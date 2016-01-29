@@ -588,7 +588,7 @@ class H2OFrame(object):
     lol = H2OFrame._expr(expr=ExprNode("levels", self)).as_data_frame(False)
     lol.pop(0)  # Remove column headers
     lol = list(zip(*lol))
-    lol = [[ll for ll in l if ll!=''] for l in lol]
+    lol = [[ll for ll in l] for l in lol]
     
     return lol
 
@@ -1599,6 +1599,28 @@ class H2OFrame(object):
       H2OFrame with trimmed strings.
     """
     fr = H2OFrame._expr(expr=ExprNode("trim", self))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+  
+  def substring(self, start_index, end_index=None):
+    """For each string, return a new string that is a substring of the original string. If end_index is not 
+    specified, then the substring extends to the end of the original string. If the start_index is longer than
+    the length of the string, or is greater than or equal to the end_index, an empty string is returned. Negative
+    start_index is coerced to 0. 
+
+    Parameters
+    ----------
+    start_index : int
+      The index of the original string at which to start the substring, inclusive.
+    end_index: int, optional
+      The index of the original string at which to end the substring, exclusive. 
+
+    Returns
+    -------
+      An H2OFrame containing the specified substrings.
+    """
+    fr = H2OFrame._expr(expr=ExprNode("substring", self, start_index, end_index)) 
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr

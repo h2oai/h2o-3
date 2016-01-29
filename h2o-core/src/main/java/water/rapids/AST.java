@@ -200,6 +200,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTCut());
     init(new ASTDdply());
     init(new ASTGroup());
+    init(new ASTGroupedPermute());
     init(new ASTMerge());
     init(new ASTQtile());
 
@@ -212,6 +213,7 @@ abstract public class AST extends Iced<AST> {
     init(new ASTCountMatches());
     init(new ASTToUpper());
     init(new ASTStrLength());
+    init(new ASTSubstring());
 
     // Functional data mungers
     init(new ASTApply());

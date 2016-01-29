@@ -28,7 +28,7 @@ h2o.word2vec <- function(trainingH2OFrame, minWordFreq, wordModel, normModel, ne
          vecSize, windowSize, sentSampleRate, initLearningRate, epochs) {
 
   # param checking
-  if (!is.H2OFrame(trainingH2OFrame)) stop("`data` must be an H2O H2OFrame object")
+  if (!is.H2OFrame(trainingH2OFrame)) stop("`data` must be an H2OFrame object")
   if (missing(wordModel) || !(wordModel %in% c("SkipGram", "CBOW"))) stop("`wordModel` must be one of \"SkipGram\" or \"CBOW\"")
   if (missing(normModel) || !(normModel %in% c("HSM", "NegSampling"))) stop("`normModel` must be onf of \"HSM\" or \"NegSampling\"")
   if (!is.null(negExCnt)) {
@@ -41,7 +41,7 @@ h2o.word2vec <- function(trainingH2OFrame, minWordFreq, wordModel, normModel, ne
   if (missing(initLearningRate) || !is.numeric(initLearningRate)) stop("`initLearningRate` must be numeric")
   if (missing(epochs) || !is.numeric(epochs)) stop("`epochs` must be numeric")
   if (!is.H2OFrame(trainingH2OFrame)) invisible(nrow(trainingH2OFrame))  # try to force the eval of the frame
-  if (!is.H2OFrame(trainingH2OFrame)) stop("Could not evaluate `trainingH2OFrame` as an H2O H2OFrame object")
+  if (!is.H2OFrame(trainingH2OFrame)) stop("Could not evaluate `trainingH2OFrame` as an H2OFrame object")
 
   params <- list(training_frame = h2o.getId(trainingH2OFrame),
                  wordModel = wordModel,

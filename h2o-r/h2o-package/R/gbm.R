@@ -10,7 +10,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
-#' @param training_frame An H2O H2OFrame object containing the variables in the model.
+#' @param training_frame An H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
@@ -30,7 +30,7 @@
 #'        level, then decrease by factor of two per level.
 #' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
 #'        Higher values can lead to more overfitting.
-#' @param validation_frame An H2O H2OFrame object indicating the validation dataset used to contruct the
+#' @param validation_frame An H2OFrame object indicating the validation dataset used to contruct the
 #'        confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data).
@@ -54,7 +54,6 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -110,7 +109,7 @@ h2o.gbm <- function(x, y, training_frame,
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")
 
-  # Training_frame may be a key or an H2O H2OFrame object
+  # Training_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {

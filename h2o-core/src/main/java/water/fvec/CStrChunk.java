@@ -150,6 +150,35 @@ public class CStrChunk extends Chunk {
     }
     return nc;
   }
+  
+  /**
+   * Optimized substring() method for a buffer of only ASCII characters.
+   * The presence of UTF-8 multi-byte characters would give incorrect results
+   * for the string length, which is required here.
+   *
+   * @param nc NewChunk to be filled with substrings in this chunk
+   * @param startIndex The beginning index of the substring, inclusive
+   * @param endIndex The ending index of the substring, exclusive
+   * @return Filled NewChunk
+   */
+  public NewChunk asciiSubstring(NewChunk nc, int startIndex, int endIndex) {
+    // copy existing data
+    nc = this.inflate_impl(nc);
+    
+    //update offsets and byte array
+    for (int i = 0; i < _len; i++) {
+      int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
+      if (off != NA) {
+        int len = 0;
+        while (_mem[_valstart + off + len] != 0) len++; //Find length
+        nc._is[i] = startIndex < len ? off + startIndex : off + len;
+        for (; len > endIndex - 1; len--) {
+          nc._ss[off + len] = 0; //Set new end
+        }
+      }
+    }
+    return nc;
+  }
 
   /**
    * Optimized length() method for a buffer of only ASCII characters.

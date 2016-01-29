@@ -5,7 +5,7 @@
 #'
 #' Parse the Raw Data produced by the import phase.
 #'
-#' @param data An H2O H2OFrame object to be parsed.
+#' @param data An H2OFrame object to be parsed.
 #' @param destination_frame (Optional) The hex key assigned to the parsed file.
 #' @param header (Optional) A logical value indicating whether the first row is
 #'        the column header. If missing, H2O will automatically try to detect
@@ -13,7 +13,7 @@
 #' @param sep (Optional) The field separator character. Values on each line of
 #'        the file are separated by this character. If \code{sep = ""}, the
 #'        parser will automatically detect the separator.
-#' @param col.names (Optional) A H2OFrame object containing a
+#' @param col.names (Optional) An H2OFrame object containing a
 #'        single delimited line with the column names for the file.
 #' @param col.types (Optional) A vector specifying the types to attempt to force
 #'        over columns.

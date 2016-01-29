@@ -133,6 +133,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
     impl._train = (null == this.  training_frame ? null : Key.<Frame>make(this.  training_frame.name));
     impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
+    impl._max_runtime_secs = nfolds > 0 ? max_runtime_secs / (nfolds+1) : max_runtime_secs;
 
     return impl;
   }

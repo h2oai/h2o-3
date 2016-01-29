@@ -40,7 +40,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
   @Override protected int nModelsInParallel() {
-    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
+    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
     if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1;
   }

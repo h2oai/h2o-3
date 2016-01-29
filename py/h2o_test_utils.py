@@ -615,9 +615,11 @@ class GridSpec(dict):
         for k, vals in self['grid_params'].iteritems():
             combos *= len(vals)
 
+        # NOTE: if we have a stopping critereon which is not a fixed number we don't know how many models to expect
+        expected = None
         if self['search_criteria'] is None or self['search_criteria']['strategy'] is 'Cartesian':
             expected = combos
-        elif self['search_criteria'] is not None and 'max_models' in self['search_criteria']:
+        elif self['search_criteria'] is not None and 'max_models' in self['search_criteria'] and 'max_time_ms' not in self['search_criteria']:
             expected = min(combos, self['search_criteria']['max_models'])
 
         if expected is not None:

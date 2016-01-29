@@ -14,7 +14,7 @@
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
 #'        column index number starting at 0, and increasing from left to right. The response must be a categorical
 #'        variable with at least two levels.
-#' @param training_frame An H2O H2OFrame object containing the variables in the model.
+#' @param training_frame An H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
@@ -25,7 +25,6 @@
 #' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
 #'        FALSE to reduce the runtime of the algorithm.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional
 #'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
 #'        deviation computed from the training dataset. When building a naive Bayes classifier,
@@ -51,7 +50,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            compute_metrics = TRUE,
                            max_runtime_secs=0)
 {
-  # Training_frame may be a key or an H2O H2OFrame object
+  # Training_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {
