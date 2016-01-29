@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.collectors.AutoLinuxProcFileReader;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.deeplearning.DeepLearning;
@@ -28,7 +29,6 @@ import java.sql.*;
 import java.util.*;
 
 import static water.util.RandomUtils.getRNG;
-
 
 /**
  * AutoCollect collects frame metadata and score histories over a grid search on
@@ -142,16 +142,16 @@ public class AutoCollect {
 
           //For the time being create a dummy hash map and send to ResourceMeta
           // Create a hash map
-          HashMap<String, Object> hashMap = new HashMap<>();
+          HashMap<String, Object> getProc = new HashMap<>();
 
           //Put elements into hash map
-          hashMap.put("RSS", 2);
-          hashMap.put("SysCPU",3);
-          hashMap.put("ProcCPU",4);
-          hashMap.put("timestamp",5);
+          getProc.put("RSS", AutoLinuxProcFileReader.getSystemTotalTicks());
+          getProc.put("SysCPU", AutoLinuxProcFileReader.getSystemTotalTicks());
+          getProc.put("ProcCPU", AutoLinuxProcFileReader.getProcessTotalTicks());
+          getProc.put("timestamp",AutoLinuxProcFileReader.getTimeStamp());
 
           //Push to ResourceMeta
-          pushResourceMeta(hashMap);
+          pushResourceMeta(getProc);
         }
       });
       while (elapsed <= _seconds) {
@@ -174,6 +174,9 @@ public class AutoCollect {
         } catch( IllegalArgumentException iae) {
           iae.printStackTrace();
         } finally {
+          if(!resource.isInterrupted()){
+            resource.interrupt();
+          }
           if( m!=null ) m.delete();
           if( fs!=null )
             for(Frame f: fs) f.delete();
