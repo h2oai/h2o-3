@@ -22,10 +22,12 @@ import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.H2O.H2OCountedCompleter;
 import water.parser.BufferedString;
 import water.util.*;
 import water.util.ArrayUtils;
+
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -142,10 +144,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _lambdaDevTest.add(devRatioTest);
     }
 
+    NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
+
+
     public synchronized TwoDimTable to2dTable() {
       String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "Explained Deviance (train)", "Explained Deviance (test)"};
-      String[] ctypes = new String[]{"string", "string", "int", "double","int", "double","double"};
-      String[] cformats = new String[]{"%s", "%s", "%d","%d", "%.5f", "%.5f","%.5f"};
+      String[] ctypes = new String[]{"string", "string", "int", "string","int", "double","double"};
+      String[] cformats = new String[]{"%s", "%s", "%d","%s", "%d", "%.3f","%.3f"};
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_lambdaIters.size()], cnames, ctypes, cformats, "");
       int j = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -154,7 +159,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res.set(i, col++, fmt.print(_scoringTimes.get(i)));
         res.set(i, col++, PrettyPrint.msecs(_scoringTimes.get(i) - _scoringTimes.get(0), true));
         res.set(i, col++, _lambdaIters.get(i));
-        res.set(i, col++, _lambdas.get(i));
+        res.set(i, col++, lambdaFormatter.format(_lambdas.get(i)));
         res.set(i, col++, _lambdaPredictors.get(i));
         res.set(i, col++, _lambdaDevTrain.get(i));
         if(_lambdaDevTest.size() > i)
@@ -266,7 +271,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
       checkMemoryFootPrint(_dinfo);
       if (_parms._max_iterations == -1) { // fill in default max iterations
-        int numclasses = nclasses();
+        int numclasses = _parms._family == Family.multinomial?nclasses():1;
         if (_parms._solver == Solver.IRLSM) {
           _parms._max_iterations = _parms._lambda_search ? numclasses * 10 * _parms._nlambdas : numclasses * 50;
         } else {
@@ -375,7 +380,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    * Main loop of the glm algo.
    */
   public final class GLMDriver extends Driver implements ProgressMonitor {
-    private int _workPerIteration;
+    private long _workPerIteration;
 
 
     private void doCleanup() {
@@ -460,7 +465,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state.setBetaMultinomial(c, ls.getX(), (GLMSubsetGinfo) ls.ginfo());
           bdiff = betaDiff(t._beta, ls.getX());
           // update multinomial
-          updateProgress();
+          if(!_parms._lambda_search)
+            updateProgress();
           Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "") + " bdiff = " + bdiff));
         }
         relImprovement = (obj - _state.objVal())/obj;
@@ -478,16 +484,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
         : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(),.5);
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
+      boolean firstIter = true;
       while(true) {
         long t1 = System.currentTimeMillis();
         GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
         long t2 = System.currentTimeMillis();
         double [] betaCnd = solveGram(t._gram,t._xy);
+        if(betaCnd.length < ls.getX().length) {
+          ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+            ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
+            : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(),.5);
+        }
         long t3 = System.currentTimeMillis();
         if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-4, 1e4, 20)) {
           Log.info(LogMsg("Ls failed " + ls));
+          if(firstIter)
+            System.out.println("haha");
           break;
         }
+        firstIter = false;
         long t4 = System.currentTimeMillis();
         if(!progress(ls.getX(),ls.ginfo()))
           break;
@@ -801,7 +816,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           nullDevTest = _parms._family == Family.multinomial
             ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
             :new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame)._resDev;
-      }
+        _workPerIteration = WORK_TOTAL/_parms._nlambdas;
+      } else
+        _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
       if (error_count() > 0) {
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       }
@@ -815,6 +832,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sumExp += Math.exp(nb[i*N + P] - maxRow);
         _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
       }
+      double testDevOld = Double.NaN;
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
@@ -838,11 +856,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
-          if(_model._output.pickBestModel().lambda_value == _state.lambda()) {
-            if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
+          if(testDev > testDevOld)
+            break; // started overfitting
+          testDevOld = testDev;
+          if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
               scoreAndUpdateModel(); // update partial results
-          } else // started overfitting => converge
-            break;
+          _job.update(_workPerIteration,"lambda = " + _state.lambda() + ", explained dev train/test = " + (1 - trainDev/nullDevTrain) + "/" + (1.0 - testDev/nullDevTest) + ", predictors = " + ArrayUtils.countNonzeros(_state.beta()));
         } else
           _model.update(_state.beta(), -1, -1, _state._iter);
       }
@@ -877,23 +896,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override public boolean progress(double [] beta, GradientInfo ginfo) {
       GLMGradientInfo gginfo = (GLMGradientInfo)ginfo;
-      double bdiff = betaDiff(beta,_state.beta());
-      double relImprovement = _state.updateState(beta,gginfo);
-      updateProgress();
-      return _job.isRunning() && _state._iter++ < _parms._max_iterations && bdiff > _parms._beta_epsilon && relImprovement > _parms._objective_epsilon;
+      _state.updateState(beta,gginfo);
+      if(!_parms._lambda_search)
+        updateProgress();
+      return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
 
     // update user visible progress
     protected void updateProgress(){
-      if(!_parms._lambda_search)
-        _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objVal());
-      int iterDelta = _state._iter < 4 ? 1 : 4;
-      _state._worked += _workPerIteration * iterDelta;
-      if (_state._iter < 4 || (_state._iter & 3) == 0)
-        _job.update(_workPerIteration * iterDelta, "iteration " + (_state._iter + 1) + ", objective value = " + MathUtils.roundToNDigits(_state.objVal(), 4));
-      if(!_parms._lambda_search && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
+      assert !_parms._lambda_search;
+      _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objVal());
+      _job.update(_workPerIteration,_state.toString());
+      if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval) {
         _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
         scoreAndUpdateModel();
       }

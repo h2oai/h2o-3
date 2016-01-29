@@ -35,7 +35,6 @@ public final class ComputationState {
   private DataInfo _activeData;
   private BetaConstraint _activeBC = null;
   private double[] _beta; // vector of coefficients corresponding to active data
-  public int _worked;
   final DataInfo _dinfo;
   private GLMGradientSolver _gslvr;
   private final Key _jobKey;
@@ -82,7 +81,7 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "itr=" + _iter + " lmb=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + " imp=" + MathUtils.roundToNDigits(_relImprovement,4) + " bdf=" + MathUtils.roundToNDigits(_relImprovement,4);
+    return "itr=" + _iter + " lmb=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + " imp=" + MathUtils.roundToNDigits(_relImprovement,4) + " bdf=" + MathUtils.roundToNDigits(_betaDiff,4);
   }
 
   private void adjustToNewLambda() {
@@ -117,7 +116,7 @@ public final class ComputationState {
     int P = _dinfo.fullN();
     int selected = 0;
     _activeBC = _bc;
-    _activeData = _dinfo;
+    _activeData = _activeData != null?_activeData:_dinfo;
     if (!_allIn && _alpha > 0) {
       final double rhs = _alpha * (2 * _lambda - _previousLambda);
       int [] cols = MemoryManager.malloc4(P);
@@ -135,7 +134,9 @@ public final class ComputationState {
       if(!_allIn) {
         if (_intercept) cols[selected++] = P;
         cols = Arrays.copyOf(cols, selected);
-        _beta = ArrayUtils.select(_beta, cols);
+        double [] b = ArrayUtils.select(_beta, cols);
+        assert Arrays.equals(_beta,ArrayUtils.expandAndScatter(b,_dinfo.fullN()+1,cols));
+        _beta = b;
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, selected));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
@@ -269,7 +270,6 @@ public final class ComputationState {
     _gradientErr = err;
     _beta = beta;
     _ginfo = ginfo;
-    _activeData = null;
     _activeBC = null;
     if(!_allIn && _lambda*_alpha > 0) {
       int[] failedCols = new int[64];
@@ -305,6 +305,7 @@ public final class ComputationState {
     if(_ginfo != null)
       _ginfo._gradient = ArrayUtils.select(_ginfo._gradient,activeCols);
     _activeData = _activeData.filterExpandedColumns(activeCols);
+    _gslvr = new GLMGradientSolver(_jobKey, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
     return activeCols;
   }
 
@@ -337,6 +338,8 @@ public final class ComputationState {
   }
   private double _betaDiff;
   private double _relImprovement;
+
+  public boolean converged(){return _betaDiff < _parms._beta_epsilon || _relImprovement < _parms._objective_epsilon;}
 
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
