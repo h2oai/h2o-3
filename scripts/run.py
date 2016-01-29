@@ -2182,7 +2182,7 @@ def parse_args(argv):
             if (i > len(argv)):
                 usage()
             g_job_name = argv[i]
-        elif (s == "--xml2"):
+        elif (s == "--geterrs"):
             g_use_xml2 = True
         else:
             unknown_arg(s)
