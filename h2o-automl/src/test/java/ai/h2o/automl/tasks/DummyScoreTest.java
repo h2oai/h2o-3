@@ -14,7 +14,7 @@ public class DummyScoreTest extends TestUtil {
   @Test public void testIrisClasses() {
     Frame fr = null;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
       double[][] dummies = DummyClassifier.getDummies(fr.vec(4), null, new String[]{"logloss", "mse"});
       System.out.println();
     } finally {
@@ -26,6 +26,7 @@ public class DummyScoreTest extends TestUtil {
     Frame fr = null;
     Vec delVec=null;
     try {
+      //Currently not in repo?
       fr = parse_test_file(Key.make("c.hex"), "/0xdata/h2o-3/bigdata/laptop/covtype/covtype.data");
       double[][] dummies = DummyClassifier.getDummies(delVec = fr.vec(54).toCategoricalVec(), null, new String[]{"logloss", "mse"});
       System.out.println();
@@ -39,7 +40,7 @@ public class DummyScoreTest extends TestUtil {
   @Test public void testIrisCol1() {
     Frame fr = null;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
       double[][] dummies = DummyRegressor.getDummies(fr.vec(0), null, new String[]{"mse"});
       System.out.println();
     } finally {
