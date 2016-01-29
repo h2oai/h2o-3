@@ -116,6 +116,7 @@ public abstract class AutoLinuxProcFileReader {
             long processSystemTicks = Long.parseLong(m.group(15));
             _processTotalTicks = processUserTicks + processSystemTicks;
             _processRss = Long.parseLong(m.group(24));
+            _timeStamp = System.currentTimeMillis();
         }
         catch (Exception ignore) {}
     }
@@ -282,6 +283,7 @@ public abstract class AutoLinuxProcFileReader {
         System.out.println("Process total ticks: " + getProcessTotalTicks());
         System.out.println("Process RSS: " + getProcessRss());
         System.out.println("Number of cpus: " + getCpuTicks().length);
+        System.out.println("Timestamp of process: " + getTimeStamp());
     }
 }
 
