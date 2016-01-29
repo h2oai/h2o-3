@@ -40,9 +40,9 @@ import static water.util.RandomUtils.getRNG;
 public class AutoCollect {
 
   public static int RFMAXDEPTH=50;
-  public static int RFMAXNBINS=1024;
-  public static int RFMAXNBINSCATS=1024;
-  public static int RFMAXNTREES=1000;
+  public static int RFMAXNBINS=1000;
+  public static int RFMAXNBINSCATS=1000;
+  public static int RFMAXNTREES=50;
   public static int RFMAXNROWS=50;
 
   private final static String[] DLGRIDDABLES = new String[]{
@@ -134,7 +134,7 @@ public class AutoCollect {
     try {
       conn.setAutoCommit(false);  // allow failed model builds... don't let them load in!
       long start = System.currentTimeMillis();
-      long elapsed = 0;
+      double elapsed = 0;
       long seedSplit;
       Thread resource = new Thread(new Runnable() {
         public void run() {
@@ -156,25 +156,19 @@ public class AutoCollect {
       });
       while (elapsed <= _seconds) {
         Model m=null;
+        ModelBuilder builder;
         Frame[] fs=null;
         try {
           fs = ShuffleSplitFrame.shuffleSplitFrame(_fr, new Key[]{Key.make(),Key.make()}, new double[]{0.8,0.2}, seedSplit=getRNG(new Random().nextLong()).nextLong());
-          ModelBuilder builder = selectNewBuilder(seedSplit);
+          builder = selectNewBuilder(seedSplit);
           builder._parms._train = fs[0]._key;
           builder._parms._valid = fs[1]._key;
           builder._parms._response_column = _fr.name(_resp);
           builder._parms._ignored_columns = ignored();
-
-          /*===== Beginning of Resource Collection=====*/
-          // start resource collector thread
-          resource.start();
-          //Model training
-          m = (Model) builder.trainModel().get();
-          // stop resource collector thread
-          resource.interrupt();
-          /*=====End of Resource Collection=====*/
-
-          elapsed = System.currentTimeMillis() - start;
+          resource.start();                        // start resource collector thread
+          m = (Model) builder.trainModel().get();  // model train/build
+          resource.interrupt();                    // stop resource collector thread
+          elapsed = (System.currentTimeMillis() - start )/ 1000.;
           logScoreHistory(m._output, getConfig(m._parms));
           conn.commit();
         } catch( IllegalArgumentException iae) {
@@ -257,7 +251,8 @@ public class AutoCollect {
 
   private ModelBuilder selectNewBuilder(long seedSplit) {
     byte algo=_algo;
-    if( algo == ANY || algo==DL ) algo = (byte)getRNG(new Random().nextLong()).nextInt((int)DL);  // TODO: currently disabling DL
+    algo=GLM;
+    if( algo == ANY || algo==DL ) algo = (byte)getRNG(new Random().nextLong()).nextInt((int)GLM);  // TODO: currently disabling DL+GLM
     switch(algo) {
       case RF:  return makeDRF(seedSplit);
       case GBM: return makeGBM(seedSplit);
@@ -301,11 +296,11 @@ public class AutoCollect {
     do {
       config.put("mtries", p._mtries = 1+getRNG(new Random().nextLong()).nextInt(_preds.length));
       config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
-      config.put("ntrees", p._ntrees = getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
-      config.put("max_depth", p._max_depth = getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
-      config.put("min_rows", p._min_rows = getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
-      config.put("nbins", p._nbins = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
-      config.put("nbins_cats", p._nbins_cats = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
+      config.put("ntrees", p._ntrees = 1+getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
+      config.put("max_depth", p._max_depth = 1+getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
+      config.put("min_rows", p._min_rows = 1+getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
+      config.put("nbins", p._nbins = 10+getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
+      config.put("nbins_cats", p._nbins_cats = 10+getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
       config.put("ConfigID", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);
@@ -320,15 +315,15 @@ public class AutoCollect {
     config.put("idFrame", _idFrame);
     config.put("SplitSeed", seedSplit);
     do {
-      config.put("ntrees", p._ntrees = getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
-      config.put("max_depth", p._max_depth = getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
-      config.put("min_rows", p._min_rows = getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
+      config.put("ntrees", p._ntrees = 1+getRNG(new Random().nextLong()).nextInt(RFMAXNTREES));
+      config.put("max_depth", p._max_depth = 1+getRNG(new Random().nextLong()).nextInt(RFMAXDEPTH));
+      config.put("min_rows", p._min_rows = 1+getRNG(new Random().nextLong()).nextInt(RFMAXNROWS));
       config.put("learn_rate", p._learn_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("col_sample_rate", p._col_sample_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("col_sample_rate_per_tree", p._col_sample_rate_per_tree = getRNG(new Random().nextLong()).nextFloat());
-      config.put("nbins", p._nbins = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
-      config.put("nbins_cats", p._nbins_cats = 20+getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
+      config.put("nbins", p._nbins = 10+getRNG(new Random().nextLong()).nextInt(RFMAXNBINS));
+      config.put("nbins_cats", p._nbins_cats = 10+getRNG(new Random().nextLong()).nextInt(RFMAXNBINSCATS));
       config.put("ConfigID", configID = getConfig(p));
     } while(!isValidConfig(configID));
     configs.add(configID);

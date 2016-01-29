@@ -59,11 +59,11 @@ public class TestUtil extends Iced {
                 (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
         } else {
-          if( cnt++ < 10 )
+          if( cnt++ < 150 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
       }
-      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+      if( 150 < leaked_keys ) System.err.println("... and "+(leaked_keys-150)+" more leaked keys");
     }
     assertTrue("No keys leaked", leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.

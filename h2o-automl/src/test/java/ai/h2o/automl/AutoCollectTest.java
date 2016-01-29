@@ -3,9 +3,6 @@ package ai.h2o.automl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 public class AutoCollectTest extends TestUtil { // requires mysql-connector-java-3.1.14-bin.jar in -cp
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 //  @Test public void testConnection() {
@@ -43,7 +40,7 @@ public class AutoCollectTest extends TestUtil { // requires mysql-connector-java
 
 
   @Test public void testSmalldataMetaCollect() {
-    AutoCollect ac = new AutoCollect(120, find_test_file_static("smalldata/meta").getAbsolutePath());
+    AutoCollect ac = new AutoCollect(30, find_test_file_static("smalldata/meta").getAbsolutePath());
     ac.start();
   }
 }
