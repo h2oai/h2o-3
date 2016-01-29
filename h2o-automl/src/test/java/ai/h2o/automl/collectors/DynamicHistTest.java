@@ -14,7 +14,7 @@ public class DynamicHistTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void histSmall1() {
-    Frame fr = parse_test_file(Key.make("a.hex"),"/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris.csv");
     int vec = 0;
     Vec v = fr.vec(vec);
     MetaCollector.DynamicHisto h = new MetaCollector.DynamicHisto(fr.name(vec), 50, 50, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), v.min(), v.max());
@@ -37,7 +37,7 @@ public class DynamicHistTest extends TestUtil {
   }
 
   @Test public void histSmall2() {
-    Frame fr = parse_test_file(Key.make("a.hex"),"/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris.csv");
     int vec=1;
     Vec v = fr.vec(vec);
     MetaCollector.DynamicHisto h = new MetaCollector.DynamicHisto(fr.name(vec), 10, 50, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), v.min(), v.max());
@@ -46,7 +46,7 @@ public class DynamicHistTest extends TestUtil {
   }
 
   @Test public void histSmallCats() {
-    Frame fr = parse_test_file(Key.make("a.hex"),"/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+    Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris.csv");
     int vec=1;
     Vec v = fr.vec(vec);
     MetaCollector.DynamicHisto h = new MetaCollector.DynamicHisto(fr.name(vec), 10, 50, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), v.min(), v.max());
