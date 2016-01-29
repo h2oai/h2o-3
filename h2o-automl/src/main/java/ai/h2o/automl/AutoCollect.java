@@ -140,8 +140,7 @@ public class AutoCollect {
         public void run() {
           //Collect resources info...
 
-          //For the time being create a dummy hash map and send to ResourceMeta
-          // Create a hash map
+          //HashMap to store resource info
           HashMap<String, Object> getProc = new HashMap<>();
 
           //Put elements into hash map
