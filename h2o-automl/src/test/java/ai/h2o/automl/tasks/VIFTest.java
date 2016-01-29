@@ -14,7 +14,7 @@ public class VIFTest extends TestUtil {
   @Test public void testVIFs() {
     Frame fr = null;
     try {
-      fr = parse_test_file(Key.make("a.hex"), "/0xdata/h2o-3/smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
       VIF[] vifs = VIF.make(fr._key, new String[]{"sepal_len", "sepal_wid","petal_len","petal_wid"}, fr.names());
       VIF.launchVIFs(vifs);
       int idx=0;
