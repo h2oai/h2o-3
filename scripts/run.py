@@ -1489,28 +1489,23 @@ class TestRunner:
         present or if the requirements file cannot be retrieved.
         """
 
+        global g_r_pkg_ver_chk_script
         self._log("")
         self._log("Conducting R package/version check...")
         out_file_name = os.path.join(self.output_dir, "package_version_check_out.txt")
         out = open(out_file_name, "w")
 
-        pkg_ver_chk_update_r = os.path.normpath(os.path.join(self.test_root_dir,"..","scripts",
-                                                             "package_version_check_update.R"))
-        cmd = ["R", "--vanilla", "-f", pkg_ver_chk_update_r, "--args", "check",]
+        cmd = ["R", "--vanilla", "-f", g_r_pkg_ver_chk_script, "--args", "check",]
 
         child = subprocess.Popen(args=cmd, stdout=out)
         rv = child.wait()
         if (self.terminated):
             return
-        if (rv == 1 or rv == 3):
+        if (rv == 1):
             self._log("")
-            self._log("ERROR: " + pkg_ver_chk_update_r + " failed.")
+            self._log("ERROR: " + g_r_pkg_ver_chk_script + " failed.")
             self._log("       See " + out_file_name)
             sys.exit(1)
-        if (rv == 2):
-            self._log("")
-            self._log("WARNING: System version of R differs from Jenkins-approved version.")
-            self._log("         See " + out_file_name)
         out.close()
 
     def _calc_test_short_dir(self, test_path):
@@ -1810,6 +1805,9 @@ g_java_start_text = 'STARTING TEST:'    # test being started in java
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
+
+g_r_pkg_ver_chk_script = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "../h2o-r/scripts/package_version_check_update.R"))
 g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "../h2o-r/scripts/h2o-r-test-setup.R"))
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
