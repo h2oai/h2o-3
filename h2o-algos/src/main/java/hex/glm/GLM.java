@@ -39,6 +39,9 @@ import java.util.HashMap;
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
+  static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
+  static NumberFormat devFormatter = new DecimalFormat(".##");
+
   public static final int SCORING_INTERVAL_MSEC = 15000; // scoreAndUpdateModel every minute unless socre every iteration is set
   public String _generatedWeights = null;
 
@@ -144,7 +147,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _lambdaDevTest.add(devRatioTest);
     }
 
-    NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
+
 
 
     public synchronized TwoDimTable to2dTable() {
@@ -861,7 +864,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           testDevOld = testDev;
           if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
               scoreAndUpdateModel(); // update partial results
-          _job.update(_workPerIteration,"lambda = " + _state.lambda() + ", explained dev train/test = " + (1 - trainDev/nullDevTrain) + "/" + (1.0 - testDev/nullDevTest) + ", predictors = " + ArrayUtils.countNonzeros(_state.beta()));
+          _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "exp.dev.ratio trn/tst= " + devFormatter.format(1 - trainDev/nullDevTrain) + "/" + devFormatter.format(1.0 - testDev/nullDevTest) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
         } else
           _model.update(_state.beta(), -1, -1, _state._iter);
       }

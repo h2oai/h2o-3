@@ -15,6 +15,8 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Arrays;
 
 public final class ComputationState {
@@ -81,7 +83,7 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "itr=" + _iter + " lmb=" + MathUtils.roundToNDigits(_lambda, 4) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + " imp=" + MathUtils.roundToNDigits(_relImprovement,4) + " bdf=" + MathUtils.roundToNDigits(_betaDiff,4);
+    return "iter=" + _iter + " lmb=" + GLM.lambdaFormatter.format(_lambda) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + " imp=" + GLM.lambdaFormatter.format(_relImprovement) + " bdf=" + GLM.lambdaFormatter.format(_betaDiff);
   }
 
   private void adjustToNewLambda() {
