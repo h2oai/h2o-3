@@ -201,7 +201,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = ParseDataset.parse(parsed, raw);
     GLM job = null;
     try {
-      GLMParameters params = new GLMParameters(Family.gamma);
+      GLMParameters params = new GLMParameters(Family.poisson);
       // params._response = 1;
       params._response_column = fr._names[1];
       params._train = parsed;
