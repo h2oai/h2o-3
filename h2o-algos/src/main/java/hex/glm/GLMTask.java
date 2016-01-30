@@ -150,7 +150,7 @@ public abstract class GLMTask  {
    @Override public void setupLocal(){}
 
    @Override public void map(Chunk [] chunks) {
-     _yMu = new double[_nClasses > 2?_nClasses:1];
+     _yMu = new double[_nClasses];
      Chunk weight = _weightId == -1?new C0DChunk(1.0,chunks[0]._len):chunks[_weightId];
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
      for(int i = 0; i < chunks.length; ++i) {

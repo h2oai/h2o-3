@@ -248,6 +248,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return null;
   }
 
+  protected boolean computePriorClassDistribution(){return _parms._family == Family.multinomial;}
 
   @Override
   public void init(boolean expensive) {
@@ -256,8 +257,36 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
-    if (error_count() > 0) return;
+    switch( _parms._family) {
+      case binomial:
+        if( !_response.isBinary() && _nclass != 2)
+          error("_family", H2O.technote(2, "Binomial requires the response to be a 2-class categorical or a binary column (0/1)"));
+        break;
+      case multinomial:
+        if (_nclass <= 2) error("_family", H2O.technote(2, "Multinomial requires a categorical response with at least 3 levels (for 2 class problem use family=binomial."));
+        break;
+      case poisson:
+        if (_nclass != 1) error("_family", "Poisson requires the response to be numeric.");
+        if(_response.min() < 0)
+          error("_family", "Poisson requires response >= 0");
+        if(!_response.isInt())
+          warn("_family","Poisson expects non-negative integer response, got floats.");
+        break;
+      case gamma:
+        if (_nclass != 1) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
+        if(_response.min() <= 0) error("_family","Gamma requires positive respone");
+        break;
+      case tweedie:
+        if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
+        break;
+      case gaussian:
+        if (_nclass != 1) error("_family", H2O.technote(2, "Gaussian requires the response to be numeric."));
+        break;
+      default:
+        error("_family","Invalid distribution: " + _parms._distribution);
+    }
     if (expensive) {
+      if (error_count() > 0) return;
       _lsc = new LambdaSearchScoringHistory();
       _sc = new ScoringHistory();
       if (_parms._alpha == null)
@@ -295,7 +324,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
-        YMUTask ymt = new YMUTask(_dinfo, nclasses(), !_parms._stdOverride, setWeights).doAll(_dinfo._adaptedFrame);
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, !_parms._stdOverride, setWeights).doAll(_dinfo._adaptedFrame);
         if (ymt._wsum == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt._nobs + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
@@ -309,11 +338,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_parms._obj_reg == -1)
           _parms._obj_reg = 1.0 / _nobs;
         if (_parms._family == Family.multinomial) {
-          long[] bins = _train.lastVec().bins();
-          double reg = 1.0 / ArrayUtils.sum(bins);
-          _state._ymu = MemoryManager.malloc8d(bins.length);
+          _state._ymu = MemoryManager.malloc8d(_nclass);
           for (int i = 0; i < _state._ymu.length; ++i)
-            _state._ymu[i] = bins[i] * reg;
+            _state._ymu[i] = _priorClassDist[i];
         } else
           _state._ymu = new double[]{_parms._intercept?_train.lastVec().mean():0};
       }

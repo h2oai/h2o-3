@@ -188,18 +188,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if(v != null && !v.isNumeric())
           glm.error("beta_constraints","beta_start must be numeric if present");
       }
-      if(_family == Family.binomial) {
-        Frame frame = DKV.getGet(_train);
-        if (frame != null) {
-          Vec response = frame.vec(_response_column);
-          if (response != null) {
-            if (response.min() < 0 || response.max() > 1) {
-              glm.error("_response_column", "Illegal response for family binomial, must be binary, got min = " + response.min() + ", max = " + response.max() + ")");
-            }
-          }
-        }
-      }
-
       if(!_lambda_search) {
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");

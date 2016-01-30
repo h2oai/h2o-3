@@ -624,7 +624,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   transient double [] _distribution;
-  transient double [] _priorClassDist;
+  transient protected double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
     return isClassifier();
