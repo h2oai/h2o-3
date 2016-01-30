@@ -143,7 +143,8 @@ public final class ComputationState {
         _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, selected));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,(1-_alpha)*_lambda,_bc);
-      }
+        assert _beta.length == selected;
+      } else _activeData = _dinfo;
     }
     return selected;
   }
@@ -264,7 +265,7 @@ public final class ComputationState {
     _gslvr = new GLMGradientSolver(_jobKey,_parms,_dinfo,(1-_alpha)*_lambda,_bc);
     GLMGradientInfo ginfo = _gslvr.getGradient(beta);
     double[] grad = ginfo._gradient.clone();
-    double err = 0;
+    double err = 1e-4;
     ADMM.subgrad(_alpha * _lambda, beta, grad);
     for (int c : activeCols) // set the error tolerance to the highest error og included columns
       if (grad[c] > err) err = grad[c];
