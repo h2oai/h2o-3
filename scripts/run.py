@@ -1828,6 +1828,9 @@ g_java_start_text = 'STARTING TEST:'    # test being started in java
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
+
+g_r_pkg_ver_chk_script = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "../h2o-r/scripts/package_version_check_update.R"))
 g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "../h2o-r/scripts/h2o-r-test-setup.R"))
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
