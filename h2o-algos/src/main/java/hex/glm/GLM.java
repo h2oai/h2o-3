@@ -513,7 +513,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitIRLSM() {
       LineSearchSolver ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
         ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-        : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(),.5);
+        : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       while(true) {
         long t1 = System.currentTimeMillis();
@@ -523,7 +523,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(betaCnd.length < ls.getX().length) {
           ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
             ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-            : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(),.5);
+            : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
         }
         long t3 = System.currentTimeMillis();
         if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {

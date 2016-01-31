@@ -59,22 +59,21 @@ public class OptimizationUtils {
 
   public static final class SimpleBacktrackingLS implements LineSearchSolver {
     private double [] _beta;
-    final double _stepDec;
+    final double _stepDec = .33;
     private double _step;
     private final GradientSolver _gslvr;
     private GradientInfo _ginfo; // gradient info excluding l1 penalty
     private double _objVal; // objective including l1 penalty
     final double _l1pen;
-    int _maxfev = 5;
+    int _maxfev = 10;
     double _minStep = 1e-4;
 
 
     public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen) {
-      this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart),.5);
+      this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart));
     }
-    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen, GradientInfo ginfo, double stepDec) {
+    public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen, GradientInfo ginfo) {
       _gslvr = gslvr;
-      _stepDec = stepDec;
       _beta = betaStart;
       _ginfo = ginfo;
       _l1pen = l1pen;
@@ -95,8 +94,13 @@ public class OptimizationUtils {
     @Override
     public boolean evaluate(double[] direction) {
       double step = 1;
+      double minStep = 1;
+      for(double d:direction) {
+        d = Math.abs(1e-4/d);
+        if(d < minStep) minStep = d;
+      }
       double [] newBeta = direction.clone();
-      for(int i = 0; i < _maxfev && step >= _minStep; ++i, step*= _stepDec) {
+      for(int i = 0; i < _maxfev && step >= minStep; ++i, step*= _stepDec) {
         GradientInfo ginfo = _gslvr.getObjective(ArrayUtils.wadd(_beta,direction,newBeta,step));
         double objVal = ginfo._objVal + _l1pen * ArrayUtils.l1norm(newBeta,true);
         if(objVal < _objVal){
@@ -106,6 +110,7 @@ public class OptimizationUtils {
           _step = step;
           return true;
         }
+
       }
       return false;
     }
