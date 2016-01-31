@@ -488,7 +488,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           long t3 = System.currentTimeMillis();
           double[] betaCnd = solveGram(t._gram, t._xy);
           long t4 = System.currentTimeMillis();
-          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-6, 1e4, 20)) {
+          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
             Log.info(LogMsg("Ls failed " + ls));
             continue;
           }
@@ -515,7 +515,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
         : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(),.5);
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      boolean firstIter = true;
       while(true) {
         long t1 = System.currentTimeMillis();
         GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
@@ -527,13 +526,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo(),.5);
         }
         long t3 = System.currentTimeMillis();
-        if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd), 1e-4, 1e4, 20)) {
+        if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
           Log.info(LogMsg("Ls failed " + ls));
-          if(firstIter)
-            System.out.println("haha");
           break;
         }
-        firstIter = false;
         long t4 = System.currentTimeMillis();
         if(!progress(ls.getX(),ls.ginfo()))
           break;
@@ -577,7 +573,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double t = 1;
         if (l1pen > 0) {
           MoreThuente mt = new MoreThuente(gslvr,nullBeta);
-          mt.evaluate(direction, 1e-12, 1000, 10);
+          mt.evaluate(direction);
           t = mt.step();
         }
         double[] rho = MemoryManager.malloc8d(beta.length);
@@ -896,6 +892,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } else
           _model.update(_state.beta(), -1, -1, _state._iter);
       }
+      _model._output.pickBestModel();
       scoreAndUpdateModel();
       if(_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
         assert _parms._intercept;
@@ -1328,8 +1325,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     public GradientInfo getObjective(double[] beta) {
-      //todo add objective task
-      return getGradient(beta);
+      double l = new GLMResDevTask(_jobKey,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
+      return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true),null);
     }
   }
 

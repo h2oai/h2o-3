@@ -67,6 +67,7 @@ public abstract class GLMTask  {
     final GLMWeightsFun _glmf;
     final double [] _beta;
     double _resDev = 0;
+    double _likelihood;
 
     public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta) {
       super(null,dinfo, jobKey);
@@ -86,8 +87,9 @@ public abstract class GLMTask  {
     protected void processRow(Row r) {
       _glmf.computeWeights(r.response(0),r.innerProduct(_beta) + _sparseOffset,r.offset,r.weight,_glmw);
       _resDev += _glmw.dev;
+      _likelihood += _glmw.l;
     }
-    @Override public void reduce(GLMResDevTask gt) {_resDev += gt._resDev;}
+    @Override public void reduce(GLMResDevTask gt) {_resDev += gt._resDev; _likelihood += gt._likelihood;}
   }
 
   static class GLMResDevTaskMultinomial extends FrameTask2<GLMResDevTaskMultinomial> {

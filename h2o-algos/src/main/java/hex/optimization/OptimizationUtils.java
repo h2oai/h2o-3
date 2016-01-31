@@ -48,7 +48,7 @@ public class OptimizationUtils {
 
 
   public interface LineSearchSolver {
-    boolean evaluate(double [] direction, final double minStep, final double maxStep, int maxfev);
+    boolean evaluate(double [] direction);
     double step();
     GradientInfo ginfo();
     LineSearchSolver setInitialStep(double s);
@@ -65,6 +65,9 @@ public class OptimizationUtils {
     private GradientInfo _ginfo; // gradient info excluding l1 penalty
     private double _objVal; // objective including l1 penalty
     final double _l1pen;
+    int _maxfev = 5;
+    double _minStep = 1e-4;
+
 
     public SimpleBacktrackingLS(GradientSolver gslvr, double [] betaStart, double l1pen) {
       this(gslvr, betaStart, l1pen, gslvr.getObjective(betaStart),.5);
@@ -90,10 +93,10 @@ public class OptimizationUtils {
     }
 
     @Override
-    public boolean evaluate(double[] direction, double minStep, double maxStep, int maxfev) {
+    public boolean evaluate(double[] direction) {
       double step = 1;
       double [] newBeta = direction.clone();
-      for(int i = 0; i < maxfev && step >= minStep; ++i, step*= _stepDec) {
+      for(int i = 0; i < _maxfev && step >= _minStep; ++i, step*= _stepDec) {
         GradientInfo ginfo = _gslvr.getObjective(ArrayUtils.wadd(_beta,direction,newBeta,step));
         double objVal = ginfo._objVal + _l1pen * ArrayUtils.l1norm(newBeta,true);
         if(objVal < _objVal){
@@ -306,8 +309,12 @@ public class OptimizationUtils {
       return "MoreThuente line search, iter = " + _iter + ", status = " + messages[_returnStatus] + ", step = " + _stx + ", I = " + "[" + _stMin + ", " + _stMax + "], grad = " + _dgx + ", bestObj = "  + _fvx;
     }
     private int _iter;
+
+    int _maxfev = 20;
+    double _maxStep = 1e10;
+    double _minStep = 1e-10;
     @Override
-    public boolean evaluate(double [] direction, final double minStep, double maxStep, int maxfev) {
+    public boolean evaluate(double [] direction) {
       double oldObjval = _ginfox._objVal;
       double step = _initialStep;
       _bound = false;
@@ -324,7 +331,7 @@ public class OptimizationUtils {
       if(dgtest >= 0)
         return false;
       double [] beta = new double[_beta.length];
-      double width = maxStep - minStep;
+      double width = _maxStep - _minStep;
       double oldWidth = 2*width;
       boolean stage1 = true;
       _fvx = _fvy = _ginfox._objVal;
@@ -339,8 +346,8 @@ public class OptimizationUtils {
           _stMin = _stx;
           _stMax = step + _xtrapf * (step - _stx);
         }
-        step = Math.min(step,maxStep);
-        step = Math.max(step,minStep);
+        step = Math.min(step,_maxStep);
+        step = Math.max(step,_minStep);
         double maxFval = oldObjval + step * dgtest;
 
         for (int i = 0; i < beta.length; ++i)
@@ -352,10 +359,10 @@ public class OptimizationUtils {
           _bestStep = step;
         }
         ++_iter;
-        if(_iter < maxfev && (!Double.isNaN(step) && (Double.isNaN(newGinfo._objVal) || Double.isInfinite(newGinfo._objVal) || ArrayUtils.hasNaNsOrInfs(newGinfo._gradient)))) {
+        if(_iter < _maxfev && (!Double.isNaN(step) && (Double.isNaN(newGinfo._objVal) || Double.isInfinite(newGinfo._objVal) || ArrayUtils.hasNaNsOrInfs(newGinfo._gradient)))) {
           _brackt = true;
           _sty = step;
-          maxStep = step;
+          _maxStep = step;
           _fvy = Double.POSITIVE_INFINITY;
           _dgy = Double.MAX_VALUE;
           step *= .5;
@@ -367,13 +374,13 @@ public class OptimizationUtils {
           _returnStatus = 6;
           break;
         }
-        if (step == maxStep && newGinfo._objVal <= maxFval & dgp <= dgtest){
+        if (step == _maxStep && newGinfo._objVal <= maxFval & dgp <= dgtest){
           _returnStatus = 5;
           _stx = step;
           _ginfox = newGinfo;
           break;
         }
-        if (step == minStep && (newGinfo._objVal > maxFval | dgp >= dgtest)){
+        if (step == _minStep && (newGinfo._objVal > maxFval | dgp >= dgtest)){
           _returnStatus = 4;
           if(_betGradient != null) {
              _stx = _bestStep;
@@ -384,7 +391,7 @@ public class OptimizationUtils {
           }
           break;
         }
-        if (_iter >= maxfev){
+        if (_iter >= _maxfev){
           _returnStatus = 3;
           if(_betGradient != null) {
             _stx = _bestStep;

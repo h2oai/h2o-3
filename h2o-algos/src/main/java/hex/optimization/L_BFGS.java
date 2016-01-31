@@ -180,15 +180,14 @@ public final class L_BFGS extends Iced {
     int iter = 0;
     double rel_improvement = 1;
     final double [] pk = new double[beta.length];
-    double minStep = 1e-16;
-    double maxStep = 100;
+    double minStep = 1e-6;
     LineSearchSolver lineSearch = new MoreThuente(gslvr,beta,ginfo);
     while(!ArrayUtils.hasNaNsOrInfs(beta) && (ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps) && iter != _maxIter) {
       ++iter;
       _hist.getSearchDirection(ginfo._gradient,pk);
-      if(!lineSearch.evaluate(pk,minStep,maxStep,20))
+      if(!lineSearch.evaluate(pk))
         break;
-      lineSearch.setInitialStep(Math.max(10 * minStep, lineSearch.step()));
+      lineSearch.setInitialStep(Math.max(minStep, lineSearch.step()));
       GradientInfo newGinfo = lineSearch.ginfo();
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
