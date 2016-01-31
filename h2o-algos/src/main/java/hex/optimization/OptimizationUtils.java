@@ -65,7 +65,7 @@ public class OptimizationUtils {
     private GradientInfo _ginfo; // gradient info excluding l1 penalty
     private double _objVal; // objective including l1 penalty
     final double _l1pen;
-    int _maxfev = 10;
+    int _maxfev = 20;
     double _minStep = 1e-4;
 
 
