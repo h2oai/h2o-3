@@ -1502,28 +1502,23 @@ class TestRunner:
         present or if the requirements file cannot be retrieved.
         """
 
+        global g_r_pkg_ver_chk_script
         self._log("")
         self._log("Conducting R package/version check...")
         out_file_name = os.path.join(self.output_dir, "package_version_check_out.txt")
         out = open(out_file_name, "w")
 
-        pkg_ver_chk_update_r = os.path.normpath(os.path.join(self.test_root_dir,"..","scripts",
-                                                             "package_version_check_update.R"))
-        cmd = ["R", "--vanilla", "-f", pkg_ver_chk_update_r, "--args", "check",]
+        cmd = ["R", "--vanilla", "-f", g_r_pkg_ver_chk_script, "--args", "check",]
 
         child = subprocess.Popen(args=cmd, stdout=out)
         rv = child.wait()
         if (self.terminated):
             return
-        if (rv == 1 or rv == 3):
+        if (rv == 1):
             self._log("")
-            self._log("ERROR: " + pkg_ver_chk_update_r + " failed.")
+            self._log("ERROR: " + g_r_pkg_ver_chk_script + " failed.")
             self._log("       See " + out_file_name)
             sys.exit(1)
-        if (rv == 2):
-            self._log("")
-            self._log("WARNING: System version of R differs from Jenkins-approved version.")
-            self._log("         See " + out_file_name)
         out.close()
 
     def _calc_test_short_dir(self, test_path):
@@ -1657,7 +1652,6 @@ class TestRunner:
             if not(failure_description==None): # for tests that fail.
                 failure_file = failure_description.split()[1]
                 failure_message = open(failure_file,'r').read() # read the whole content in here.
-                java_errors = ""
 
                 # add the error message from Java side here, java filename is in self.clouds[].output_file_name
                 for each_cloud in self.clouds:
@@ -1668,7 +1662,6 @@ class TestRunner:
 
 
                 if len(java_errors) < 1:
-
                     failure_message += "\n\n###################################################################################\n########### Problems encountered extracting Java messages.  Please alert the QA team. \n###################################################################################\n\n"
 
 
