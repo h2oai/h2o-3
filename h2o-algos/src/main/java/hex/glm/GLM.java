@@ -437,22 +437,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
-      if(_state._iter == 0 && (_parms._remove_collinear_columns || _parms._compute_p_values)) {
+      if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
-        Cholesky chol = _chol = gram.qrCholesky(ignoredCols);
+        Cholesky chol = ((_state._iter == 0 && _parms._remove_collinear_columns)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        if(!chol.isSPD()) throw new NonSPDMatrixException();
+        _chol = chol;
         if(!ignoredCols.isEmpty()) { // got some redundant cols
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
             collinear_cols[i] = ignoredCols.get(i);
           String [] collinear_col_names = ArrayUtils.select(_state.activeData().coefNames(),collinear_cols);
-          if(!_parms._remove_collinear_columns)
-            throw new IllegalArgumentException("Got collinear columns, can not compute p-values unless some of the co-lienar columns are removed, please re-run with remove collinear_columns flag on or remove the collinear columns manually. Found following dependent columns " + collinear_col_names);
           // need to drop the cols from everywhere
-          Log.info(LogMsg("Removed collinear columns " + collinear_col_names));
-          _model.addWarning("Removed collinear columns " + collinear_col_names);
+          _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
           xy = ArrayUtils.select(xy,_state.removeCols(collinear_cols));
-
         }
         chol.solve(xy);
       } else { // todo add switch between COD and ADMM
@@ -515,25 +513,29 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
         : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      while(true) {
-        long t1 = System.currentTimeMillis();
-        GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
-        long t2 = System.currentTimeMillis();
-        double [] betaCnd = solveGram(t._gram,t._xy);
-        if(betaCnd.length < ls.getX().length) {
-          ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-            ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-            : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
+      try {
+        while (true) {
+          long t1 = System.currentTimeMillis();
+          GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
+          long t2 = System.currentTimeMillis();
+          double[] betaCnd = solveGram(t._gram, t._xy);
+          if (betaCnd.length < ls.getX().length) {
+            ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+              ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+              : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+          }
+          long t3 = System.currentTimeMillis();
+          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+            Log.info(LogMsg("Ls failed " + ls));
+            break;
+          }
+          long t4 = System.currentTimeMillis();
+          if (!progress(ls.getX(), ls.ginfo()))
+            break;
+          Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
         }
-        long t3 = System.currentTimeMillis();
-        if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
-          Log.info(LogMsg("Ls failed " + ls));
-          break;
-        }
-        long t4 = System.currentTimeMillis();
-        if(!progress(ls.getX(),ls.ginfo()))
-          break;
-        Log.info(LogMsg("computed in " + (t2-t1) + "+" + (t3 - t2) + "+" + (t4-t3) + "=" + (t4-t1) +"ms, step = " + ls.step() + ((_lslvr != null)?", l1solver " + _lslvr:"")));
+      } catch(NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
     }
 
