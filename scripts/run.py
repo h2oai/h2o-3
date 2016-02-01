@@ -90,50 +90,63 @@ def is_javascript_test_file(file_name):
 function grab_java_message() will look through the java text output and try to extract the
 java messages from Java side.
 '''
-def grab_java_message(cloud_list,curr_testname):
-    global g_java_start_text
+
+def grab_java_message(node_list, curr_testname):
+    """scan through the java output text and extract the java messages related to running
+    test specified in curr_testname.
+    Parameters
+    ----------
+    node_list :  list of H2O nodes
+      List of H2o nodes associated with a H2OCloud that are performing the test specified in curr_testname.
+    curr_testname : str
+      Store the unit test name (can be R unit or Py unit) that has been completed and failed.
+    :return: a string object that is either empty or the java messages that associated with the test in curr_testname.
+     The java messages can usually be found in one of the java_*_0.out.txt
+    """
+
+    global g_java_start_text    # contains text that describe the start of a unit test.
 
     java_messages = ""
-    java_messages += "\n\n**********************************************************\n"
-    java_messages += "**********************************************************\n"
-    java_messages += "JAVA Messages\n"
-    java_messages += "**********************************************************\n"
-    java_messages += "**********************************************************\n\n"
+    startTest = False           # denote when the current test was found in the java_*_0.out.txt file
 
-    startTest = False
-
-    #grab each java file and process
-    for each_cloud in cloud_list:
-        java_filename = each_cloud.output_file_name
+    # grab each java file and try to grab the java messages associated with curr_testname
+    for each_node in node_list:
+        java_filename = each_node.output_file_name  # find the java_*_0.out.txt file
 
         if os.path.isfile(java_filename):
             java_file = open(java_filename,'r')
-
             for each_line in java_file:
                 if (g_java_start_text in each_line):
                     startStr,found,endStr = each_line.partition(g_java_start_text)
 
-                    if len(found) > 0:   # a new test is being started.  Save old info and move on
-                        current_testname = endStr.strip()
-                        if (current_testname == curr_testname): # found the line starting with current test.  Grab everything
-                            startTest = True
+                    if len(found) > 0:   # a new test is being started.
+                        current_testname = endStr.strip()   # grab the test name and check if it is curr_testname
+                        if (current_testname == curr_testname): # found the line starting with current test.  Grab everything now
+                            startTest = True    # found text in java_*_0.out.txt that describe curr_testname
 
-                        else:   # found a differnt test than our current tests, either ignore or be done!
-                            if startTest:   # found current test and was writting into it, can stop now
+                            # add header to make JAVA messages visible.
+                            java_messages += "\n\n**********************************************************\n"
+                            java_messages += "**********************************************************\n"
+                            java_messages += "JAVA Messages\n"
+                            java_messages += "**********************************************************\n"
+                            java_messages += "**********************************************************\n\n"
+
+
+                        else:   # found a differnt test than our curr_testname.  We are done!
+                            if startTest:   # in the middle of curr_testname but found a new test starting, can quit now.
                                 break
 
-                # start loop to keep writing message into list
+                # store java message associated with curr_testname into java_messages
                 if startTest:
                     java_messages += each_line
+
             java_file.close()   # finished finding java messages
 
-        if startTest:   # found java message associate with our test already.
+        if startTest:       # found java message associate with our test already. No need to continue the loop.
             break
 
-    if not startTest:   # the java_*_0.out.txt file for the unit test was not there for some reason
-        java_messages += "The java_*_0.out.txt file or Java messages associated with the unit test "+ curr_testname + " was not found.  Please alert the QE team of this problem."
+    return java_messages    # java messages associated with curr_testname
 
-    return java_messages    # java messages
 
 
 
@@ -1644,6 +1657,7 @@ class TestRunner:
             if not(failure_description==None): # for tests that fail.
                 failure_file = failure_description.split()[1]
                 failure_message = open(failure_file,'r').read() # read the whole content in here.
+                java_errors = ""
 
                 # add the error message from Java side here, java filename is in self.clouds[].output_file_name
                 for each_cloud in self.clouds:
@@ -1652,7 +1666,11 @@ class TestRunner:
                         failure_message += java_errors
                         break;
 
-                    #                print "failure_message", failure_message
+
+                if len(java_errors) < 1:
+
+                    failure_message += "\n\n###################################################################################\n########### Problems encountered extracting Java messages.  Please alert the QA team. \n###################################################################################\n\n"
+
 
                 if failure_message:
                     failure = "" if not failure_type else """<failure type="{}" message="{}"><![CDATA[{}]]></failure>""" \
@@ -1810,6 +1828,9 @@ g_java_start_text = 'STARTING TEST:'    # test being started in java
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
+
+g_r_pkg_ver_chk_script = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "../h2o-r/scripts/package_version_check_update.R"))
 g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "../h2o-r/scripts/h2o-r-test-setup.R"))
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
