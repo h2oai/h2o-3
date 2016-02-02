@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.ModelMetricsBinomialGLM;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -326,6 +327,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._max_iterations = 100; // not expected to reach max iterations here
     params._intercept = false;
     params._beta_epsilon = 1e-6;
+    params._missing_values_handling = MissingValuesHandling.Skip;
     try {
       for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS /* , Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
         Frame scoreTrain = null, scoreTest = null;
@@ -552,6 +554,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._beta_epsilon = 1e-6;
     params._max_iterations = 1000; // not expected to reach max iterations here
+    params._missing_values_handling = MissingValuesHandling.Skip;
     try {
       for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS /*, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
         Frame scoreTrain = null, scoreTest = null;
@@ -561,6 +564,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._weights_column = "weights";
           params._gradient_epsilon = 1e-8;
           params._objective_epsilon = 0;
+          params._missing_values_handling = MissingValuesHandling.Skip;
           System.out.println("SOLVER = " + s);
           model = new GLM(params).trainModel().get();
           params._train = _prostateTrainUpsampled._key;
@@ -574,8 +578,8 @@ public class GLMBasicTestBinomial extends TestUtil {
           System.out.println(modelUpsampled._output._training_metrics);
           boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
           for (int i = 0; i < cfs1.length; ++i) {
-            System.out.println("cfs = " + cfs1[i]);
-            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-8:1e-4);
+            System.out.println("cfs = " + cfs1[i] + ": " + coefsUpsampled.get(cfs1[i]) + " =?= " + coefs.get(cfs1[i]));
+            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-5:1e-4);
             assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-3:1e-4);//dec
           }
           assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);

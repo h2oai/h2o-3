@@ -175,7 +175,8 @@ public abstract class GLMTask  {
      }
      double w;
      for(int r = 0; r < response._len; ++r) {
-       if(skip[r] || (w = weight.atd(r)) == 0) continue;
+       if(skip[r] || (w = weight.atd(r)) == 0)
+         continue;
        if(_comupteWeightedSigma) {
          for(int i = 0; i < _nums; ++i) {
            nums[i] = chunks[i + _numOff].atd(r);
@@ -199,9 +200,7 @@ public abstract class GLMTask  {
      }
    }
    @Override public void postGlobal() {
-     double [] ws = _basicStats.wsum();
-     if(_comupteWeightedSigma)
-       ArrayUtils.mult(_yMu,1.0/ws[ws.length-1]);
+     ArrayUtils.mult(_yMu,1.0/_wsum);
      Futures fs = new Futures();
      fs.blockForPending();
    }

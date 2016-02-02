@@ -134,7 +134,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(offset == 0)
       null_devince += weight * _glmf.deviance(yreal, _ymu[0]);
     else
-      null_devince += weight * _glmf.deviance(yreal, _glmf.linkInv(offset + _glmf.link(_ymu[0])));
+      null_devince += weight * _glmf.deviance(yreal, _glmf.linkInv(offset +_glmf.link(_ymu[0])));
     if (_glmf._family == Family.poisson) { // AIC for poisson
       long y = Math.round(yreal);
       double logfactorial = MathUtils.logFactorial(y);

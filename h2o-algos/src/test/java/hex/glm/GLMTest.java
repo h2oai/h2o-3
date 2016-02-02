@@ -5,6 +5,7 @@ import hex.DataInfo.TransformType;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsRegressionGLM;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
@@ -206,6 +207,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._missing_values_handling = MissingValuesHandling.Skip;
       GLM glm = new GLM( params, glmkey("gamma_test"));
       glm.trainModel().get();
       assertFalse("should've thrown IAE", true);
@@ -429,6 +431,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
+      params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params, modelKey).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
@@ -448,6 +451,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._beta_epsilon = 1e-5;
+      params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params, modelKey).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
@@ -462,6 +466,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params, modelKey).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
