@@ -3,8 +3,6 @@ package hex.glm;
 import hex.DataInfo;
 import hex.DataInfo.Row;
 
-import hex.DataInfo.Rows;
-import hex.FrameTask;
 import hex.FrameTask2;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -12,7 +10,6 @@ import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMModel.GLMWeights;
 import hex.gram.Gram;
 import hex.glm.GLMModel.GLMParameters.Family;
-import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.*;
@@ -123,30 +120,33 @@ public abstract class GLMTask  {
     @Override public void reduce(GLMResDevTaskMultinomial gt) {_likelihood += gt._likelihood;}
   }
 
- static class YMUTask extends MRTask<YMUTask> {
+ static public class YMUTask extends MRTask<YMUTask> {
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long _nobs;
-   double _wsum;
+   public double _wsum;
    final int _responseId;
    final int _weightId;
    final int _offsetId;
    final int _nums; // number of numeric columns
    final int _numOff;
    final boolean _setIgnores;
-   final boolean _comupteWeightedSigma;
+   final boolean _computeWeightedSigma;
+   final boolean _computeWeightedMeanSigmaResponse;
 
-   BasicStats _basicStats;
+   public BasicStats _basicStats;
+   public BasicStats _basicStatsResponse;
    double [] _yMu;
    final int _nClasses;
 
-   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean setIgnores){
+   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean computeWeightedMeanSigmaResponse, boolean setIgnores, boolean haveResponse){
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
-     _responseId = dinfo.responseChunkId(0);
+     _responseId = haveResponse ? dinfo.responseChunkId(0) : -1;
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
      _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
      _nClasses = nclasses;
-     _comupteWeightedSigma = computeWeightedSigma;
+     _computeWeightedSigma = computeWeightedSigma;
+     _computeWeightedMeanSigmaResponse = computeWeightedMeanSigmaResponse;
      _setIgnores = setIgnores;
    }
    @Override public void setupLocal(){}
@@ -162,19 +162,31 @@ public abstract class GLMTask  {
           weight.set(r,0);
        }
      }
-     Chunk response = chunks[_responseId];
+     Chunk response = _responseId < 0 ? null : chunks[_responseId];
      double [] nums = null;
-     if(_comupteWeightedSigma) {
+     double [] numsResponse = null;
+     if(_computeWeightedSigma) {
        _basicStats = new BasicStats(_nums);
        nums = MemoryManager.malloc8d(_nums);
      }
+     if(_computeWeightedMeanSigmaResponse) {
+       _basicStatsResponse = new BasicStats(_nClasses);
+       numsResponse = MemoryManager.malloc8d(_nClasses);
+     }
      double w;
+     if (response == null) return;
      for(int r = 0; r < response._len; ++r) {
        if(skip[r] || (w = weight.atd(r)) == 0) continue;
-       if(_comupteWeightedSigma) {
+       if(_computeWeightedSigma) {
          for(int i = 0; i < _nums; ++i)
            nums[i] = chunks[i+_numOff].atd(r);
          _basicStats.add(nums,w);
+       }
+       if(_computeWeightedMeanSigmaResponse) {
+         //FIXME: Add support for subtracting offset from response
+         for(int i = 0; i < _nClasses; ++i)
+           numsResponse[i] = chunks[chunks.length-_nClasses+i].atd(r);
+         _basicStatsResponse.add(numsResponse,w);
        }
        double d = w*response.atd(r);
        assert !Double.isNaN(d);
@@ -191,7 +203,7 @@ public abstract class GLMTask  {
      }
    }
    @Override public void postGlobal() {
-     if(_comupteWeightedSigma)
+     if(_computeWeightedSigma)
        ArrayUtils.mult(_yMu,1.0/_basicStats.wsum());
      else
        ArrayUtils.mult(_yMu,1.0/_nobs);
@@ -208,15 +220,17 @@ public abstract class GLMTask  {
          _yMin = ymt._yMin;
        if(_yMax < ymt._yMax)
          _yMax = ymt._yMax;
-       if(_comupteWeightedSigma) {
+       if(_computeWeightedSigma)
          _basicStats.reduce(ymt._basicStats);
-       }
+       if(_computeWeightedMeanSigmaResponse)
+         _basicStatsResponse.reduce(ymt._basicStatsResponse);
      } else if (_nobs == 0) {
        _yMu = ymt._yMu;
        _nobs = ymt._nobs;
        _yMin = ymt._yMin;
        _yMax = ymt._yMax;
        _basicStats = ymt._basicStats;
+       _basicStatsResponse = ymt._basicStatsResponse;
      }
    }
  }

@@ -102,8 +102,10 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     final long offset = chunks[0].start();
     boolean doWork = chunkInit();
     if (!doWork) return;
-    final boolean obs_weights = _dinfo._weights && !_fr.vecs()[_dinfo.weightChunkId()].isConst();
-    final double global_weight_sum = obs_weights ? _fr.vecs()[_dinfo.weightChunkId()].mean() * _fr.numRows() : 0;
+    final boolean obs_weights = _dinfo._weights
+            && !_fr.vecs()[_dinfo.weightChunkId()].isConst() //if all constant weights (such as 1) -> doesn't count as obs weights
+            && !(_fr.vecs()[_dinfo.weightChunkId()].isBinary()); //special case for cross-val      -> doesn't count as obs weights
+    final double global_weight_sum = obs_weights ? Math.round(_fr.vecs()[_dinfo.weightChunkId()].mean() * _fr.numRows()) : 0;
 
     DataInfo.Row row = null;
     DataInfo.Row[] rows = null;
@@ -161,6 +163,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
     final int miniBatchSize = getMiniBatchSize();
     long num_processed_rows = 0;
+    long num_skipped_rows = 0;
     int miniBatchCounter = 0;
     for(int rep = 0; rep < repeats; ++rep) {
       for(int row_idx = 0; row_idx < nrows; ++row_idx){
@@ -188,8 +191,11 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         assert(r >= 0 && r<=nrows);
 
         row = _bulkRead ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
-        if(!row.bad) {
-          assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
+        // row can be bad if _dinfo._skipMissing==true and there's any NAs in the row
+        if (row.bad || row.weight==0) {
+          num_skipped_rows++;
+          continue;
+        } else {
           long seed = offset + rep * nrows + r;
           miniBatchCounter++;
           if (outputs != null && outputs.length > 0)
@@ -207,7 +213,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     if (miniBatchCounter>0)
       applyMiniBatchUpdate(miniBatchCounter); //finish up the last piece
 
-    assert(fraction != 1 || num_processed_rows == repeats * nrows);
+    assert(fraction != 1 || num_processed_rows + num_skipped_rows == repeats * nrows);
     chunkDone(num_processed_rows);
   }
 

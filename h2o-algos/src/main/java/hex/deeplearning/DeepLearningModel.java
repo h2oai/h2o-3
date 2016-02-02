@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
+import hex.glm.GLMTask;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
@@ -437,7 +438,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    */
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
-    final DataInfo dinfo = makeDataInfo(train, valid, _parms);
+    final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
@@ -880,7 +881,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         preds[0] = out[0];
       // transform prediction to response space
       preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
-      if (Double.isNaN(preds[0])) throw new RuntimeException("Predicted regression target NaN!");
+      if (Double.isNaN(preds[0]))
+        throw new RuntimeException("Predicted regression target NaN!");
     }
     return preds;
   }
