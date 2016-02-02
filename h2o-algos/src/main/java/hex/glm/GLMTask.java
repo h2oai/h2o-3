@@ -134,12 +134,15 @@ public abstract class GLMTask  {
    final int _numOff;
    final boolean _setIgnores;
    final boolean _comupteWeightedSigma;
+   final boolean _skipNAs;
 
    BasicStats _basicStats;
    double [] _yMu;
+   double [] _means;
    final int _nClasses;
 
-   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean setIgnores){
+
+   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean setIgnores, boolean skipNAs){
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
      _responseId = dinfo.responseChunkId(0);
@@ -148,6 +151,8 @@ public abstract class GLMTask  {
      _nClasses = nclasses;
      _comupteWeightedSigma = computeWeightedSigma;
      _setIgnores = setIgnores;
+     _skipNAs = skipNAs;
+     _means = dinfo._numMeans;
    }
    @Override public void setupLocal(){}
 
@@ -158,7 +163,7 @@ public abstract class GLMTask  {
      for(int i = 0; i < chunks.length; ++i) {
        for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
          if(skip[r])continue;
-         if((skip[r] = chunks[i].isNA(r)) && _setIgnores)
+         if((skip[r] = _skipNAs && chunks[i].isNA(r)) && _setIgnores)
           weight.set(r,0);
        }
      }
@@ -172,8 +177,11 @@ public abstract class GLMTask  {
      for(int r = 0; r < response._len; ++r) {
        if(skip[r] || (w = weight.atd(r)) == 0) continue;
        if(_comupteWeightedSigma) {
-         for(int i = 0; i < _nums; ++i)
-           nums[i] = chunks[i+_numOff].atd(r);
+         for(int i = 0; i < _nums; ++i) {
+           nums[i] = chunks[i + _numOff].atd(r);
+           if(Double.isNaN(nums[i]))
+             nums[i] = _means[i];
+         }
          _basicStats.add(nums,w);
        }
        double d = w*response.atd(r);
@@ -191,12 +199,10 @@ public abstract class GLMTask  {
      }
    }
    @Override public void postGlobal() {
+     double [] ws = _basicStats.wsum();
      if(_comupteWeightedSigma)
-       ArrayUtils.mult(_yMu,1.0/_basicStats.wsum());
-     else
-       ArrayUtils.mult(_yMu,1.0/_nobs);
+       ArrayUtils.mult(_yMu,1.0/ws[ws.length-1]);
      Futures fs = new Futures();
-//     _fVec.postWrite(fs); // we just overwrote the vec
      fs.blockForPending();
    }
    @Override public void reduce(YMUTask ymt) {

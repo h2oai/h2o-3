@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.*;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.ComputationState.GLMSubsetGinfo;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
@@ -301,7 +302,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ? 7000 : 100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
       checkMemoryFootPrint(_dinfo);
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
@@ -318,14 +319,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _validDinfo = _dinfo.validDinfo(_valid);
       _state = new ComputationState(_job._key, _parms, _dinfo, bc, nclasses());
       // skipping extra rows? (outside of weights == 0)
-      boolean skippingRows = true;//(_parms._missing_value_handling == MissingValuesHandling.Skip && _train.hasNAs());
-      if (hasWeightCol() || skippingRows) { // need to re-compute means and sd
+      boolean skippingRows = (_parms._missing_values_handling == MissingValuesHandling.Skip && _train.hasNAs());
+      if (hasWeightCol() || _train.hasNAs()) { // need to re-compute means and sd
         boolean setWeights = skippingRows && _parms._lambda_search && _parms._alpha[0] > 0;
         if (setWeights) {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
-        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, !_parms._stdOverride, setWeights).doAll(_dinfo._adaptedFrame);
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, !_parms._stdOverride, setWeights, skippingRows).doAll(_dinfo._adaptedFrame);
         if (ymt._wsum == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt._nobs + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
@@ -352,7 +353,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state._ymu = x;
         Log.info(LogMsg("fitted intercept = " + x[0]));
       }
-
       if (_parms._prior > 0)
         _iceptAdjust = -Math.log(_state._ymu[0] * (1 - _parms._prior) / (_parms._prior * (1 - _state._ymu[0])));
       ArrayList<Vec> vecs = new ArrayList<>();
@@ -375,7 +375,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       _state.updateState(beta,ginfo);
       if (_parms._lambda == null) {  // no lambda given, we will base lambda as a fraction of lambda max
-        _lmax = lmax(_state.ginfo()._gradient);
+        _lmax = lmax(ginfo._gradient);
         if (_parms._lambda_search) {
           if (_parms._nlambdas == -1)
             _parms._nlambdas = 100;

@@ -223,6 +223,14 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
+  public DataInfo scoringInfo(){
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,false,false,false);
+    res._adaptedFrame = null;
+    res._responses = 0;
+    res._valid = true;
+    return res;
+  }
+
   public double[] denormalizeBeta(double [] beta) {
     int N = fullN()+1;
     assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
@@ -285,6 +293,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(v.isCategorical()) return v.mode();
     return (int)Math.round(v.mean());
   }
+
 
   public DataInfo filterExpandedColumns(int [] cols){
     assert _predictor_transform != null;
@@ -611,6 +620,60 @@ public class DataInfo extends Keyed<DataInfo> {
     return v;
   }
 
+  public final Row extractDenseRow(double [] vals, Row row, double w, double o) {
+    row.bad = false;
+    row.rid = 0;
+    row.cid = 0;
+    row.offset = o;
+    row.weight = w;
+    if(row.weight == 0) return row;
+
+    if (_skipMissing)
+      for (double d:vals)
+        if(Double.isNaN(d)) {
+          row.bad = true;
+          return row;
+        }
+    int nbins = 0;
+    for (int i = 0; i < _cats; ++i) {
+      if (Double.isNaN(vals[i])) {
+        if (_imputeMissing) {
+          int c = getCategoricalId(i,_catModes[i]);
+          if(c >= 0)
+            row.binIds[nbins++] = c;
+        } else   // TODO: What if missingBucket = false?
+          row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+      } else {
+        int c = getCategoricalId(i,(int)vals[i]);
+        if(c >= 0)
+          row.binIds[nbins++] = c;
+      }
+    }
+    row.nBins = nbins;
+    final int n = _nums;
+    for (int i = 0; i < n; ++i) {
+      double d = vals[_cats + i]; // can be NA if skipMissing() == false
+      if (Double.isNaN(d)) d = _numMeans[i];
+      if (_normMul != null && _normSub != null)
+        d = (d - _normSub[i]) * _normMul[i];
+      row.numVals[i] = d;
+    }
+    int off = responseChunkId(0);
+    for (int i = off; i < Math.min(vals.length,off + _responses); ++i) {
+      try {
+        row.response[i] = vals[responseChunkId(i)];
+      } catch(Throwable t){
+        throw new RuntimeException(t);
+      }
+      if (_normRespMul != null)
+        row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
+      if (Double.isNaN(row.response[i])) {
+        row.bad = true;
+        return row;
+      }
+    }
+    return row;
+  }
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
@@ -642,8 +705,9 @@ public class DataInfo extends Keyed<DataInfo> {
     row.nBins = nbins;
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
+
       double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
-      if (_imputeMissing && Double.isNaN(d))
+      if (Double.isNaN(d))
         d = _numMeans[i];
       if (_normMul != null && _normSub != null)
         d = (d - _normSub[i]) * _normMul[i];
@@ -664,7 +728,6 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
-
     return row;
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
@@ -759,6 +822,8 @@ public class DataInfo extends Keyed<DataInfo> {
         if (row.bad) continue;
         if (c.isNA(r)) row.bad = _skipMissing;
         double d = c.atd(r);
+        if(Double.isNaN(d))
+          d = _numMeans[cid];
         if(_normMul != null)
           d *= _normMul[cid];
         row.addNum(cid + numStart, d);
@@ -782,69 +847,4 @@ public class DataInfo extends Keyed<DataInfo> {
     return rows;
   }
 
-  /**
-   * Extract (dense) rows from given chunks, one Vec at a time - should be slightly faster than per-row
-   * @param chunks - chunk of dataset
-   * @return array of dense rows
-   */
-  public final Row[] extractDenseRowsVertical(Chunk[] chunks) {
-    Row[] rows = new Row[chunks[0]._len];
-  long start = chunks[0].start();
-    for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(false, _nums, _cats, _responses, i, start);
-      if(_offset)  {
-        rows[i].offset = chunks[offsetChunkId()].atd(i);
-        if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
-      }
-      if(_weights) {
-        rows[i].weight = chunks[weightChunkId()].atd(i);
-        if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
-      }
-    }
-    for (int i = 0; i < _cats; ++i) {
-      for (int r = 0; r < chunks[0]._len; ++r) {
-        Row row = rows[r];
-        if(row.bad)continue;
-        if (chunks[i].isNA(r)) {
-          if (_skipMissing) {
-            row.bad = true;
-          } else
-            row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
-        } else {
-          int c = getCategoricalId(i,(int)chunks[i].at8(r));
-          if(c >=0)
-            row.binIds[row.nBins++] = c;
-        }
-      }
-    }
-    int numStart = numStart();
-    // generic numbers
-    for (int cid = 0; cid < _nums; ++cid) {
-      Chunk c = chunks[_cats + cid];
-      for (int r = 0; r < c._len; ++r) {
-        Row row = rows[r];
-        if (row.bad) continue;
-        if (c.isNA(r)) row.bad = _skipMissing;
-        double d = c.atd(r);
-        if(_normMul != null && _normSub != null) //either none or both
-          d = (d - _normSub[cid]) * _normMul[cid];
-        row.numVals[numStart + cid] = d;
-      }
-    }
-    // response(s)
-    for (int i = 1; i <= _responses; ++i) {
-      Chunk rChunk = chunks[responseChunkId(i-1)];
-      for (int r = 0; r < chunks[0]._len; ++r) {
-        Row row = rows[r];
-        if(row.bad) continue;
-        row.response[row.response.length - i] = rChunk.atd(r);
-        if (_normRespMul != null) {
-          row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
-        }
-        if (Double.isNaN(row.response[row.response.length - i]))
-          row.bad = true;
-      }
-    }
-    return rows;
-  }
 }

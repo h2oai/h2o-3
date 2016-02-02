@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import hex.DataInfo;
+import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
@@ -119,6 +120,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _tweedie_link_power;
     public double [] _alpha = null;
     public double [] _lambda = null;
+    public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
     public double _prior = -1;
     public boolean _lambda_search = false;
     public int _nlambdas = -1;
@@ -135,11 +137,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
 
+
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1;
     public boolean _stdOverride; // standardization override by beta constraints
-    public MissingValuesHandling _missing_value_handling = MissingValuesHandling.Skip;
 
     public void validate(GLM glm) {
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
@@ -685,6 +687,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
+    DataInfo _scoringDinfo; // dinfo with no standardization and no response
     String[] _coefficient_names;
     public int _best_lambda_idx;
 
@@ -737,6 +740,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo;
+      _scoringDinfo = dinfo.scoringInfo();
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
@@ -766,6 +770,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _dinfo._adaptedFrame = new Frame(_dinfo._adaptedFrame.names().clone(),_dinfo._adaptedFrame.vecs().clone());
         _dinfo.dropWeights();
       }
+      _scoringDinfo = _dinfo.scoringInfo();
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
@@ -983,63 +988,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return preds;
   }
 
+  private transient ThreadLocal<Row> _row = new ThreadLocal<>();
+
   @Override
-  public double[] score0(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+  // public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds )
+  public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
     if(_parms._family == Family.multinomial)
       return scoreMultinomial(chks,row_in_chunk,tmp,preds);
-     /*
-
-     public final double[] score0( double[] data, double[] preds ) {
-    double eta = 0.0;
-    final double [] b = BETA;
-    for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {
-      int ival = (int)data[i] - 1;
-      if(ival != data[i] - 1) throw new IllegalArgumentException("categorical value out of range");
-      ival += CATOFFS[i];
-      if(ival < CATOFFS[i + 1])
-        eta += b[ival];
-    }
-    for(int i = 3; i < b.length-1-205; ++i)
-      eta += b[205+i]*data[i];
-    eta += b[b.length-1]; // reduce intercept
-    double mu = hex.genmodel.GenModel.GLM_identityInv(eta);
-    preds[0] = mu;
-
-     */
-    double eta = 0.0;
-    final double [] b = beta();
-    int [] catOffs = dinfo()._catOffsets;
-    for(int i = 0; i < catOffs.length-1; ++i) {
-      if(chks[i].isNA(row_in_chunk)) {
-        eta = Double.NaN;
-        break;
-      }
-      long lval = chks[i].at8(row_in_chunk);
-      int ival = (int)lval;
-      if(ival != lval) throw new IllegalArgumentException("categorical value out of range");
-      if(!_parms._use_all_factor_levels)--ival;
-      int from = catOffs[i];
-      int to = catOffs[i+1];
-      // can get values out of bounds for cat levels not seen in training
-      if(ival >= 0 && (ival + from) < catOffs[i+1])
-        eta += b[ival+from];
-    }
-    final int noff = dinfo().numStart() - dinfo()._cats;
-    for(int i = dinfo()._cats; i < b.length-1-noff; ++i)
-      eta += b[noff+i]*chks[i].atd(row_in_chunk);
-    eta += b[b.length-1]; // intercept
-
-    double mu = _parms.linkInv(eta);
-    preds[0] = mu;
+    Row r = _row.get();
+    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
+    _output._scoringDinfo.extractDenseRow(chks,row_in_chunk,r);
+    double mu = preds[0] = _parms.linkInv(r.innerProduct(beta()) + offset);
     if( _parms._family == Family.binomial ) { // threshold for prediction
-      if(Double.isNaN(mu)){
-        preds[0] = Double.NaN;
-        preds[1] = Double.NaN;
-        preds[2] = Double.NaN;
-      } else {
-        preds[1] = 1.0 - mu; // class 0
-        preds[2] =       mu; // class 1
-      }
+      preds[1] = 1.0 - mu; // class 0
+      preds[2] =       mu; // class 1
     }
     return preds;
   }
@@ -1091,38 +1053,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
     if(_parms._family == Family.multinomial)
       return scoreMultinomial(data, preds, w, o);
-    double eta = 0.0;
-    final double [] b = beta();
-    final DataInfo dinfo = _output._dinfo;
-    for(int i = 0; i < dinfo._cats; ++i) {
-      if(Double.isNaN(data[i])) {
-        eta = Double.NaN;
-        break;
-      }
-      int ival = (int) data[i];
-      if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
-      ival += dinfo._catOffsets[i];
-      if (!_parms._use_all_factor_levels)
-        --ival;
-      // can get values out of bounds for cat levels not seen in training
-      if (ival >= dinfo._catOffsets[i] && ival < dinfo._catOffsets[i + 1])
-        eta += b[ival];
-    }
-    int noff = dinfo.numStart();
-    for(int i = 0; i < dinfo._nums; ++i)
-      eta += b[noff+i]*data[dinfo._cats + i];
-    eta += b[b.length-1]; // add intercept
-    double mu = _parms.linkInv(eta + o);
-    preds[0] = mu;
+    Row r = _row.get();
+    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
+    _output._scoringDinfo.extractDenseRow(data,r,w,0);
+    double eta = r.innerProduct(beta());
+    double mu = preds[0] = _parms.linkInv(eta + o);
     if( _parms._family == Family.binomial ) { // threshold for prediction
-      if(Double.isNaN(mu)){
-        preds[0] = Double.NaN;
-        preds[1] = Double.NaN;
-        preds[2] = Double.NaN;
-      } else {
-        preds[1] = 1.0 - mu; // class 0
-        preds[2] =       mu; // class 1
-      }
+      preds[1] = 1.0 - mu; // class 0
+      preds[2] =       mu; // class 1
     }
     return preds;
   }

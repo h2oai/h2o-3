@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
-  protected boolean _bulkRead;
   protected boolean _sparse;
   protected transient DataInfo _dinfo;
   public DataInfo dinfo() { return _dinfo; }
@@ -39,7 +38,6 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     _activeCols = activeCols;
     _seed = seed;
     _iteration = iteration;
-    _bulkRead = sparse; // TODO: no evidence so far that dense bulk read speeds up dense data reads, but might be the case - need to trade off fitting entire chunk's worth of data or DL weights in cache...
     _sparse = sparse;
   }
   @Override protected void setupLocal(){
@@ -107,21 +105,10 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
 
     DataInfo.Row row = null;
     DataInfo.Row[] rows = null;
-    if (_bulkRead) {
-      rows = _sparse ? _dinfo.extractSparseRows(chunks) : _dinfo.extractDenseRowsVertical(chunks);
-//      // expensive sanity check
-//      DataInfo.Row[] rowsD = _dinfo.extractDenseRows(chunks);
-//      for (int i = 0; i < rows.length; ++i) {
-//        for (int j = 0; j < _dinfo.fullN(); ++j) {
-//          assert (Double.doubleToRawLongBits(rows[i].get(j)) == Double.doubleToRawLongBits(rowsD[i].get(j)));
-//        }
-//      }
-    }
-    else {
+    if (_sparse)
+      rows = _dinfo.extractSparseRows(chunks);
+    else
       row = _dinfo.newDenseRow();
-    }
-
-
     double[] weight_map = null;
     double relative_chunk_weight = 1;
     //TODO: store node-local helper arrays in _dinfo -> avoid re-allocation and construction
@@ -129,7 +116,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i = 0; i < nrows; ++i) {
-        row = _bulkRead ? rows[i] : _dinfo.extractDenseRow(chunks, i, row);
+        row = _sparse ? rows[i] : _dinfo.extractDenseRow(chunks, i, row);
         weight_sum += row.weight;
         weight_map[i] = weight_sum;
         assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
@@ -187,7 +174,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
-        row = _bulkRead ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
+        row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
         if(!row.bad) {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           long seed = offset + rep * nrows + r;

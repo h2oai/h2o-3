@@ -38,38 +38,40 @@ public class MathUtils {
   public static final class BasicStats extends Iced {
     private final double [] _mean;
     private final double [] _m2;
-    double _wsum;
+    double [] _wsum;
     long _nobs;
     public BasicStats(int n) {
       _mean = MemoryManager.malloc8d(n);
       _m2 = MemoryManager.malloc8d(n);
+      _wsum = MemoryManager.malloc8d(n);
     }
     public void add(double [] x, double w) {
-      double wsum = _wsum + w;
       for(int i = 0; i < x.length; ++i) {
-        double delta = x[i] - _mean[i];
-        double R = delta * w / wsum;
-        _mean[i] += R;
-        _m2[i] += _wsum * delta * R;
+        if(!Double.isNaN(x[i])) {
+          double wsum = _wsum[i] + w;
+          double delta = x[i] - _mean[i];
+          double R = delta * w / wsum;
+          _mean[i] += R;
+          _m2[i] += _wsum[i] * delta * R;
+          _wsum[i] = wsum;
+        }
       }
-      _wsum = wsum;
       _nobs++;
     }
     public void reduce(BasicStats bs) {
-      double wsum = _wsum + bs._wsum;
-      double reg = 1./wsum;
       for(int i =0 ; i < _mean.length; ++i) {
+        double wsum = _wsum[i] + bs._wsum[i];
         double delta = bs._mean[i] - _mean[i];
-        _mean[i] = (_wsum * _mean[i] + bs._wsum * bs._mean[i]) * reg;
-        _m2[i] += bs._m2[i] + delta * delta * _wsum * bs._wsum * reg;
+        _mean[i] = (_wsum[i] * _mean[i] + bs._wsum[i] * bs._mean[i]) / wsum;
+        _m2[i] += bs._m2[i] + delta * delta * _wsum[i] * bs._wsum[i] /wsum;
+        _wsum[i] = wsum;
       }
-      _wsum = wsum;
       _nobs += bs._nobs;
     }
     public double [] variance(double [] res) {
-      double reg = 1.0/_wsum * _nobs/(_nobs-1.0);
+      double reg = _nobs/(_nobs-1.0);
       for(int i = 0; i < res.length; ++i)
-        res[i] = reg*_m2[i];
+        res[i] = reg*_m2[i]/_wsum[i];
       return res;
     }
     public double [] variance() {return variance(MemoryManager.malloc8d(_mean.length));}
@@ -83,7 +85,7 @@ public class MathUtils {
     public double [] sigma() {return sigma(MemoryManager.malloc8d(_mean.length));}
     public double [] mean() {return _mean;}
     public long nobs(){return _nobs;}
-    public double wsum(){return _wsum;}
+    public double [] wsum(){return _wsum;}
   }
 
   /** Fast approximate sqrt
