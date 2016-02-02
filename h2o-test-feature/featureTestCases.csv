@@ -1,34 +1,68 @@
 id|feature|feature_params|data_set_ids|validation_method|validation_data_set_id|description
-1|cos||1|R||Basic cosine test. The dataset is 3 rows x 4 columns of integers.
-15|cos||9|R||Basic cosine test. The dataset consists of a single value.
-2|&||24;25|R||
-30|&||24;25|H|26|
-3|all||1|R||
-31|all||27|H|28|
-4|as.factor||2|O||
-5|h2o.cbind||3;4;3|R||
-32|h2o.cbind||3;4;3|H|29|
-6|colnames|TRUE|5|R||
-7|colnames|FALSE|5|R||
-33|colnames|TRUE|5|H|30|
-8|[|3;3|5|R||
-9|[|1:22;1:3|5|R||
-10|[|1:150;5|5|R||
-11|[|c(1,3,5);c(3,4)|5|R||
-12|h2o.hist|'Sturges'|6|O||
-13|h2o.hist|'Rice'|6|O||
-14|h2o.impute|1;'mean';'interpolate';NULL;FALSE|7|H|8|
-16|h2o.table||10|R||
-17|h2o.table||11|R||
-18|h2o.table||11;12|H|13|
-19|h2o.quantile|c(0.001,0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99,0.999);'interpolate';NULL|14|R||
-20|cut|c(4.2,4.8,5.8,6,8);c('a','b','c','d');FALSE;TRUE;3|15|R||
-21|h2o.match|c('setosa','versicolor');0;NULL|16|R||
-22|h2o.which||17|R||
-23|h2o.rep_len|2|5|R||
-24|h2o.strsplit|'o'|18|R||
-25|h2o.toupper||19|R||
-26|t||20|R||
-27|%*%||21;22|R||
-28|h2o.var|NULL;FALSE|23|R||
-29|h2o.var|FALSE|23;23|R||
+1|cos||1|R||cos feature test case.
+2|&||2;4|R||& feature test case.
+3|&||2;5|R||& feature test case.
+4|&||3;4|R||& feature test case.
+5|&||3;5|R||& feature test case.
+6|all||6|R||all feature test case.
+7|all||7|R||all feature test case.
+8|all||8|R||all feature test case.
+9|all||9|R||all feature test case.
+10|all||10|R||all feature test case.
+11|h2o.cbind||11;12;13|R||h2o.cbind feature test case.
+12|colnames|TRUE;'col'|14|R||colnames feature test case.
+13|colnames|FALSE;'col'|14|R||colnames feature test case.
+14|[|2;9|15|R||[ feature test case.
+15|[|2;c(1,2,2,9,9)|15|R||[ feature test case.
+16|[|c(1,1,3,3,3);9|15|R||[ feature test case.
+17|[|c(1,1,3,3,3);c(1,2,2,9,9)|15|R||[ feature test case.
+18|h2o.table||16|R||h2o.table feature test case.
+19|h2o.table||17|R||h2o.table feature test case.
+20|h2o.table||18;19|R||h2o.table feature test case.
+21|h2o.quantile|c(0.559434599541,0.817175749188,0.00479900426479,0.818290869473,0.117152847061);'interpolate'|20|R||h2o.quantile feature test case.
+22|h2o.quantile|c(0.559434599541,0.817175749188,0.00479900426479,0.818290869473,0.117152847061);'average'|20|R||h2o.quantile feature test case.
+23|h2o.quantile|c(0.559434599541,0.817175749188,0.00479900426479,0.818290869473,0.117152847061);'low'|20|R||h2o.quantile feature test case.
+24|h2o.quantile|c(0.559434599541,0.817175749188,0.00479900426479,0.818290869473,0.117152847061);'high'|20|R||h2o.quantile feature test case.
+25|h2o.quantile|c(0.443130031818,0.00636630302583,0.278993832331,0.548157231049,0.768339379457);'interpolate';'C2'|21|R||h2o.quantile feature test case.
+26|h2o.quantile|c(0.443130031818,0.00636630302583,0.278993832331,0.548157231049,0.768339379457);'average';'C2'|21|R||h2o.quantile feature test case.
+27|h2o.quantile|c(0.443130031818,0.00636630302583,0.278993832331,0.548157231049,0.768339379457);'low';'C2'|21|R||h2o.quantile feature test case.
+28|h2o.quantile|c(0.443130031818,0.00636630302583,0.278993832331,0.548157231049,0.768339379457);'high';'C2'|21|R||h2o.quantile feature test case.
+29|cut|c(0.529893158107,0.290598414482,0.307790224264);NULL;TRUE;TRUE;3|22|R||cut feature test case.
+30|cut|c(0.529893158107,0.290598414482,0.307790224264);NULL;TRUE;FALSE;3|22|R||cut feature test case.
+31|cut|c(0.529893158107,0.290598414482,0.307790224264);NULL;FALSE;TRUE;3|22|R||cut feature test case.
+32|cut|c(0.529893158107,0.290598414482,0.307790224264);NULL;FALSE;FALSE;3|22|R||cut feature test case.
+33|h2o.match|c('c');83;c('b')|23|R||h2o.match feature test case.
+34|h2o.which||24|R||h2o.which feature test case.
+35|h2o.rep_len|19|25|R||h2o.rep_len feature test case.
+36|h2o.strsplit|'aK7mHbhJ5u'|26|R||h2o.strsplit feature test case.
+37|h2o.toupper||27|R||h2o.toupper feature test case.
+38|t||28|R||t feature test case.
+39|%*%||29;30|R||%*% feature test case.
+40|h2o.var|TRUE;'everything'|31;33|R||h2o.var feature test case.
+41|h2o.var|TRUE;'complete.obs'|31;33|R||h2o.var feature test case.
+42|h2o.var|FALSE;'everything'|31;33|R||h2o.var feature test case.
+43|h2o.var|FALSE;'complete.obs'|31;33|R||h2o.var feature test case.
+44|h2o.var|TRUE;'everything'|31;34|R||h2o.var feature test case.
+45|h2o.var|TRUE;'complete.obs'|31;34|R||h2o.var feature test case.
+46|h2o.var|FALSE;'everything'|31;34|R||h2o.var feature test case.
+47|h2o.var|FALSE;'complete.obs'|31;34|R||h2o.var feature test case.
+48|h2o.var|NULL;TRUE;'everything'|31|R||h2o.var feature test case.
+49|h2o.var|NULL;TRUE;'complete.obs'|31|R||h2o.var feature test case.
+50|h2o.var|NULL;FALSE;'everything'|31|R||h2o.var feature test case.
+51|h2o.var|NULL;FALSE;'complete.obs'|31|R||h2o.var feature test case.
+52|h2o.var|TRUE;'everything'|32;33|R||h2o.var feature test case.
+53|h2o.var|TRUE;'complete.obs'|32;33|R||h2o.var feature test case.
+54|h2o.var|FALSE;'everything'|32;33|R||h2o.var feature test case.
+55|h2o.var|FALSE;'complete.obs'|32;33|R||h2o.var feature test case.
+56|h2o.var|TRUE;'everything'|32;34|R||h2o.var feature test case.
+57|h2o.var|TRUE;'complete.obs'|32;34|R||h2o.var feature test case.
+58|h2o.var|FALSE;'everything'|32;34|R||h2o.var feature test case.
+59|h2o.var|FALSE;'complete.obs'|32;34|R||h2o.var feature test case.
+60|h2o.var|NULL;TRUE;'everything'|32|R||h2o.var feature test case.
+61|h2o.var|NULL;TRUE;'complete.obs'|32|R||h2o.var feature test case.
+62|h2o.var|NULL;FALSE;'everything'|32|R||h2o.var feature test case.
+63|h2o.var|NULL;FALSE;'complete.obs'|32|R||h2o.var feature test case.
+64|h2o.var|TRUE;'all.obs'|35;36|R||h2o.var feature test case.
+65|h2o.var|FALSE;'all.obs'|35;36|R||h2o.var feature test case.
+66|h2o.var|NULL;TRUE;'all.obs'|35|R||h2o.var feature test case.
+67|h2o.var|NULL;FALSE;'all.obs'|35|R||h2o.var feature test case.

@@ -122,9 +122,11 @@ function(feature, r) {
     if (!r) {
         return("H2OFrame")
     } else {
-        if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "h2o.table", "colnames", "[", "h2o.hist",
+        if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "colnames", "[", "h2o.hist",
                            "h2o.impute", "h2o.rep_len", "t", "h2o.var")) {
             return("data.frame")
+        } else if (feature %in% c("h2o.table")) {
+            return("data.frameORvector")
         } else if (feature %in% c("h2o.quantile", "cut")) {
             return("numeric")
         } else if (feature %in% c("h2o.which")) {
@@ -145,6 +147,12 @@ function(dataSet, dataArgsType) {
     if        (dataArgsType == "H2OFrame")   { dArg <- fr
     } else if (dataArgsType == "data.frame") { dArg <- as.data.frame(fr)
     } else if (dataArgsType == "vector")     { dArg <- as.data.frame(fr[,1])[,1]
+    } else if (dataArgsType == "data.frameORvector") {
+        if (ncol(fr) > 1) {
+            dArg <- as.data.frame(fr)
+        } else {
+            dArg <- as.data.frame(fr[,1])[,1]
+        }
     } else if (dataArgsType == "matrix")     { dArg <- as.matrix(as.data.frame(fr))
     } else if (dataArgsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1]) # we only take the first column of the dataset source file
     } else if (dataArgsType == "logical")    { dArg <- as.logical(as.data.frame(fr[,1])[,1])
@@ -264,10 +272,23 @@ function(df1, df2) {
 .comp.H2OFrame.matrix <- function(hf, m) { .comp.H2OFrame.data.frame(hf, as.data.frame(m)) }
 .comp.H2OFrame.table<-
 function(hf, table) {
+    t <- data.frame()
     if (ncol(hf) > 2) { # case 2 dimensions
-        .comp.H2OFrame.data.frame(hf[,2:ncol(hf)], as.data.frame.matrix(table))
+        for (r in rownames(table)) {
+            for (c in colnames(table)) {
+                if (table[r,c] >= 1) {
+                    t <- rbind(t, c(r, c, table[r,c]))
+                }
+            }
+        }
+        t[,3] <- as.integer(t[,3])
+        .comp.H2OFrame.base(hf[,3], t[,3])
     } else { # case 1 dimension
-        .comp.H2OFrame.data.frame(hf[,2],as.data.frame(as.data.frame(table)[,2]))
+        for (r in names(table)) {
+            t <- rbind(t, c(r, as.numeric(table[r])))
+        }
+        t[,2] <- as.integer(t[,2])
+        .comp.H2OFrame.base(hf[,2], t[,2])
     }
 }
 .comp.H2OFrame.base<-
@@ -302,9 +323,13 @@ function(hf, b) {
 }
 .comp.base.base<-
 function(b1, b2) {
-    if (!all(b1 == b2)) {
-        stop(paste0("Expected b1 and b2 results to be the same, but got: ", b1, " and ", b2,
-                    ", respectively."))
+    for (i in 1:length(b1)){
+        tryCatch({
+            expect_equal(b1[[i]], b2[[i]], tolerance = 1e-6)
+        }, error = function(e) {
+            stop(paste0("Expected b1 and b2 results to be the same, but got: ", b1[i], " and ", b2[i],
+                                            ", respectively."))
+        })
     }
 }
 
