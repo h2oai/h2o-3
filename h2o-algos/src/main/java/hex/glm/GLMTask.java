@@ -186,17 +186,19 @@ public abstract class GLMTask  {
          _basicStats.add(nums,w);
        }
        double d = w*response.atd(r);
-       assert !Double.isNaN(d);
-       if(_nClasses > 2)
-         _yMu[(int)d] += 1;
-       else
-        _yMu[0] += d;
-       if(d < _yMin)
-         _yMin = d;
-       if(d > _yMax)
-         _yMax = d;
-       _nobs++;
-       _wsum += w;
+       if(!Double.isNaN(d)) {
+         assert !Double.isNaN(d);
+         if (_nClasses > 2)
+           _yMu[(int) d] += 1;
+         else
+           _yMu[0] += d;
+         if (d < _yMin)
+           _yMin = d;
+         if (d > _yMax)
+           _yMax = d;
+         _nobs++;
+         _wsum += w;
+       }
      }
    }
    @Override public void postGlobal() {

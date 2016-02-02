@@ -95,9 +95,9 @@ public class DataInfo extends Keyed<DataInfo> {
   public double [] _normRespSub;
   public double [] _numMeans;
   public boolean _intercept = true;
-  public final boolean _offset;
+  public boolean _offset;
   public boolean _weights;
-  public final boolean _fold;
+  public boolean _fold;
   public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
 
@@ -224,8 +224,11 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo scoringInfo(){
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,false,false,false);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,_weights,_offset,_fold);
     res._adaptedFrame = null;
+    res._weights = false;
+    res._offset = false;
+    res._fold = false;
     res._responses = 0;
     res._valid = true;
     return res;
