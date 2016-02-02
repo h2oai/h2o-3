@@ -98,7 +98,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected long nFoldSeed() { return new Random().nextLong(); }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
-    public double _tweedie_power = 1.5f;
+    public double _tweedie_power = 1.5;
+    public double _quantile_alpha = 0.5;
     protected double defaultStoppingTolerance() { return 1e-3; }
 
     // TODO: This field belongs in the front-end column-selection process and

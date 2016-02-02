@@ -55,7 +55,8 @@
 #'        (experimental) or "Huber" (experimental)
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
-#'        "laplace", "huber" or "gaussian"
+#'        "laplace", "huber", "quantile" or "gaussian"
+#' @param quantile_alpha Quantile (only for Quantile regression, must be between 0 and 1)
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2).
 #' @param score_interval Shortest time interval (in secs) between model scoring.
 #' @param score_training_samples Number of training set samples for scoring (0 for all).
@@ -162,7 +163,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
                              loss = c("Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),
-                             distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber"),
+                             distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber", "quantile"),
+                             quantile_alpha = 0.5,
                              tweedie_power = 1.5,
                              score_interval = 5,
                              score_training_samples,
@@ -297,6 +299,8 @@ h2o.deeplearning <- function(x, y, training_frame,
   }
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(quantile_alpha))
+    parms$quantile_alpha <- quantile_alpha
   if (!missing(tweedie_power))
     parms$tweedie_power <- tweedie_power
   if(!missing(score_interval))

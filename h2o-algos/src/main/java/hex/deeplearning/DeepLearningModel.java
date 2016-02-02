@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.*;
-import hex.glm.GLMTask;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
@@ -81,7 +80,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public double deviance(double w, double y, double f) {
     // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     assert(get_params()._distribution != Distribution.Family.AUTO);
-    return new Distribution(get_params()._distribution, get_params()._tweedie_power).deviance(w,y,f);
+    return new Distribution(get_params()).deviance(w,y,f);
   }
 
   // Default publicly visible Schema is V2
@@ -827,7 +826,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 //        pred = (pred / di._normRespMul[0] + di._normRespSub[0]);
 //        actual = (actual / di._normRespMul[0] + di._normRespSub[0]);
 //      }
-        Distribution dist = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power);
+        Distribution dist = new Distribution(model_info.get_params());
         pred = dist.linkInv(pred);
         loss += prefactor * dist.deviance(1 /*weight*/, actual, pred);
       }
@@ -880,7 +879,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       else
         preds[0] = out[0];
       // transform prediction to response space
-      preds[0] = new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInv(preds[0]);
+      preds[0] = new Distribution(model_info.get_params()).linkInv(preds[0]);
       if (Double.isNaN(preds[0]))
         throw new RuntimeException("Predicted regression target NaN!");
     }
@@ -1398,7 +1397,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       else {
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
-      bodySb.i(2).p("preds[1] = " + new Distribution(model_info.get_params()._distribution, model_info.get_params()._tweedie_power).linkInvString("preds[1]")+";").nl();
+      bodySb.i(2).p("preds[1] = " + new Distribution(model_info.get_params()).linkInvString("preds[1]")+";").nl();
       bodySb.i(2).p("if (Double.isNaN(preds[1])) throw new RuntimeException(\"Predicted regression target NaN!\");").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();
@@ -1862,7 +1861,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * Absolute, Quadratic, Huber or CrossEntropy for classification
      */
     public enum Loss {
-      Automatic, Quadratic, CrossEntropy, Huber, Absolute
+      Automatic, Quadratic, CrossEntropy, Huber, Absolute, Quantile
     }
   
     /**
@@ -1968,6 +1967,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           case gaussian:
           case huber:
           case laplace:
+          case quantile:
           case tweedie:
           case gamma:
           case poisson:
@@ -1995,6 +1995,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           case laplace:
             if (_loss != Loss.Absolute && _loss != Loss.Automatic)
               dl.error("_distribution", "Only Automatic or Absolute loss is allowed for " + _distribution + " distribution.");
+            break;
+          case quantile:
+            if (_loss != Loss.Quantile && _loss != Loss.Automatic)
+              dl.error("_distribution", "Only Automatic or Quantile loss is allowed for " + _distribution + " distribution.");
             break;
           case huber:
             if (_loss != Loss.Huber && _loss != Loss.Automatic)
@@ -2138,6 +2142,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_max_categorical_features",
               "_nfolds",
               "_distribution",
+              "_quantile_alpha",
               "_tweedie_power"
       };
   
@@ -2321,6 +2326,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               case Absolute:
                 toParms._distribution = Distribution.Family.laplace;
                 break;
+              case Quantile:
+                toParms._distribution = Distribution.Family.quantile;
+                break;
               case Huber:
                 toParms._distribution = Distribution.Family.huber;
                 break;
@@ -2334,6 +2342,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           switch (toParms._distribution) {
             case gaussian:
               toParms._loss = Loss.Quadratic;
+              break;
+            case quantile:
+              toParms._loss = Loss.Quantile;
               break;
             case laplace:
               toParms._loss = Loss.Absolute;

@@ -79,7 +79,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
    */
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
     double x = 0.782347234;
-    boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
+    boolean identityLink = new Distribution(parms).link(x) == x;
     DataInfo dinfo = new DataInfo(
             train,
             valid,

@@ -134,7 +134,7 @@ public abstract class Neurons {
     params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     params._distribution = minfo.get_params()._distribution;
-    _dist = new Distribution(params._distribution, params._tweedie_power);
+    _dist = new Distribution(params);
     _a = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {
       _e = new Storage.DenseVector(units);
