@@ -22,6 +22,16 @@ public class MathUtils {
     return nobs <= 1? 0 : Math.sqrt(xxSum*reg - (xSum*xSum) * reg * reg);
   }
 
+  public static double logFactorial(long y) {
+    if(y <= 100) {
+      double l = 0;
+      for (long i = 2; i <= y; ++i)
+        l += Math.log(i);
+      return l;
+    }
+    return y * Math.log(y) - y + .5*Math.log(2*Math.PI*y);
+  }
+
   /**
    * Wrapper around weighted paralell basic stats computation (mean, variance)
    */
@@ -562,5 +572,11 @@ public class MathUtils {
       _sum = sum;
     }
     @Override public void reduce( SquareError ce ) { _sum += ce._sum; }
+  }
+
+  public static double y_log_y(double y, double mu) {
+    if(y == 0)return 0;
+    if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
+    return y * Math.log(y / mu);
   }
 }

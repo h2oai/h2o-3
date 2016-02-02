@@ -119,6 +119,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
+
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to an Categorical, etc.  */
@@ -194,7 +195,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return How many models to train in parallel during cross-validation
    */
   protected int nModelsInParallel() {
-    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
+    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
     if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1; //safe fallback
   }
@@ -356,7 +357,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(nRunning++ == nModelsInParallel()) //piece-wise advance in training the CV models
+      if(++nRunning == nModelsInParallel()) //piece-wise advance in training the CV models
         while (nRunning>0) submodel_tasks[i+1-nRunning--].join();
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
@@ -623,7 +624,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   transient double [] _distribution;
-  transient double [] _priorClassDist;
+  transient protected double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
     return isClassifier();

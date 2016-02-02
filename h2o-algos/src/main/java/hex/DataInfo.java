@@ -1,7 +1,7 @@
 package hex;
 
 import water.*;
-import water.fvec.Chunk;
+import water.fvec.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -21,6 +21,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;
   public int _responses;   // number of responses
+  public int _outpus; // number of outputs
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
@@ -38,10 +39,15 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public int[] activeCols() {
     if(_activeCols != null) return _activeCols;
-    int [] res = new int[fullN()];
+    int [] res = new int[fullN()+1];
     for(int i = 0; i < res.length; ++i)
       res[i] = i;
     return res;
+  }
+
+  public void addResponse(String [] names, Vec[] vecs) {
+    _adaptedFrame.add(names,vecs);
+    _responses += vecs.length;
   }
 
   public enum TransformType {
@@ -92,17 +98,26 @@ public class DataInfo extends Keyed<DataInfo> {
   public final boolean _offset;
   public boolean _weights;
   public final boolean _fold;
-  public int responseChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
+  public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
+  public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
+
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
+  public int outputChunkId() { return outputChunkId(0);}
+  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + _responses;}
+  public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v);}
+  public Vec getOutputVec(int i) {return _adaptedFrame.vec(outputChunkId(i));}
+  public void setResponse(String name, Vec v){ setResponse(name,v,0);}
+  public void setResponse(String name, Vec v, int n){ _adaptedFrame.insertVec(responseChunkId(n),name,v);}
+
   public final boolean _skipMissing;
   public final boolean _imputeMissing;
   public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
   public final int [][] _catLvls;
+
+  private DataInfo() {  _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
   public String[] _coefNames;
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
-
-  private DataInfo() { super(null); _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
 
   public DataInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
@@ -120,7 +135,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
     super(Key.<DataInfo>make());
-    _valid = false;
+    _valid = valid != null;
     assert predictor_transform != null;
     assert  response_transform != null;
     _offset = offset;
@@ -209,27 +224,29 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public double[] denormalizeBeta(double [] beta) {
-    if(beta.length != fullN()+1)
-      System.out.println("haha");
-    assert beta.length == fullN()+1:"beta len = " + beta.length;
+    int N = fullN()+1;
+    assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
+    int nclasses = beta.length/N;
     beta = MemoryManager.arrayCopyOf(beta,beta.length);
     if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {
-      double norm = 0.0;        // Reverse any normalization on the intercept
-      // denormalize only the numeric coefs (categoricals are not normalized)
-      final int numoff = numStart();
-      for (int i = numoff; i < beta.length - 1; i++) {
-        double b = beta[i] * _normMul[i - numoff];
-        norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
-        beta[i] = b;
+      for(int c = 0; c < nclasses; ++c) {
+        int off = N*c;
+        double norm = 0.0;        // Reverse any normalization on the intercept
+        // denormalize only the numeric coefs (categoricals are not normalized)
+        final int numoff = numStart();
+        for (int i = numoff; i < N-1; i++) {
+          double b = beta[off + i] * _normMul[i - numoff];
+          norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
+          beta[off + i] = b;
+        }
+        beta[off + N - 1] -= norm;
       }
-      beta[beta.length-1] -= norm;
     }
     return beta;
   }
 
   // private constructor called by filterExpandedColumns
-  private DataInfo(Key<DataInfo> selfKey, Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
-    super(selfKey);
+  private DataInfo(Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
     _offset = offset;
     _weights = weight;
     _fold = fold;
@@ -272,7 +289,8 @@ public class DataInfo extends Keyed<DataInfo> {
   public DataInfo filterExpandedColumns(int [] cols){
     assert _predictor_transform != null;
     assert  _response_transform != null;
-    if(cols == null)return this;
+    int hasIcpt = (cols.length > 0 && cols[cols.length-1] == fullN())?1:0;
+    if(cols == null)return deep_clone();
     int i = 0, j = 0, ignoredCnt = 0;
     //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
     int [][] catLvls = new int[_cats][];
@@ -317,20 +335,20 @@ public class DataInfo extends Keyed<DataInfo> {
     double [] normMul = null;
     int id = Arrays.binarySearch(cols,numStart());
     if(id < 0) id = -id-1;
-    int nnums = cols.length - id;
+    int nnums = cols.length - id - hasIcpt;
     int off = numStart();
     if(_normSub != null) {
       normSub = new double[nnums];
-      for(int k = id; k < cols.length; ++k)
+      for(int k = id; k < (id + nnums); ++k)
         normSub[k-id] = _normSub[cols[k]-off];
     }
     if(_normMul != null) {
       normMul = new double[nnums];
-      for(int k = id; k < cols.length; ++k)
+      for(int k = id; k < (id + nnums); ++k)
         normMul[k-id] = _normMul[cols[k]-off];
     }
-    DataInfo dinfo = new DataInfo(_key,f, normMul, normSub, catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
-    // do not put activeData into K/V - active data is recreated on each node based on active columns
+    // public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
+    DataInfo dinfo = new DataInfo(f, normMul, normSub, catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
     dinfo._activeCols = cols;
     return dinfo;
   }
@@ -462,36 +480,51 @@ public class DataInfo extends Keyed<DataInfo> {
     public int    [] numIds;
     public int    [] binIds;
     public long      rid;
+    public int      cid;
     public int       nBins;
     public int       nNums;
+    public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
-    public final double etaOffset;
+    private C8DChunk [] _outputs;
+
+
+    public void setOutput(int i, double v) {_outputs[i].set8D(cid,v);}
+    public double getOutput(int i) {return _outputs[i].get8D(cid);}
+
+
 
     public final boolean isSparse(){return numIds != null;}
 
-    public Row(boolean sparse, int nNums, int nBins, int nresponses, double etaOffset) {
+
+    public Row(boolean sparse, int nNums, int nBins, int nresponses, int i, long start) {
       binIds = MemoryManager.malloc4(nBins);
       numVals = MemoryManager.malloc8d(nNums);
       response = MemoryManager.malloc8d(nresponses);
       if(sparse)
         numIds = MemoryManager.malloc4(nNums);
-      this.etaOffset = etaOffset;
       this.nNums = sparse?0:nNums;
+      cid = i;
+      rid = start + i;
     }
 
-    public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, double etaOffset) {
+    public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, int i, long start) {
       int nNums = numVals == null ? 0:numVals.length;
       this.numVals = numVals;
       if(sparse)
         numIds = MemoryManager.malloc4(nNums);
-      this.etaOffset = etaOffset;
       this.nNums = sparse ? 0:nNums;
       this.nBins = binIds == null ? 0:binIds.length;
       this.binIds = binIds;
       this.response = response;
+      cid = i;
+      rid = start + i;
     }
 
+    public Row(double [] nums) {
+      numVals = nums;
+      nNums = nums.length;
+    }
     public double response(int i) {return response[i];}
 
     public double get(int i) {
@@ -558,6 +591,10 @@ public class DataInfo extends Keyed<DataInfo> {
     public String toString() {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
+
+    public void setResponse(int i, double z) {response[i] = z;}
+
+
   }
 
   public final int getCategoricalId(int cid, int val) {
@@ -577,6 +614,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
+    row.cid = rid;
     if(_weights)
       row.weight = chunks[weightChunkId()].atd(rid);
     if(row.weight == 0) return row;
@@ -612,7 +650,11 @@ public class DataInfo extends Keyed<DataInfo> {
       row.numVals[i] = d;
     }
     for (int i = 0; i < _responses; ++i) {
-      row.response[i] = chunks[responseChunkId()].atd(rid);
+      try {
+        row.response[i] = chunks[responseChunkId(i)].atd(rid);
+      } catch(Throwable t){
+        throw new RuntimeException(t);
+      }
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
       if (Double.isNaN(row.response[i])) {
@@ -625,12 +667,11 @@ public class DataInfo extends Keyed<DataInfo> {
 
     return row;
   }
-
-  public Row newDenseRow(){
-    return new Row(false,_nums,_cats,_responses,0);
-  }
-  public Row newDenseRow(double[] numVals) {
-    return new Row(false, numVals, null, null, 0);
+  public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
+  public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
+  public Row newDenseRow(){return new Row(false,_nums,_cats,_responses,0,0);}
+  public Row newDenseRow(double[] numVals, long start) {
+    return new Row(false, numVals, null, null, 0, start);
   }
 
   public final class Rows {
@@ -643,10 +684,11 @@ public class DataInfo extends Keyed<DataInfo> {
     private Rows(Chunk [] chks, boolean sparse) {
       _nrows = chks[0]._len;
       _sparse = sparse;
+      long start = chks[0].start();
       if(sparse) {
         _denseRow = null;
         _chks = null;
-        _sparseRows = extractSparseRows(chks,0);
+        _sparseRows = extractSparseRows(chks);
       } else {
         _denseRow = DataInfo.this.newDenseRow();
         _chks = chks;
@@ -670,14 +712,13 @@ public class DataInfo extends Keyed<DataInfo> {
    * Note: 0 remains 0 - _normSub of DataInfo isn't used (mean shift during standarization is not reverted) - UNLESS offset is specified (for GLM only)
    * Essentially turns the dataset 90 degrees.
    * @param chunks - chunk of dataset
-   * @param offset - adjustment for 0s if running with on-the-fly standardization (i.e. zeros are not really zeros because of centering)
    * @return array of sparse rows
    */
-  public final Row[] extractSparseRows(Chunk [] chunks, double offset) {
+  public final Row[] extractSparseRows(Chunk [] chunks) {
     Row[] rows = new Row[chunks[0]._len];
-
+    long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, offset);
+      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
@@ -725,11 +766,12 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
-      Chunk rChunk = chunks[responseChunkId()];
+      int rid = responseChunkId(i-1);
+      Chunk rChunk = chunks[rid];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
         if(row.bad) continue;
-        row.response[row.response.length - i] = rChunk.atd(r);
+        row.response[i-1] = rChunk.atd(r);
         if (_normRespMul != null) {
           row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
         }
@@ -747,10 +789,9 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public final Row[] extractDenseRowsVertical(Chunk[] chunks) {
     Row[] rows = new Row[chunks[0]._len];
-
+  long start = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(false, _nums, _cats, _responses, 0);
-      rows[i].rid = chunks[0].start() + i;
+      rows[i] = new Row(false, _nums, _cats, _responses, i, start);
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
         if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
@@ -792,7 +833,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
-      Chunk rChunk = chunks[responseChunkId()];
+      Chunk rChunk = chunks[responseChunkId(i-1)];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
         if(row.bad) continue;

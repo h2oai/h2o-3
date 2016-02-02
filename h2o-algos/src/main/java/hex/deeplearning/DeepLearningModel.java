@@ -400,7 +400,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
 //      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
-    DKV.put(dataInfo);
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
     time_of_start_ms = cp.time_of_start_ms;
@@ -540,7 +539,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final long sinceLastScore = now -_timeLastScoreStart;
 
     // this is potentially slow - only do every so often
-    if( !keep_running ||
+    if( !keep_running || get_params()._score_each_iteration ||
         (sinceLastScore > get_params()._score_interval *1000 //don't score too often
             &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
       jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fTest != null ? (", " + fTest.numRows() + " validation samples") : ""));
@@ -1870,7 +1869,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * @param expensive (whether or not this is the "final" check)
      */
     void validate(DeepLearning dl, boolean expensive) {
-      dl.hide("_score_each_iteration", "Not used by Deep Learning.");
       boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
   

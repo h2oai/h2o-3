@@ -1,11 +1,11 @@
 #'
 #' Principal Components Analysis
 #'
-#' Principal components analysis of a H2O dataset using the power method
+#' Principal components analysis of an H2O data frame using the power method
 #' to calculate the singular value decomposition of the Gram matrix.
 #'
 #'
-#' @param training_frame An H2O H2OFrame object containing the
+#' @param training_frame An H2OFrame object containing the
 #'        variables in the model.
 #' @param x (Optional) A vector containing the data columns on which SVD operates.
 #' @param k The number of principal components to be computed. This must be
@@ -42,7 +42,6 @@
 #' @param seed (Optional) Random seed used to initialize the right singular vectors
 #'        at the beginning of each power method iteration.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
@@ -72,7 +71,7 @@ h2o.prcomp <- function(training_frame, x, k,
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument \"training_frame\" is missing, with no default")
 
-  # Training_frame may be a key or an H2O H2OFrame object
+  # Training_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),
              error = function(err) {

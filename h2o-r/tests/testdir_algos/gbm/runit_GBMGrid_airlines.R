@@ -31,7 +31,17 @@ gbm.grid.test <- function() {
     expect_model_param(grid_models, "max_depth", max_depth_opts)
     expect_model_param(grid_models, "learn_rate", learn_rate_opts)
 
-    
+    #
+    # test random/max_models search criterion
+    size_of_hyper_space <- 5
+    search_criteria = list(strategy = "Random", max_models = size_of_hyper_space)
+    air.grid <- h2o.grid("gbm", y = "IsDepDelayed", x = myX,
+                         distribution="bernoulli",
+                         training_frame = air.hex,
+                         hyper_params = hyper_params,
+                         search_criteria = search_criteria)
+    print(air.grid)
+    expect_equal(length(air.grid@model_ids), size_of_hyper_space)
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)

@@ -2,7 +2,7 @@ package hex;
 
 import water.fvec.Frame;
 
-public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
+public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLMMetrics {
   public final long _nullDegressOfFreedom;
   public final long _residualDegressOfFreedom;
   public final double _resDev;
@@ -19,9 +19,18 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
   }
 
   @Override
+  public double residualDeviance() {return _resDev;}
+
+  @Override
+  public double nullDeviance() {return _nullDev;}
+
+  @Override
   public long residualDegreesOfFreedom(){
     return _residualDegressOfFreedom;
   }
+
+  @Override
+  public long nullDegreesOfFreedom() {return _nullDegressOfFreedom;}
 
   @Override
   public String toString() {
@@ -44,7 +53,7 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
       Math.abs(_resDev - mm._resDev) < 1e-8;
   }
 
-  public static class ModelMetricsMultinomialGLM extends ModelMetricsMultinomial {
+  public static class ModelMetricsMultinomialGLM extends ModelMetricsMultinomial implements GLMMetrics {
     public final long _nullDegressOfFreedom;
     public final long _residualDegressOfFreedom;
     public final double _resDev;
@@ -61,9 +70,18 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial {
     }
 
     @Override
+    public double residualDeviance() {return _resDev;}
+
+    @Override
+    public double nullDeviance() {return _nullDev;}
+
+    @Override
     public long residualDegreesOfFreedom(){
       return _residualDegressOfFreedom;
     }
+
+    @Override
+    public long nullDegreesOfFreedom() {return _nullDegressOfFreedom;}
 
     @Override
     public String toString() {

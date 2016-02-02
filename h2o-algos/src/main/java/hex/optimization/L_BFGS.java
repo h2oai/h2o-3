@@ -47,7 +47,6 @@ public final class L_BFGS extends Iced {
 
   History _hist;
 
-  LineSearchSolver _lineSearch = new MoreThuente();// new BacktrackingLS(.5);//new MoreThuente();
 
   public L_BFGS() {}
   public L_BFGS setMaxIter(int m) {_maxIter = m; return this;}
@@ -66,8 +65,8 @@ public final class L_BFGS extends Iced {
   /**
    * Monitor progress and enable early termination.
    */
-  public static class ProgressMonitor {
-    public boolean progress(double [] beta, GradientInfo ginfo){return true;}
+  public interface ProgressMonitor {
+    boolean progress(double [] betaDiff, GradientInfo ginfo);
   }
 
   // constants used in line search
@@ -181,23 +180,21 @@ public final class L_BFGS extends Iced {
     int iter = 0;
     double rel_improvement = 1;
     final double [] pk = new double[beta.length];
-    double minStep = 1e-12;
-    double maxStep = 100;
-    _lineSearch = new MoreThuente();
-    while(!ArrayUtils.hasNaNsOrInfs(beta) && (pm.progress(beta, ginfo) && (ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps) && iter != _maxIter)) {
+    double minStep = 1e-6;
+    LineSearchSolver lineSearch = new MoreThuente(gslvr,beta,ginfo);
+    while(!ArrayUtils.hasNaNsOrInfs(beta) && (ArrayUtils.linfnorm(ginfo._gradient,false) > _gradEps  && rel_improvement > _objEps) && iter != _maxIter) {
       ++iter;
       _hist.getSearchDirection(ginfo._gradient,pk);
-      if(!_lineSearch.evaluate(gslvr,ginfo,beta,pk,minStep,maxStep,20)) {
+      if(!lineSearch.evaluate(pk))
         break;
-      }
-      _lineSearch.setInitialStep(Math.max(10 * minStep, _lineSearch.step()));
-      ArrayUtils.add(beta,ArrayUtils.mult(pk,_lineSearch.step()));
-      GradientInfo newGinfo = _lineSearch.ginfo();
+      lineSearch.setInitialStep(Math.max(minStep, lineSearch.step()));
+      GradientInfo newGinfo = lineSearch.ginfo();
       _hist.update(pk, newGinfo._gradient, ginfo._gradient);
       rel_improvement = (ginfo._objVal - newGinfo._objVal)/ginfo._objVal;
       ginfo = newGinfo;
+      if(!pm.progress(lineSearch.getX(), ginfo))break;
     }
-    return new Result((ArrayUtils.linfnorm(ginfo._gradient,false) <= _gradEps  || rel_improvement <= _objEps),iter,beta, ginfo,rel_improvement);
+    return new Result((ArrayUtils.linfnorm(ginfo._gradient,false) <= _gradEps  || rel_improvement <= _objEps),iter,lineSearch.getX(), lineSearch.ginfo(),rel_improvement);
   }
 
   /**
@@ -213,7 +210,12 @@ public final class L_BFGS extends Iced {
    * function evaluated at the found optmimum.
    */
   public final Result solve(GradientSolver gslvr, double [] coefs){
-    return solve(gslvr, coefs, gslvr.getGradient(coefs), new ProgressMonitor());
+    return solve(gslvr, coefs, gslvr.getGradient(coefs), new ProgressMonitor(){
+      @Override
+      public boolean progress(double[] beta, GradientInfo ginfo) {
+        return true;
+      }
+    });
   }
 
   public static double [] startCoefs(int n, long seed){

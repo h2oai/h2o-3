@@ -132,7 +132,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.COORDINATE_DESCENT_NAIVE}) { //{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}){
+      for (Solver s : new Solver[]{Solver.IRLSM}) { //{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}){
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -327,7 +327,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._intercept = false;
     params._beta_epsilon = 1e-6;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS /* , Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -417,7 +417,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 0;
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 100; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}) {
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS /*, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -553,7 +553,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-6;
     params._max_iterations = 1000; // not expected to reach max iterations here
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS /*, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -575,7 +575,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
           for (int i = 0; i < cfs1.length; ++i) {
             System.out.println("cfs = " + cfs1[i]);
-            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-10:1e-4);
+            assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-8:1e-4);
             assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-3:1e-4);//dec
           }
           assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);
@@ -665,8 +665,8 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._standardize = false;
     params._non_negative = true;
     params._intercept = true;
-    params._objective_epsilon = 1e-6;
-    params._gradient_epsilon = 1e-5;
+    params._objective_epsilon = 1e-10;
+    params._gradient_epsilon = 1e-6;
     params._max_iterations = 10000; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
       Frame scoreTrain = null, scoreTest = null;

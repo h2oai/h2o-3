@@ -96,7 +96,6 @@ class H2OEstimator(ModelBase):
       H2OFrame with validation data to be scored on while training.
     max_runtime_secs : float
       Maximum allowed runtime in seconds for model training. Use 0 to disable.
-      For cross-validation and grid searches, this time limit applies to all sub-models.
     """
     algo_params = locals()
     parms = self._parms.copy()

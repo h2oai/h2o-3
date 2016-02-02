@@ -22,6 +22,8 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   final Key<Job> _jobKey;
   protected final DataInfo _dinfo;
 
+  public static class JobCancelledException extends RuntimeException {}
+
   public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key<Job> jobKey){
     super(cmp);
     _dinfo = dinfo;
@@ -43,16 +45,19 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
    */
   public void chunkDone(){}
 
+  private transient Job _job;
+  @Override
+  public void setupLocal(){if(_jobKey != null)_job = _jobKey.get();}
 
   public boolean handlesSparseData(){return false;}
-  abstract protected void processRow(Row r);
+  protected abstract void processRow(Row r);
 
   @Override public void map(Chunk[] chks) {
-    if( _jobKey != null && _jobKey.get().stop_requested() ) return;
+    if(_job != null && !_job.isRunning()) throw new JobCancelledException();
     chunkInit();
     // compute
     if(_sparse) {
-      for(Row r:_dinfo.extractSparseRows(chks, 0)) {
+      for(Row r:_dinfo.extractSparseRows(chks)) {
         if(!r.bad && r.weight != 0)
           processRow(r);
       }
@@ -66,5 +71,4 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
     }
     chunkDone();
   }
-
 }

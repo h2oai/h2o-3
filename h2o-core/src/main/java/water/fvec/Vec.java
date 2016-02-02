@@ -351,6 +351,29 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
   }
 
+  public Vec [] makeDoubles(int n, double [] values) {
+    Key [] keys = group().addVecs(n);
+    Vec [] res = new Vec[n];
+    for(int i = 0; i < n; ++i)
+      res[i] = new Vec(keys[i],_rowLayout);
+    fillDoubleChunks(this,res, values);
+    Futures fs = new Futures();
+    for(Vec v:res)
+      DKV.put(v,fs);
+    fs.blockForPending();
+    System.out.println("made vecs " + Arrays.toString(res));
+    return res;
+  }
+
+
+  private static void fillDoubleChunks(Vec v, final Vec[] ds, final double [] values){
+    new MRTask(){
+      public void map(Chunk c){
+        for(int i = 0; i < ds.length; ++i)
+          DKV.put(ds[i].chunkKey(c.cidx()),new C0DChunk(values[i],c._len << 3));
+      }
+    }.doAll(v);
+  }
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to zero.
    *  @return A new vector with the same size and data layout as the current one,

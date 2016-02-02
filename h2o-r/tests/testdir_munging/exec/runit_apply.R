@@ -53,6 +53,11 @@ test.apply <- function() {
   fun <-  function(x) { x * fun1(x) }
   print(apply(hex, 2, fun))
 
+
+  lookup <- as.h2o(data.frame(matrix(rnorm(100), ncol=50, nrow=50)))
+  i <- 4 
+  print(apply(as.h2o(1:50), 1, function(x) { lookup[i,] - lookup[10,] }))
+
   
 }
 

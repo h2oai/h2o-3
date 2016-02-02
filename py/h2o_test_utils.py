@@ -559,12 +559,14 @@ class GridSpec(dict):
     '''
     Dictionary which specifies all that's needed to build and validate a grid of models.
     '''
-    def __init__(self, dest_key, algo, frame_key, params, grid_params, model_category):
+    def __init__(self, dest_key, algo, frame_key, params, grid_params, model_category, search_criteria=None):
         self['algo'] = algo
         self['frame_key'] = frame_key
         self['params'] = params
         self['grid_params'] = grid_params
         self['model_category'] = model_category
+
+        self['search_criteria'] = search_criteria
 
         if dest_key is None:
             self['dest_key'] = algo + "_" + frame_key
@@ -572,7 +574,7 @@ class GridSpec(dict):
             self['dest_key'] = dest_key
 
     @staticmethod
-    def for_dataset(dest_key, algo, dataset, params, grid_params):
+    def for_dataset(dest_key, algo, dataset, params, grid_params, search_criteria=None):
         '''
         Factory for creating a GridSpec for a given Dataset (frame and additional metadata).
         '''
@@ -581,7 +583,7 @@ class GridSpec(dict):
         if 'response_column' in dataset: dataset_params['response_column'] = dataset['response_column']
         if 'ignored_columns' in dataset: dataset_params['ignored_columns'] = dataset['ignored_columns']
 
-        return GridSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), grid_params, dataset['model_category'])
+        return GridSpec(dest_key, algo, dataset['dest_key'], dict(dataset_params.items() + params.items()), grid_params, dataset['model_category'], search_criteria)
 
 
     def build_and_validate_grid(self, a_node):
@@ -589,7 +591,7 @@ class GridSpec(dict):
         if isVerbose(): print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model grid on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params']) + ' and grid_params: ' + repr(self['grid_params'])
 
         # returns a GridSearchSchema:
-        result = a_node.build_model_grid(algo=self['algo'], grid_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], grid_parameters=self['grid_params'], timeoutSecs=240) # synchronous
+        result = a_node.build_model_grid(algo=self['algo'], grid_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], grid_parameters=self['grid_params'], search_criteria=self['search_criteria'], timeoutSecs=240) # synchronous
         if isVerboser(): print 'result: ' + repr(result)
         grid = a_node.grid(key=self['dest_key'])
         if isVerboser(): print 'grid: ' + repr(grid)
@@ -608,11 +610,20 @@ class GridSpec(dict):
             assert 'model_category' in model['output'], 'FAIL: Failed to find model_category in model: ' + self['dest_key']
             assert model['output']['model_category'] == self['model_category'], 'FAIL: Expected model_category: ' + self['model_category'] + ' but got: ' + model['output']['model_category'] + ' for model: ' + self['dest_key']
 
-        # Cartesian: check that we got the right number of models:
+        # Cartesian or random with max_models: check that we got the right number of models if we know beforehand:
         combos = 1
         for k, vals in self['grid_params'].iteritems():
             combos *= len(vals)
-        assert combos == len(grid['model_ids']), 'FAIL: Expected ' + str(combos) + ' models; got: ' + str(len(grid['model_ids']))
+
+        # NOTE: if we have a stopping critereon which is not a fixed number we don't know how many models to expect
+        expected = None
+        if self['search_criteria'] is None or self['search_criteria']['strategy'] is 'Cartesian':
+            expected = combos
+        elif self['search_criteria'] is not None and 'max_models' in self['search_criteria'] and 'max_time_ms' not in self['search_criteria']:
+            expected = min(combos, self['search_criteria']['max_models'])
+
+        if expected is not None:
+            assert expected == len(grid['model_ids']), 'FAIL: Expected ' + str(expected) + ' models; got: ' + str(len(grid['model_ids']))
 
         if isVerbose(): print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
         return grid

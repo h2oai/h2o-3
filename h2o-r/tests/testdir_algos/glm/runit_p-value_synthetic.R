@@ -27,7 +27,7 @@ test.pvalue.syn <- function(conn){
     	print(distribu)
     	(gg1 =glm(y~.- wts,family = "Gamma",data = data))
     	r_pval = as.numeric(summary(gg1)$coefficients[,4])
-    	hh1 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+    	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
                   family =distribu,standardize = F)
     	h_pval = hh1@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -37,7 +37,7 @@ test.pvalue.syn <- function(conn){
     	hsdata = as.h2o(sdata,destination_frame = "sdata")
     	gg1 =glm(y~.- wts,family = "Gamma",data = sdata)
     	r_pval = as.numeric(summary(gg1)$coefficients[,4])
-    	hh1 = h2o.glm(x = 3:length(colnames(hsdata)),y = 1,training_frame = hsdata,lambda = 0,compute_p_values = T,
+    	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hsdata)),y = 1,training_frame = hsdata,lambda = 0,compute_p_values = T,
                   family =distribu,standardize = T)
     	h_pval = hh1@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -45,7 +45,7 @@ test.pvalue.syn <- function(conn){
     	(gg2 =glm(y~.- wts,family = "Gamma",data = data,weights = wts/3))
     	r_pval = as.numeric(summary(gg2)$coefficients[,4])
     	hdata$wts = hdata$wts/3
-    	hh2 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,weights_column = "wts",
+    	hh2 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,weights_column = "wts",
                   family =distribu,standardize = F)
    		h_pval = hh2@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -54,7 +54,7 @@ test.pvalue.syn <- function(conn){
     	r_pval = as.numeric(summary(gg3)$coefficients[,4])
     	offset = as.h2o(rep(.1,length(data$wts)),destination_frame = "offset")
     	hdata = h2o.cbind(hdata,offset) 
-    	hh3 = h2o.glm(x = 3:(length(colnames(hdata))-1),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "x",
+    	hh3 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:(length(colnames(hdata))-1),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "x",
                   family =distribu,standardize = F)
     	h_pval = hh3@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -69,7 +69,7 @@ test.pvalue.syn <- function(conn){
     	print("non-standardized")
     	gg1 =glm(y~.- wts,family = distribu,data = data)
     	r_pval = as.numeric(summary(gg1)$coefficients[,4])
-    	hh1 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+    	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
                   family =distribu,standardize = F)
     	h_pval = hh1@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -80,12 +80,12 @@ test.pvalue.syn <- function(conn){
     	hsdata = as.h2o(sdata,destination_frame = "sdata")
     	gg1 =glm(y~.- wts,family = distribu,data = sdata)
     	r_pval = as.numeric(summary(gg1)$coefficients[,4])
-    	hh1 = h2o.glm(x = 3:length(colnames(hsdata)),y = 1,training_frame = hsdata,lambda = 0,compute_p_values = T,
+    	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hsdata)),y = 1,training_frame = hsdata,lambda = 0,compute_p_values = T,
                   family =distribu,standardize = T)
     	h_pval = hh1@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
     	print("II")
-    	hh1 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+    	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
                   family =distribu,standardize = T)
     	h_pval = hh1@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -94,7 +94,7 @@ test.pvalue.syn <- function(conn){
     	print("weight")
     	(gg2 =glm(y~.- wts,family = distribu,data = data,weights = wts))
     	r_pval = as.numeric(summary(gg2)$coefficients[,4])
-    	hh2 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,weights_column = "wts",
+    	hh2 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,weights_column = "wts",
                   family =distribu,standardize = F)
     	h_pval = hh2@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -103,7 +103,7 @@ test.pvalue.syn <- function(conn){
     	(gg3 =glm(y~.- wts,family = distribu,data = data,offset = wts/10))
     	r_pval = as.numeric(summary(gg3)$coefficients[,4])
     	hdata$wts = hdata$wts/10
-    	hh3 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
+    	hh3 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
                   family =distribu,standardize = F)
     	h_pval = hh3@model$coefficients_table[,5]
     	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -121,7 +121,7 @@ test.pvalue.syn <- function(conn){
 	print("non-standardized")
 	gg1 =glm(y~.- wts,family = distribu,data = data)
 	r_pval = as.numeric(summary(gg1)$coefficients[,4])
-	hh1 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
               family =distribu,standardize = F)
 	h_pval = hh1@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -132,12 +132,12 @@ test.pvalue.syn <- function(conn){
 	hsdata = as.h2o(sdata,destination_frame = "sdata")
 	gg1 =glm(y~.- wts,family = distribu,data = sdata)
 	r_pval = as.numeric(summary(gg1)$coefficients[,4])
-	hh1 = h2o.glm(x = 3:length(colnames(hsdata)),y = 1,training_frame = hsdata,lambda = 0,compute_p_values = T,
+	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hsdata)),y = 1,training_frame = hsdata,lambda = 0,compute_p_values = T,
 	            family =distribu,standardize = T)
 	h_pval = hh1@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
 	print("II")
-	hh1 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
+	hh1 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,
               family =distribu,standardize = T)
 	h_pval = hh1@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -146,7 +146,7 @@ test.pvalue.syn <- function(conn){
 	print("weight")
 	(gg2 =glm(y~.- wts,family = distribu,data = data,weights = wts))
 	r_pval = as.numeric(summary(gg2)$coefficients[,4])
-	hh2 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,weights_column = "wts",
+	hh2 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,weights_column = "wts",
               family =distribu,standardize = F)
 	h_pval = hh2@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)
@@ -155,7 +155,7 @@ test.pvalue.syn <- function(conn){
 	(gg3 =glm(y~.- wts,family = distribu,data = data,offset = wts/10))
 	r_pval = as.numeric(summary(gg3)$coefficients[,4])
 	hdata$wts = hdata$wts/10
-	hh3 = h2o.glm(x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
+	hh3 = h2o.glm(objective_epsilon=0, beta_epsilon=1e-8,x = 3:length(colnames(hdata)),y = 1,training_frame = hdata,lambda = 0,compute_p_values = T,offset_column = "wts",
               family =distribu,standardize = F)
 	h_pval = hh3@model$coefficients_table[,5]
 	expect_equal(r_pval,h_pval,tolerance = 1e-4)

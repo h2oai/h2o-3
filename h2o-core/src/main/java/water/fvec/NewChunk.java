@@ -63,7 +63,7 @@ public class NewChunk extends Chunk {
   public int _timCnt = 0;
   protected static final int MIN_SPARSE_RATIO = 32;
   private int _sparseRatio = MIN_SPARSE_RATIO;
-  public boolean _isAllASCII = false; //For cat/string col, are all characters in chunk ASCII? FIXME: this is never updated anywhere... setting to false
+  public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
 

@@ -108,7 +108,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     DataInfo.Row row = null;
     DataInfo.Row[] rows = null;
     if (_bulkRead) {
-      rows = _sparse ? _dinfo.extractSparseRows(chunks, 0) : _dinfo.extractDenseRowsVertical(chunks);
+      rows = _sparse ? _dinfo.extractSparseRows(chunks) : _dinfo.extractDenseRowsVertical(chunks);
 //      // expensive sanity check
 //      DataInfo.Row[] rowsD = _dinfo.extractDenseRows(chunks);
 //      for (int i = 0; i < rows.length; ++i) {
@@ -220,7 +220,8 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     @Override
     public void map(Chunk[] cs) {
       // fill up _row with the data of row with global id _gid
-      if (cs[0].start() <= _gid && cs[0].start()+cs[0].len() > _gid) {
+      long start = cs[0].start();
+      if (start <= _gid && cs[0].start()+cs[0].len() > _gid) {
         _row = _di.newDenseRow();
         _di.extractDenseRow(cs, (int)(_gid-cs[0].start()), _row);
       }
