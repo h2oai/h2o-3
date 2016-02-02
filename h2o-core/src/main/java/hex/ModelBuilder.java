@@ -442,7 +442,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
     if (preds!=null) preds.remove();
-    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
+    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
 
     // Now, the main model is complete (has cv metrics)
