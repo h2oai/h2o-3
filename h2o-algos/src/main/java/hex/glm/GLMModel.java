@@ -13,7 +13,6 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
-import water.DKV;
 import water.H2O;
 import water.Iced;
 import water.Key;
@@ -965,11 +964,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         preds[c + 1] = eta[c] * sumExp;
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
-      double mu = preds[0] = _parms.linkInv(r.innerProduct(beta()) + o);
+      double mu = _parms.linkInv(r.innerProduct(beta()) + o);
       if (_parms._family == Family.binomial) { // threshold for prediction
+        preds[0] = mu >= defaultThreshold()?1:0;
         preds[1] = 1.0 - mu; // class 0
         preds[2] = mu; // class 1
-      }
+      } else
+        preds[0] = mu;
     }
     return preds;
   }
@@ -1004,12 +1005,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       @Override
       public void generate(JCodeSB out) {
         JCodeGen.toClassWithArray(out, "static", "BETA", beta_internal()); // "The Coefficients"
+        JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
+        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo._catModes,"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
       }
     });
-
     body.ip("final double [] b = BETA.VALUES;").nl();
-
+    if(_parms._missing_values_handling == MissingValuesHandling.MeanImputation){
+      body.ip("for(int i = 0; i < " + _output._dinfo._cats + "; ++i) if(Double.isNaN(data[i])) data[i] = CAT_MODES.VALUES[i];").nl();
+      body.ip("for(int i = 0; i < " + _output._dinfo._nums + "; ++i) if(Double.isNaN(data[i + " + _output._dinfo._cats + "])) data[i+" + _output._dinfo._cats + "] = NUM_MEANS.VALUES[i];").nl();
+    }
     if(_parms._family != Family.multinomial) {
       body.ip("double eta = 0.0;").nl();
       if (!_parms._use_all_factor_levels) { // skip level 0 of all factors
@@ -1036,7 +1041,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
       else
         body.ip("double mu = hex.genmodel.GenModel.GLM_tweedieInv(eta," + _parms._tweedie_link_power);
-//    if( _parms._link == hex.glm.GLMModel.GLMParameters.Link.tweedie ) body.p(",").p(_parms._tweedie_link_power);
       body.p(");").nl();
       if (_parms._family == Family.binomial) {
         body.ip("preds[0] = (mu > ").p(defaultThreshold()).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
