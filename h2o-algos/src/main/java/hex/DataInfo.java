@@ -374,8 +374,21 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     if(_predictor_transform.isMeanAdjusted()) {
       if(mean.length != _normSub.length)
-        throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
+        throw new IllegalArgumentException("Length of means does not match number of scaled columns.");
       System.arraycopy(mean,0,_normSub,0,mean.length);
+    }
+  }
+  public void updateWeightedSigmaAndMeanForResponse(double [] sigmas, double [] mean) {
+    if(_response_transform.isSigmaScaled()) {
+      if(sigmas.length != _normRespMul.length)
+        throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
+      for(int i = 0; i < sigmas.length; ++i)
+        _normRespMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
+    }
+    if(_response_transform.isMeanAdjusted()) {
+      if(mean.length != _normRespSub.length)
+        throw new IllegalArgumentException("Length of means does not match number of scaled columns.");
+      System.arraycopy(mean,0,_normRespSub,0,mean.length);
     }
   }
 

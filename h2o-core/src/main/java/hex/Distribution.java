@@ -2,7 +2,6 @@ package hex;
 
 import water.H2O;
 import water.Iced;
-import water.util.Log;
 
 /**
  * Distribution functions to be used by ML Algos
@@ -13,34 +12,33 @@ public class Distribution extends Iced {
     AUTO,         //model-specific behavior
     bernoulli,    //binomial classification (nclasses == 2)
     multinomial,  //classification (nclasses >= 2)
-    gaussian, poisson, gamma, tweedie, huber, laplace //regression
+    gaussian, poisson, gamma, tweedie, huber, laplace, quantile //regression
+  }
+
+  // Default constructor for non-Tweedie and non-Quantile families
+  public Distribution(Family family) {
+    distribution = family;
+    assert(family != Family.tweedie);
+    assert(family != Family.quantile);
+    tweediePower = 1.5;
+    quantileAlpha = 0.5;
   }
 
   /**
-   * Short constructor for non-Tweedie distributions
-   * @param distribution
+   * @param params
    */
-  public Distribution(Family distribution) {
-    assert(distribution != Family.tweedie);
-    this.distribution = distribution;
-    this.tweediePower = 0;
-  }
-
-  /**
-   * Constructor to be used for Tweedie (and if uncertain)
-   * @param distribution
-   * @param tweediePower Tweedie Power
-   */
-  public Distribution(Family distribution, double tweediePower) {
-    this.distribution = distribution;
+  public Distribution(Model.Parameters params) {
+    distribution = params._distribution;
+    tweediePower = params._tweedie_power;
+    quantileAlpha = params._quantile_alpha;
     assert(tweediePower >1 && tweediePower <2);
-    this.tweediePower = tweediePower;
   }
   static public double MIN_LOG = -19;
   static public double MAX = 1e19;
 
   public final Family distribution;
   public final double tweediePower; //tweedie power
+  public final double quantileAlpha; //for quantile regression
 
   // helper - sanitized exponential function
   public static double exp(double x) {
@@ -83,6 +81,8 @@ public class Distribution extends Iced {
         }
       case laplace:
         return w * Math.abs(y-f); // weighted absolute deviance == weighted absolute error
+      case quantile:
+        return y > f ? w*quantileAlpha*(y-f) : w*(1-quantileAlpha)*(f-y);
       case bernoulli:
         return -2 * w * (y * f - log(1 + exp(f)));
       case poisson:
@@ -123,6 +123,8 @@ public class Distribution extends Iced {
         }
       case laplace:
         return f > y ? -1 : 1;
+      case quantile:
+        return y > f ? quantileAlpha : quantileAlpha-1;
       default:
         throw H2O.unimpl();
     }
@@ -139,6 +141,7 @@ public class Distribution extends Iced {
       case gaussian:
       case huber:
       case laplace:
+      case quantile:
         return f;
       case bernoulli:
         return log(f/(1-f));
@@ -163,6 +166,7 @@ public class Distribution extends Iced {
       case gaussian:
       case huber:
       case laplace:
+      case quantile:
         return f;
       case bernoulli:
         return 1 / (1 + exp(-f));
@@ -187,6 +191,7 @@ public class Distribution extends Iced {
       case gaussian:
       case huber:
       case laplace:
+      case quantile:
         return f;
       case bernoulli:
         return "1/(1+" + expString("-" + f) + ")";

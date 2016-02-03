@@ -326,7 +326,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
-        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, !_parms._stdOverride, setWeights, skippingRows).doAll(_dinfo._adaptedFrame);
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, !_parms._stdOverride, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
         if (ymt._wsum == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt._nobs + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));

@@ -82,7 +82,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   @Override
   public double deviance(double w, double y, double f) {
-    return new Distribution(_parms._distribution, _parms._tweedie_power).deviance(w, y, f);
+    return new Distribution(_parms).deviance(w, y, f);
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {

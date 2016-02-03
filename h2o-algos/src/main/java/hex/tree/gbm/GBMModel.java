@@ -39,7 +39,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
     if (_parms._distribution == Distribution.Family.bernoulli) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
-      preds[2] = new Distribution(Distribution.Family.bernoulli).linkInv(f);
+      preds[2] = new Distribution(_parms).linkInv(f);
       preds[1] = 1.0 - preds[2];
     } else if (_parms._distribution == Distribution.Family.multinomial) { // Kept the initial prediction for binomial
       if (_output.nclasses() == 2) { //1-tree optimization for binomial
@@ -49,7 +49,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       hex.genmodel.GenModel.GBM_rescale(preds);
     } else { //Regression
       double f = preds[0] + _output._init_f + offset;
-      preds[0] = new Distribution(_parms._distribution, _parms._tweedie_power).linkInv(f);
+      preds[0] = new Distribution(_parms).linkInv(f);
     }
     return preds;
   }
@@ -60,7 +60,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     // the loss function.
     if( _parms._distribution == Distribution.Family.bernoulli ) {
       body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = " + new Distribution(_parms._distribution).linkInvString("preds[2]") + ";").nl();
+      body.ip("preds[2] = " + new Distribution(_parms).linkInvString("preds[2]") + ";").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
@@ -69,7 +69,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     }
     if( _output.nclasses() == 1 ) { // Regression
       body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-      body.ip("preds[0] = " + new Distribution(_parms._distribution, _parms._tweedie_power).linkInvString("preds[0]") + ";").nl();
+      body.ip("preds[0] = " + new Distribution(_parms).linkInvString("preds[0]") + ";").nl();
       return;
     }
     if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial

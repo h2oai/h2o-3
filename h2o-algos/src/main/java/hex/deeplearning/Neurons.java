@@ -134,7 +134,7 @@ public abstract class Neurons {
     params._hidden_dropout_ratios = minfo.get_params()._hidden_dropout_ratios;
     params._rate *= Math.pow(params._rate_decay, index-1);
     params._distribution = minfo.get_params()._distribution;
-    _dist = new Distribution(params._distribution, params._tweedie_power);
+    _dist = new Distribution(params);
     _a = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {
       _e = new Storage.DenseVector(units);
@@ -499,8 +499,7 @@ public abstract class Neurons {
         }
         ncats++;
       }
-      final int n = data.length - (_dinfo._weights ? 1 : 0) - (_dinfo._offset ? 1 : 0);
-      for(;i < n;++i){
+      for(;i < data.length;++i){
         double d = data[i];
         if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
         nums[i-_dinfo._cats] = d; //can be NaN for missing numerical data
