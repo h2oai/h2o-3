@@ -264,10 +264,12 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 
 #` Flush any cached data
 .flush.data <- function(x) {
-  if( !is.null(attr(x,"data")) ) rm("data" ,envir=x)
-  if( !is.null(attr(x,"data")) ) rm("types",envir=x)
-  if( !is.null(attr(x,"data")) ) rm("nrow" ,envir=x)
-  if( !is.null(attr(x,"data")) ) rm("ncol" ,envir=x)
+  browser()
+  if( !is.null(attr(x,"data")) ) attr(x, "data")  <- NULL
+  if( !is.null(attr(x,"nrow")) ) attr(x, "nrow")  <- NULL
+  if( !is.null(attr(x,"ncol")) ) attr(x, "ncol")  <- NULL
+  if( !is.null(attr(x,"types"))) attr(x, "types") <- NULL
+  browser()
   x
 }
 
@@ -1957,6 +1959,9 @@ scale.H2OFrame <- h2o.scale
 #' @export
 as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
+
+#  zz <- deparse(substitute(x))
+#  browser()
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(!is.data.frame(x))
