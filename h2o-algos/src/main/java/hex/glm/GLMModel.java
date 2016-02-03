@@ -988,13 +988,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return preds;
   }
 
-  private transient ThreadLocal<Row> _row = new ThreadLocal<>();
+  private transient ThreadLocal<Row> _row;
 
   @Override
   // public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds )
   public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
     if(_parms._family == Family.multinomial)
       return scoreMultinomial(chks,row_in_chunk,tmp,preds);
+    if(_row == null) _row = new ThreadLocal<>();
     Row r = _row.get();
     if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
     _output._scoringDinfo.extractDenseRow(chks,row_in_chunk,r);
