@@ -178,10 +178,11 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         assert(r >= 0 && r<=nrows);
 
         row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
-        if(!row.bad) {
-          assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
+        if(row.bad || row.weight == 0) {
           num_skipped_rows++;
+          continue;
         } else {
+          assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           long seed = offset + rep * nrows + r;
           miniBatchCounter++;
           if (outputs != null && outputs.length > 0)
