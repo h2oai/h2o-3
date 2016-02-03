@@ -199,7 +199,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
       if( y=="TRUE" )       y <- TRUE
       else if( y=="FALSE" ) y <- FALSE
     }
-    .set(x,"data",y)
+    .set(x,"data",as.numeric(y))
   } else if( !is.null(res$funstr) ) {
     stop("Unimplemented: handling of function returns")
   } else if( !is.null(res$string) ) {
