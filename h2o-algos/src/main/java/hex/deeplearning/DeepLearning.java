@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMTask;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -97,7 +98,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
     // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses, true, !parms._autoencoder && nClasses == 1, false, !parms._autoencoder).doAll(dinfo._adaptedFrame);
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses, true, !parms._autoencoder && nClasses == 1, parms._missing_values_handling == MissingValuesHandling.Skip, !parms._autoencoder).doAll(dinfo._adaptedFrame);
     if (ymt._wsum == 0 && parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip)
       throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
     if (parms._weights_column != null && parms._offset_column != null) {
