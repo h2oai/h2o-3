@@ -937,6 +937,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Tweedie distribution.");
+    } else if (_parms._distribution == Distribution.Family.quantile) {
+      if (_parms._quantile_alpha > 1 || _parms._quantile_alpha < 0)
+        error("_quantile_alpha", "Quantile (alpha) must be between 0 and 1.");
     }
   }
 
