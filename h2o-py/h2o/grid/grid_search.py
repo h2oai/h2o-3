@@ -36,6 +36,8 @@ class H2OGridSearch(object):
     grid_id : str, optional
       The unique id assigned to the resulting grid object. If none is given, an id will
       automatically be generated.
+    search_criteria: dict, optional
+      A dictionary of directives which direct the search of the hyperparameter space.
      
     Returns
     -------
