@@ -58,6 +58,7 @@
 #' @param non_negative Logical, allow only positive coefficients.
 #' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are collinear predictors.
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
+#' @param missing_values_handling (Optional) Controls handling of missing values. Can be either "MeanImputation" or "Skip". MeanImputation replaces missing values with mean for numeric and most frequent level for categorical,  Skip ignores observations with any missing value. Applied both during model training *AND* scoring.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
