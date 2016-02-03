@@ -264,12 +264,10 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 
 #` Flush any cached data
 .flush.data <- function(x) {
-  browser()
   if( !is.null(attr(x,"data")) ) attr(x, "data")  <- NULL
   if( !is.null(attr(x,"nrow")) ) attr(x, "nrow")  <- NULL
   if( !is.null(attr(x,"ncol")) ) attr(x, "ncol")  <- NULL
   if( !is.null(attr(x,"types"))) attr(x, "types") <- NULL
-  browser()
   x
 }
 
@@ -1960,8 +1958,9 @@ scale.H2OFrame <- h2o.scale
 as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
 
-#  zz <- deparse(substitute(x))
-#  browser()
+  dest_name <- if( destination_frame=="") deparse(substitute(x)) else destination_frame
+  if( nzchar(dest_name) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", dest_name)[1L] == -1L )
+    dest_name <- destination_frame
 
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(!is.data.frame(x))
@@ -1978,7 +1977,7 @@ as.h2o <- function(x, destination_frame= "") {
   types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
   write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
-  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+  h2f <- h2o.uploadFile(tmpf, destination_frame = dest_name, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
   file.remove(tmpf)
   h2f

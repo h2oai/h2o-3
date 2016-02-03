@@ -143,7 +143,6 @@ h2o.uploadFile <- function(path, destination_frame = "",
 
   rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
   destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
-  browser()
   if (parse) {
     h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
   } else {
