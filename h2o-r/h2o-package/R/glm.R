@@ -109,7 +109,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     beta_epsilon = 0,
                     solver = c("IRLSM", "L_BFGS"),
                     standardize = TRUE,
-                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
+                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie","multinomial"),
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
                     tweedie_variance_power = NaN,
                     tweedie_link_power = NaN,
@@ -133,7 +133,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     non_negative = FALSE,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
-                    max_runtime_secs = 0)
+                    max_runtime_secs = 0,
+                    missing_values_handling = c("Skip", "MeanImputation"))
 {
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
@@ -198,6 +199,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
     parms$nfolds <- nfolds
   if(!missing(beta_constraints))
     parms$beta_constraints <- beta_constraints
+    if(!missing(missing_values_handling))
+        parms$missing_values_handling <- missing_values_handling
   m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]
