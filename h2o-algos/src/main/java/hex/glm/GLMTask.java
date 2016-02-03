@@ -139,7 +139,7 @@ public abstract class GLMTask  {
    double [] _means;
    final int _nClasses;
 
-   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean computeWeightedMeanSigmaResponse,boolean skipNAs, boolean haveResponse){
+   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse){
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
      _responseId = haveResponse ? dinfo.responseChunkId(0) : -1;
@@ -160,7 +160,7 @@ public abstract class GLMTask  {
      for(int i = 0; i < chunks.length; ++i) {
        for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
          if(skip[r])continue;
-         if((skip[r] = _skipNAs && chunks[i].isNA(r)))
+         if((skip[r] = _skipNAs && chunks[i].isNA(r)) && _weightId != -1)
           weight.set(r,0);
        }
      }
