@@ -287,6 +287,7 @@ h2o.assign <- function(data, key) {
   x = .eval.driver(.newExpr("assign", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
   .set(x,"eval",NULL)
+  gc()
   x
 }
 
