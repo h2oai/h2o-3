@@ -623,12 +623,10 @@ public class DataInfo extends Keyed<DataInfo> {
     return v;
   }
 
-  public final Row extractDenseRow(double [] vals, Row row, double w, double o) {
+  public final Row extractDenseRow(double [] vals, Row row) {
     row.bad = false;
     row.rid = 0;
     row.cid = 0;
-    row.offset = o;
-    row.weight = w;
     if(row.weight == 0) return row;
 
     if (_skipMissing)

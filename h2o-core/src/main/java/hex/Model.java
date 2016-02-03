@@ -839,7 +839,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
-
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
@@ -850,6 +849,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 1, 0, row_in_chunk, tmp, preds);
   }
+
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )

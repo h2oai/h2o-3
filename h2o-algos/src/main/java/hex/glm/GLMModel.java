@@ -945,125 +945,54 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return super.checksum_impl();
   }
 
-  private double [] scoreMultinomial(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
-    double[] eta = MemoryManager.malloc8d(_output.nclasses());
-    final double[][] b = _output._global_beta_multinomial;
-    final int P = b[0].length;
-    int[] catOffs = dinfo()._catOffsets;
-    for (int i = 0; i < catOffs.length - 1; ++i) {
-      if (chks[i].isNA(row_in_chunk)) {
-        Arrays.fill(eta, Double.NaN);
-        break;
+  private double [] scoreRow(Row r, double o, double [] preds) {
+    if(_parms._family == Family.multinomial) {
+      if(_eta == null) _eta = new ThreadLocal<>();
+      double[] eta = _eta.get();
+      if(eta == null) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
+      final double[][] bm = _output._global_beta_multinomial;
+      double sumExp = 0;
+      double maxRow = 0;
+      for (int c = 0; c < bm.length; ++c) {
+        eta[c] = r.innerProduct(bm[c]) + o;
+        if(eta[c] > maxRow)
+          maxRow = eta[c];
       }
-      long lval = chks[i].at8(row_in_chunk);
-      int ival = (int) lval;
-      if (ival != lval) throw new IllegalArgumentException("categorical value out of range");
-      if (!_parms._use_all_factor_levels) --ival;
-      int from = catOffs[i];
-      int to = catOffs[i + 1];
-      // can get values out of bounds for cat levels not seen in training
-      if (ival >= 0 && (ival + from) < catOffs[i + 1])
-        for (int j = 0; j < _output.nclasses(); ++j)
-          eta[j] += b[j][ival + from];
+      for (int c = 0; c < bm.length; ++c)
+        sumExp += eta[c] = Math.exp(eta[c]-maxRow); // intercept
+      sumExp = 1.0 / sumExp;
+      for (int c = 0; c < bm.length; ++c)
+        preds[c + 1] = eta[c] * sumExp;
+      preds[0] = ArrayUtils.maxIndex(eta);
+    } else {
+      double mu = preds[0] = _parms.linkInv(r.innerProduct(beta()) + o);
+      if (_parms._family == Family.binomial) { // threshold for prediction
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] = mu; // class 1
+      }
     }
-    final int noff = dinfo().numStart() - dinfo()._cats;
-    for (int i = dinfo()._cats; i < b.length - 1 - noff; ++i) {
-      double d = chks[i].atd(row_in_chunk);
-      for (int j = 0; j < _output.nclasses(); ++j)
-        eta[j] += b[j][noff + i] * d;
-    }
-    double sumExp = 0;
-    double max_row = 0;
-    for (int j = 0; j < _output.nclasses(); ++j) {
-      eta[j] += b[j][P - 1];
-      if(eta[j] > max_row)
-        max_row = eta[j];
-    }
-    for (int j = 0; j < _output.nclasses(); ++j)
-      sumExp += eta[j] = Math.exp(eta[j]-max_row); // intercept
-    sumExp = 1.0 / sumExp;
-    for (int i = 0; i < eta.length; ++i)
-      preds[i + 1] = eta[i] * sumExp;
-    preds[0] = ArrayUtils.maxIndex(eta);
     return preds;
   }
 
   private transient ThreadLocal<Row> _row;
+  private transient ThreadLocal<double[]> _eta;
+
+  private final Row getRow(){
+    if(_row == null) _row = new ThreadLocal<>();
+    Row r = _row.get();
+    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
+    return r;
+  }
+
 
   @Override
   // public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds )
   public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-    if(_parms._family == Family.multinomial)
-      return scoreMultinomial(chks,row_in_chunk,tmp,preds);
-    if(_row == null) _row = new ThreadLocal<>();
-    Row r = _row.get();
-    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
-    _output._scoringDinfo.extractDenseRow(chks,row_in_chunk,r);
-    double mu = preds[0] = _parms.linkInv(r.innerProduct(beta()) + offset);
-    if( _parms._family == Family.binomial ) { // threshold for prediction
-      preds[1] = 1.0 - mu; // class 0
-      preds[2] =       mu; // class 1
-    }
-    return preds;
+    return scoreRow(_output._scoringDinfo.extractDenseRow(chks,row_in_chunk,getRow()),offset,preds);
   }
-
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
-
-  private double [] scoreMultinomial(double[] data, double[] preds, double w, double o) {
-    double [] eta = MemoryManager.malloc8d(_output.nclasses());
-    final double [][] b = _output._global_beta_multinomial;
-    final int P = b[0].length;
-    final DataInfo dinfo = _output._dinfo;
-    for(int i = 0; i < dinfo._cats; ++i) {
-      if(Double.isNaN(data[i])) {
-        Arrays.fill(eta,Double.NaN);
-        break;
-      }
-      int ival = (int) data[i];
-      if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
-      ival += dinfo._catOffsets[i];
-      if (!_parms._use_all_factor_levels)
-        --ival;
-      // can get values out of bounds for cat levels not seen in training
-      if (ival >= dinfo._catOffsets[i] && ival < dinfo._catOffsets[i + 1])
-        for(int j = 0; j < eta.length; ++j)
-          eta[j] += b[j][ival];
-    }
-    int noff = dinfo.numStart();
-    for(int i = 0; i < dinfo._nums; ++i) {
-      double d = data[dinfo._cats + i];
-      for (int j = 0; j < eta.length; ++j)
-        eta[j] += b[j][noff + i] * d;
-    }
-    double sumExp = 0;
-    double max_row = 0;
-    for (int j = 0; j < eta.length; ++j) {
-      eta[j] += b[j][P - 1];
-      if(eta[j] > max_row)
-        max_row = eta[j];
-    }
-    for (int j = 0; j < eta.length; ++j)
-      sumExp += (eta[j] = Math.exp(eta[j]-max_row));
-    sumExp = 1.0/sumExp;
-    preds[0] = ArrayUtils.maxIndex(eta);
-    for(int i = 0; i < eta.length; ++i)
-      preds[1+i] = eta[i]*sumExp;
-    return preds;
-  }
-
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
-    if(_parms._family == Family.multinomial)
-      return scoreMultinomial(data, preds, w, o);
-    Row r = _row.get();
-    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
-    _output._scoringDinfo.extractDenseRow(data,r,w,0);
-    double eta = r.innerProduct(beta());
-    double mu = preds[0] = _parms.linkInv(eta + o);
-    if( _parms._family == Family.binomial ) { // threshold for prediction
-      preds[1] = 1.0 - mu; // class 0
-      preds[2] =       mu; // class 1
-    }
-    return preds;
+    return scoreRow(_output._scoringDinfo.extractDenseRow(data,getRow()),o,preds);
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,
