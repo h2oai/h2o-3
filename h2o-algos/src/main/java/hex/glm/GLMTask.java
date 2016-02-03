@@ -185,13 +185,13 @@ public abstract class GLMTask  {
          }
          _basicStats.add(nums,w);
        }
-       double d = w*response.atd(r);
+       double d = response.atd(r);
        if(!Double.isNaN(d)) {
          assert !Double.isNaN(d);
          if (_nClasses > 2)
-           _yMu[(int) d] += 1;
+           _yMu[(int) d] += w;
          else
-           _yMu[0] += d;
+           _yMu[0] += w*d;
          if (d < _yMin)
            _yMin = d;
          if (d > _yMax)
