@@ -2,8 +2,6 @@ package hex.schemas;
 
 import hex.Model;
 import hex.grid.Grid;
-import hex.grid.GridSearch;
-import hex.grid.GridSearch.Strategy;
 import water.H2O;
 import water.Key;
 import water.api.*;
@@ -13,7 +11,6 @@ import water.util.IcedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 
 /**
  * This is a common grid search schema composed of two parameters: default parameters for a builder
@@ -44,17 +41,8 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help = "Destination id for this grid; auto-generated if not specified.", required = false, direction = API.Direction.INOUT)
   public KeyV3.GridKeyV3 grid_id;
 
-  @API(help="Hyperparameter search strategy, either \"Cartesian\" or \"Random\".", required = false, values = { "Cartesian", "Random" }, direction = API.Direction.INOUT)
-  public Strategy strategy = Strategy.Cartesian;
-
-  @API(help="Maximum number of models to build.", required = false, direction = API.Direction.INOUT)
-  public int max_models = Integer.MAX_VALUE;
-
-  @API(help="Maximum time to spend building models, in mS.  The highest possible is ~24.855 days.", required = false, direction = API.Direction.INOUT)
-  public int max_time_ms = Integer.MAX_VALUE;
-
-  @API(help="Seed for randomized search criteria.", required = false, direction = API.Direction.INOUT)
-  public long seed = (new Random().nextLong());
+  @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
+  public HyperSpaceSearchCriteriaV99 search_criteria;
 
   //
   // Outputs
@@ -78,26 +66,31 @@ public class GridSearchSchema<G extends Grid<MP>,
       parms.remove("hyper_parameters");
     }
 
-    // Ugh:
-    if (parms.containsKey("strategy"))
-      try { strategy = GridSearch.Strategy.valueOf((String)parms.get("strategy")); }
-      catch (IllegalArgumentException iae) { throw new H2OIllegalArgumentException("strategy", (String)parms.get("strategy")); }
-      finally { parms.remove("strategy"); }
+    if( parms.containsKey("search_criteria") ) {
+      Properties p = water.util.JSONUtils.parseToProperties(parms.getProperty("search_criteria"));
 
-    if (parms.containsKey("max_models"))
-      try { max_models = Integer.valueOf((String)parms.get("max_models")); }
-      catch (NumberFormatException nfe) { throw new H2OIllegalArgumentException("max_models", (String)parms.get("max_models")); }
-      finally { parms.remove("max_models"); }
+      if (! p.containsKey("strategy")) {
+        throw new H2OIllegalArgumentException("search_criteria.strategy", "null");
+      }
 
-    if (parms.containsKey("max_time_ms"))
-      try { max_time_ms = Integer.valueOf((String)parms.get("max_time_ms")); }
-      catch (NumberFormatException nfe) { throw new H2OIllegalArgumentException("max_time_ms", (String)parms.get("max_time_ms")); }
-      finally { parms.remove("max_time_ms"); }
+      // TODO: move this into a factory method in HyperSpaceSearchCriteriaV99
+      String strategy = (String)p.get("strategy");
+      if ("Cartesian".equals(strategy)) {
+        search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
+      } else if ("RandomDiscrete".equals(strategy)) {
+        search_criteria = new HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99();
+      } else {
+        throw new H2OIllegalArgumentException("search_criteria.strategy", strategy);
+      }
 
-    if (parms.containsKey("seed"))
-      try { seed = Long.valueOf((String)parms.get("seed")); }
-      catch (NumberFormatException nfe) { throw new H2OIllegalArgumentException("seed", (String)parms.get("seed")); }
-      finally { parms.remove("seed"); }
+      search_criteria.fillWithDefaults();
+      search_criteria.fillFromParms(p);
+      parms.remove("search_criteria");
+    } else {
+      // Fall back to Cartesian if there's no search_criteria specified.
+      search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
+    }
+
 
     if (parms.containsKey("grid_id")) { grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id"))); parms.remove("grid_id"); }
 

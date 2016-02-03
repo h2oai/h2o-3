@@ -23,7 +23,7 @@
 #' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  Specify the
 #'        Random strategy to get random search of all the combinations of your hyperparameters.  Generally this
 #'        should be combined with an early stopping criterion,
-#'        max_models or max_time_ms, e.g. \code{list(strategy = "Random", max_models = 42)}.  
+#'        max_models or max_time_ms, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42)}.  
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \donttest{

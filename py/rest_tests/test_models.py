@@ -61,8 +61,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         # TODO: this should trigger a parameter validation error, but instead the non-grid ntrees silently overrides the grid values:        GridSpec.for_dataset('gbm_iris_multinomial_grid', 'gbm', datasets['iris_multinomial'], { 'ntrees': 5, 'distribution': 'multinomial' }, { 'ntrees': [1, 5, 10], 'max_depth': [1, 3, 5] } ),
 
         # Test stopping criteria:
-        GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 3 } ),
-        GridSpec.for_dataset('gbm_prostate_regression_grid_max_20mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_time_ms': 20 } ),
+        GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_models': 3 } ),
+        GridSpec.for_dataset('gbm_prostate_regression_grid_max_20mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_time_ms': 20 } ),
        ]
     
     for grid_spec in grids_to_build:
