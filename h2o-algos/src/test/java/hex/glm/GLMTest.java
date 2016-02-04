@@ -5,16 +5,12 @@ import hex.DataInfo.TransformType;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.ModelMetricsRegressionGLM;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
-import hex.glm.GLMTask.GLMIterationTask;
-import hex.glm.GLMTask.GLMGradientTask;
-import hex.glm.GLMTask.GLMLineSearchTask;
-import hex.glm.GLMTask.LBFGS_LogisticGradientTask;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import hex.glm.GLMModel.GLMWeightsFun;
+import hex.glm.GLMTask.*;
+import org.junit.*;
 
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -35,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
 
   //------------------- simple tests on synthetic data------------------------------------
   @Test
@@ -101,18 +98,18 @@ public class GLMTest  extends TestUtil {
       fr.delete();
 
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
-      FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n");
+      FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
       fr = ParseDataset.parse(parsed, raw);
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
       // params2._response = 1;
       params2._response_column = fr._names[1];
       params2._lambda = new double[]{0};
-      params2._standardize = false;
+      params2._standardize = true;
       params2._beta_epsilon = 1e-5;
       model = new GLM(params2,modelKey).trainModel().get();
-      assertEquals(0.3396, model.beta()[1], 1e-4);
-      assertEquals(0.2565, model.beta()[0], 1e-4);
+      assertEquals(0.3396, model.beta()[1], 1e-1);
+      assertEquals(0.2565, model.beta()[0], 1e-1);
       // test scoring
       res = model.score(fr);
       // Build a POJO, validate same results
@@ -196,48 +193,6 @@ public class GLMTest  extends TestUtil {
 //    }
 //  }
 
-  @Test
-  public void testLineSearchTask() {
-    Key parsed = Key.make("cars_parsed");
-    Frame fr = null;
-    DataInfo dinfo = null;
-    double ymu = 0;
-    try {
-      fr = parse_test_file(parsed, "smalldata/junit/mixcat_train.csv");
-      GLMParameters params = new GLMParameters(Family.binomial, Family.binomial.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
-      // params._response = fr.find(params._response_column);
-      params._train = parsed;
-      params._lambda = new double[]{0};
-      params._use_all_factor_levels = true;
-      fr.add("Useless", fr.remove("Useless"));
-
-      dinfo = new DataInfo(fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      DKV.put(dinfo._key, dinfo);
-
-      double[] beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
-      double[] pk = MemoryManager.malloc8d(dinfo.fullN() + 1);
-      Random rnd = new Random(987654321);
-      for (int i = 0; i < beta.length; ++i) {
-        beta[i] = 1 - 2 * rnd.nextDouble();
-        pk[i] = 10 * (1 - 2 * rnd.nextDouble());
-      }
-      GLMLineSearchTask glst = new GLMLineSearchTask(dinfo, params, beta, pk, 1, .7, 16, null).doAll(dinfo._adaptedFrame);
-      double step = 1, stepDec = .7;
-      for (int i = 0; i < glst._nSteps; ++i) {
-        double[] b = beta.clone();
-        for (int j = 0; j < b.length; ++j) {
-          b[j] += step * pk[j];
-        }
-        GLMIterationTask glmt = new GLMTask.GLMIterationTask(null, dinfo, 0, params, true, b, ymu, true,  null).doAll(dinfo._adaptedFrame);
-        assertEquals("objective values differ at step " + i + ": " + step, glmt._likelihood, glst._likelihoods[i], 1e-8);
-        System.out.println("step = " + step + ", obj = " + glmt._likelihood + ", " + glst._likelihoods[i]);
-        step *= stepDec;
-      }
-    } finally {
-      if (fr != null) fr.delete();
-      if (dinfo != null) dinfo.remove();
-    }
-  }
 
   @Test
   public void testAllNAs() {
@@ -245,19 +200,22 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("gamma_test_data_parsed");
     FVecTest.makeByteVec(raw, "x,y,z\n1,0,NA\n2,NA,1\nNA,3,2\n4,3,NA\n5,NA,1\nNA,6,4\n7,NA,9\n8,NA,18\nNA,9,23\n10,31,NA\nNA,11,20\n12,NA,25\nNA,13,37\n14,45,NA\n");
     Frame fr = ParseDataset.parse(parsed, raw);
+    GLM job = null;
     try {
-      GLMParameters params = new GLMParameters(Family.gamma);
+      GLMParameters params = new GLMParameters(Family.poisson);
       // params._response = 1;
       params._response_column = fr._names[1];
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._missing_values_handling = MissingValuesHandling.Skip;
       GLM glm = new GLM( params, glmkey("gamma_test"));
       glm.trainModel().get();
       assertFalse("should've thrown IAE", true);
-    } catch (H2OModelBuilderIllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("Got no data to run on after filtering out the rows with missing values."));
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("No rows left in the dataset"));
+    } finally {
+      fr.delete();
     }
-    fr.delete();
   }
 
   // Make sure all three implementations of ginfo computation in GLM get the same results
@@ -282,13 +240,10 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
 
-      GLMGradientTask grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceColAccess().doAll(dinfo._adaptedFrame);
-      GLMGradientTask grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceRowAccess().doAll(dinfo._adaptedFrame);
-      LBFGS_LogisticGradientTask logistic = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, params._lambda[0], beta, 1, true).forceRowAccess().doAll(dinfo._adaptedFrame);
-      for (int i = 0; i < beta.length; ++i) {
-        assertEquals("gradients differ", grtRow._gradient[i], grtCol._gradient[i], 1e-4);
-        assertEquals("gradients differ", grtRow._gradient[i], logistic._gradient[i], 1e-4);
-      }
+      GLMGradientTask grtSpc = new GLMBinomialGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      for (int i = 0; i < beta.length; ++i)
+        assertEquals("gradients differ", grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
       params._use_all_factor_levels = false;
       dinfo.remove();
@@ -298,31 +253,11 @@ public class GLMTest  extends TestUtil {
       rnd = new Random(1987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
-      grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceRowAccess().doAll(dinfo._adaptedFrame);
-
+      grtSpc = new GLMGaussianGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
       for (int i = 0; i < beta.length; ++i)
-        assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
+        assertEquals("gradients differ: " + Arrays.toString(grtSpc._gradient) + " != " + Arrays.toString(grtGen._gradient), grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
       dinfo.remove();
-      fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
-      params = new GLMParameters(Family.poisson, Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
-      // params._response = fr.find(params._response_column);
-      params._train = parsed;
-      params._lambda = new double[]{0};
-      params._use_all_factor_levels = true;
-      dinfo = new DataInfo(fr, null, 1, params._use_all_factor_levels || params._lambda_search, params._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      DKV.put(dinfo._key,dinfo);
-      beta = MemoryManager.malloc8d(dinfo.fullN()+1);
-      rnd = new Random(987654321);
-      for (int i = 0; i < beta.length; ++i)
-        beta[i] = 1 - 2 * rnd.nextDouble();
-
-      grtCol = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceColAccess().doAll(dinfo._adaptedFrame);
-      grtRow = new GLMGradientTask(dinfo, params, params._lambda[0], beta, 1, true, null).forceRowAccess().doAll(dinfo._adaptedFrame);
-      for (int i = 0; i < beta.length; ++i)
-        assertEquals("gradients differ: " + Arrays.toString(grtRow._gradient) + " != " + Arrays.toString(grtCol._gradient), grtRow._gradient[i], grtCol._gradient[i], 1e-4);
-      dinfo.remove();
-      // arcene takes too long
     } finally {
       if (fr != null) fr.delete();
       if (dinfo != null) dinfo.remove();
@@ -461,7 +396,7 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < bins.length; ++i)
         means[i] = bins[i]*sumInv;
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(dinfo,0,means,beta,1.0/fr.numRows(),true,null).doAll(dinfo._adaptedFrame);
+      GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows(),true,null).doAll(dinfo._adaptedFrame);
       assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
       for(int i = 0; i < gmt._gradient.length; ++i)
         assertEquals("Mismatch at coefficient " + i,exp_grad[i], gmt._gradient[i], 1e-8);
@@ -496,6 +431,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
+      params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params, modelKey).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
@@ -515,6 +451,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._beta_epsilon = 1e-5;
+      params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params, modelKey).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
@@ -529,6 +466,7 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = new String[]{"name"};
       params._train = parsed;
       params._lambda = new double[]{0};
+      params._missing_values_handling = MissingValuesHandling.Skip;
       model = new GLM( params, modelKey).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
@@ -538,6 +476,7 @@ public class GLMTest  extends TestUtil {
       if (fr != null) fr.delete();
       if (score != null) score.delete();
       if (model != null) model.delete();
+      checkLeakedKeys();
     }
   }
 
@@ -625,8 +564,10 @@ public class GLMTest  extends TestUtil {
       params._response_column = "CAPSULE";
       params._ignored_columns = new String[]{"ID"};
       params._train = fr._key;
+      params._objective_epsilon = 0;
       params._alpha = new double[]{1};
       params._lambda = new double[]{0.001607};
+      params._obj_reg = 1.0/380;
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       assertTrue(glm.isStopped());
@@ -636,7 +577,7 @@ public class GLMTest  extends TestUtil {
       ModelMetricsBinomialGLM val = (ModelMetricsBinomialGLM) model._output._training_metrics;
       assertEquals(512.2888, val._nullDev, 1e-1);
       // 388.4952716196743
-      assertEquals(388.4686, val._resDev, 1e-1);
+      assertEquals(388.4686, val._resDev, 5e-1);
       model.delete();
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
@@ -652,7 +593,7 @@ public class GLMTest  extends TestUtil {
       DKV.put(fr._key, fr);
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask)new LBFGS_LogisticGradientTask(dinfo,params,0,beta,1.0/380.0, true).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
       BufferedString tmpStr = new BufferedString();
@@ -732,8 +673,7 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-
-  @Test @Ignore
+  @Test
   public void testCoordinateDescent_anomaly() {
     GLMModel model = null;
     Key parsed = Key.make("anomaly_parsed");
@@ -822,9 +762,9 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._alpha = new double[]{0};
       params._lambda = new double[]{0};
+      params._obj_reg = 1.0/380;
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
-
       double[] beta_1 = model.beta();
       params._solver = Solver.L_BFGS;
       params._max_iterations = 1000;
@@ -833,10 +773,7 @@ public class GLMTest  extends TestUtil {
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      // todo: remove, result from h2o.1
-      // beta = new double[]{0.06644411112189823, -0.11172826074033719, 9.77360531534266, -9.972691681370678, 0.24664516432994327, -0.12369381230741447, 0.11330593275731994, -19.64465932744036};
-      LBFGS_LogisticGradientTask lt = (LBFGS_LogisticGradientTask) new LBFGS_LogisticGradientTask(dinfo, params, 0, beta_1, 1.0 / 380.0,true).doAll(dinfo._adaptedFrame);
-      new GLMGradientTask(dinfo, params, 0, beta_1, 1.0 / 380, true, null).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame);
       double[] grad = lt._gradient;
       for (int i = 0; i < beta_1.length; ++i)
         assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
@@ -868,7 +805,7 @@ public class GLMTest  extends TestUtil {
 //      params._response_column = "IsDepDelayed";
 //      params._ignored_columns = ignoredCols;
 //      params._train = fr._key;
-//      params._lambda = new double[]{1e-5};
+//      params._l2pen = new double[]{1e-5};
 //      params._standardize = false;
 //      model1 = new GLM(params,glmkey("airlines_cat_nostd")).trainModel().get();
 //      Frame score1 = model1.score(fr);
@@ -1019,8 +956,9 @@ public class GLMTest  extends TestUtil {
     DKV.put(f);
     DataInfo dinfo = new DataInfo(f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);
-    final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, true, null).setSparse(true).doAll(dinfo._adaptedFrame);
-    final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, 1e-5, params, false, null, 0, true, null).setSparse(false).doAll(dinfo._adaptedFrame);
+    //                              public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw,double [] beta, double lambda) {
+    final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(true).doAll(dinfo._adaptedFrame);
+    final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(false).doAll(dinfo._adaptedFrame);
     for (int i = 0; i < glmtDense._xy.length; ++i) {
       for (int j = 0; j <= i; ++j) {
         assertEquals(glmtDense._gram.get(i, j), glmtSparse._gram.get(i, j), 1e-8);
@@ -1028,16 +966,16 @@ public class GLMTest  extends TestUtil {
       assertEquals(glmtDense._xy[i], glmtSparse._xy[i], 1e-8);
     }
     final double[] beta = MemoryManager.malloc8d(dinfo.fullN() + 1);
-    // now do the same but wieghted, use LSM solution as beta to generate meaningfull weights
+    // now do the same but weighted, use LSM solution as beta to generate meaningfull weights
     H2O.submitTask(new H2OCountedCompleter() {
       @Override
       public void compute2() {
-        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, 0, null, null).solve(null, beta);
+        new GLM.GramSolver(glmtDense._gram, glmtDense._xy, true, 1e-5, 0, null, null, null, null).solve(null, beta);
         tryComplete();
       }
     }).join();
-    final GLMIterationTask glmtSparse2 = new GLMIterationTask(null, dinfo, 1e-5, params, false, beta, 0, true, null).setSparse(true).doAll(dinfo._adaptedFrame);
-    final GLMIterationTask glmtDense2 = new GLMIterationTask(null, dinfo, 1e-5, params, false, beta, 0, true, null).setSparse(false).doAll(dinfo._adaptedFrame);
+    final GLMIterationTask glmtSparse2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), beta).setSparse(true).doAll(dinfo._adaptedFrame);
+    final GLMIterationTask glmtDense2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), beta).setSparse(false).doAll(dinfo._adaptedFrame);
     for (int i = 0; i < glmtDense2._xy.length; ++i) {
       for (int j = 0; j <= i; ++j) {
         assertEquals(glmtDense2._gram.get(i, j), glmtSparse2._gram.get(i, j), 1e-8);
@@ -1069,7 +1007,9 @@ public class GLMTest  extends TestUtil {
       params._ignored_columns = ignoredCols;
       params._train = fr._key;
       params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
       params._standardize = false;
+      params._use_all_factor_levels = false;
       model1 = new GLM(params,glmkey("airlines_cat_nostd")).trainModel().get();
       Frame score1 = model1.score(fr);
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
@@ -1082,34 +1022,9 @@ public class GLMTest  extends TestUtil {
       Assert.assertTrue(model1.testJavaScoring(fr, res, 1e-15));
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
-      model2 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
-      params._standardize = true;
-      params._train = frMM._key;
-      params._use_all_factor_levels = true;
-      // test the gram
-      DataInfo dinfo = new DataInfo(frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMIterationTask glmt = new GLMIterationTask(null,dinfo,1e-5,params,false,null,0, true, null).doAll(dinfo._adaptedFrame);
-      for(int i = 0; i < glmt._xy.length; ++i) {
-        for(int j = 0; j <= i; ++j ) {
-          assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);
-        }
-        assertEquals(xy.at(i), glmt._xy[i], 1e-5);
-      }
-      xy.remove();
-      params = (GLMParameters) params.clone();
-      params._standardize = true;
-      params._family = Family.binomial;
-      params._link = Link.logit;
-      model3 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
-      params._train = fr._key;
-      params._ignored_columns = ignoredCols;
-      model4 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
-      assertEquals(nullDeviance(model3), nullDeviance(model4), 1e-4);
-      assertEquals(residualDeviance(model4), residualDeviance(model3), nullDeviance(model3) * 1e-3);
-      HashMap<String, Double> coefs1 = model1.coefficients();
+      model2 = new GLM( params,glmkey("airlines_mm")).trainModel().get();      HashMap<String, Double> coefs1 = model1.coefficients();
       HashMap<String, Double> coefs2 = model2.coefficients();
-//      GLMValidation val1 = model1.validation();
-//      GLMValidation val2 = model2.validation();
+      boolean failed = false;
       // compare against each other
       for (String s : coefs2.keySet()) {
         String s1 = s;
@@ -1119,9 +1034,37 @@ public class GLMTest  extends TestUtil {
           s1 = "Dest." + s.substring(4);
         if (s.startsWith("UniqueCarrier"))
           s1 = "UniqueCarrier." + s.substring(13);
-        assertEquals("coeff " + s1 + " differs, " + coefs1.get(s1) + " != " + coefs2.get(s), coefs1.get(s1), coefs2.get(s), 1e-4);
-        DKV.put(frMM._key, frMM); // update the frame in the KV after removing the vec!
+        if(Math.abs(coefs1.get(s1) - coefs2.get(s)) > 1e-4) {
+          System.out.println("coeff " + s1 + " differs, " + coefs1.get(s1) + " != " + coefs2.get(s));
+          failed = true;
+        }
+//        assertEquals("coeff " + s1 + " differs, " + coefs1.get(s1) + " != " + coefs2.get(s), coefs1.get(s1), coefs2.get(s), 1e-4);
       }
+      assertFalse(failed);
+      params._standardize = true;
+      params._train = frMM._key;
+      params._use_all_factor_levels = true;
+      // test the gram
+      DataInfo dinfo = new DataInfo(frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+      GLMIterationTask glmt = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).doAll(dinfo._adaptedFrame);
+      for(int i = 0; i < glmt._xy.length; ++i) {
+        for(int j = 0; j <= i; ++j ) {
+          assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);
+        }
+        assertEquals(xy.at(i), glmt._xy[i], 1e-5);
+      }
+      xy.remove();
+      params = (GLMParameters) params.clone();
+      params._standardize = false;
+      params._family = Family.binomial;
+      params._link = Link.logit;
+      model3 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
+      params._train = fr._key;
+      params._ignored_columns = ignoredCols;
+      model4 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
+      assertEquals(nullDeviance(model3), nullDeviance(model4), 1e-4);
+      assertEquals(residualDeviance(model4), residualDeviance(model3), nullDeviance(model3) * 1e-3);
+
       assertEquals(nullDeviance(model1), nullDeviance(model2), 1e-4);
       assertEquals(residualDeviance(model1), residualDeviance(model2), 1e-4);
 //      assertEquals(val1._aic, val2._aic,1e-2);
@@ -1192,13 +1135,13 @@ public class GLMTest  extends TestUtil {
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
-      //System.out.println( " lambda min " + params._lambda[params._lambda.length-1] );
+      //System.out.println( " lambda min " + params._l2pen[params._l2pen.length-1] );
       //System.out.println( " lambda_max " + model1._lambda_max);
       //System.out.println(" intercept " + beta[beta.length-1]);
-      double objective = glm.likelihood()/model1._nobs +
-              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
-      System.out.println( " objective value " + objective);
-      assertEquals(0.670921, objective,1e-4);
+//      double objective = model1._output._training_metrics./model1._nobs +
+//              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
+//      System.out.println( " objective value " + objective);
+//      assertEquals(0.670921, objective,1e-4);
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
@@ -1228,10 +1171,10 @@ public class GLMTest  extends TestUtil {
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
-      double objective = glm.likelihood()/model1._nobs +
-              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
-      System.out.println( " objective value " + objective);
-      assertEquals(0.670921, objective,1e-2);
+//      double objective = job.likelihood()/model1._nobs +
+//              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
+//      System.out.println( " objective value " + objective);
+//      assertEquals(0.670921, objective,1e-2);
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
@@ -1264,9 +1207,9 @@ public class GLMTest  extends TestUtil {
       System.out.println("lambda " + sm.lambda_value);
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
-      double objective = glm.likelihood()/model1._nobs + // gives likelihood of the last lambda
-              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
-      assertEquals(0.65689, objective,1e-4);
+//      double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
+//              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
+//      assertEquals(0.65689, objective,1e-4);
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
@@ -1299,9 +1242,9 @@ public class GLMTest  extends TestUtil {
       System.out.println("lambda " + sm.lambda_value);
       double l1pen = ArrayUtils.l1norm(beta,true);
       double l2pen = ArrayUtils.l2norm2(beta,true);
-      double objective = glm.likelihood()/model1._nobs + // gives likelihood of the last lambda
-              params._lambda[params._lambda.length-1]*params._alpha[0]*l1pen + params._lambda[params._lambda.length-1]*(1-params._alpha[0])*l2pen/2  ;
-      assertEquals(0.65689, objective,1e-4);
+//      double objective = job.likelihood()/model1._nobs + // gives likelihood of the last lambda
+//              params._l2pen[params._l2pen.length-1]*params._alpha[0]*l1pen + params._l2pen[params._l2pen.length-1]*(1-params._alpha[0])*l2pen/2  ;
+//      assertEquals(0.65689, objective,1e-4);
     } finally {
       fr.delete();
       if (model1 != null) model1.delete();
@@ -1398,17 +1341,18 @@ public class GLMTest  extends TestUtil {
   // test class
   private static final class GLMIterationTaskTest extends GLMIterationTask {
     final GLMModel _m;
-    GLMValidation _val2;
+    GLMMetricBuilder _val2;
 
-    public GLMIterationTaskTest(Key<Job> jobKey, DataInfo dinfo, double lambda, GLMParameters glm, boolean validate, double[] beta, double ymu, GLMModel m) {
-      super(jobKey, dinfo, lambda, glm, validate, beta, ymu, true, null);
+    public GLMIterationTaskTest(Key jobKey, DataInfo dinfo, double lambda, GLMParameters glm, boolean validate, double[] beta, double ymu, GLMModel m) {
+      // null, dinfo, new GLMWeightsFun(params), beta, 1e-5
+      super(jobKey, dinfo, new GLMWeightsFun(glm), beta);
       _m = m;
     }
 
     public void map(Chunk[] chks) {
       super.map(chks);
 
-      _val2 = (GLMValidation) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain());
+      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain());
       double[] ds = new double[3];
 
       float[] actual = new float[1];
@@ -1455,7 +1399,6 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       GLM glm = new GLM(params,glmkey("prostate_model"));
       model = glm.trainModel().get();
-
       HashMap<String, Double> coefs = model.coefficients();
       for(int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
@@ -1481,7 +1424,6 @@ public class GLMTest  extends TestUtil {
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
       model2 = glm.trainModel().get();
-
       for(int i = 0; i < model2.beta().length-1; ++i)
         assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
       assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu[0] * (1-prior)/(prior * (1-model._ymu[0]))),model2.beta()[model.beta().length-1],1e-10);
@@ -1491,6 +1433,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = null;
       params._alpha = new double[]{0};
       params._prior = -1;
+      params._obj_reg = -1;
       params._max_iterations = 500;
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
@@ -1505,30 +1448,18 @@ public class GLMTest  extends TestUtil {
       fr.remove("ID").remove();
       DKV.put(fr._key,fr);
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMIterationTaskTest gtt = (GLMIterationTaskTest)new GLMIterationTaskTest(null,dinfo,1,params,true,model3.beta(),model3._ymu[0],model3).doAll(dinfo._adaptedFrame);
-      System.out.println("val1 = " + gtt._val.toString());
-      System.out.println("val2 = " + gtt._val2.toString());
-      ModelMetrics mm1 = gtt._val .makeModelMetrics(model3, dinfo._adaptedFrame, null, null);
-      ModelMetrics mm2 = gtt._val2.makeModelMetrics(model3, dinfo._adaptedFrame, null, null);
-      System.out.println("mm1 = " + mm1.toString());
-      System.out.println("mm2 = " + mm2.toString());
-      assert mm1.equals(mm2);
-
       model3.score(fr).delete();
       mm3 = ModelMetrics.getFromDKV(model3,fr);
-
       assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + mm3._MSE,model3._output._training_metrics._MSE,mm3._MSE,1e-8);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)mm3)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)mm3)._resDev,1e-4);
-
-
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
       model4 = glm.trainModel().get();
-      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-8);
+      assertEquals("mse don't match, " + model3._output._training_metrics._MSE + " != " + model4._output._training_metrics._MSE,model3._output._training_metrics._MSE,model4._output._training_metrics._MSE,1e-6);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev + " != " + ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,((ModelMetricsBinomialGLM)model3._output._training_metrics)._resDev, ((ModelMetricsBinomialGLM)model4._output._training_metrics)._resDev,1e-4);
       model4.score(fr).delete();
       ModelMetrics mm4 = ModelMetrics.getFromDKV(model4,fr);
-      assertEquals("mse don't match, " + mm3._MSE + " != " + mm4._MSE,mm3._MSE,mm4._MSE,1e-8);
+      assertEquals("mse don't match, " + mm3._MSE + " != " + mm4._MSE,mm3._MSE,mm4._MSE,1e-6);
       assertEquals("res-devs don't match, " + ((ModelMetricsBinomialGLM)mm3)._resDev + " != " + ((ModelMetricsBinomialGLM)mm4)._resDev,((ModelMetricsBinomialGLM)mm3)._resDev, ((ModelMetricsBinomialGLM)mm4)._resDev,1e-4);
 //      GLMValidation val2 = new GLMValidationTsk(params,model._ymu,rank(model.beta())).doAll(new Vec[]{fr.vec("CAPSULE"),score.vec("1")})._val;
 //      assertEquals(val.residualDeviance(),val2.residualDeviance(),1e-6);
@@ -1657,6 +1588,7 @@ public class GLMTest  extends TestUtil {
         model = DKV.get(modelKey).get();
         // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
         assertEquals(params._nlambdas, model._output._submodels.length);
+        System.out.println(model._output._training_metrics);
         // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
       }
 

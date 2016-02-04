@@ -401,3 +401,22 @@ function(seed = NULL, master_seed = FALSE) {
     Log.info(paste("USING SEED: ", SEED))
 }
 
+h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
+  df_h2o_obj <- as.data.frame(h2o_obj)
+  df_r_obj <- as.data.frame(r_obj)
+  expect_equal(length(df_h2o_obj), length(df_r_obj))
+  
+  #Check NAs are in same places 
+  df_h2o_nas <- if (length(df_h2o_obj) == 1) df_h2o_obj == "NaN" else is.na(df_h2o_obj)
+  df_r_nas <- is.na(df_r_obj)
+  expect_true(all(df_h2o_nas == df_r_nas))
+  
+  #Check non-NAs are same vals
+  df_h2o_obj_free <- df_h2o_obj[!df_h2o_nas]
+  df_r_na_free <- df_r_obj[!df_r_nas]
+  
+  expect_equal(length(df_h2o_obj_free), length(df_r_na_free))
+  if (length(df_r_na_free) > 0)
+    expect_true(all(abs(df_h2o_obj_free - df_r_na_free) < tolerance))
+  
+}

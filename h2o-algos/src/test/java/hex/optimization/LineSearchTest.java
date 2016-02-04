@@ -26,22 +26,28 @@ public class LineSearchTest extends TestUtil {
         ginfo._objVal = -x/(xx+b);
         return ginfo;
       }
+
+      @Override
+      public GradientInfo getObjective(double[] beta) {
+        return getGradient(beta);
+      }
     };
 
     double stp = 1;
     double x = 100;
-    MoreThuente ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    boolean succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{-1}, 1e-8, 1000,20);
+
+    MoreThuente ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    boolean succ = ls.evaluate(new double[]{-1});
     assertTrue(succ);
-    assertEquals(ls._returnStatus,1);
+    assertEquals(1,ls._returnStatus);
     assertEquals(18,ls.nfeval());
     assertEquals(-0.35355,ls.ginfo()._objVal,1e-5);
     assertEquals(98586,Math.round(1000*ls.step()),1e-5);
 
     x = 0;
     stp = 100;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(5,ls.nfeval());
@@ -50,15 +56,15 @@ public class LineSearchTest extends TestUtil {
 
     x = 0;
     stp = 10;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(1, ls.nfeval());
 
     x = 0;
     stp = 1000;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertEquals(ls._returnStatus,1);
     assertTrue(succ);
     assertEquals(4,ls.nfeval());
@@ -66,8 +72,8 @@ public class LineSearchTest extends TestUtil {
 
     x = 0;
     stp = 1e-3;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertEquals(ls._returnStatus,1);
     assertTrue(succ);
     assertEquals(6,ls.nfeval());
@@ -83,33 +89,38 @@ public class LineSearchTest extends TestUtil {
         ginfo._gradient[0] = Math.pow(b + x,3) * (5*(b + x)-8);
         return ginfo;
       }
+
+      @Override
+      public GradientInfo getObjective(double[] beta) {
+        return getGradient(beta);
+      }
     };
 
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(12,ls.nfeval());
     assertEquals(16,Math.round(10*ls.step()));
 
     stp = 0.1;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(8,ls.nfeval());
     assertEquals(16,Math.round(10*ls.step()));
 
     stp = 10;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(8,ls.nfeval());
     assertEquals(16,Math.round(10*ls.step()));
 
     stp = 1000;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(11,ls.nfeval());
@@ -150,10 +161,15 @@ public class LineSearchTest extends TestUtil {
         ginfo._gradient[0] = phi0Prime(x) + a*b*Math.cos(b*x);
         return ginfo;
       }
+
+      @Override
+      public GradientInfo getObjective(double[] beta) {
+        return getGradient(beta);
+      }
     };
     stp = 0.001;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertEquals(ls._returnStatus,1);
     assertTrue(succ);
     assertEquals(12,ls.nfeval());
@@ -161,16 +177,16 @@ public class LineSearchTest extends TestUtil {
 
 
     stp = 0.1;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(12,ls.nfeval());
     assertEquals(10,Math.round(10*ls.step()));
 
     stp = 10;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertEquals(ls._returnStatus,1);
     assertTrue(succ);
     assertEquals(10,ls.nfeval());
@@ -178,8 +194,8 @@ public class LineSearchTest extends TestUtil {
 
 
     stp = 1000;
-    ls = new OptimizationUtils.MoreThuente(1e-1,1e-1,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-1,1e-1,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(13,ls.nfeval());
@@ -187,31 +203,31 @@ public class LineSearchTest extends TestUtil {
 
     f = new F(1e-3,1e-3);
     stp = 0.001;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(4,ls.nfeval());
     assertEquals(9, Math.round(100 * ls.step()));
 
     stp = 0.1;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(1,ls.nfeval());
     assertEquals(10, Math.round(100 * ls.step()));
 
     stp = 10;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(3,ls.nfeval());
     assertEquals(35, Math.round(100 * ls.step()));
 
     stp = 1000;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(4,ls.nfeval());
@@ -219,31 +235,31 @@ public class LineSearchTest extends TestUtil {
 
     f = new F(0.01,1e-3);
     stp = 0.001;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(6,ls.nfeval());
     assertEquals(75, Math.round(1000 * ls.step()));
 
     stp = 0.1;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(3,ls.nfeval());
     assertEquals(78, Math.round(1000 * ls.step()));
 
     stp = 10;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(7,ls.nfeval());
     assertEquals(73, Math.round(1000 * ls.step()));
 
     stp = 1000;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate( new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(8,ls.nfeval());
@@ -251,31 +267,31 @@ public class LineSearchTest extends TestUtil {
 
     f = new F(1e-3,0.01);
     stp = 0.001;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(13,ls.nfeval());
     assertEquals(93, Math.round(100 * ls.step()));
 
     stp = 0.1;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(11,ls.nfeval());
     assertEquals(93, Math.round(100 * ls.step()));
 
     stp = 10;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(8,ls.nfeval());
     assertEquals(92, Math.round(100 * ls.step()));
 
     stp = 1000;
-    ls = new OptimizationUtils.MoreThuente(1e-3,1e-3,1e-5).setInitialStep(stp);
-    succ = ls.evaluate(f, f.getGradient(new double[]{x}), new double[]{x}, new double[]{1}, 1e-8, 1000, 20);
+    ls = new OptimizationUtils.MoreThuente(f,new double[]{x},f.getGradient(new double[]{x}),1e-3,1e-3,1e-5).setInitialStep(stp);
+    succ = ls.evaluate(new double[]{1});
     assertTrue(succ);
     assertEquals(ls._returnStatus,1);
     assertEquals(11,ls.nfeval());
@@ -303,6 +319,11 @@ public class LineSearchTest extends TestUtil {
       ginfo._objVal = ga*Math.sqrt((1-x)*(1-x) + b*b) + gb*Math.sqrt(x * x + a * a);
       ginfo._gradient[0] = ga*(x-1)/Math.sqrt((1-x)*(1-x) + b*b) +gb*x/Math.sqrt(x * x + a * a);
       return ginfo;
+    }
+
+    @Override
+    public GradientInfo getObjective(double[] beta) {
+      return getGradient(beta);
     }
   }
 }

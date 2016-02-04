@@ -35,7 +35,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'glm', {\"model_id\":\"glm-62983aab-d0ea-4fdb-af4a-3a254f47bd98\",\"training_frame\":\"BigCross1.hex\",\"response_column\":\"C1\",\"solver\":\"L_BFGS\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":true,\"link\":\"family_default\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":0,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
+      "input": "buildModel 'glm', {\"model_id\":\"glm-62983aab-d0ea-4fdb-af4a-3a254f47bd98\",\"training_frame\":\"BigCross1.hex\",\"response_column\":\"C1\",\"solver\":\"L_BFGS\",\"max_iterations\":-1,\"beta_epsilon\":0,\"standardize\":true,\"family\":\"gaussian\",\"balance_classes\":true,\"link\":\"family_default\",\"alpha\":[0.5],\"lambda\":[],\"lambda_search\":false,\"class_sampling_factors\":[],\"max_after_balance_size\":5,\"prior\":-1,\"nlambdas\":-1,\"lambda_min_ratio\":-1}"
     },
     {
       "type": "cs",

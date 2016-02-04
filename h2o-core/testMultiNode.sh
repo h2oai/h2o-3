@@ -63,7 +63,7 @@ fi
 
 # Memory should be explicitly kept to 2g. If the JVM runs out of
 # memory on these tests, we need to diagnose the extra memory requirements
-MAX_MEM="-Xmx2g"
+MAX_MEM="-Xmx3g"
 
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
@@ -75,7 +75,7 @@ else
     COVERAGE=""
 fi
 # Command to invoke test.
-JVM="nice $JAVA_CMD $COVERAGE $MAX_MEM -Xms2g -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE $MAX_MEM -Xms3g -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

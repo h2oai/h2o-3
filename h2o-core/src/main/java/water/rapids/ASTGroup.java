@@ -311,7 +311,7 @@ class ASTGroup extends ASTPrim {
       _hash = hash();
       return this;
     }
-    private int hash() {
+    protected int hash() {
       long h=0;                 // hash is sum of field bits
       for( double d : _gs ) h += Double.doubleToRawLongBits(d);
       // Doubles are lousy hashes; mix up the bits some

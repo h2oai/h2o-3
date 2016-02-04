@@ -75,6 +75,14 @@ class ValFrame extends Val {
   ValFrame(Frame fr) { assert( fr!= null ); _fr = fr; }
   @Override public String toString() { return _fr.toString(); }
   @Override public int type () { return FRM; }
+  @Override public double[] getRow() {
+    if( _fr.numRows()!=1 )
+      throw new IllegalArgumentException("Trying to get a single row from a multirow frame: " + _fr.numRows() + "!=1");
+    double res[] = new double[_fr.numCols()];
+    for(int i=0;i<_fr.numCols();++i)
+      res[i] = _fr.vec(i).at(0);
+    return res;
+  }
   @Override boolean isFrame() { return true; }
   @Override public Frame getFrame() { return _fr; }
 }

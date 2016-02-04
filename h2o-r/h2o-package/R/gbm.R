@@ -16,7 +16,8 @@
 #' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param distribution A \code{character} string. The distribution function of the response.
-#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile" or "gaussian"
+#' @param quantile_alpha Quantile (only for Quantile regression, must be between 0 and 1)
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
@@ -76,7 +77,8 @@ h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     checkpoint,
                     ignore_const_cols = TRUE,
-                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace"),
+                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile"),
+                    quantile_alpha = 0.5,
                     tweedie_power = 1.5,
                     ntrees = 50,
                     max_depth = 5,
@@ -140,6 +142,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(distribution))
     parms$distribution <- distribution
+  if (!missing(quantile_alpha))
+    parms$quantile_alpha <- quantile_alpha
   if (!missing(tweedie_power))
     parms$tweedie_power <- tweedie_power
   if (!missing(ntrees))

@@ -199,7 +199,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
       if( y=="TRUE" )       y <- TRUE
       else if( y=="FALSE" ) y <- FALSE
     }
-    .set(x,"data",y)
+    .set(x,"data",as.numeric(y))
   } else if( !is.null(res$funstr) ) {
     stop("Unimplemented: handling of function returns")
   } else if( !is.null(res$string) ) {
@@ -264,10 +264,10 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 
 #` Flush any cached data
 .flush.data <- function(x) {
-  if( !is.null(attr(x,"data")) ) rm("data" ,envir=x)
-  if( !is.null(attr(x,"data")) ) rm("types",envir=x)
-  if( !is.null(attr(x,"data")) ) rm("nrow" ,envir=x)
-  if( !is.null(attr(x,"data")) ) rm("ncol" ,envir=x)
+  if( !is.null(attr(x,"data")) ) attr(x, "data")  <- NULL
+  if( !is.null(attr(x,"nrow")) ) attr(x, "nrow")  <- NULL
+  if( !is.null(attr(x,"ncol")) ) attr(x, "ncol")  <- NULL
+  if( !is.null(attr(x,"types"))) attr(x, "types") <- NULL
   x
 }
 
@@ -287,6 +287,7 @@ h2o.assign <- function(data, key) {
   x = .eval.driver(.newExpr("assign", key, id)) # Eager eval, so can see it in cluster
   .set(x,"id",key)
   .set(x,"eval",NULL)
+  gc()
   x
 }
 
@@ -1849,14 +1850,18 @@ mean.H2OFrame <- h2o.mean
 #}
 
 #'
-#' Variance of a column.
+#' Variance of a column or covariance of columns.
 #'
-#' Obtain the variance of a column of a parsed H2O data object.
+#' Compute the variance or covariance matrix of one or two H2OFrames.
 #'
 #' @param x An H2OFrame object.
-#' @param y \code{NULL} (default) or a column of an H2OFrame object. The default is equivalent to y = x (but more efficient).
+#' @param y \code{NULL} (default) or an H2OFrame. The default is equivalent to y = x.
 #' @param na.rm \code{logical}. Should missing values be removed?
-#' @param use An optional character string to be used in the presence of missing values. This must be one of the following strings. "everything", "all.obs", or "complete.obs".
+#' @param use An optional character string indicating how to handle missing values. This must be one of the following: 
+#   "everything"            - outputs NaNs whenever one of its contributing observations is missing
+#   "all.obs"               - presence of missing observations will throw an error
+#   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+#   "pairwise.complete.obs" - uses all complete pairs of observations
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \donttest{
@@ -1867,16 +1872,16 @@ mean.H2OFrame <- h2o.mean
 #' }
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
-  if( na.rm ) stop("na.rm versions not impl")
   if( is.null(y) ) y <- x
   if(!missing(use)) {
-    if (use %in% c("pairwise.complete.obs", "na.or.complete"))
-      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
-  } else
-    use <- "everything"
+    if (use == "na.or.complete")
+      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", \"complete.obs\", or \"pairwise.complete.obs\"")
+  } else {
+    if (na.rm) use <- "complete.obs" else use <- "everything"
+  }
   # Eager, mostly to match prior semantics but no real reason it need to be
   expr <- .newExpr("var",x,y,.quote(use))
-  if( (nrow(x)==1L || ncol(x)==1L) ) .eval.scalar(expr)
+  if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
   else .fetch.data(expr,ncol(x))
 }
 
@@ -1958,6 +1963,10 @@ scale.H2OFrame <- h2o.scale
 as.h2o <- function(x, destination_frame= "") {
   .key.validate(destination_frame)
 
+  dest_name <- if( destination_frame=="") deparse(substitute(x)) else destination_frame
+  if( nzchar(dest_name) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", dest_name)[1L] == -1L )
+    dest_name <- destination_frame
+
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
   if(!is.data.frame(x))
     if( length(x)==1L ) x <- data.frame(C1=x)
@@ -1973,7 +1982,7 @@ as.h2o <- function(x, destination_frame= "") {
   types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
   write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
-  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+  h2f <- h2o.uploadFile(tmpf, destination_frame = dest_name, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
   file.remove(tmpf)
   h2f
@@ -2404,6 +2413,10 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
 
   # Create the group by AST
   .newExprList("GB",args)
+}
+
+h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
+  .newExpr("grouped_permute", fr, permCol-1, groupByCols-1, permByCol-1, keepCol-1)
 }
 
 #'

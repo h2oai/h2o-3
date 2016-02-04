@@ -35,10 +35,10 @@ sudo apt-get install -y \
   python-pip
 
 # Python packages
-sudo pip install grip tabulate wheel numpy scikit-learn scipy
+sudo pip install grip tabulate wheel numpy scikit-learn scipy requests future
 
 # R
-sudo apt-get install -y r-base
+sudo apt-get install -y r-base-core=3.2.2-1trusty0
 
 # R packages
 export R_LIBS_USER=$HOME/R/libs

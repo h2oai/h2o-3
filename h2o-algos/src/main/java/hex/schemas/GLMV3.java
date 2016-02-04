@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -38,6 +39,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_search",
             "nlambdas",
             "standardize",
+            "missing_values_handling",
             "compute_p_values",
             "remove_collinear_columns",
             "intercept",
@@ -88,6 +90,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
     public boolean standardize;
+
+    @API(help = "Handling of missing values. Either Skip or MeanImputation.", values = { "Skip", "MeanImputation" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
     @API(help = "Restrict coefficients (not intercept) to be non-negative")
     public boolean non_negative;

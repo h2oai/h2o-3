@@ -38,7 +38,7 @@ def link_functions_tweedie_vpow():
                                                            "R's. h2o: {0}, r: {1}".format(deviance_h2o_tweedie, r_dev[ridx])
 
         print("compare null and residual deviance between R glm and h2o.glm for tweedie")
-        assert abs(r_null[ridx] - h2ofit.null_deviance()) < 1e-6, "h2o's null deviance is not equal to R's. h2o: {0}, r: " \
+        assert abs(r_null[ridx] - h2ofit.null_deviance()) < 1e-3, "h2o's null deviance is not equal to R's. h2o: {0}, r: " \
                                                                    "{1}".format(h2ofit.null_deviance(), r_null[ridx])
 
 

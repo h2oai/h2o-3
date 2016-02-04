@@ -975,6 +975,7 @@ public final class ParseDataset {
       String isConstantStr = isConstant ? "constant" : "";
       String numLevelsStr = isCategorical ? String.format("%d", v.domain().length) : "";
 
+      boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
       boolean printLogSeparatorToStdout = false;
       boolean printColumnToStdout;
       {
@@ -984,7 +985,9 @@ public final class ParseDataset {
         // Print information to stdout for this many trailing columns.
         final int MAX_TAIL_TO_PRINT_ON_STDOUT = 10;
 
-        if (vecArr.length <= (MAX_HEAD_TO_PRINT_ON_STDOUT + MAX_TAIL_TO_PRINT_ON_STDOUT)) {
+        if (launchedWithHadoopJar) {
+          printColumnToStdout = true;
+        } else if (vecArr.length <= (MAX_HEAD_TO_PRINT_ON_STDOUT + MAX_TAIL_TO_PRINT_ON_STDOUT)) {
           // For small numbers of columns, print them all.
           printColumnToStdout = true;
         } else if (i < MAX_HEAD_TO_PRINT_ON_STDOUT) {

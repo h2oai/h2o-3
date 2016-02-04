@@ -8,7 +8,6 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test <- function() {
-
   print("Read allyears2k_headers.zip into R.")
   data.hex <-  h2o.importFile(locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="airlines.data")
 
@@ -21,10 +20,7 @@ test <- function() {
 
   # GLM - All columns are being filtered out due to NA content
   expect_error(h2o.glm(x = myX, y = myY, training_frame = data.hex, validation_frame = valid,
-    family = "gaussian"))
-
-
-  
+    family = "gaussian",missing_values_handling="Skip"))
 }
 
 doTest("GLM PUBDEV-686", test)

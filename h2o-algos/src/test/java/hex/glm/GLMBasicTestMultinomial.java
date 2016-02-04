@@ -60,11 +60,11 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._alpha = new double[]{1};
       params._objective_epsilon = 1e-6;
       params._beta_epsilon = 1e-4;
-      params._max_iterations = 250;
-      double[] alpha = new double[]{1.0};
+      params._max_iterations = 300;
+      double[] alpha = new double[]{1};
       double[] expected_deviance = new double[]{25499.76};
       double[] lambda = new double[]{2.544750e-05};
-      for (Solver s : new Solver[]{Solver.L_BFGS,Solver.IRLSM}) {
+      for (Solver s : new Solver[]{Solver.IRLSM, Solver.L_BFGS}) {
         System.out.println("solver = " + s);
         params._solver = s;
         for (int i = 0; i < alpha.length; ++i) {
@@ -75,7 +75,6 @@ public class GLMBasicTestMultinomial extends TestUtil {
           System.out.println(model._output._validation_metrics);
           assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
           assertTrue(((ModelMetricsMultinomialGLM) model._output._training_metrics)._resDev <= expected_deviance[i] * 1.1);
-
           preds = model.score(_covtype);
           ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, _covtype);
           assertTrue(model._output._training_metrics.equals(mmTrain));

@@ -12,6 +12,8 @@ import water.util.PojoUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Map;
 
 /**
@@ -77,7 +79,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /** For advanced search methods we can put a time limit on the overall grid search.  This doesn't make much sense
    * for strict Cartesian.
    */
-  private long _max_time_ms = Long.MAX_VALUE;
+  private int _max_time_ms = Integer.MAX_VALUE;
 
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP> hyperSpaceWalker) {
@@ -86,6 +88,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
     assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
     _hyperSpaceWalker = hyperSpaceWalker;
+    // TODO: hacky: when we have SearchCriteria classes pass an instance down through the startGridSearch chain into this constructor.
+    if (_hyperSpaceWalker instanceof HyperSpaceWalker.RandomDiscreteValueWalker) {
+      this._max_time_ms = ((HyperSpaceWalker.RandomDiscreteValueWalker)_hyperSpaceWalker).max_time_ms();
+    }
     // Note: do not validate parameters of created model builders here!
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
@@ -151,6 +157,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     //                       ? grid._key + "_model_"
     //                       : _hyperSpaceWalker.getParams()._model_id.toString() + H2O.calcNextUniqueModelId("") + "_";
     String protoModelKey = grid._key + "_model_";
+    NumberFormat mSformatter = new DecimalFormat("#0.000");
+
     try {
       // Get iterator to traverse hyper space
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
@@ -158,7 +166,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       int counter = 0;
       while (it.hasNext(model)) {
         if(_job.stop_requested() ) return;  // Handle end-user cancel request
-        if  (it.timeRemaining() < 0) {
+        long remaining_time = it.timeRemaining();
+
+        if  (remaining_time < 0) {
           Log.info("Grid max_time_ms has expired; stopping early.");
           return;
         }
@@ -169,8 +179,22 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           params = it.nextModelParameters(model);
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
+
+          // Do we need to limit the model build time?
+          if (_max_time_ms < Integer.MAX_VALUE) {
+            Log.info("Grid time is limited to: " + _max_time_ms + " for grid: " + grid._key + ". Remaining time is: " + remaining_time);
+            if (params._max_runtime_secs == 0) { // unlimited
+              params._max_runtime_secs = remaining_time / 1000.0;
+              Log.info("Due to the grid time limit, changing model max runtime to: " + mSformatter.format(params._max_runtime_secs) + "S.");
+            } else {
+              double was = params._max_runtime_secs;
+              params._max_runtime_secs = Math.min(params._max_runtime_secs, remaining_time / 1000.0 );
+              Log.info("Due to the grid time limit, changing model max runtime from: " + mSformatter.format(was) + " to: " + mSformatter.format(params._max_runtime_secs) + "S.");
+            }
+          }
+
           try {
-            model = buildModel(params, grid, counter++, protoModelKey); // TODO: pass in remaining time!
+            model = buildModel(params, grid, counter++, protoModelKey);
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);

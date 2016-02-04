@@ -136,12 +136,13 @@ h2o.uploadFile <- function(path, destination_frame = "",
 
   .h2o.gc()  # Clear out H2O to make space for new file
   path <- normalizePath(path, winslash = "/")
-  srcKey <- .key.make(path)
+  srcKey <- .key.make( path )
   urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
 
-  rawData = .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
+  rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
+  destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
   if (parse) {
     h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
   } else {

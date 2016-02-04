@@ -42,8 +42,6 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     schema.parameters.fillFromParms(parms);         // Overwrite with user parms
     schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
     builder.init(false);          // validate parameters
-    if (builder.error_count() > 0)// Check for any parameter errors and bail now
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(builder);
 
     _t_start = System.currentTimeMillis();
     if( doTrain ) builder.trainModel();

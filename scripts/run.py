@@ -86,6 +86,70 @@ def is_javascript_test_file(file_name):
     return False
 
 
+'''
+function grab_java_message() will look through the java text output and try to extract the
+java messages from Java side.
+'''
+
+def grab_java_message(node_list, curr_testname):
+    """scan through the java output text and extract the java messages related to running
+    test specified in curr_testname.
+    Parameters
+    ----------
+    node_list :  list of H2O nodes
+      List of H2o nodes associated with a H2OCloud that are performing the test specified in curr_testname.
+    curr_testname : str
+      Store the unit test name (can be R unit or Py unit) that has been completed and failed.
+    :return: a string object that is either empty or the java messages that associated with the test in curr_testname.
+     The java messages can usually be found in one of the java_*_0.out.txt
+    """
+
+    global g_java_start_text    # contains text that describe the start of a unit test.
+
+    java_messages = ""
+    startTest = False           # denote when the current test was found in the java_*_0.out.txt file
+
+    # grab each java file and try to grab the java messages associated with curr_testname
+    for each_node in node_list:
+        java_filename = each_node.output_file_name  # find the java_*_0.out.txt file
+
+        if os.path.isfile(java_filename):
+            java_file = open(java_filename,'r')
+            for each_line in java_file:
+                if (g_java_start_text in each_line):
+                    startStr,found,endStr = each_line.partition(g_java_start_text)
+
+                    if len(found) > 0:   # a new test is being started.
+                        current_testname = endStr.strip()   # grab the test name and check if it is curr_testname
+                        if (current_testname == curr_testname): # found the line starting with current test.  Grab everything now
+                            startTest = True    # found text in java_*_0.out.txt that describe curr_testname
+
+                            # add header to make JAVA messages visible.
+                            java_messages += "\n\n**********************************************************\n"
+                            java_messages += "**********************************************************\n"
+                            java_messages += "JAVA Messages\n"
+                            java_messages += "**********************************************************\n"
+                            java_messages += "**********************************************************\n\n"
+
+
+                        else:   # found a differnt test than our curr_testname.  We are done!
+                            if startTest:   # in the middle of curr_testname but found a new test starting, can quit now.
+                                break
+
+                # store java message associated with curr_testname into java_messages
+                if startTest:
+                    java_messages += each_line
+
+            java_file.close()   # finished finding java messages
+
+        if startTest:       # found java message associate with our test already. No need to continue the loop.
+            break
+
+    return java_messages    # java messages associated with curr_testname
+
+
+
+
 class H2OUseCloudNode:
     """
     A class representing one node in an H2O cloud which was specified by the user.
@@ -1460,28 +1524,23 @@ class TestRunner:
         present or if the requirements file cannot be retrieved.
         """
 
+        global g_r_pkg_ver_chk_script
         self._log("")
         self._log("Conducting R package/version check...")
         out_file_name = os.path.join(self.output_dir, "package_version_check_out.txt")
         out = open(out_file_name, "w")
 
-        pkg_ver_chk_update_r = os.path.normpath(os.path.join(self.test_root_dir,"..","scripts",
-                                                             "package_version_check_update.R"))
-        cmd = ["R", "--vanilla", "-f", pkg_ver_chk_update_r, "--args", "check",]
+        cmd = ["R", "--vanilla", "-f", g_r_pkg_ver_chk_script, "--args", "check",]
 
         child = subprocess.Popen(args=cmd, stdout=out)
         rv = child.wait()
         if (self.terminated):
             return
-        if (rv == 1 or rv == 3):
+        if (rv == 1):
             self._log("")
-            self._log("ERROR: " + pkg_ver_chk_update_r + " failed.")
+            self._log("ERROR: " + g_r_pkg_ver_chk_script + " failed.")
             self._log("       See " + out_file_name)
             sys.exit(1)
-        if (rv == 2):
-            self._log("")
-            self._log("WARNING: System version of R differs from Jenkins-approved version.")
-            self._log("         See " + out_file_name)
         out.close()
 
     def _calc_test_short_dir(self, test_path):
@@ -1632,11 +1691,39 @@ class TestRunner:
     # XSD schema for xunit reports is here; http://windyroad.com.au/dl/Open%20Source/JUnit.xsd
     def _report_xunit_result(self, testsuite_name, testcase_name, testcase_runtime,
                              skipped=False, failure_type=None, failure_message=None, failure_description=None):
+
+        global g_use_xml2   # True if user want to enable log capturing in xml file.
+
         errors = 0
         failures = 1 if failure_type else 0
         skip = 1 if skipped else 0
         failure = "" if not failure_type else """"<failure type="{}" message="{}">{}</failure>""" \
             .format(failure_type, failure_message, failure_description)
+
+
+        if g_use_xml2:
+            # need to change the failure content when using new xml format.
+            # first get the output file that contains the python/R output error
+            if not(failure_description==None): # for tests that fail.
+                failure_file = failure_description.split()[1]
+                failure_message = open(failure_file,'r').read() # read the whole content in here.
+
+                # add the error message from Java side here, java filename is in self.clouds[].output_file_name
+                for each_cloud in self.clouds:
+                    java_errors = grab_java_message(each_cloud.nodes,testcase_name)
+                    if len(java_errors) > 0:    # found java message and can quit now
+                        failure_message += java_errors
+                        break;
+
+
+                if len(java_errors) < 1:
+                    failure_message += "\n\n###################################################################################\n########### Problems encountered extracting Java messages.  Please alert the QA team. \n###################################################################################\n\n"
+
+
+                if failure_message:
+                    failure = "" if not failure_type else """<failure type="{}" message="{}"><![CDATA[{}]]></failure>""" \
+                        .format(failure_type, failure_description, failure_message)
+
 
         xml_report = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="{testsuiteName}" tests="1" errors="{errors}" failures="{failures}" skip="{skip}">
@@ -1647,6 +1734,7 @@ class TestRunner:
 """.format(testsuiteName=testsuite_name, testcaseClassName=testcase_name, testcaseName=testcase_name,
            testcaseRuntime=testcase_runtime, failure=failure,
            errors=errors, failures=failures, skip=skip)
+
 
         self._save_xunit_report(testsuite_name, testcase_name, xml_report)
 
@@ -1661,6 +1749,7 @@ class TestRunner:
         f = self._get_testreport_filehandle(testsuite, testcase)
         f.write(report)
         f.close()
+
 
     def _log(self, s):
         f = self._get_summary_filehandle_for_appending()
@@ -1792,11 +1881,17 @@ g_job_name= None
 g_py3 = False
 g_pycoverage = False
 
+# globals added to support better reporting in xml files
+g_use_xml2 = False  # by default, use the original xml file output
+g_java_start_text = 'STARTING TEST:'    # test being started in java
 
 # Global variables that are set internally.
 g_output_dir = None
 g_runner = None
 g_handling_signal = False
+
+g_r_pkg_ver_chk_script = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "../h2o-r/scripts/package_version_check_update.R"))
 g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "../h2o-r/scripts/h2o-r-test-setup.R"))
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -1911,6 +2006,8 @@ def usage():
     print("                     follow in the format of [includes]:[excludes] where [...] denotes a list of")
     print("                     classes, each separated by a comma (,). Wildcard characters (* and ?) may be used.")
     print("")
+    print("    --geterrs        Generate xml file that contains the actual unit test errors and the actual Java error.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -2017,6 +2114,7 @@ def parse_args(argv):
     global g_job_name
     global g_py3
     global g_pycoverage
+    global g_use_xml2
 
     i = 1
     while (i < len(argv)):
@@ -2182,6 +2280,8 @@ def parse_args(argv):
             if (i >= len(argv)):
                 usage()
             g_job_name = argv[i]
+        elif (s == "--geterrs"):
+            g_use_xml2 = True
         else:
            unknown_arg(s)
 

@@ -738,7 +738,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    * @return initial value
    */
   protected double getInitialValue() {
-    return new InitialValue(_parms._distribution, _parms._tweedie_power).doAll(
+    return new InitialValue(_parms).doAll(
             _response,
             hasWeightCol() ? _weights : _response.makeCon(1),
             hasOffsetCol() ? _offset : _response.makeCon(0)
@@ -747,7 +747,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Helper MRTask to compute the initial value
   private static class InitialValue extends MRTask<InitialValue> {
-    public  InitialValue(Distribution.Family family, double power) { _dist = new Distribution(family, power); }
+    public  InitialValue(Model.Parameters parms) { _dist = new Distribution(parms); }
     final private Distribution _dist;
     private double _num;
     private double _denom;

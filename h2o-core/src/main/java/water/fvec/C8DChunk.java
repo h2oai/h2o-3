@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.AutoBuffer;
+import water.MemoryManager;
 import water.util.UnsafeUtils;
 
 /**
@@ -8,6 +9,7 @@ import water.util.UnsafeUtils;
  */
 public class C8DChunk extends Chunk {
   C8DChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
+
   @Override protected final long   at8_impl( int i ) {
     double res = UnsafeUtils.get8d(_mem, i << 3);
     if( Double.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -16,6 +18,15 @@ public class C8DChunk extends Chunk {
   @Override protected final double   atd_impl( int i ) { return              UnsafeUtils.get8d(_mem,i<<3) ; }
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(UnsafeUtils.get8d(_mem,i<<3)); }
   @Override boolean set_impl(int idx, long l) { return false; }
+
+  /**
+   * Fast explicit set for double.
+   * @param i
+   * @param d
+   */
+  public void set8D(int i, double d) {UnsafeUtils.set8d(_mem,i<<3,d);}
+  public double get8D(int i) {return UnsafeUtils.get8d(_mem,i<<3);}
+
   @Override boolean set_impl(int i, double d) {
     UnsafeUtils.set8d(_mem,i<<3,d);
     return true;
@@ -24,6 +35,8 @@ public class C8DChunk extends Chunk {
     UnsafeUtils.set8d(_mem,i<<3,f);
     return true;
   }
+
+
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy

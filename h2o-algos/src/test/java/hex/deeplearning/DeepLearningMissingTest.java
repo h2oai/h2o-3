@@ -37,13 +37,15 @@ public class DeepLearningMissingTest extends TestUtil {
     StringBuilder sb = new StringBuilder();
     for (DeepLearningParameters.MissingValuesHandling mvh :
             new DeepLearningParameters.MissingValuesHandling[]{
-            DeepLearningParameters.MissingValuesHandling.Skip,
-            DeepLearningParameters.MissingValuesHandling.MeanImputation })
+                    DeepLearningParameters.MissingValuesHandling.MeanImputation,
+                    DeepLearningParameters.MissingValuesHandling.Skip
+            })
     {
       double sumerr = 0;
       Map<Double,Double> map = new TreeMap<>();
-      for (double missing_fraction : new double[]{0, 0.1, 0.25, 0.5, 0.75, 0.99}) {
+      for (double missing_fraction : new double[]{0, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99}) {
 
+        double err=0;
         try {
           Scope.enter();
           NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
@@ -75,8 +77,8 @@ public class DeepLearningMissingTest extends TestUtil {
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
           p._loss = DeepLearningParameters.Loss.Huber;
-          p._activation = DeepLearningParameters.Activation.Tanh;
-          p._hidden = new int[]{100,100};
+          p._activation = DeepLearningParameters.Activation.Rectifier;
+          p._hidden = new int[]{50,50};
           p._l1 = 1e-5;
           p._input_dropout_ratio = 0.2;
           p._epochs = 3;
@@ -97,16 +99,14 @@ public class DeepLearningMissingTest extends TestUtil {
           mymodel = dl.trainModel().get();
 
           // Extract the scoring on validation set from the model
-          double err = mymodel.loss();
+          err = mymodel.loss();
 
           Log.info("Missing " + missing_fraction * 100 + "% -> logloss: " + err);
-          map.put(missing_fraction, err);
-          sumerr += err;
-          Scope.exit();
         } catch(Throwable t) {
           t.printStackTrace();
-          throw new RuntimeException(t);
+          err = 100;
         } finally {
+          Scope.exit();
           // cleanup
           if (mymodel != null) {
             mymodel.delete();
@@ -115,6 +115,8 @@ public class DeepLearningMissingTest extends TestUtil {
           if (test != null) test.delete();
           if (data != null) data.delete();
         }
+        map.put(missing_fraction, err);
+        sumerr += err;
       }
       sb.append("\nMethod: ").append(mvh.toString()).append("\n");
       sb.append("missing fraction --> Error\n");
@@ -125,8 +127,8 @@ public class DeepLearningMissingTest extends TestUtil {
       sumErr.put(mvh, sumerr);
     }
     Log.info(sb.toString());
-    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip) > 4.9);
-    Assert.assertTrue(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation) < 4.0);
+    Assert.assertEquals(501.37629982829094, sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip), 1e-2);
+    Assert.assertEquals(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation), 5.94659155607, 1e-7);
   }
 }
 
