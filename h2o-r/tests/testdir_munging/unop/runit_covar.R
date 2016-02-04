@@ -6,8 +6,6 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.var <- function() {
-  
-  
   #1 row case
   n <- 20
   g <- runif(n)
@@ -29,21 +27,33 @@ test.var <- function() {
   g[1,4] <- NA
   h[2,3] <- NA
   run.var.tests(g,h,has_nas=TRUE)
-  
 }
 
 run.var.tests <- function (g,h,one_row=FALSE,has_nas=FALSE) {
+  h2o_g <- as.h2o(g)
+  h2o_h <- as.h2o(h)
   uses <- c("everything", "all.obs", "complete.obs", "pairwise.complete.obs")
   if (has_nas) uses <- uses[-2]
   for (na.rm in c(FALSE, TRUE)) {
     for (use in uses) {
+      #2 inputs
       if (one_row) {
         h2o_var <- var(as.h2o(t(g)),as.h2o(t(h)), na.rm = na.rm, use = use)
       } else {
-        h2o_var <- var(as.h2o(g),as.h2o(h), na.rm = na.rm, use = use)
+        h2o_var <- var(h2o_g, h2o_h, na.rm = na.rm, use = use)
       }
       R_var <- var(g,h, na.rm = na.rm, use = use)
       h2o_and_R_equal(h2o_var, R_var)
+
+      #1 input
+      h2o_var <- var(h2o_g, na.rm=na.rm, use=use)
+      R_var <- var(g, na.rm=na.rm, use=use)
+      h2o_and_R_equal(h2o_var, R_var)
+    
+      #other input
+      h2o_var <- var(h2o_h, na.rm=na.rm, use=use)
+      R_var <- var(h, na.rm=na.rm, use=use)
+      h2o_and_R_equal(h2o_var, R_var)    
     }
   }
 }

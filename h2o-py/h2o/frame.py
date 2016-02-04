@@ -1502,10 +1502,13 @@ class H2OFrame(object):
       An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y 
       (if y is given). If self and y are single rows or single columns, the variance or covariance is given as a scalar.
     """
-    if y is None: y = self
+    symmetric = False
+    if y is None: 
+      y = self
+      if self.ncol > 1 and self.nrow > 1: symmetric = True
     if use is None: use = "complete.obs" if na_rm else "everything"
-    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("var",self,y,use)._eager_scalar()
-    return H2OFrame._expr(expr=ExprNode("var",self,y,use))._frame()
+    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("var",self,y,use,symmetric)._eager_scalar()
+    return H2OFrame._expr(expr=ExprNode("var",self,y,use,symmetric))._frame()
 
   def sd(self, na_rm=False):
     """Compute the standard deviation.

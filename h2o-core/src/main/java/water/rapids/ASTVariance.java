@@ -11,9 +11,9 @@ import java.util.Arrays;
 /** Variance between columns of a frame */
 class ASTVariance extends ASTPrim {
   @Override
-  public String[] args() { return new String[]{"ary", "x","y","use"}; }
+  public String[] args() { return new String[]{"ary", "x","y","use", "symmetric"}; }
   private enum Mode { Everything, AllObs, CompleteObs, PairwiseCompleteObs }
-  @Override int nargs() { return 1+3; /* (var X Y use) */}
+  @Override int nargs() { return 1+4; /* (var X Y use symmetric) */}
   @Override public String str() { return "var"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame frx = stk.track(asts[1].exec(env)).getFrame();
@@ -21,6 +21,7 @@ class ASTVariance extends ASTPrim {
     if( frx.numRows() != fry.numRows() )
       throw new IllegalArgumentException("Frames must have the same number of rows, found "+frx.numRows()+" and "+fry.numRows());
     String use = stk.track(asts[3].exec(env)).getStr();
+    boolean symmetric = asts[4].exec(env).getNum()==1;
     Mode mode;
     //In R, if the use arg is set, the na.rm arg has no effect (same result whether it is T or F). The na.rm param only 
     // comes into play when no use arg is set. Without a use arg, setting na.rm = T is equivalent to use = "complete.obs",
@@ -33,7 +34,7 @@ class ASTVariance extends ASTPrim {
       default: throw new IllegalArgumentException("unknown use mode, found: "+use);
     }
     
-    return frx.numRows() == 1 ? scalar(frx,fry,mode) : array(frx,fry,mode);
+    return frx.numRows() == 1 ? scalar(frx,fry,mode) : array(frx,fry,mode, symmetric);
   }
 
   // Scalar covariance for 1 row
@@ -65,13 +66,50 @@ class ASTVariance extends ASTPrim {
   // Matrix covariance.  Compute covariance between all columns from each Frame
   // against each other.  Return a matrix of covariances which is frx.numCols
   // tall and fry.numCols wide.
-  private Val array( Frame frx, Frame fry, Mode mode) {
+  private Val array( Frame frx, Frame fry, Mode mode, boolean symmetric) {
     Vec[] vecxs = frx.vecs();  int ncolx = vecxs.length;
     Vec[] vecys = fry.vecs();  int ncoly = vecys.length;
 
     if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
-      // Launch tasks; each does all Xs vs one Y
       CoVarTaskEverything[] cvts = new CoVarTaskEverything[ncoly];
+      if (symmetric) {
+        int[] idx  = new int[ncoly];
+        for (int y = 0; y < ncoly; y++) idx[y] = y;
+        int[] first_index = new int[]{0};
+        //compute covariances between column_i and and column_i, column_i+1, ... 
+        Frame reduced_fr = new Frame(frx);
+        for (int y = 0; y <ncoly; y++) {
+          cvts[y] = new CoVarTaskEverything().dfork(new Frame(vecys[y]).add(reduced_fr));
+          idx = ArrayUtils.removeIds(idx, first_index);
+          reduced_fr = new Frame(frx.vecs(idx));
+        }
+        //arrange the results into the bottom left of res_array. each successive cvts is 1 smaller in length
+        double[][] res_array = new double[ncoly][ncoly];
+        for (int y =0; y<ncoly; y++) {
+          double[] res_array_y = res_array[y];
+          CoVarTaskEverything cvtx = cvts[y].getResult();
+          if (mode.equals(Mode.AllObs))
+            for (double ss : cvtx._ss)
+              if (Double.isNaN(ss)) throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
+          double[] res = ArrayUtils.div(ArrayUtils.subtract(cvtx._ss, ArrayUtils.mult(cvtx._xsum,
+                  ArrayUtils.div(cvtx._ysum, frx.numRows()))), frx.numRows() - 1);
+          System.arraycopy(res, 0, res_array_y, y, ncoly - y);
+        }
+        //copy over the bottom left of res_array to its top right
+        for (int y = 0; y < ncoly -1; y++) {
+          for (int x = y+1; x < ncoly ; x++) {
+            res_array[x][y] = res_array[y][x];
+          }
+        }
+        //set Frame
+        Vec[] res = new Vec[ncoly];
+        Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+        for (int y = 0; y < ncoly; y++) {
+          res[y] = Vec.makeVec(res_array[y], keys[y]);
+        }
+        return new ValFrame(new Frame(fry._names, res));
+      }
+      // Launch tasks; each does all Xs vs one Y
       for (int y = 0; y < ncoly; y++)
         cvts[y] = new CoVarTaskEverything().dfork(new Frame(vecys[y]).add(frx));
       // Short cut for the 1-row-1-col result: return a scalar
@@ -109,7 +147,6 @@ class ASTVariance extends ASTPrim {
       //}
       return new ValFrame(new Frame(fry._names, res));
     }
-    
     if (mode.equals(Mode.CompleteObs)) {
       CoVarTaskComplete cvs = new CoVarTaskComplete(ncolx, ncoly).doAll(new Frame(fry).add(frx));
       
@@ -125,10 +162,44 @@ class ASTVariance extends ASTPrim {
       }
       return new ValFrame(new Frame(fry._names, res));
     }
-    
-    if (mode.equals(Mode.PairwiseCompleteObs)) {
-
+    else { //if (mode.equals(Mode.PairwiseCompleteObs)) {
       CoVarTaskPairwise[] cvts = new CoVarTaskPairwise[ncoly];
+      if (symmetric) {
+        int[] idx  = new int[ncoly];
+        for (int y = 0; y < ncoly; y++) idx[y] = y;
+        int[] first_index = new int[]{0};
+        //compute covariances between column_i and and column_i, column_i+1, ... 
+        Frame reduced_fr = new Frame(frx);
+        for (int y = 0; y <ncoly; y++) {
+          cvts[y] = new CoVarTaskPairwise().dfork(new Frame(vecys[y]).add(reduced_fr));
+          idx = ArrayUtils.removeIds(idx, first_index);
+          reduced_fr = new Frame(frx.vecs(idx));
+        }
+        //arrange the results into the bottom left of res_array. each successive cvts is 1 smaller in length
+        double[][] res_array = new double[ncoly][ncoly];
+        for (int y =0; y<ncoly; y++) {
+          double[] res_array_y = res_array[y];
+          CoVarTaskPairwise cvtx = cvts[y].getResult();
+
+          double[] res = ArrayUtils.div(ArrayUtils.subtract(cvtx._ss, ArrayUtils.mult(cvtx._xsum,
+                  ArrayUtils.div(cvtx._ysum, ArrayUtils.subtract(frx.numRows(), cvtx._NACount.clone())))), 
+                  ArrayUtils.subtract(frx.numRows() - 1, cvtx._NACount.clone()));
+          System.arraycopy(res, 0, res_array_y, y, ncoly - y);
+        }
+        //copy over the bottom left of res_array to its top right
+        for (int y = 0; y < ncoly -1; y++) {
+          for (int x = y+1; x < ncoly ; x++) {
+            res_array[x][y] = res_array[y][x];
+          }
+        }
+        //set Frame
+        Vec[] res = new Vec[ncoly];
+        Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+        for (int y = 0; y < ncoly; y++) {
+          res[y] = Vec.makeVec(res_array[y], keys[y]);
+        }
+        return new ValFrame(new Frame(fry._names, res));
+      }
       for (int y = 0; y < ncoly; y++)
         cvts[y] = new CoVarTaskPairwise().dfork(new Frame(vecys[y]).add(frx));
       // Short cut for the 1-row-1-col result: return a scalar
@@ -142,12 +213,12 @@ class ASTVariance extends ASTPrim {
       for (int y = 0; y < ncoly; y++) {
         CoVarTaskPairwise cvtx = cvts[y].getResult();
         res[y] = Vec.makeVec(ArrayUtils.div(ArrayUtils.subtract(cvtx._ss, ArrayUtils.mult(cvtx._xsum,
-                ArrayUtils.div(cvtx._ysum, ArrayUtils.subtract(frx.numRows(), cvtx._NACount.clone())))), ArrayUtils.subtract(frx.numRows() - 1, cvtx._NACount.clone())), keys[y]);
+                ArrayUtils.div(cvtx._ysum, ArrayUtils.subtract(frx.numRows(), cvtx._NACount.clone())))), 
+                ArrayUtils.subtract(frx.numRows() - 1, cvtx._NACount.clone())), keys[y]);
       }
       
       return new ValFrame(new Frame(fry._names, res));
     }
-    throw new IllegalArgumentException("unknown use mode, found: "+mode);
   }
 
 
@@ -237,8 +308,9 @@ class ASTVariance extends ASTPrim {
         if (add) {
           for (int y=0; y < _ncoly; y++) {
             _ss_y = _ss[y];
+            yval = yvals[y];
             for (int x = 0; x < _ncolx; x++)
-              _ss_y[x] += xvals[x] * yvals[y];
+              _ss_y[x] += xvals[x] * yval;
           }
           ArrayUtils.add(_xsum, xvals);
           ArrayUtils.add(_ysum, yvals);
