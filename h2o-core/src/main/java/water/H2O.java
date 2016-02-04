@@ -291,6 +291,13 @@ final public class H2O {
 
       return result.toString();
     }
+
+    /**
+     * Whether this H2O instance was launched on hadoop (using 'hadoop jar h2odriver.jar') or not.
+     */
+    public boolean launchedWithHadoopJar() {
+      return hdfs_skip;
+    }
   }
 
   public static void parseFailed(String message) {

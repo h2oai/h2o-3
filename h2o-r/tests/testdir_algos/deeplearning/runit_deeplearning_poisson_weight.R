@@ -31,7 +31,7 @@ test <- function() {
   print(max(ph[,1]))
 	expect_equal(1.996, mean_deviance, tolerance=1e-1)
 	expect_equal(1.05837, mean(ph[,1]), tolerance=1e-1 )
-	expect_equal(0.86598, min(ph[,1]), tolerance=1e-1 )
+	expect_equal(0.9155, min(ph[,1]), tolerance=1e-1 )
 	expect_equal(1.2629, max(ph[,1]), tolerance=1e-1 )
 		
 	
