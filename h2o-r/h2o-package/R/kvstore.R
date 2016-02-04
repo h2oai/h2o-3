@@ -5,8 +5,8 @@
 .key.validate <- function(key) {
   if (!missing(key) && !is.null(key)) {
     stopifnot( is.character(key) && length(key) == 1L && !is.na(key) )
-    if( nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L )
-      stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+    if( nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.-]*$", key)[1L] == -1L )
+      stop(paste0("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$': ", key))
   }
   invisible(TRUE)
 }
