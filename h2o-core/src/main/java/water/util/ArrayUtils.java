@@ -253,6 +253,12 @@ public class ArrayUtils {
     for (int i=0; i<ary.length; i++) mult(ary[i], n);
     return ary;
   }
+  
+  public static double[] mult(double[] nums, double[] nums2) {
+    for (int i=0; i<nums.length; i++) nums[i] *= nums2[i];
+    return nums;
+  }
+  
   public static double[] invert(double[] ary) {
     if(ary == null) return null;
     for(int i=0;i<ary.length;i++) ary[i] = 1. / ary[i];
@@ -1259,5 +1265,10 @@ public class ArrayUtils {
     for(double d:beta)
       if(d != 0)++res;
     return res;
+  }
+
+  public static long[] subtract(long n, long[] nums) {
+    for (int i=0; i<nums.length; i++) nums[i] = n - nums[i];
+    return nums;
   }
 }

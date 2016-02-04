@@ -1479,25 +1479,31 @@ class H2OFrame(object):
     """
     return ExprNode("median", self, na_rm)._eager_scalar()
 
-  def var(self,y=None,use="everything"):
-    """Compute the variance, or co-variance matrix.
+  def var(self,y=None,na_rm=False, use=None):
+    """Compute the variance or covariance matrix of one or two H2OFrames.
 
     Parameters
     ----------
     y : H2OFrame, default=None
-      If y is None, then the variance is computed for self. If self has more than one
-      column, then the covariance matrix is returned.
-      If y is not None, then the covariance between self and y is computed (self and y
-      must therefore both be single columns).
-    use : str
-      One of "everything", "complete.obs", or "all.obs"
+      If y is None and self is a single column, then the variance is computed for self. If self has 
+      multiple columns, then its covariance matrix is returned. Single rows are treated as single columns. 
+      If y is not None, then a covariance matrix between the columns of self and the columns of y is computed. 
+    na_rm : bool, default=False
+      Remove NAs from the computation.
+    use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
+      A string indicating how to handle missing values. This must be one of the following: 
+        "everything"            - outputs NaNs whenever one of its contributing observations is missing
+        "all.obs"               - presence of missing observations will throw an error
+        "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+        "pairwise.complete.obs" - uses all complete pairs of observations
 
     Returns
     -------
-      The covariance matrix of the columns in this H2OFrame if y is given, or a eagerly
-      computed scalar if y is not given.
+      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y 
+      (if y is given). If self and y are single rows or single columns, the variance or covariance is given as a scalar.
     """
     if y is None: y = self
+    if use is None: use = "complete.obs" if na_rm else "everything"
     if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("var",self,y,use)._eager_scalar()
     return H2OFrame._expr(expr=ExprNode("var",self,y,use))._frame()
 
@@ -1886,7 +1892,7 @@ class H2OFrame(object):
     fr = H2OFrame._expr(expr=ExprNode("na.omit", self), cache=self._ex._cache)
     fr._ex._cache.nrows=-1
     return fr
-
+ 
   def isna(self):
     """For each element in an H2OFrame, determine if it is NA or not.
 
