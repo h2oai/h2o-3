@@ -926,6 +926,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   public void checkDistributions() {
+    if (_parms._distribution != Distribution.Family.tweedie) {
+      hide("_tweedie_power", "Tweedie power is only used for Tweedie distribution.");
+    }
+    if (_parms._distribution != Distribution.Family.quantile) {
+      hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
+    }
     if (_parms._distribution == Distribution.Family.poisson) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Poisson distribution.");
