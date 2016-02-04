@@ -357,23 +357,25 @@ class ASTMatch extends ASTPrim {
     else if( asts[2] instanceof ASTStr    ) strsTable2 = new String[]{asts[2].exec(env).getStr()};
     else throw new IllegalArgumentException("Expected numbers/strings. Got: "+asts[2].getClass());
 
+    final double nomatch = asts[3].exec(env).getNum();
+
     final String[] strsTable = strsTable2;
     final double[] dblsTable = dblsTable2;
 
     Frame rez = new MRTask() {
       @Override public void map(Chunk c, NewChunk n) {
         String[] domain = c.vec().domain();
-        int x, rows = c._len;
+        double x; int rows = c._len;
         for( int r = 0; r < rows; ++r) {
-          x = c.isNA(r) ? 0 : (strsTable==null ? in(dblsTable, c.atd(r)) : in(strsTable, domain[(int)c.at8(r)]));
-          n.addNum(x,0);
+          x = c.isNA(r) ? nomatch : (strsTable==null ? in(dblsTable, c.atd(r), nomatch) : in(strsTable, domain[(int)c.at8(r)], nomatch));
+          n.addNum(x);
         }
       }
     }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame();
     return new ValFrame(rez);
   }
-  private static int in(String[] matches, String s) { return Arrays.binarySearch(matches, s) >=0 ? 1: 0; }
-  private static int in(double[] matches, double d) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: 0; }
+  private static double in(String[] matches, String s, double nomatch) { return Arrays.binarySearch(matches, s) >=0 ? 1: nomatch; }
+  private static double in(double[] matches, double d, double nomatch) { return binarySearchDoublesUlp(matches, 0,matches.length,d) >=0 ? 1: nomatch; }
 
   private static int binarySearchDoublesUlp(double[] a, int from, int to, double key) {
     int lo = from;
