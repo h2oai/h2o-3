@@ -705,10 +705,10 @@ public class DeepLearningTest extends TestUtil {
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7222222222222222, mm.auc_obj()._auc, 1e-8);
+      assertEquals(0.7592592592592592, mm.auc_obj()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.31599425403539766, mse, 1e-8); //Note: better results than non-shuffled
+      assertEquals(0.314813341867078, mse, 1e-8); //Note: better results than non-shuffled
 
 //      assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr, 1e-5)); //PUBDEV-1900
       dl.delete();
@@ -784,10 +784,10 @@ public class DeepLearningTest extends TestUtil {
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7777777777777778, mm.auc_obj()._auc, 1e-8);
+      assertEquals(0.7592592592592592, mm.auc_obj()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.32223485418125575, mse, 1e-8);
+      assertEquals(0.3116490253190556, mse, 1e-8);
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,fr2=dl.score(tfr),1e-5)); //PUBDEV-1900
       dl.delete();
@@ -1433,6 +1433,32 @@ public class DeepLearningTest extends TestUtil {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.delete();
       if (dl2 != null) dl2.delete();
+    }
+  }
+  @Test
+  public void testCrossValidation() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._nfolds = 4;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(dl._output._training_metrics._MSE,12.892871729257042,1e-6);
+      Assert.assertEquals(dl._output._cross_validation_metrics._MSE,17.42844560821736,1e-6);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
     }
   }
 }

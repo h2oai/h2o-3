@@ -98,7 +98,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     protected long nFoldSeed() { return new Random().nextLong(); }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
-    public double _tweedie_power = 1.5f;
+    public double _tweedie_power = 1.5;
+    public double _quantile_alpha = 0.5;
     protected double defaultStoppingTolerance() { return 1e-3; }
 
     // TODO: This field belongs in the front-end column-selection process and
@@ -453,7 +454,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
 
-    long checksum_impl() {
+    protected long checksum_impl() {
       return (null == _names ? 13 : Arrays.hashCode(_names)) *
               (null == _domains ? 17 : Arrays.deepHashCode(_domains)) *
               getModelCategory().ordinal();
@@ -839,7 +840,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
-
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
@@ -850,6 +850,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 1, 0, row_in_chunk, tmp, preds);
   }
+
   public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
@@ -1133,7 +1134,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       String modelName = JCodeGen.toJavaId(_key.toString());
       boolean preview = false;
       String java_text = toJava(preview, true);
-      //System.out.println(java_text);
       GenModel genmodel;
       try {
         Class clz = JCodeGen.compile(modelName,java_text);

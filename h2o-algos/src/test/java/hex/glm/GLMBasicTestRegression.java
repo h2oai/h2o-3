@@ -88,7 +88,7 @@ public class GLMBasicTestRegression extends TestUtil {
       System.out.println("Solver = " + s);
       System.out.println("===============================================================");
       try {
-        parms._lambda = null;
+        parms._lambda = new double[]{1e-5};
         parms._alpha = null;
         parms._train = _weighted._key;
         parms._solver = s;
@@ -98,7 +98,7 @@ public class GLMBasicTestRegression extends TestUtil {
         System.out.println("coefs1 = " + coefs1);
         parms._train = _upsampled._key;
         parms._weights_column = null;
-        parms._lambda = null;
+        parms._lambda = new double[]{1e-5};
         parms._alpha = null;
         model2 = new GLM(parms).trainModel().get();
         HashMap<String, Double> coefs2 = model2.coefficients();
@@ -296,8 +296,7 @@ public class GLMBasicTestRegression extends TestUtil {
           assertEquals(res_dof, GLMTest.resDOF(model), 0);
           // test scoring
           scoreTrain = model.score(_earinf);
-
-          model.testJavaScoring(_earinf,scoreTrain,1e-8);
+          assertTrue(model.testJavaScoring(_earinf,scoreTrain,1e-8));
           hex.ModelMetricsRegressionGLM mmTrain = (ModelMetricsRegressionGLM) hex.ModelMetricsRegression.getFromDKV(model, _earinf);
           assertEquals(model._output._training_metrics._MSE, mmTrain._MSE, 1e-8);
           assertEquals(GLMTest.residualDeviance(model), mmTrain._resDev, 1e-8);
@@ -414,6 +413,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._alpha = new double[]{0};
     parms._response_column = "Infections";
     parms._compute_p_values = true;
+    parms._objective_epsilon = 0;
 
     GLMModel model = null;
     try {

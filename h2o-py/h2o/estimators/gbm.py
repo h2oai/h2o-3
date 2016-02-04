@@ -15,7 +15,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     automatically be generated.
   distribution : str
      The distribution function of the response. Must be "AUTO", "bernoulli",
-     "multinomial", "poisson", "gamma", "tweedie", "laplace" or "gaussian"
+     "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile" or "gaussian"
+  quantile_alpha : float
+    Quantile (only for Quantile regression, must be between 0 and 1)
   tweedie_power : float
     Tweedie power (only for Tweedie distribution, must be between 1 and 2)
   ntrees : int
@@ -78,7 +80,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   -------
     A new H2OGradientBoostedEstimator object.
   """
-  def __init__(self, model_id=None, distribution=None, tweedie_power=None, ntrees=None,
+  def __init__(self, model_id=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
                sample_rate=None, col_sample_rate=None, col_sample_rate_per_tree=None,
                nbins_top_level=None, nbins_cats=None, balance_classes=None,
@@ -97,6 +99,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @distribution.setter
   def distribution(self, value):
     self._parms["distribution"] = value
+
+  @property
+  def quantile_alpha(self):
+      return self._parms["quantile_alpha"]
+
+  @quantile_alpha.setter
+  def quantile_alpha(self, value):
+      self._parms["quantile_alpha"] = value
 
   @property
   def tweedie_power(self):

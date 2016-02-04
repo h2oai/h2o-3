@@ -4,7 +4,6 @@ import hex.Distribution;
 import hex.ModelCategory;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
-import hex.schemas.GBMV3;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -120,6 +119,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     case laplace:
       if (isClassifier()) error("_distribution", H2O.technote(2, "Laplace requires the response to be numeric."));
       break;
+    case quantile:
+      if (isClassifier()) error("_distribution", H2O.technote(2, "Quantile requires the response to be numeric."));
+      break;
     case AUTO:
       break;
     default:
@@ -142,11 +144,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
-      _initialPrediction = _nclass > 2 || _parms._distribution == Distribution.Family.laplace ? 0 : getInitialValue();
+      _initialPrediction = _nclass > 2 || _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.quantile ? 0 : getInitialValue();
       if (_parms._distribution == Distribution.Family.bernoulli) {
         if (hasOffsetCol()) _initialPrediction = getInitialValueBernoulliOffset(_train);
       } else if (_parms._distribution == Distribution.Family.laplace) {
         _initialPrediction = getInitialValueQuantile(0.5);
+      } else if (_parms._distribution == Distribution.Family.quantile) {
+        _initialPrediction = getInitialValueQuantile(_parms._quantile_alpha);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
@@ -243,7 +247,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk ys = chk_resp(chks);
         Chunk offset = chk_offset(chks);
         Chunk weight = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        Distribution dist = new Distribution(Distribution.Family.bernoulli);
+        Distribution dist = new Distribution(_parms);
         for( int row = 0; row < ys._len; row++) {
           double w = weight.atd(row);
           if (w == 0) continue;
@@ -273,7 +277,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk preds = chk_tree(chks, 0); // Prior tree sums
         Chunk wk = chk_work(chks, 0); // Place to store residuals
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
-        Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
+        Distribution dist = new Distribution(_parms);
         for( int row = 0; row < wk._len; row++) {
           if( ys.isNA(row) ) continue;
           double f = preds.atd(row) + offset.atd(row);
@@ -412,6 +416,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
       if (_parms._distribution == Distribution.Family.laplace) {
         fitBestConstantsQuantile(ktrees, leafs, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
+      } else if (_parms._distribution == Distribution.Family.quantile) {
+        fitBestConstantsQuantile(ktrees, leafs, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
         fitBestConstants(ktrees, leafs, gp);
       }
@@ -574,7 +580,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
                 || _dist == Distribution.Family.gamma
                 || _dist == Distribution.Family.tweedie)
         {
-          return new Distribution(_dist, _parms._tweedie_power).link(g);
+          return new Distribution(_parms).link(g);
         } else {
           return g;
         }
@@ -610,7 +616,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
           if( tree.root() instanceof LeafNode ) continue;
-          Distribution dist = new Distribution(_parms._distribution, _parms._tweedie_power);
+          Distribution dist = new Distribution(_parms);
           for( int row=0; row<nids._len; row++ ) { // For all rows
             int nid = (int)nids.at8(row);          // Get Node to decide from
 
@@ -635,8 +641,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             assert !ress.isNA(row);
 
             // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
-            // For Laplace distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
-            if (wasOOBRow || _parms._distribution == Distribution.Family.laplace) continue;
+            // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
+            if (wasOOBRow || _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.quantile) continue;
 
             // Compute numerator and denominator of terminal node estimate (gamma)
             double w = hasWeightCol() ? chk_weight(chks).atd(row) : 1; //weight
@@ -688,7 +694,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   // turns the results into a probability distribution.
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double f = chk_tree(chks,0).atd(row) + offset;
-    double p = new Distribution(_parms._distribution, _parms._tweedie_power).linkInv(f);
+    double p = new Distribution(_parms).linkInv(f);
     if( _parms._distribution == Distribution.Family.bernoulli ) {
       fs[2] = p;
       fs[1] = 1.0-p;

@@ -58,6 +58,7 @@
 #' @param non_negative Logical, allow only positive coefficients.
 #' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are collinear predictors.
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
+#' @param missing_values_handling (Optional) Controls handling of missing values. Can be either "MeanImputation" or "Skip". MeanImputation replaces missing values with mean for numeric and most frequent level for categorical,  Skip ignores observations with any missing value. Applied both during model training *AND* scoring.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param ... (Currently Unimplemented)
 #'        coefficients.
@@ -109,7 +110,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     beta_epsilon = 0,
                     solver = c("IRLSM", "L_BFGS"),
                     standardize = TRUE,
-                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
+                    family = c("gaussian", "binomial", "poisson", "gamma", "tweedie","multinomial"),
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
                     tweedie_variance_power = NaN,
                     tweedie_link_power = NaN,
@@ -133,7 +134,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     non_negative = FALSE,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
-                    max_runtime_secs = 0)
+                    max_runtime_secs = 0,
+                    missing_values_handling = c("Skip", "MeanImputation"))
 {
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
@@ -198,6 +200,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
     parms$nfolds <- nfolds
   if(!missing(beta_constraints))
     parms$beta_constraints <- beta_constraints
+    if(!missing(missing_values_handling))
+        parms$missing_values_handling <- missing_values_handling
   m <- .h2o.modelJob('glm', parms)
   m@model$coefficients <- m@model$coefficients_table[,2]
   names(m@model$coefficients) <- m@model$coefficients_table[,1]

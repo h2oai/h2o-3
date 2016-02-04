@@ -10,7 +10,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                nesterov_accelerated_gradient=None, input_dropout_ratio=None,
                hidden_dropout_ratios=None, l1=None, l2=None, max_w2=None,
                initial_weight_distribution=None, initial_weight_scale=None, loss=None,
-               distribution=None, tweedie_power=None, score_interval=None,
+               distribution=None, quantile_alpha=None, tweedie_power=None, score_interval=None,
                score_training_samples=None, score_validation_samples=None,
                score_duty_cycle=None, classification_stop=None, regression_stop=None,
                quiet_mode=None, max_confusion_matrix_size=None, max_hit_ratio_k=None,
@@ -105,7 +105,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     distribution : str
        A character string. The distribution function of the response.
        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma",
-       "tweedie", "laplace", "huber" or "gaussian"
+       "tweedie", "laplace", "huber", "quantile" or "gaussian"
+    quantile_alpha : float
+      Quantile (only for Quantile regression, must be between 0 and 1)
     tweedie_power : float
       Tweedie power (only for Tweedie distribution, must be between 1 and 2)
     score_interval : int
@@ -431,6 +433,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
   @distribution.setter
   def distribution(self, value):
     self._parms["distribution"] = value
+
+  @property
+  def quantile_alpha(self):
+      return self._parms["quantile_alpha"]
+
+  @quantile_alpha.setter
+  def quantile_alpha(self, value):
+      self._parms["quantile_alpha"] = value
 
   @property
   def tweedie_power(self):

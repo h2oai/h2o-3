@@ -119,6 +119,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
+
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to an Categorical, etc.  */
@@ -441,7 +442,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
     if (preds!=null) preds.remove();
-    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data";
+    mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
 
     // Now, the main model is complete (has cv metrics)
@@ -586,11 +587,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column '" + _parms._response_column + "' not found in the training frame");
       } else {
         if(_response == _offset)
-          error("_response", "Response must be different from offset_column");
+          error("_response_column", "Response column must be different from offset_column");
         if(_response == _weights)
-          error("_response", "Response must be different from weights_column");
+          error("_response_column", "Response column must be different from weights_column");
         if(_response == _fold)
-          error("_response", "Response must be different from fold_column");
+          error("_response_column", "Response column must be different from fold_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }
@@ -623,7 +624,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
 
   transient double [] _distribution;
-  transient double [] _priorClassDist;
+  transient protected double [] _priorClassDist;
 
   protected boolean computePriorClassDistribution(){
     return isClassifier();
@@ -936,6 +937,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Tweedie distribution.");
+    } else if (_parms._distribution == Distribution.Family.quantile) {
+      if (_parms._quantile_alpha > 1 || _parms._quantile_alpha < 0)
+        error("_quantile_alpha", "Quantile (alpha) must be between 0 and 1.");
     }
   }
 

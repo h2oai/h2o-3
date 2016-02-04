@@ -62,7 +62,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
 
         # Test stopping criteria:
         GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 3 } ),
-        GridSpec.for_dataset('gbm_prostate_regression_grid_max_10mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_time_ms': 10 } ),
+        GridSpec.for_dataset('gbm_prostate_regression_grid_max_20mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_time_ms': 20 } ),
        ]
     
     for grid_spec in grids_to_build:

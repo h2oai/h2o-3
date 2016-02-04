@@ -303,7 +303,7 @@ abstract public class Log {
   private static synchronized org.apache.log4j.Logger createLog4j() {
     if( _logger != null ) return _logger; // Test again under lock
 
-    boolean launchedWithHadoopJar = H2O.ARGS.hdfs_skip;
+    boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
     String log4jConfiguration = System.getProperty ("h2o.log4j.configuration");
     boolean log4jConfigurationProvided = log4jConfiguration != null;
 

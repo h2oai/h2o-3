@@ -2,6 +2,8 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.glm.GLMTask;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -73,12 +75,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
    * @param train Training frame
    * @param valid Validation frame
    * @param parms Model parameters
+   * @param nClasses Number of response levels (1: regression, >=2: classification)
    * @return DataInfo
    */
-  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms) {
+  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
     double x = 0.782347234;
-    boolean identityLink = new Distribution(parms._distribution, parms._tweedie_power).link(x) == x;
-    return new DataInfo(
+    boolean identityLink = new Distribution(parms).link(x) == x;
+    DataInfo dinfo = new DataInfo(
             train,
             valid,
             parms._autoencoder ? 0 : 1, //nResponses
@@ -91,7 +94,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             parms._weights_column != null, // observation weights
             parms._offset_column != null,
             parms._fold_column != null
-      );
+    );
+    // Checks and adjustments:
+    // 1) observation weights (adjust mean/sigmas for predictors and response)
+    // 2) NAs (check that there's enough rows left)
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses, true, !parms._autoencoder && nClasses == 1, parms._missing_values_handling == MissingValuesHandling.Skip, !parms._autoencoder).doAll(dinfo._adaptedFrame);
+    if (ymt._wsum == 0 && parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip)
+      throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
+    if (parms._weights_column != null && parms._offset_column != null) {
+      Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
+    }
+    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+      dinfo.updateWeightedSigmaAndMean(ymt._basicStats.sigma(), ymt._basicStats.mean());
+      if (nClasses == 1)
+        dinfo.updateWeightedSigmaAndMeanForResponse(ymt._basicStatsResponse.sigma(), ymt._basicStatsResponse.mean());
+    }
+    return dinfo;
   }
 
   @Override protected void checkMemoryFootPrint() {
@@ -237,8 +255,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
           for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
           for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
-
-          dinfo = makeDataInfo(_train, _valid, _parms);
+          dinfo = makeDataInfo(_train, _valid, _parms, nclasses());
           DKV.put(dinfo);
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(_job);
@@ -343,6 +360,11 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
         }
         model.training_rows = train.numRows();
+        if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {
+          model.training_rows = Math.round(train.numRows()*_weights.mean());
+          Log.warn("Not counting " + (train.numRows() - model.training_rows) + " rows with weight=0 towards an epoch.");
+        }
+        Log.info("One epoch corresponds to " + model.training_rows + " training data rows.");
         trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
         if( trainScoreFrame != train ) Scope.track(trainScoreFrame);
 
@@ -363,14 +385,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         }
 
         // Set train_samples_per_iteration size (cannot be done earlier since this depends on whether stratified sampling is done)
-        model.actual_train_samples_per_iteration = computeTrainSamplesPerIteration(mp, train.numRows(), model);
+        model.actual_train_samples_per_iteration = computeTrainSamplesPerIteration(mp, model.training_rows, model);
         // Determine whether shuffling is enforced
-        if(mp._replicate_training_data && (model.actual_train_samples_per_iteration == train.numRows()*(mp._single_node_mode ?1:H2O.CLOUD.size())) && !mp._shuffle_training_data && H2O.CLOUD.size() > 1 && !mp._reproducible) {
+        if(mp._replicate_training_data && (model.actual_train_samples_per_iteration == model.training_rows*(mp._single_node_mode ?1:H2O.CLOUD.size())) && !mp._shuffle_training_data && H2O.CLOUD.size() > 1 && !mp._reproducible) {
           if (!mp._quiet_mode)
             Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
-        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == train.numRows() && train.anyVec().nChunks()==1) {
+        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == model.training_rows && train.anyVec().nChunks()==1) {
           if (!mp._quiet_mode)
             Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
           mp._shuffle_training_data = true;

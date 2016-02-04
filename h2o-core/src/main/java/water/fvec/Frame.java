@@ -66,6 +66,12 @@ public class Frame extends Lockable<Frame> {
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
 
+  public boolean hasNAs(){
+    for(Vec v:_vecs)
+      if(v.naCnt() > 0) return true;
+    return false;
+  }
+
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
   public Frame( Vec... vecs ){ this(null,vecs);}
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
@@ -390,7 +396,7 @@ public class Frame extends Lockable<Frame> {
     return card;
   }
 
-  private Vec[] bulkRollups() {
+  public Vec[] bulkRollups() {
     Futures fs = new Futures();
     Vec[] vecs = vecs();
     for(Vec v : vecs)  v.startRollupStats(fs);

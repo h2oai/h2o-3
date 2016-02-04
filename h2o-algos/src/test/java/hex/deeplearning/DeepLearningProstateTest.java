@@ -24,7 +24,7 @@ import java.util.Random;
 import static hex.ConfusionMatrix.buildCM;
 
 public class DeepLearningProstateTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void run() throws Exception { runFraction(0.00002f); }
 

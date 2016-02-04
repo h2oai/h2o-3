@@ -59,6 +59,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "initial_weight_scale",
         "loss",
         "distribution",
+        "quantile_alpha",
         "tweedie_power",
         "score_interval",
         "score_training_samples",
@@ -401,14 +402,17 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Loss function", values = { "Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile" }, required = false, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public DeepLearningParameters.Loss loss;
 
-    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "huber" }, level = API.Level.secondary, gridable = true)
+    @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "huber", "quantile" }, level = API.Level.secondary, gridable = true)
     public Distribution.Family distribution;
 
     @API(help = "Tweedie Power", level = API.Level.secondary)
     public double tweedie_power;
+
+    @API(help="Desired quantile for quantile regression (from 0.0 to 1.0)", gridable = true)
+    public double quantile_alpha;
 
     /*Scoring*/
     /**

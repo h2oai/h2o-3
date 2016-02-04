@@ -5,8 +5,8 @@
 .key.validate <- function(key) {
   if (!missing(key) && !is.null(key)) {
     stopifnot( is.character(key) && length(key) == 1L && !is.na(key) )
-    if( nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", key)[1L] == -1L )
-      stop("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$'")
+    if( nzchar(key) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.-]*$", key)[1L] == -1L )
+      stop(paste0("`key` must match the regular expression '^[a-zA-Z_][a-zA-Z0-9_.]*$': ", key))
   }
   invisible(TRUE)
 }
@@ -62,6 +62,7 @@ h2o.ls <- function() {
 #' }
 #' @export
 h2o.removeAll <- function(timeout_secs=0) {
+  gc()
   tryCatch(
     invisible(.h2o.__remoteSend(.h2o.__DKV, method = "DELETE", timeout=timeout_secs)),
     error = function(e) {
@@ -81,6 +82,7 @@ h2o.removeAll <- function(timeout_secs=0) {
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @export
 h2o.rm <- function(ids) {
+  gc()
   if( !is.vector(ids) ) x_list = c(ids) else x_list = ids
   for (xi in x_list) {
     if( is.null(xi) ) stop("h2o.rm with NULL object is not supported")
@@ -100,7 +102,6 @@ h2o.rm <- function(ids) {
   #remove object from R client if possible (not possible for input of strings)
   ids <- deparse(substitute(ids))
   if( exists(ids, envir=parent.frame()) ) rm(list=ids, envir=parent.frame())
-  
 }
 
 #'
