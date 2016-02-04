@@ -5,6 +5,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.MathUtils;
 
 import java.util.Arrays;
 
@@ -62,9 +63,9 @@ public class ASTCut extends ASTPrim {
         for (int r = 0; r < rows; ++r) {
           double x = c.atd(r);
           if (Double.isNaN(x) || (lowest && x <  cutz[0])
-                  || (!lowest && x <= cutz[0])
+                  || (!lowest && (x < cutz[0] || MathUtils.equalsWithinOneSmallUlp(x,cutz[0])) )
                   || (rite    && x >  cutz[cutz.length-1])
-                  || (!rite   && x >= cutz[cutz.length-1])) nc.addNum(Double.NaN); //slightly faster than nc.addNA();
+                  || (!rite   && (x > cutz[cutz.length-1] || MathUtils.equalsWithinOneSmallUlp(x,cutz[cutz.length-1]) )) ) nc.addNum(Double.NaN);
           else {
             for (int i = 1; i < cutz.length; ++i) {
               if (rite) {
