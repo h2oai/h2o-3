@@ -122,8 +122,10 @@ function(feature, r) {
     if (!r) {
         return("H2OFrame")
     } else {
-        if (feature %in% c("as.factor", "cos", "all", "&", "h2o.cbind", "colnames", "[", "h2o.hist",
-                           "h2o.impute", "h2o.rep_len", "t", "h2o.var")) {
+        if (feature %in% c("as.factor", "cos", "acos", "cosh", "acosh", "sin", "asin", "sinh", "asinh", "tan", "atan",
+                           "tanh","atanh", "all", "&", "h2o.cbind", "colnames", "[", "h2o.hist", "h2o.impute",
+                           "h2o.rep_len", "t", "h2o.var", "abs", "ceiling", "digamma", "exp", "gamma", "floor",
+                           "expm1", "is.na")) {
             return("data.frame")
         } else if (feature %in% c("h2o.table")) {
             return("data.frameORvector")
@@ -131,7 +133,7 @@ function(feature, r) {
             return("numeric")
         } else if (feature %in% c("h2o.which")) {
             return("logical")
-        } else if (feature %in% c("h2o.match")) {
+        } else if (feature %in% c("h2o.match", "is.character")) {
             return("vector")
         } else if (feature %in% c("h2o.strsplit", "h2o.toupper")) {
             return("character")
@@ -353,6 +355,17 @@ function(h2oRes) {
 .whatR<-
 function(op) {
     if        (op == "cos")           { return("cos")
+    } else if (op == "acos")          { return("acos")
+    } else if (op == "cosh")          { return("cosh")
+    } else if (op == "acosh")         { return("acosh")
+    } else if (op == "sin")           { return("sin")
+    } else if (op == "asin")          { return("asin")
+    } else if (op == "sinh")          { return("sinh")
+    } else if (op == "asinh")         { return("asinh")
+    } else if (op == "tan")           { return("tan")
+    } else if (op == "atan")          { return("atan")
+    } else if (op == "tanh")          { return("tanh")
+    } else if (op == "atanh")         { return("atanh")
     } else if (op == "&")             { return("&")
     } else if (op == "all")           { return("all")
     } else if (op == "as.factor")     { return("as.factor")
@@ -370,9 +383,17 @@ function(op) {
     } else if (op == "t")             { return("t")
     } else if (op == "%*%")           { return("%*%")
     } else if (op == "h2o.var")       { return("var")
+    } else if (op == "abs")           { return("abs")
+    } else if (op == "ceiling")       { return("ceiling")
+    } else if (op == "digamma")       { return("digamma")
+    } else if (op == "exp")           { return("exp")
+    } else if (op == "gamma")         { return("gamma")
+    } else if (op == "floor")         { return("floor")
+    } else if (op == "expm1")         { return("expm1")
+    } else if (op == "is.character")  { return("is.character")
+    } else if (op == "is.na")         { return("is.na")
     }
 }
-
 
 #h2oTest.loadFeatureTestCase<-
 #function(testCaseId) {
