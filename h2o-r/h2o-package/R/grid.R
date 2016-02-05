@@ -46,7 +46,7 @@ h2o.grid <- function(algorithm,
                      hyper_params = list(),
                      is_supervised = NULL,
                      do_hyper_params_check = FALSE,
-                     search_criteria = list())
+                     search_criteria = NULL)
 {
   # Extract parameters
   dots <- list(...)
@@ -97,8 +97,15 @@ h2o.grid <- function(algorithm,
   # Append grid parameters in JSON form
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
 
-  # pass along the search criteria among the other params
-  params <- c(params, search_criteria)
+  if( !is.null(search_criteria)) {
+      # Append grid search criteria in JSON form. 
+      # jsonlite unfortunately doesn't handle scalar values so we need to serialize ourselves.
+      keys = paste0("\"", names(search_criteria), "\"", "=")
+      vals <- lapply(search_criteria, function(val) { if(is.numeric(val)) val else paste0("\"", val, "\"") })
+      body <- paste0(paste0(keys, vals), collapse=",")
+      js <- paste0("{", body, "}", collapse="")
+      params$search_criteria <- js
+  }
 
   # Append grid_id if it is specified
   if (!missing(grid_id)) params$grid_id <- grid_id
