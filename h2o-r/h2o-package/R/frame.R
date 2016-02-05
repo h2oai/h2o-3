@@ -506,7 +506,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
     parms$seed <- seed
   json <- .h2o.__remoteSend(method = "POST", page = 'MissingInserter', .params = parms)
   .h2o.__waitOnJob(json$key$name)
-  .flush.data(data)  # Flush cache and return data
+  .flush.data(data); .fetch.data(data,10L) # Flush cache and return data
 }
 
 #' Split an H2O Data Set
@@ -2503,10 +2503,8 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
       gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
-  if( gb.cols == "[]" && base::is.character(groupByFrame) )
-    res <- .eval.scalar(.newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, groupByFrame, values))
-  else
-    res <- .eval.frame(.newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, groupByFrame, values))
+  if( gb.cols == "[]" && base::is.character(groupByFrame) ) {res <- .eval.scalar(.newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, groupByFrame, values)) }
+  else { res <- .eval.frame(.newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, groupByFrame, values)) }
   .flush.data(data); .fetch.data(data,10L)
   res
 }
