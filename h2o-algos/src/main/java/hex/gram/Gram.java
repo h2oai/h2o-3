@@ -142,7 +142,7 @@ public final class Gram extends Iced<Gram> {
     return res;
   }
 
-  private static double f_eps = 1e-8;
+  private static double f_eps = 1e-7;
   private static final int MIN_PAR = 1000;
 
   private final void updateZij(int i, int j, double [][] Z, double [] gamma) {
@@ -228,7 +228,7 @@ public final class Gram extends Iced<Gram> {
       for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
         zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
       ZdiagInv[j] = 1./zjj;
-      if(-f_eps < zjj && zjj < f_eps) { // collinear column, drop it!
+      if(zjj < f_eps) { // collinear column, drop it!
         zjj = 0;
         dropped_cols.add(j-1);
         ZdiagInv[j] = 0;
