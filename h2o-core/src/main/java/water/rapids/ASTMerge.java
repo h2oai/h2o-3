@@ -379,7 +379,7 @@ public class ASTMerge extends ASTPrim {
     void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, BufferedString bStr) {
       int c=0;
       for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
-      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[_ncols],absRow,bStr);
+      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - chks.length + _ncols],absRow,bStr);
     }
   }
 }

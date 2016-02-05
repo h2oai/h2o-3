@@ -37,7 +37,7 @@ def benign_grid():
   assert best_model.params['family']['actual'] == 'binomial'
 
   # test search_criteria plumbing
-  search_criteria = { 'strategy': "Random", 'max_models': 3 }
+  search_criteria = { 'strategy': "RandomDiscrete", 'max_models': 3 }
   max_models_g = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters, search_criteria=search_criteria)
   max_models_g.train(x=X,y=Y, training_frame=training_data)
 
@@ -45,8 +45,6 @@ def benign_grid():
   print(max_models_g.grid_id)
   print(max_models_g.sort_by('F1', False))
 
-  ##### TODO: remove:
-  print("before assert")
   assert len(max_models_g.models) == 3, "expected 3 models, got: {}".format(len(max_models_g.models))
 
 if __name__ == "__main__":
