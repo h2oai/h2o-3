@@ -2,11 +2,12 @@ package hex.grid;
 
 import hex.Model;
 import hex.ModelParametersBuilderFactory;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
 
 import java.util.*;
 
-public interface HyperSpaceWalker<MP extends Model.Parameters> {
+public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
 
   interface HyperSpaceIterator<MP extends Model.Parameters> {
     /**
@@ -51,7 +52,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
      * @return  array of "untyped" values representing configuration of grid parameters
      */
     Object[] getCurrentRawParameters();
-  }
+  } // interface HyperSpaceIterator
+
+  /**
+   * Search criteria for the hyperparameter search including directives for how to search and
+   * when to stop the search.
+   */
+  public C search_criteria();
 
   /**
    * Returns an iterator to traverse this hyper-space.
@@ -93,7 +100,18 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    * values, where the String is a valid field name in the corresponding Model.Parameter, and the Object is
    * the field value (boxed as needed).
    */
-  abstract class BaseWalker<MP extends Model.Parameters> implements HyperSpaceWalker<MP> {
+  abstract class BaseWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> implements HyperSpaceWalker<MP, C> {
+
+    /**
+     * @see #search_criteria()
+     */
+    final protected C _search_criteria;
+
+    /**
+     * Search criteria for the hyperparameter search including directives for how to search and
+     * when to stop the search.
+     */
+    public C search_criteria() { return _search_criteria; }
 
     /**
      * Parameters builder factory to create new instance of parameters.
@@ -123,18 +141,43 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     final protected int _maxHyperSpaceSize;
 
     /**
+     * Java hackery so we can have a factory method on a class with type params.
+     */
+    public static class WalkerFactory<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
+      /**
+       * Factory method to create an instance based on the given HyperSpaceSearchCriteria instance.
+       */
+      public static <MP extends Model.Parameters, C extends HyperSpaceSearchCriteria>
+        HyperSpaceWalker create(MP params,
+                                              Map<String, Object[]> hyperParams,
+                                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                            C search_criteria) {
+        HyperSpaceSearchCriteria.Strategy strategy = search_criteria.strategy();
+
+        if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian)
+          return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.CartesianSearchCriteria) search_criteria);
+        else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete )
+          return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria);
+        else
+          throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
+      }
+    }
+
+    /**
      *
      * @param paramsBuilderFactory
      * @param hyperParams
      */
     public BaseWalker(MP params,
-                           Map<String, Object[]> hyperParams,
-                           ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
+                      Map<String, Object[]> hyperParams,
+                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                      C search_criteria) {
       _params = params;
       _hyperParams = hyperParams;
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
+      _search_criteria = search_criteria;
     }
 
     @Override
@@ -198,12 +241,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    * Hyperparameter space walker which visits each combination of hyperparameters in order.
    */
   public static class CartesianWalker<MP extends Model.Parameters>
-          extends BaseWalker<MP> {
+          extends BaseWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
 
     public CartesianWalker(MP params,
-                      Map<String, Object[]> hyperParams,
-                      ModelParametersBuilderFactory<MP> paramsBuilderFactory) {
-      super(params, hyperParams, paramsBuilderFactory);
+                           Map<String, Object[]> hyperParams,
+                           ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                           HyperSpaceSearchCriteria.CartesianSearchCriteria search_criteria) {
+      super(params, hyperParams, paramsBuilderFactory, search_criteria);
     }
 
     @Override
@@ -291,13 +335,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
    * given in explicit lists as they are with CartesianWalker.
    */
   public static class RandomDiscreteValueWalker<MP extends Model.Parameters>
-      extends BaseWalker<MP> {
+      extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
     Random random;
-
-    // stopping criteria:
-    private int _max_models;
-    private int _max_time_ms;
-    public int max_time_ms() { return _max_time_ms; }
 
     /** All visited hyper params permutations, including the current one. */
     private List<int[]> _visitedPermutations = new ArrayList<>();
@@ -306,13 +345,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParams,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                     int max_models,
-                                     int max_time_ms,
-                                     long seed) {
-      super(params, hyperParams, paramsBuilderFactory);
-      random = new Random(seed); // TODO: allow the user to set the seed
-      this._max_models = max_models;
-      this._max_time_ms = max_time_ms;
+                                     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria) {
+      super(params, hyperParams, paramsBuilderFactory, search_criteria);
+      random = new Random(search_criteria.seed());
     }
 
     @Override
@@ -357,12 +392,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
         @Override
         public boolean hasNext(Model previousModel) {
           // _currentPermutationNum is 1-based
-          return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < _max_models;
+          return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < search_criteria().max_models();
         }
 
         @Override
         public long timeRemaining() {
-          return _max_time_ms - (System.currentTimeMillis() - _start_time);
+          return search_criteria().max_time_ms() - (System.currentTimeMillis() - _start_time);
         }
 
         @Override

@@ -36,6 +36,8 @@ class H2OGridSearch(object):
     grid_id : str, optional
       The unique id assigned to the resulting grid object. If none is given, an id will
       automatically be generated.
+    search_criteria: dict, optional
+      A dictionary of directives which direct the search of the hyperparameter space.
      
     Returns
     -------
@@ -54,7 +56,7 @@ class H2OGridSearch(object):
     self._id = grid_id
     self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
     self.hyper_params = dict(hyper_params)
-    self.search_criteria = search_criteria
+    self.search_criteria = None if None == search_criteria else dict(search_criteria)
     self._grid_json = None
     self.models = None # list of H2O Estimator instances
     self._parms = {} # internal, for object recycle #
@@ -148,7 +150,7 @@ class H2OGridSearch(object):
 
     parms = self._parms.copy()
     parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
-    if self.search_criteria: parms.update({k:v for k, v in self.search_criteria.items() })
+    parms["search_criteria"] = self.search_criteria
     parms["hyper_parameters"] = self.hyper_params  # unique to grid search
     parms.update({k:v for k,v in list(self.model._parms.items()) if v is not None})  # unique to grid search
     if '__class__' in parms:  # FIXME: hackt for PY3

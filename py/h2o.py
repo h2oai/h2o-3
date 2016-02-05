@@ -856,12 +856,7 @@ class H2O(object):
         post_parameters.update(parameters)
         post_parameters['hyper_parameters'] = grid_parameters
         # gridParams['grid_parameters'] = json.dumps(hyperParameters)
-
-        if search_criteria is not None:
-            if 'strategy' in search_criteria: post_parameters['strategy'] = search_criteria['strategy']
-            if 'max_models' in search_criteria: post_parameters['max_models'] = search_criteria['max_models']
-            if 'max_time_ms' in search_criteria: post_parameters['max_time_ms'] = search_criteria['max_time_ms']
-            if 'seed' in search_criteria: post_parameters['seed'] = search_criteria['seed']
+        post_parameters['search_criteria'] = search_criteria
 
         # print("post_parameters: " + repr(post_parameters))
 
