@@ -215,18 +215,7 @@ public final class Gram extends Iced<Gram> {
    * @return Cholesky - cholesky decomposition fo the gram
    */
   public Cholesky qrCholesky(ArrayList<Integer> dropped_cols) {
-    final double [][] Z = getXX(true);
-    // put intercept first
-    int icpt_id = Z.length-1;
-    double d = Z[0][0];
-    Z[0][0] = Z[icpt_id][icpt_id];
-    Z[icpt_id][icpt_id] = d;
-    for(int i = 1; i < Z.length-1; ++i) {
-      d = Z[i][0];
-      Z[i][0] = Z[icpt_id][i];
-      Z[icpt_id][i] = d;
-    }
-    // todo add diagonal hack to save on the largest categorical variable
+    final double [][] Z = getXX(true,true);
     final double [][] R = new double[Z.length][];
     final double [] ZdiagInv = new double[Z.length];
     for(int i = 0; i < Z.length; ++i)
@@ -241,7 +230,7 @@ public final class Gram extends Iced<Gram> {
       ZdiagInv[j] = 1./zjj;
       if(-f_eps < zjj && zjj < f_eps) { // collinear column, drop it!
         zjj = 0;
-        dropped_cols.add(j);
+        dropped_cols.add(j-1);
         ZdiagInv[j] = 0;
       }
       Z[j][j] = zjj;
@@ -302,17 +291,13 @@ public final class Gram extends Iced<Gram> {
       if(Z[i][i] == 0) continue;
       int k = 0;
       for(int l = 0; l <= i; ++l) {
-        if(k < dropped_cols.size() && l == dropped_cols.get(k)) {
+        if(k < dropped_cols.size() && l == (dropped_cols.get(k)+1)) {
           ++k;
           continue;
         }
         Rnew[j][l - k] = R[i][l];
       }
       ++j;
-    }
-    if((dropped_cols.get(dropped_cols.size()-1)) == ZdiagInv.length-1){
-      dropped_cols.remove(dropped_cols.size()-1);
-      dropped_cols.add(0,0); // first and last columns are switched so that the intercept is the first drugin the QR decomp
     }
     return new Cholesky(Rnew,new double[0], true);
   }
@@ -484,19 +469,27 @@ public final class Gram extends Iced<Gram> {
     return chol;
   }
 
-  public double[][] getXX(){return getXX(false);}
-  public double[][] getXX(boolean lowerDiag) {
+  public double[][] getXX(){return getXX(false, false);}
+  public double[][] getXX(boolean lowerDiag, boolean icptFist) {
     final int N = _fullN;
     double[][] xx = new double[N][];
     for( int i = 0; i < N; ++i )
       xx[i] = MemoryManager.malloc8d(lowerDiag?i+1:N);
+    int off = 0;
+    if(icptFist) {
+      double [] icptRow = _xx[_xx.length-1];
+      xx[0][0] = icptRow[icptRow.length-1];
+      for(int i = 0; i < icptRow.length-1; ++i)
+        xx[i+1][0] = icptRow[i];
+      off = 1;
+    }
     for( int i = 0; i < _diag.length; ++i )
-      xx[i][i] = _diag[i];
-    for( int i = 0; i < _xx.length; ++i ) {
+      xx[i+off][i+off] = _diag[i];
+    for( int i = 0; i < _xx.length - off; ++i ) {
       for( int j = 0; j < _xx[i].length; ++j ) {
-        xx[i + _diag.length][j] = _xx[i][j];
+        xx[i + _diag.length + off][j + off] = _xx[i][j];
         if(!lowerDiag)
-          xx[j][i + _diag.length] = _xx[i][j];
+          xx[j + off][i + _diag.length + off] = _xx[i][j];
       }
     }
     return xx;
@@ -906,9 +899,10 @@ public final class Gram extends Iced<Gram> {
     public final void   solve(double[] y) {
       if( !isSPD() ) throw new NonSPDMatrixException();
       if(_icptFirst) {
-        double d = y[y.length-1];
-        y[y.length-1] = y[0];
-        y[0] = d;
+        double icpt = y[y.length-1];
+        for(int i = y.length-1; i > 0; --i)
+          y[i] = y[i-1];
+        y[0] = icpt;
       }
       // diagonal
       for( int k = 0; k < _diag.length; ++k )
@@ -932,9 +926,10 @@ public final class Gram extends Iced<Gram> {
       for( int k = _diag.length - 1; k >= 0; --k )
         y[k] /= _diag[k];
       if(_icptFirst) {
-        double d = y[y.length-1];
-        y[y.length-1] = y[0];
-        y[0] = d;
+        double icpt = y[0];
+        for(int i = 1; i < y.length; ++i)
+          y[i-1] = y[i];
+        y[y.length-1] = icpt;
       }
     }
     public final boolean isSPD() {return _isSPD;}
@@ -1039,7 +1034,7 @@ public final class Gram extends Iced<Gram> {
 
   public void mul(double [] x, double [] res){
     Arrays.fill(res,0);
-    if(XX == null) XX = getXX(false);
+    if(XX == null) XX = getXX(false,false);
     for(int i = 0; i < XX.length; ++i){
       double d  = 0;
       double [] xi = XX[i];
@@ -1101,6 +1096,9 @@ public final class Gram extends Iced<Gram> {
       _nobs += gt._nobs;
     }
   }
-  public static class NonSPDMatrixException extends RuntimeException {}
+  public static class NonSPDMatrixException extends RuntimeException {
+    public NonSPDMatrixException(){}
+    public NonSPDMatrixException(String msg){super(msg);}
+  }
 }
 

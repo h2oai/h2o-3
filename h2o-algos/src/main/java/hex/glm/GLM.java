@@ -442,7 +442,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
-        Cholesky chol = ((_state._iter == 0 && _parms._remove_collinear_columns)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
+          int [] collinear_cols = new int[ignoredCols.size()];
+          for(int i = 0; i < collinear_cols.length; ++i)
+            collinear_cols[i] = ignoredCols.get(i);
+          throw new NonSPDMatrixException("Found collinear columns in the dataset. Can not compute compute p-values without removing them, set remove_collinear_columns flag to true. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
+        }
         if(!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
         if(!ignoredCols.isEmpty()) { // got some redundant cols
