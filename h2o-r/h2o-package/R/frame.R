@@ -2442,7 +2442,8 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'                "mode" replaces with the most common factor (for factor columns only);
 #'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
 #'  @param by group by columns
-#'  @param inplace Perform the imputation inplace or make a copy. Default is to perform the imputation in place.
+#'  @param groupByFrame Impute the column col with this pre-computed grouped frame.
+#'  @param values A vector of impute values (one per column). NaN indicates to skip the column
 #'
 #'  @return an H2OFrame with imputed values
 #'  @examples
@@ -2454,27 +2455,28 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'  fr <- h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
 #' }
 #'  @export
-h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
-                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, inplace=FALSE) {
+h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
+                       combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, groupByFrame=NULL, values=NULL) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector
   # TODO: "ffill" front fill the missing value with the most-recent non-missing value in the vector.
   # TODO: #'  @param max_gap  The maximum gap with which to fill (either "ffill", or "bfill") missing values. If more than max_gap consecutive missing values occur, then those values remain NA.
 
   # this AST: (h2o.impute %fr #colidx method combine_method inplace max_gap by)
   chk.H2OFrame(data)
+  if( !is.null(groupByFrame) ) chk.H2OFrame(groupByFrame)
+  else groupByFrame <- "_"  # NULL value for rapids backend
+
+  if( is.null(values) ) values <- "_"  # TODO: exposes categorical-int mapping! Fix this with an object that hides mapping...
 
   # sanity check `column` then convert to 0-based index.
   if( length(column) > 1L ) stop("`column` must be a single column.")
   col.id <- -1L
   if( is.numeric(column) ) col.id <- column - 1L
   else                     col.id <- match(column,colnames(data)) - 1L
-  if( col.id < 0L || col.id > (ncol(data)-1L) ) stop("Column ", col.id, " out of range.")
+  if( col.id > (ncol(data)-1L) ) stop("Column ", col.id, " out of range.")
 
   # choose "mean" by default for numeric columns. "mode" for factor columns
-  if( length(method) > 1) {
-    if( is.factor(data[column]) ) method <- "mode"
-    method <- "mean"
-  }
+  if( length(method) > 1) method <- "mean"
 
   # choose "interplate" by default for combine_method
   if( length(combine_method) > 1L ) combine_method <- "interpolate"
@@ -2486,10 +2488,6 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
     # no by and median
     if( !is.null(by) ) stop("Unimplemented: No `by` and `median`. Please select a different method.")
   }
-
-  # check that method isn't median or mean for factor columns.
-  if( is.factor(data[column]) && !(method %in% c("ffill", "bfill", "mode")) )
-    stop("Column is categorical, method must not be mean or median.")
 
   # handle the data
   gb.cols <- "[]"
@@ -2505,10 +2503,11 @@ h2o.impute <- function(data, column, method=c("mean","median","mode"), # TODO: a
       gb.cols <- .row.col.selector(vars,envir=parent.frame())
   }
 
-  res <- .newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols)
-  # In-place updates we force right now, because the user expects future uses
-  # of 'data' to show the imputed changed.
-  if( inplace ) stop("unimpl")
+  if( gb.cols == "[]" && base::is.character(groupByFrame) )
+    res <- .eval.scalar(.newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, groupByFrame, values))
+  else
+    res <- .eval.frame(.newExpr("h2o.impute",data, col.id, .quote(method), .quote(combine_method), gb.cols, groupByFrame, values))
+  .flush.data(data); .fetch.data(data,10L)
   res
 }
 
