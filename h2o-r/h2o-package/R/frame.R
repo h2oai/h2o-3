@@ -507,6 +507,7 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
   json <- .h2o.__remoteSend(method = "POST", page = 'MissingInserter', .params = parms)
   .h2o.__waitOnJob(json$key$name)
   .flush.data(data); .fetch.data(data,10L) # Flush cache and return data
+  data
 }
 
 #' Split an H2O Data Set
