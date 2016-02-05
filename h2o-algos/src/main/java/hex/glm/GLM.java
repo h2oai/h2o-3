@@ -315,6 +315,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
+      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
+        error("_compute_p_values","P-values can not be computed for constrained problems");
+
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
       _state = new ComputationState(_job._key, _parms, _dinfo, bc, nclasses());
@@ -835,6 +838,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _keys2Keep.put("dest",dest());
       _parms.read_lock_frames(_job);
       init(true);
+      if (error_count() > 0) {
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+      }
       double nullDevTrain = Double.NaN;
       double nullDevTest = Double.NaN;
       if(_parms._lambda_search) {
@@ -848,9 +854,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _workPerIteration = WORK_TOTAL/_parms._nlambdas;
       } else
         _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
-      if (error_count() > 0) {
-        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
-      }
+
       if(_parms._family == Family.multinomial && _parms._solver == Solver.IRLSM) {
         double [] nb = getNullBeta();
         double maxRow = ArrayUtils.maxValue(nb);
@@ -1550,6 +1554,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (double d : _betaUB)
           if (!Double.isInfinite(d)) return true;
       return false;
+    }
+
+    public boolean hasProximalPenalty() {
+      return _betaGiven != null && _rho != null && ArrayUtils.countNonzeros(_rho) > 0;
     }
 
     public void adjustGradient(double[] beta, double[] grad) {
