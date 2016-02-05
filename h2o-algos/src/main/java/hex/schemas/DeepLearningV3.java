@@ -408,10 +408,10 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "huber", "quantile" }, level = API.Level.secondary, gridable = true)
     public Distribution.Family distribution;
 
-    @API(help = "Tweedie Power", level = API.Level.secondary)
+    @API(help = "Tweedie Power", level = API.Level.secondary, gridable = true)
     public double tweedie_power;
 
-    @API(help="Desired quantile for quantile regression (from 0.0 to 1.0)", gridable = true)
+    @API(help="Desired quantile for quantile regression (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double quantile_alpha;
 
     /*Scoring*/

@@ -34,7 +34,7 @@ gbm.grid.test <- function() {
     #
     # test random/max_models search criterion
     size_of_hyper_space <- 5
-    search_criteria = list(strategy = "Random", max_models = size_of_hyper_space)
+    search_criteria = list(strategy = "RandomDiscrete", max_models = size_of_hyper_space)
     air.grid <- h2o.grid("gbm", y = "IsDepDelayed", x = myX,
                          distribution="bernoulli",
                          training_frame = air.hex,

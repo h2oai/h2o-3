@@ -230,6 +230,7 @@ public abstract class GLMTask  {
      } else if (_nobs == 0) {
        _yMu = ymt._yMu;
        _nobs = ymt._nobs;
+       _wsum = ymt._wsum;
        _yMin = ymt._yMin;
        _yMax = ymt._yMax;
        _basicStats = ymt._basicStats;
