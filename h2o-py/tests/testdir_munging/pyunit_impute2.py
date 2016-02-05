@@ -5,8 +5,6 @@ import h2o
 from tests import pyunit_utils
 
 
-
-
 def impute2():
     # Connect to a pre-existing cluster
     
@@ -35,48 +33,48 @@ def impute2():
     h2o_data = h2o.H2OFrame(data)
 
     # mean check
-    h2o_data = h2o_data.impute(column="C1", method="mean")
+    h2o_data.impute(column="C1", method="mean")
     c1_imputed = h2o_data[0,0]
     assert c1_imputed == 3, "Wrong value imputed. Expected imputed value of 3, but got {0}".format(c1_imputed)
 
     # inplace check
     h2o_data = h2o.H2OFrame(data)
     h2o_data.impute(column="C1", method="mean")
-    assert h2o_data["C1"].isna().sum() == 1, "Expected imputation to be done in place."
+    assert h2o_data["C1"].isna().sum() == 0, "Expected imputation to be done in place."
 
     # median-average
     h2o_data = h2o.H2OFrame(data)
-    h2o_data = h2o_data.impute( column="C2", method="median", combine_method="average")
+    h2o_data.impute( column="C2", method="median", combine_method="average")
     c2_imputed = h2o_data[1,1]
     assert c2_imputed == 3.5, "Wrong value imputed. Expected imputed value of 3.5, but got {0}".format(c2_imputed)
 
     # median-low
     h2o_data = h2o.H2OFrame(data)
-    h2o_data = h2o_data.impute(column="C3", method="median", combine_method="low")
+    h2o_data.impute(column="C3", method="median", combine_method="low")
     c3_imputed = h2o_data[2,2]
     assert c3_imputed == 4, "Wrong value imputed. Expected imputed value of 4, but got {0}".format(c3_imputed)
 
     # median-high
     h2o_data = h2o.H2OFrame(data)
-    h2o_data = h2o_data.impute(column="C4", method="median", combine_method="high")
+    h2o_data.impute(column="C4", method="median", combine_method="high")
     c4_imputed = h2o_data[2,3]
     assert c4_imputed == 5, "Wrong value imputed. Expected imputed value of 5, but got {0}".format(c4_imputed)
 
     # mode-categorical
     h2o_data = h2o.H2OFrame.from_python(data, na_strings=[''])
-    h2o_data = h2o_data.impute(column="C5", method="mode")
+    h2o_data.impute(column="C5", method="mode")
     c5_imputed = h2o_data[4,4]
     assert c5_imputed == 'b', "Wrong value imputed. Expected imputed value of b, but got {0}".format(c5_imputed)
 
     # mode-numeric
     h2o_data = h2o.H2OFrame(data)
-    h2o_data = h2o_data.impute(column="C6", method="mode")
+    h2o_data.impute(column="C6", method="mode")
     c6_imputed = h2o_data[5,5]
     assert c6_imputed == 1, "Wrong value imputed. Expected imputed value of 1, but got {0}".format(c6_imputed)
 
     # mean-group by C7
     h2o_data = h2o.H2OFrame(data)
-    h2o_data = h2o_data.impute(column="C3", method="mean", by="C7")
+    h2o_data.impute(column="C3", method="mean", by="C7")
     imputed1 = h2o_data[2,2]
     imputed2 = h2o_data[3,2]
     assert imputed1 == 3.5, "Wrong value imputed. Expected imputed value of 3.5, but got {0}".format(imputed1)
