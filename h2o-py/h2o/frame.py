@@ -1361,13 +1361,14 @@ class H2OFrame(object):
     if isinstance(column, basestring): column = self.names.index(column)
     if isinstance(by, basestring):     by     = self.names.index(by)
 
-    gby=True
-    if by is None and group_by_frame is None: gby=False
+
     if values is None: values="_"
     if group_by_frame is None: group_by_frame="_"
 
-    if gby: res = ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values)._eager_frame()
-    else:   res = ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values)._eager_scalar()
+    if by is not None or group_by_frame is not "_":
+      res = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values))._frame()
+    else:
+      res = ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values)._eager_scalar()
 
     self._ex._cache.flush(); self._ex._cache.fill(10)
     return res
