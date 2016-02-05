@@ -527,7 +527,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       H2O.submitTask(sqt);
       sqt.join();
 
-      for (int i = 0; i < ktrees[0]._len - leafs[0]; i++) {
+      for (int i = 0; i < sqt._quantiles.length; i++) {
         float val = (float) (_parms._learn_rate * sqt._quantiles[i]);
         assert !Float.isNaN(val) && !Float.isInfinite(val);
         ((LeafNode) ktrees[0].node(leafs[0] + i))._pred = val;
