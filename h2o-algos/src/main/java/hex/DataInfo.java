@@ -181,14 +181,14 @@ public class DataInfo extends Keyed<DataInfo> {
     _catOffsets = MemoryManager.malloc4(ncats+1);
     _catMissing = new boolean[ncats];
     int len = _catOffsets[0] = 0;
-    boolean extraBucket = !skipMissing && !imputeMissing;
+
     for(int i = 0; i < ncats; ++i) {
       _catModes[i] = imputeCat(train.vec(cats[i]));
       _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
-      _catMissing[i] = missingBucket || (extraBucket &&  v.naCnt() > 0); //needed for test time
-      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + ((missingBucket || (extraBucket &&  v.naCnt() > 0))? 1 : 0)); //missing values turn into a new factor level
+      _catMissing[i] = missingBucket; //needed for test time
+      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
     }
     _numMeans = new double[_nums];
     for(int i = 0; i < _nums; ++i){
