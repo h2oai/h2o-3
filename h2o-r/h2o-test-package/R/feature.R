@@ -125,7 +125,8 @@ function(feature, r) {
         if (feature %in% c("as.factor", "cos", "acos", "cosh", "acosh", "sin", "asin", "sinh", "asinh", "tan", "atan",
                            "tanh","atanh", "all", "&", "h2o.cbind", "colnames", "[", "h2o.hist", "h2o.impute",
                            "h2o.rep_len", "t", "h2o.var", "abs", "ceiling", "digamma", "exp", "gamma", "floor",
-                           "expm1", "is.na")) {
+                           "expm1", "is.na", "lgamma", "log", "log2", "log1p", "log10", "!", "round", "sign",
+                           "signif", "trigamma", "trunc", "ncol", "nrow", "sqrt")) {
             return("data.frame")
         } else if (feature %in% c("h2o.table")) {
             return("data.frameORvector")
@@ -133,7 +134,7 @@ function(feature, r) {
             return("numeric")
         } else if (feature %in% c("h2o.which")) {
             return("logical")
-        } else if (feature %in% c("h2o.match", "is.character")) {
+        } else if (feature %in% c("h2o.match", "is.character", "is.numeric", "h2o.levels")) {
             return("vector")
         } else if (feature %in% c("h2o.strsplit", "h2o.toupper")) {
             return("character")
@@ -232,6 +233,7 @@ function(obj1, obj2) {
     } else if (obj1Class == "numeric"   && obj2Class == "numeric")    { .comp.base.base(obj1, obj2)
     } else if (obj1Class == "character" && obj2Class == "character")  { .comp.base.base(obj1, obj2)
     } else if (obj1Class == "logical"   && obj2Class == "logical")    { .comp.base.base(obj1, obj2)
+    } else if (obj1Class == "integer"   && obj2Class == "integer")    { .comp.base.base(obj1, obj2)
     } else { stop(paste0("Objects of class ", obj1Class, " and ", obj2Class, " cannot be compared."))
     }
 }
@@ -391,7 +393,23 @@ function(op) {
     } else if (op == "floor")         { return("floor")
     } else if (op == "expm1")         { return("expm1")
     } else if (op == "is.character")  { return("is.character")
+    } else if (op == "is.numeric")    { return("is.numeric")
     } else if (op == "is.na")         { return("is.na")
+    } else if (op == "lgamma")        { return("lgamma")
+    } else if (op == "h2o.levels")    { return("levels")
+    } else if (op == "log")           { return("log")
+    } else if (op == "log2")          { return("log2")
+    } else if (op == "log1p")         { return("log1p")
+    } else if (op == "log10")         { return("log10")
+    } else if (op == "ncol")          { return("ncol")
+    } else if (op == "!")             { return("!")
+    } else if (op == "nrow")          { return("nrow")
+    } else if (op == "round")         { return("round")
+    } else if (op == "sign")          { return("sign")
+    } else if (op == "signif")        { return("signif")
+    } else if (op == "trigamma")      { return("trigamma")
+    } else if (op == "trunc")         { return("trunc")
+    } else if (op == "sqrt")          { return("sqrt")
     }
 }
 
