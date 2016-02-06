@@ -70,7 +70,7 @@ public class Merge {
 
     // Align MSB locations between the two keys
     // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
-    int bitShift = Math.max(8, rightIndex._biggestBit[0]) - Math.max(8, leftIndex._biggestBit[0]);
+    /*int bitShift = Math.max(8, rightIndex._biggestBit[0]) - Math.max(8, leftIndex._biggestBit[0]);
     int leftExtent = 256, rightExtent = 1;
     if (bitShift < 0) {
       // The biggest keys in left table are larger than the biggest in right table
@@ -79,7 +79,7 @@ public class Merge {
       leftExtent >>= -bitShift;
       // and those could join to multiple msb in the right table, one-to-many ...
       rightExtent <<= -bitShift;
-    }
+    }*/
     // else if bitShift > 0
     //   The biggest keys in right table are larger than the largest in left table
     //   The msb values in left table need to be reduced in magnitude and will then join to the smallest of the right key's msb values
@@ -97,18 +97,36 @@ public class Merge {
     System.out.print("Making BinaryMerge RPC calls ... ");
     t0 = System.nanoTime();
     List<RPC> bmList = new ArrayList<>();
-    for (int leftMSB =0; leftMSB <leftExtent; leftMSB++) { // each of left msb values.  TO DO: go parallel
+
+    for (int leftMSB=0; leftMSB<256; leftMSB++) { // each of left msb values. NAs (0) aren't joined currently but could be
 //      long leftLen = leftIndex._MSBhist[i];
 //      if (leftLen > 0) {
-      int rightMSBBase = leftMSB >> bitShift;  // could be positive or negative, or most commonly and ideally bitShift==0
-      for (int k=0; k<rightExtent; k++) {
-        int rightMSB = rightMSBBase +k;
+      // int rightMSBBase = leftMSB >> bitShift;  // could be positive or negative, or most commonly and ideally bitShift==0
+      //rightFrom = (leftMSB-1) << (Math.max(8, leftIndex._biggestBit[0])-8) + leftIndex._colMin[0] - rightIndex._colMin[0];
+
+      //rightFrom >>= (Math.max(8, rightIndex._biggestBit[0])-8);
+      //rightFrom++;
+
+      for (int rightMSB=0; rightMSB<256; rightMSB++) {
+        //int rightMSB = rightMSBBase +k;
 //          long rightLen = rightIndex._MSBhist[j];
 //          if (rightLen > 0) {
         //System.out.print(i + " left " + lenx + " => right " + leny);
         // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node
         //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
 //        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
+
+        //if  ( ((leftMSB-1) << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] !=
+        //      ((rightMSB-1) << (Math.max(8, rightIndex._biggestBit[0])-8)) + rightIndex._colMin[0] )
+        //  continue;
+        long tt = (leftMSB << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] - rightIndex._colMin[0];
+        if (tt<0) continue;  // The left MSB values represent a range less than the right minimum value, so cannot match.
+        tt >>= (Math.max(8, rightIndex._biggestBit[0])-8);
+        if (tt != rightMSB) continue;  // including possibly tt greater than 256 for left values greater than the right's max
+
+        // A naive loop through 1:65536 is considered easier to read. Could get fancy and loop inner loop through relevant lower and upper bound only but trying hurt my brain too much and had too high risk of bugs.
+        // The loops are started at 1, then 1 taken off again, to remind us about NA.
+
         H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);  // TODO: ensure that that owner has that part of the index locally.
         //if (leftMSB!=73 || rightMSB!=73) continue;
         //Log.info("Calling BinaryMerge for " + leftMSB + " " + rightMSB);
@@ -118,6 +136,8 @@ public class Merge {
                         //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                         leftIndex._bytesUsed,   // field sizes for each column in the key
                         rightIndex._bytesUsed,
+                        leftIndex._colMin,
+                        rightIndex._colMin,
                         allLeft
                 )
         );
@@ -130,7 +150,11 @@ public class Merge {
 
     int queueSize = Math.max(H2O.CLOUD.size() * 20, 40);  // TODO: remove and let thread pool take care of it once GC issue alleviated
     t0 = System.nanoTime();
-    System.out.print("Sending BinaryMerge async RPC calls in a queue of " + queueSize + " ... ");
+    if (queueSize > bmList.size()) {
+      System.out.println("Small number of MSB joins (" + bmList.size() + ") means we won't get full parallelization benefit");
+      queueSize = bmList.size();
+    }
+    System.out.println("Sending "+bmList.size()+" BinaryMerge async RPC calls in a queue of " + queueSize + " ... ");
     // need to do our own queue it seems, otherwise floods the cluster
 
     //int nbatch = 1+ (bmList.size()-1)/queueSize;

@@ -6,6 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.Pair;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;
@@ -19,13 +20,15 @@ class RadixCount extends MRTask<RadixCount> {
   Long2DArray _counts;
   int _biggestBit;
   int _col;
+  long _colMin;
   boolean _isLeft; // used to determine the unique DKV names since DF._key is null now and before only an RTMP name anyway
   int _id_maps[][];
 
-  RadixCount(boolean isLeft, int biggestBit, int col, int id_maps[][]) {
+  RadixCount(boolean isLeft, int biggestBit, long colMin, int col, int id_maps[][]) {
     _isLeft = isLeft;
     _biggestBit = biggestBit;
     _col = col;
+    _colMin = colMin;
     _id_maps = id_maps;
   }
 
@@ -47,16 +50,38 @@ class RadixCount extends MRTask<RadixCount> {
     long tmp[] = _counts._val[chk.cidx()] = new long[256];
     int shift = _biggestBit-8;
     if (shift<0) shift = 0;
-    // TO DO: assert chk instanceof integer or enum;  -- but how?  // alternatively: chk.getClass().equals(C8Chunk.class)
-    if (!_isLeft && chk.vec().isCategorical()) {   // first column (for MSB split) in an Enum. Heed the id_maps.
-      assert _id_maps[0].length > 0;
-      for (int r=0; r<chk._len; r++) {
-        tmp[(int) (_id_maps[0][(int)chk.at8(r)] >> shift & 0xFFL)]++;
+    // TO DO: assert chk instanceof integer or enum;  -- but how since many integers (C1,C2 etc)? // alternatively: chk.getClass().equals(C8Chunk.class)
+    if (_isLeft || !chk.vec().isCategorical()) {
+      if (chk.vec().naCnt() == 0) {
+        // There are no NA in this join column; hence branch-free loop. Most common case as should never really have NA in join columns.
+        for (int r=0; r<chk._len; r++) {
+          tmp[(int)((chk.at8(r)-_colMin+1) >> shift & 0xFFL)]++;  // forget the L => wrong answer with no type warning from IntelliJ
+          // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
+        }
+      } else {
+        // There are some NA in the column so have to branch. TODO: warn user NA are present in join column
+        for (int r=0; r<chk._len; r++) {
+          if (chk.isNA(r)) tmp[0]++;
+          else tmp[(int)((chk.at8(r)-_colMin+1) >> shift & 0xFFL)]++;  // forget the L => wrong answer with no type warning from IntelliJ
+          // Done - we will join NA to NA as data.table does
+          // TODO: allow NA-to-NA join to be turned off. Do that in bmerge as a simple low-cost switch.
+          // Note that NA and the minimum may well both be in MSB 0 but most of the time we will not have NA in join columns
+        }
       }
     } else {
-      for (int r=0; r<chk._len; r++) {
-        tmp[(int) (chk.at8(r) >> shift & 0xFFL)]++;  // forget the L => wrong answer with no type warning from IntelliJ
-        // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
+      // first column (for MSB split) in an Enum
+      // map right categorical to left levels using _id_maps
+      assert _id_maps[0].length > 0;
+      assert _colMin==0;  // TODO: no longer true.  Will likely fail first time we have an enum as the first join column
+      if (chk.vec().naCnt() == 0) {
+        for (int r=0; r<chk._len; r++) {
+          tmp[(int)((_id_maps[0][(int)chk.at8(r)]+1) >> shift & 0xFFL)]++;
+        }
+      } else {
+        for (int r=0; r<chk._len; r++) {
+          if (chk.isNA(r)) tmp[0]++;
+          else tmp[(int)((_id_maps[0][(int)chk.at8(r)]+1) >> shift & 0xFFL)]++;
+        }
       }
     }
   }
@@ -77,15 +102,16 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   transient byte _x[][][];
   boolean _isLeft;
   int _biggestBit, _batchSize, _bytesUsed[], _keySize;
-  int[]_col;
+  long _colMin[];
+  int  _col[];
   long _numRowsOnThisNode;
-  Key _linkTwoMRTask;
-  int _id_maps[][];
+  Key  _linkTwoMRTask;
+  int  _id_maps[][];
 
   static Hashtable<Key,SplitByMSBLocal> MOVESHASH = new Hashtable<>();
-  SplitByMSBLocal(boolean isLeft, int biggestBit, int keySize, int batchSize, int bytesUsed[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
+  SplitByMSBLocal(boolean isLeft, int biggestBit, int keySize, int batchSize, int bytesUsed[], long colMin[], int[] col, Key linkTwoMRTask, int[][] id_maps) {
     _isLeft = isLeft;
-    _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed = bytesUsed; _col = col;
+    _biggestBit = biggestBit; _batchSize=batchSize; _bytesUsed=bytesUsed; _col=col; _colMin=colMin;
     _keySize = keySize;  // ArrayUtils.sum(_bytesUsed) -1;
     _linkTwoMRTask = linkTwoMRTask;
     _id_maps = id_maps;
@@ -181,14 +207,22 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
     //int leftAlign = (8-(_biggestBit % 8)) % 8;   // only the first column is left aligned, currently. But they all could be for better splitting.
 
-    // Loop through this chunk and write the byte key and the source row into the local MSB buckets
+    // Loop through this chunk and write the byte key and the source row number into the local MSB buckets
+    // TODO: make this branch free and write the already-compressed _mem directly.  Just need to normalize compression across all chunks.
+    // This has to loop through rows because we need the MSBValue from the first column to use on the others, by row.  Nothing to do cache
+    // efficiency, although, it will be most cache efficient (holding one page of each column's _mem, plus a page of this_x, all contiguous.  At the
+    // cost of more instructions.
     long t0 = System.nanoTime();
+    int shift = Math.max(_biggestBit-8, 0);
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
-      long thisx = chk[0].at8(r);  // - _colMin[0]) << leftAlign;  (don't subtract colMin because it unlikely helps compression and makes joining 2 compressed keys more difficult and expensive).
-      if (!_isLeft && _id_maps[0] != null) thisx = _id_maps[0][(int)thisx];  // TO DO: restore branch-free again, go by column and retain original compression with no .at8()
-      int shift = _biggestBit-8;   // TO DO: not needed if we stick with original compression and standardize in merge.
-      if (shift<0) shift = 0;
-      int MSBvalue = (int) (thisx >> shift & 0xFFL);
+      int MSBvalue = 0;  // default for NA
+      long thisx = 0;
+      if (!chk[0].isNA(r)) {
+        thisx = chk[0].at8(r);
+        if (!_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;  // TODO: restore branch-free again, go by column and retain original compression with no .at8()
+        else thisx = thisx - _colMin[0] + 1;                                     //       may not be worth that as has to be global minimum so will rarely be able to use as raw, but when we can maybe can do in bulk
+        MSBvalue = (int)(thisx >> shift & 0xFFL);   // +1 leaving 0 for NA
+      }
       long target = myCounts[MSBvalue]++;
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
@@ -202,9 +236,11 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         thisx >>= 8;
       }
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
-        offset += _bytesUsed[c-1];    // advance offset by the previous field width
-        thisx = chk[c].at8(r);        // TO DO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
-        if (!_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx];  // TO DO: restore branch-free again, go by column and retain original compression with no .at8()
+        offset += _bytesUsed[c-1];     // advance offset by the previous field width
+        if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
+        thisx = chk[c].at8(r);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
+        if (!_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
+        else thisx = thisx - _colMin[c] + 1;
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
           this_x[offset + i] = (byte) (thisx & 0xFF);
           thisx >>= 8;
@@ -719,6 +755,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counted completer so that left and right index can run at the same time
   int _biggestBit[];
   int _bytesUsed[];
+  long _colMin[];
   //long[][][] _o;
   //byte[][][] _x;
   Frame _DF;
@@ -739,22 +776,25 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     long t0 = System.nanoTime();
     _biggestBit = new int[_whichCols.length];   // currently only biggestBit[0] is used
     _bytesUsed = new int[_whichCols.length];
-    //long colMin[] = new long[whichCols.length];
-    for (int i = 0; i < _whichCols.length; i++) {
+    _colMin = new long[_whichCols.length];
+    for (int i=0; i<_whichCols.length; i++) {
       Vec col = _DF.vec(_whichCols[i]);
       //long range = (long) (col.max() - col.min());
       //assert range >= 1;   // otherwise log(0)==-Inf next line
       double numerator;
+      // TODO: string & double. But we we'll only allow fixed precision double in keys, unlike data.table
+      _colMin[i] = col.isCategorical() ? 0 : (long)col.min();   // temp workaround
       if (!_isLeft && col.isCategorical()) {
         // the right's levels have been matched to the left's levels and we store the mapped values so it's that mapped range we need here (or the col.max() of the corresonding left table would be fine too, but mapped range might be less so use that for possible efficiency)
         assert _id_maps[i] != null;
-        numerator = ArrayUtils.maxValue(_id_maps[i]);  // could use rightcol.max(), but this way if we join to a small subset of levels, we'll benefit from the small range here.
+        //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);  // TODO: what is in _id_maps for no matches (-1?) and exclude those i.e. find the minimum >=0. Then treat -1 in _id_map as an NA when writing key
+        numerator = ArrayUtils.maxValue(_id_maps[i]) - _colMin[i] + 2;  // if we join to a small subset of levels, we'll benefit from the small range here.
       } else {
-        numerator = col.max();
+        //_colMin[i] = (long)col.min();
+        numerator = (long)col.max() - _colMin[i] + 2;  // +1 for bounds, another +1 for NA (if any) being stored at 0
       }
       _biggestBit[i] = 1 + (int) Math.floor(Math.log(numerator) / Math.log(2));   // number of bits starting from 1 easier to think about (for me)
       _bytesUsed[i] = (int) Math.ceil(_biggestBit[i] / 8.0);
-      //colMin[i] = (long) col.min();   // TO DO: non-int/enum
     }
     if (_biggestBit[0] < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  // TODO: feeed back to R warnings()
     int keySize = ArrayUtils.sum(_bytesUsed);   // The MSB is stored (seemingly wastefully on first glance) because we need it when aligning two keys in Merge()
@@ -763,7 +803,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
     t0 = System.nanoTime();
-    new RadixCount(_isLeft, _biggestBit[0], _whichCols[0], _isLeft ? null : _id_maps ).doAll(_DF.vec(_whichCols[0]));
+    new RadixCount(_isLeft, _biggestBit[0], _colMin[0], _whichCols[0], _isLeft ? null : _id_maps ).doAll(_DF.vec(_whichCols[0]));
     System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -777,7 +817,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     // from first on that node to second on that node.  // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     t0 = System.nanoTime();
     Key linkTwoMRTask = Key.make();
-    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
+    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, _colMin, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
     System.out.print(tmp.profString());
 
