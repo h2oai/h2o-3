@@ -22,8 +22,6 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     public String algoName() { return "PCA"; }
     public String fullName() { return "Principle Components Analysis"; }
     public String javaName() { return PCAModel.class.getName(); }
-    @Override public long progressUnits() { return _pca_method == PCAParameters.Method.GramSVD ? 5 : 3; }
-
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation
     public Method _pca_method = Method.GramSVD;   // Method for computing PCA
     public int _k = 1;                     // Number of principal components

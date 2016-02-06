@@ -36,8 +36,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     boolean hasNext(Model previousModel);
 
-    void reset();
-
     long timeRemaining();
 
     /**
@@ -291,10 +289,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           return false;
         }
 
-        @Override public void reset() {
-          _currentHyperparamIndices = null;
-        }
-
         @Override
         public long timeRemaining() { return Long.MAX_VALUE; }
 
@@ -387,6 +381,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
             MP params = getModelParams(commonModelParams, hypers);
+            // We have another model parameters
+            Log.info("About to build model: " + _currentPermutationNum);
             return params;
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
@@ -397,14 +393,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         public boolean hasNext(Model previousModel) {
           // _currentPermutationNum is 1-based
           return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < search_criteria().max_models();
-        }
-
-        @Override
-        public void reset() {
-          _currentPermutationNum = 0;
-          _currentHyperparamIndices = null;
-          _visitedPermutations.clear();
-          _visitedPermutationHashes.clear();
         }
 
         @Override

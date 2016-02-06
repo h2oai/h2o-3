@@ -27,7 +27,6 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
     public String algoName() { return "NaiveBayes"; }
     public String fullName() { return "Naive Bayes"; }
     public String javaName() { return NaiveBayesModel.class.getName(); }
-    @Override public long progressUnits() { return 6; }
   }
 
   public static class NaiveBayesOutput extends Model.Output {

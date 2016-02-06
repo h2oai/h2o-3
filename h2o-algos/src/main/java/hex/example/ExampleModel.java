@@ -12,7 +12,6 @@ public class ExampleModel extends Model<ExampleModel,ExampleModel.ExampleParamet
     public String algoName() { return "Example"; }
     public String fullName() { return "Example"; }
     public String javaName() { return ExampleModel.class.getName(); }
-    @Override public long progressUnits() { return _max_iterations; }
     public int _max_iterations = 1000; // Max iterations
   }
 

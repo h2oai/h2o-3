@@ -14,6 +14,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   public enum NormModel { HSM, NegSampling }
   public Word2Vec(Word2VecModel.Word2VecParameters parms) { super(parms); }
   @Override protected Word2VecDriver trainModelImpl() { return new Word2VecDriver(); }
+  @Override public long progressUnits() { return _parms._epochs; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

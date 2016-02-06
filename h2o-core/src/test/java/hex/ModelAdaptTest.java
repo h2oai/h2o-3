@@ -20,7 +20,6 @@ public class ModelAdaptTest extends TestUtil {
       public String algoName() { return "A"; }
       public String fullName() { return "A"; }
       public String javaName() { return AModel.class.getName(); }
-      @Override public long progressUnits() { return 0; }
     }
     static class AOutput extends Model.Output { }
   }

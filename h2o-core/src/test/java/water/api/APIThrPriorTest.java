@@ -158,7 +158,6 @@ class BogusModel extends Model<BogusModel,BogusModel.BogusParameters,BogusModel.
     public String algoName() { return "Bogus"; }
     public String fullName() { return "Bogus"; }
     public String javaName() { return BogusModel.class.getName(); }
-    @Override public long progressUnits() { return 0; }
   }
   public static class BogusOutput extends Model.Output { }
   BogusModel( Key selfKey, BogusParameters parms, BogusOutput output) { super(selfKey,parms,output); }
@@ -178,6 +177,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public Bogus( BogusModel.BogusParameters parms ) { super(parms); init(false); }
   @Override protected Driver trainModelImpl() { return new BogusDriver(); }
+  @Override public long progressUnits() { return 0; }
   @Override public void init(boolean expensive) { super.init(expensive); }
 
   private class BogusDriver extends Driver {

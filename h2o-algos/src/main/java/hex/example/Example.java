@@ -20,6 +20,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
   // Called from Nano thread; start the Example Job on a F/J thread
   public Example( ExampleModel.ExampleParameters parms ) { super(parms); init(false); }
   @Override protected ExampleDriver trainModelImpl() { return new ExampleDriver(); }
+  @Override public long progressUnits() { return _parms._max_iterations; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

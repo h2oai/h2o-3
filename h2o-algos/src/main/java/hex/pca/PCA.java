@@ -33,6 +33,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
   @Override protected PCADriver trainModelImpl() { return new PCADriver(); }
+  @Override public long progressUnits() { return _parms._pca_method == PCAParameters.Method.GramSVD ? 5 : 3; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
 
   @Override protected void checkMemoryFootPrint() {

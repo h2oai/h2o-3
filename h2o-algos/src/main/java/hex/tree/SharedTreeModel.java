@@ -40,9 +40,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
 
-    @Override public long progressUnits() { return _ntrees; }
-
-    @Override protected long nFoldSeed() {
+    @Override protected long nFoldSeed() { 
       return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
     }
 

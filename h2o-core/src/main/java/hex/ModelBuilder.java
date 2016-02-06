@@ -161,7 +161,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
     if( !nFoldCV() )
-      return _job.start(trainModelImpl(), _parms.progressUnits());
+      return _job.start(trainModelImpl(), progressUnits());
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
@@ -170,7 +170,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           computeCrossValidation();
           tryComplete();
         }
-      }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * _parms.progressUnits());
+      }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * progressUnits());
   }
 
   /** Train a model as part of a larger Job; the Job already exists and has started. */
@@ -186,6 +186,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
+  abstract protected long progressUnits();
 
   /**
    * How many should be trained in parallel during N-fold cross-validation?

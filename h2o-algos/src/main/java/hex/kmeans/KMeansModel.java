@@ -21,7 +21,6 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public String algoName() { return "KMeans"; }
     public String fullName() { return "K-means"; }
     public String javaName() { return KMeansModel.class.getName(); }
-    @Override public long progressUnits() { return _max_iterations; }
     public int _max_iterations = 1000;     // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public long _seed = System.nanoTime(); // RNG seed

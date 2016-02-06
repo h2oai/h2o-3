@@ -21,6 +21,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   public Quantile( QuantileModel.QuantileParameters parms ) { super(parms); init(false); }
   public Quantile( QuantileModel.QuantileParameters parms, Job job ) { super(parms, job); init(false); }
   @Override public Driver trainModelImpl() { return new QuantileDriver(); }
+  @Override public long progressUnits() { return train().numCols()*_parms._probs.length; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
   // any number of chunks is fine - don't rebalance - it's not worth it for a few passes over the data (at most)
   @Override protected int desiredChunks(final Frame original_fr, boolean local) { return 1;  }

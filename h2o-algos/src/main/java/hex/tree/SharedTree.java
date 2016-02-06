@@ -52,6 +52,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   public boolean isSupervised(){return true;}
 
+  @Override public long progressUnits() { return _parms._ntrees; }
+
   @Override protected boolean computePriorClassDistribution(){ return true;}
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the

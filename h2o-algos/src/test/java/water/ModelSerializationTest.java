@@ -185,7 +185,6 @@ public class ModelSerializationTest extends TestUtil {
       public String algoName() { return "Blah"; }
       public String fullName() { return "Blah"; }
       public String javaName() { return BlahModel.class.getName(); }
-      @Override public long progressUnits() { return 0; }
     }
     static class BlahOutput extends Model.Output {
       public BlahOutput(boolean hasWeights, boolean hasOffset, boolean hasFold) {

@@ -41,6 +41,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
   @Override protected SVDDriver trainModelImpl() { return new SVDDriver(); }
+  @Override public long progressUnits() {
+    switch(_parms._svd_method) {
+    case GramSVD:    return 2;
+    case Power:      return 1 + _parms._nv;
+    case Randomized: return 5 + _parms._max_iterations;
+    default:         return _parms._nv;
+    }
+  }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 

@@ -54,6 +54,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
   private transient GLRMParameters.Loss[] _lossFunc;
 
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
+  @Override public long progressUnits() { return 2 + _parms._max_iterations; }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
   public enum Initialization { Random, SVD, PlusPlus, User }
 
