@@ -788,7 +788,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     double loss = 0;
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
-    final double prefactor = _parms._distribution == Distribution.Family.laplace ? 1 : 0.5;
+    final double prefactor = _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.quantile ? 1 : 0.5;
     for (DataInfo.Row myRow : myRows) {
       if (myRow == null) continue;
       long seed = -1; //ignored
