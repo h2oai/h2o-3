@@ -396,11 +396,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
-  private static final long WORK_TOTAL = 1000000;
+  protected static final long WORK_TOTAL = 1000000;
 
   @Override protected GLMDriver trainModelImpl() { return new GLMDriver(); }
-
-  @Override public long progressUnits() { return WORK_TOTAL; }
 
   private final double lmax(double[] grad) {
     return Math.max(ArrayUtils.maxValue(grad), -ArrayUtils.minValue(grad)) / Math.max(1e-2, _parms._alpha[0]);
