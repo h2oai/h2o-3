@@ -1456,7 +1456,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       super();
       _stopping_rounds = 5;
     }
-  
+    @Override
+    public long progressUnits() {
+      if (train()==null) return 1;
+      return (long)Math.ceil(_epochs*train().numRows());
+    }
     @Override
     public double missingColumnsType() {
       return _sparse ? 0 : Double.NaN;

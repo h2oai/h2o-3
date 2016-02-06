@@ -117,13 +117,31 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
                      _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }
+
+    Model model = null;
+    HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+    long gridWork=0;
+    if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+      while (it.hasNext(model)) {
+        try {
+          gridWork += it.nextModelParameters(model).progressUnits();
+        } catch(Throwable ex) {
+          //swallow invalid combinations
+        }
+      }
+    } else {
+      //TODO: Future totally unbounded search: need a time-based progress bar
+      gridWork = Long.MAX_VALUE;
+    }
+    it.reset();
+
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
         gridSearch(grid);
         tryComplete();
       }
-    }, gridSize);
+    }, gridWork);
   }
 
   /**
