@@ -1294,7 +1294,7 @@ h2o.length <- length.H2OFrame
 #' Return the levels from the column requested column.
 #'
 #' @param x An H2OFrame object.
-#' @param i The index of the column whose domain is to be returned.
+#' @param i Optional, the index of the column whose domain is to be returned.
 #' @seealso \code{\link[base]{levels}} for the base R method.
 #' @examples
 #' \donttest{
@@ -1304,10 +1304,29 @@ h2o.length <- length.H2OFrame
 #' @export
 h2o.levels <- function(x, i) {
   df <- .fetch.data(x,1L)
-  if( missing(i) ) levels(df[[1]])
-  else levels(df[[i]])
+  res <- list()
+  if( missing(i) ) {
+    for (col in 1:ncol(df)) {
+      res <- c(res, list(levels(df[[col]])))
+    }
+    if (length(res) == 1) res <- res[[1]]
+  }
+  else res <- levels(df[[i]])
+  res
 }
 
+
+#'
+#' Get the number of factor levels for this frame.
+#'
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{nlevels}} for the base R method.
+#' @export
+h2o.nlevels <- function(x) {
+  levels <- h2o.levels(x)
+  if (!is.list(levels)) levels <- list(levels)
+  lapply(levels,length)
+}
 #'
 #' Set Levels of H2O Factor Column
 #'
