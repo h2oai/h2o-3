@@ -227,7 +227,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( _output_types == null ) return null;
     final int noutputs = _output_types.length;
     Vec[] vecs = new Vec[noutputs];
-    if( _appendables==null )  // Zero rows?
+    if( _appendables==null || _appendables.length == 0)  // Zero rows?
       for( int i = 0; i < noutputs; i++ )
         vecs[i] = _fr.anyVec().makeZero();
     else {

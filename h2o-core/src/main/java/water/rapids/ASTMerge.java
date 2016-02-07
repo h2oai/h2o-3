@@ -78,7 +78,7 @@ public class ASTMerge extends ASTPrim {
       long lsize = 0, rsize = 0;
       for( int i=ncols; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
       for( int i=ncols; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
-      walkLeft = lsize > rsize;
+      walkLeft = lsize < rsize;
     } else {
       walkLeft = allLeft;
     }
