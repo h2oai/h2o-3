@@ -1218,7 +1218,7 @@ trunc <- function(x, ...) {
 #' @export
 h2o.which <- function(x) {
   if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
-  else .newExpr("which",x)
+  else .newExpr("which",x) + 1
 }
 
 #' Count of NAs per column
