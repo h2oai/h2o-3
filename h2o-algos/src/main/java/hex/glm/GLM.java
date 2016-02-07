@@ -438,6 +438,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         gram.dropIntercept();
         xy = Arrays.copyOf(xy, xy.length - 1);
       }
+      int [] zeros = gram.dropZeroCols();
+      assert zeros.length == 0:"zero column(s) in gram matrix";
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
@@ -459,7 +461,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // need to drop the cols from everywhere
           _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          xy = ArrayUtils.select(xy,_state.removeCols(collinear_cols));
+          _state.removeCols(collinear_cols);
+          xy = ArrayUtils.removeIds(xy,collinear_cols);
         }
         chol.solve(xy);
       } else { // todo add switch between COD and ADMM

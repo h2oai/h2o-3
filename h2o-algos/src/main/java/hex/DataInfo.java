@@ -225,7 +225,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo scoringInfo(){
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,_weights,_offset,_fold);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!_skipMissing,_weights,_offset,_fold);
     res._adaptedFrame = null;
     res._weights = false;
     res._offset = false;

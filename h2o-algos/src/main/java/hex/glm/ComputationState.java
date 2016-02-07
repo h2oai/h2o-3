@@ -119,7 +119,7 @@ public final class ComputationState {
     int selected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
-    if (!_allIn && _alpha > 0) {
+    if (!_allIn) {
       final double rhs = _alpha * (2 * _lambda - _previousLambda);
       int [] cols = MemoryManager.malloc4(P);
       int j = 0;
@@ -132,7 +132,7 @@ public final class ComputationState {
           cols[selected++] = i;
         }
       }
-      _allIn = _alpha == 0 || selected == P;
+      _allIn = selected == P;
       if(!_allIn) {
         if (_intercept) cols[selected++] = P;
         cols = Arrays.copyOf(cols, selected);
@@ -144,9 +144,11 @@ public final class ComputationState {
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,(1-_alpha)*_lambda,_bc);
         assert _beta.length == selected;
-      } else _activeData = _dinfo;
+        return selected;
+      }
     }
-    return selected;
+    _activeData = _dinfo;
+    return _dinfo.fullN();
   }
 
   private DataInfo [] _activeDataMultinomial;
@@ -222,7 +224,7 @@ public final class ComputationState {
     int selected = 0;
     _activeBC = _bc;
     _activeData = _dinfo;
-    if (!_allIn && _alpha > 0) {
+    if (!_allIn) {
       if(_activeDataMultinomial == null)
         _activeDataMultinomial = new DataInfo[_nclasses];
       final double rhs = _alpha * (2 * _lambda - _previousLambda);
@@ -245,7 +247,7 @@ public final class ComputationState {
         for(int i = start; i < selected; ++i)
           cols[i] += c*N;
       }
-      _allIn = _alpha == 0 || selected == cols.length;
+      _allIn = selected == cols.length;
     }
     return selected;
   }
@@ -302,12 +304,13 @@ public final class ComputationState {
     return true;
   }
   public int []  removeCols(int [] cols) {
-    int [] activeCols = ArrayUtils.removeSorted(_activeData.activeCols(),cols);
+    int [] activeCols = ArrayUtils.removeIds(_activeData.activeCols(),cols);
     if(_beta != null)
-      _beta = ArrayUtils.select(_beta,activeCols);
+      _beta = ArrayUtils.removeIds(_beta,cols);
     if(_ginfo != null)
-      _ginfo._gradient = ArrayUtils.select(_ginfo._gradient,activeCols);
-    _activeData = _activeData.filterExpandedColumns(activeCols);
+      _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
+    _activeData = _dinfo.filterExpandedColumns(activeCols);
+    _activeBC = _bc.filterExpandedColumns(activeCols);
     _gslvr = new GLMGradientSolver(_jobKey, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
     return activeCols;
   }
