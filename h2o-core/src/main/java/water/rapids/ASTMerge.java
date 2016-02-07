@@ -75,10 +75,7 @@ public class ASTMerge extends ASTPrim {
     // columns.  The hashed dataframe is completely replicated per-node
     boolean walkLeft;
     if( allLeft == allRite ) {
-      long lsize = 0, rsize = 0;
-      for( int i=ncols; i<l.numCols(); i++ ) lsize += l.vecs()[i].byteSize();
-      for( int i=ncols; i<r.numCols(); i++ ) rsize += r.vecs()[i].byteSize();
-      walkLeft = lsize < rsize;
+      walkLeft = l.numRows() > r.numRows();
     } else {
       walkLeft = allLeft;
     }
