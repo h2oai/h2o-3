@@ -465,14 +465,18 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     long sinceLastScore = now-_timeLastScoreStart;
     boolean updated = false;
     _job.update(0,"Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
-    // Now model already contains tid-trees in serialized form
-    if( _parms._score_each_iteration ||
-            finalScoring ||
-            (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
-            // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
-            (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
-                    (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
 
+    boolean timeToScore = (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
+        // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+        (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+            (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1); //10% duty cycle
+
+    boolean manualInterval = _parms._score_tree_interval > 0 && _model._output._ntrees % _parms._score_tree_interval == 0;
+
+    // Now model already contains tid-trees in serialized form
+    if( _parms._score_each_iteration || finalScoring || // always score under these circumstances
+        (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
+        manualInterval) {
       checkMemoryFootPrint();
 
       // If validation is specified we use a model for scoring, so we need to

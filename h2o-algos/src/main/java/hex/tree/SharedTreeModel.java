@@ -34,6 +34,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public boolean _build_tree_one_node = false;
 
+    public int _score_tree_interval = 0; // score every so many trees (no matter what)
+
     public int _initial_score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring the first  4 secs
 
     public int _score_interval = 4000; //Adding this parameter to take away the hard coded value of 4000 for scoring each iteration every 4 secs
