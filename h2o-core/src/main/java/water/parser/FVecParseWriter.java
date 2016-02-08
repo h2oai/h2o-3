@@ -76,7 +76,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public void addNumCol(int colIdx, long number, int exp) {
     if( colIdx < _nCols ) {
       _nvs[_col = colIdx].addNum(number, exp);
-      if(_ctypes[colIdx] == Vec.T_BAD ) _ctypes[colIdx] = Vec.T_NUM;
+      if(_ctypes != null && _ctypes[colIdx] == Vec.T_BAD ) _ctypes[colIdx] = Vec.T_NUM;
     }
   }
 
