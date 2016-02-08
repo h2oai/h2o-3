@@ -692,6 +692,8 @@ Z-score, standard error and p-values are classical statistical way of evaluating
 
 You can request p-values by setting the \\\texttt{compute\_p\_values} flag. It can only be used with \texttt{IRLSM} solver and no regularization. It is recommended that you also set \texttt{remove\_collinear\_columns} option, otherwise H2O will return an error (it can not add regularization if P-values are requested) if there are collinear columns.
 
+\textbf{Note:} GLM auto-standardizes data by default (recommended), this changes the p-value of the constant term (intercept). 
+
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_p_values.R}
 
