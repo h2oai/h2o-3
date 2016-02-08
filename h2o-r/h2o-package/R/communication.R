@@ -430,8 +430,7 @@
                  string = {},
                  {})
         }
-        if( x$name == "Confusion Matrix") attr(tbl, "header") <- paste0(x$name, " - (", x$description, ")")
-        else                              attr(tbl, "header")  <- x$name
+        attr(tbl, "header")  <- x$name
         attr(tbl, "formats") <- fmts
         attr(tbl, "description")   <- descr
         oldClass(tbl) <- c("H2OTable", "data.frame")
