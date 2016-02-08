@@ -3,6 +3,7 @@
 h2oEnsemble 0.1.5.9000 (devel)
 -----------------
 * Updated default value for `model_id` in wrapper functions from `""` to `NULL`.  Was causing an NPE on the master branch of h2o-3. Issue documented here: https://0xdata.atlassian.net/browse/PUBDEV-2623
+* Updated default `prior` value in `h2o.glm.wrapper` from 0 (no longer supported in `h2o.glm`) to `NULL`.  Issue documented here: https://0xdata.atlassian.net/browse/PUBDEV-2624
 * TO DO: Add utility function, `h2o.stack` which takes as input a list of "H2OModel" objects and returns an object of class, "h2o.ensemble".  
 * TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
