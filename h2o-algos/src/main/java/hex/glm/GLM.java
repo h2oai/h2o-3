@@ -439,6 +439,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         xy = Arrays.copyOf(xy, xy.length - 1);
       }
       int [] zeros = gram.dropZeroCols();
+
       assert zeros.length == 0:"zero column(s) in gram matrix";
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
@@ -879,12 +880,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
         _state.setLambda(_parms._lambda[i]);
-        if(_parms._family == Family.multinomial)
-          for(int c = 0; c < _nclass; ++c)
-            Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        else
-          Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        do { fitModel(); } while(!_state.checkKKTs());
+        do {
+          if(_parms._family == Family.multinomial)
+            for(int c = 0; c < _nclass; ++c)
+              Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+          else
+            Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+          fitModel();
+        } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if(_parms._lambda_search) {  // compute train and test dev
           double trainDev = _parms._family == Family.multinomial

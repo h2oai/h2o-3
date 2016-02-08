@@ -13,6 +13,7 @@ import water.H2O;
 import water.Key;
 import water.MemoryManager;
 import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.MathUtils;
 
 import java.text.DecimalFormat;
@@ -120,7 +121,7 @@ public final class ComputationState {
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
     if (!_allIn) {
-      final double rhs = _alpha * (2 * _lambda - _previousLambda);
+      final double rhs = Math.abs(_alpha * (2 * _lambda - _previousLambda));
       int [] cols = MemoryManager.malloc4(P);
       int j = 0;
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
@@ -128,19 +129,19 @@ public final class ComputationState {
         if (j < oldActiveCols.length && i == oldActiveCols[j]) {
           cols[selected++] = i;
           ++j;
-        } else if (_ginfo._gradient[i] > rhs || _ginfo._gradient[i] < -rhs) {
+        } else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs) {
           cols[selected++] = i;
         }
       }
       _allIn = selected == P;
       if(!_allIn) {
-        if (_intercept) cols[selected++] = P;
+        cols[selected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
         cols = Arrays.copyOf(cols, selected);
         double [] b = ArrayUtils.select(_beta, cols);
         assert Arrays.equals(_beta,ArrayUtils.expandAndScatter(b,_dinfo.fullN()+1,cols));
         _beta = b;
-        _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, selected));
+        _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,(1-_alpha)*_lambda,_bc);
         assert _beta.length == selected;
@@ -262,7 +263,7 @@ public final class ComputationState {
       return checkKKTsMultinomial();
     double [] beta = _beta;
     if(_activeData._activeCols != null)
-      beta = ArrayUtils.expandAndScatter(beta,_dinfo.fullN() + (_intercept?1:0),_activeData._activeCols);
+      beta = ArrayUtils.expandAndScatter(beta,_dinfo.fullN() + 1,_activeData._activeCols);
     int [] activeCols = _activeData.activeCols();
     _gslvr = new GLMGradientSolver(_jobKey,_parms,_dinfo,(1-_alpha)*_lambda,_bc);
     GLMGradientInfo ginfo = _gslvr.getGradient(beta);
@@ -276,7 +277,7 @@ public final class ComputationState {
     _beta = beta;
     _ginfo = ginfo;
     _activeBC = null;
-    if(!_allIn && _lambda*_alpha > 0) {
+    if(!_allIn) {
       int[] failedCols = new int[64];
       int fcnt = 0;
       for (int i = 0; i < grad.length - 1; ++i) {
@@ -288,6 +289,7 @@ public final class ComputationState {
         }
       }
       if (fcnt > 0) {
+        Log.info(fcnt + " variables failed KKT conditions, adding them to the model and recomputing.");
         final int n = activeCols.length;
         int[] newCols = Arrays.copyOf(activeCols, activeCols.length + fcnt);
         for (int i = 0; i < fcnt; ++i)

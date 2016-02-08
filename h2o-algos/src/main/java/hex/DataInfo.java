@@ -272,6 +272,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _adaptedFrame = fr;
     _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
     _catMissing = new boolean[catLevels.length];
+    Arrays.fill(_catMissing,!(imputeMissing || skipMissing));
     int s = 0;
     for(int i = 0; i < catLevels.length; ++i){
       _catOffsets[i] = s;
