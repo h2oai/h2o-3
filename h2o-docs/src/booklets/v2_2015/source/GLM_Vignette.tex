@@ -371,18 +371,22 @@ function. Change the regression by changing the family to binomial.
 
 
 \subsubsection{Multi-class classification (Multinomial Family)}
-Multinomial family generalization of binomial model to multi-class response. Similarly to binomial family, we will model conditional probability of observing class c given x. We will thus have a vector of coefficients for each of the output classes ($\beta$ is now a matrix). The probabilities are defined as 
+Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the
+binomial family, we model the conditional probability of observing class c given x. We have a vector of coefficients
+for each of the output classes ($\beta$ is a matrix). The probabilities are defined as
 
 $$ \hat{y}_c = Pr(y = c|x) = {e^{x^{\top}\beta_c + \beta_{c0}} \over \sum_{k=1}^K (e^{x^{\top}\beta_k + \beta_{k0}}) }$$ 
 
-And the penalized negative log-likelihood of the problem is defined as:
+The penalized negative log-likelihood is defined as:
 
 $$
 - \lbrack {1\over{N}} \sum_{i=1}^N\sum_{k=1}^K(y_{i,k}(x^{\top}\beta_k + \beta_{c0})) - log(\sum_{k=1}^Ke^{x^{\top}\beta_k + \beta_{k0}}) \rbrack + \lambda \lbrack {(1-\alpha) \over 2} \| \beta \|_F^2 + \sum_{j=1}^P \|beta_j\|_1 \rbrack 
 $$
-, where $\beta_c$ is vector of coefficients for class c and $y_{i,k}$ is kth element of a binary vector produced by expanding the response variable using one-hot encoding (i.e. $y_{i,k} == 1$ iff response at the ith observation is k, 0 otherwise. 
+, where $\beta_c$ is vector of coefficients for class c and $y_{i,k}$ is kth element of the binary vector produced by
+expanding the response variable using one-hot encoding (i.e. $y_{i,k} == 1$ iff the response at the ith observation
+is k. It is 0 otherwise.
 
-Simple example using iris dataset:
+Here is a simple example using the iris dataset:
 
 
 \waterExampleInR
@@ -679,20 +683,32 @@ unit variance.  This parameter must be enabled (using \texttt{standardize=TRUE})
 We recommend enabling standardization when using regularization (i.e. \texttt{lambda} is chosen by H2O or greater than 0). Only advanced users should disable standardization.
 
 \subsubsection{Auto-remove collinear columns}
-Collinear columns can cause problems during model fitting. The preferred way to deal with collinearity is to add some regularization (either L1, L2 or Elastic Net) which is the default H2O behavior. However, if you want non-regularized solution, you can choose to automatically remove collinear columns by setting the \texttt{remove\_collinear\_columns} option.
+Collinear columns can cause problems during model fitting. The preferred way to deal with collinearity is to add some
+regularization (either L1, L2 or Elastic Net). This is the default H2O behavior. However, if you want a non-regularized
+solution, you can choose to automatically remove collinear columns by setting the \texttt{remove\_collinear\_columns}
+option.
 
-The option can only be used with \texttt{IRLSM} solver and no regularization. If selected, H2O will automatically remove columns if it detects collinearity. Which columns are removed is depends on the order of the columns in the vector of coefficients (Intercept first, then categorical variables ordered by cadrinality from largest to smallest, then numbers).  
+This option can only be used with the \texttt{IRLSM} solver and no regularization. If selected, H2O will automatically
+remove columns if it detects collinearity. Which columns are removed depends on the order of the columns in the vector
+of coefficients (Intercept first, then categorical variables ordered by cadrinality from largest to smallest, and then
+numbers).
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_remove_collinear_columns.R}
 
 
 \subsubsection{P-Values}
-Z-score, standard error and p-values are classical statistical way of evaluating model quality. The p-values are essentially a hypothesis test on the value of each coefficient. High p-value means that the coefficient is unreliable (insiginificant) while low p-value suggest that the coefficient is statistically significant. 
+Z-score, standard error and p-values are classical statistical measures of model quality. p-values are essentially
+hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable
+(insiginificant) while a low p-value suggest that the coefficient is statistically significant.
 
-You can request p-values by setting the \\\texttt{compute\_p\_values} flag. It can only be used with \texttt{IRLSM} solver and no regularization. It is recommended that you also set \texttt{remove\_collinear\_columns} option, otherwise H2O will return an error (it can not add regularization if P-values are requested) if there are collinear columns.
+You can request p-values by setting the \\\texttt{compute\_p\_values} option. It can only be used with the
+\texttt{IRLSM} solver and no regularization. It is recommended that you also set the
+\texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error. If there are collinear columns and
+P-values are requested, then regularization cannot be added.
 
-\textbf{Note:} GLM auto-standardizes data by default (recommended), this changes the p-value of the constant term (intercept). 
+\textbf{Note:} GLM auto-standardizes the data by default (recommended). This changes the p-value of the constant term
+(intercept).
 
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_p_values.R}
@@ -751,7 +767,7 @@ it is therefore less numerically stable and can be very slow as well due to slow
 
 \subsubsection{Offsets}
 
-\texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row ``Äúbias values''Äù that are used during model training. 
+\texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row ``ÔøΩÔøΩbias values''ÔøΩÔøΩ that are used during model training. 
 
 For Gaussian distributions, they can be seen as simple corrections to the response (\texttt{y}) column. Instead of learning to predict the response (\texttt{y}-row), the model learns to predict the (row) offset of the response column. 
 
