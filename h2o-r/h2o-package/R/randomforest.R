@@ -46,6 +46,7 @@
 #'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param score_each_iteration Attempts to score each tree.
+#' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric.
 #'        Stop if simple moving average of length k of the stopping_metric does not improve
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
@@ -85,6 +86,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              fold_assignment = c("AUTO","Random","Modulo"),
                              keep_cross_validation_predictions = FALSE,
                              score_each_iteration = FALSE,
+                             score_tree_interval = 0,
                              stopping_rounds=0,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=1e-3,
@@ -157,8 +159,8 @@ h2o.randomForest <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
-  if (!missing(score_each_iteration))
-    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_each_iteration)) parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_tree_interval)) parms$score_tree_interval <- score_tree_interval
   if(!missing(stopping_rounds)) parms$stopping_rounds <- stopping_rounds
   if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
