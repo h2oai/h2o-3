@@ -218,7 +218,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo validDinfo(Frame valid) {
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,_weights,_offset,_fold);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
