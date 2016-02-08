@@ -101,6 +101,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double _tweedie_power = 1.5;
     public double _quantile_alpha = 0.5;
     protected double defaultStoppingTolerance() { return 1e-3; }
+    abstract public long progressUnits();
 
     // TODO: This field belongs in the front-end column-selection process and
     // NOT in the parameters - because this requires all model-builders to have

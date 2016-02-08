@@ -1186,14 +1186,43 @@ t.H2OFrame <- function(x) .newExpr("t",x)
 #' @rdname H2OFrame
 #' @export
 log <- function(x, ...) {
-  if( !is.H2OFrame(x) ) .Primitive("log")(x)
-  else .newExpr("log",x)
+  if( !is.H2OFrame(x) ) .Primitive("log")(x,...)
+  else {
+    dots <- list(...)
+    base <- if (length(dots) > 0) dots[[1]] else exp(1) 
+    if (base == exp(1)) .newExpr("log",x)
+    else if (base == 10) .newExpr("log10",x)
+    else if (base == 2) .newExpr("log2",x)
+    else .newExpr("log",x) / .newExpr("log",base)
+  }
 }
 
 #' @rdname H2OFrame
 #' @export
+log10 <- function(x) {
+  if( !is.H2OFrame(x) ) .Primitive("log10")(x)
+  else .newExpr("log10",x)
+}
+
+#' @rdname H2OFrame
+#' @export
+log2 <- function(x) {
+  if( !is.H2OFrame(x) ) .Primitive("log2")(x)
+  else .newExpr("log2",x)
+}
+
+#' @rdname H2OFrame
+#' @export
+log1p <- function(x) {
+  if( !is.H2OFrame(x) ) .Primitive("log1p")(x)
+  else .newExpr("log1p",x)
+}
+
+
+#' @rdname H2OFrame
+#' @export
 trunc <- function(x, ...) {
-  if( !is.H2OFrame(x) ) .Primitive("trunc")(x)
+  if( !is.H2OFrame(x) ) .Primitive("trunc")(x, ...)
   else .newExpr("trunc",x)
 }
 
@@ -1219,7 +1248,7 @@ trunc <- function(x, ...) {
 #' @export
 h2o.which <- function(x) {
   if( !is.H2OFrame(x) ) stop("must be an H2OFrame")
-  else .newExpr("which",x)
+  else .newExpr("which",x) + 1
 }
 
 #' Count of NAs per column
@@ -1295,7 +1324,7 @@ h2o.length <- length.H2OFrame
 #' Return the levels from the column requested column.
 #'
 #' @param x An H2OFrame object.
-#' @param i The index of the column whose domain is to be returned.
+#' @param i Optional, the index of the column whose domain is to be returned.
 #' @seealso \code{\link[base]{levels}} for the base R method.
 #' @examples
 #' \donttest{
@@ -1305,10 +1334,29 @@ h2o.length <- length.H2OFrame
 #' @export
 h2o.levels <- function(x, i) {
   df <- .fetch.data(x,1L)
-  if( missing(i) ) levels(df[[1]])
-  else levels(df[[i]])
+  res <- list()
+  if( missing(i) ) {
+    for (col in 1:ncol(df)) {
+      res <- c(res, list(levels(df[[col]])))
+    }
+    if (length(res) == 1) res <- res[[1]]
+  }
+  else res <- levels(df[[i]])
+  res
 }
 
+
+#'
+#' Get the number of factor levels for this frame.
+#'
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{nlevels}} for the base R method.
+#' @export
+h2o.nlevels <- function(x) {
+  levels <- h2o.levels(x)
+  if (!is.list(levels)) levels <- list(levels)
+  lapply(levels,length)
+}
 #'
 #' Set Levels of H2O Factor Column
 #'
@@ -1925,6 +1973,45 @@ sd <- function(x, na.rm=FALSE) {
   if( is.H2OFrame(x) ) h2o.sd(x,na.rm)
   else stats::sd(x,na.rm)
 }
+
+#'
+#' Round doubles/floats to the given number of significant digits.
+#'
+#' @name h2o.signif
+#' @param x An H2OFrame object.
+#' @param digits Number of significant digits to round doubles/floats.
+#' @seealso \code{\link[base]{signif}} for the base R implementation.
+#' @export
+h2o.signif <- function(x, digits=6) .newExpr("signif",chk.H2OFrame(x),digits)
+
+#' @rdname h2o.signif
+#' @export
+signif <- function(x, digits=6) {
+  if( is.H2OFrame(x) ) h2o.signif(x,digits)
+  else base::signif(x,digits)
+}
+
+#'
+#' Round doubles/floats to the given number of decimal places.
+#'
+#' @name h2o.round
+#' @param x An H2OFrame object.
+#' @param digits Number of decimal places to round doubles/floats. Rounding to a negative number of decimal places is 
+#         not supported. For rounding off a 5, the IEC 60559 standard is used, 'go to the even digit'. Therefore 
+#         rounding 2.5 gives 2 and rounding 3.5 gives 4.
+#' @seealso \code{\link[base]{round}} for the base R implementation.
+#' @export
+h2o.round <- function(x, digits=0) .newExpr("round",chk.H2OFrame(x),digits)
+
+
+#' @rdname h2o.round
+#' @export
+round <- function(x, digits=0) {
+  if( is.H2OFrame(x) ) h2o.round(x,digits)
+  else base::round(x,digits)
+}
+
+
 
 #'
 #' Scaling and Centering of an H2OFrame

@@ -65,6 +65,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Whether to keep the predictions of the cross-validation models
   score_each_iteration : bool
     Attempts to score each tree.
+  score_tree_interval : int
+    Score the model after every so many trees. Disabled if set to 0.
   stopping_rounds : int
     Early stopping based on convergence of stopping_metric.
     Stop if simple moving average of length k of the stopping_metric does not improve
@@ -87,7 +89,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                max_after_balance_size=None, seed=None, build_tree_one_node=None,
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
-               score_each_iteration=None, checkpoint=None):
+               score_each_iteration=None, score_tree_interval=None, checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -259,6 +261,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @score_each_iteration.setter
   def score_each_iteration(self, value):
     self._parms["score_each_iteration"] = value
+
+  @property
+  def score_tree_interval(self):
+      return self._parms["score_tree_interval"]
+
+  @score_tree_interval.setter
+  def score_tree_interval(self, value):
+      self._parms["score_tree_interval"] = value
 
   @property
   def stopping_rounds(self):

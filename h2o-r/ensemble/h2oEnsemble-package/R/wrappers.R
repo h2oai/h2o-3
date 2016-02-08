@@ -1,7 +1,9 @@
 # Set of default wrappers to create a uniform interface for h2o supervised ML functions (H2O 3.0 and above)
+# These wrapper functions should always be compatible with the master branch of: https://github.com/h2oai/h2o-3
+# See the ensemble README for a full wrapper compatibility chart
 
 # Example of a wrapper function:
-h2o.example.wrapper <- function(x, y, training_frame, model_id = "", family = c("gaussian", "binomial"), ...) {
+h2o.example.wrapper <- function(x, y, training_frame, model_id = NULL, family = c("gaussian", "binomial"), ...) {
   # This function is just an example.  
   # You can wrap any H2O learner inside a wrapper function, example: h2o.glm
   h2o.glm(x = x, y = y, training_frame = training_frame, family = family)
@@ -15,7 +17,7 @@ h2o.example.wrapper <- function(x, y, training_frame, model_id = "", family = c(
 # This is a version of the h2o.glm.wrapper which doesn't pass along all the args
 # Use this version until this is resolved: https://0xdata.atlassian.net/browse/PUBDEV-1558
 # beta_constraints currently causing a bug: https://0xdata.atlassian.net/browse/PUBDEV-1556
-h2o.glm.wrapper <- function(x, y, training_frame, model_id = "", validation_frame = NULL, max_iterations = 50,
+h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL, validation_frame = NULL, max_iterations = 50,
                             beta_epsilon = 0, solver = c("IRLSM", "L_BFGS"), standardize = TRUE,
                             family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
                             link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"), 
@@ -41,7 +43,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = "", validation_fram
 
 
 
-h2o.gbm.wrapper <- function(x, y, training_frame, model_id = "", #checkpoint
+h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL, #checkpoint
                             family = c("AUTO", "gaussian", "bernoulli", "binomial", "multinomial", "poisson", "gamma", "tweedie"),
                             tweedie_power = 1.5, ntrees = 50, max_depth = 5, min_rows = 10,
                             learn_rate = 0.1, sample_rate = 1, col_sample_rate = 1,
@@ -75,7 +77,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = "", #checkpoint
 }
 
 
-h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = "",
+h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      family = c("binomial", "multinomial", "gaussian"), 
                                      validation_frame = NULL, #checkpoint 
                                      mtries = -1, sample_rate = 0.632, build_tree_one_node = FALSE,
@@ -102,7 +104,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = "",
 }
 
 
-h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = "",
+h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      family = c("binomial", "multinomial", "gaussian"), 
                                      overwrite_with_best_model, validation_frame = NULL, checkpoint,
                                      autoencoder = FALSE, use_all_factor_levels = TRUE,
