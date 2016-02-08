@@ -233,7 +233,7 @@ public class ASTImpute extends ASTPrim {
       for(int row=0; row < cs[0]._len; ++row) {
         IcedDouble[] imputes = new IcedDouble[_ncol];
         for(int c=0;c<imputes.length;++c)
-          imputes[c] = _localbyColzSet.contains(c) ? new IcedDouble(Double.NaN) : new IcedDouble(cs[c+_byCols.length].atd(row));
+          imputes[c] = (_localbyColzSet.contains(c) || (c+ _byCols.length >= cs.length)) ? new IcedDouble(Double.NaN) : new IcedDouble(cs[c+_byCols.length].atd(row));
         _group_impute_map.put(new ASTGroup.G(_byCols.length,null).fill(row,cs,_byCols), imputes);
       }
     }
