@@ -207,7 +207,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   } else {
     if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>, <data>)`)\n")); } }
   }
-  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(data.frame(tm$cm$table)) } }
+  if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat("=========================================================================\n"); print(tm$cm$table) } }
   if (arg != "test") {
     if( !is.null(tm$hit_ratio_table)                                 )  cat(paste0("\nHit Ratio Table: Extract with `h2o.hit_ratio_table(<model>,", arg, " = TRUE)`\n"))
   } else {
