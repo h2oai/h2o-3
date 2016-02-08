@@ -418,10 +418,13 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 \subsection{Grid Search for Model Comparison}
 \label{ssec:Grid search}
 
-To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
+\subsubsection{Cartesian Grid Search}
+To run a Cartesian hyper-parameter grid search in R, use the following:
 
 \waterExampleInR
 \lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch.R}
+
+To run a Cartesian hyper-parameter grid search in Python, use the following:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch.py}
@@ -430,12 +433,23 @@ This example specifies three different tree numbers, three different tree sizes,
 
 Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to {\textbf{\nameref{ssec:Model Parameters}}} for parameter descriptions and suggested values.
 
-\begin{minipage}{\textwidth}
+To view the results of the grid search, use the following: 
+
 \waterExampleInR
 \lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_result.R}
+
 \waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch_result.py} 
-\end{minipage}
+
+\subsubsection{Random Grid Search}
+If the search space is too large (i.e., you don't want to restrict the parameters too much), you can also let the Grid Search make random model selections for you. Just specify how many models (and/or how much training time) you want, and a seed to make the random selection deterministic:
+
+\waterExampleInR
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_random.R}
+\waterExampleInPython
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch_random.py}
+
+
 
 
 \newpage
@@ -464,7 +478,7 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{distribution}}: The distribution function options: \texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace,} \\\texttt{quantile} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
 \item {\texttt{score\_tree\_interval}}: Score the model after every so many trees. Disabled if set to 0.
-\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random, Stratified} or \texttt{Modulo}. 
 \item \texttt{fold\_column}:  Column with cross-validation fold index assignment per observation. 
 \item \texttt{offset\_column}: Specify the offset column. {\textbf{Note}}: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 \item \texttt{weights\_column}: Specify the weights column. {\textbf{Note}}: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.

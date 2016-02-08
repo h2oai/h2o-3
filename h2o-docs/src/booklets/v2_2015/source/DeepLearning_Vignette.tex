@@ -655,33 +655,35 @@ In this example, three different network topologies and two different $\ell_1$ n
 
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
-
-To run a grid search in R, use the following:
+\subsubsection{Cartesian Grid Search}
+To run a Cartesian hyper-parameter grid search in R, use the following:
 
 \waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
-
-
-To run a grid search in Python, use the following:
+To run a Cartesian hyper-parameter grid search in Python, use the following:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
 
-\normalsize
-\noindent
 
-To view the results of the grid search in R, use the following: 
+To view the results of the grid search, use the following: 
 
 \waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R}
 
-\medskip
-
-To view the results of the grid search in Python, use the following: 
-
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
+
+\subsubsection{Random Grid Search}
+If the search space is too large (i.e., you don't want to restrict the parameters too much), you can also let the Grid Search make random model selections for you. Just specify how many models (and/or how much training time) you want, and a seed to make the random selection deterministic:
+
+\waterExampleInR
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.py}
+
 
 
 \subsection{Checkpoint Models}
@@ -1010,7 +1012,7 @@ The default is 0, which disables cross-validation.
 
 \item \texttt{fold\_column}: (Optional) Specifies the name of the column with the cross-validation fold index assignment per observation; the folds are supplied by the user. 
 
-\item \texttt{fold\_assignment}: Specifies the cross-validation fold assignment scheme if \texttt{nfolds} is greater than zero and \texttt{fold\_column} is not specified. The options are \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item \texttt{fold\_assignment}: Specifies the cross-validation fold assignment scheme if \texttt{nfolds} is greater than zero and \texttt{fold\_column} is not specified. The options are \texttt{AUTO, Random, Stratified} or \texttt{Modulo}. 
 
 \item \texttt{keep\_cross\_validation\_predictions}: Logical.  Specify whether to keep the predictions of the cross-validation models.  The default is false.
 
