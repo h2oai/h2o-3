@@ -173,10 +173,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #
 .eval.frame <- function(x) {
   id <- attr(chk.H2OFrame(x), "id")
-  if( base::is.character(id) ) {
-    .fetch.data(x,10L)
-    return(x)  # Already executed and named
-  }
+  if( base::is.character(id) ) return(x)  # Already executed and named
   # H2OFrame does not have a name in the cluster?
   # Act "as if" they're on the 2nd execution - and
   # they will get assigned a temp
@@ -1284,15 +1281,15 @@ h2o.nacnt <- function(x)
 #' dim(iris.hex)
 #' }
 #' @export
-dim.H2OFrame <- function(x) { .eval.frame(x); c(attr(x, "nrow"), attr(x,"ncol")) }
+dim.H2OFrame <- function(x) { .eval.frame(x); .fetch.data(x,10L); c(attr(x, "nrow"), attr(x,"ncol")) }
 
 #' @rdname H2OFrame
 #' @export
-nrow.H2OFrame <- function(x) attr(.eval.frame(x), "nrow")
+nrow.H2OFrame <- function(x) { .fetch.data(x,10L); attr(.eval.frame(x), "nrow") }
 
 #' @rdname H2OFrame
 #' @export
-ncol.H2OFrame <- function(x) attr(.eval.frame(x), "ncol")
+ncol.H2OFrame <- function(x) { .fetch.data(x,10L); attr(.eval.frame(x), "ncol") }
 
 #' Column names of an H2OFrame
 #' @param x An H2OFrame
@@ -1317,7 +1314,7 @@ colnames <- function(x, do.NULL=TRUE, prefix = "col") {
 
 #' @rdname H2OFrame
 #' @export
-length.H2OFrame <- function(x) attr(.eval.frame(x),"ncol")
+length.H2OFrame <- function(x) { .fetch.data(x,10L); attr(.eval.frame(x),"ncol") }
 
 #' @rdname H2OFrame
 #' @export
