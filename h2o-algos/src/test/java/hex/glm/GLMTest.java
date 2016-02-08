@@ -1397,9 +1397,11 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._lambda = new double[]{0};
       params._standardize = false;
+//      params._missing_values_handling = MissingValuesHandling.Skip;
       GLM glm = new GLM(params,glmkey("prostate_model"));
       model = glm.trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
+      System.out.println(coefs);
       for(int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
       assertEquals(512.3, nullDeviance(model),1e-1);

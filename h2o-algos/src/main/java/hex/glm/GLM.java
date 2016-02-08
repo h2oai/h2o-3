@@ -302,7 +302,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ? 7000 : 100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, false ,_parms._missing_values_handling == MissingValuesHandling.MeanImputation, hasWeightCol(), hasOffsetCol(), hasFoldCol());
       checkMemoryFootPrint(_dinfo);
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
@@ -315,6 +315,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
       BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
+      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
+        error("_compute_p_values","P-values can not be computed for constrained problems");
+
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
       _state = new ComputationState(_job._key, _parms, _dinfo, bc, nclasses());
@@ -433,11 +436,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         gram.dropIntercept();
         xy = Arrays.copyOf(xy, xy.length - 1);
       }
+      int [] zeros = gram.dropZeroCols();
+
+      assert zeros.length == 0:"zero column(s) in gram matrix";
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
-        Cholesky chol = ((_state._iter == 0 && _parms._remove_collinear_columns)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
+          int [] collinear_cols = new int[ignoredCols.size()];
+          for(int i = 0; i < collinear_cols.length; ++i)
+            collinear_cols[i] = ignoredCols.get(i);
+          throw new NonSPDMatrixException("Found collinear columns in the dataset. Can not compute compute p-values without removing them, set remove_collinear_columns flag to true. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
+        }
         if(!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
         if(!ignoredCols.isEmpty()) { // got some redundant cols
@@ -448,7 +460,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // need to drop the cols from everywhere
           _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          xy = ArrayUtils.select(xy,_state.removeCols(collinear_cols));
+          _state.removeCols(collinear_cols);
+          xy = ArrayUtils.removeIds(xy,collinear_cols);
         }
         chol.solve(xy);
       } else { // todo add switch between COD and ADMM
@@ -833,6 +846,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _keys2Keep.put("dest",dest());
       _parms.read_lock_frames(_job);
       init(true);
+      if (error_count() > 0) {
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+      }
       double nullDevTrain = Double.NaN;
       double nullDevTest = Double.NaN;
       if(_parms._lambda_search) {
@@ -846,9 +862,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _workPerIteration = WORK_TOTAL/_parms._nlambdas;
       } else
         _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
-      if (error_count() > 0) {
-        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
-      }
+
       if(_parms._family == Family.multinomial && _parms._solver == Solver.IRLSM) {
         double [] nb = getNullBeta();
         double maxRow = ArrayUtils.maxValue(nb);
@@ -864,12 +878,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
         _state.setLambda(_parms._lambda[i]);
-        if(_parms._family == Family.multinomial)
-          for(int c = 0; c < _nclass; ++c)
-            Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        else
-          Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        do { fitModel(); } while(!_state.checkKKTs());
+        do {
+          if(_parms._family == Family.multinomial)
+            for(int c = 0; c < _nclass; ++c)
+              Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+          else
+            Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+          fitModel();
+        } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if(_parms._lambda_search) {  // compute train and test dev
           double trainDev = _parms._family == Family.multinomial
@@ -1548,6 +1564,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (double d : _betaUB)
           if (!Double.isInfinite(d)) return true;
       return false;
+    }
+
+    public boolean hasProximalPenalty() {
+      return _betaGiven != null && _rho != null && ArrayUtils.countNonzeros(_rho) > 0;
     }
 
     public void adjustGradient(double[] beta, double[] grad) {

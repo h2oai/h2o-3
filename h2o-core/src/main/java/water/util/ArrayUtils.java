@@ -1248,7 +1248,7 @@ public class ArrayUtils {
     double [] res = new double[x.length-ids.length];
     int j = 0;
     for(int i = 0; i < x.length; ++i)
-      if(i != ids[j]) res[i-j] = x[i]; else ++j;
+      if(j == ids.length || i != ids[j]) res[i-j] = x[i]; else ++j;
     return res;
   }
 
