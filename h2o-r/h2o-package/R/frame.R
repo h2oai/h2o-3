@@ -1572,7 +1572,7 @@ str.H2OFrame <- function(object, ..., cols=FALSE) {
       }
     } else idx <- col
     if( is.null(value) ) return(`[.H2OFrame`(data,row=-idx)) # Assign a null: delete by selecting inverse columns
-    if( idx==ncol(data)+1 && is.na(name) ) name <- paste0("C",idx)
+      if( idx==(ncol(data)+1) && is.na(name) ) name <- paste0("C",idx)
     cols <- .row.col.selector(idx, envir=parent.frame())
   }
 
