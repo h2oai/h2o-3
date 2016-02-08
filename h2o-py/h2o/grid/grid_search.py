@@ -37,7 +37,12 @@ class H2OGridSearch(object):
       The unique id assigned to the resulting grid object. If none is given, an id will
       automatically be generated.
     search_criteria: dict, optional
-      A dictionary of directives which direct the search of the hyperparameter space.
+      A dictionary of directives which control the search of the hyperparameter space.
+      The default strategy 'Cartesian' covers the entire space of hyperparameter combinations.
+      Specify the 'RandomDiscrete' strategy to get random search of all the combinations 
+      of your hyperparameters.  RandomDiscrete should usually be combined with at least one early 
+      stopping criterion, max_models and/or max_runtime_secs, e.g. 
+      {strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800}.
      
     Returns
     -------

@@ -38,7 +38,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     void reset();
 
-    long timeRemaining();
+    /**
+     * @return the total time allowed for building this grid, in seconds.
+     */
+    double max_runtime_secs();
+
+    /**
+     * @return the time remaining for building this grid, in seconds.
+     */
+    double time_remaining_secs();
 
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
@@ -296,7 +304,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public long timeRemaining() { return Long.MAX_VALUE; }
+        public double time_remaining_secs() { return Double.MAX_VALUE; }
+
+        @Override
+        public double max_runtime_secs() { return Double.MAX_VALUE; }
 
         @Override
         public void modelFailed(Model failedModel) {
@@ -401,15 +412,20 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public void reset() {
+          _start_time = System.currentTimeMillis();
           _currentPermutationNum = 0;
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
         }
 
+        public double max_runtime_secs() {
+          return search_criteria().max_runtime_secs();
+        }
+
         @Override
-        public long timeRemaining() {
-          return search_criteria().max_time_ms() - (System.currentTimeMillis() - _start_time);
+        public double time_remaining_secs() {
+          return search_criteria().max_runtime_secs() - (System.currentTimeMillis() - _start_time) / 1000.0;
         }
 
         @Override

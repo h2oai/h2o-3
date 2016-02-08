@@ -20,10 +20,11 @@
 #'        name and parameters specify a supervised or unsupervised algorithm.
 #' @param do_hyper_params_check  Perform client check for specified hyper parameters. It can be time expensive for
 #'        large hyper space.
-#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  Specify the
-#'        Random strategy to get random search of all the combinations of your hyperparameters.  Generally this
-#'        should be combined with an early stopping criterion,
-#'        max_models or max_time_ms, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42)}.  
+#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  The default
+#'        strategy 'Cartesian' covers the entire space of hyperparameter combinations.  Specify the
+#'        'RandomDiscrete' strategy to get random search of all the combinations of your hyperparameters.  RandomDiscrete
+#'        should be usually combined with at least one early stopping criterion,
+#'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \donttest{

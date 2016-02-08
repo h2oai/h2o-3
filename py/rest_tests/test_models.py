@@ -62,7 +62,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
 
         # Test stopping criteria:
         GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_models': 3 } ),
-        GridSpec.for_dataset('gbm_prostate_regression_grid_max_20mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_time_ms': 20 } ),
+        GridSpec.for_dataset('gbm_prostate_regression_grid_max_20mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_runtime_secs': 0.020 } ),
        ]
     
     for grid_spec in grids_to_build:
@@ -71,6 +71,14 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         for model_key in grid['model_ids']:
             model_key = model_key['name']
             built_models[model_key] = a_node.models(key=model_key)
+
+    # test search limits: max_models
+    grid = a_node.grid(key='gbm_prostate_regression_grid_max_3')
+    assert len(grid['model_ids']) == 3, "FAIL: using max_models, expected a max of 3 models, got: " + str(len(grid['model_ids']))
+
+    # test search limits: max_runtime_secs
+    grid = a_node.grid(key='gbm_prostate_regression_grid_max_20mS')
+    assert len(grid['model_ids']) < 12, "FAIL: using max_runtime_secs, expected less than 12 models, got: " + str(len(grid['model_ids']))
 
 #    grid = a_node.grid(key='kmeans_prostate_grid', sort_by='', sort_order='desc')
     h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')

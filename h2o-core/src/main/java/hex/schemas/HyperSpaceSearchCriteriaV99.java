@@ -34,11 +34,11 @@ public class HyperSpaceSearchCriteriaV99<I, S> extends Schema<HyperSpaceSearchCr
       strategy = HyperSpaceSearchCriteria.Strategy.RandomDiscrete;
     }
 
-    public RandomDiscreteValueSearchCriteriaV99(long seed, int max_models, int max_time_ms) {
+    public RandomDiscreteValueSearchCriteriaV99(long seed, int max_models, int max_runtime_secs) {
       strategy = HyperSpaceSearchCriteria.Strategy.RandomDiscrete;
       this.seed = seed;
       this.max_models = max_models;
-      this.max_time_ms = max_time_ms;
+      this.max_runtime_secs = max_runtime_secs;
     }
 
     @API(help = "Seed for random number generator; used for reproducibility.", required = false, direction = API.Direction.INOUT)
@@ -48,7 +48,7 @@ public class HyperSpaceSearchCriteriaV99<I, S> extends Schema<HyperSpaceSearchCr
     public int max_models;
 
     @API(help = "Maximum time to spend building models (optional).", required = false, direction = API.Direction.INOUT)
-    public int max_time_ms;
+    public double max_runtime_secs;
   }
 
   /**
