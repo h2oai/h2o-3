@@ -1849,14 +1849,15 @@ class H2OFrame(object):
     return H2OFrame._expr(expr=ExprNode("signif", self, digits), cache=self._ex._cache)
 
   def round(self, digits=0):
-    """Round doubles/floats to the given number of digits.
+    """Round doubles/floats to the given number of decimal places.
 
     Parameters
     ----------
     digits : int, default=0
-      Number of digits to round doubles/floats. Rounding to a negative number of digits is not supported.
+      Number of decimal places to round doubles/floats. Rounding to a negative number of decimal places is not 
+      supported. For rounding off a 5, the IEC 60559 standard is used, ‘go to the even digit’. Therefore rounding 2.5 
+      gives 2 and rounding 3.5 gives 4.
       
-
     Returns
     -------
       H2OFrame

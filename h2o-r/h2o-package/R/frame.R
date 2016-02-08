@@ -1184,9 +1184,11 @@ t.H2OFrame <- function(x) .newExpr("t",x)
 
 #' @rdname H2OFrame
 #' @export
-log <- function(x, base=exp(1)) {
-  if( !is.H2OFrame(x) ) .Primitive("log")(x,base=base)
+log <- function(x, ...) {
+  if( !is.H2OFrame(x) ) .Primitive("log")(x,...)
   else {
+    dots <- list(...)
+    base <- if (length(dots) > 0) dots[[1]] else exp(1) 
     if (base == exp(1)) .newExpr("log",x)
     else if (base == 10) .newExpr("log10",x)
     else if (base == 2) .newExpr("log2",x)
@@ -1976,7 +1978,7 @@ sd <- function(x, na.rm=FALSE) {
 #'
 #' @name h2o.signif
 #' @param x An H2OFrame object.
-#' @param Number of significant digits to round doubles/floats.
+#' @param digits Number of significant digits to round doubles/floats.
 #' @seealso \code{\link[base]{signif}} for the base R implementation.
 #' @export
 h2o.signif <- function(x, digits=6) .newExpr("signif",chk.H2OFrame(x),digits)
@@ -1989,11 +1991,13 @@ signif <- function(x, digits=6) {
 }
 
 #'
-#' Round doubles/floats to the given number of digits.
+#' Round doubles/floats to the given number of decimal places.
 #'
 #' @name h2o.round
 #' @param x An H2OFrame object.
-#' @param Number of digits to round doubles/floats. Rounding to a negative number of digits is not supported.
+#' @param digits Number of decimal places to round doubles/floats. Rounding to a negative number of decimal places is 
+#         not supported. For rounding off a 5, the IEC 60559 standard is used, 'go to the even digit'. Therefore 
+#         rounding 2.5 gives 2 and rounding 3.5 gives 4.
 #' @seealso \code{\link[base]{round}} for the base R implementation.
 #' @export
 h2o.round <- function(x, digits=0) .newExpr("round",chk.H2OFrame(x),digits)

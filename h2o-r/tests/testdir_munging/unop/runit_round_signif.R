@@ -7,7 +7,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.round.signif <- function() {
 
-  for (g in c(-231.38523412, 3.1,0,NA)) { 
+  for (g in c(-231.38523412,-3.5,3.5,0,NA,4.5,-4.5,4.6)) { 
     run.round.tests(g)
     run.signif.tests(g)
   }

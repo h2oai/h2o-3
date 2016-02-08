@@ -353,7 +353,7 @@ class ASTRound extends ASTBinOp {
     double power_of_10 = (int)Math.pow(10, (int)digits);
     return sgn*(digits == 0
                 // go to the even digit
-                ? (x % 1 >= 0.5 && !(Math.floor(x)%2==0))
+                ?( x % 1 > 0.5 || (x % 1 == 0.5 && !(Math.floor(x)%2==0)))
                 ? Math.ceil(x)
                 : Math.floor(x)
                 : Math.floor(x * power_of_10 + 0.5) / power_of_10);
