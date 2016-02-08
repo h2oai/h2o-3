@@ -193,7 +193,7 @@ public class ASTImpute extends ASTPrim {
         throw new IllegalArgumentException("Ambiguous group-by frame. Supply the `by` columns to proceed.");
 
       final int[] bycols0 = ArrayUtils.seq(0, Math.max((int)by2.cnt(), 1 /* imputes.numCols()-1 */));
-      group_impute_map = new MakeIHM(by2.expand4(),bycols0,fr.numCols()).doAll(imputes)._group_impute_map;
+      group_impute_map = new Gather(by2.expand4(),bycols0,fr.numCols(),col).doAll(imputes)._group_impute_map;
 
       // Now walk over the data, replace NAs with the imputed results
       final IcedHashMap<ASTGroup.G,IcedDouble[]> final_group_impute_map = group_impute_map;
@@ -220,23 +220,27 @@ public class ASTImpute extends ASTPrim {
     }
   }
 
-  private static class MakeIHM extends MRTask<MakeIHM> {
+  // flatten the GroupBy result Frame back into a IcedHashMap
+  private static class Gather extends MRTask<Gather> {
+    private final int _imputedCol;
     private final int _ncol;
     private final int[] _byCols0; // actual group-by indexes
     private final int[] _byCols;  // index into the grouped-by frame result
     private IcedHashMap<ASTGroup.G,IcedDouble[]> _group_impute_map;
     private transient Set<Integer> _localbyColzSet;
-    MakeIHM( int[] byCols0, int[] byCols, int ncol) { _byCols=byCols; _byCols0=byCols0; _ncol=ncol; }
+    Gather( int[] byCols0, int[] byCols, int ncol, int imputeCol) { _byCols=byCols; _byCols0=byCols0; _ncol=ncol; _imputedCol=imputeCol; }
     @Override public void setupLocal() { _localbyColzSet=new HashSet<>(); for(int by: _byCols0) _localbyColzSet.add(by); }
     @Override public void map(Chunk cs[]) {
       _group_impute_map = new IcedHashMap<>();
-      for(int row=0; row < cs[0]._len; ++row) {
+      for(int row=0; row<cs[0]._len; ++row) {
         IcedDouble[] imputes = new IcedDouble[_ncol];
-        for(int c=0;c<imputes.length;++c)
-          imputes[c] = (_localbyColzSet.contains(c) || (c+ _byCols.length >= cs.length)) ? new IcedDouble(Double.NaN) : new IcedDouble(cs[c+_byCols.length].atd(row));
+        for(int c=0, z=_byCols.length;c<imputes.length;++c,++z) {  // z used to skip over the gby cols into the columns containing the aggregated columns
+          if( _imputedCol!=-1 ) imputes[c] = c==_imputedCol?new IcedDouble(cs[cs.length-1].atd(row)):new IcedDouble(Double.NaN);
+          else                  imputes[c] = _localbyColzSet.contains(c) ? new IcedDouble(Double.NaN) : new IcedDouble(cs[z].atd(row));
+        }
         _group_impute_map.put(new ASTGroup.G(_byCols.length,null).fill(row,cs,_byCols), imputes);
       }
     }
-    @Override public void reduce( MakeIHM mrt ) { _group_impute_map.putAll(mrt._group_impute_map); }
+    @Override public void reduce( Gather mrt ) { _group_impute_map.putAll(mrt._group_impute_map); }
   }
 }
