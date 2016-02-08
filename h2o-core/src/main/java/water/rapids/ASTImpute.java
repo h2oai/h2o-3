@@ -177,7 +177,6 @@ public class ASTImpute extends ASTPrim {
           aggs[1] = new ASTFrame(fr);
           aggs[2] = by2;
           int c=3;
-          int z=0;
           for(int i=0;i<fr.numCols();++i) {
             if( !by2.has(i) && (fr.vec(i).isCategorical() || fr.vec(i).isNumeric()) ) {
               aggs[c] = fr.vec(i).isNumeric() ? new ASTMean() : new ASTMode();
@@ -187,9 +186,8 @@ public class ASTImpute extends ASTPrim {
             }
           }
           imputes = ast_grp.apply(env,stk,aggs).getFrame();
-        } else {
+        } else
           imputes = ast_grp.apply(env, stk, new AST[]{ast_grp, new ASTFrame(fr), by2,  /**/method, new ASTNumList(col, col + 1), new ASTStr("rm") /**/}).getFrame();
-        }
       }
       if( by2.isEmpty() && imputes.numCols() > 2 ) // >2 makes it ambiguous which columns are groupby cols and which are aggs, throw IAE
         throw new IllegalArgumentException("Ambiguous group-by frame. Supply the `by` columns to proceed.");
