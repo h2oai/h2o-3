@@ -8,7 +8,7 @@ test <- function(conn) {
   iris.hex = as.h2o(iris)
   
   Log.info("Find the factor levels h2o and R frame...")
-  levels1 <- sort(h2o.levels(iris.hex$Species))
+  levels1 <- sort(unlist(h2o.levels(iris.hex$Species)))
   levels2 <- sort(levels(iris$Species))
   print("Factor levels for Species column for H2OH2OFrame...")
   print(levels1)
@@ -22,13 +22,28 @@ test <- function(conn) {
   
   Log.info("Try printing the levels of a numeric column...")
   levels1 <- levels(iris$Sepal.Length)
-  levels2 <- h2o.levels(iris.hex$Sepal.Length)
+  levels2 <- unlist(h2o.levels(iris.hex$Sepal.Length))
   print("Factor levels for Sepal.Length column for H2OH2OFrame...")
   print(levels1)
   print("Factor levels for Sepal.Length column for dataframe...")
   print(levels2)  
   if(!is.null(levels2)) stop("Numeric Column should not have any factor levels...")
 
+  allLevels <- h2o.levels(iris.hex)
+  expect_true(is.list(allLevels))
+  expect_true(length(allLevels) == ncol(iris.hex))
+  numLevels <- h2o.nlevels(iris.hex)
+  expect_true(length(numLevels) == 5)
+  
+  oneLevel <- h2o.levels(iris.hex[,5])
+  expect_true(!is.list(oneLevel))
+  expect_true(length(oneLevel) == 3)
+  numLevels <- h2o.nlevels(iris.hex[,5])
+  expect_true(numLevels == 3)
+  
+  oneLevel <- h2o.levels(iris.hex,5)
+  expect_true(!is.list(oneLevel))
+  expect_true(length(oneLevel) == 3)
   
 }
 

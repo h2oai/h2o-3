@@ -16,6 +16,12 @@ This module depends on *requests*, *tabulate*, and *scikit-learn* modules, all o
 
     $ pip install scikit-learn
 
+    $ pip install future
+    
+    $ pip install six
+ 
+    $ pip install wheel
+
 The H2O Python Module
 =====================
 

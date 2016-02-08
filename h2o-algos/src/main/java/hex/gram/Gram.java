@@ -19,7 +19,7 @@ public final class Gram extends Iced<Gram> {
   boolean _hasIntercept;
   public double[][] _xx;
   double[] _diag;
-  public final int _diagN;
+  public int _diagN;
   final int _denseN;
   int _fullN;
   final static int MIN_TSKSZ=10000;
@@ -302,6 +302,55 @@ public final class Gram extends Iced<Gram> {
     return new Cholesky(Rnew,new double[0], true);
   }
 
+
+  public int [] dropZeroCols(){
+    ArrayList<Integer> zeros = new ArrayList<>();
+    if(_diag != null)
+      for(int i = 0; i < _diag.length; ++i)
+        if(_diag[i] == 0)zeros.add(i);
+    int diagZeros = zeros.size();
+    for(int i = 0; i < _xx.length; ++i)
+      if(_xx[i][_xx[i].length-1] == 0)
+        zeros.add(_xx[i].length-1);
+    if(zeros.size() == 0) return new int[0];
+    int [] ary = new int[zeros.size() + 1];
+    ary[ary.length-1] = -1;
+    for(int i = 0; i < zeros.size(); ++i)
+      ary[i] = zeros.get(i);
+    int j = 0;
+    if(diagZeros > 0) {
+      double [] diag = MemoryManager.malloc8d(_diagN - diagZeros);
+      int k = 0;
+      for(int i = 0; i < _diagN; ++i)
+        if (ary[j] == i) {
+          ++j;
+        } else  diag[k++] = _diag[i];
+      _diag = diag;
+    }
+    double [][] xxNew = new double[_xx.length-ary.length+diagZeros+1][];
+    int iNew = 0;
+    for(int i = 0; i < _xx.length; ++i) {
+      if((_diagN + i) == ary[j]){
+        ++j; continue;
+      }
+      if(j == 0) {
+        xxNew[iNew++] = _xx[i];
+        continue;
+      }
+      int l = 0,m = 0;
+      double [] x = MemoryManager.malloc8d(_xx[i].length-j);
+      for(int k = 0; k < _xx[i].length; ++k)
+        if(k == ary[l]) {
+          ++l;
+        } else
+          x[m++] = _xx[i][k];
+      xxNew[iNew++] = x;
+    }
+    _xx = xxNew;
+    _diagN = _diag.length;
+    _fullN = _xx[_xx.length-1].length;
+    return Arrays.copyOf(ary,ary.length-1);
+  }
 
   public String toString(){
     if(_fullN >= 1000){

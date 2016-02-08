@@ -302,7 +302,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._max_active_predictors = _parms._solver == Solver.IRLSM ? 7000 : 100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
-      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol());
+      _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, false ,_parms._missing_values_handling == MissingValuesHandling.MeanImputation, hasWeightCol(), hasOffsetCol(), hasFoldCol());
       checkMemoryFootPrint(_dinfo);
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
@@ -436,6 +436,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         gram.dropIntercept();
         xy = Arrays.copyOf(xy, xy.length - 1);
       }
+      int [] zeros = gram.dropZeroCols();
+
+      assert zeros.length == 0:"zero column(s) in gram matrix";
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
@@ -457,7 +460,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // need to drop the cols from everywhere
           _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
-          xy = ArrayUtils.select(xy,_state.removeCols(collinear_cols));
+          _state.removeCols(collinear_cols);
+          xy = ArrayUtils.removeIds(xy,collinear_cols);
         }
         chol.solve(xy);
       } else { // todo add switch between COD and ADMM
@@ -874,12 +878,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
         _state.setLambda(_parms._lambda[i]);
-        if(_parms._family == Family.multinomial)
-          for(int c = 0; c < _nclass; ++c)
-            Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        else
-          Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-        do { fitModel(); } while(!_state.checkKKTs());
+        do {
+          if(_parms._family == Family.multinomial)
+            for(int c = 0; c < _nclass; ++c)
+              Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+          else
+            Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+          fitModel();
+        } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if(_parms._lambda_search) {  // compute train and test dev
           double trainDev = _parms._family == Family.multinomial

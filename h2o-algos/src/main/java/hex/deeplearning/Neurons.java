@@ -481,7 +481,7 @@ public abstract class Neurons {
       int    [] cats = MemoryManager.malloc4(_dinfo._cats); // a bit wasteful - reallocated each time
       int i = 0, ncats = 0;
       for(; i < _dinfo._cats; ++i){
-        assert(_dinfo._catMissing[i] != 0); //we now *always* have a categorical level for NAs, just in case.
+        assert(_dinfo._catMissing[i]); //we now *always* have a categorical level for NAs, just in case.
         if (Double.isNaN(data[i])) {
           cats[ncats] = (_dinfo._catOffsets[i+1]-1); //use the extra level for NAs made during training
         } else {
