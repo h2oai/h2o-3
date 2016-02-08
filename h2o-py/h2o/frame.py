@@ -1853,7 +1853,9 @@ class H2OFrame(object):
 
     Parameters
     ----------
-    digits : int
+    digits : int, default=0
+      Number of digits to round doubles/floats. Rounding to a negative number of digits is not supported.
+      
 
     Returns
     -------

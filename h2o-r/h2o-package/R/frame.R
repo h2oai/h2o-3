@@ -1184,15 +1184,42 @@ t.H2OFrame <- function(x) .newExpr("t",x)
 
 #' @rdname H2OFrame
 #' @export
-log <- function(x, ...) {
-  if( !is.H2OFrame(x) ) .Primitive("log")(x)
-  else .newExpr("log",x)
+log <- function(x, base=exp(1)) {
+  if( !is.H2OFrame(x) ) .Primitive("log")(x,base=base)
+  else {
+    if (base == exp(1)) .newExpr("log",x)
+    else if (base == 10) .newExpr("log10",x)
+    else if (base == 2) .newExpr("log2",x)
+    else .newExpr("log",x) / .newExpr("log",base)
+  }
 }
 
 #' @rdname H2OFrame
 #' @export
+log10 <- function(x) {
+  if( !is.H2OFrame(x) ) .Primitive("log10")(x)
+  else .newExpr("log10",x)
+}
+
+#' @rdname H2OFrame
+#' @export
+log2 <- function(x) {
+  if( !is.H2OFrame(x) ) .Primitive("log2")(x)
+  else .newExpr("log2",x)
+}
+
+#' @rdname H2OFrame
+#' @export
+log1p <- function(x) {
+  if( !is.H2OFrame(x) ) .Primitive("log1p")(x)
+  else .newExpr("log1p",x)
+}
+
+
+#' @rdname H2OFrame
+#' @export
 trunc <- function(x, ...) {
-  if( !is.H2OFrame(x) ) .Primitive("trunc")(x)
+  if( !is.H2OFrame(x) ) .Primitive("trunc")(x, ...)
   else .newExpr("trunc",x)
 }
 
@@ -1943,6 +1970,43 @@ sd <- function(x, na.rm=FALSE) {
   if( is.H2OFrame(x) ) h2o.sd(x,na.rm)
   else stats::sd(x,na.rm)
 }
+
+#'
+#' Round doubles/floats to the given number of significant digits.
+#'
+#' @name h2o.signif
+#' @param x An H2OFrame object.
+#' @param Number of significant digits to round doubles/floats.
+#' @seealso \code{\link[base]{signif}} for the base R implementation.
+#' @export
+h2o.signif <- function(x, digits=6) .newExpr("signif",chk.H2OFrame(x),digits)
+
+#' @rdname h2o.signif
+#' @export
+signif <- function(x, digits=6) {
+  if( is.H2OFrame(x) ) h2o.signif(x,digits)
+  else base::signif(x,digits)
+}
+
+#'
+#' Round doubles/floats to the given number of digits.
+#'
+#' @name h2o.round
+#' @param x An H2OFrame object.
+#' @param Number of digits to round doubles/floats. Rounding to a negative number of digits is not supported.
+#' @seealso \code{\link[base]{round}} for the base R implementation.
+#' @export
+h2o.round <- function(x, digits=0) .newExpr("round",chk.H2OFrame(x),digits)
+
+
+#' @rdname h2o.round
+#' @export
+round <- function(x, digits=0) {
+  if( is.H2OFrame(x) ) h2o.round(x,digits)
+  else base::round(x,digits)
+}
+
+
 
 #'
 #' Scaling and Centering of an H2OFrame
