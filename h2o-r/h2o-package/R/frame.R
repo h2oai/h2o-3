@@ -677,7 +677,7 @@ median.H2OFrame <- h2o.median
 #' Divides the range of the H2O data into intervals and codes the values according to which interval they fall in. The
 #' leftmost interval corresponds to the level one, the next is level two, etc.
 #'
-#' @param x An H2OFrame object with numeric columns.
+#' @param x An H2OFrame object with a single numeric column.
 #' @param breaks A numeric vector of two or more unique cut points.
 #' @param labels Labels for the levels of the resulting category. By default, labels are constructed sing "(a,b]"
 #'        interval notation.
