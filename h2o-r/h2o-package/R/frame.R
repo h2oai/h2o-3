@@ -173,7 +173,10 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #
 .eval.frame <- function(x) {
   id <- attr(chk.H2OFrame(x), "id")
-  if( base::is.character(id) ) return(x)  # Already executed and named
+  if( base::is.character(id) ) {
+    .fetch.data(x,10L)
+    return(x)  # Already executed and named
+  }
   # H2OFrame does not have a name in the cluster?
   # Act "as if" they're on the 2nd execution - and
   # they will get assigned a temp
