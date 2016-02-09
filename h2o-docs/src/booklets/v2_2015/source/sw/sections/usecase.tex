@@ -33,23 +33,20 @@ object AirlinesWithWeatherDemo extends SparkContextSupport {
       absPath("examples/smalldata/Chicago_Ohare_International_Airport.csv"),
       absPath("examples/smalldata/allyears2k_headers.csv.gz"))
 
-    //val weatherDataFile = "examples/smalldata/Chicago_Ohare_International_Airport.csv"
     val wrawdata = sc.textFile(SparkFiles.get("Chicago_Ohare_International_Airport.csv"),3).cache()
     val weatherTable = wrawdata.map(_.split(",")).map(row => WeatherParse(row)).filter(!_.isWrongRow())
 
-    //
     // Load H2O from CSV file (i.e., access directly H2O cloud)
-    // Use super-fast advanced H2O CSV parser !!!
     val airlinesData = new H2OFrame(new File(SparkFiles.get("allyears2k_headers.csv.gz")))
 
-    val airlinesTable : RDD[Airlines] = asRDD[Airlines](airlinesData)
+    val airlinesTable: RDD[Airlines] = asRDD[Airlines](airlinesData)
 \end{lstlisting}
 
 The flight data file is imported directly into H2O already as an \texttt{H2OFrame}. The weather table, however, is first processed in Spark where we do some parsing of the data and data scrubbing.
 
 After both files have been processed, we then take the airlines data that currently sits in H2O and it pass back into Spark whereby we filter for those flights ONLY arriving at Chicago'€™s O'Hare International Airport:
 \begin{lstlisting}[style=Scala]
-val flightsToORD = airlinesTable.filter(f => f.Dest==Some("ORD"))
+val flightsToORD = airlinesTable.filter(f => f.Dest == Some("ORD"))
 
 flightsToORD.count
 println(s"\nFlights to ORD: ${flightsToORD.count}\n")
@@ -60,7 +57,8 @@ At this point, we are ready to join these two tables which are currently Spark R
 \item Convert the RDD into a \texttt{DataFrame} and register the resulting \texttt{DataFrame} as 'TempTable' 
 \begin{lstlisting}[style=Scala]
 val sqlContext = new SQLContext(sc)
-import sqlContext.implicits._ // import implicit conversions
+// Import implicit conversions
+import sqlContext.implicits._ 
 flightsToORD.toDF.registerTempTable("FlightsToORD")
 weatherTable.toDF.registerTempTable("WeatherORD")
 \end{lstlisting}
@@ -105,34 +103,13 @@ val dl = new DeepLearning(dlParams)
 val dlModel = dl.trainModel.get
 \end{lstlisting}
 
-More parameters can be found at: docs.h2o.ai for Deep Learning and all other algorithms.
+More parameters for Deep Learning and all other algorithms can be found in H2O documentation at \url{http://docs.h2o.ai} .
 
-Now we can run this model on our test dataset to score the model against our holdout:
+Now we can run this model on our test dataset to score the model against our holdout dataset:
 \begin{lstlisting}[style=Scala]
 val predictionH2OFrame = dlModel.score(bigTable)('predict)
 val predictionsFromModel = asRDD[DoubleHolder](predictionH2OFrame).collect.map(_.result.getOrElse(Double.NaN))
 println(predictionsFromModel.mkString("\n===> Model predictions: ", ", ", ", ...\n"))
-
-println(
-   s"""# R script for residual plot
-     |library(h2o)
-     |h = h2o.init()
-     |
-     |pred = h2o.getFrame(h, "${predictionH2OFrame._key}")
-     |act = h2o.getFrame (h, "${bigTable._key}")
-     |
-     |predDelay = pred$$predict
-     |actDelay = act$$ArrDelay
-     |
-     |nrow(actDelay) == nrow(predDelay)
-     |
-     |residuals = predDelay - actDelay
-     |
-     |compare = cbind (as.data.frame(actDelay$$ArrDelay), as.data.frame(residuals$$predict))
-     |nrow(compare)
-     |plot( compare[,1:2] )
-     |
-   """.stripMargin)
 \end{lstlisting}
 
 The full source for the application is here: \url{http://bit.ly/1mo3XO2}
