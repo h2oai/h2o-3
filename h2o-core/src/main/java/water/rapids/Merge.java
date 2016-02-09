@@ -120,6 +120,7 @@ public class Merge {
       //rightFrom >>= (Math.max(8, rightIndex._biggestBit[0])-8);
       //rightFrom++;
 
+      int howManyMatch = 0;
       for (int rightMSB=0; rightMSB<256; rightMSB++) {
         //int rightMSB = rightMSBBase +k;
 //          long rightLen = rightIndex._MSBhist[j];
@@ -136,6 +137,8 @@ public class Merge {
         if (tt<0) continue;  // The left MSB values represent a range less than the right minimum value, so cannot match.
         tt >>= (Math.max(8, rightIndex._biggestBit[0])-8);
         if (tt != rightMSB) continue;  // including possibly tt greater than 256 for left values greater than the right's max
+
+        howManyMatch++;
 
         // A naive loop through 1:65536 is considered easier to read. Could get fancy and loop inner loop through relevant lower and upper bound only but trying hurt my brain too much and had too high risk of bugs.
         // The loops are started at 1, then 1 taken off again, to remind us about NA.
@@ -157,6 +160,29 @@ public class Merge {
         bmList.add(bm);
         System.out.print(rightNode.index() + " "); // So we can make sure distributed across nodes.
         //System.out.println("Made RPC to node " + rightNode.index() + " for MSB" + leftMSB + "/" + rightMSB);
+      }
+      if (howManyMatch>1) {
+        // TODO: construct test with small left range and large right range to trigger this
+        throw new IllegalArgumentException("Internal not yet implemented: left MSB matches to multiple right MSB.");
+      }
+      if (howManyMatch==0 && allLeft) {
+        // Temp workaround for situation that hasn't arisen in real data yet.
+        // Currently, BinaryMerge() generates the result rows. TODO: Perhaps change BinaryMerge to only find the matches and then
+        // add a new method that runs once per leftMSB goes and fetches the (possible multiple) right MSB results.
+        // Or perhaps BinaryMerge could know where each rightMSB ends in the left so as to only generate rows for that part of leftMSB. That
+        // would still leave the howManyMatch==0 problem though.
+        RPC bm = new RPC<>(SplitByMSBLocal.ownerOfMSB(0),
+                new BinaryMerge(leftFrame, rightFrame,
+                        leftMSB, 0,
+                        //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
+                        leftIndex._bytesUsed,   // field sizes for each column in the key
+                        rightIndex._bytesUsed,
+                        leftIndex._colMin,
+                        rightIndex._colMin,
+                        allLeft
+                )
+        );
+        bmList.add(bm);
       }
     }
     System.out.println("... took: " + (System.nanoTime() - t0) / 1e9);

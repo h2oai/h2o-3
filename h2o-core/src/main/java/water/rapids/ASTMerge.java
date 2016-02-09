@@ -80,6 +80,8 @@ public class ASTMerge extends ASTPrim {
     if (method.equals("radix")) {
       // Build categorical mappings, to rapidly convert categoricals from the left to the right
       // With the sortingMerge approach there is no variance here: always map left to right
+      if (allRite)
+        throw new IllegalArgumentException("all.y=TRUE not yet implemented for method='radix'");
       int[][] id_maps = new int[ncols][];
       for( int i=0; i<ncols; i++ ) {
         Vec lv = l.vec(i);
