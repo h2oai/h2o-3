@@ -1,6 +1,6 @@
 
 hidden_opt = [[17,32],[8,19],[32,16,8],[100],[10,10,10,10]]
-l1_opt = [x/1e6 for x in range(1,1001)]
+l1_opt = [s/1e6 for s in range(1,1001)]
 hyper_parameters = {"hidden":hidden_opt, "l1":l1_opt}
 search_criteria = {"strategy":"RandomDiscrete", 
     "max_models":10, "max_runtime_secs":100, 

@@ -1,7 +1,7 @@
 #Define parameters for gridsearch
 ntrees_opt = range(0,100,1)
 max_depth_opt = range(0,20,1)
-learn_rate_opt = [x/float(1000) for x in range(1,101)]
+learn_rate_opt = [s/float(1000) for s in range(1,101)]
 hyper_parameters = {"ntrees": ntrees_opt, 
     "max_depth":max_depth_opt, "learn_rate":learn_rate_opt}
 search_criteria = {"strategy":"RandomDiscrete", 
