@@ -17,6 +17,14 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public String algoName() { return "SVD"; }
     public String fullName() { return "Singular Value Decomposition"; }
     public String javaName() { return SVDModel.class.getName(); }
+    @Override public long progressUnits() {
+      switch(_svd_method) {
+        case GramSVD:    return 2;
+        case Power:      return 1 + _nv;
+        case Randomized: return 5 + _max_iterations;
+        default:         return _nv;
+      }
+    }
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE; // Data transformation (demean to compare with PCA)
     public Method _svd_method = Method.GramSVD;   // Method for computing SVD
     public int _nv = 1;    // Number of right singular vectors to calculate

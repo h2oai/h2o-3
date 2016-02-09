@@ -696,9 +696,10 @@ public final class ParseDataset {
 
     private FVecParseWriter makeDout(ParseSetup localSetup, int chunkOff, int nchunks) {
       AppendableVec [] avs = new AppendableVec[localSetup._number_columns];
-      long [] espc = MemoryManager.malloc8(nchunks);
+      final long [] espc = MemoryManager.malloc8(nchunks);
+      final byte[] ctypes = localSetup._column_types; // SVMLight only uses numeric types, sparsely represented as a null
       for(int i = 0; i < avs.length; ++i)
-        avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, localSetup._column_types[i], chunkOff);
+        avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, ctypes==null ? /*SVMLight*/Vec.T_NUM : ctypes[i], chunkOff);
       return localSetup._parse_type == ParserType.SVMLight
         ? new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs)
         : new FVecParseWriter(_vg, chunkOff, categoricals(_cKey, localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);

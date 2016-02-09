@@ -1,17 +1,17 @@
-\input{common/conf_top.tex}
+%\input{common/conf_top.tex} % default, for online version
+\input{common/conf_top_print.tex} % for print version
 
 \input{common/conf_titles.tex}
+\input{common/conf_listings.tex}
+%\input{common/conf_listings_colorized.tex} %lacks Scala style setup
 %
 % Use fancy table
 %
 \usepackage{tabularx}
 \usepackage{booktabs}
+\usepackage{forest}
 
 \begin{document}
-
-\input{common/conf_listings.tex}
-
-
 
 \thispagestyle{empty} %removes page number  
 
@@ -22,7 +22,9 @@
 \line(1,0){250}  %inserts  horizontal line 
 \\
 \bigskip
-\textsc{\small{Michal Malohlava\hspace{20pt} Alex Tellez \hspace{20pt} Jessica Lanford}}
+\textsc{\small{Michal Malohlava\hspace{20pt} Nidhi Mehta}}
+
+\textsc{\small{Edited by: Brandon Hill \&\ Vinod Iyengar}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -45,13 +47,15 @@
 {\raggedright\vfill\ 
 
 Machine Learning with Sparkling Water: H2O + Spark\\
-  by Michal Malohlava, Alex Tellez \&\  Jessica Lanford\\
+  by Michal Malohlava \&\ Nidhi Mehta\\
+  Edited by: Brandon Hill \&\ Vinod Iyengar
+  
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright 2016 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
 \monthname \hspace{1pt}  \the\year: First Edition
@@ -86,15 +90,16 @@ Printed in the United States of America.
 %
 % SW design
 %
+\newpage
 \input{sw/sections/design}
 %
 % Exposed public Scala API
 %
+\newpage
 \input{sw/sections/api}
 
+\newpage
 \input{sw/sections/deployment}
-
-\include{sw/sections/configuration}
 
 %
 % Building standalone applications with Sparkling Water
@@ -103,8 +108,15 @@ Printed in the United States of America.
 \include{sw/sections/apps}
 
 \newpage
+\include{sw/sections/pysparkling}
 
-\section{References}
+\newpage
+\include{sw/sections/usecase}
+
+\newpage
+\include{sw/sections/FAQ}
+
+\newpage\section{References}
 
 \bibliographystyle{plainnat}  
 

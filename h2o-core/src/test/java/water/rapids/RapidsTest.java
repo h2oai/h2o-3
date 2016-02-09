@@ -205,10 +205,10 @@ public class RapidsTest extends TestUtil {
 
   @Test public void testVariance() {
     // Checking variance: scalar
-    String tree = "({x . (var x x \"everything\")} (rows a.hex [0]))";
+    String tree = "({x . (var x x \"everything\" FALSE)} (rows a.hex [0]))";
     checkTree(tree);
 
-    tree = "({x . (var x x \"everything\")} a.hex)";
+    tree = "({x . (var x x \"everything\" FALSE)} a.hex)";
     checkTree(tree);
 
     tree = "(table (trunc (cols a.hex 1)) FALSE)";

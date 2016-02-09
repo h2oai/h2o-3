@@ -110,6 +110,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
+    @Override public long progressUnits() { return GLM.WORK_TOTAL; }
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
@@ -163,7 +164,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_obj_reg != -1 && _obj_reg <= 0)
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
-        glm.error("_prior","Prior must be in (exlusive) range (0,1)");
+        glm.error("_prior","Prior must be in (exclusive) range (0,1)");
       if(_family != Family.tweedie) {
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
@@ -586,8 +587,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
-      x.l = likelihood(y,x.mu);
-      x.dev = deviance(y,x.mu);
+      x.l = w*likelihood(y,x.mu);
+      x.dev = w*deviance(y,x.mu);
       return x;
     }
   }
@@ -773,6 +774,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
+      if(glm._parms._family == Family.binomial && domains[_dinfo.responseChunkId(0)] == null)
+        domains[_dinfo.responseChunkId(0)] = new String[]{"0","1"};
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         String [] ns = new String[names.length-1];

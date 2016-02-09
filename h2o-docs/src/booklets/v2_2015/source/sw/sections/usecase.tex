@@ -1,0 +1,116 @@
+\section{A Use Case Example}
+
+
+\subsection{Predicting Arrival Delay in Minutes - Regression}
+
+\textbf{What is the task?}
+
+As Chief Air Traffic Controller, your job is come up with a prediction engine that can be used to tell passengers whether an incoming flight will be delayed by X number of minutes.  To accomplish this task, we have an airlines dataset containing ${\sim}$44k flights since 1987 with features such as: Origin and Destination codes,  distance traveled, carrier, etc.  The key variable we are trying to predict is 'ArrDelay'€ (arrival delay) in minutes. We will do this leveraging H2O and the Spark SQL library.
+
+\textbf{Spark SQL}
+
+One of the many cool features about the Spark project is the ability to initiate a €˜SQL context€™ within our application that enables us to write SQL-like queries against an existing \texttt{DataFrame}.  Given the ubiquitous nature of SQL, this is very appealing to data scientists who may not be comfortable yet with Scala / Java / Python, but want to perform complex manipulations of their data.
+
+Within the context of this example, we are going to first read in the airlines dataset and then process a weather file which contains the weather data at the arriving city. Joining the two tables will require a SQL context such that we can write an INNER JOIN against the two independent \texttt{DataFrame}s.  Let's get started!
+
+\textbf{Data Ingest}
+
+Our first order of business is to process both files, the flight data and the weather data:
+
+\begin{lstlisting}[style=Scala]
+object AirlinesWithWeatherDemo extends SparkContextSupport {
+
+  def main(args: Array[String]): Unit = {
+    // Configure this application
+    val conf: SparkConf = configure("Sparkling Water: Join of Airlines with Weather Data")
+
+    // Create SparkContext to execute application on Spark cluster
+    val sc = new SparkContext(conf)
+    val h2oContext = H2OContext.getOrCreate(sc)
+    import h2oContext._
+    // Setup environment
+    addFiles(sc,
+      absPath("examples/smalldata/Chicago_Ohare_International_Airport.csv"),
+      absPath("examples/smalldata/allyears2k_headers.csv.gz"))
+
+    val wrawdata = sc.textFile(SparkFiles.get("Chicago_Ohare_International_Airport.csv"),3).cache()
+    val weatherTable = wrawdata.map(_.split(",")).map(row => WeatherParse(row)).filter(!_.isWrongRow())
+
+    // Load H2O from CSV file (i.e., access directly H2O cloud)
+    val airlinesData = new H2OFrame(new File(SparkFiles.get("allyears2k_headers.csv.gz")))
+
+    val airlinesTable: RDD[Airlines] = asRDD[Airlines](airlinesData)
+\end{lstlisting}
+
+The flight data file is imported directly into H2O already as an \texttt{H2OFrame}. The weather table, however, is first processed in Spark where we do some parsing of the data and data scrubbing.
+
+After both files have been processed, we then take the airlines data that currently sits in H2O and it pass back into Spark whereby we filter for those flights ONLY arriving at Chicago'€™s O'Hare International Airport:
+\begin{lstlisting}[style=Scala]
+val flightsToORD = airlinesTable.filter(f => f.Dest == Some("ORD"))
+
+flightsToORD.count
+println(s"\nFlights to ORD: ${flightsToORD.count}\n")
+\end{lstlisting}
+
+At this point, we are ready to join these two tables which are currently Spark RDDs.  The workflow required for this is as follows:
+\begin{itemize}
+\item Convert the RDD into a \texttt{DataFrame} and register the resulting \texttt{DataFrame} as 'TempTable' 
+\begin{lstlisting}[style=Scala]
+val sqlContext = new SQLContext(sc)
+// Import implicit conversions
+import sqlContext.implicits._ 
+flightsToORD.toDF.registerTempTable("FlightsToORD")
+weatherTable.toDF.registerTempTable("WeatherORD")
+\end{lstlisting}
+\item Join the two temp tables using Spark SQL 
+\begin{lstlisting}[style=Scala]
+val bigTable = sqlContext.sql(
+   """SELECT
+     |f.Year,f.Month,f.DayofMonth,
+     |f.CRSDepTime,f.CRSArrTime,f.CRSElapsedTime,
+     |f.UniqueCarrier,f.FlightNum,f.TailNum,
+     |f.Origin,f.Distance,
+     |w.TmaxF,w.TminF,w.TmeanF,w.PrcpIn,w.SnowIn,w.CDD,w.HDD,w.GDD,
+     |f.ArrDelay
+     |FROM FlightsToORD f
+     |JOIN WeatherORD w
+     |ON f.Year=w.Year AND f.Month=w.Month AND f.DayofMonth=w.Day
+     |WHERE f.ArrDelay IS NOT NULL""".stripMargin)
+\end{lstlisting}
+
+\item Transfer the €˜joined€™ table from Spark back to H2O to run an algorithm against
+\begin{lstlisting}[style=Scala]
+val train: H2OFrame = bigTable
+\end{lstlisting}
+\end{itemize}
+
+% Where does this happen?
+%Notice that we are also doing some data-munging by changing the field named: 'IsDepDelayed'€ (Is Departure Delayed) to an enum type (aka categorical).  This is because when H2O first read the data, this particular filed is either 0 (departure not delayed) or 1 (departure is delayed); but because this is an actual label corresponding to a value and NOT a true numeric feature, we have to make this conversion so that the model recognizes the correct data type.  Please be aware that for datasets that have labels stored as numbers, H2O will first read it as numeric and so users must manually change these fields.
+
+\textbf{H2O Deep Learning}
+
+Now we have our dataset loaded into H2O. Recall this dataset has been filtered to only include the flights and weather data on Chicago Ohare. It'€™s now time to run a machine learning algorithm to predict flight delay in minutes.  As always, we start off with the necessary imports we need followed by declaring the parameters that we wish to control:
+\pagebreak
+\begin{lstlisting}[style=Scala]
+val dlParams = new DeepLearningParameters()
+dlParams._train = train
+dlParams._response_column = 'ArrDelay
+dlParams._epochs = 5
+dlParams._activation = Activation.RectifierWithDropout
+dlParams._hidden = Array[Int](100, 100)
+
+val dl = new DeepLearning(dlParams)
+val dlModel = dl.trainModel.get
+\end{lstlisting}
+
+More parameters for Deep Learning and all other algorithms can be found in H2O documentation at \url{http://docs.h2o.ai} .
+
+Now we can run this model on our test dataset to score the model against our holdout dataset:
+\begin{lstlisting}[style=Scala]
+val predictionH2OFrame = dlModel.score(bigTable)('predict)
+val predictionsFromModel = asRDD[DoubleHolder](predictionH2OFrame).collect.map(_.result.getOrElse(Double.NaN))
+println(predictionsFromModel.mkString("\n===> Model predictions: ", ", ", ", ...\n"))
+\end{lstlisting}
+
+The full source for the application is here: \url{http://bit.ly/1mo3XO2}
+

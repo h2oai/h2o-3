@@ -17,6 +17,7 @@ public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantilePar
     public String algoName() { return "Quantiles"; }
     public String fullName() { return "Quantiles"; }
     public String javaName() { return QuantileModel.class.getName(); }
+    @Override public long progressUnits() { return train().numCols()*_probs.length; }
   }
 
   public static class QuantileOutput extends Model.Output {

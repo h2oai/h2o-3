@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.schemas.GridSearchSchema;
 import water.H2O;
 import water.Job;
@@ -62,8 +63,13 @@ public class GridSearchHandler<G extends Grid<MP>,
     gss.init_meta();
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
     gss.parameters.init_meta();
+
+    // Get default parameters, then overlay the passed-in values
     ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
     gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
+
+
+
     gss.fillFromParms(parms);   // Override defaults from user parms
 
     // Verify list of hyper parameters
@@ -82,7 +88,7 @@ public class GridSearchHandler<G extends Grid<MP>,
                                                  params,
                                                  gss.hyper_parameters,
                                                  new DefaultModelParametersBuilderFactory<MP, P>(),
-            gss.strategy, gss.max_models, gss.max_time_ms, gss.seed);
+                                                 (HyperSpaceSearchCriteria)gss.search_criteria.createAndFillImpl());
 
     // Fill schema with job parameters
     // FIXME: right now we have to remove grid parameters which we sent back

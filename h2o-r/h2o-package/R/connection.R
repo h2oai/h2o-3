@@ -420,7 +420,16 @@ h2o.clusterStatus <- function() {
   if (.Platform$OS.type == "windows") {
     command <- normalizePath(gsub("\"","",command))
   }
-  jver <- system2(command, "-version", stdout = TRUE, stderr = TRUE)
+  
+  jver <- tryCatch({system2(command, "-version", stdout = TRUE, stderr = TRUE)}, 
+      error = function(err) {
+        print(err)
+        stop("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
+        "Please download the latest Java SE JDK 7 from the following URL:\n",
+        "http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html")
+      }
+    )
+    
   if(any(grepl("GNU libgcj", jver))) {
     stop("Sorry, GNU Java is not supported for H2O.\n",
          "Please download the latest Java SE JDK 7 from the following URL:\n",

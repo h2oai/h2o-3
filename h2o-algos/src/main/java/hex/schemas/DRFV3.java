@@ -14,6 +14,7 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
         "nfolds",
         "keep_cross_validation_predictions",
         "score_each_iteration",
+        "score_tree_interval",
         "fold_assignment",
         "fold_column",
 				"response_column",

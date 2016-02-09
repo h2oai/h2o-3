@@ -52,7 +52,7 @@ public class LinearAlgebraUtils {
       if (Double.isNaN(row[col])) {
         if (dinfo._imputeMissing)
           cidx = dinfo._catModes[col];
-        else if (dinfo._catMissing[col] == 0)
+        else if (!dinfo._catMissing[col])
           continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
         else
           cidx = dinfo._catOffsets[col+1]-1;  // Otherwise, missing value turns into extra (last) factor
@@ -171,7 +171,7 @@ public class LinearAlgebraUtils {
             if (Double.isNaN(a)) {
               if (_ainfo._imputeMissing)
                 cidx = _ainfo._catModes[p];
-              else if (_ainfo._catMissing[p] == 0)
+              else if (!_ainfo._catMissing[p])
                 continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
               else
                 cidx = _ainfo._catOffsets[p+1]-1;     // Otherwise, missing value turns into extra (last) factor

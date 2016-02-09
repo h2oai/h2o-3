@@ -31,7 +31,7 @@
 #' @param lambda A non-negative shrinkage parameter for the elastic-net, which multiplies \eqn{P(\alpha,\beta)} in the objective function.
 #'               When \code{lambda = 0}, no elastic-net penalty is applied and ordinary generalized linear models are fit.
 #' @param prior (Optional) A numeric specifying the prior probability of class 1 in the response when \code{family = "binomial"}.
-#'               The default prior is the observational frequency of class 1.
+#'               The default prior is the observational frequency of class 1. Must be from (0,1) exclusive range or NULL (no prior).
 #' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
 #'                      \code{lambda} is interpreted as lambda min.
 #' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}.
@@ -115,7 +115,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     tweedie_variance_power = NaN,
                     tweedie_link_power = NaN,
                     alpha = 0.5,
-                    prior = 0.0,
+                    prior = NULL,
                     lambda = 1e-05,
                     lambda_search = FALSE,
                     nlambdas = -1,
