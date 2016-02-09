@@ -1,10 +1,14 @@
-hidden_opt <- list(c(32,32), c(32,16,8), c(100))
-l1_opt <- c(1e-4,1e-3)
+hidden_opt = lapply(1:100, function(x)10+sample(50, sample(4), replace=TRUE))
+l1_opt = seq(1e-6,1e-3,1e-6)
 hyper_params <- list(hidden = hidden_opt, l1 = l1_opt)
+search_criteria = list(strategy = "RandomDiscrete", 
+    max_models = 10, max_runtime_secs = 100, 
+    seed=123456)
 
 model_grid <- h2o.grid("deeplearning", 
     grid_id = "mygrid",
     hyper_params = hyper_params, 
+    search_criteria = search_criteria,
     x = x,
     y = y,
     distribution = "multinomial", 

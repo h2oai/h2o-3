@@ -25,8 +25,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
                fold_assignment=None, keep_cross_validation_predictions=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
     """
-    Build a supervised Deep Learning model
-    Performs Deep Learning neural networks on an H2OFrame
+    Build a supervised Deep Neural Network model
+    Builds a feed-forward multilayer artificial neural network on an H2OFrame
 
     Parameters
     ----------

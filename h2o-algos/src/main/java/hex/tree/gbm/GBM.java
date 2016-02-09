@@ -531,7 +531,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         float val = (float) (_parms._learn_rate * sqt._quantiles[i]);
         assert !Float.isNaN(val) && !Float.isInfinite(val);
         ((LeafNode) ktrees[0].node((int)strata.min() + i))._pred = val;
-//        Log.info("Leaf " + ((int)strata.min()+i) + " has median: " + sqt._quantiles[i]);
+//        Log.info("Leaf " + ((int)strata.min()+i) + " has quantile: " + sqt._quantiles[i]);
       }
     }
 

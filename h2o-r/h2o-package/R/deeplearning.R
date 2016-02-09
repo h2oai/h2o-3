@@ -1,7 +1,7 @@
 # ---------------------------- Deep Learning - Neural Network ---------------- #
-#' Build a Deep Learning Neural Network
+#' Build a Deep Neural Network
 #'
-#' Performs Deep Learning neural networks on an H2OFrame
+#' Builds a feed-forward multilayer artificial neural network on an H2OFrame
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param y The name of the response variable in the model.

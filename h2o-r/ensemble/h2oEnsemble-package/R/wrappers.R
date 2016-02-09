@@ -22,11 +22,15 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL, validation_fr
                             family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
                             link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"), 
                             tweedie_variance_power = NaN, tweedie_link_power = NaN,
-                            alpha = 0.5, prior = 0, lambda = 1e-05, lambda_search = FALSE,
+                            alpha = 0.5, prior = NULL, lambda = 1e-05, lambda_search = FALSE,
                             nlambdas = -1, lambda_min_ratio = -1, nfolds = 0, fold_column = NULL,
                             fold_assignment = c("AUTO", "Random", "Modulo"),
                             keep_cross_validation_predictions = TRUE, beta_constraints = NULL,
-                            offset_column = NULL, weights_column = NULL, intercept = TRUE, ...) {
+                            offset_column = NULL, weights_column = NULL, intercept = TRUE, 
+                            max_active_predictors = -1, objective_epsilon = -1,
+                            gradient_epsilon = -1, non_negative = FALSE, compute_p_values = FALSE,
+                            remove_collinear_columns = FALSE, max_runtime_secs = 0,
+                            missing_values_handling = c("Skip", "MeanImputation"), ...) {
   
   # Also, offset_column, weights_column, intercept not implemented at the moment
   h2o.glm(x = x, y = y, training_frame = training_frame, model_id = model_id, 

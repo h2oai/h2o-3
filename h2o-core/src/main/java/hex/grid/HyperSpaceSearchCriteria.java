@@ -36,11 +36,11 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     // stopping criteria:
     private int _max_models = Integer.MAX_VALUE;
-    private int _max_time_ms = Integer.MAX_VALUE;
+    private double _max_runtime_secs = Double.MAX_VALUE;
 
     public long seed() { return _seed; }
     public int max_models() { return _max_models; }
-    public int max_time_ms() { return _max_time_ms; }
+    public double max_runtime_secs() { return _max_runtime_secs; }
 
     public RandomDiscreteValueSearchCriteria() {
       super(Strategy.RandomDiscrete);

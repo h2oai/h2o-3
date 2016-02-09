@@ -40,6 +40,12 @@ class SVMLightParser extends Parser {
     else throw new H2OParseException("Could not parse file as an SVMLight file.");
   }
 
+  public static byte[] col_types(int ncols) {
+    byte[] res = new byte[ncols];
+    Arrays.fill(res,Vec.T_NUM);
+    return res;
+  }
+
   final boolean isWhitespace(byte c){return c == ' '  || c == '\t';}
 
   @SuppressWarnings("fallthrough")
@@ -361,11 +367,6 @@ class SVMLightParser extends Parser {
         _data[_nlines][colIdx] = Double.toString(d);
     }
 
-    public byte[] guessTypes() {
-      byte [] types = new byte[_ncols];
-      for(int i = 0; i < _ncols; ++i)
-        types[i] = Vec.T_NUM;
-      return types;
-    }
+    public byte[] guessTypes() { return col_types(_ncols); }
   }
 }

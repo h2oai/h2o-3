@@ -75,12 +75,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
 
-  /** For advanced search methods we can put a time limit on the overall grid search.  This doesn't make much sense
-   * for strict Cartesian.
-   */
-  private int _max_time_ms = Integer.MAX_VALUE;
-
-
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
@@ -179,10 +173,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       int counter = 0;
       while (it.hasNext(model)) {
         if(_job.stop_requested() ) return;  // Handle end-user cancel request
-        long remaining_time = it.timeRemaining();
+        double time_remaining_secs = it.time_remaining_secs();
+        double max_runtime_secs = it.max_runtime_secs();
 
-        if  (remaining_time < 0) {
-          Log.info("Grid max_time_ms has expired; stopping early.");
+        if  (time_remaining_secs < 0) {
+          Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
           return;
         }
 
@@ -194,14 +189,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // exception up, just mark combination of model parameters as wrong
 
           // Do we need to limit the model build time?
-          if (_max_time_ms < Integer.MAX_VALUE) {
-            Log.info("Grid time is limited to: " + _max_time_ms + " for grid: " + grid._key + ". Remaining time is: " + remaining_time);
+          if (max_runtime_secs < Double.MAX_VALUE) {
+            Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
             if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = remaining_time / 1000.0;
+              params._max_runtime_secs = time_remaining_secs;
               Log.info("Due to the grid time limit, changing model max runtime to: " + mSformatter.format(params._max_runtime_secs) + "S.");
             } else {
               double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, remaining_time / 1000.0 );
+              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
               Log.info("Due to the grid time limit, changing model max runtime from: " + mSformatter.format(was) + " to: " + mSformatter.format(params._max_runtime_secs) + "S.");
             }
           }

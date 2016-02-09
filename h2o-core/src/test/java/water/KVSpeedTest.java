@@ -4,6 +4,7 @@ import org.junit.*;
 import java.util.ArrayList;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
+import water.util.PrettyPrint;
 
 @Ignore("Speed/perf test, not intended as a pre-push junit test")
 public class KVSpeedTest extends TestUtil {
@@ -71,12 +72,14 @@ public class KVSpeedTest extends TestUtil {
     logTime(start,"REMALL_DONE",NCLOUD);
 
     DKV.remove(k);
+    System.out.printf("STORE size = "+H2O.STORE.size());
+    System.out.printf("STORE raw array length = "+H2O.STORE.raw_array().length);
   }
 
   @Test @Ignore
   public void testMillionInsertKeys() {
     final int PAR=100;
-    final int NKEY=1000000;     // PAR*NKEY = 100M keys
+    final int NKEY=100000;     // PAR*NKEY = 100M keys
     final int WARMKEY=10000;    // PAR*WARMKEY = 1M keys
     H2O.H2OCountedCompleter foo = H2O.submitTask(new H2O.H2OCountedCompleter() {
         final Key  [][] keys = new Key  [PAR][NKEY];
@@ -184,13 +187,14 @@ public class KVSpeedTest extends TestUtil {
         }
       });
     foo.join();
-
+    System.out.printf("STORE size = %d\n",H2O.STORE.size());
+    System.out.printf("STORE raw array length = %d\n",H2O.STORE.raw_array().length);
   }
 
   private long logTime( long start, String msg, int ncloud ) {
     long now = System.currentTimeMillis();
-    double d = (double)(now-start)/NKEYS/ncloud;
-    System.out.println(msg+" "+d+" msec/op");
+    double msec_op = (double)(now-start)/NKEYS/ncloud;    
+    System.out.println(msg+" "+ PrettyPrint.usecs((long)(msec_op*1000.0))+"/op");
     return now;
   }
 }

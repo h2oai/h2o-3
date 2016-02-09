@@ -956,18 +956,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     abstract protected boolean filter(Vec v);
 
     void doIt( Frame f, String msg, boolean expensive ) {
-      boolean any=false;
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ ) {
         if( filter(f.vecs()[i]) ) {
-          if( any ) msg += ", "; // Log dropped cols
-          any = true;
-          msg += f._names[i];
           _removedCols.add(f._names[i]);
           f.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
-      if( any ) {
+      if( !_removedCols.isEmpty() ) {
+        msg += _removedCols.toString();
         warn("_train", msg);
         if (expensive) Log.info(msg);
       }
