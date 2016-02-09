@@ -198,3 +198,65 @@ gbmParams._max_depth = 6
  val gbmModel = gbm.trainModel.get 
  \end{lstlisting}
  \end{enumerate}
+
+\subsection{Using Spark Data Sources with H2OFrame}
+Spark SQL provides configurable data source for SQL tables. Sparkling Water enable \texttt{H2OFrame} to be
+used as data source to load/save data from/to Spark SQL table.
+
+\subsubsection{Reading from \texttt{H2OFrame}}
+
+Let's suppose we have a \texttt{H2OFrame}. The shortest way to load a \texttt{DataFrame} from \texttt{H2OFrame} with default settings is:
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.h2o(frame.key)
+\end{lstlisting}
+
+There are two more ways to load a \texttt{DataFrame} from \texttt{H2OFrame} allowing us to specify additional options:
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.format("h2o").option("key",frame.key.toString).load()
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.format("h2o").load(frame.key.toString)
+\end{lstlisting}
+
+\subsubsection{Saving to \texttt{H2OFrame}}
+
+Let's suppose we have \texttt{DataFrame} df. The shortest way to save the \texttt{DataFrame} as \texttt{H2OFrame} with default settings is:
+\begin{lstlisting}[style=Scala]
+df.write.h2o("new_key")
+\end{lstlisting}
+
+There are two more ways to save the \texttt{DataFrame} as \texttt{H2OFrame} allowing us to specify additional options:
+\begin{lstlisting}[style=Scala]
+df.write.format("h2o").option("key","new_key").save()
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+df.write.format("h2o").save("new_key")
+\end{lstlisting}
+
+All three variants save the \texttt{DataFrame} as \texttt{H2OFrame} with the key "new\_key". They won't succeed if a \texttt{H2OFrame} with the same key already exists.
+
+\subsubsection{Loading \& Saving Options}
+
+If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.from("h2o").option("key","key_one").load("key_two")
+\end{lstlisting}
+or
+\begin{lstlisting}[style=Scala]
+val df = sqlContext.read.from("h2o").option("key","key_one").save("key_two")
+\end{lstlisting}
+
+In both examples, "key\_one" is used.
+
+\subsubsection{Specifying Saving Mode}
+
+There are four save modes available when saving data using Data Source API- see \url{http://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes}
+
+\begin{itemize}
+\item If "append" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original \texttt{H2OFrame} and the appended \texttt{DataFrame}.
+\item If "overwrite" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and new one with the new rows is created with the same key.
+\item If "error" mode is used, and a \texttt{H2OFrame} with the specified key already exists, an exception is thrown.
+\item If "ignore" mode is used, and a \texttt{H2OFrame} with the specified key already exists, no data are changed.
+\end{itemize}

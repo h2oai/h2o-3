@@ -48,6 +48,10 @@ val h2oFrame = new H2OFrame(new File("/data/iris.csv"))
 \begin{lstlisting}[style=Scala]
 val h2oFrame = new H2OFrame(URI.create("hdfs://data/iris.csv"))
 \end{lstlisting}
+	\item loading multiple files from HDFS/S3/S3N/S3A:
+\begin{lstlisting}[style=Scala]
+val h2oFrame = new H2OFrame(URI.create("hdfs://data/iris/01.csv"), URI.create("hdfs://data/iris/02.csv"))
+\end{lstlisting}
 	\item transforming Spark RDD or \texttt{DataFrame}:
 \begin{lstlisting}[style=Scala]
 val h2oFrame = h2oContext.asH2OFrame(rdd)
