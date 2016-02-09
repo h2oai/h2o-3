@@ -5,7 +5,7 @@
 \begin{lstlisting}[style=Scala]
 val sc: SparkContext = ...
 val hc = H2OContext.getOrCreate(sc)
-\end{lstlisting}
+\end{lstlisting} 
 or:
 \begin{lstlisting}[style=Scala]
 val sc: SparkContext = ...
@@ -40,8 +40,8 @@ H2O resides in the same executor JVM as Spark. The memory provided for H2O is co
 \textbf{Yarn specific configuration}
 
 \begin{itemize}
-\item Refer to the Spark documentation
-\item For JVMs that require a large amount of memory, we strongly recommend configuring the maximum amount of memory available for individual mappers. For information on how to do this using Yarn, refer to {\url{http://docs.h2o.ai/deployment/hadoop_yarn.html}}
+\item Refer to the Spark documentation \url{https://spark.apache.org/docs/latest/running-on-yarn.html}
+\item For JVMs that require a large amount of memory, we strongly recommend configuring the maximum amount of memory available for individual mappers.
  \end{itemize} 
  
  \subsection{Converting H2OFrame into RDD[T]}

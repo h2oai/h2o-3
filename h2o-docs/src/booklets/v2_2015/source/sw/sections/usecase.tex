@@ -3,15 +3,13 @@
 
 \subsection{Predicting Arrival Delay in Minutes - Regression}
 
-Up until now, we have seen two classification task applications.  Now, we are going to build an application that looks to predict a real number as opposed to a 'label'Äô.  In particular, we are going to play air traffic controller and see if we can predict an arrival delay - in minutes - leveraging H2O and the Spark SQL library.
-
 \textbf{What is the task?}
 
-As Chief Air Traffic Controller, your job is come up with a prediction engine that can be used to tell passengers whether an incoming flight will be delayed by X number of minutes.  To accomplish this task, we have an airlines dataset containing ${\sim}$44k flights since 1987 with features such as: Origin and Destination codes,  distance traveled, carrier, etc.  The key variable we are trying to predict is 'ArrDelay'Äù (arrival delay) in minutes.
+As Chief Air Traffic Controller, your job is come up with a prediction engine that can be used to tell passengers whether an incoming flight will be delayed by X number of minutes.  To accomplish this task, we have an airlines dataset containing ${\sim}$44k flights since 1987 with features such as: Origin and Destination codes,  distance traveled, carrier, etc.  The key variable we are trying to predict is 'ArrDelay'Äù (arrival delay) in minutes. We will do this leveraging H2O and the Spark SQL library.
 
 \textbf{Spark SQL}
 
-One of the many cool features about the Spark project is the ability to initiate a ÄòSQL contextÄô within our application that enables us to write SQL-like queries against an existing \texttt{DataFrame}.  Given the ubiquitous nature of SQL, this is very appealing to data scientists who may not be comfortable yet with Scala / Java / Python but want to perform complex manipulations of their data.
+One of the many cool features about the Spark project is the ability to initiate a ÄòSQL contextÄô within our application that enables us to write SQL-like queries against an existing \texttt{DataFrame}.  Given the ubiquitous nature of SQL, this is very appealing to data scientists who may not be comfortable yet with Scala / Java / Python, but want to perform complex manipulations of their data.
 
 Within the context of this example, we are going to first read in the airlines dataset and then process a weather file which contains the weather data at the arriving city. Joining the two tables will require a SQL context such that we can write an INNER JOIN against the two independent \texttt{DataFrame}s.  Let's get started!
 
@@ -51,48 +49,50 @@ The flight data file is imported directly into H2O already as an \texttt{H2OFram
 
 After both files have been processed, we then take the airlines data that currently sits in H2O and it pass back into Spark whereby we filter for those flights ONLY arriving at Chicago'Äôs O'Hare International Airport:
 \begin{lstlisting}[style=Scala]
-    val flightsToORD = airlinesTable.filter(f => f.Dest==Some("ORD"))
+val flightsToORD = airlinesTable.filter(f => f.Dest==Some("ORD"))
 
-    flightsToORD.count
-    println(s"\nFlights to ORD: ${flightsToORD.count}\n")
-
-    val sqlContext = new SQLContext(sc)
-    import sqlContext.implicits._ // import implicit conversions
-    flightsToORD.toDF.registerTempTable("FlightsToORD")
-    weatherTable.toDF.registerTempTable("WeatherORD")
+flightsToORD.count
+println(s"\nFlights to ORD: ${flightsToORD.count}\n")
 \end{lstlisting}
 
 At this point, we are ready to join these two tables which are currently Spark RDDs.  The workflow required for this is as follows:
 \begin{itemize}
-\item Convert the RDD into a \texttt{DataFrame}
-\item Register the resulting \texttt{DataFrame} as 'TempTable' 
-\item Join the two temp tables using Spark SQL
-\item Transfer the ÄòjoinedÄô table from Spark back to H2O to run an algorithm against
-\end{itemize}
-
+\item Convert the RDD into a \texttt{DataFrame} and register the resulting \texttt{DataFrame} as 'TempTable' 
 \begin{lstlisting}[style=Scala]
- val bigTable = sqlContext.sql(
-      """SELECT
-        |f.Year,f.Month,f.DayofMonth,
-        |f.CRSDepTime,f.CRSArrTime,f.CRSElapsedTime,
-        |f.UniqueCarrier,f.FlightNum,f.TailNum,
-        |f.Origin,f.Distance,
-        |w.TmaxF,w.TminF,w.TmeanF,w.PrcpIn,w.SnowIn,w.CDD,w.HDD,w.GDD,
-        |f.ArrDelay
-        |FROM FlightsToORD f
-        |JOIN WeatherORD w
-        |ON f.Year=w.Year AND f.Month=w.Month AND f.DayofMonth=w.Day
-        |WHERE f.ArrDelay IS NOT NULL""".stripMargin)
-
-    val train: H2OFrame = bigTable .repartition(4) // This is trick to handle PUBDEV-928 - DeepLearning is failing on empty chunks
+val sqlContext = new SQLContext(sc)
+import sqlContext.implicits._ // import implicit conversions
+flightsToORD.toDF.registerTempTable("FlightsToORD")
+weatherTable.toDF.registerTempTable("WeatherORD")
+\end{lstlisting}
+\item Join the two temp tables using Spark SQL 
+\begin{lstlisting}[style=Scala]
+val bigTable = sqlContext.sql(
+   """SELECT
+     |f.Year,f.Month,f.DayofMonth,
+     |f.CRSDepTime,f.CRSArrTime,f.CRSElapsedTime,
+     |f.UniqueCarrier,f.FlightNum,f.TailNum,
+     |f.Origin,f.Distance,
+     |w.TmaxF,w.TminF,w.TmeanF,w.PrcpIn,w.SnowIn,w.CDD,w.HDD,w.GDD,
+     |f.ArrDelay
+     |FROM FlightsToORD f
+     |JOIN WeatherORD w
+     |ON f.Year=w.Year AND f.Month=w.Month AND f.DayofMonth=w.Day
+     |WHERE f.ArrDelay IS NOT NULL""".stripMargin)
 \end{lstlisting}
 
+\item Transfer the ÄòjoinedÄô table from Spark back to H2O to run an algorithm against
+\begin{lstlisting}[style=Scala]
+val train: H2OFrame = bigTable
+\end{lstlisting}
+\end{itemize}
 
-Notice that we are also doing some data-munging by changing the field name: 'IsDepDelayed'Äù (Is Departure Delayed) to an enum type (aka categorical).  This is because when H2O first read the data, this particular filed is either 0 (departure not delayed) or 1 (departure is delayed); but because this is an actual label corresponding to a value and NOT a true numeric feature, we have to make this conversion so that the model recognizes the correct data type.  Please be aware that for datasets that have labels stored as numbers, H2O will first read it as numeric and so users must manually change these fields.
+% Where does this happen?
+%Notice that we are also doing some data-munging by changing the field named: 'IsDepDelayed'Äù (Is Departure Delayed) to an enum type (aka categorical).  This is because when H2O first read the data, this particular filed is either 0 (departure not delayed) or 1 (departure is delayed); but because this is an actual label corresponding to a value and NOT a true numeric feature, we have to make this conversion so that the model recognizes the correct data type.  Please be aware that for datasets that have labels stored as numbers, H2O will first read it as numeric and so users must manually change these fields.
 
 \textbf{H2O Deep Learning}
 
 Now we have our dataset loaded into H2O. Recall this dataset has been filtered to only include the flights and weather data on Chicago Ohare. It'Äôs now time to run a machine learning algorithm to predict flight delay in minutes.  As always, we start off with the necessary imports we need followed by declaring the parameters that we wish to control:
+\pagebreak
 \begin{lstlisting}[style=Scala]
 val dlParams = new DeepLearningParameters()
 dlParams._train = train
