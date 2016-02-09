@@ -1336,29 +1336,42 @@ class H2OFrame(object):
     """
     return GroupBy(self,by)
 
-  def impute(self, column, method="mean", combine_method="interpolate", by=None):
-    """Impute a column in this H2OFrame
+  def impute(self, column=-1, method="mean", combine_method="interpolate", by=None, group_by_frame=None, values=None):
+    """Impute in place.
 
     Parameters
     ----------
-    column : int, str
-      The column to impute
-    method: str, default="mean"
-      How to compute the imputation value.
-    combine_method: str, default="interpolate"
-      For even samples and method="median", how to combine quantiles.
-    by : list
-      Columns to group-by for computing imputation value per groups of columns.
+    column: int, default=-1
+        The column to impute, if -1 then impute the whole frame
+    method : str, default="mean"
+        The method of imputation: mean, median, mode
+    combine_method : str, default="interpolate"
+        When method is "median", dictates how to combine quantiles for even samples.
+    by : list, default=None
+        The columns to group on.
+    group_by_frame : H2OFrame, default=None
+        Impute the column col with this pre-computed grouped frame.
+    values : list
+        A list of impute values (one per column). NaN indicates to skip the column.
 
     Returns
     -------
-      An H2OFrame with the desired column's NAs filled with imputed values.
-      Note that the returned Frame is in conceptually a new Frame, but due 
-      to back-end optimizations is frequently not actually a copy.
+      A list of values used in the imputation or the group by result used in imputation.
     """
     if isinstance(column, basestring): column = self.names.index(column)
     if isinstance(by, basestring):     by     = self.names.index(by)
-    return H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by), cache=self._ex._cache)
+
+
+    if values is None: values="_"
+    if group_by_frame is None: group_by_frame="_"
+
+    if by is not None or group_by_frame is not "_":
+      res = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values))._frame()
+    else:
+      res = ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values)._eager_scalar()
+
+    self._ex._cache.flush(); self._ex._cache.fill(10)
+    return res
 
   def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
     """Merge two datasets based on common column names

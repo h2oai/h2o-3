@@ -27,6 +27,7 @@ class RapidsHandler extends Handler {
       throw e;
     } catch( Throwable e ) {
       Log.err(e);
+      e.printStackTrace();
       throw e;
     }
 

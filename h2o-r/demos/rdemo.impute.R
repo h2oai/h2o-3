@@ -28,8 +28,8 @@ DepTime_mean <- mean(air$DepTime, na.rm = TRUE)
 DepTime_mean
 
 # impute the column with h2o.impute(...)
-air_imputed <- h2o.impute(air, "DepTime", method = "median", combine_method="lo")
-numNAs <- sum(is.na(air_imputed$DepTime))
+h2o.impute(air, "DepTime", method = "median", combine_method="lo")
+numNAs <- sum(is.na(air[,"DepTime"]))
 stopifnot(numNAs == 0)
 
 # revert imputations
