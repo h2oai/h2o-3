@@ -774,6 +774,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
+      if(glm._parms._family == Family.binomial && domains[_dinfo.responseChunkId(0)] == null)
+        domains[_dinfo.responseChunkId(0)] = new String[]{"0","1"};
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         String [] ns = new String[names.length-1];
