@@ -13,7 +13,7 @@ def all_confusion_matrix_funcs():
     
     
 
-    metrics = ["min_per_class_accuracy", "absolute_MCC", "precision", "accuracy", "f0point5", "f2", "f1"]
+    metrics = ["recall", "specificity", "min_per_class_accuracy", "absolute_MCC", "precision", "accuracy", "f0point5", "f2", "f1"]
     train = [True, False]
     valid = [True, False]
 

@@ -2,13 +2,10 @@
 Since Sparkling Water is designed as a regular Spark application, its deployment cycle is strictly driven by Spark deployment strategies (refer to Spark documentation\footnote{Spark deployment guide \url{http://spark.apache.org/docs/latest/cluster-overview.html}}). Spark applications are deployed by the \texttt{spark-submit}~\footnote{Submitting Spark applications \url{http://spark.apache.org/docs/latest/submitting-applications.html}} script that handles all deployment scenarios:
 
 \begin{lstlisting}[style=Bash]
-./bin/spark-submit \
---class <main-class>
---master <master-url> \
---conf <key>=<value> \
-... # other options
-<application-jar> \
-[application-arguments]
+./bin/spark-submit --class <main-class> \
+--master <master-url> --conf <key>=<value> \
+... # other options \
+<application-jar> [application-arguments]
 \end{lstlisting}
 
 \begin{itemize}
@@ -26,6 +23,33 @@ Sparkling Water supports deployments to the following Spark cluster types:
 	\item{Standalone cluster} 
 	\item{YARN cluster}
 \end{itemize}
+
+\subsection{Sparkling Water as a Spark Package}
+
+Sparkling Water is published as a Spark package. You can use it directly from your Spark distribution.
+
+For example, if you have Spark version 1.6 and would like to use Sparkling Water version 1.6.1 and launch example CraigslistJobTitlesStreamingApp, then you can use the following command:
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.5.2,ai.h2o:sparkling-water-examples_2.10:1.5.2 --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp /dev/null
+\end{lstlisting}
+
+The Spark option \texttt{--packages} points to published Sparkling Water packages in Maven repository.
+
+The similar command works for spark-shell:
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-shell --packages ai.h2o:sparkling-water-core_2.10:1.5.2,ai.h2o:sparkling-water-examples_2.10:1.5.2 
+\end{lstlisting}
+
+The same command works for Python programs:
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.5.2,ai.h2o:sparkling-water-examples_2.10:1.5.2 example.py
+\end{lstlisting}
+
+    Note: When you are using Spark packages you do not need to download Sparkling Water distribution! Spark installation is sufficient!
+
 
 \subsection{Local cluster}
 The local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, or \texttt{local[*]}. In this case, the cluster is composed of a single JVM and is created during application submission.
@@ -72,3 +96,79 @@ sparkling-water-assembly-1.5.1-all.jar
 \end{lstlisting}
 
 The command in the example above creates a YARN job and requests 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.
+
+\subsection{Sparkling Water Configuration Properties}
+
+The following configuration properties can be passed to Spark to configure Sparking Water:
+
+\textbf{Generic parameters}
+\begin{table}[!ht]
+\centering
+{\small
+\begin{tabular}{l l p{4.0cm}}
+\toprule
+Property name & Default value  & Description \\
+\midrule
+		
+spark.ext.h2o.flatfile 	& true & Use flatfile (instead of multicast) for creating H2O cloud. \\  \addlinespace
+
+spark.ext.h2o.cluster.size 	& -1 & Expected number of workers of H2O cloud. -1 automatically
+detects the cluster size. This number must be equal to number of Spark workers.\\  \addlinespace
+
+spark.ext.h2o.port.base  & 54321 & Base port used for individual H2O node configuration.\\  \addlinespace
+
+spark.ext.h2o.port.incr  & 2 & Increment added to base port to find the next available port.\\  \addlinespace
+
+spark.ext.h2o.cloud.timeout  & 60*1000 & Timeout (in msec) for cloud.\\  \addlinespace
+
+spark.ext.h2o.spreadrdd.retries & 10 & Number of retries for creation of an RDD covering all existing Spark executors.\\  \addlinespace
+
+spark.ext.h2o.cloud.name & sparkling-water- & Name of H2O cloud.\\  \addlinespace
+
+spark.ext.h2o.network.mask & -- & Subnet selector for H2O if IP detection fails. Useful for detecting correct IP if 'spark.ext.h2o.flatfile' is false.*\\  \addlinespace
+
+spark.ext.h2o.nthreads  & -1 & Limit for number of threads used by H2O. -1 means unlimited.\\  \addlinespace
+
+spark.ext.h2o.disable.ga 	& false &Disable Google Analytics tracking for embedded H2O.\\
+
+\bottomrule
+\end{tabular} 
+} % end of \small
+\end{table}
+
+\textbf{H2O server node parameters}
+\begin{table}[!ht]
+\centering
+{\small
+\begin{tabular}{l p{3.0cm} p{3.0cm}}
+\toprule
+Property name & Default value  & Description \\
+\midrule
+		
+spark.ext.h2o.node.log.level & INFO & Set H2O node internal logging level.\\  \addlinespace
+
+spark.ext.h2o.node.log.dir  & System.getProperty ("user.dir") + File.separator + "h2ologs" or YARN container dir &	Location of h2o logs on executor machine.\\
+
+\bottomrule
+\end{tabular} 
+} % end of \small
+\end{table}
+
+\textbf{H2O client parameters}
+\begin{table}[!ht]
+\centering
+{\small
+\begin{tabular}{l p{3.0cm} p{3.0cm}}
+\toprule
+Property name & Default value  & Description \\
+\midrule
+
+spark.ext.h2o.client.log.level & INFO & Set H2O client internal logging level (running inside Spark driver).\\  \addlinespace
+
+spark.ext.h2o.client.log.dir & System.getProperty ("user.dir") + File.separator + "h2ologs" & Location of h2o logs on driver machine.\\  \addlinespace
+
+spark.ext.h2o.client.web.port & -1 & Exact client port to access web UI. -1 triggers automatic search for free port starting at spark.ext.h2o.port.base.\\  
+\bottomrule
+\end{tabular} 
+} % end of \small
+\end{table}
