@@ -8,13 +8,13 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -546,24 +546,64 @@ public class KMeansTest extends TestUtil {
       tfr.remove("class").remove();
       DKV.put(tfr);
 
-      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
-      parms._train = tfr._key;
-      parms._valid = tfr._key;
-      parms._seed = 0xdecaf;
-      parms._k = 3;
-      parms._overClusterFactor = 2.0f;
-      parms._score_each_iteration = true;
-
-      kmm = new KMeans(parms).trainModel().get();
-      // Report
-      KMeansModel.KMeansOutput kout = kmm._output;
-      System.out.println(kout._model_summary.toString());
-      System.out.println(kout._scoring_history.toString());
-      for( int i=0; i<kout._iterations; i++ ) {
-        System.out.println("--- Iter "+i+" , mse= "+kout._history_tot_withinss[i]+" ---");
-        for( int j=0; j<kout._history_size[i].length; j++ )
-          System.out.println("Cluster "+j+" , sz= "+kout._history_size[i][j]+" , mse= "+(kout._history_clust_withinss[i][j]/kout._history_size[i][j]));
+      class Clust implements Comparable<Clust> {
+        Clust( long[] size, double mse ) { Arrays.sort(size); _size = size; _mse = mse; }
+        final long[] _size;
+        final double _mse;
+        int _cnt;
+        @Override public boolean equals( Object o ) {
+          if( !(o instanceof Clust) ) return false;
+          Clust c = (Clust)o;
+          //return _mse==c._mse && Arrays.equals(_size,c._size);
+          //return MathUtils.equalsWithinOneSmallUlp(_mse,c._mse) && Arrays.equals(_size,c._size);
+          return MathUtils.compare(_mse,c._mse,1e-8,1e-8) && Arrays.equals(_size,c._size);
+        }
+        @Override public int hashCode() { return Arrays.hashCode(_size); }
+        @Override public int compareTo( Clust c ) { return (int)Math.signum(_mse - c._mse);  }
+        @Override public String toString() {
+          return String.format("%8.8f %4d  %s",_mse,_cnt,Arrays.toString(_size));
+        }
       }
+      HashMap<Clust,Clust> clusts = new HashMap<>();
+      final int K=8;
+      final int TRIALS=10000;
+
+      for( int iter=0; iter<TRIALS; iter++ ) {
+        KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+        parms._train = tfr._key;
+        parms._valid = tfr._key;
+        parms._seed = 0xdecaf+iter*0xcafebabe;
+        parms._k = K;
+        parms._overClusterFactor = 2.0f;
+        parms._score_each_iteration = false;
+        
+        kmm = new KMeans(parms).trainModel().get();
+        // Report
+        KMeansModel.KMeansOutput kout = kmm._output;
+        //System.out.println(kout._model_summary.toString());
+        //System.out.println(kout._scoring_history.toString());
+        //for( int i=0; i<kout._iterations; i++ ) {
+        //  System.out.println("--- Iter "+i+" , mse= "+kout._history_tot_withinss[i]+" ---");
+        //  for( int j=0; j<kout._history_size[i].length; j++ )
+        //    System.out.println("Cluster "+j+" , sz= "+kout._history_size[i][j]+" , mse= "+(kout._history_clust_withinss[i][j]/kout._history_size[i][j]));
+        //}
+
+        Clust c = new Clust(kout._size,kout._tot_withinss/tfr.numRows());
+        Clust x = clusts.get(c);
+        if( x==null ) clusts.put(c,x=c);
+        x._cnt++;
+
+        kmm.delete();
+      }
+
+      Clust[] cs = clusts.keySet().toArray(new Clust[clusts.size()]);
+      Arrays.sort(cs);
+      double sum=0, sumsq=0;
+      for( Clust c : cs ) { double tmp=c._mse*c._cnt; sum += tmp; sumsq += tmp*c._mse; }
+      final double mean = sum/TRIALS;
+      System.out.format("K=%d, num_clusters=%d, avg_mse=%f, stddev=%f\n",K,cs.length,mean, Math.sqrt(sumsq/TRIALS-mean*mean));
+      System.out.println("___MSE___   CNT  CLUSTER");
+      for( Clust c : cs ) System.out.println(c);
 
     } finally {
       if( tfr != null ) tfr.delete();

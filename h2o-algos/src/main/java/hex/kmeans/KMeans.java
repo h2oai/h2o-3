@@ -45,6 +45,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       error("_train", msg);
     }
   }
+  @Override protected boolean logMe() { return false; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -288,7 +289,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             Log.info(model._output._model_summary);
         }
 
-        Log.info(model._output._model_summary);
+//        Log.info(model._output._model_summary);
 //        Log.info(model._output._scoring_history);
 //        Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
 
