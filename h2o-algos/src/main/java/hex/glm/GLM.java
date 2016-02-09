@@ -314,13 +314,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _parms._max_iterations = _parms._nlambdas * 100 * numclasses;
         }
       }
-      BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
-      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
-        error("_compute_p_values","P-values can not be computed for constrained problems");
 
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
-      _state = new ComputationState(_job._key, _parms, _dinfo, bc, nclasses());
+      _state = new ComputationState(_job._key, _parms, _dinfo, null, nclasses());
       // skipping extra rows? (outside of weights == 0)GLMT
       boolean skippingRows = (_parms._missing_values_handling == MissingValuesHandling.Skip && _train.hasNAs());
       if (true || hasWeightCol() || _train.hasNAs()) { // need to re-compute means and sd
@@ -349,6 +346,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } else
           _state._ymu = new double[]{_parms._intercept?_train.lastVec().mean():_parms.linkInv(0)};
       }
+      BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
+      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
+        error("_compute_p_values","P-values can not be computed for constrained problems");
+      _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
         GLMGradientSolver gslvr = new GLMGradientSolver(_job._key,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;

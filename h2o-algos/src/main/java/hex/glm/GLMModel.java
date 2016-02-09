@@ -587,8 +587,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
-      x.l = likelihood(y,x.mu);
-      x.dev = deviance(y,x.mu);
+      x.l = w*likelihood(y,x.mu);
+      x.dev = w*deviance(y,x.mu);
       return x;
     }
   }

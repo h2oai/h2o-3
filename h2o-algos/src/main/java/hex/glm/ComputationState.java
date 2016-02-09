@@ -24,7 +24,7 @@ public final class ComputationState {
   final boolean _intercept;
   final int _nclasses;
   private final GLMParameters _parms;
-  private final BetaConstraint _bc;
+  private BetaConstraint _bc;
   final double _alpha;
   double[] _ymu;
   boolean _allIn;
@@ -183,6 +183,11 @@ public final class ComputationState {
 
   public GLMSubsetGinfo ginfoMultinomial(int c) {
     return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
+  }
+
+  public void setBC(BetaConstraint bc) {
+    _bc = bc;
+    _activeBC = _bc;
   }
 
   public static class GLMSubsetGinfo extends GLMGradientInfo {
