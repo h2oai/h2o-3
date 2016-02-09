@@ -2,10 +2,12 @@
 Since Sparkling Water is designed as a regular Spark application, its deployment cycle is strictly driven by Spark deployment strategies (refer to Spark documentation\footnote{Spark deployment guide \url{http://spark.apache.org/docs/latest/cluster-overview.html}}). Spark applications are deployed by the \texttt{spark-submit}~\footnote{Submitting Spark applications \url{http://spark.apache.org/docs/latest/submitting-applications.html}} script that handles all deployment scenarios:
 
 \begin{lstlisting}[style=Bash]
-./bin/spark-submit --class <main-class> \
---master <master-url> --conf <key>=<value> \
-... # other options \
-<application-jar> [application-arguments]
+./bin/spark-submit \
+  --class <main-class> \
+  --master <master-url> \
+  --conf <key>=<value> \
+  ... # other options \
+  <application-jar> [application-arguments]
 \end{lstlisting}
 
 \begin{itemize}
@@ -16,7 +18,53 @@ Since Sparkling Water is designed as a regular Spark application, its deployment
 	\item \texttt{application-arguments}: Arguments passed to the main method of the class via the \texttt{--class} option
 \end{itemize}
 
+\subsection{Referencing Sparkling Water}
 
+\subsubsection{Using Fatjar}
+The Sparkling Water archive provided at \url{http://h2o.ai/download} contains a Fatjar with all classes required for Sparkling Water run.
+
+An application submission with Sparkling Water Fatjar is using the \texttt{--jars} option which references included fatjar.
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-submit \
+  --jars assembly/build/libs/sparkling-water-assembly-1.6.1-all.jar \
+  --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp \
+  /dev/null
+\end{lstlisting}
+
+\subsubsection{Using Spark Package}
+
+Sparkling Water is also published as a Spark package. The benefit of using the package is that you can use it directly from your Spark distribution without need to download Sparkling Water.
+
+For example, if you have Spark version 1.6 and would like to use Sparkling Water version 1.6.1 and launch example \texttt{CraigslistJobTitlesStreamingApp}, then you can use the following command:
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-submit \
+  --packages ai.h2o:sparkling-water-core_2.10:1.6.1,ai.h2o:sparkling-water-examples_2.10:1.6.1 \
+  --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp \
+  /dev/null
+\end{lstlisting}
+
+The Spark option \texttt{--packages} points to coordinate of published Sparkling Water package in Maven repository.
+
+The similar command works for spark-shell:
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-shell \
+ --packages ai.h2o:sparkling-water-core_2.10:1.6.1,ai.h2o:sparkling-water-examples_2.10:1.6.1 
+\end{lstlisting}
+
+The same command works for Python programs:
+
+\begin{lstlisting}[style=Bash]
+$SPARK_HOME/bin/spark-submit \
+ --packages ai.h2o:sparkling-water-core_2.10:1.6.1,ai.h2o:sparkling-water-examples_2.10:1.6.1\
+  example.py
+\end{lstlisting}
+
+Note: When you are using Spark packages you do not need to download Sparkling Water distribution! Spark installation is sufficient!
+
+\subsection{Target Deployment Environments}
 Sparkling Water supports deployments to the following Spark cluster types:
 \begin{itemize}
 	\item{Local cluster}
@@ -24,34 +72,7 @@ Sparkling Water supports deployments to the following Spark cluster types:
 	\item{YARN cluster}
 \end{itemize}
 
-\subsection{Sparkling Water as a Spark Package}
-
-Sparkling Water is published as a Spark package. You can use it directly from your Spark distribution.
-
-For example, if you have Spark version 1.6 and would like to use Sparkling Water version 1.6.1 and launch example CraigslistJobTitlesStreamingApp, then you can use the following command:
-
-\begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.5.2,ai.h2o:sparkling-water-examples_2.10:1.5.2 --class org.apache.spark.examples.h2o.CraigslistJobTitlesStreamingApp /dev/null
-\end{lstlisting}
-
-The Spark option \texttt{--packages} points to published Sparkling Water packages in Maven repository.
-
-The similar command works for spark-shell:
-
-\begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-shell --packages ai.h2o:sparkling-water-core_2.10:1.5.2,ai.h2o:sparkling-water-examples_2.10:1.5.2 
-\end{lstlisting}
-
-The same command works for Python programs:
-
-\begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.5.2,ai.h2o:sparkling-water-examples_2.10:1.5.2 example.py
-\end{lstlisting}
-
-    Note: When you are using Spark packages you do not need to download Sparkling Water distribution! Spark installation is sufficient!
-
-
-\subsection{Local cluster}
+\subsubsection{Local cluster}
 The local cluster is identified by the following master URLs - \texttt{local}, \texttt{local[K]}, or \texttt{local[*]}. In this case, the cluster is composed of a single JVM and is created during application submission.
 
 For example, the following command will run the ChicagoCrimeApp application inside a single JVM with a heap size of 5g:
@@ -60,30 +81,31 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master local[*] \
+  --packages ai.h2o:sparkling-water-examples_2.10:1.6.1 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
-  sparkling-water-assembly-1.5.1-all.jar  
+  /dev/null
 \end{lstlisting}
 
-
-\subsection{On Standalone Cluster}
+\subsubsection{On Standalone Cluster}
 For AWS deployments or local private clusters, the standalone cluster deployment\footnote{Refer to Spark documentation~\url{http://spark.apache.org/docs/latest/spark-standalone.html}} is typical. Additionally, a Spark standalone cluster is also provided by Hadoop distributions like CDH or HDP. The cluster is identified by the URL \texttt{spark://IP:PORT}.
 
-The following command deploys the ChicagoCrimeApp on a standalone cluster where the master node is exposed on IP mr-0xd10-precise1.0xdata.loc and port 7077:
+The following command deploys the \texttt{ChicagoCrimeApp} on a standalone cluster where the master node is exposed on IP \texttt{mr-0xd10-precise1.0xdata.loc} and port \texttt{7077}:
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
   --conf spark.executor.memory=5g \
   --conf spark.driver.memory=5g \
   --master spark://mr-0xd10-precise1.0xdata.loc:7077 \
+  --packages ai.h2o:sparkling-water-examples_2.10:1.6.1 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
-  sparkling-water-assembly-1.5.1-all.jar  
+  /dev/null
 \end{lstlisting}
 
 In this case, the standalone Spark cluster must be configured to provide the requested 5g of memory per executor node. 
 
-\subsection{On YARN Cluster}
+\subsubsection{On YARN Cluster}
 Because it provides effective resource management and control, most production environments use YARN for cluster deployment.\footnote{See Spark documentation~\url{http://spark.apache.org/docs/latest/running-on-yarn.html}} 
-In this case, the environment must contain the shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR}.
+In this case, the environment must contain the shell variable~\texttt{HADOOP\_CONF\_DIR} or \texttt{YARN\_CONF\_DIR} which point to Hadoop configuration directory (e.g., \texttt{/etc/hadoop/conf}).
 
 \begin{lstlisting}[style=Bash]
 $SPARK_HOME/bin/spark-submit \ 
@@ -91,11 +113,12 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.driver.memory=5g \
   --num-executors 5 \
   --master yarn-client \
+  --packages ai.h2o:sparkling-water-examples_2.10:1.6.1 \
   --class org.apache.spark.examples.h2o.ChicagoCrimeApp \
-sparkling-water-assembly-1.5.1-all.jar  
+  /dev/null
 \end{lstlisting}
 
-The command in the example above creates a YARN job and requests 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.
+The command in the example above creates a YARN job and requests for 5 nodes, each with 5G of memory. The \texttt{yarn-client} option forces driver to run in the client process.
 
 \subsection{Sparkling Water Configuration Properties}
 
