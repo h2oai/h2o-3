@@ -2,6 +2,7 @@ package water.rapids;
 
 import hex.quantile.QuantileModel;
 import water.H2O;
+import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -110,7 +111,7 @@ public class ASTImpute extends ASTPrim {
     else values=null;
     boolean doGrpBy = !by2.isEmpty() || groupByFrame!=null;
     // Compute the imputed value per-group.  Empty groups are allowed and OK.
-    IcedHashMap<ASTGroup.G,IcedDouble[]> group_impute_map;
+    IcedHashMap<ASTGroup.G,Iced[]> group_impute_map;
     if( !doGrpBy ) {        // Skip the grouping work
       if( ffill0 || bfill0 ) {  // do a forward/backward fill on the NA
         // TODO: requires chk.previousNonNA and chk.nextNonNA style methods (which may go across chk boundaries)s
@@ -196,7 +197,7 @@ public class ASTImpute extends ASTPrim {
       group_impute_map = new Gather(by2.expand4(),bycols0,fr.numCols(),col).doAll(imputes)._group_impute_map;
 
       // Now walk over the data, replace NAs with the imputed results
-      final IcedHashMap<ASTGroup.G,IcedDouble[]> final_group_impute_map = group_impute_map;
+      final IcedHashMap<ASTGroup.G, Iced[]> final_group_impute_map = group_impute_map;
       if( by2.isEmpty() ) {
         int[] byCols = new int[imputes.numCols()-1];
         for(int i=0;i<byCols.length;++i)
@@ -205,15 +206,15 @@ public class ASTImpute extends ASTPrim {
       }
       final int[] bycols = by2.expand4();
       new MRTask() {
-        private transient Set<Integer> _bycolz;
-        @Override public void setupLocal() { _bycolz=new HashSet<>(); for(int b:bycols) _bycolz.add(b); }
         @Override public void map( Chunk cs[] ) {
+          Set<Integer> _bycolz =  new HashSet<>();
+          for(int b:bycols) _bycolz.add(b);
           ASTGroup.G g = new ASTGroup.G(bycols.length,null);
           for( int row=0; row<cs[0]._len; row++ )
             for(int c=0;c<cs.length;++c)
               if (!_bycolz.contains(c))
                 if( cs[c].isNA(row) )
-                  cs[c].set(row, final_group_impute_map.get(g.fill(row, cs, bycols))[c]._val);
+                  cs[c].set(row, ((IcedDouble)final_group_impute_map.get(g.fill(row, cs, bycols))[c])._val);
         }
       }.doAll(fr);
       return new ValFrame(imputes);
@@ -226,7 +227,7 @@ public class ASTImpute extends ASTPrim {
     private final int _ncol;
     private final int[] _byCols0; // actual group-by indexes
     private final int[] _byCols;  // index into the grouped-by frame result
-    private IcedHashMap<ASTGroup.G,IcedDouble[]> _group_impute_map;
+    private IcedHashMap<ASTGroup.G,Iced[]> _group_impute_map;
     private transient Set<Integer> _localbyColzSet;
     Gather( int[] byCols0, int[] byCols, int ncol, int imputeCol) { _byCols=byCols; _byCols0=byCols0; _ncol=ncol; _imputedCol=imputeCol; }
     @Override public void setupLocal() { _localbyColzSet=new HashSet<>(); for(int by: _byCols0) _localbyColzSet.add(by); }
