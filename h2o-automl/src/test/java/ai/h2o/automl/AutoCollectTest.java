@@ -1,10 +1,9 @@
 package ai.h2o.automl;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AutoCollectTest extends TestUtil { // requires mysql-connector-java-3.1.14-bin.jar in -cp
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+//  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 //  @Test public void testConnection() {
 //    ResultSet rs = AutoCollect.query("SHOW TABLES;");
 //    try {
@@ -39,8 +38,16 @@ public class AutoCollectTest extends TestUtil { // requires mysql-connector-java
 //  }
 
 
-  @Test public void testSmalldataMetaCollect() {
-    AutoCollect ac = new AutoCollect(30, find_test_file_static("smalldata/meta").getAbsolutePath());
-    ac.start();
+//  @Test public void testSmalldataMetaCollect() {
+//    AutoCollect ac = new AutoCollect(30, find_test_file_static("smalldata/meta").getAbsolutePath());
+//    ac.start();
+//  }
+
+  @Test public void testMetaParser1() {
+    AutoCollect.MetaConfig mc = new AutoCollect.MetaConfig();
+    mc.readX("1,2,3,4,5");
+    mc.readX("1:5,8");
+    mc.readX("1");
+    mc.readX("90:100");
   }
 }
