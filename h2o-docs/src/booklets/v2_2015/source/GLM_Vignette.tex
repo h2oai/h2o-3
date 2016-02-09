@@ -380,7 +380,7 @@ $$ \hat{y}_c = Pr(y = c|x) = {e^{x^{\top}\beta_c + \beta_{c0}} \over \sum_{k=1}^
 The penalized negative log-likelihood is defined as:
 
 $$
-- \lbrack {1\over{N}} \sum_{i=1}^N\sum_{k=1}^K(y_{i,k}(x^{\top}\beta_k + \beta_{c0})) - log(\sum_{k=1}^Ke^{x^{\top}\beta_k + \beta_{k0}}) \rbrack + \lambda \lbrack {(1-\alpha) \over 2} \| \beta \|_F^2 + \sum_{j=1}^P \|\beta_j\|_1 \rbrack 
+- \lbrack {1\over{N}} \sum_{i=1}^N\sum_{k=1}^K(y_{i,k}(x_i^{\top}\beta_k + \beta_{k0})) - log(\sum_{k=1}^Ke^{x_i^{\top}\beta_k + \beta_{k0}}) \rbrack + \lambda \lbrack {(1-\alpha) \over 2} \| \beta \|_F^2 + \alpha\sum_{j=1}^P \|\beta_j\|_1 \rbrack 
 $$
 , where $\beta_c$ is vector of coefficients for class c and $y_{i,k}$ is kth element of the binary vector produced by
 expanding the response variable using one-hot encoding (i.e. $y_{i,k} == 1$ iff the response at the ith observation
@@ -704,8 +704,7 @@ hypothesis tests on the values of each coefficient. A high p-value means that a 
 
 You can request p-values by setting the \\\texttt{compute\_p\_values} option. It can only be used with the
 \texttt{IRLSM} solver and no regularization. It is recommended that you also set the
-\texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error. If there are collinear columns and
-P-values are requested, then regularization cannot be added.
+\texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error if it detects collinearity in the dataset and p-values are requested. 
 
 \textbf{Note:} GLM auto-standardizes the data by default (recommended). This changes the p-value of the constant term
 (intercept).
