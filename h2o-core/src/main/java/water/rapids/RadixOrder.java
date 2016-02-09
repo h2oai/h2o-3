@@ -51,7 +51,7 @@ class RadixCount extends MRTask<RadixCount> {
     int shift = _biggestBit-8;
     if (shift<0) shift = 0;
     // TO DO: assert chk instanceof integer or enum;  -- but how since many integers (C1,C2 etc)? // alternatively: chk.getClass().equals(C8Chunk.class)
-    if (_isLeft || !chk.vec().isCategorical()) {
+    if (!(_isLeft && chk.vec().isCategorical())) {
       if (chk.vec().naCnt() == 0) {
         // There are no NA in this join column; hence branch-free loop. Most common case as should never really have NA in join columns.
         for (int r=0; r<chk._len; r++) {
@@ -70,7 +70,7 @@ class RadixCount extends MRTask<RadixCount> {
       }
     } else {
       // first column (for MSB split) in an Enum
-      // map right categorical to left levels using _id_maps
+      // map left categorical to right levels using _id_maps
       assert _id_maps[0].length > 0;
       assert _colMin==0;  // TODO: no longer true.  Will likely fail first time we have an enum as the first join column
       if (chk.vec().naCnt() == 0) {
@@ -219,7 +219,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       long thisx = 0;
       if (!chk[0].isNA(r)) {
         thisx = chk[0].at8(r);
-        if (!_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;  // TODO: restore branch-free again, go by column and retain original compression with no .at8()
+        if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;  // TODO: restore branch-free again, go by column and retain original compression with no .at8()
         else thisx = thisx - _colMin[0] + 1;                                     //       may not be worth that as has to be global minimum so will rarely be able to use as raw, but when we can maybe can do in bulk
         MSBvalue = (int)(thisx >> shift & 0xFFL);   // +1 leaving 0 for NA
       }
@@ -239,7 +239,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         offset += _bytesUsed[c-1];     // advance offset by the previous field width
         if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
         thisx = chk[c].at8(r);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
-        if (!_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
+        if (_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
         else thisx = thisx - _colMin[c] + 1;
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
           this_x[offset + i] = (byte) (thisx & 0xFF);
@@ -784,8 +784,8 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
       double numerator;
       // TODO: string & double. But we we'll only allow fixed precision double in keys, unlike data.table
       _colMin[i] = col.isCategorical() ? 0 : (long)col.min();   // temp workaround
-      if (!_isLeft && col.isCategorical()) {
-        // the right's levels have been matched to the left's levels and we store the mapped values so it's that mapped range we need here (or the col.max() of the corresonding left table would be fine too, but mapped range might be less so use that for possible efficiency)
+      if (_isLeft && col.isCategorical()) {
+        // the left's levels have been matched to the right's levels and we store the mapped values so it's that mapped range we need here (or the col.max() of the corresponding right table would be fine too, but mapped range might be less so use that for possible efficiency)
         assert _id_maps[i] != null;
         //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);  // TODO: what is in _id_maps for no matches (-1?) and exclude those i.e. find the minimum >=0. Then treat -1 in _id_map as an NA when writing key
         numerator = ArrayUtils.maxValue(_id_maps[i]) - _colMin[i] + 2;  // if we join to a small subset of levels, we'll benefit from the small range here.
@@ -803,7 +803,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
     t0 = System.nanoTime();
-    new RadixCount(_isLeft, _biggestBit[0], _colMin[0], _whichCols[0], _isLeft ? null : _id_maps ).doAll(_DF.vec(_whichCols[0]));
+    new RadixCount(_isLeft, _biggestBit[0], _colMin[0], _whichCols[0], _isLeft ? _id_maps : null ).doAll(_DF.vec(_whichCols[0]));
     System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.

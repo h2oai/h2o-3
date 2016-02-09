@@ -45,7 +45,20 @@ public class Merge {
     System.out.println("\nCreating left index ...");
     long t0 = System.nanoTime();
     RadixOrder leftIndex;
-    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, null));
+
+    // map missing levels to -1 (rather than increasing slots after the end) for now to save a deep branch later
+    for (int i=0; i<id_maps.length; i++) {
+      if (id_maps[i] == null) continue;
+      assert id_maps[i].length == leftFrame.vec(leftCols[i]).max()+1;
+      int right_max = (int)rightFrame.vec(rightCols[i]).max();
+      for (int j=0; j<id_maps[i].length; j++) {
+        assert id_maps[i][j] >= 0;
+        if (id_maps[i][j] > right_max) id_maps[i][j] = -1;
+      }
+    }
+
+
+    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, id_maps));
     left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
                  // a little slower (97s) than one by one (89s).  TODO: retest in future
     System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
@@ -53,7 +66,7 @@ public class Merge {
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
     RadixOrder rightIndex;
-    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, id_maps));
+    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, null));
     right.join();
     System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
 

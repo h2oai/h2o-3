@@ -149,7 +149,7 @@ test.merge <- function() {
     for (nc in 1:1) {
         for (am in c(TRUE, FALSE)) {
             for (ax in c(TRUE, FALSE)) {
-                for (ay in c(TRUE, FALSE)) {
+                for (ay in c(FALSE)) {   # TODO: implement all.y=TRUE
                     dxdy = NULL
                     if (am) { dxdy = list(dxdy1=c(TRUE,TRUE),dxdy2=c(FALSE,FALSE))
                     } else  { dxdy = list(dxdy1=c(TRUE,TRUE),dxdy2=c(FALSE,FALSE),dxdy3=c(TRUE,FALSE),dxdy2=c(FALSE,TRUE)) }
@@ -174,3 +174,5 @@ test.merge <- function() {
 }
 
 doTest("Test merge", test.merge)
+
+
