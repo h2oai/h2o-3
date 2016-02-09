@@ -1,9 +1,10 @@
+
 hidden_opt = [[17,32],[8,19],[32,16,8],[100],[10,10,10,10]]
 l1_opt = range(1e-6,1e-3,1e-6)
 hyper_parameters = {"hidden":hidden_opt, "l1":l1_opt}
 search_criteria = {"strategy":"RandomDiscrete", 
     "max_models":10, "max_runtime_secs":100, 
-    "seed":123456)
+    "seed":123456}
 
 from h2o.grid.grid_search import H2OGridSearch
 model_grid = H2OGridSearch(H2ODeepLearningEstimator, 

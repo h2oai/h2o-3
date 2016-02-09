@@ -9,6 +9,7 @@ def deeplearning_vignette():
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_varimp.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py"),
+        pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_checkpoint.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_savemodel.py"),
         pyunit_utils.locate("DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.py"),
