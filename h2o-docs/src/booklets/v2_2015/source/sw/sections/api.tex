@@ -3,12 +3,12 @@
 \subsection{Starting H2O Services}
 
 \begin{lstlisting}[style=Scala]
-val sc:SparkContext = ...
+val sc: SparkContext = ...
 val hc = H2OContext.getOrCreate(sc)
 \end{lstlisting}
 or:
 \begin{lstlisting}[style=Scala]
-val sc:SparkContext = ...
+val sc: SparkContext = ...
 val hc = new H2OContext(sc).start()
 \end{lstlisting}
 
@@ -49,7 +49,7 @@ H2O resides in the same executor JVM as Spark. The memory provided for H2O is co
  The \texttt{H2OContext} class provides the explicit conversion, \texttt{asRDD}, which creates an RDD-like wrapper around the provided \texttt{H2OFrame}:
 
 \begin{lstlisting}[style=Scala]
-def asRDD[A <: Product: TypeTag: ClassTag](fr : H2OFrame) : RDD[A]
+def asRDD[A <: Product: TypeTag: ClassTag](fr: H2OFrame): RDD[A]
 \end{lstlisting}
 
 The call expects the type \texttt{A} to create a correctly-typed RDD. The conversion requires type \texttt{A} to be bound by \texttt{Product} interface. The relationship between the columns of \texttt{H2OFrame} and the attributes of class \texttt{A} is based on name matching.
@@ -66,7 +66,7 @@ val rdd = asRDD[Weather](df)
 The \texttt{H2OContext} class provides the explicit conversion, \texttt{asDataFrame}, which creates a \texttt{DataFrame}-like wrapper around the provided \texttt{H2OFrame}. Technically, it provides the \texttt{RDD[sql.Row]} RDD API:
 
 \begin{lstlisting}[style=Scala]
-def asDataFrame(fr : H2OFrame)(implicit sqlContext: SQLContext) : DataFrame
+def asDataFrame(fr: H2OFrame)(implicit sqlContext: SQLContext): DataFrame
 \end{lstlisting}
 
 This call does not require any type of parameters, but since it creates \texttt{DataFrame} instances, it requires access to an instance of \texttt{SQLContext}. In this case, the instance is provided as an implicit parameter of the call. The parameter can be passed in two ways: as an explicit parameter or by introducing an implicit variable into the current context.
@@ -94,13 +94,13 @@ val schemaRDD = asDataFrame(h2oFrame)
 The \texttt{H2OContext} provides implicit conversion from the specified \texttt{RDD[A]} to \texttt{H2OFrame}. As with conversion in the opposite direction, the type \texttt{A} has to satisfy the upper bound expressed by the type \texttt{Product}. The conversion will create a new \texttt{H2OFrame}, transfer data from the specified RDD, and save it to the H2O K/V data store.
 
 \begin{lstlisting}[style=Scala]
-implicit def asH2OFrame[A <: Product : TypeTag](rdd : RDD[A]) : H2OFrame
+implicit def asH2OFrame[A <: Product: TypeTag](rdd: RDD[A]): H2OFrame
 \end{lstlisting}
 
 The API also provides explicit version which allows for specifying name for resulting \texttt{H2OFrame}.
 
 \begin{lstlisting}[style=Scala]
-def asH2OFrame[A <: Product : TypeTag](rdd : RDD[A], frameName: Option[String]) : H2OFrame
+def asH2OFrame[A <: Product: TypeTag](rdd: RDD[A], frameName: String): H2OFrame
 \end{lstlisting}
 
 \textbf{Example}
@@ -108,10 +108,10 @@ def asH2OFrame[A <: Product : TypeTag](rdd : RDD[A], frameName: Option[String]) 
 \begin{lstlisting}[style=Scala]
 val rdd: RDD[Weather] = ...
 import h2oContext._
-//implicit call of H2OContext.asH2OFrame[Weather](rdd) is used 
+// Implicit call of H2OContext.asH2OFrame[Weather](rdd) is used 
 val hf: H2OFrame = rdd
-//Explicit call of of H2OContext API with name for resulting H2OFrame
-val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, Some("h2oframe"))
+// Explicit call of of H2OContext API with name for resulting H2OFrame
+val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, "hfNamed")
 \end{lstlisting}
 
 \subsection{Converting DataFrame into H2OFrame}
@@ -119,13 +119,13 @@ val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, Some("h2oframe"))
 The \texttt{H2OContext} provides \textbf{implicit} conversion from the specified \texttt{DataFrame} to \texttt{H2OFrame}. The conversion will create a new \texttt{H2OFrame}, transfer data from the specified \texttt{DataFrame}, and save it to the H2O K/V data store.
 
 \begin{lstlisting}[style=Scala]
-implicit def asH2OFrame(rdd : DataFrame) : H2OFrame
+implicit def asH2OFrame(rdd: DataFrame): H2OFrame
 \end{lstlisting}
 
 The API also provides explicit version which allows for specifying name for resulting \texttt{H2OFrame}.
 
 \begin{lstlisting}[style=Scala]
-def asH2OFrame(rdd : DataFrame, frameName: Option[String]) : H2OFrame
+def asH2OFrame(rdd: DataFrame, frameName: String): H2OFrame
 \end{lstlisting}
 
 \textbf{Example}
@@ -133,10 +133,10 @@ def asH2OFrame(rdd : DataFrame, frameName: Option[String]) : H2OFrame
 \begin{lstlisting}[style=Scala]
 val df: DataFrame = ...
 import h2oContext._
-//Implicit call of H2OContext.asH2OFrame(srdd) is used 
+// Implicit call of H2OContext.asH2OFrame(srdd) is used 
 val hf: H2OFrame = df 
-//Explicit call of H2Context API with name for resulting H2OFrame
-val hfNamed: H2OFrame = h2oContext.asH2OFrame(df, Some("h2oframe"))
+// Explicit call of H2Context API with name for resulting H2OFrame
+val hfNamed: H2OFrame = h2oContext.asH2OFrame(df, "hfNamed")
 \end{lstlisting}
 
 \subsection{Creating H2OFrame from an Existing Key}
@@ -190,11 +190,11 @@ gbmParams._max_depth = 6
 
  \item Create a model builder:
  \begin{lstlisting}[style=Scala]
- scala val gbm = new GBM(gbmParams)
+ val gbm = new GBM(gbmParams)
  \end{lstlisting}
  
  \item Invoke the model build job and block until the end of computation (\texttt{trainModel} is an asynchronous call by default): 
  \begin{lstlisting}[style=Scala]
- scala val gbmModel = gbm.trainModel.get|} 
+ val gbmModel = gbm.trainModel.get 
  \end{lstlisting}
  \end{enumerate}
