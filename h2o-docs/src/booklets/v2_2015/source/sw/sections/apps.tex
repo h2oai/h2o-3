@@ -74,11 +74,9 @@ There are two ways to open this project in IntelliJ IDEA
 
 Using Gradle build file directly:
 
-Open the project's \texttt{build.gradle} in IDEA via File $\rightarrow$ Open
+\quad Open the project's \texttt{build.gradle} in IDEA via File $\rightarrow$ Open
 
-or
-
-Using Gradle generated project files:
+or using Gradle generated project files:
 
 \begin{enumerate}
 \item Generate Idea configuration files via  {\lstinline[style=Bash]|./gradlew idea|} 
@@ -118,13 +116,13 @@ Create application assembly which can be directly submitted to Spark cluster:
 ./gradlew shadowJar
 \end{lstlisting}
 
-The command creates jar file build/libs/sparkling-water-droplet-app.jar containing all necessary classes to run application on top of Spark cluster.
+The command creates jar file \texttt{build/libs/sparkling-water-droplet-app.jar} containing all necessary classes to run application on top of Spark cluster.
 
 Submit application to Spark cluster (in this case, local cluster is used):
 
 \begin{lstlisting}[style=Bash]
 export MASTER='local-cluster[3,2,1024]'
-$SPARK_HOME/bin/spark-submit --class water.droplets.SparklingWaterDroplet build/libs/sparkling-water-droplet
+$SPARK_HOME/bin/spark-submit --class water.droplets.SparklingWaterDroplet build/libs/sparkling-water-droplet-all.jar
 \end{lstlisting}
 
 

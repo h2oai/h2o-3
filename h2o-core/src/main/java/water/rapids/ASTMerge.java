@@ -69,6 +69,31 @@ public class ASTMerge extends ASTPrim {
     if( ncols == 0 ) 
       throw new IllegalArgumentException("Frames must have at least one column in common to merge them");
 
+    // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
+    // repeatable timings.  Otherwise full GCs can cause blocks. Adding System.gc() here suggested by Cliff
+    // during F2F pair-programming and it for sure worked.
+    // TODO - would be better at the end to clean up, but there are several exit paths here.
+    new MRTask() {
+      @Override public void setupLocal() { System.gc(); }
+    }.doAllNodes();
+
+    if (method.equals("radix")) {
+      // Build categorical mappings, to rapidly convert categoricals from the left to the right
+      // With the sortingMerge approach there is no variance here: always map left to right
+      if (allRite)
+        throw new IllegalArgumentException("all.y=TRUE not yet implemented for method='radix'");
+      int[][] id_maps = new int[ncols][];
+      for( int i=0; i<ncols; i++ ) {
+        Vec lv = l.vec(i);
+        Vec rv = r.vec(i);
+        if( lv.isCategorical() ) {
+          assert rv.isCategorical();  // if not, would have thrown above
+          id_maps[i] = CategoricalWrappedVec.computeMap(lv.domain(),rv.domain());
+        }
+      }
+      return sortingMerge(l,r,allLeft,allRite,ncols,id_maps);
+    }
+
     // Pick the frame to replicate & hash.  If one set is "all" and the other
     // is not, the "all" set must be walked, so the "other" is hashed.  If both
     // or neither are "all", then pick the smallest bytesize of the non-key
@@ -92,18 +117,6 @@ public class ASTMerge extends ASTPrim {
         id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
     }
 
-    // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
-    // repeatable timings.  Otherwise full GCs can cause blocks. Adding System.gc() here suggested by Cliff
-    // during F2F pair-programming and it for sure worked.
-    // TODO - would be better at the end to clean up, but there are several exit paths here.
-    new MRTask() {
-      @Override public void setupLocal() { System.gc(); }
-    }.doAllNodes();
-
-    if (method.equals("radix")) {
-      return sortingMerge(l,r,allLeft,allRite,ncols,id_maps);
-    }
-    
     // Build the hashed version of the hashed frame.  Hash and equality are
     // based on the known-integer key columns.  Duplicates are either ignored
     // (!allRite) or accumulated, and can force replication of the walked set.

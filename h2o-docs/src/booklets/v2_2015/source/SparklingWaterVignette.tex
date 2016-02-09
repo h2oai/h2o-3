@@ -1,6 +1,9 @@
-\input{common/conf_top.tex}
+%\input{common/conf_top.tex} % default, for online version
+\input{common/conf_top_print.tex} % for print version
 
 \input{common/conf_titles.tex}
+\input{common/conf_listings.tex}
+%\input{common/conf_listings_colorized.tex} %lacks Scala style setup
 %
 % Use fancy table
 %
@@ -9,10 +12,6 @@
 \usepackage{forest}
 
 \begin{document}
-
-\input{common/conf_listings.tex}
-
-
 
 \thispagestyle{empty} %removes page number  
 
@@ -23,7 +22,9 @@
 \line(1,0){250}  %inserts  horizontal line 
 \\
 \bigskip
-\textsc{\small{Michal Malohlava\hspace{20pt} Alex Tellez \hspace{20pt} Jessica Lanford}}
+\textsc{\small{Michal Malohlava\hspace{20pt} Nidhi Mehta}}
+
+\textsc{\small{Edited by: Brandon Hill \&\ Vinod Iyengar}}
 \\
 \bigskip
 \line(1,0){250}  %inserts  horizontal line
@@ -46,7 +47,9 @@
 {\raggedright\vfill\ 
 
 Machine Learning with Sparkling Water: H2O + Spark\\
-  by Michal Malohlava, Alex Tellez \&\  Jessica Lanford\\
+  by Michal Malohlava \&\ Nidhi Mehta\\
+  Edited by: Brandon Hill \&\ Vinod Iyengar
+  
 \bigskip
   Published by H2O.ai, Inc. \\
 2307 Leghorn St. \\
