@@ -25,9 +25,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   transient long _leftOrder[/*n2GB*/][/*i mod 2GB * _keySize*/];
   transient long _rightOrder[][];
   transient boolean _oneToManyMatch = false;   // does any left row match to more than 1 right row?  If not, can allocate and loop more efficiently, and mark the resulting key'd frame with a 'unique' index.
-                                               //      TODO: implement
-  int _leftFieldSizes[], _rightFieldSizes[];  // the widths of each column in the key
-  transient int _leftKeyNCol, _rightKeyNCol;  // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
+                                               //   TODO: implement
+  int _leftFieldSizes[], _rightFieldSizes[];   // the widths of each column in the key
+  long _leftColMins[], _rightColMins[];        // the col.min() of each column in the key
+  transient int _leftKeyNCol, _rightKeyNCol;   // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
   transient int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
   transient int _numJoinCols;
   transient long _leftN, _rightN;
@@ -44,13 +45,13 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   transient int _leftChunkNode[], _rightChunkNode[];  // fast lookups to save repeated calls to node.index() which calls binarysearch within it.
 
-  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
+  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], long leftColMins[], long rightColMins[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
     _rightFrame = rightFrame;
     _leftMSB = leftMSB;
     _rightMSB = rightMSB;
-    _leftFieldSizes = leftFieldSizes;
-    _rightFieldSizes = rightFieldSizes;
+    _leftFieldSizes = leftFieldSizes; _rightFieldSizes = rightFieldSizes;
+    _leftColMins = leftColMins; _rightColMins = rightColMins;
     _allLeft = allLeft;
     _allRight = false;  // TODO: pass through
     // TODO: set 2 Frame and 2 int[] to NULL at the end of compute2 to save some traffic back, but should be small and insignificant
@@ -148,34 +149,51 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   }
 
 
-  private int keycmp(byte x[][], long xi, byte y[][], long yi) {   // TO DO - faster way closer to CPU like batches of long compare, maybe.
+  //TODO specialize keycmp for cases when no join column contains NA (very very often) and make this totally branch free; i.e. without the two `==0 ? :`
+  private int keycmp(byte x[][], long xi, byte y[][], long yi) {
+    // Must be passed a left key and a right key to avoid call overhead of extra arguments.
+    // Only need left to left for equality only and that's optimized in leftKeyEqual below.
     //long t0 = System.nanoTime();
     //_timings[12] += 1;
     byte xbatch[] = x[(int)(xi / _leftBatchSize)];
     byte ybatch[] = y[(int)(yi / _rightBatchSize)];
     int xoff = (int)(xi % _leftBatchSize) * _leftKeySize;
     int yoff = (int)(yi % _rightBatchSize) * _rightKeySize;
-    byte xByte=0, yByte=0;
-    // TODO: switch to use keycmp_sameShape() for common case of all(leftFieldSizes == rightFieldSizes), although, skipping to current column will
-    //        help save repeating redundant work and saving the outer for() loop and one if() may not be worth it.
+    long xval=0, yval=0;
+
+    // We don't avoid unsafe here because it's unsafe but because we want finer grain compression than 1,2,4 or 8 bytes types. In particular,
+    // a range just greater than 4bn can use 5 bytes rather than 8 bytes; a 38% RAM saving over the wire in that possibly common case.
+    // Note this is tight and almost branch free.
     int i=0;
-    while (i<_numJoinCols && xByte==yByte) {    // TO DO: pass i in to start at a later key column, when known
+    while (i<_numJoinCols && xval==yval) {    // TO DO: pass i in to start at a later key column, when known
       int xlen = _leftFieldSizes[i];
       int ylen = _rightFieldSizes[i];
-      if (xlen!=ylen) {
-        while (xlen>ylen && xbatch[xoff]==0) { xoff++; xlen--; }
-        while (ylen>xlen && ybatch[yoff]==0) { yoff++; ylen--; }
-        if (xlen!=ylen) {
-          //_timings[13] += (System.nanoTime() - t0)/1e9;
-          return (xlen - ylen);
-        }
-      }
-      while (xlen>0 && (xByte=xbatch[xoff])==(yByte=ybatch[yoff])) { xoff++; yoff++; xlen--; }
+      xval = xbatch[xoff] & 0xFF; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFF; xlen--; } xoff++;
+      yval = ybatch[yoff] & 0xFF; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFF; ylen--; } yoff++;
+      xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftColMins[i];
+      yval = yval==0 ? Long.MIN_VALUE : yval-1+_rightColMins[i];
       i++;
     }
-    //_timings[13] += (System.nanoTime() - t0)/1e9;
-    return (xByte & 0xFF) - (yByte & 0xFF);
-    // Same return value as strcmp in C. <0 => xi<yi
+    long diff = xval-yval;  // could overflow even in long; e.g. joining to a prevailing NA, or very large gaps O(2^62)
+    if (xval>yval) {        // careful not diff>0 here due to overflow
+      return( (diff<0 | diff>Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)diff );
+    } else {
+      return( (diff>0 | diff<Integer.MIN_VALUE+1) ? Integer.MIN_VALUE+1 : (int)diff);
+    }
+    // Same return value as strcmp in C. <0 => xi<yi.
+    // The magnitude of the difference is used for limiting staleness in a rolling join, capped at Integer.MAX|(MIN+1). roll's type is chosen to be int so staleness can't be requested over int's limit.
+  }
+
+  private boolean leftKeyEqual(byte x[][], long xi, long yi) {
+    // Must be passed two leftKeys only.
+    // Optimized special case for the two calling points; see usages in bmerge_r below.
+    byte xbatch[] = x[(int)(xi / _leftBatchSize)];
+    byte ybatch[] = x[(int)(yi / _leftBatchSize)];
+    int xoff = (int)(xi % _leftBatchSize) * _leftKeySize;
+    int yoff = (int)(yi % _leftBatchSize) * _leftKeySize;
+    int i=0;
+    while (i<_leftKeySize && xbatch[xoff++] == ybatch[yoff++]) i++;
+    return(i==_leftKeySize);
   }
 
   private void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn) {
@@ -216,10 +234,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // Related to 'allow.cartesian' in data.table.
     // TO DO:  if index stores attribute that it is unique then we don't need this step. However, each of these while()s would run at most once in that case, which may not be worth optimizing.
     tmpLow = lr + 1;
-    while (tmpLow<lUpp && keycmp(_leftKey, tmpLow, _leftKey, lr)==0) tmpLow++;
+    while (tmpLow<lUpp && leftKeyEqual(_leftKey, tmpLow, lr)) tmpLow++;  // TODO: these while's could be rolled up inside leftKeyEqual saving call overhead
     lUpp = tmpLow;
     tmpUpp = lr - 1;
-    while (tmpUpp>lLow && keycmp(_leftKey, tmpUpp, _leftKey, lr)==0) tmpUpp--;
+    while (tmpUpp>lLow && leftKeyEqual(_leftKey, tmpUpp, lr)) tmpUpp--;
     lLow = tmpUpp;
     // lLow and lUpp now surround the group in the left table.  If left key is unique then lLow==lr-1 and lUpp==lr+1.
     assert lUpp - lLow >= 2;

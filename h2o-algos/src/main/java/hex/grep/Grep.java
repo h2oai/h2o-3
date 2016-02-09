@@ -19,7 +19,6 @@ import java.util.regex.PatternSyntaxException;
 public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
   public Grep( GrepModel.GrepParameters parms ) { super(parms); init(false); }
   @Override protected GrepDriver trainModelImpl() { return new GrepDriver(); }
-  @Override public long progressUnits() { return _parms.train().numRows(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
 

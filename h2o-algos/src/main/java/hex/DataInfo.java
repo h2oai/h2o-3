@@ -86,7 +86,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _nums;
   public int _cats;
   public int [] _catOffsets;
-  public int [] _catMissing;  // bucket for missing categoricals
+  public boolean [] _catMissing;  // bucket for missing categoricals
   public int [] _catModes;    // majority class of each categorical col
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;
@@ -179,15 +179,16 @@ public class DataInfo extends Keyed<DataInfo> {
     // Compute the cardinality of each cat
     _catModes = new int[_cats];
     _catOffsets = MemoryManager.malloc4(ncats+1);
-    _catMissing = new int[ncats];
+    _catMissing = new boolean[ncats];
     int len = _catOffsets[0] = 0;
+
     for(int i = 0; i < ncats; ++i) {
       _catModes[i] = imputeCat(train.vec(cats[i]));
       _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
-      _catMissing[i] = missingBucket ? 1 : 0; //needed for test time
-      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket ? 1 : 0)); //missing values turn into a new factor level
+      _catMissing[i] = missingBucket; //needed for test time
+      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
     }
     _numMeans = new double[_nums];
     for(int i = 0; i < _nums; ++i){
@@ -217,14 +218,14 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo validDinfo(Frame valid) {
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,_weights,_offset,_fold);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold);
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
   }
 
   public DataInfo scoringInfo(){
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,false,_weights,_offset,_fold);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!_skipMissing,_weights,_offset,_fold);
     res._adaptedFrame = null;
     res._weights = false;
     res._offset = false;
@@ -270,7 +271,8 @@ public class DataInfo extends Keyed<DataInfo> {
     _imputeMissing = imputeMissing;
     _adaptedFrame = fr;
     _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
-    _catMissing = new int[catLevels.length];
+    _catMissing = new boolean[catLevels.length];
+    Arrays.fill(_catMissing,!(imputeMissing || skipMissing));
     int s = 0;
     for(int i = 0; i < catLevels.length; ++i){
       _catOffsets[i] = s;
@@ -458,7 +460,7 @@ public class DataInfo extends Keyed<DataInfo> {
           continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
       }
-      if (_catMissing[i] > 0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if (_catMissing[i]) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
@@ -631,7 +633,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int v = c + _catOffsets[cid];
     if(v >= _catOffsets[cid+1]) { // previously unseen level
       assert _valid:"categorical value out of bounds, got " + v + ", next cat starts at " + _catOffsets[cid+1];
-      return -2;
+      return _catMissing[cid]?_catOffsets[cid+1]-1:-2;// if we have NA bucket, treat previously unseen as NA.
     }
     return v;
   }
@@ -655,7 +657,7 @@ public class DataInfo extends Keyed<DataInfo> {
           int c = getCategoricalId(i,_catModes[i]);
           if(c >= 0)
             row.binIds[nbins++] = c;
-        } else   // TODO: What if missingBucket = false?
+        } else if(_catMissing[i])  // TODO: What if missingBucket = false?
           row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
       } else {
         int c = getCategoricalId(i,(int)vals[i]);
@@ -708,8 +710,9 @@ public class DataInfo extends Keyed<DataInfo> {
             int c = getCategoricalId(i,_catModes[i]);
             if(c >= 0)
               row.binIds[nbins++] = c;
-          } else   // TODO: What if missingBucket = false?
+          } else if(_catMissing[i])  // TODO: What if missingBucket = false?
             row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
+          // else skip
       } else {
         int c = getCategoricalId(i,(int)chunks[i].at8(rid));
         if(c >= 0)

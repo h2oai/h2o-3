@@ -369,8 +369,32 @@ function. Change the regression by changing the family to binomial.
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.R}
 
+
+\subsubsection{Multi-class classification (Multinomial Family)}
+Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the
+binomial family, we model the conditional probability of observing class c given x. We have a vector of coefficients
+for each of the output classes ($\beta$ is a matrix). The probabilities are defined as
+
+$$ \hat{y}_c = Pr(y = c|x) = {e^{x^{\top}\beta_c + \beta_{c0}} \over \sum_{k=1}^K (e^{x^{\top}\beta_k + \beta_{k0}}) }$$ 
+
+The penalized negative log-likelihood is defined as:
+
+$$
+- \lbrack {1\over{N}} \sum_{i=1}^N\sum_{k=1}^K(y_{i,k}(x_i^{\top}\beta_k + \beta_{k0})) - log(\sum_{k=1}^Ke^{x_i^{\top}\beta_k + \beta_{k0}}) \rbrack + \lambda \lbrack {(1-\alpha) \over 2} \| \beta \|_F^2 + \alpha\sum_{j=1}^P \|\beta_j\|_1 \rbrack 
+$$
+, where $\beta_c$ is vector of coefficients for class c and $y_{i,k}$ is kth element of the binary vector produced by
+expanding the response variable using one-hot encoding (i.e. $y_{i,k} == 1$ iff the response at the ith observation
+is k. It is 0 otherwise.
+
+Here is a simple example using the iris dataset:
+
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_multinomial.R}
+
 \waterExampleInPython
-\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_binomial_example.py}
+\lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_multinomial.py}
+
 
 \subsubsection{Poisson Models}
 Poisson regression is typically used for datasets where the response represents counts and the errors are assumed to have a Poisson distribution. In general, it can be applied to any data where the response is non-negative. It models the dependency between the response and covariates as: 
@@ -658,6 +682,37 @@ unit variance.  This parameter must be enabled (using \texttt{standardize=TRUE})
 
 We recommend enabling standardization when using regularization (i.e. \texttt{lambda} is chosen by H2O or greater than 0). Only advanced users should disable standardization.
 
+\subsubsection{Auto-remove collinear columns}
+Collinear columns can cause problems during model fitting. The preferred way to deal with collinearity is to add some
+regularization (either L1, L2 or Elastic Net). This is the default H2O behavior. However, if you want a non-regularized
+solution, you can choose to automatically remove collinear columns by setting the \texttt{remove\_collinear\_columns}
+option.
+
+This option can only be used with the \texttt{IRLSM} solver and no regularization. If selected, H2O will automatically
+remove columns if it detects collinearity. Which columns are removed depends on the order of the columns in the vector
+of coefficients (Intercept first, then categorical variables ordered by cadrinality from largest to smallest, and then
+numbers).
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_remove_collinear_columns.R}
+
+
+\subsubsection{P-Values}
+Z-score, standard error and p-values are classical statistical measures of model quality. p-values are essentially
+hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable
+(insiginificant) while a low p-value suggest that the coefficient is statistically significant.
+
+You can request p-values by setting the \\\texttt{compute\_p\_values} option. It can only be used with the
+\texttt{IRLSM} solver and no regularization. It is recommended that you also set the
+\texttt{remove\_collinear\_columns} option. Otherwise, H2O will return an error if it detects collinearity in the dataset and p-values are requested. 
+
+\textbf{Note:} GLM auto-standardizes the data by default (recommended). This changes the p-value of the constant term
+(intercept).
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_p_values.R}
+
+
 \subsubsection{K-fold Cross-Validation}
 
 All validation values can be computed using either the training dataset (the default option) or using K-fold
@@ -711,7 +766,7 @@ it is therefore less numerically stable and can be very slow as well due to slow
 
 \subsubsection{Offsets}
 
-\texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row “bias values” that are used during model training. 
+\texttt{offset\_column} is an optional column name or index referring to a column in the training frame. This column specifies a prior known component to be included in the linear predictor during training. Offsets are per-row ``��bias values''�� that are used during model training. 
 
 For Gaussian distributions, they can be seen as simple corrections to the response (\texttt{y}) column. Instead of learning to predict the response (\texttt{y}-row), the model learns to predict the (row) offset of the response column. 
 
@@ -739,6 +794,8 @@ The constraints are specified as a frame with following vecs (matched by name; a
 The proximal operator interface allows you to run the GLM with a proximal penalty on a distance from a specified
 given solution. There are many potential uses: for example, it can be used as part of an ADMM consensus algorithm
 to obtain a unified solution over separate H2O clouds or in Bayesian regression approximation.
+
+
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -1200,7 +1257,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{tweedie\_variance\_power}: A numeric specifying the power for the variance function when \texttt{family = "tweedie"}. 
 \item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}. 
 \item \texttt{alpha}: The elastic-net mixing parameter, which must be in $[0,1]$. The penalty is defined to be $P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|] $ so \texttt{alpha=1} is the Lasso penalty, while \texttt{alpha=0} is the ridge penalty. Default is 0.5.
-\item \texttt{prior}: (Optional) A numeric specifying the prior probability of class 1 in the response when \texttt{family = "binomial"}. The default value is the observation frequency of class 1. 
+\item \texttt{prior}: (Optional) A numeric specifying the prior probability of class 1 in the response when \texttt{family = "binomial"}. The default value is the observation frequency of class 1. Must be from (0,1) exclusive range or NULL (no prior).
 \item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, regularization is disabled and ordinary generalized linear models are fit. The default is 1e-05.
 \item \texttt{lambda\_search}: A logical value indicating whether to conduct a search over the space of lambda values, starting from the max lambda, given lambda will be interpreted as the min. lambda. Default is false.
 \item \texttt{nlambdas}: The number of lambda values when \texttt{lambda\_search = TRUE}. Default is -1.
@@ -1213,6 +1270,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{offset\_column}: Specify the offset column. Note: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 \item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
+\item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 \end{itemize}
 %Additional: 
 %Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 
@@ -1269,7 +1327,7 @@ Tom is VP of Engineering of Customer and Pre-Sales Engineering at H2O and key to
 
 \textbf{Nadine Hussami}
 
-Nadine is a math hacker intern at H2O. She is a PhD student at Stanford University. Her main research interests include statistical learning and convex optimization. Before Stanford, she worked as an algorithm development engineer at Bina Technologies. She holds a Master’s degree from Stanford in Electrical Engineering. 
+Nadine is a math hacker intern at H2O. She is a PhD student at Stanford University. Her main research interests include statistical learning and convex optimization. Before Stanford, she worked as an algorithm development engineer at Bina Technologies. She holds a Masters degree from Stanford in Electrical Engineering. 
 
 \textbf{Ariel Rao}
 

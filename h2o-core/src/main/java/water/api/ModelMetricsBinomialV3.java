@@ -55,7 +55,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         thresholds[i] = Double.toString(auc._ths[i]);
       AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
       String[] colHeaders = new String[crits.length+2];
-      String[] colHeadersMax = new String[7];
+      String[] colHeadersMax = new String[9];
       String[] types      = new String[crits.length+2];
       String[] formats    = new String[crits.length+2];
       colHeaders[0] = "Threshold";

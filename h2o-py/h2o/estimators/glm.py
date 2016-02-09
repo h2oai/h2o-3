@@ -63,7 +63,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       models are fit.
     prior : float, optional
       A numeric specifying the prior probability of class 1 in the response when
-      family = "binomial". The default prior is the observational frequency of class 1.
+      family = "binomial". The default prior is the observational frequency of class 1. Must be from (0,1) exclusive range or None (no prior).
     lambda_search : bool
       A logical value indicating whether to conduct a search over the space of lambda
       values starting from the lambda max, given lambda is interpreted as lambda minself.

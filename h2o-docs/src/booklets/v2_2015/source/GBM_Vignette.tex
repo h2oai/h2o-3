@@ -23,9 +23,9 @@
 \\
 \bigskip
 \small
-\textsc{Cliff Click  \hspace{10pt} Michal Malohlava \hspace{10pt} Viraj Parmar}
+\textsc{Cliff Click  \hspace{10pt} Michal Malohlava \hspace{10pt} Arno Candel}
 
-\textsc{Hank Roark \hspace{10pt} Arno Candel}
+\textsc{Hank Roark \hspace{10pt} Viraj Parmar}
 
 \textsc{Edited by: Jessica Lanford}
 
@@ -61,7 +61,7 @@
 Gradient Boosted Models with H2O\\
 
   by Cliff Click, Michal Malohlava, \\
-Viraj Parmar, Hank Roark \&\  Arno Candel\\
+Arno Candel, Hank Roark \&\  Viraj Parmar\\
 Edited by: Jessica Lanford
 
 \bigskip
@@ -117,9 +117,7 @@ Topics include:
 
 \input{common/what_is_h2o.tex}
 
-%----------------------------------------------------------------------
-%----------------------------------------------------------------------
-%\input{generated_buildinfo.tex}
+\input{generated_buildinfo.tex}
 
 \input{common/installation.tex}
 
@@ -156,8 +154,8 @@ H2O's GBM functionalities include:
 \item fast and memory-efficient Java implementations of the algorithms
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item automatic early stopping based on convergence of user-specified metrics to user-specified relative tolerance
-\item stochastic gradient boosting with column and row sampling for better generalization
-\item support for exponential families (Poisson, Gamma, Tweedie) and loss functions in addition to binomial (Bernoulli), Gaussian and multinomial distributions
+\item stochastic gradient boosting with column and row sampling (per split and per tree) for better generalization
+\item support for exponential families (Poisson, Gamma, Tweedie) and loss functions in addition to binomial (Bernoulli), Gaussian and multinomial distributions, such as Quantile regression
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
 \item additional parameters for model tuning (for a complete listing of parameters, refer to the {\textbf{\nameref{ssec:Model Parameters}}} section.)
@@ -297,8 +295,11 @@ One nice feature for finding the optimal number of trees is early stopping based
 \item To compute the best number of trees with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of trees from the convergence behavior of the \texttt{nfolds} cross-validation models.
 \end{itemize}
 
+\subsubsection{Time-based Early Stopping}
+To stop model training after a given amount of seconds, specify \texttt{max\_runtime\_secs > 0}. This option is also available for grid searches and models with cross-validation. Note: The model(s) will likely end up with fewer trees than specified by \texttt{ntrees}.
+
 \subsubsection{Stochastic GBM}
-Stochastic GBM is a way to improve generalization by sampling columns (per split) and rows (per tree) during the model building process. To control the sampling ratios use \texttt{sample\_rate} for rows and \texttt{col\_sample\_rate} for columns. Both parameters must range from 0 to 1.
+Stochastic GBM is a way to improve generalization by sampling columns (per split) and rows (per tree) during the model building process. To control the sampling ratios use \texttt{sample\_rate} for rows (per tree), \texttt{col\_sample\_rate\_per\_tree} for columns per tree and \texttt{col\_sample\_rate} for columns per split. All three parameters must range from 0 to 1, and default to 1.
 
 \section{Use Case: Airline Data Classification}
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. 
@@ -417,10 +418,13 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 \subsection{Grid Search for Model Comparison}
 \label{ssec:Grid search}
 
-To enable grid search capabilities for model tuning, specify sets of values for parameter arguments that will configure certain parameters and then observe the changes in the model behavior. The following example represents a grid search:
+\subsubsection{Cartesian Grid Search}
+To run a Cartesian hyper-parameter grid search in R, use the following:
 
 \waterExampleInR
 \lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch.R}
+
+To run a Cartesian hyper-parameter grid search in Python, use the following:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch.py}
@@ -429,16 +433,27 @@ This example specifies three different tree numbers, three different tree sizes,
 
 Of course, sets of other parameters can be specified for a larger space of models. This allows for more subtle insights in the model tuning and selection process, especially during inspection and comparison of the trained models after the grid search process is complete. To decide how and when to choose different parameter configurations in a grid search, refer to {\textbf{\nameref{ssec:Model Parameters}}} for parameter descriptions and suggested values.
 
-\begin{minipage}{\textwidth}
+To view the results of the grid search, use the following: 
+
 \waterExampleInR
 \lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_result.R}
+
 \waterExampleInPython
 \lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch_result.py} 
-\end{minipage}
+
+\subsubsection{Random Grid Search}
+If the search space is too large (i.e., you don't want to restrict the parameters too much), you can also let the Grid Search make random model selections for you. Just specify how many models (and/or how much training time) you want, and a seed to make the random selection deterministic:
+
+\waterExampleInR
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_gridsearch_random.R}
+\waterExampleInPython
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_gridsearch_random.py}
+
+
 
 
 \newpage
-\subsection{ Model Parameters}
+\subsection{Model Parameters}
 \label{ssec:Model Parameters}
 This section describes the functions of the parameters for GBM. 
 \begin{itemize}
@@ -453,14 +468,17 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
 \item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
+\item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
 \item {\texttt{seed}}: Seed containing random numbers that affects sampling.
 \item{\texttt{mtries}}: Number of variables randomly sampled as candidates at each split. If {\texttt{-1}}, the square root of $p$ is used for classification,or $p/3$ for regression (where $p$ is the number of predictors). 
 \item{\texttt{sample\_rate}}: Row sample rate (from 0.0 to 1.0). 
+\item{\texttt{col\_sample\_rate}}: Column sample rate (per split) (from 0.0 to 1.0). 
 \item{\texttt{col\_sample\_rate\_per\_tree}}: Column sample rate per tree (from 0.0 to 1.0). 
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
-\item {\texttt{distribution}}: The distribution function options: {\texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma}} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
+\item {\texttt{distribution}}: The distribution function options: \texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace,} \\\texttt{quantile} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
-\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item {\texttt{score\_tree\_interval}}: Score the model after every so many trees. Disabled if set to 0.
+\item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random, Stratified} or \texttt{Modulo}. 
 \item \texttt{fold\_column}:  Column with cross-validation fold index assignment per observation. 
 \item \texttt{offset\_column}: Specify the offset column. {\textbf{Note}}: Offsets are per-row “bias values” that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 \item \texttt{weights\_column}: Specify the weights column. {\textbf{Note}}: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
@@ -468,19 +486,18 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{max\_confusion\_matrix\_size}}: Maximum size (number of classes) for confusion matrices to print in the H2O logs.  The default is 20.
 \item {\texttt{max\_hit\_ratio\_k}}: (for multi-class only) Maximum number (top K) of predictions to use for hit ratio computation.  To disable, enter  {\texttt{0}}. The default is 10.
 \item {\texttt{r2\_stopping}}: Stop making trees when the $R^2$ metric equals or exceeds this value.  The default is 0.999999.
-\item \texttt{regression\_stop}: Specifies the stopping criterion for regression error (MSE) on the training data scoring dataset. When the error is at or below this threshold, training stops. The default is 1e-6.  To disable, specify \texttt{-1}.
 \item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
 \item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO, deviance, logloss, MSE, AUC, r2, misclassification}.
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
-\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network 
-overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.
+\item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+\item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.
 \item {\texttt{binomial\_double\_trees}}: For binary classification: Builds twice as many trees (one per class), which can result in better accuracy. 
+\item {\texttt{quantile\_alpha}}: Desired quantile for quantile regression (from 0.0 to 1.0) when \texttt{distribution = "quantile"}.  The default is 0.5 (median, same as \texttt{distribution = "laplace"}).
 \item {\texttt{tweedie\_power}}: A numeric specifying the power for the Tweedie function when \texttt{distribution = "tweedie"}.  The default is 1.5.
 \item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 \item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   The default is {\texttt{FALSE}}.
 \item {\texttt{class\_sampling\_factors}}: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires \texttt{balance\_classes}.
 \item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5.
-\item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
 \item \texttt{model\_id}: The unique ID assigned to the generated model. If not specified, an ID is generated automatically.
 \end{itemize}
 
@@ -532,10 +549,13 @@ overhead but fewer CPUs used. Suitable for small datasets.  The default is {\tex
 
 Cliff Click is the CTO and Co-Founder of H2O, makers of H2O, the open-source math and machine learning engine for Big Data. Cliff is invited to speak regularly at industry and academic conferences and has published many papers about HotSpot technology. He holds a PhD in Computer Science from Rice University and about 15 patents.
 
-
 \textbf{Michal Malohlava}
 
 Michal is a geek, developer, Java, Linux, programming languages enthusiast developing software for over 10 years. He obtained PhD from the Charles University in Prague in 2012 and post-doc at Purdue University. He participated in design and development of various systems including SOFA and Fractal component systems or jPapabench control system.
+
+\textbf{Arno Candel}
+
+Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform and the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \textbf{Viraj Parmar}
 
@@ -544,10 +564,6 @@ Prior to joining H2O as a data and math hacker intern, Viraj worked in a researc
 \textbf{Hank Roark}
 
 Hank is a Data Scientist and Hacker at H2O. Hank comes to H2O with a background turning data into products and system solutions and loves helping others find value in their data.  Hank has an SM from MIT in Engineering and Management and BS Physics from Georgia Tech.
-
-\textbf{Arno Candel}
-
-Arno is the Chief Architect of H2O, a distributed and scalable open-source machine learning platform and the main author of H2O Deep Learning.  Arno holds a PhD and Masters summa cum laude in Physics from ETH Zurich, Switzerland. He has authored dozens of scientific papers and is a sought-after conference speaker. Arno was named “2014 Big Data All-Star” by Fortune Magazine. Follow him on Twitter: @ArnoCandel.
 
 \textbf{Jessica Lanford}
 

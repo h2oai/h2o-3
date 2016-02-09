@@ -68,30 +68,19 @@ import java.util.Map;
  * @see #startGridSearch(Key, HyperSpaceWalker)
  */
 public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
-  public enum Strategy { Unknown, Cartesian, Random } // search strategy
   public final Key<Grid> _result;
   public final Job<Grid> _job;
 
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
-  private final transient HyperSpaceWalker<MP> _hyperSpaceWalker;
+  private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
 
-  /** For advanced search methods we can put a time limit on the overall grid search.  This doesn't make much sense
-   * for strict Cartesian.
-   */
-  private int _max_time_ms = Integer.MAX_VALUE;
-
-
-  private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP> hyperSpaceWalker) {
+  private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
     assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
     _hyperSpaceWalker = hyperSpaceWalker;
-    // TODO: hacky: when we have SearchCriteria classes pass an instance down through the startGridSearch chain into this constructor.
-    if (_hyperSpaceWalker instanceof HyperSpaceWalker.RandomDiscreteValueWalker) {
-      this._max_time_ms = ((HyperSpaceWalker.RandomDiscreteValueWalker)_hyperSpaceWalker).max_time_ms();
-    }
     // Note: do not validate parameters of created model builders here!
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
@@ -122,13 +111,31 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
                      _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
       grid.delete_and_lock(_job);
     }
+
+    Model model = null;
+    HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
+    long gridWork=0;
+    if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+      while (it.hasNext(model)) {
+        try {
+          gridWork += it.nextModelParameters(model).progressUnits();
+        } catch(Throwable ex) {
+          //swallow invalid combinations
+        }
+      }
+    } else {
+      //TODO: Future totally unbounded search: need a time-based progress bar
+      gridWork = Long.MAX_VALUE;
+    }
+    it.reset();
+
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
         gridSearch(grid);
         tryComplete();
       }
-    }, gridSize);
+    }, gridWork);
   }
 
   /**
@@ -166,10 +173,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       int counter = 0;
       while (it.hasNext(model)) {
         if(_job.stop_requested() ) return;  // Handle end-user cancel request
-        long remaining_time = it.timeRemaining();
+        double time_remaining_secs = it.time_remaining_secs();
+        double max_runtime_secs = it.max_runtime_secs();
 
-        if  (remaining_time < 0) {
-          Log.info("Grid max_time_ms has expired; stopping early.");
+        if  (time_remaining_secs < 0) {
+          Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
           return;
         }
 
@@ -181,14 +189,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // exception up, just mark combination of model parameters as wrong
 
           // Do we need to limit the model build time?
-          if (_max_time_ms < Integer.MAX_VALUE) {
-            Log.info("Grid time is limited to: " + _max_time_ms + " for grid: " + grid._key + ". Remaining time is: " + remaining_time);
+          if (max_runtime_secs < Double.MAX_VALUE) {
+            Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
             if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = remaining_time / 1000.0;
+              params._max_runtime_secs = time_remaining_secs;
               Log.info("Due to the grid time limit, changing model max runtime to: " + mSformatter.format(params._max_runtime_secs) + "S.");
             } else {
               double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, remaining_time / 1000.0 );
+              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
               Log.info("Due to the grid time limit, changing model max runtime from: " + mSformatter.format(was) + " to: " + mSformatter.format(params._max_runtime_secs) + "S.");
             }
           }
@@ -335,22 +343,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       final MP params,
       final Map<String, Object[]> hyperParams,
       final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-      final Strategy strategy,
-      final int max_models,
-      final int max_time_ms,
-      long seed) {
+      final HyperSpaceSearchCriteria search_criteria) {
 
-    // Create a walker to traverse the hyper space of model parameters.
-    // TODO: encapsulate this switch in a factory to make it pluggable.
-    BaseWalker<MP> hyperSpaceWalker;
-    if (strategy == Strategy.Cartesian)
-      hyperSpaceWalker = new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory);
-    else if (strategy == Strategy.Random)
-      hyperSpaceWalker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, max_models, max_time_ms, seed);
-    else
-      throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
-
-    return startGridSearch(destKey, hyperSpaceWalker);
+    return startGridSearch(destKey, BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, search_criteria));
   }
 
 
@@ -369,13 +364,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    *
-   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, Strategy, int, int, long)
+   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria)
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(final Key<Grid> destKey,
                                                                         final MP params,
                                                                         final Map<String, Object[]> hyperParams) {
-    return startGridSearch(destKey, params, hyperParams, new SimpleParametersBuilderFactory<MP>(),
-            Strategy.Cartesian, -1, -1, -1L);
+    return startGridSearch(
+            destKey,
+            params,
+            hyperParams,
+            new SimpleParametersBuilderFactory<MP>(),
+            new HyperSpaceSearchCriteria.CartesianSearchCriteria());
   }
 
   /**
@@ -391,7 +390,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
-      final HyperSpaceWalker<MP> hyperSpaceWalker) {
+      final HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     // Compute key for destination object representing grid
     MP params = hyperSpaceWalker.getParams();
     Key<Grid> gridKey = destKey != null ? destKey
