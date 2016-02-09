@@ -6,26 +6,24 @@
 val sc:SparkContext = ...
 val hc = H2OContext.getOrCreate(sc)
 \end{lstlisting}
-
 or:
 \begin{lstlisting}[style=Scala]
 val sc:SparkContext = ...
 val hc = new H2OContext(sc).start()
 \end{lstlisting}
 
-When the number of Spark nodes is known, it can be specified in the getOrCreate call:
+When the number of Spark nodes is known, it can be specified in the \texttt{getOrCreate} call:
 
 \begin{lstlisting}[style=Scala]
 val hc = H2OContext.getOrCreate(sc, numOfSparkNodes)
 \end{lstlisting}
-
-or, in start method of H2O Context:
+or, in start method of \texttt{H2OContext}:
 
 \begin{lstlisting}[style=Scala]
 val hc = new H2OContext(sc).start(numOfSparkNodes)
 \end{lstlisting}
 
-The former variant is preferred, because it initiates and starts H2O Context in one call and can be used to obtain already existing H2OContext. It is semantically the same as the latter variant though.
+The former variant is preferred, because it initiates and starts \texttt{H2OContext} in one call and can be used to obtain already existing \texttt{H2OContext}. It is semantically the same as the latter variant though.
 
 \subsection{Starting H2O Services}
 
@@ -38,6 +36,7 @@ H2O resides in the same executor JVM as Spark. The memory provided for H2O is co
 \item Configure the Driver memory (i.e., memory available for H2O client running inside the Spark driver) via the Spark configuration property \texttt{spark.driver.memory}. For example, {\lstinline[style=Bash]|bin/sparkling-shell --conf spark.driver.memory=4g|} or configure the property in {\lstinline[style=Bash]|$SPARK_HOME/conf/spark-defaults.conf|}.
 \end{itemize}
 
+\pagebreak
 \textbf{Yarn specific configuration}
 
 \begin{itemize}
@@ -47,13 +46,13 @@ H2O resides in the same executor JVM as Spark. The memory provided for H2O is co
  
  \subsection{Converting H2OFrame into RDD[T]}
  
- The H2OContext class provides the explicit conversion, \texttt{asRDD}, which creates an RDD-like wrapper around the provided H2OFrame:
+ The \texttt{H2OContext} class provides the explicit conversion, \texttt{asRDD}, which creates an RDD-like wrapper around the provided \texttt{H2OFrame}:
 
 \begin{lstlisting}[style=Scala]
 def asRDD[A <: Product: TypeTag: ClassTag](fr : H2OFrame) : RDD[A]
 \end{lstlisting}
 
-The call expects the type \texttt{A} to create a correctly-typed RDD. The conversion requires type \texttt{A} to be bound by \texttt{Product} interface. The relationship between the columns of H2OFrame and the attributes of class \texttt{A} is based on name matching.
+The call expects the type \texttt{A} to create a correctly-typed RDD. The conversion requires type \texttt{A} to be bound by \texttt{Product} interface. The relationship between the columns of \texttt{H2OFrame} and the attributes of class \texttt{A} is based on name matching.
 
 \textbf{Example}
 
@@ -64,7 +63,7 @@ val rdd = asRDD[Weather](df)
 
 \subsection{Converting H2OFrame into DataFrame}
 
-The \texttt{H2OContext} class provides the explicit conversion, \texttt{asDataFrame}, which creates a DataFrame-like wrapper around the provided H2OFrame. Technically, it provides the \texttt{RDD[sql.Row]} RDD API:
+The \texttt{H2OContext} class provides the explicit conversion, \texttt{asDataFrame}, which creates a \texttt{DataFrame}-like wrapper around the provided \texttt{H2OFrame}. Technically, it provides the \texttt{RDD[sql.Row]} RDD API:
 
 \begin{lstlisting}[style=Scala]
 def asDataFrame(fr : H2OFrame)(implicit sqlContext: SQLContext) : DataFrame
@@ -76,7 +75,7 @@ The schema of the created instance of the \texttt{DataFrame} is derived from the
 
 \textbf{Example}
 
-Using an explicit parameter in the call to pass sqlContext:
+Using an explicit parameter in the call to pass \texttt{sqlContext}:
 
 \begin{lstlisting}[style=Scala]
 val sqlContext = new SQLContext(sc)
@@ -109,9 +108,9 @@ def asH2OFrame[A <: Product : TypeTag](rdd : RDD[A], frameName: Option[String]) 
 \begin{lstlisting}[style=Scala]
 val rdd: RDD[Weather] = ...
 import h2oContext._
-// implicit call of H2OContext.asH2OFrame[Weather](rdd) is used 
+//implicit call of H2OContext.asH2OFrame[Weather](rdd) is used 
 val hf: H2OFrame = rdd
-// Explicit call of of H2OContext API with name for resulting H2O frame
+//Explicit call of of H2OContext API with name for resulting H2OFrame
 val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, Some("h2oframe"))
 \end{lstlisting}
 
@@ -119,7 +118,9 @@ val hfNamed: H2OFrame = h2oContext.asH2OFrame(rdd, Some("h2oframe"))
 
 The \texttt{H2OContext} provides \textbf{implicit} conversion from the specified \texttt{DataFrame} to \texttt{H2OFrame}. The conversion will create a new \texttt{H2OFrame}, transfer data from the specified \texttt{DataFrame}, and save it to the H2O K/V data store.
 
+\begin{lstlisting}[style=Scala]
 implicit def asH2OFrame(rdd : DataFrame) : H2OFrame
+\end{lstlisting}
 
 The API also provides explicit version which allows for specifying name for resulting \texttt{H2OFrame}.
 
@@ -132,9 +133,9 @@ def asH2OFrame(rdd : DataFrame, frameName: Option[String]) : H2OFrame
 \begin{lstlisting}[style=Scala]
 val df: DataFrame = ...
 import h2oContext._
-// Implicit call of H2OContext.asH2OFrame(srdd) is used 
+//Implicit call of H2OContext.asH2OFrame(srdd) is used 
 val hf: H2OFrame = df 
-// Explicit call of H2Context API with name for resulting H2O frame
+//Explicit call of H2Context API with name for resulting H2OFrame
 val hfNamed: H2OFrame = h2oContext.asH2OFrame(df, Some("h2oframe"))
 \end{lstlisting}
 
@@ -148,7 +149,7 @@ val trainHF = new H2OFrame("train.hex")
 
 \subsection{Type map between H2OFrame and Spark DataFrame types}
 
-For all primitive Scala types or Spark SQL (see \texttt{org.apache.spark.sql.types}) types which can be part of Spark RDD/DataFrame we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
+For all primitive Scala types or Spark SQL types (see \linebreak \texttt{org.apache.spark.sql.types}) which can be part of Spark RDD/DataFrame we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
 
 \begin{table}[!ht]
 \centering
@@ -187,5 +188,13 @@ gbmParams._ntrees = 500
 gbmParams._max_depth = 6
 \end{lstlisting}
 
- \item Create a model builder: {\lstinline[style=Scala]|scala val gbm = new GBM(gbmParams)|}
- \item Invoke the model build job and block until the end of computation (\texttt{trainModel} is an asynchronous call by default): {\lstinline[style=Scala]|scala val gbmModel = gbm.trainModel.get|} \end{enumerate}
+ \item Create a model builder:
+ \begin{lstlisting}[style=Scala]
+ scala val gbm = new GBM(gbmParams)
+ \end{lstlisting}
+ 
+ \item Invoke the model build job and block until the end of computation (\texttt{trainModel} is an asynchronous call by default): 
+ \begin{lstlisting}[style=Scala]
+ scala val gbmModel = gbm.trainModel.get|} 
+ \end{lstlisting}
+ \end{enumerate}

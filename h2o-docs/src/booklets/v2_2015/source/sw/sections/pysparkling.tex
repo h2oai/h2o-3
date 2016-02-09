@@ -1,8 +1,8 @@
 \section{What is PySparkling Water?}
 
-PySparkling Water is an integration of Python with Sparkling water. It allows user to start H2O services on a spark cluster from Python API.
+PySparkling Water is an integration of Python with Sparkling water. It allows the user to start H2O services on a spark cluster from Python API.
 
-In the PySparkling Water driver program, the Spark context(sc) that uses Py4J to start the driver JVM and the JAVA spark Context, is used to create H2O context(hc).  This in turn starts the H2O cloud in the Spark ecosystem. Once the H2O cluster is up, H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's rest api interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
+In the PySparkling Water driver program, the \texttt{SparkContext} (sc) that uses Py4J to start the driver JVM and the JAVA \texttt{SparkContext}, is used to create \texttt{H2OContext} (hc).  This in turn starts the H2O cloud in the Spark ecosystem. Once the H2O cluster is up, H2O-Python package is used to interact with the cloud and run H2O algorithms. All pure H2O calls are executed via H2O's REST API interface. Users can easily integrate their regular PySpark workflow with H2O algorithms using PySparkling Water.
 
 PySparkling Water programs can be launched as an application, or in an interactive shell, or notebook environment.
 
@@ -81,15 +81,15 @@ $SPARKLING_HOME/py/examples/scripts/H2OContextDemo.py
 \end{lstlisting}
 \end{enumerate}
 
-\textbf{H2O Frame as Spark's Data Source}
+\textbf{H2OFrame as Spark's Data Source}
 
-The way a H2O Frame can be used as Spark's data source differs a little bit in Python and Scala.
+The way a \texttt{H2OFrame} can be used as Spark's data source differs a little bit in Python and Scala.
 
 \textbf{Usage in Python - pySparkling}
 
-\textbf{Reading from H2O Frame}
+\textbf{Reading from \texttt{H2OFrame}}
 
-Let's suppose we have an H2O frame. There are two ways how the data frame can be loaded from H2OFrame in pySparkling:
+Let's suppose we have an \texttt{H2OFrame}. There are two ways how the \texttt{DataFrame} can be loaded from \texttt{H2OFrame} in pySparkling:
 \begin{lstlisting}[style=Scala]
 df = sqlContext.read.format("h2o").option("key",frame.frame_id).load()
 \end{lstlisting}
@@ -98,10 +98,10 @@ or
 df = sqlContext.read.format("h2o").load(frame.frame_id)
 \end{lstlisting}
 
-\textbf{Saving to H2O Frame}
+\textbf{Saving to \texttt{H2OFrame}}
 
-Let's suppose we have a DataFrame df. There are two ways how data frame can be saved as 
-H2OFrame in pySparkling:
+Let's suppose we have a \texttt{DataFrame} df. There are two ways how \texttt{DataFrame} can be saved as 
+\texttt{H2OFrame} in pySparkling:
 
 \begin{lstlisting}[style=Scala]
 df.write.format("h2o").option("key","new_key").save()
@@ -111,11 +111,11 @@ or
 df.write.format("h2o").save("new_key")
 \end{lstlisting}
 
-Both variants save data frame as H2OFrame with key "new\_key". They won't succeed if the H2OFrame with the same key already exists.
+Both variants save \texttt{DataFrame} as a \texttt{H2OFrame} with key "new\_key". They won't succeed if a \texttt{H2OFrame} with the same key already exists.
 
 \textbf{Loading \& Saving Options}
 
-If the key is specified as 'key' option and also in the load/save method, the option 'key' is preferred:
+If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
 \begin{lstlisting}[style=Scala]
 df = sqlContext.read.from("h2o").option("key","key_one").load("key_two")
 \end{lstlisting}
@@ -128,14 +128,14 @@ In both examples, "key\_one" is used.
 
 \textbf{Usage in Scala}
 
-\textbf{Reading from H2O Frame}
+\textbf{Reading from \texttt{H2OFrame}}
 
-Let's suppose we have an H2O frame. The shortest way to load a data frame from H2OFrame with default settings is:
+Let's suppose we have a \texttt{H2OFrame}. The shortest way to load a \texttt{DataFrame} from \texttt{H2OFrame} with default settings is:
 \begin{lstlisting}[style=Scala]
 val df = sqlContext.read.h2o(frame.key)
 \end{lstlisting}
 
-There are two more ways to load a data frame from H2OFrame allowing us to specify additional options:
+There are two more ways to load a \texttt{DataFrame} from \texttt{H2OFrame} allowing us to specify additional options:
 \begin{lstlisting}[style=Scala]
 val df = sqlContext.read.format("h2o").option("key",frame.key.toString).load()
 \end{lstlisting}
@@ -144,14 +144,14 @@ or
 val df = sqlContext.read.format("h2o").load(frame.key.toString)
 \end{lstlisting}
 
-\textbf{Saving to H2O Frame}
+\textbf{Saving to \texttt{H2OFrame}}
 
-Let's suppose we have DataFrame df. The shortest way to save the data frame as H2O Frame with default settings is:
+Let's suppose we have \texttt{DataFrame} df. The shortest way to save the \texttt{DataFrame} as \texttt{H2OFrame} with default settings is:
 \begin{lstlisting}[style=Scala]
 df.write.h2o("new_key")
 \end{lstlisting}
 
-There are two more ways to save the data frame as H2OFrame allowing us to specify additional options:
+There are two more ways to save the \texttt{DataFrame} as \texttt{H2OFrame} allowing us to specify additional options:
 \begin{lstlisting}[style=Scala]
 df.write.format("h2o").option("key","new_key").save()
 \end{lstlisting}
@@ -160,7 +160,7 @@ or
 df.write.format("h2o").save("new_key")
 \end{lstlisting}
 
-All three variants save the data frame as H2OFrame with the key "new\_key". They won't succeed if the H2O Frame with the same key already exists.
+All three variants save the \texttt{DataFrame} as \texttt{H2OFrame} with the key "new\_key". They won't succeed if a \texttt{H2OFrame} with the same key already exists.
 
 \textbf{Loading \& Saving Options}
 
@@ -180,9 +180,9 @@ In both examples, "key\_one" is used.
 There are four save modes available when saving data using Data Source API- see \url{http://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes}
 
 \begin{itemize}
-\item If "append" mode is used, an existing H2OFrame with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original H2O Frame and the appended data frame.
-\item If "overwrite" mode is used, an existing H2OFrame with the same key is deleted, and new one with the new rows is created with the same key.
-\item If "error" mode is used, and a H2OFrame with the specified key already exists, an exception is thrown.
-\item If "ignore" mode is used, and a H2OFrame with the specified key already exists, no data are changed.
+\item If "append" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original \texttt{H2OFrame} and the appended \texttt{DataFrame}.
+\item If "overwrite" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and new one with the new rows is created with the same key.
+\item If "error" mode is used, and a \texttt{H2OFrame} with the specified key already exists, an exception is thrown.
+\item If "ignore" mode is used, and a \texttt{H2OFrame} with the specified key already exists, no data are changed.
 \end{itemize}
 

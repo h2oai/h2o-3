@@ -11,9 +11,9 @@ As Chief Air Traffic Controller, your job is come up with a prediction engine th
 
 \textbf{Spark SQL}
 
-One of the many cool features about the Spark project is the ability to initiate a €˜SQL context€™ within our application that enables us to write SQL-like queries against an existing DataFrame.  Given the ubiquitous nature of SQL, this is very appealing to data scientists who may not be comfortable yet with Scala / Java / Python but want to perform complex manipulations of their data.
+One of the many cool features about the Spark project is the ability to initiate a €˜SQL context€™ within our application that enables us to write SQL-like queries against an existing \texttt{DataFrame}.  Given the ubiquitous nature of SQL, this is very appealing to data scientists who may not be comfortable yet with Scala / Java / Python but want to perform complex manipulations of their data.
 
-Within the context of this example, we are going to first read in the airlines dataset and then process a weather file which contains the weather data at the arriving city. Joining the two tables will require a SQL context such that we can write an INNER JOIN against the two independent DataFrames.  Let'€™s get started!
+Within the context of this example, we are going to first read in the airlines dataset and then process a weather file which contains the weather data at the arriving city. Joining the two tables will require a SQL context such that we can write an INNER JOIN against the two independent \texttt{DataFrame}s.  Let's get started!
 
 \textbf{Data Ingest}
 
@@ -47,7 +47,7 @@ object AirlinesWithWeatherDemo extends SparkContextSupport {
     val airlinesTable : RDD[Airlines] = asRDD[Airlines](airlinesData)
 \end{lstlisting}
 
-The flight data file is imported directly into H2O already as an H2O frame. The weather table, however, is first processed in Spark where we do some parsing of the data and data scrubbing.
+The flight data file is imported directly into H2O already as an \texttt{H2OFrame}. The weather table, however, is first processed in Spark where we do some parsing of the data and data scrubbing.
 
 After both files have been processed, we then take the airlines data that currently sits in H2O and it pass back into Spark whereby we filter for those flights ONLY arriving at Chicago'€™s O'Hare International Airport:
 \begin{lstlisting}[style=Scala]
@@ -64,10 +64,10 @@ After both files have been processed, we then take the airlines data that curren
 
 At this point, we are ready to join these two tables which are currently Spark RDDs.  The workflow required for this is as follows:
 \begin{itemize}
-\item Convert the RDD into a DataFrame
-\item Register the resulting DataFrame as '€˜Temp Table' 
+\item Convert the RDD into a \texttt{DataFrame}
+\item Register the resulting \texttt{DataFrame} as 'TempTable' 
 \item Join the two temp tables using Spark SQL
-\item Transfer the €˜joined€™ table from Spark back to H2O to run an algorithm against.
+\item Transfer the €˜joined€™ table from Spark back to H2O to run an algorithm against
 \end{itemize}
 
 \begin{lstlisting}[style=Scala]
