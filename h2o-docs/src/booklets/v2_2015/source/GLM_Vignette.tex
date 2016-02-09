@@ -380,7 +380,7 @@ $$ \hat{y}_c = Pr(y = c|x) = {e^{x^{\top}\beta_c + \beta_{c0}} \over \sum_{k=1}^
 The penalized negative log-likelihood is defined as:
 
 $$
-- \lbrack {1\over{N}} \sum_{i=1}^N\sum_{k=1}^K(y_{i,k}(x^{\top}\beta_k + \beta_{c0})) - log(\sum_{k=1}^Ke^{x^{\top}\beta_k + \beta_{k0}}) \rbrack + \lambda \lbrack {(1-\alpha) \over 2} \| \beta \|_F^2 + \sum_{j=1}^P \|beta_j\|_1 \rbrack 
+- \lbrack {1\over{N}} \sum_{i=1}^N\sum_{k=1}^K(y_{i,k}(x^{\top}\beta_k + \beta_{c0})) - log(\sum_{k=1}^Ke^{x^{\top}\beta_k + \beta_{k0}}) \rbrack + \lambda \lbrack {(1-\alpha) \over 2} \| \beta \|_F^2 + \sum_{j=1}^P \|\beta_j\|_1 \rbrack 
 $$
 , where $\beta_c$ is vector of coefficients for class c and $y_{i,k}$ is kth element of the binary vector produced by
 expanding the response variable using one-hot encoding (i.e. $y_{i,k} == 1$ iff the response at the ith observation
