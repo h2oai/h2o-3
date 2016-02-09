@@ -25,7 +25,7 @@ val hc = new H2OContext(sc).start(numOfSparkNodes)
 
 The former variant is preferred, because it initiates and starts \texttt{H2OContext} in one call and can be used to obtain already existing \texttt{H2OContext}. It is semantically the same as the latter variant though.
 
-\subsection{Starting H2O Services}
+\subsection{Memory Allocation}
 
 H2O resides in the same executor JVM as Spark. The memory provided for H2O is configured via Spark; refer to Spark configuration for more details.
 
@@ -139,7 +139,7 @@ val hf: H2OFrame = df
 val hfNamed: H2OFrame = h2oContext.asH2OFrame(df, Some("h2oframe"))
 \end{lstlisting}
 
-\subsection{Creating H2OFrame from an existing Key}
+\subsection{Creating H2OFrame from an Existing Key}
 
 If the H2O cluster already contains a loaded \texttt{H2OFrame} referenced by the key \texttt{train.hex}, it is possible to reference it from Sparkling Water by creating a proxy \texttt{H2OFrame} instance using the key as the input:
 
@@ -147,9 +147,9 @@ If the H2O cluster already contains a loaded \texttt{H2OFrame} referenced by the
 val trainHF = new H2OFrame("train.hex")
 \end{lstlisting}
 
-\subsection{Type map between H2OFrame and Spark DataFrame types}
+\subsection{Type Map Between H2OFrame and Spark DataFrame Types}
 
-For all primitive Scala types or Spark SQL types (see \linebreak \texttt{org.apache.spark.sql.types}) which can be part of Spark RDD/DataFrame we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
+For all primitive Scala types or Spark SQL types (see \linebreak \texttt{org.apache.spark.sql.types}) which can be part of Spark RDD/DataFrame, we provide mapping into H2O vector types (numeric, categorical, string, time, UUID - see \texttt{water.fvec.Vec}):
 
 \begin{table}[!ht]
 \centering

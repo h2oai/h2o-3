@@ -61,22 +61,23 @@ val h2oFrame = new H2OFrame("iris.hex")
 \begin{table}[!ht]
 \centering
 %\begin{adjustbox}{width=\textwidth} %resizes table to text width
-
+%\setlength{\tabcolsep}{2pt} %narrow column separation
 \begin{tabular}{c c p{5.2cm}}
 %\begin{tabularx}{\textwidth}{l l p{5.2cm}}
 \toprule
 Concept & API Representation & Description \\
 \midrule
-H2O context & \texttt{H2OContext}\footnote{Fullname of class is \texttt{org.apache.spark.h2o.H2OContext}} & Contains the
+H2O Context & \texttt{H2OContext} & Contains the
 H2O state and provides primitives to publish \texttt{RDD} as \texttt{H2OFrame} and
 vice versa. Follows design principles of Spark primitives such as
-\texttt{SparkContext} or \texttt{SQLContext} \\  \addlinespace
+\texttt{SparkContext} or \texttt{SQLContext}. \\ \addlinespace
+%\small{(Full name: \small{\texttt{org.apache.spark.\break h2o.H2OContext}}}) \\  \addlinespace
 
-H2O entry point & \texttt{H2O}\footnote{Fullname of class is \texttt{water.H2Ot}} & Represents the entry point for accessing
+H2O Entry Point & \texttt{water.H2O} & Represents the entry point for accessing
 H2O services. Contains information about running H2O services, including a list of
 nodes and the status of the distributed K/V datastore. \\  \addlinespace
 
-H2O Frame & \texttt{H2OFrame}\footnote{Fullname of class is \texttt{water.fvec.H2OFrame}} & A data structure 
+H2O Frame &  \small{\texttt{water.fvec.H2OFrame}} & A data structure 
 representing a table of values. The table is column-based and provides column and
 row accessors. \\  \addlinespace
 
@@ -91,6 +92,7 @@ algorithms. \\
 \label{tab:primitives}
 \end{table}
 
+\pagebreak
 When the \texttt{H2OContext} is running, any H2O algorithm can be called. Most of provided algorithms are located in the \texttt{hex} package. Calling an algorithm is composed of two steps:
 
 \begin{itemize}
