@@ -12,8 +12,37 @@ Integrating these two open-source environments provides a seamless experience fo
 
 For additional examples, please visit the Sparkling Water GitHub repository at {\url{https://github.com/h2oai/sparkling-water/tree/master/examples}}. 
 
-\subsection{Typical Use Case}
-Sparkling Water excels in leveraging existing Spark-based workflows needed to call advanced machine learning algorithms. A typical example involves data munging with help of Spark API, where a prepared table is passed to an H2O algorithm. The constructed model estimates different metrics based on the testing data or gives a prediction that can then be used in the rest of the Spark workflow.
+\subsection{Typical Use Cases}
+Sparkling Water excels in leveraging existing Spark-based workflows needed to call advanced machine learning algorithms. We identified three the most common use-cases which are described below. 
+
+\subsubsection{Model Building}
+A typical example involves multiple data transformations with help of Spark API, where a final form of data is transformed into H2O frame and passed to an H2O algorithm. The constructed model estimates different metrics based on the testing data or gives a prediction that can be used in the rest of the data pipeline (see Figure~\ref{fig:uc1}).
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.9\textwidth]{sw/images/uc1.png}
+	\caption{Sparkling Water extends existing Spark data pipeline with advanced machine learning algorithms.}
+	\label{fig:uc1} 
+\end{figure}
+
+\subsubsection{Data Munging}
+Another use-case includes Sparkling Water as a provider of ad-hoc data transformations. Figure~\ref{fig:uc2} shows a data pipeline benefiting from H2O's parallel data load and parse capabilities, while Spark API is used as another provider of data transformations. Furthermore, H2O can be used as in-place data transformer.
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.9\textwidth]{sw/images/uc2.png}
+	\caption{Sparkling Water introduces H2O parallel load and parse into Spark pipelines.}
+	\label{fig:uc2} 
+\end{figure}
+
+\subsubsection{Stream Processing}
+The last use-case depicted on Figure~\ref{fig:uc3} introduces two data pipelines. The first one, called an off-line training pipeline, is invoked regularly (e.g., every hour or every day), utilizes Spark as well as H2O API and provides an H2O model as output. The H2O API allows the model to be exported in a source code form. The second one processes streaming data (with help of Spark Streaming or Storm) and utilizes the model trained in the first pipeline to score the incoming data. Since the model is exported as a code,  the streaming pipeline can be lightweight and independent on H2O or Sparkling Water infrastructure.
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.9\textwidth]{sw/images/uc3.png}
+	\caption{Sparkling Water used as an off-line model producer feeding models into a stream-based data pipeline.}
+	\label{fig:uc3} 
+\end{figure}
 
 \subsection{Features}
 
