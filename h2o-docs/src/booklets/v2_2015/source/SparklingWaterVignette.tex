@@ -6,6 +6,7 @@
 %
 \usepackage{tabularx}
 \usepackage{booktabs}
+\usepackage{forest}
 
 \begin{document}
 
@@ -51,7 +52,7 @@ Machine Learning with Sparkling Water: H2O + Spark\\
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright 2016 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
 \monthname \hspace{1pt}  \the\year: First Edition
@@ -86,15 +87,16 @@ Printed in the United States of America.
 %
 % SW design
 %
+\newpage
 \input{sw/sections/design}
 %
 % Exposed public Scala API
 %
+\newpage
 \input{sw/sections/api}
 
+\newpage
 \input{sw/sections/deployment}
-
-\include{sw/sections/configuration}
 
 %
 % Building standalone applications with Sparkling Water
@@ -103,8 +105,15 @@ Printed in the United States of America.
 \include{sw/sections/apps}
 
 \newpage
+\include{sw/sections/pysparkling}
 
-\section{References}
+\newpage
+\include{sw/sections/usecase}
+
+\newpage
+\include{sw/sections/FAQ}
+
+\newpage\section{References}
 
 \bibliographystyle{plainnat}  
 
