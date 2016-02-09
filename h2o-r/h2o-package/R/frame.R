@@ -2883,3 +2883,17 @@ h2o.substring <- function(x, start, stop="[]") .newExpr("substring", x, start-1,
 
 #' @rdname h2o.substring
 h2o.substr <- h2o.substring
+
+#'
+#' Strip set from left
+#'
+#' @param x The column whose strings should be lstrip-ed.
+#' @export
+h2o.lstrip <- function(x, set = " ") .newExpr("lstrip", x, .quote(set))
+
+#'
+#' Strip set from right
+#'
+#' @param x The column whose strings should be rstrip-ed.
+#' @export
+h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
