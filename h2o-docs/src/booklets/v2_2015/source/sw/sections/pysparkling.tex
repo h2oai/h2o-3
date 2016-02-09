@@ -6,12 +6,12 @@ In the PySparkling Water driver program, the \texttt{SparkContext} (sc) that use
 
 PySparkling Water programs can be launched as an application, or in an interactive shell, or notebook environment.
 
-\textbf{To get started:}
+\subsection{Get started}
 
 \begin{enumerate}
 \item Download Spark (if not already installed) from the Spark Downloads Page.
 
-Choose Spark release : 1.6.1
+Choose Spark release : 1.6.0
 
 Choose a package type: Pre-built for Hadoop 2.4 and later
 
@@ -30,8 +30,8 @@ export MASTER="local-cluster[3,2,1024]"
 
 \begin{lstlisting}[style=Bash]
 cd ~/Downloads
-unzip sparkling-water-1.6.10.zip
-cd sparkling-water-1.6.10
+unzip sparkling-water-1.6.1.zip
+cd sparkling-water-1.6.1
 \end{lstlisting}
 
 Start an interactive Python terminal:
@@ -58,8 +58,8 @@ import h2o
 \item To launch on YARN:
 
 \begin{lstlisting}[style=Bash]
-wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/10/sparkling-water-1.5.10.zip
-unzip sparkling-water-1.5.10.zip
+wget http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.6/1/sparkling-water-1.6.1.zip
+unzip sparkling-water-1.6.1.zip
  
 export SPARK_HOME="/path/to/spark/installation"
 export HADOOP_CONF_DIR=/etc/hadoop/conf
@@ -76,18 +76,16 @@ import h2o
 
 \item To launch as a Spark Package application
 \begin{lstlisting}[style=Bash]
-$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.5.10 --py-files $SPARKLING_HOME/py/dist/pySparkling-1.5.10-py2.7.egg
+$SPARK_HOME/bin/spark-submit --packages ai.h2o:sparkling-water-core_2.10:1.6.1 --py-files $SPARKLING_HOME/py/dist/pySparkling-1.6.1-py2.7.egg
 $SPARKLING_HOME/py/examples/scripts/H2OContextDemo.py 
 \end{lstlisting}
 \end{enumerate}
 
-\textbf{H2OFrame as Spark's Data Source}
+\subsection{Using Spark Data Sources}
 
 The way a \texttt{H2OFrame} can be used as Spark's data source differs a little bit in Python and Scala.
 
-\textbf{Usage in Python - pySparkling}
-
-\textbf{Reading from \texttt{H2OFrame}}
+\subsubsection{Reading from \texttt{H2OFrame}}
 
 Let's suppose we have an \texttt{H2OFrame}. There are two ways how the \texttt{DataFrame} can be loaded from \texttt{H2OFrame} in pySparkling:
 \begin{lstlisting}[style=Scala]
@@ -98,7 +96,7 @@ or
 df = sqlContext.read.format("h2o").load(frame.frame_id)
 \end{lstlisting}
 
-\textbf{Saving to \texttt{H2OFrame}}
+\subsubsection{Saving to \texttt{H2OFrame}}
 
 Let's suppose we have a \texttt{DataFrame} df. There are two ways how \texttt{DataFrame} can be saved as 
 \texttt{H2OFrame} in pySparkling:
@@ -113,7 +111,7 @@ df.write.format("h2o").save("new_key")
 
 Both variants save \texttt{DataFrame} as a \texttt{H2OFrame} with key "new\_key". They won't succeed if a \texttt{H2OFrame} with the same key already exists.
 
-\textbf{Loading \& Saving Options}
+\subsubsection{Loading and Saving Options}
 
 If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
 \begin{lstlisting}[style=Scala]
@@ -126,63 +124,4 @@ df = sqlContext.read.from("h2o").option("key","key_one").save("key_two")
 
 In both examples, "key\_one" is used.
 
-\textbf{Usage in Scala}
-
-\textbf{Reading from \texttt{H2OFrame}}
-
-Let's suppose we have a \texttt{H2OFrame}. The shortest way to load a \texttt{DataFrame} from \texttt{H2OFrame} with default settings is:
-\begin{lstlisting}[style=Scala]
-val df = sqlContext.read.h2o(frame.key)
-\end{lstlisting}
-
-There are two more ways to load a \texttt{DataFrame} from \texttt{H2OFrame} allowing us to specify additional options:
-\begin{lstlisting}[style=Scala]
-val df = sqlContext.read.format("h2o").option("key",frame.key.toString).load()
-\end{lstlisting}
-or
-\begin{lstlisting}[style=Scala]
-val df = sqlContext.read.format("h2o").load(frame.key.toString)
-\end{lstlisting}
-
-\textbf{Saving to \texttt{H2OFrame}}
-
-Let's suppose we have \texttt{DataFrame} df. The shortest way to save the \texttt{DataFrame} as \texttt{H2OFrame} with default settings is:
-\begin{lstlisting}[style=Scala]
-df.write.h2o("new_key")
-\end{lstlisting}
-
-There are two more ways to save the \texttt{DataFrame} as \texttt{H2OFrame} allowing us to specify additional options:
-\begin{lstlisting}[style=Scala]
-df.write.format("h2o").option("key","new_key").save()
-\end{lstlisting}
-or
-\begin{lstlisting}[style=Scala]
-df.write.format("h2o").save("new_key")
-\end{lstlisting}
-
-All three variants save the \texttt{DataFrame} as \texttt{H2OFrame} with the key "new\_key". They won't succeed if a \texttt{H2OFrame} with the same key already exists.
-
-\textbf{Loading \& Saving Options}
-
-If the key is specified as 'key' option, and also in the load/save method, the option 'key' is preferred:
-\begin{lstlisting}[style=Scala]
-val df = sqlContext.read.from("h2o").option("key","key_one").load("key_two")
-\end{lstlisting}
-or
-\begin{lstlisting}[style=Scala]
-val df = sqlContext.read.from("h2o").option("key","key_one").save("key_two")
-\end{lstlisting}
-
-In both examples, "key\_one" is used.
-
-\textbf{Specifying Saving Mode}
-
-There are four save modes available when saving data using Data Source API- see \url{http://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes}
-
-\begin{itemize}
-\item If "append" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and a new one created with the same key. The new frame contains the union of all rows from the original \texttt{H2OFrame} and the appended \texttt{DataFrame}.
-\item If "overwrite" mode is used, an existing \texttt{H2OFrame} with the same key is deleted, and new one with the new rows is created with the same key.
-\item If "error" mode is used, and a \texttt{H2OFrame} with the specified key already exists, an exception is thrown.
-\item If "ignore" mode is used, and a \texttt{H2OFrame} with the specified key already exists, no data are changed.
-\end{itemize}
 
