@@ -1,5 +1,5 @@
 h2o.ensemble <- function(x, y, training_frame, 
-                         model_id = "", validation_frame = NULL,
+                         model_id = NULL, validation_frame = NULL,
                          family = c("AUTO", "binomial", "gaussian"),
                          learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper", "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"),
                          metalearner = "h2o.glm.wrapper",
