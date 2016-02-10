@@ -124,8 +124,8 @@ h2o.grid <- function(algorithm,
 #' Get a grid object from H2O distributed K/V store.
 #'
 #' @param grid_id  ID of existing grid object to fetch
-#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "auc", "r2"
-#' @param sort_order Specify if sort order should be increasing/decreasing with "asc" and "desc"
+#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
+#' @param decreasing Specify whether sort order should be decreasing
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -142,9 +142,8 @@ h2o.grid <- function(algorithm,
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
 #' }
 #' @export
-h2o.getGrid <- function(grid_id, sort_by, sort_order) {
-  json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, sort_order))
-#  browser()
+h2o.getGrid <- function(grid_id, sort_by, decreasing) {
+  json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, decreasing))
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })

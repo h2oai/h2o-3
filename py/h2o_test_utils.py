@@ -405,9 +405,9 @@ def validate_grid_parameters(grid_parameters, actual_parameters):
     # TODO: training_frame, validation_frame
 
 
-def fetch_and_validate_grid_sort(a_node, key, sort_by, sort_order):
-    # key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')
-    grid = a_node.grid(key=key, sort_by=sort_by, sort_order=sort_order)
+def fetch_and_validate_grid_sort(a_node, key, sort_by, decreasing):
+    # key='kmeans_prostate_grid', sort_by='totss', decreasing=TRUE)
+    grid = a_node.grid(key=key, sort_by=sort_by, decreasing=decreasing)
     training_metrics = grid['training_metrics']
 
     # check sorting:
@@ -419,12 +419,12 @@ def fetch_and_validate_grid_sort(a_node, key, sort_by, sort_order):
                 criteria.append(v)
                 break
     unsorted = list(criteria)
-    criteria.sort(reverse=(sort_order == 'desc'))
+    criteria.sort(reverse=decreasing)
 
     # print("criteria sorted: " + repr(criteria))
     # print("original: " + repr(unsorted))
     
-    assert unsorted == criteria, "FAIL: model metrics were not sorted correctly by criterion: " + key + ", " + sort_by + ", " + sort_order
+    assert unsorted == criteria, "FAIL: model metrics were not sorted correctly by criterion: " + key + ", " + sort_by + ", decreasing: " + decreasing
 
     for i in range(len(grid['model_ids'])):
         assert grid['model_ids'][i]['name'] == training_metrics[i]['model']['name'], "FAIL: model_ids not sorted in the same order as training_metrics for grid: " + key + ", index: " + str(i)
