@@ -197,8 +197,12 @@ The GLM suite includes:
 	> - If the family is **poisson**, the data must be numeric. 
 	> - If the family is **gamma**, the data must be numeric and continuous (**Int**). 
 	> - If the family is **tweedie**, the data must be numeric and continuous (**Int**). 
+	> - If the family is **laplace**, the data must be numeric and continuous (**Int**). 
+	> - If the family is **quantile**, the data must be numeric and continuous (**Int**). 
 
 - **tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
+
+- **quantile_alpha**: (Only applicable if *Quantile* is selected for **Family**) Specify the quantile to be used for Quantile Regression.
 
 - **tweedie_link_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
@@ -511,8 +515,8 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification, deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
@@ -521,6 +525,8 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
 - **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
 - **binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
@@ -528,7 +534,6 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 - **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
-
 
 - **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
