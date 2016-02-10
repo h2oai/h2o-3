@@ -23,7 +23,8 @@ function() {
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_extractmodelparams.R"),
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_predict.R"),
     h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch_result.R"))
+    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch_result.R"),
+    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch_random.R"))
 
     checkCodeExamplesInDir(approvedRCodeExamples, h2o:::.h2o.locate("GBM_Vignette_code_examples"))
 

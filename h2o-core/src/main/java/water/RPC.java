@@ -357,7 +357,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
         _computed = true;
       }
       _dt.setException(ex);
-      sendAck();
+      sendAck();  // PUBDEV-2630
       return false;
     }
 

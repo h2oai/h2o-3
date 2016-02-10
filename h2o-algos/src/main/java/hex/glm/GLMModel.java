@@ -722,7 +722,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double [] zValues(){return _zvalues.clone();}
     public double [] pValues(){
       double [] res = zValues();
-      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residualDegreesOfFreedom()):new NormalDistribution();
+      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residual_degrees_of_freedom()):new NormalDistribution();
       for(int i = 0; i < res.length; ++i)
         res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
       return res;

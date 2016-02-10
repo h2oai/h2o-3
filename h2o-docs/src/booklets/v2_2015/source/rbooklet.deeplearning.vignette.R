@@ -25,6 +25,7 @@ function() {
     h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_varimp.R"),
     h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R"),
     h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R"),
+    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.R"),
     h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R"),
     h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_savemodel.R"),
     h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.R"),

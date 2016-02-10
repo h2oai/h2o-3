@@ -56,7 +56,7 @@ airlines.hex$TravelTime <- travelTime
 scatter_plot(airlines.hex, "Distance", "TravelTime")
 
 ## Imputation : You can also choose to impute missing values by taking the mean of subsets.
-airlines.hex <- h2o.impute(data = airlines.hex, column = "Distance", by = c("Origin","Dest"))
+h2o.impute(data = airlines.hex, column = "Distance", by = c("Origin","Dest"))
 scatter_plot(airlines.hex, "Distance", "TravelTime")
 
 ## Clean weather dataset, convert dates column to multiple year, month, day columns

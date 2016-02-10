@@ -2,8 +2,10 @@ package water.api;
 
 import water.*;
 import water.api.KeyV3.JobKeyV3;
-import water.util.Log;
 import water.util.PojoUtils;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /** Schema for a single Job. */
 public class JobV3 extends RequestSchema<Job, JobV3> {
@@ -37,6 +39,9 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String exception;
 
+  @API(help="stacktrace", direction=API.Direction.OUTPUT)
+  public String stacktrace;
+
   //==========================
   // Custom adapters go here
 
@@ -67,6 +72,12 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
     Throwable ex = job.ex();
     if( ex != null ) status = "FAILED";
     exception = ex == null ? null : ex.toString();
+    if (ex!=null) {
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      ex.printStackTrace(pw);
+      stacktrace = sw.toString();
+    }
     msec = job.msec();
 
     Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);

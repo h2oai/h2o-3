@@ -479,6 +479,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
         manualInterval) {
       checkMemoryFootPrint();
+      if (error_count() > 0)
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
 
       // If validation is specified we use a model for scoring, so we need to
       // update it!  First we save model with trees (i.e., make them available

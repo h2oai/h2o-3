@@ -19,18 +19,18 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
   }
 
   @Override
-  public double residualDeviance() {return _resDev;}
+  public double residual_deviance() {return _resDev;}
 
   @Override
-  public double nullDeviance() {return _nullDev;}
+  public double null_deviance() {return _nullDev;}
 
   @Override
-  public long residualDegreesOfFreedom(){
+  public long residual_degrees_of_freedom(){
     return _residualDegressOfFreedom;
   }
 
   @Override
-  public long nullDegreesOfFreedom() {return _nullDegressOfFreedom;}
+  public long null_degrees_of_freedom() {return _nullDegressOfFreedom;}
 
   @Override
   public String toString() {
@@ -70,18 +70,18 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     }
 
     @Override
-    public double residualDeviance() {return _resDev;}
+    public double residual_deviance() {return _resDev;}
 
     @Override
-    public double nullDeviance() {return _nullDev;}
+    public double null_deviance() {return _nullDev;}
 
     @Override
-    public long residualDegreesOfFreedom(){
+    public long residual_degrees_of_freedom(){
       return _residualDegressOfFreedom;
     }
 
     @Override
-    public long nullDegreesOfFreedom() {return _nullDegressOfFreedom;}
+    public long null_degrees_of_freedom() {return _nullDegressOfFreedom;}
 
     @Override
     public String toString() {
