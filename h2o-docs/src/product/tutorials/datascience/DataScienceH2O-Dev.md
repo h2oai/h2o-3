@@ -1337,6 +1337,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **balance_classes**: (Applicable for classification only) Oversample the minority classes to balance the class distribution. This option is not selected by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter. 
 
+- **standardize**: If enabled, automatically standardize the data (mean 0, variance 0). If disabled, the user must provide properly scaled input data.
+
 - **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
 - **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
