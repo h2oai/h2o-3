@@ -82,7 +82,7 @@ class H2OFrame(object):
     """
     if not self._ex._cache.names_valid():
       self._ex._cache.flush()
-      self._frame()._ex._cache.fill()
+      self._frame(True)
     return self._ex._cache.names
 
   @names.setter
@@ -104,7 +104,7 @@ class H2OFrame(object):
     """
     if not self._ex._cache.nrows_valid():
       self._ex._cache.flush()
-      self._frame()
+      self._frame(True)
     return self._ex._cache.nrows
 
   @property
@@ -116,7 +116,7 @@ class H2OFrame(object):
     """
     if not self._ex._cache.ncols_valid():
       self._ex._cache.flush()
-      self._frame()
+      self._frame(True)
     return self._ex._cache.ncols
 
   @property
@@ -146,7 +146,7 @@ class H2OFrame(object):
     """
     if not self._ex._cache.types_valid():
       self._ex._cache.flush()
-      self._frame()._ex._cache.fill()
+      self._frame(True)
     return self._ex._cache.types
 
   @property
@@ -416,7 +416,11 @@ class H2OFrame(object):
     print("\n")
     self.summary()
 
-  def _frame(self):  self._ex._eager_frame(); return self
+  def _frame(self, fill_cache=False):
+    self._ex._eager_frame()
+    if fill_cache:
+      self._ex._cache.fill()
+    return self
 
   def head(self,rows=10,cols=200):
     """Analogous to Rs `head` call on a data.frame.
