@@ -144,6 +144,7 @@ h2o.grid <- function(algorithm,
 #' @export
 h2o.getGrid <- function(grid_id, sort_by, sort_order) {
   json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, sort_order))
+#  browser()
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })
@@ -163,7 +164,9 @@ h2o.getGrid <- function(grid_id, sort_by, sort_order) {
       failed_params = failed_params,
       failure_details = failure_details,
       failure_stack_traces = failure_stack_traces,
-      failed_raw_params = failed_raw_params)
+      failed_raw_params = failed_raw_params,
+      summary_table     = json$summary_table
+      )
 }
 
 

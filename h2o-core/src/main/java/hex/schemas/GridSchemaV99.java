@@ -97,6 +97,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
         }
       }
     }
+    if( sort_order==null ) sort_order="asc";
 
     // Are we sorting by model metrics?
     if (null != sort_by && ! sort_by.isEmpty()) {

@@ -81,7 +81,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       // fall through
     }
 
-    if (null == criterion && null != cm) {
+    if (null == method && null != cm) {
       try {
         method = cm.getClass().getMethod(criterion);
       }
@@ -94,12 +94,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     double c;
     try {
       c = (double) method.invoke(m);
-    }
-    catch (Exception e) {
-      throw new H2OIllegalArgumentException(
-              "Failed to get metric: " + criterion + " from ModelMetrics object: " + m,
-              "Failed to get metric: " + criterion + " from ModelMetrics object: " + m + ", criterion: " + method + ", exception: " + e
-      );
+    } catch(Exception fallthru) {
+      try {
+        c = (double)method.invoke(cm);
+      } catch (Exception e) {
+        throw new H2OIllegalArgumentException(
+                "Failed to get metric: " + criterion + " from ModelMetrics object: " + m,
+                "Failed to get metric: " + criterion + " from ModelMetrics object: " + m + ", criterion: " + method + ", exception: " + e
+        );
+      }
     }
     return c;
   }
