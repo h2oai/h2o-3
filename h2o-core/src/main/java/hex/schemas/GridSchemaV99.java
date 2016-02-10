@@ -6,6 +6,7 @@ import hex.grid.Grid;
 import water.DKV;
 import water.Key;
 import water.api.*;
+import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,9 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   @API(help = "Cross validation model metrics for the returned models; only returned if sort_by is set", direction = API.Direction.OUTPUT)
   public ModelMetricsBase[] cross_validation_metrics;
 
+  @API(help="Summary", direction=API.Direction.OUTPUT)
+  TwoDimTableBase summary_table;
+
   @Override
   public Grid createImpl() {
     return Grid.GRID_PROTO;
@@ -77,6 +81,20 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     for (Key k : gridModelKeys) {
       if (k != null && DKV.get(k) != null) {
         modelKeys.add(k);
+      }
+    }
+
+    // Default sort order -- TODO: Outsource
+    if (sort_by == null && modelKeys.size() > 0 && modelKeys.get(0) != null) {
+      Model m = DKV.getGet(modelKeys.get(0));
+      if (m!=null && m.isSupervised()) {
+        if (m._output.nclasses()>1) {
+          sort_by = "logloss";
+          sort_order = "asc";
+        } else {
+          sort_by = "residual_deviance";
+          sort_order = "asc";
+        }
       }
     }
 
@@ -101,12 +119,13 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
           if (null != o._cross_validation_metrics) cross_validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._cross_validation_metrics).fillFromImpl(o._cross_validation_metrics);
         }
       }
-
     }
 
     KeyV3.ModelKeyV3[] modelIds = new KeyV3.ModelKeyV3[modelKeys.size()];
+    Key<Model>[] keys = new Key[modelKeys.size()];
     for (int i = 0; i < modelIds.length; i++) {
       modelIds[i] = new KeyV3.ModelKeyV3(modelKeys.get(i));
+      keys[i] = modelIds[i].key();
     }
     grid_id = new KeyV3.GridKeyV3(grid._key);
     model_ids = modelIds;
@@ -115,6 +134,10 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     failure_details = grid.getFailureDetails();
     failure_stack_traces = grid.getFailureStackTraces();
     failed_raw_params = grid.getFailedRawParameters();
+
+    TwoDimTable t = grid.createSummaryTable(keys, sort_by, sort_order);
+    if (t!=null)
+      summary_table = new TwoDimTableBase().fillFromImpl(t);
     return this;
   }
 
