@@ -486,6 +486,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   } // Output
 
+  protected String[][] scoringDomains() {return _output._domains;}
   public O _output; // TODO: move things around so that this can be protected
 
   public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
@@ -1041,13 +1042,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.nl();
     sb.ip("// Column domains. The last array contains domain of response column.").nl();
     sb.ip("public static final String[][] DOMAINS = new String[][] {").nl();
-    for (int i=0; i<_output._domains.length; i++) {
+    String [][] domains = scoringDomains();
+    for (int i=0; i< domains.length; i++) {
       final int idx = i;
-      final String[] dom = _output._domains[i];
+      final String[] dom = domains[i];
       final String colInfoClazz = modelName+"_ColInfo_"+i;
       sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
       if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
-      if (i!=_output._domains.length-1) sb.p(',');
+      if (i!=domains.length-1) sb.p(',');
       sb.nl();
       // Right now do not generate the class representing column
       // since it does not hold any interesting information except String array holding domain
