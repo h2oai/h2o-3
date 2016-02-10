@@ -32,7 +32,7 @@ public class FrameMeta extends Iced {
   private int _catFeat=-1; // count of categorical features
   private int _nclass=-1;  // number of classes if classification problem
   private double[][] _dummies=null; // dummy predictions
-  ColMeta[] _cols;
+  public ColMeta[] _cols;
 
   public final static String[] METAVALUES = new String[]{
     "DatasetName", "NRow", "NCol", "LogNRow", "LogNCol", "NACount", "NAFraction",
