@@ -684,7 +684,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String [][] domains = _output._domains;
     if(_parms._family == Family.binomial && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
       domains = domains.clone();
-      _output._domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
+      domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
     }
     return domains;
   }
