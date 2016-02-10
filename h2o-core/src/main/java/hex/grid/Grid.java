@@ -313,14 +313,13 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
   public TwoDimTable createSummaryTable(Key<Model>[] model_ids, String sort_by, String sort_order) {
     if (_hyper_names==null) return null;
-    int extra_len = sort_by != null ? 3 : 2;
+    int extra_len = sort_by != null ? 2 : 1;
     String[] colTypes = new String[_hyper_names.length+extra_len]; Arrays.fill(colTypes, "string");
     String[] colFormats = new String[_hyper_names.length+extra_len]; Arrays.fill(colFormats, "%s");
     String[] colNames = Arrays.copyOf(_hyper_names, _hyper_names.length+extra_len);
-    colNames[_hyper_names.length+0] = "status_ok";
-    colNames[_hyper_names.length+1] = "model_ids";
+    colNames[_hyper_names.length] = "model_ids";
     if (sort_by!=null)
-      colNames[_hyper_names.length+2] = sort_by;
+      colNames[_hyper_names.length+1] = sort_by;
     TwoDimTable table = new TwoDimTable("Hyper-Parameter Search Summary",
             sort_by != null ? "ordered by " + (sort_order.equals("asc") ? "ascending " : "descending ") + sort_by : null,
             new String[_models.size()], colNames, colTypes, colFormats, "");
@@ -331,9 +330,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
       int j;
       for (j = 0; j < _hyper_names.length; ++j)
         table.set(i, j, PojoUtils.getFieldValue(parms, _hyper_names[j], _field_naming_strategy));
-      table.set(i, j + 0, m._output._job.isDone() ? "OK" : m._output._job.isCrashed() ? "Failed" : "N/A");
-      table.set(i, j + 1, km.toString());
-      if (sort_by != null) table.set(i, j + 2, ModelMetrics.getMetricFromModel(km, sort_by));
+      table.set(i, j, km.toString());
+      if (sort_by != null) table.set(i, j+1, ModelMetrics.getMetricFromModel(km, sort_by));
       i++;
     }
     Log.info(table);
