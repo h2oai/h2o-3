@@ -27,9 +27,8 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   @API(help = "Model performance metric to sort by.", required = false, direction = API.Direction.INOUT)
   public String sort_by;
 
-  @API(help = "Sort order, \"desc\" or \"asc\".", required = false, direction = API.Direction.INOUT)
-  public String sort_order;
-
+  @API(help = "Specify whether sort order should be decreasing.", required = false, direction = API.Direction.INOUT)
+  public boolean decreasing;
 
   //
   // Outputs
@@ -90,19 +89,18 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
       if (m!=null && m.isSupervised()) {
         if (m._output.nclasses()>1) {
           sort_by = "logloss";
-          sort_order = "asc";
+          decreasing = false;
         } else {
           sort_by = "residual_deviance";
-          sort_order = "asc";
+          decreasing = false;
         }
       }
     }
-    if( sort_order==null ) sort_order="asc";
 
     // Are we sorting by model metrics?
     if (null != sort_by && ! sort_by.isEmpty()) {
       // sort the model keys
-      modelKeys = ModelMetrics.sortModelsByMetric(sort_by, sort_order, modelKeys);
+      modelKeys = ModelMetrics.sortModelsByMetric(sort_by, decreasing, modelKeys);
 
       // fill the metrics arrays
       training_metrics = new ModelMetricsBase[modelKeys.size()];
@@ -136,7 +134,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     failure_stack_traces = grid.getFailureStackTraces();
     failed_raw_params = grid.getFailedRawParameters();
 
-    TwoDimTable t = grid.createSummaryTable(keys, sort_by, sort_order);
+    TwoDimTable t = grid.createSummaryTable(keys, sort_by, decreasing);
     if (t!=null)
       summary_table = new TwoDimTableBase().fillFromImpl(t);
     return this;

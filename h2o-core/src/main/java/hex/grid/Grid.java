@@ -311,7 +311,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
   @Override public Class<water.api.KeyV3.GridKeyV3> makeSchema() { return water.api.KeyV3.GridKeyV3.class; }
 
-  public TwoDimTable createSummaryTable(Key<Model>[] model_ids, String sort_by, String sort_order) {
+  public TwoDimTable createSummaryTable(Key<Model>[] model_ids, String sort_by, boolean decreasing) {
     if (_hyper_names==null || model_ids == null || model_ids.length == 0) return null;
     int extra_len = sort_by != null ? 2 : 1;
     String[] colTypes = new String[_hyper_names.length+extra_len]; Arrays.fill(colTypes, "string");
@@ -321,7 +321,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
     if (sort_by!=null)
       colNames[_hyper_names.length+1] = sort_by;
     TwoDimTable table = new TwoDimTable("Hyper-Parameter Search Summary",
-            sort_by != null ? "ordered by " + (sort_order.equals("asc") ? "ascending " : "descending ") + sort_by : null,
+            sort_by != null ? "ordered by " + (decreasing ? "decreasing " : "increasing ") + sort_by : null,
             new String[_models.size()], colNames, colTypes, colFormats, "");
     int i=0;
     for (Key<Model> km : model_ids) {

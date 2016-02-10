@@ -80,14 +80,14 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     grid = a_node.grid(key='gbm_prostate_regression_grid_max_20mS')
     assert len(grid['model_ids']) < 12, "FAIL: using max_runtime_secs, expected less than 12 models, got: " + str(len(grid['model_ids']))
 
-#    grid = a_node.grid(key='kmeans_prostate_grid', sort_by='', sort_order='desc')
-    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='desc')
-    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='desc')
-    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='desc')
+#    grid = a_node.grid(key='kmeans_prostate_grid', sort_by='', decreasing=True)
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', decreasing=True)
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', decreasing=True)
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', decreasing=True)
 
-    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', sort_order='asc')
-    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', sort_order='asc')
-    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', sort_order='asc')
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', decreasing=False)
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='tot_withinss', decreasing=False)
+    h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='betweenss', decreasing=False)
 
 #    import sys
 #    sys.exit(0)

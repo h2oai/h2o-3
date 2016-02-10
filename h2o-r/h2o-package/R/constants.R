@@ -114,15 +114,15 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)
-.h2o.__GRIDS <- function(grid_id, sort_by, sort_order) {
+.h2o.__GRIDS <- function(grid_id, sort_by, decreasing) {
     if (missing(grid_id)) {
         "/Grids"
     } else {
         url <- paste0("Grids/", grid_id)
         if (! missing(sort_by)) {
             url <- paste0(url, "?sort_by=", sort_by)
-            if (! missing(sort_order)) {
-                url <- paste0(url, "&sort_order=", sort_order)
+            if (! missing(decreasing)) {
+                url <- paste0(url, "&decreasing=", decreasing)
             }
         }
          url
