@@ -66,6 +66,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   static public double getMetricFromModel(Key<Model> key, String criterion) {
     Model model = DKV.getGet(key);
     if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    if (null == criterion || criterion.equals("")) throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
     ModelMetrics m =
             model._output._cross_validation_metrics != null ?
                     model._output._cross_validation_metrics :
@@ -89,7 +90,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
         // fall through
       }
     }
-    if (null == method) throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
+    if (null == method)
+      throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
 
     double c;
     try {
@@ -110,17 +112,17 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   private static class MetricsComparator implements Comparator<Key<Model>> {
     String _sort_by = null;
-    boolean descending = true;
+    boolean decreasing = false;
 
-    public MetricsComparator(String sort_by, String sort_direction) {
+    public MetricsComparator(String sort_by, boolean decreasing) {
       this._sort_by = sort_by;
-      this.descending = ! "asc".equals(sort_direction);
+      this.decreasing = decreasing;
     }
 
     public int compare(Key<Model> key1, Key<Model> key2) {
       double c1 = getMetricFromModel(key1, _sort_by);
       double c2 = getMetricFromModel(key2, _sort_by);
-      if (descending) {
+      if (decreasing) {
         return (c2 - c1 > 0 ? 1 : -1);
       } else {
         return (c1 - c2 > 0 ? 1 : -1);
@@ -132,14 +134,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
    * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "errCount",
    * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "F1", "F2", "F0point5". . .
    * @param sort_by criterion by which we should sort
+   * @param decreasing sort by decreasing metrics or not
    * @param modelKeys keys of models to sortm
    * @return keys of the models, sorted by the criterion
    */
-  public static List<Key<Model>> sortModelsByMetric(String sort_by, String sort_order, List<Key<Model>>modelKeys) {
+  public static List<Key<Model>> sortModelsByMetric(String sort_by, boolean decreasing, List<Key<Model>>modelKeys) {
     List<Key<Model>> sorted = new ArrayList<>();
     sorted.addAll(modelKeys);
 
-    Comparator<Key<Model>> c = new MetricsComparator(sort_by, sort_order);
+    Comparator<Key<Model>> c = new MetricsComparator(sort_by, decreasing);
 
     Collections.sort(sorted, c);
     return sorted;
@@ -262,7 +265,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
      * Having computed a MetricBuilder, this method fills in a ModelMetrics
      * @param m Model
      * @param f Scored Frame
-     * @param adaptedFrame
+     * @param adaptedFrame Adapted Frame
      *@param preds Predictions of m on f (optional)  @return Filled Model Metrics object
      */
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);
