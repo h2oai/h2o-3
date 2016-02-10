@@ -484,6 +484,8 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
+- **score\_tree\_interval**: Score the model after every so many trees. Disabled if set to 0.
+
 - **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
 - **fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
@@ -1076,6 +1078,8 @@ There was some code cleanup and refactoring to support the following features:
 - **col\_sample_rate**: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
+
+- **score\_tree\_interval**: Score the model after every so many trees. Disabled if set to 0.
 
 - **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
  
