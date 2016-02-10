@@ -197,12 +197,8 @@ The GLM suite includes:
 	> - If the family is **poisson**, the data must be numeric. 
 	> - If the family is **gamma**, the data must be numeric and continuous (**Int**). 
 	> - If the family is **tweedie**, the data must be numeric and continuous (**Int**). 
-	> - If the family is **laplace**, the data must be numeric and continuous (**Int**). 
-	> - If the family is **quantile**, the data must be numeric and continuous (**Int**). 
 
 - **tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
-
-- **quantile_alpha**: (Only applicable if *Quantile* is selected for **Family**) Specify the quantile to be used for Quantile Regression.
 
 - **tweedie_link_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie link power. 
 
@@ -660,6 +656,8 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 
 - **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0. 
 
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
 
 
 ###Interpreting a Naïve Bayes Model
@@ -832,7 +830,7 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
-
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 
 
@@ -1069,6 +1067,8 @@ There was some code cleanup and refactoring to support the following features:
 	> - If the distribution is **gamma**, the response column must be  numeric. 
 	> - If the distribution is **tweedie**, the response column must be numeric. 
 	> - If the distribution is **gaussian**, the response column must be numeric. 
+	> - If the distribution is **laplace**, the data must be numeric and continuous (**Int**). 
+	> - If the distribution is **quantile**, the data must be numeric and continuous (**Int**). 
 
 
 - **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
@@ -1115,9 +1115,13 @@ There was some code cleanup and refactoring to support the following features:
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
 - **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
-- **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
+- **quantile_alpha**: (Only applicable if *Quantile* is selected for **distribution**) Specify the quantile to be used for Quantile Regression.
+
+- **tweedie_power**: (Only applicable if *Tweedie* is selected for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
 - **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
@@ -1358,9 +1362,11 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 	> - Use **Absolute**, **Quadratic**, or **Huber** for regression
 	> - Use  **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
 
-- **distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+- **distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile or tweedie.
 
-- **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
+- **quantile_alpha**: (Only applicable if *Quantile* is selected for **distribution**) Specify the quantile to be used for Quantile Regression.
+
+- **tweedie_power**: (Only applicable if *Tweedie* is selected for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
 - **score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring.  
 
@@ -1388,6 +1394,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     - **misclassification** 
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
+
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 - **autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
 	>**Note**: Cross-validation is not supported when autoencoder is enabled.   
