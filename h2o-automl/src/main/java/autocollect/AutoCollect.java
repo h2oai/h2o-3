@@ -120,6 +120,7 @@ public class AutoCollect {
       long start = System.currentTimeMillis();
       double elapsed = 0;
       long seedSplit;
+      double[] splitRatios = new double[]{0.8,0.2};
       Thread resource = new Thread(new Runnable() {
         public void run() {
           //Collect resources info...
@@ -141,25 +142,25 @@ public class AutoCollect {
         Model m=null;
         ModelBuilder builder;
         Frame[] fs=null;
+        seedSplit=getRNG(new Random().nextLong()).nextLong();
+        Key[] trainTestKeys = new Key[]{Key.make(),Key.make()};
         try {
-          fs = ShuffleSplitFrame.shuffleSplitFrame(_fr, new Key[]{Key.make(),Key.make()}, new double[]{0.8,0.2}, seedSplit=getRNG(new Random().nextLong()).nextLong());
-          builder = selectNewBuilder(seedSplit);
-          builder._parms._train = fs[0]._key;
-          builder._parms._valid = fs[1]._key;
-          builder._parms._response_column = _fr.name(_resp);
-          builder._parms._ignored_columns = ignored();
-          resource.start();                        // start resource collector thread
-          m = (Model) builder.trainModel().get();  // model train/build
-          resource.interrupt();                    // stop resource collector thread
+
+          /// MAIN WORK
+          fs = ShuffleSplitFrame.shuffleSplitFrame(_fr, trainTestKeys, splitRatios, seedSplit);  // split data
+          builder = selectNewBuilder(seedSplit, fs);                                             // select new ModelBuilder
+          resource.start();                                                                      // start resource collector thread
+          m = (Model) builder.trainModel().get();                                                // model train/build
+          resource.interrupt();                                                                  // stop resource collector thread
+          ///
+
           elapsed = (System.currentTimeMillis() - start )/ 1000.;
           logScoreHistory(m._output, getConfig(m._parms));
           conn.commit();
         } catch( IllegalArgumentException iae) {
           iae.printStackTrace();
         } finally {
-          if(!resource.isInterrupted()){
-            resource.interrupt();
-          }
+          if( !resource.isInterrupted() ) resource.interrupt();
           if( m!=null ) m.delete();
           if( fs!=null )
             for(Frame f: fs) f.delete();
@@ -235,18 +236,24 @@ public class AutoCollect {
     }
   }
 
-  private ModelBuilder selectNewBuilder(long seedSplit) {
+  private ModelBuilder selectNewBuilder(long seedSplit, Frame[] testTrain) {
     byte algo=_algo;
     algo=GLM;
+    ModelBuilder m;
     if( algo == ANY || algo==DL ) algo = (byte)getRNG(new Random().nextLong()).nextInt((int)GLM);  // TODO: currently disabling DL+GLM
     switch(algo) {
-      case RF:  return makeDRF(seedSplit);
-      case GBM: return makeGBM(seedSplit);
-      case GLM: return makeGLM(seedSplit);
-      case DL:  return makeDL(seedSplit);
+      case RF:  m = makeDRF(seedSplit); break;
+      case GBM: m = makeGBM(seedSplit); break;
+      case GLM: m = makeGLM(seedSplit); break;
+      case DL:  m = makeDL(seedSplit);  break;
       default:
         throw new RuntimeException("Unknown algo type: " + algo);
     }
+    m._parms._train = testTrain[0]._key;
+    m._parms._valid = testTrain[1]._key;
+    m._parms._response_column = _fr.name(_resp);
+    m._parms._ignored_columns = ignored();
+    return m;
   }
 
   DRF makeDRF(long seedSplit) { return new DRF(genRFParams(seedSplit));  }
