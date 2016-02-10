@@ -492,6 +492,7 @@ setClass("H2OModelFuture", representation(job_key="character", model_id="charact
 #' @slot failure_stack_traces  list of stack traces corresponding to model failures reported by
 #'                             failed_params and failure_details fields
 #' @slot failed_raw_params list of failed raw parameters
+#' @slot summary_table table of models built with parameters and metric information.
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @aliases H2OGrid
 #' @export
