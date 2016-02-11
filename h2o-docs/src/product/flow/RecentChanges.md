@@ -11,8 +11,9 @@ These changes represent features that have been added since the previous release
 
 #####API
 
+- [PUBDEV-1798](https://0xdata.atlassian.net/browse/PUBDEV-1798): Ability to conduct a randomized grid search with optional limit of max. number of models or max. runtime
+- [PUBDEV-1822](https://0xdata.atlassian.net/browse/PUBDEV-1822): Add score_tree_interval to GBM to score every n'th tree
 - [PUBDEV-2311](https://0xdata.atlassian.net/browse/PUBDEV-2311): Make it easy for clients to sort by model metric of choice
-- [PUBDEV-1798](https://0xdata.atlassian.net/browse/PUBDEV-1798): Ability to conduct a randomized grid search
 - [PUBDEV-2548](https://0xdata.atlassian.net/browse/PUBDEV-2548): Add ability to set a maximum runtime limit on all models
 - [PUBDEV-2632](https://0xdata.atlassian.net/browse/PUBDEV-2632): Return a grid search summary as a table with desired sort order and metric
 
@@ -40,7 +41,6 @@ The following changes are improvements to existing features (which includes chan
 
 #####Algorithms
 
-- [PUBDEV-1822](https://0xdata.atlassian.net/browse/PUBDEV-1822): Add score_tree_interval to GBM to score every n'th tree
 - [PUBDEV-2233](https://0xdata.atlassian.net/browse/PUBDEV-2233): Adjust string substitution and global string substitution to do in place updates on a string column.
 
 
