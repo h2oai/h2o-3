@@ -12,6 +12,8 @@ These changes represent features that have been added since the previous release
 #####API
 
 - [PUBDEV-2311](https://0xdata.atlassian.net/browse/PUBDEV-2311): Make it easy for clients to sort by model metric of choice
+- [PUBDEV-2338](https://0xdata.atlassian.net/browse/PUBDEV-2338): Add ability to set a maximum runtime limit on all models
+- [PUBDEV-2632](https://0xdata.atlassian.net/browse/PUBDEV-2632): Return a grid search summary as a table with desired sort order and metric
 
 #####Algorithms
 
@@ -22,8 +24,7 @@ These changes represent features that have been added since the previous release
 - [PUBDEV-2402](https://0xdata.atlassian.net/browse/PUBDEV-2402): Add observations weights to quantile computation
 - [PUBDEV-2469](https://0xdata.atlassian.net/browse/PUBDEV-2469): For GBM/DRF, add ability to pick columns to sample from once per tree, instead of at every level
 - [PUBDEV-2594](https://0xdata.atlassian.net/browse/PUBDEV-2212): Quantile regression for GBM and Deep Learning
-
-
+- [PUBDEV-2625](https://0xdata.atlassian.net/browse/PUBDEV-2625): Add recall and specificity to default ROC metrics
 
 #####Python
 
@@ -37,6 +38,7 @@ The following changes are improvements to existing features (which includes chan
 
 #####Algorithms
 
+- [PUBDEV-1822](https://0xdata.atlassian.net/browse/PUBDEV-1822): Add score_tree_interval to GBM to score every n'th tree
 - [PUBDEV-2233](https://0xdata.atlassian.net/browse/PUBDEV-2233): Adjust string substitution and global string substitution to do in place updates on a string column.
 
 
