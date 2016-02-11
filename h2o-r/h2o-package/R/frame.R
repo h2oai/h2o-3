@@ -1354,8 +1354,8 @@ h2o.levels <- function(x, i) {
 #' @export
 h2o.nlevels <- function(x) {
   levels <- h2o.levels(x)
-  if (!is.list(levels)) levels <- list(levels)
-  lapply(levels,length)
+  if (!is.list(levels)) length(levels)
+  else lapply(levels,length)
 }
 #'
 #' Set Levels of H2O Factor Column

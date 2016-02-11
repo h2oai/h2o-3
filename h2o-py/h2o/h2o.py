@@ -668,7 +668,7 @@ def cluster_status():
 def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
          license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None, 
          strict_version_check=True, proxy=None, https=False, insecure=False, username=None, 
-         password=None, max_mem_size_GB=None, min_mem_size_GB=None):
+         password=None, max_mem_size_GB=None, min_mem_size_GB=None, proxies=None, size=None):
   """Initiate an H2O connection to the specified ip and port.
 
   Parameters
@@ -699,19 +699,22 @@ def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
     Setting this to False is unsupported and should only be done when advised by technical support.
   proxy : dict
     A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
-  https: bool
+  https : bool
     Set this to True to use https instead of http.
-  insecure: bool
+  insecure : bool
     Set this to True to disable SSL certificate checking.
   username : str
     Username to login with.
   password : str
     Password to login with.
-  max_mem_size_GB: DEPRECATED
+  max_mem_size_GB : DEPRECATED
     Use max_mem_size instead.
-  min_mem_size_GB: DEPRECATED
+  min_mem_size_GB : DEPRECATED
     Use min_mem_size instead.
-  
+  proxies : DEPRECATED
+    Use proxy instead.
+  size : DEPRECATED
+    Size is deprecated.
 
   Examples
   --------
@@ -727,7 +730,7 @@ def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
   H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,
                 nthreads=nthreads,max_mem_size=max_mem_size,min_mem_size=min_mem_size,ice_root=ice_root,
                 strict_version_check=strict_version_check,proxy=proxy,https=https,insecure=insecure,username=username,
-                password=password,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB)
+                password=password,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,proxies=proxies,size=size)
   return None
 
 
