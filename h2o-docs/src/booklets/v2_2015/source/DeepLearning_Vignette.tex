@@ -206,7 +206,7 @@ H2O's Deep Learning functionalities include:
 
 \item automatic pre- and post-processing for categorical and numerical data
 
-\item automatic imputation of missing values
+\item automatic imputation of missing values (optional)
 
 \item automatic tuning of communication vs computation for best performance  %assuming this is a reference to the force_load_balance param?
 
@@ -597,7 +597,6 @@ To view the model results in Python, use the following:
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py}
 
-
 \noindent
 The training error value is based on the parameter \texttt{score\_training\_samples}, which specifies the number of randomly sampled training points used for scoring (the default value is 10,000 points). The validation error is based on the parameter \texttt{score\_validation\_samples}, which configures the same value on the validation set (by default, this is the entire validation set).
 
@@ -956,6 +955,8 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
 
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+\item \texttt{missing\_values\_handling}: Handling of missing values. Either \texttt{Skip} or \texttt{MeanImputation} (default).
 
 \item \texttt{quiet\_mode}: Logical. Enables quiet mode for less output to standard output. The default is false.
 
