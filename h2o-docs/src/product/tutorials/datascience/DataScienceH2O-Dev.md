@@ -165,7 +165,8 @@ The GLM suite includes:
 
 - Gaussian regression
 - Poisson regression
-- Binomial regression
+- Binomial regression (classification)
+- Multinomial classification
 - Gamma regression
 
 
@@ -192,11 +193,11 @@ The GLM suite includes:
 
 - **family**: Select the model type.
 	> - If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
-	> - If the family is **binomial**, the data must be categorical or numeric with exactly 2 levels/classes (**Enum** or **Int**).
-	> - If the family is **multinomial**, the data can be categorical or numeric  (**Enum** or **Int**) with more than two levels/classes.
-	> - If the family is **poisson**, the data must be numeric. 
-	> - If the family is **gamma**, the data must be numeric and continuous (**Int**). 
-	> - If the family is **tweedie**, the data must be numeric and continuous (**Int**). 
+	> - If the family is **binomial**, the data must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+	> - If the family is **multinomial**, the data can be categorical with more than two levels/classes (**Enum**).
+	> - If the family is **poisson**, the data must be numeric and non-negative (**Int**).
+	> - If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
+	> - If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
 
 - **tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power. 
 
@@ -213,7 +214,11 @@ The GLM suite includes:
 
 - **nlambdas**: (Applicable only if **lambda\_search** is enabled) Specify the number of lambdas to use in the search. The default is 100. 
 
-- **standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default. 
+- **standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default.
+
+- **remove_collinear_columns**: Automatically remove collinear columns during model-building. Collinear columns will be dropped from the model and will have 0 coefficient in the returned model. Can only be set if there is no regularization (lambda=0)
+
+- **compute_p_values**: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not set.
 
 - **non-negative**: To force coefficients to have non-negative values, check this checkbox. 
 
@@ -255,7 +260,7 @@ The GLM suite includes:
 
 - **gradient_epsilon**: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. 
 
-- **prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.  
+- **prior**: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. Note: this is simple method affecting only the intercept, you may want to use weights and offset for better fit.
 
 - **lambda\_min\_ratio**: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda\_max**). 
 
