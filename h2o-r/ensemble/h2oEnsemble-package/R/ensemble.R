@@ -227,10 +227,10 @@ h2o.ensemble <- function(x, y, training_frame,
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   if (("x" %in% names(formals(learner[l]))) && (as.character(formals(learner[l])$x)[1] != "")) {
     # Special case where we pass a subset of the colnames, x, in a custom learner function wrapper
-    fit <- match.fun(learner[l])(y = y, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+    fit <- match.fun(learner[l])(y = y, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = TRUE)
   } else {
     # Use all predictors in training set for training
-    fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
+    fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = TRUE)
   }
   #fit <- get(learner[l], mode = "function", envir = parent.frame())(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)

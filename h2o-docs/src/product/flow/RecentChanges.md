@@ -2,6 +2,120 @@
 
 ##H2O
 
+###Tukey (3.8.0.1) - 2/10/16  
+
+####New Features 
+
+These changes represent features that have been added since the previous release:
+
+
+#####API
+
+- [PUBDEV-1798](https://0xdata.atlassian.net/browse/PUBDEV-1798): Ability to conduct a randomized grid search with optional limit of max. number of models or max. runtime
+- [PUBDEV-1822](https://0xdata.atlassian.net/browse/PUBDEV-1822): Add score_tree_interval to GBM to score every n'th tree
+- [PUBDEV-2311](https://0xdata.atlassian.net/browse/PUBDEV-2311): Make it easy for clients to sort by model metric of choice
+- [PUBDEV-2548](https://0xdata.atlassian.net/browse/PUBDEV-2548): Add ability to set a maximum runtime limit on all models
+- [PUBDEV-2632](https://0xdata.atlassian.net/browse/PUBDEV-2632): Return a grid search summary as a table with desired sort order and metric
+
+
+#####Algorithms
+
+- [HEXDEV-495](https://0xdata.atlassian.net/browse/HEXDEV-495): Added ability to calculate GLM p-values for non-regularized models
+- [PUBDEV-853](https://0xdata.atlassian.net/browse/PUBDEV-853): Implemented gain/lift computation to allow using predicted data to evaluate the model performance
+- [PUBDEV-2118](https://0xdata.atlassian.net/browse/PUBDEV-2118): Compute the lift metric for binomial classification models
+- [PUBDEV-2212](https://0xdata.atlassian.net/browse/PUBDEV-2212): Add absolute loss (Laplace distribution) to GBM and Deep Learning
+- [PUBDEV-2402](https://0xdata.atlassian.net/browse/PUBDEV-2402): Add observations weights to quantile computation
+- [PUBDEV-2469](https://0xdata.atlassian.net/browse/PUBDEV-2469): For GBM/DRF, add ability to pick columns to sample from once per tree, instead of at every level
+- [PUBDEV-2594](https://0xdata.atlassian.net/browse/PUBDEV-2212): Quantile regression for GBM and Deep Learning
+- [PUBDEV-2625](https://0xdata.atlassian.net/browse/PUBDEV-2625): Add recall and specificity to default ROC metrics
+
+#####Python
+
+- [HEXDEV-399](https://0xdata.atlassian.net/browse/HEXDEV-399): Added support for Python 3.5 and better (in addition to existing support for 2.7 and better)
+
+
+####Enhancements
+
+The following changes are improvements to existing features (which includes changed default values):
+
+
+#####Algorithms
+
+- [PUBDEV-2233](https://0xdata.atlassian.net/browse/PUBDEV-2233): Adjust string substitution and global string substitution to do in place updates on a string column.
+
+
+#####Python 
+
+- [PUBDEV-1981](https://0xdata.atlassian.net/browse/PUBDEV-1956): Fix layout issues of Python docs.
+- [PUBDEV-2335](https://0xdata.atlassian.net/browse/PUBDEV-2335): as.numeric for a string column only converts strings to ints rather than reals
+- [PUBDEV-2257](https://0xdata.atlassian.net/browse/PUBDEV-2257): Table printout in Python doesn't warn the user about truncation
+- [PUBDEV-2460](https://0xdata.atlassian.net/browse/PUBDEV-2460): Version mismatch message directs user to get a matching download
+- [HEXDEV-527](https://0xdata.atlassian.net/browse/HEXDEV-527): Implement secure Python h2o.init
+- [PUBDEV-2504](https://0xdata.atlassian.net/browse/PUBDEV-2504): Check and print a warning if a proxy environment variable is found
+
+
+#####R
+
+- [PUBDEV-2335](https://0xdata.atlassian.net/browse/PUBDEV-2335): as.numeric for a string column only converts strings to ints rather than reals
+- [PUBDEV-2257](https://0xdata.atlassian.net/browse/PUBDEV-2257): Table printout in R doesn't warn the user about truncation
+- [PUBDEV-2430](https://0xdata.atlassian.net/browse/PUBDEV-2430): Improve R's reporting on quantiles
+- [PUBDEV-2460](https://0xdata.atlassian.net/browse/PUBDEV-2460): Version mismatch message directs user to get a matching download
+
+#####Flow
+
+- [PUBDEV-2407](https://0xdata.atlassian.net/browse/PUBDEV-2407): Improve model convergence plots in Flow
+- [PUBDEV-2596](https://0xdata.atlassian.net/browse/PUBDEV-2596): Flow shows empty logloss box for regression models
+- [PUBDEV-2617](https://0xdata.atlassian.net/browse/PUBDEV-2617): Flow's histogram doesn't cover the full support
+
+#####System
+
+- [HEXDEV-436](https://0xdata.atlassian.net/browse/HEXDEV-436): exportFile should be a real job and have a progress bar
+- [PUBDEV-2459](https://0xdata.atlassian.net/browse/PUBDEV-2459): Improve parse chunk size heuristic for better use of cores on small data sets
+- [PUBDEV-2606](https://0xdata.atlassian.net/browse/PUBDEV-2606): Print all columns to stdout for Hadoop jobs for easier debugging
+
+####Bug Fixes
+
+The following changes resolve incorrect software behavior: 
+
+#####API
+
+- [PUBDEV-2633](https://0xdata.atlassian.net/browse/PUBDEV-2633): Ability to extend grid searches with more models
+
+#####Algorithms
+
+- [PUBDEV-1867](https://0xdata.atlassian.net/browse/PUBDEV-1867): GLRM with Simplex Fails with Infinite Objective
+- [PUBDEV-2114](https://0xdata.atlassian.net/browse/PUBDEV-2114): Set GLM to give error when lower bound > upper bound in beta contraints
+- [PUBDEV-2190](https://0xdata.atlassian.net/browse/PUBDEV-2190): Set GLM to default to a value of rho = 0, if rho is not provided when beta constraints are used
+- [PUBDEV-2210](https://0xdata.atlassian.net/browse/PUBDEV-2210): Add check for epochs value when using checkpointing in deep learning
+- [PUBDEV-2241](https://0xdata.atlassian.net/browse/PUBDEV-2241): Set warnings about slowness from wide column counts comes before building a model, not after
+- [PUBDEV-2278](https://0xdata.atlassian.net/browse/PUBDEV-2278): Fix docstring reporting in iPython
+- [PUBDEV-2366](https://0xdata.atlassian.net/browse/PUBDEV-2366): Fix display of scoring speed for autoencoder
+- [PUBDEV-2426](https://0xdata.atlassian.net/browse/PUBDEV-2426): GLM gives different std. dev. and means than expected
+- [PUBDEV-2595](https://0xdata.atlassian.net/browse/PUBDEV-2595): Bad (perceived) quality of DL models during cross-validation due to internal weights handling
+- [PUBDEV-2626](https://0xdata.atlassian.net/browse/PUBDEV-2626): GLM with weights gives different answer h2o vs R
+
+#####Python
+
+- [PUBDEV-2319](https://0xdata.atlassian.net/browse/PUBDEV-2319): sd not working inside group_by
+- [PUBDEV-2403](https://0xdata.atlassian.net/browse/PUBDEV-2403): Parser reads file of empty strings as 0 rows
+- [PUBDEV-2404](https://0xdata.atlassian.net/browse/PUBDEV-2404): Empty strings in Python objects parsed as missing
+
+#####R
+
+- [PUBDEV-2319](https://0xdata.atlassian.net/browse/PUBDEV-2319): sd not working inside group_by
+- [PUBDEV-2231](https://0xdata.atlassian.net/browse/PUBDEV-2231): Fix bug in summary when zero-count categoricals were present.
+- [PUBDEV-1749](https://0xdata.atlassian.net/browse/PUBDEV-1749): Fix h2o.apply to correctly handle functions (so long as functions contain only H2O supported primitives)
+
+#####System
+
+- [PUBDEV-1872](https://0xdata.atlassian.net/browse/PUBDEV-1872): Ability to ignore 0-byte files during parse
+- [PUBDEV-2401](https://0xdata.atlassian.net/browse/PUBDEV-2401): /Jobs fails if you build a Model and then overwrite it in the DKV with any other type
+- [PUBDEV-2603](https://0xdata.atlassian.net/browse/PUBDEV-2603): Improve progress bar for grid/hyper-param searches
+
+
+---
+
+
 ###Tibshirani (3.6.0.9) - 12/7/15  
 
 ####New Features 

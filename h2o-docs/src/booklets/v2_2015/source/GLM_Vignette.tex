@@ -42,7 +42,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Fifth Edition
 
  
 \bigskip
@@ -79,7 +79,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fourth Edition 
+\monthname \hspace{1pt}  \the\year: Fifth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -143,7 +143,7 @@ The document source itself can be found here:
 
 To cite this booklet, use the following: 
 
-Nykodym, T.,  Kraljevic, T., Hussami, N., Rao, A.,  and Wang, A. (Nov. 2015). {\textit{Generalized Linear Modeling with H2O}}. {\url{http://h2o.ai/resources/}}. 
+Nykodym, T.,  Kraljevic, T., Hussami, N., Rao, A.,  and Wang, A. (\shortmonthname\ \the\year). {\textit{Generalized Linear Modeling with H2O}}. {\url{http://h2o.ai/resources/}}.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -743,10 +743,10 @@ Use caution when including $\alpha=0$ or $\alpha=1$ in the grid search. $\alpha=
 and it can be very slow (or even impossible) to compute in large $N$ situations. $\alpha=1$ has no  $\ell_2$ penalty, so
 it is therefore less numerically stable and can be very slow as well due to slower convergence. In general, we recommend using $alpha=1-\epsilon$ instead.
 
-\newpage
 \waterExampleInR
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.R}
 
+\newpage
 \waterExampleInPython
 \lstinputlisting[style=python]{GLM_Vignette_code_examples/glm_grid_search_over_alpha.py}
 

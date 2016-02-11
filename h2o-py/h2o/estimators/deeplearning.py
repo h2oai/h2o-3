@@ -21,6 +21,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                replicate_training_data=None, single_node_mode=None,
                shuffle_training_data=None, sparse=None, col_major=None,
                average_activation=None, sparsity_beta=None, max_categorical_features=None,
+               missing_values_handling=None,
                reproducible=None, export_weights_and_biases=None, nfolds=None,
                fold_assignment=None, keep_cross_validation_predictions=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
@@ -183,6 +184,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
       Max. number of categorical features, enforced via hashing Experimental)
     reproducible : bool
       Force reproducibility on small data (will be slow - only uses 1 thread)
+    missing_values_handling : str
+      Handling of missing values. Either "Skip" or "MeanImputation".
     export_weights_and_biases : bool
       Whether to export Neural Network weights and biases to H2O Frames"
     nfolds : int, optional
@@ -681,6 +684,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
   @max_categorical_features.setter
   def max_categorical_features(self, value):
     self._parms["max_categorical_features"] = value
+
+  @property
+  def missing_values_handling(self):
+      return self._parms["missing_values_handling"]
+
+  @missing_values_handling.setter
+  def missing_values_handling(self, value):
+      self._parms["missing_values_handling"] = value
 
   @property
   def reproducible(self):

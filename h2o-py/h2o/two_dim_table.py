@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import copy
 from .display import H2ODisplay
-from .utils.shared_utils import _is_list_of_lists
+from .utils.shared_utils import _is_list_of_lists, can_use_pandas
 
 
 class H2OTwoDimTable(object):
@@ -19,6 +19,13 @@ class H2OTwoDimTable(object):
     self.cell_values = cell_values if cell_values else self._parse_values(raw_cell_values, col_types)
     self.col_formats = col_formats
     self.table_description = table_description
+  
+  def as_data_frame(self):
+    if can_use_pandas():
+     import pandas
+     pandas.options.display.max_colwidth = 70
+     return pandas.DataFrame(self.cell_values,columns=self.col_header)
+    return self
 
   def show(self, header=True):
     #if h2o.can_use_pandas():
@@ -42,6 +49,7 @@ class H2OTwoDimTable(object):
       table = trunc_table
 
     H2ODisplay(table, self.col_header, numalign="left", stralign="left")
+    if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
 
   def __repr__(self):
     self.show()

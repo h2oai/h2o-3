@@ -3,6 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import java.util.Arrays;
 import water.H2O.H2OCountedCompleter;
+import water.util.Log;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -253,11 +254,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     }
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       final DException dex = new DException(ex,caller.getClass());
+      try {Log.err(ex);} catch(Throwable t) {/* do nothing */}
       new Barrier1OnExCom(dex).apply(Job.this);
-      if( getCompleter().getCompleter() == null ) { // barrier2 doesn't handle this exception, so print it out
-        System.err.println("barrier onExCompletion for "+caller.getClass());
-        ex.printStackTrace();
-      }
       _barrier = null;          // Free for GC
       return true;
     }

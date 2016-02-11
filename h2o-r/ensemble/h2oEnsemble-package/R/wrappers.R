@@ -49,9 +49,9 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             compute_p_values = FALSE,
                             remove_collinear_columns = FALSE, 
                             max_runtime_secs = 0,
-                            missing_values_handling = c("Skip", "MeanImputation"), ...) {
+                            missing_values_handling = c("MeanImputation", "Skip"), ...) {
   
-  # Also, offset_column, weights_column, intercept not implemented at the moment
+  # Also, offset_column, weights_column, intercept not implemented at the moment due to similar bug as beta_constraints
   h2o.glm(x = x, y = y, training_frame = training_frame, model_id = model_id, 
           validation_frame = validation_frame, 
           ignore_const_cols = ignore_const_cols,
@@ -61,18 +61,18 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
           standardize = standardize,
           family = match.arg(family), 
           link = match.arg(link),
-          #tweedie_variance_power = tweedie_variance_power,  # Produces error NaN
+          #tweedie_variance_power = tweedie_variance_power,  # Produces error with default, NaN
           #tweedie_link_power = tweedie_link_power,
-#           alpha = alpha, 
-#           prior = prior, 
-#           lambda = lambda, 
-#           lambda_search = lambda_search, 
-#           nlambdas = nlambdas, 
-#           lambda_min_ratio = lambda_min_ratio, 
-#           nfolds = nfolds, 
-#           fold_column = fold_column,
-#           fold_assignment = match.arg(fold_assignment),
-#           keep_cross_validation_predictions = keep_cross_validation_predictions, 
+          alpha = alpha, 
+          prior = prior, 
+          lambda = lambda, 
+          lambda_search = lambda_search, 
+          nlambdas = nlambdas, 
+          lambda_min_ratio = lambda_min_ratio, 
+          nfolds = nfolds, 
+          fold_column = fold_column,
+          fold_assignment = match.arg(fold_assignment),
+          keep_cross_validation_predictions = keep_cross_validation_predictions, 
           #beta_constraints = beta_constraints,
           #offset_column = offset_column, 
           #weights_column = weights_column, 
@@ -304,7 +304,8 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      nfolds = 0, 
                                      fold_column = NULL, 
                                      fold_assignment  = c("AUTO", "Random", "Modulo"),
-                                     keep_cross_validation_predictions = TRUE, ...) {
+                                     keep_cross_validation_predictions = TRUE,
+                                     missing_values_handling = c("MeanImputation", "Skip"), ...) {
   
   # Currently ignoring the `family` arg, will get class from outcome in H2OFrame
   h2o.deeplearning(x = x, y = y, training_frame = training_frame, model_id = model_id,
@@ -378,6 +379,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                    nfolds = nfolds, 
                    fold_column = fold_column, 
                    fold_assignment = match.arg(fold_assignment),
-                   keep_cross_validation_predictions = keep_cross_validation_predictions) 
+                   keep_cross_validation_predictions = keep_cross_validation_predictions,
+                   missing_values_handling = match.arg(missing_values_handling)) 
 }
 

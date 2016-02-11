@@ -171,7 +171,8 @@ The GLM suite includes:
 
 - Gaussian regression
 - Poisson regression
-- Binomial regression
+- Binomial regression (classification)
+- Multinomial classification
 - Gamma regression
 
 
@@ -197,12 +198,13 @@ The GLM suite includes:
 - **ignore\_const\_cols**: Check this checkbox to ignore constant training columns, since no information can be gained from them. This option is selected by default.
 
 - **family**: Select the model type.
-    > - If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
-    > - If the family is **binomial**, the data must be categorical or numeric with exactly 2 levels/classes (**Enum** or **Int**).
-    > - If the family is **multinomial**, the data can be categorical or numeric  (**Enum** or **Int**) with more than two levels/classes.
-    > - If the family is **poisson**, the data must be numeric.
-    > - If the family is **gamma**, the data must be numeric and continuous (**Int**).
-    > - If the family is **tweedie**, the data must be numeric and continuous (**Int**).
+
+	> - If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
+	> - If the family is **binomial**, the data must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+	> - If the family is **multinomial**, the data can be categorical with more than two levels/classes (**Enum**).
+	> - If the family is **poisson**, the data must be numeric and non-negative (**Int**).
+	> - If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
+	> - If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
 
 - **tweedie_variance_power**: (Only applicable if *Tweedie* is selected for **Family**) Specify the Tweedie variance power.
 
@@ -220,6 +222,10 @@ The GLM suite includes:
 - **nlambdas**: (Applicable only if **lambda\_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
 
 - **standardize**: To standardize the numeric columns to have a mean of zero and unit variance, check this checkbox. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is selected by default.
+
+- **remove_collinear_columns**: Automatically remove collinear columns during model-building. Collinear columns will be dropped from the model and will have 0 coefficient in the returned model. Can only be set if there is no regularization (lambda=0)
+
+- **compute_p_values**: Request computation of p-values. Only applicable with no penalty (lambda = 0 and no beta constraints). Setting remove_collinear_columns is recommended. H2O will return an error if p-values are requested and there are collinear columns and remove_collinear_columns flag is not set.
 
 - **non-negative**: To force coefficients to have non-negative values, check this checkbox.
 
@@ -261,7 +267,7 @@ The GLM suite includes:
 
 - **gradient_epsilon**: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
-- **prior**: Specify prior probability for y ==1. Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality.
+- **prior**: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. Note: this is simple method affecting only the intercept, you may want to use weights and offset for better fit.
 
 - **lambda\_min\_ratio**: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda\_max**).
 
@@ -490,7 +496,9 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training.
 
-- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).
+- **score\_tree\_interval**: Score the model after every so many trees. Disabled if set to 0.
+
+- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation). 
 
 - **fold_column**: Select the column that contains the cross-validation fold index assignment per observation.
 
@@ -515,10 +523,10 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
     3. N+1 models do *not* use **overwrite\_with\_best\_model**
     4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
-- **stopping\_metric**: Select the metric to use for early stopping. The available options are:
-
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+- **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
+	
+    - **AUTO**: Logloss for classification, deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
@@ -527,7 +535,9 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value.
 
-- **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+- **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
 - **binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default.
 
@@ -535,8 +545,7 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox.
 
-
-- **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.
+- **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
 
 - **max\_after\_balance\_size**: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). The value can be less than 1.0.
 
@@ -665,6 +674,8 @@ Naïve Bayes (NB) is a classification algorithm that relies on strong assumption
 - **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs.
 
 - **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0.
+
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 
 
@@ -848,7 +859,7 @@ PCA is commonly used to model without regularization or perform dimensionality r
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training.
 
-
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
 
 
@@ -1085,6 +1096,13 @@ There was some code cleanup and refactoring to support the following features:
     > - If the distribution is **tweedie**, the response column must be numeric.
     > - If the distribution is **gaussian**, the response column must be numeric.
 
+	> - If the distribution is **multinomial**, the response column must be categorical.
+	> - If the distribution is **poisson**, the response column must be numeric.
+	> - If the distribution is **gamma**, the response column must be  numeric. 
+	> - If the distribution is **tweedie**, the response column must be numeric. 
+	> - If the distribution is **gaussian**, the response column must be numeric. 
+	> - If the distribution is **laplace**, the data must be numeric and continuous (**Int**). 
+	> - If the distribution is **quantile**, the data must be numeric and continuous (**Int**). 
 
 - **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)).
 
@@ -1094,7 +1112,11 @@ There was some code cleanup and refactoring to support the following features:
 
 - **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).
 
-- **fold_column**: Select the column that contains the cross-validation fold index assignment per observation.
+- **score\_tree\_interval**: Score the model after every so many trees. Disabled if set to 0.
+
+- **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold_column** is not selected) Select the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, or [Modulo](https://en.wikipedia.org/wiki/Modulo_operation).  
+ 
+- **fold_column**: Select the column that contains the cross-validation fold index assignment per observation. 
 
 - **offset_column**: (Not applicable if the **distribution** is **multinomial**) Select a column to use as the offset.
     >*Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following [link](http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf). If the **distribution** is **Bernoulli**, the value must be less than one.
@@ -1130,9 +1152,13 @@ There was some code cleanup and refactoring to support the following features:
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value.
 
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
 - **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
-- **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution).
+- **quantile_alpha**: (Only applicable if *Quantile* is selected for **distribution**) Specify the quantile to be used for Quantile Regression.
+
+- **tweedie_power**: (Only applicable if *Tweedie* is selected for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
 - **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 
@@ -1353,7 +1379,9 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **balance_classes**: (Applicable for classification only) Oversample the minority classes to balance the class distribution. This option is not selected by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
 
-- **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs.
+- **standardize**: If enabled, automatically standardize the data (mean 0, variance 0). If disabled, the user must provide properly scaled input data.
+
+- **max\_confusion\_matrix\_size**: Specify the maximum size (in number of classes) for confusion matrices to be printed in the Logs. 
 
 - **max\_hit\_ratio\_k**: Specify the maximum number (top K) of predictions to use for hit ratio computation. Applicable to multi-class only. To disable, enter 0.
 
@@ -1378,9 +1406,11 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     > - Use **Absolute**, **Quadratic**, or **Huber** for regression
     > - Use  **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
 
-- **distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+- **distribution**:  Select the distribution type from the drop-down list. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile or tweedie.
 
-- **tweedie_power**: (Only applicable if *Tweedie* is selected for **family**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution).
+- **quantile_alpha**: (Only applicable if *Quantile* is selected for **distribution**) Specify the quantile to be used for Quantile Regression.
+
+- **tweedie_power**: (Only applicable if *Tweedie* is selected for **distribution**) Specify the Tweedie power. The range is from 1 to 2. For a normal distribution, enter `0`. For Poisson distribution, enter `1`. For a gamma distribution, enter `2`. For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. For more information, refer to [Tweedie distribution](https://en.wikipedia.org/wiki/Tweedie_distribution). 
 
 - **score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring.
 
@@ -1412,7 +1442,10 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 - **autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default.
     >**Note**: Cross-validation is not supported when autoencoder is enabled.
 
-- **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox.
+- **max\_runtime\_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+- **autoencoder**: Check this checkbox to enable the Deep Learning autoencoder. This option is not selected by default. 
+	>**Note**: Cross-validation is not supported when autoencoder is enabled.   
 
 - **class\_sampling\_factors**: (Applicable only for classification and when **balance\_classes** is enabled) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.
 

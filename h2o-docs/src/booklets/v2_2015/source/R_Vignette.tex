@@ -28,7 +28,7 @@
 {\url{http://h2o.ai/resources/}}
 
 \bigskip
-\monthname \hspace{1pt}  \the\year: Fifth Edition 
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 
 \bigskip
 \end{center}
@@ -62,7 +62,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fifth Edition
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc. 
@@ -181,7 +181,7 @@ R code for the examples in this document is located here:
 
 To cite this booklet, use the following: 
 
-Aiello, S., Eckstrand, E., Fu, A., Landry, M., and Aboyoun, P. (Nov. 2015) {\textit{Machine Learning with R and H2O}. {\url{http://h2o.ai/resources/}}. 
+Aiello, S., Eckstrand, E., Fu, A., Landry, M., and Aboyoun, P. (\shortmonthname\ \the\year). {\textit{Machine Learning with R and H2O}. {\url{http://h2o.ai/resources/}}.
 
 %Tom: Do we still want to include this section? If so, can you please make an R example that will call the latest version? 
 
@@ -215,7 +215,6 @@ This section describes how to launch H2O:
 \item from R
 \item from the command line
 \item on Hadoop
-\item on an EC2 cluster
 \end{itemize}
 
 \subsection{Launching from R} \label{ssec:LaunchR}
@@ -325,10 +324,6 @@ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 \item{\texttt{output}} is the name of the directory created each time a H2O cloud is created so it is necessary for the name to be unique each time it is launched.
 \end{itemize}
 
-\subsection{Launching on an EC2}
-
-{\textbf{Note}}: If you would like to try out H2O on an EC2 cluster, {\url{http://play.h2o.ai}} is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
-%TODO
 
 \subsection{Checking Cluster Status}
 

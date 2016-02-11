@@ -43,13 +43,15 @@ public class DRFGridTest extends TestUtil {
       DKV.put(fr);
 
       // Setup hyperparameter search space
-      HashMap<String, Object[]> hyperParms = new HashMap<>();
-      hyperParms.put("_ntrees", new Integer[]{2, 4});
-      hyperParms.put("_max_depth", new Integer[]{10, 20});
-      hyperParms.put("_mtries", new Integer[]{-1, 4});
-      Float[] legalSampleRateOpts = new Float[]{0.5f};
-      Float[] illegalSampleRateOpts = new Float[]{1f};
-      hyperParms.put("_sample_rate", ArrayUtils.join(legalSampleRateOpts, illegalSampleRateOpts));
+      final Float[] legalSampleRateOpts = new Float[]{0.5f};
+      final Float[] illegalSampleRateOpts = new Float[]{1f};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{2, 4});
+        put("_max_depth", new Integer[]{10, 20});
+        put("_mtries", new Integer[]{-1, 4});
+        put("_sample_rate", ArrayUtils.join(legalSampleRateOpts, illegalSampleRateOpts));
+      }};
+
       // Name of used hyper parameters
       String[] hyperParamNames = hyperParms.keySet().toArray(new String[hyperParms.size()]);
       Arrays.sort(hyperParamNames);
@@ -127,11 +129,12 @@ public class DRFGridTest extends TestUtil {
       DKV.put(fr);
 
       // Setup random hyperparameter search space
-      HashMap<String, Object[]> hyperParms = new HashMap<>();
-      hyperParms.put("_ntrees", new Integer[]{5, 5});
-      hyperParms.put("_max_depth", new Integer[]{2, 2});
-      hyperParms.put("_mtries", new Integer[]{-1, -1});
-      hyperParms.put("_sample_rate", new Float[]{.1f, .1f});
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{5, 5});
+        put("_max_depth", new Integer[]{2, 2});
+        put("_mtries", new Integer[]{-1, -1});
+        put("_sample_rate", new Float[]{.1f, .1f});
+      }};
 
       // Fire off a grid search
       DRFModel.DRFParameters params = new DRFModel.DRFParameters();

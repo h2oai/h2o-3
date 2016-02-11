@@ -135,7 +135,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
                     max_runtime_secs = 0,
-                    missing_values_handling = c("Skip", "MeanImputation"))
+                    missing_values_handling = c("MeanImputation","Skip"))
 {
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
