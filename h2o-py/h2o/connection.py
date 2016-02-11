@@ -46,7 +46,7 @@ class H2OConnection(object):
   __ENCODING_ERROR__ = "replace"
 
   def __init__(self, ip, port, start_h2o, enable_assertions, license, nthreads, max_mem_size, min_mem_size, ice_root,
-               strict_version_check, proxy, https, insecure, username, password, max_mem_size_GB, min_mem_size_GB):
+               strict_version_check, proxy, https, insecure, username, password, max_mem_size_GB, min_mem_size_GB, proxies, size):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -67,6 +67,8 @@ class H2OConnection(object):
     :param password: Password to login with. 
     :param max_mem_size_GB: DEPRECATED. Use max_mem_size.
     :param min_mem_size_GB: DEPRECATED. Use min_mem_size.
+    :param proxies: DEPRECATED. Use proxy.
+    :param size: DEPRECATED.
     :return: None
     """
 
@@ -82,7 +84,12 @@ class H2OConnection(object):
     if min_mem_size_GB is not None:
       warnings.warn("`min_mem_size_GB` is deprecated. Use `min_mem_size` instead.", category=DeprecationWarning)
       min_mem_size = min_mem_size_GB
-      
+    if proxies is not None:
+      warnings.warn("`proxies` is deprecated. Use `proxy` instead.", category=DeprecationWarning)
+      proxy = proxies
+    if size is not None:
+      warnings.warn("`size` is deprecated.", category=DeprecationWarning)
+    
     global __H2OCONN__
     self._cld = None
     self._ip = ip

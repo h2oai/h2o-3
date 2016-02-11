@@ -78,7 +78,7 @@ Edited by: Jessica Lanford
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright 2016 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
 \monthname \hspace{1pt}  \the\year: Fourth Edition
@@ -138,7 +138,7 @@ The document source itself can be found here:
 
 To cite this booklet, use the following: 
 
-Candel, A., Parmar, V., LeDell, E.,  and Arora, A. (Nov. 2015). {\textit{Deep Learning with H2O}}. {\url{http://h2o.ai/resources}}. 
+Candel, A., Parmar, V., LeDell, E.,  and Arora, A. (Feb. 2016). {\textit{Deep Learning with H2O}}. {\url{http://h2o.ai/resources}}. 
 
 \section{Deep Learning Overview}
 Unlike the neural networks of the past, modern Deep Learning  provides training stability, generalization, and scalability with big data. Since it performs quite well in a number of diverse problems, Deep Learning is quickly becoming the algorithm of choice for the highest predictive accuracy. 
@@ -206,7 +206,7 @@ H2O's Deep Learning functionalities include:
 
 \item automatic pre- and post-processing for categorical and numerical data
 
-\item automatic imputation of missing values
+\item automatic imputation of missing values (optional)
 
 \item automatic tuning of communication vs computation for best performance  %assuming this is a reference to the force_load_balance param?
 
@@ -310,6 +310,16 @@ Cross Entropy & $L(W,B | j) = -\sum\limits_{y \in O} \left(\ln(o_y^{(j)}) \cdot 
 \end{adjustbox}
 \label{table:LossFunctions} % is used to refer this table in the text 
 \end{table}
+
+To predict the 80-th percentile of the petal length of the Iris dataset in R, use the following:
+
+\waterExampleInR
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_quantile.R}
+
+To predict the 80-th percentile of the petal length of the Iris dataset in Python, use the following:
+
+\waterExampleInPython
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_quantile.py}
 
 \newpage
 \subsubsection{Parallel Distributed Network Training} 
@@ -586,7 +596,6 @@ To view the model results in Python, use the following:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py}
-
 
 \noindent
 The training error value is based on the parameter \texttt{score\_training\_samples}, which specifies the number of randomly sampled training points used for scoring (the default value is 10,000 points). The validation error is based on the parameter \texttt{score\_validation\_samples}, which configures the same value on the validation set (by default, this is the entire validation set).
@@ -946,6 +955,8 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
 
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+\item \texttt{missing\_values\_handling}: Handling of missing values. Either \texttt{Skip} or \texttt{MeanImputation} (default).
 
 \item \texttt{quiet\_mode}: Logical. Enables quiet mode for less output to standard output. The default is false.
 

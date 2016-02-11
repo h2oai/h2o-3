@@ -4,22 +4,18 @@ This module implements grid search class. All grid search things inherit from th
 from __future__ import print_function
 from __future__ import absolute_import
 from builtins import zip
-from builtins import str
 from builtins import range
-from builtins import object
 from .. import H2OConnection, H2OJob, H2OFrame
 from ..estimators import H2OEstimator
 from ..two_dim_table import H2OTwoDimTable
 from ..display import H2ODisplay
 import h2o
-from .metrics import *
 import itertools
+from .metrics import *
 
 
 class H2OGridSearch(object):
-  # for use with sort_by():
-  ASC=True
-  DESC=False
+
 
   def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
     """
@@ -365,14 +361,14 @@ class H2OGridSearch(object):
     """
     return {model.model_id:model.model_performance(test_data, train, valid) for model in self.models}
 
-  def score_history(self):
+  def scoring_history(self):
     """Retrieve Model Score History
 
     Returns
     -------
       Score history (H2OTwoDimTable)
     """
-    return {model.model_id:model.score_history() for model in self.models}
+    return {model.model_id:model.scoring_history() for model in self.models}
 
   def summary(self, header=True):
     """Print a detailed summary of the explored models."""
@@ -396,18 +392,14 @@ class H2OGridSearch(object):
 
 
   def show(self):
-    """Print innards of grid, without regard to type"""
+    """Print models sorted by metric"""
     hyper_combos = itertools.product(*list(self.hyper_params.values()))
     if not self.models:
       c_values = [[idx+1, list(val)] for idx, val in enumerate(hyper_combos)]
       print(H2OTwoDimTable(col_header=['Model', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']'],
-                               table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
+                           table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
     else:
-      if self.failed_raw_params:
-        print('Failed Hyperparameters and Message:')
-        for i in range(len(self.failed_raw_params)):
-          print([str(fi) for fi in self.failed_raw_params[i]], '-->', self.failure_details[i])
-      print(self.sort_by('mse'))
+      print(self.sorted_metric_table())
 
 
   def varimp(self, use_pandas=False):
@@ -660,6 +652,17 @@ class H2OGridSearch(object):
     if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']')
     return res
 
+  def sorted_metric_table(self):
+    """
+    Retrieve Summary Table of an H2O Grid Search
+    
+    Returns
+    -------
+      The summary table as an H2OTwoDimTable or a Pandas DataFrame.
+    """
+    summary = self._grid_json["summary_table"]
+    if summary is not None: return summary.as_data_frame()
+    print("No sorted metric table for this grid search")
 
   @staticmethod
   def _metrics_class(model_json):
@@ -673,35 +676,30 @@ class H2OGridSearch(object):
     else: raise NotImplementedError(model_type)
     return model_class
 
-  @staticmethod
-  def get_grid(model, hyper_params, grid_id, **kwargs):
+  def get_grid(self, sort_by=None, decreasing=None):
     """
-    Retrieve an H2OGridSearch instance already trained given its original model, hyper_params, and grid_id. 
+    Retrieve an H2OGridSearch instance. Optionally specify a metric by which to sort models and a sort order.  
     
     Parameters
     ----------    
-    model : H2O Estimator model
-      The type of model explored that is initalized with optional parameters which are unchanged across explored models.
-    hyper_params: dict
-      A dictionary of string parameters (keys) and a list of values explored by grid search (values).
-    grid_id : str, optional
-      The unique id assigned to the grid object.
-     
+    sort_by : str, optional
+      A metric by which to sort the models in the grid space. Choices are "logloss", "residual_deviance", "mse", "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
+    decreasing : bool, optional
+      Sort the models in decreasing order of metric if true, otherwise sort in increasing order (default).
     Returns
     -------
-      A new H2OGridSearch instance that is a replica of the H2OGridSearch instance with the specified grid_id.
+      A new H2OGridSearch instance optionally sorted on the specified metric.
 
     """
-    if kwargs is None:
-      kwargs = {}
-    kwargs['_rest_version'] = 99
-    grid_json = H2OConnection.get_json("Grids/"+grid_id, **kwargs)
-    grid = H2OGridSearch(model, hyper_params, grid_id)
-    grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
-    first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=kwargs['_rest_version'])['models'][0]
+    if sort_by is None and decreasing is None: return self
+
+    grid_json = H2OConnection.get_json("Grids/"+self._id, sort_by=sort_by, decreasing=decreasing, _rest_version=99)
+    grid = H2OGridSearch(self.model, self.hyper_params, self._id)
+    grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']] #reordered
+    first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=99)['models'][0]
     model_class = H2OGridSearch._metrics_class(first_model_json)
     m = model_class()
-    m._id = grid_id
+    m._id = self._id
     m._grid_json = grid_json
     # m._metrics_class = metrics_class
     m._parms = grid._parms
