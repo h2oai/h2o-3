@@ -23,15 +23,11 @@ These changes represent features that have been added since the previous release
 - [PUBDEV-2469](https://0xdata.atlassian.net/browse/PUBDEV-2469): For GBM/DRF, add ability to pick columns to sample from once per tree, instead of at every level
 - [PUBDEV-2594](https://0xdata.atlassian.net/browse/PUBDEV-2212): Quantile regression for GBM and Deep Learning
 
-#####R
-
-- [PUBDEV-1956](https://0xdata.atlassian.net/browse/PUBDEV-1956): Add ability to plot decision boundaries from classifiers.
 
 
 #####Python
 
 - [HEXDEV-399](https://0xdata.atlassian.net/browse/HEXDEV-399): Added support for Python 3.5 and better (in addition to existing support for 2.7 and better)
-- [PUBDEV-1974](https://0xdata.atlassian.net/browse/PUBDEV-1974): Add ability to plot decision boundaries from classifiers.
 
 
 ####Enhancements
@@ -42,7 +38,7 @@ The following changes are improvements to existing features (which includes chan
 #####Algorithms
 
 - [PUBDEV-2233](https://0xdata.atlassian.net/browse/PUBDEV-2233): Adjust string substitution and global string substitution to do in place updates on a string column.
-- [PUBDEV-2595](https://0xdata.atlassian.net/browse/PUBDEV-2595): Bad (perceived) quality of DL models during cross-validation due to internal weights handling
+
 
 #####Python 
 
@@ -88,6 +84,7 @@ The following changes resolve incorrect software behavior:
 - [PUBDEV-2278](https://0xdata.atlassian.net/browse/PUBDEV-2278): Fix docstring reporting in iPython
 - [PUBDEV-2366](https://0xdata.atlassian.net/browse/PUBDEV-2366): Fix display of scoring speed for autoencoder
 - [PUBDEV-2426](https://0xdata.atlassian.net/browse/PUBDEV-2426): GLM gives different std. dev. and means than expected
+- [PUBDEV-2595](https://0xdata.atlassian.net/browse/PUBDEV-2595): Bad (perceived) quality of DL models during cross-validation due to internal weights handling
 - [PUBDEV-2626](https://0xdata.atlassian.net/browse/PUBDEV-2626): GLM with weights gives different answer h2o vs R
 
 #####Python
