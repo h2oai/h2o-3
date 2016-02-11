@@ -130,6 +130,42 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
   }
 
+  //
+  public static Set<String> getAllowedMetrics(Key<Model> key) {
+    Set<String> res = new HashSet<>();
+    Model model = DKV.getGet(key);
+    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    ModelMetrics m =
+            model._output._cross_validation_metrics != null ?
+                    model._output._cross_validation_metrics :
+                    model._output._validation_metrics != null ?
+                            model._output._validation_metrics :
+                            model._output._training_metrics;
+    ConfusionMatrix cm = m.cm();
+    if (m!=null) {
+      for (Method meth : m.getClass().getMethods()) {
+        if (meth.getName().equals("makeSchema")) continue;
+        try {
+          double c = (double) meth.invoke(m);
+          res.add(meth.getName());
+        } catch (Exception e) {
+          // fall through
+        }
+      }
+    }
+    if (cm!=null) {
+      for (Method meth : cm.getClass().getMethods()) {
+        try {
+          double c = (double) meth.invoke(cm);
+          res.add(meth.getName());
+        } catch (Exception e) {
+          // fall through
+        }
+      }
+    }
+    return res;
+  }
+
   /**
    * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "errCount",
    * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "F1", "F2", "F0point5". . .
