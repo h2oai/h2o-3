@@ -12,7 +12,7 @@ These changes represent features that have been added since the previous release
 #####API
 
 - [PUBDEV-2311](https://0xdata.atlassian.net/browse/PUBDEV-2311): Make it easy for clients to sort by model metric of choice
-- [PUBDEV-2338](https://0xdata.atlassian.net/browse/PUBDEV-2338): Add ability to set a maximum runtime limit on all models
+- [PUBDEV-2548](https://0xdata.atlassian.net/browse/PUBDEV-2548): Add ability to set a maximum runtime limit on all models
 - [PUBDEV-2632](https://0xdata.atlassian.net/browse/PUBDEV-2632): Return a grid search summary as a table with desired sort order and metric
 
 #####Algorithms
