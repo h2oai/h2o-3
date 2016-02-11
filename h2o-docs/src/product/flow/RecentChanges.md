@@ -77,6 +77,9 @@ The following changes are improvements to existing features (which includes chan
 
 The following changes resolve incorrect software behavior: 
 
+#####API
+
+- [PUBDEV-2633](https://0xdata.atlassian.net/browse/PUBDEV-2633): Ability to extend grid searches with more models
 
 #####Algorithms
 
