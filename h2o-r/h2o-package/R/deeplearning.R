@@ -88,6 +88,7 @@
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class
 #'        counts (can be less than 1.0).
 #' @param score_validation_sampling Method used to sample validation dataset for scoring.
+#' @param missing_values_handling Handling of missing values. Either Skip or MeanImputation.
 #' @param diagnostics Enable diagnostics for hidden layers.
 #' @param variable_importances Compute variable importances for input features (Gedeon method) - can
 #'        be slow for large networks.
@@ -183,6 +184,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              class_sampling_factors,
                              max_after_balance_size,
                              score_validation_sampling,
+                             missing_values_handling = c("Skip", "MeanImputation"),
                              diagnostics,
                              variable_importances,
                              fast_mode,
@@ -244,6 +246,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$use_all_factor_levels <- use_all_factor_levels
   if(!missing(standardize))
     parms$standardize <- standardize
+  if(!missing(missing_values_handling))
+    parms$missing_values_handling <- missing_values_handling
   if(!missing(activation))
     parms$activation <- activation
   if(!missing(hidden))
