@@ -47,8 +47,7 @@ public class AutoCollectTest extends TestUtil { // requires mysql-connector-java
   }
 
 
-  @Test
-  public void testSmalldataMetaCollect() {
+  /*@Test */ public void testSmalldataMetaCollect() {
     AutoCollect ac = new AutoCollect(30, find_test_file_static("smalldata/meta").getAbsolutePath());
     ac.start();
   }
