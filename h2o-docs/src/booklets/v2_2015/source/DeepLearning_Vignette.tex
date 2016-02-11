@@ -78,7 +78,7 @@ Edited by: Jessica Lanford
 2307 Leghorn St. \\
 Mountain View, CA 94043\\
 \bigskip
-\textcopyright 2015 H2O.ai, Inc. All Rights Reserved. 
+\textcopyright 2016 H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
 \monthname \hspace{1pt}  \the\year: Fourth Edition
@@ -138,7 +138,7 @@ The document source itself can be found here:
 
 To cite this booklet, use the following: 
 
-Candel, A., Parmar, V., LeDell, E.,  and Arora, A. (Nov. 2015). {\textit{Deep Learning with H2O}}. {\url{http://h2o.ai/resources}}. 
+Candel, A., Parmar, V., LeDell, E.,  and Arora, A. (Feb. 2016). {\textit{Deep Learning with H2O}}. {\url{http://h2o.ai/resources}}. 
 
 \section{Deep Learning Overview}
 Unlike the neural networks of the past, modern Deep Learning  provides training stability, generalization, and scalability with big data. Since it performs quite well in a number of diverse problems, Deep Learning is quickly becoming the algorithm of choice for the highest predictive accuracy. 
@@ -206,7 +206,7 @@ H2O's Deep Learning functionalities include:
 
 \item automatic pre- and post-processing for categorical and numerical data
 
-\item automatic imputation of missing values
+\item automatic imputation of missing values (optional)
 
 \item automatic tuning of communication vs computation for best performance  %assuming this is a reference to the force_load_balance param?
 
@@ -276,6 +276,7 @@ Specify the one of the following distribution functions for the response variabl
 
 \begin{itemize}
   \item Laplace
+  \item Quantile
   \item Huber
   \item Gaussian
 \end{itemize}\\
@@ -284,7 +285,7 @@ Specify the one of the following distribution functions for the response variabl
 
 \end{frame}
 
-Each distribution has a primary association with a particular loss function, but some distributions allow users to specify a non-default loss function from the group of loss functions specified in Table 2.  Bernoulli and multinomial are primarily associated with cross-entropy (also known as log-loss), Gaussian with Mean Squared Error, Laplace with Absolute loss and Huber with Huber loss.  For Poisson, Gamma, and Tweedie distributions, the loss function cannot be changed, so \texttt{loss} must be set to AUTO.    
+Each distribution has a primary association with a particular loss function, but some distributions allow users to specify a non-default loss function from the group of loss functions specified in Table 2.  Bernoulli and multinomial are primarily associated with cross-entropy (also known as log-loss), Gaussian with Mean Squared Error, Laplace with Absolute loss (a special case of Quantile with \texttt{quantile\_alpha=0.5}) and Huber with Huber loss.  For Poisson, Gamma, and Tweedie distributions, the loss function cannot be changed, so \texttt{loss} must be set to AUTO.    
 
 %The following choices for the loss function $L(W,B$ $|$ $ j)$ are summarized in Table 2. 
 
@@ -309,6 +310,16 @@ Cross Entropy & $L(W,B | j) = -\sum\limits_{y \in O} \left(\ln(o_y^{(j)}) \cdot 
 \end{adjustbox}
 \label{table:LossFunctions} % is used to refer this table in the text 
 \end{table}
+
+To predict the 80-th percentile of the petal length of the Iris dataset in R, use the following:
+
+\waterExampleInR
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_quantile.R}
+
+To predict the 80-th percentile of the petal length of the Iris dataset in Python, use the following:
+
+\waterExampleInPython
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_quantile.py}
 
 \newpage
 \subsubsection{Parallel Distributed Network Training} 
@@ -487,6 +498,9 @@ Early stopping based on convergence of a user-specified metric is an especially 
 \item To compute the best number of epochs with cross-validation, simply specify \texttt{stopping\_rounds>0} as in the examples above, in combination with \texttt{nfolds>1}, and the main model will pick the ideal number of epochs from the convergence behavior of the \texttt{nfolds} cross-validation models.
 \end{itemize}
 
+\subsubsection{Time-based Early Stopping}
+To stop model training after a given amount of seconds, specify \texttt{max\_runtime\_secs > 0}. This option is also available for grid searches and models with cross-validation. Note: The model(s) will likely end up with fewer epochs than specified by \texttt{epochs}.
+
 \subsection{Additional Parameters} 
 
 Since there are dozens of possible parameter arguments when creating models, configuring H2O Deep Learning models may seem daunting. However, most parameters do not need to be modified; the default settings are recommended for most use cases. 
@@ -583,7 +597,6 @@ To view the model results in Python, use the following:
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_inspect_model.py}
 
-
 \noindent
 The training error value is based on the parameter \texttt{score\_training\_samples}, which specifies the number of randomly sampled training points used for scoring (the default value is 10,000 points). The validation error is based on the parameter \texttt{score\_validation\_samples}, which configures the same value on the validation set (by default, this is the entire validation set).
 
@@ -651,33 +664,35 @@ In this example, three different network topologies and two different $\ell_1$ n
 
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
-
-To run a grid search in R, use the following:
+\subsubsection{Cartesian Grid Search}
+To run a Cartesian hyper-parameter grid search in R, use the following:
 
 \waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R}
 
-
-
-To run a grid search in Python, use the following:
+To run a Cartesian hyper-parameter grid search in Python, use the following:
 
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch.py}
 
-\normalsize
-\noindent
 
-To view the results of the grid search in R, use the following: 
+To view the results of the grid search, use the following: 
 
 \waterExampleInR
 \lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R}
 
-\medskip
-
-To view the results of the grid search in Python, use the following: 
-
 \waterExampleInPython
 \lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.py}
+
+\subsubsection{Random Grid Search}
+If the search space is too large (i.e., you don't want to restrict the parameters too much), you can also let the Grid Search make random model selections for you. Just specify how many models (and/or how much training time) you want, and a seed to make the random selection deterministic:
+
+\waterExampleInR
+\lstinputlisting[style=R]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.R}
+
+\waterExampleInPython
+\lstinputlisting[style=python]{DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.py}
+
 
 
 \subsection{Checkpoint Models}
@@ -916,8 +931,9 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 
 \item \texttt{loss}: Specifies the loss option: \texttt{Automatic, CrossEntropy} (classification only), \texttt{Quadratic, Absolute}, or \texttt{Huber}. The default is \texttt{Automatic}. Refer to {\textbf{\nameref{sssec:ActivationLoss}}} for more details.
 
-\item \texttt{distribution}: Specifies the distribution function of the response: \texttt{AUTO, bernoulli, multinomial, poisson, gamma, \\ tweedie, laplace, huber,} or \texttt{gaussian}. 
+\item \texttt{distribution}: Specifies the distribution function of the response: \texttt{AUTO, bernoulli, multinomial, poisson, gamma, \\ tweedie, laplace, quantile, huber,} or \texttt{gaussian}. 
 
+\item {\texttt{quantile\_alpha}}: Desired quantile for quantile regression (from 0.0 to 1.0) when \texttt{distribution = "quantile"}.  The default is 0.5 (median, same as \texttt{distribution = "laplace"}).
 \item \texttt{tweedie\_power}: Specifies the Tweedie power when \texttt{distribution} is  \texttt{tweedie}. The range is from 1.0 to 2.0. 
 
 \item \texttt{score\_interval}: Specifies the minimum time (in seconds) between model scoring. The actual interval is determined by the number of training samples per iteration and the scoring duty cycle. To use all training set samples, specify \texttt{0}. The default is 5.
@@ -937,6 +953,10 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 \item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO, deviance, logloss, MSE, AUC, r2, misclassification}.
 
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
+
+\item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+\item \texttt{missing\_values\_handling}: Handling of missing values. Either \texttt{Skip} or \texttt{MeanImputation} (default).
 
 \item \texttt{quiet\_mode}: Logical. Enables quiet mode for less output to standard output. The default is false.
 
@@ -1003,7 +1023,7 @@ The default is 0, which disables cross-validation.
 
 \item \texttt{fold\_column}: (Optional) Specifies the name of the column with the cross-validation fold index assignment per observation; the folds are supplied by the user. 
 
-\item \texttt{fold\_assignment}: Specifies the cross-validation fold assignment scheme if \texttt{nfolds} is greater than zero and \texttt{fold\_column} is not specified. The options are \texttt{AUTO, Random,} or \texttt{Modulo}. 
+\item \texttt{fold\_assignment}: Specifies the cross-validation fold assignment scheme if \texttt{nfolds} is greater than zero and \texttt{fold\_column} is not specified. The options are \texttt{AUTO, Random, Stratified} or \texttt{Modulo}. 
 
 \item \texttt{keep\_cross\_validation\_predictions}: Logical.  Specify whether to keep the predictions of the cross-validation models.  The default is false.
 

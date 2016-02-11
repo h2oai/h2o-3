@@ -52,8 +52,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   public boolean isSupervised(){return true;}
 
-  @Override public long progressUnits() { return _parms._ntrees; }
-
   @Override protected boolean computePriorClassDistribution(){ return true;}
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -108,6 +106,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_top_level >= 1<<16) error ("_nbins_top_level", "nbins_top_level must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    if (_parms._score_tree_interval < 0 || _parms._score_tree_interval > _parms._ntrees) error ("_score_tree_interval", "_score_tree_interval must be >= 0 and <= _ntrees.");
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate);
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
@@ -467,15 +466,21 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     long sinceLastScore = now-_timeLastScoreStart;
     boolean updated = false;
     _job.update(0,"Built " + _model._output._ntrees + " trees so far (out of " + _parms._ntrees + ").");
-    // Now model already contains tid-trees in serialized form
-    if( _parms._score_each_iteration ||
-            finalScoring ||
-            (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
-            // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
-            (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
-                    (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1) ) { // 10% duty cycle
 
+    boolean timeToScore = (now-_firstScore < _parms._initial_score_interval) || // Score every time for 4 secs
+        // Throttle scoring to keep the cost sane; limit to a 10% duty cycle & every 4 secs
+        (sinceLastScore > _parms._score_interval && // Limit scoring updates to every 4sec
+            (double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < 0.1); //10% duty cycle
+
+    boolean manualInterval = _parms._score_tree_interval > 0 && _model._output._ntrees % _parms._score_tree_interval == 0;
+
+    // Now model already contains tid-trees in serialized form
+    if( _parms._score_each_iteration || finalScoring || // always score under these circumstances
+        (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
+        manualInterval) {
       checkMemoryFootPrint();
+      if (error_count() > 0)
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
 
       // If validation is specified we use a model for scoring, so we need to
       // update it!  First we save model with trees (i.e., make them available

@@ -28,7 +28,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   public enum Initialization { Random, PlusPlus, Furthest, User }
   /** Start the KMeans training Job on an F/J thread. */
   @Override protected KMeansDriver trainModelImpl() { return new KMeansDriver();  }
-  @Override public long progressUnits() { return _parms._max_iterations; }
 
   // Called from an http request
   public KMeans( KMeansModel.KMeansParameters parms         ) { super(parms    ); init(false); }

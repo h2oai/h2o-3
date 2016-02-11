@@ -12,6 +12,7 @@ public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepMode
     public String algoName() { return "Grep"; }
     public String fullName() { return "Grep"; }
     public String javaName() { return GrepModel.class.getName(); }
+    @Override public long progressUnits() { return train() != null ? train().numRows() : 1; }
     public String _regex;       // The regex
   }
 

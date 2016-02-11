@@ -1,10 +1,10 @@
 from __future__ import print_function
 from builtins import range
 import sys
+sys.path.insert(1,"../../../")
 from h2o.grid.grid_search import H2OGridSearch
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
-sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 
@@ -28,16 +28,11 @@ def benign_grid():
   gs.predict(training_data)
   print(gs.get_hyperparams(best_model_id))
   print(gs.grid_id)
-  
-  new_g = H2OGridSearch.get_grid(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters, gs.grid_id)
-  new_g.show()
-  print(new_g.grid_id)
-  print(new_g.sort_by('F1', False))
 
   assert best_model.params['family']['actual'] == 'binomial'
 
   # test search_criteria plumbing
-  search_criteria = { 'strategy': "Random", 'max_models': 3 }
+  search_criteria = { 'strategy': "RandomDiscrete", 'max_models': 3 }
   max_models_g = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters, search_criteria=search_criteria)
   max_models_g.train(x=X,y=Y, training_frame=training_data)
 
@@ -45,9 +40,9 @@ def benign_grid():
   print(max_models_g.grid_id)
   print(max_models_g.sort_by('F1', False))
 
-  ##### TODO: remove:
-  print("before assert")
   assert len(max_models_g.models) == 3, "expected 3 models, got: {}".format(len(max_models_g.models))
+  print(max_models_g.sorted_metric_table())
+  print(max_models_g.get_grid("r2"))
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(benign_grid)

@@ -1,11 +1,12 @@
 package water.util;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /** Iced / Freezable NonBlockingHashMap.  Delegates to a NonBlockingHashMap for
  *  all its operations.  Inspired by water.parser.Categorical.
@@ -33,27 +34,43 @@ public class IcedHashMap<K, V> extends IcedHashMapBase<K,V> implements Concurren
     // In the raw backing array, Keys and Values alternate in slots
     // Ignore tombstones and Primes and null's
     switch( mode ) {
-    case 1:
+    case 1:  // <String,String>
       for( int i=2; i<kvs.length; i += 2 )
         if( kvs[i] instanceof String && kvs[i+1] instanceof String )
           ab.putStr((String)kvs[i]).putStr((String)kvs[i+1]);
       break;
-    case 2:   
+    case 2: // <String,Iced>
       for( int i=2; i<kvs.length; i += 2 )
         if( kvs[i] instanceof String && kvs[i+1] instanceof Iced   )
           ab.putStr((String)kvs[i]).put   ((Iced  )kvs[i+1]);
       break;
-    case 3:   
+    case 3: // <Iced,String>
       for( int i=2; i<kvs.length; i += 2 )
         if( kvs[i] instanceof Iced   && kvs[i+1] instanceof String )
           ab.put   ((Iced  )kvs[i]).putStr((String)kvs[i+1]);
       break;
-    case 4:   
+    case 4: // <Iced,Iced>
       for( int i=2; i<kvs.length; i += 2 )
         if( kvs[i] instanceof Iced   && kvs[i+1] instanceof Iced   )
           ab.put   ((Iced  )kvs[i]).put   ((Iced  )kvs[i+1]);
       break;
-    default: H2O.fail();
+    case 5:  // <String,Iced[]>
+      for( int i=2;i<kvs.length; i+=2 )
+        if( kvs[i] instanceof String && kvs[i+1] instanceof Iced[] ) {
+          Iced[] vals = (Iced[])kvs[i+1];
+          ab.put((Iced)kvs[i]).put4(vals.length);  // key len vals
+          for(Iced v: vals) ab.put(v);
+        }
+      break;
+    case 6: // <Iced,Iced[]>
+      for( int i=2;i<kvs.length; i+=2 )
+        if( kvs[i] instanceof Iced && kvs[i+1] instanceof Iced[] ) {
+          Iced[] vals = (Iced[])kvs[i+1];
+          ab.put((Iced)kvs[i]).put4(vals.length);  // key len vals
+          for(Iced v: vals) ab.put(v);
+        }
+      break;
+    default: throw H2O.fail();
     }
   }
 

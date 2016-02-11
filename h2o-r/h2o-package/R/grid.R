@@ -20,10 +20,11 @@
 #'        name and parameters specify a supervised or unsupervised algorithm.
 #' @param do_hyper_params_check  Perform client check for specified hyper parameters. It can be time expensive for
 #'        large hyper space.
-#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  Specify the
-#'        Random strategy to get random search of all the combinations of your hyperparameters.  Generally this
-#'        should be combined with an early stopping criterion,
-#'        max_models or max_time_ms, e.g. \code{list(strategy = "Random", max_models = 42)}.  
+#' @param search_criteria  (Optional)  List of control parameters for smarter hyperparameter search.  The default
+#'        strategy 'Cartesian' covers the entire space of hyperparameter combinations.  Specify the
+#'        'RandomDiscrete' strategy to get random search of all the combinations of your hyperparameters.  RandomDiscrete
+#'        should be usually combined with at least one early stopping criterion,
+#'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \donttest{
@@ -46,7 +47,7 @@ h2o.grid <- function(algorithm,
                      hyper_params = list(),
                      is_supervised = NULL,
                      do_hyper_params_check = FALSE,
-                     search_criteria = list())
+                     search_criteria = NULL)
 {
   # Extract parameters
   dots <- list(...)
@@ -97,8 +98,15 @@ h2o.grid <- function(algorithm,
   # Append grid parameters in JSON form
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
 
-  # pass along the search criteria among the other params
-  params <- c(params, search_criteria)
+  if( !is.null(search_criteria)) {
+      # Append grid search criteria in JSON form. 
+      # jsonlite unfortunately doesn't handle scalar values so we need to serialize ourselves.
+      keys = paste0("\"", names(search_criteria), "\"", "=")
+      vals <- lapply(search_criteria, function(val) { if(is.numeric(val)) val else paste0("\"", val, "\"") })
+      body <- paste0(paste0(keys, vals), collapse=",")
+      js <- paste0("{", body, "}", collapse="")
+      params$search_criteria <- js
+  }
 
   # Append grid_id if it is specified
   if (!missing(grid_id)) params$grid_id <- grid_id
@@ -116,8 +124,8 @@ h2o.grid <- function(algorithm,
 #' Get a grid object from H2O distributed K/V store.
 #'
 #' @param grid_id  ID of existing grid object to fetch
-#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "auc", "r2"
-#' @param sort_order Specify if sort order should be increasing/decreasing with "asc" and "desc"
+#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
+#' @param decreasing Specify whether sort order should be decreasing
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -134,8 +142,8 @@ h2o.grid <- function(algorithm,
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
 #' }
 #' @export
-h2o.getGrid <- function(grid_id, sort_by, sort_order) {
-  json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, sort_order))
+h2o.getGrid <- function(grid_id, sort_by, decreasing) {
+  json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, decreasing))
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
   model_ids <- lapply(json$model_ids, function(model_id) { model_id$name })
@@ -155,7 +163,9 @@ h2o.getGrid <- function(grid_id, sort_by, sort_order) {
       failed_params = failed_params,
       failure_details = failure_details,
       failure_stack_traces = failure_stack_traces,
-      failed_raw_params = failed_raw_params)
+      failed_raw_params = failed_raw_params,
+      summary_table     = json$summary_table
+      )
 }
 
 

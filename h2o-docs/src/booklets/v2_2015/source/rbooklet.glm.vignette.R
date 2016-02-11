@@ -36,8 +36,12 @@ function() {
                  h2o:::.h2o.locate("GLM_Vignette_code_examples/glm_recalculate_predict.R"))
     story11 <- c(h2o:::.h2o.locate("GLM_Vignette_code_examples/glm_download_pojo.R"))
     story12 <- c(h2o:::.h2o.locate("GLM_Vignette_code_examples/glm_compare_cross_validation_folds.R"))
+    story13 <- c(h2o:::.h2o.locate("GLM_Vignette_code_examples/glm_multinomial.R"))
+    story14 <- c(h2o:::.h2o.locate("GLM_Vignette_code_examples/glm_remove_collinear_columns.R"))
+    story15 <- c(h2o:::.h2o.locate("GLM_Vignette_code_examples/glm_p_values.R"))
 
-    approvedRCodeExamples <- c(story1,story2,story3,story4,story5,story6,story7,story8,story9,story10,story11,story12)
+    approvedRCodeExamples <- c(story1,story2,story3,story4,story5,story6,story7,story8,story9,story10,story11,story12,
+                               story13,story14,story15)
 
     checkCodeExamplesInDir(approvedRCodeExamples, h2o:::.h2o.locate("GLM_Vignette_code_examples"))
 
@@ -53,6 +57,9 @@ function() {
     checkStory("story10",story10)
     checkStory("story11",story11)
     checkStory("story12",story12)
+    checkStory("story12",story13)
+    checkStory("story12",story14)
+    checkStory("story12",story15)
 }
 
 glmBooklet()

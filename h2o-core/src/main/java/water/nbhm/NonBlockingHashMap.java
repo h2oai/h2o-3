@@ -248,7 +248,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // can trigger a table resize.  Several places must have exact agreement on
   // what the reprobe_limit is, so we share it here.
   private static final int reprobe_limit( int len ) {
-    return REPROBE_LIMIT + (len>>8);
+    return REPROBE_LIMIT + (len>>4);
   }
 
   // --- NonBlockingHashMap --------------------------------------------------
@@ -867,8 +867,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
       return
         // Do the cheap check first: we allow some number of reprobes always
         reprobe_cnt >= REPROBE_LIMIT &&
-        // More expensive check: see if the table is > 1/2 full.
-        _slots.estimate_get() >= reprobe_limit(len)*2;
+        (reprobe_cnt >= reprobe_limit(len) ||
+         // More expensive check: see if the table is > 1/2 full.
+         _slots.estimate_get() >= (len>>1));
     }
 
     // --- resize ------------------------------------------------------------
@@ -968,7 +969,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // racing resizing threads.  Extra CHM's will be GC'd.
       if( CAS_newkvs( newkvs ) ) { // NOW a resize-is-in-progress!
         //notifyAll();            // Wake up any sleepers
-        Log.info("Resizing NBHM: "+oldlen+" -> "+(1<<log2)+" extras: "+(_resizers-1));
+        Log.info("Resizing NBHM: "+oldlen+" -> "+(1<<log2));
         topmap.rehash();        // Call for Hashtable's benefit
       } else                    // CAS failed?
         newkvs = _newkvs;       // Reread new table

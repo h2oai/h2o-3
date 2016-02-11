@@ -60,7 +60,7 @@ final public class DeepLearningModelInfo extends Iced {
     if (cats == null) return;
     if (_saw_missing_cats == null) return;
     for (int i=0; i<cats.length; ++i) {
-      assert(data_info._catMissing[i] == 1); //have a missing bucket for each categorical
+      assert(data_info._catMissing[i]); //have a missing bucket for each categorical
       if (_saw_missing_cats[i]) continue;
       _saw_missing_cats[i] = (cats[i] == data_info._catOffsets[i+1]-1);
     }
@@ -589,7 +589,7 @@ final public class DeepLearningModelInfo extends Iced {
     // zero out missing categorical variables if they were never seen
     if (_saw_missing_cats != null) {
       for (int i = 0; i < _saw_missing_cats.length; ++i) {
-        assert (data_info._catMissing[i] == 1); //have a missing bucket for each categorical
+        assert (data_info._catMissing[i]); //have a missing bucket for each categorical
         if (!_saw_missing_cats[i]) vi[data_info._catOffsets[i + 1] - 1] = 0;
       }
     }

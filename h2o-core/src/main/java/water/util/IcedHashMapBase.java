@@ -47,15 +47,21 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     int mode;
     if( key instanceof String ) {
       if( val instanceof String ) {      mode = 1; } 
-      else { assert val instanceof Iced; mode = 2; }
+      else {
+        assert (val instanceof Iced || val instanceof Iced[]);
+        mode = val instanceof Iced ? 2 : 5;
+      }
     } else {
       assert key instanceof Iced;
       if( val instanceof String ) {      mode = 3; }
-      else { assert val instanceof Iced; mode = 4; }
+      else {
+        assert (val instanceof Iced || val instanceof Iced[]);
+        mode = val instanceof Iced ? 4 : 6;
+      }
     }
     ab.put1(mode);              // Type of hashmap being serialized
     writeMap(ab,mode);          // Do the hard work of writing the map
-    return (mode==1 || mode==2) ? ab.putStr(null) : ab.put(null);
+    return (mode==1 || mode==2 || mode==5) ? ab.putStr(null) : ab.put(null);
   }
 
   abstract protected Map<K,V> init();
@@ -64,8 +70,17 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     for( Entry<K, V> e : map().entrySet() ) {
       K key = e.getKey();   assert key != null;
       V val = e.getValue(); assert val != null;
-      if( mode==1 || mode ==2 ) ab.putStr((String)key); else ab.put((Iced)key);
-      if( mode==1 || mode ==3 ) ab.putStr((String)val); else ab.put((Iced)val);
+
+      // put key
+      if( mode==1 || mode==2 || mode==5 ) ab.putStr((String)key); else ab.put((Iced)key);
+
+      // put value
+      if( mode==1 || mode==3 ) ab.putStr((String)val);
+      else if( mode==5 || mode==6 ) {
+        ab.put4(((Iced[]) val).length);
+        for (Iced v : (Iced[]) val) ab.put(v);
+      }
+      else ab.put((Iced)val);
     }
   }
 
@@ -81,8 +96,14 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     K key;
     V val;
     while ((key = ((mode == 1 || mode == 2) ? (K) ab.getStr() : (K) ab.get())) != null) {
-      val = ((mode == 1 || mode == 3) ? (V) ab.getStr() : (V) ab.get());
-      map.put(key, val);
+      if( mode == 5 || mode == 6) {
+        Iced[] vals = new Iced[ab.get4()];
+        for(int i=0;i<vals.length;++i) vals[i] = ab.get();
+        map.put(key,(V)vals);
+      } else {
+        val = ((mode == 1 || mode == 3) ? (V) ab.getStr() : (V) ab.get());
+        map.put(key, val);
+      }
     }
     return this;
   }

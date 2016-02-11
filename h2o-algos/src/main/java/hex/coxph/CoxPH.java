@@ -20,7 +20,6 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
   public CoxPH( CoxPHModel.CoxPHParameters parms ) { super(parms); init(false); }
   @Override protected CoxPHDriver trainModelImpl() { return new CoxPHDriver(); }
-  @Override public long progressUnits() { return _parms.iter_max; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

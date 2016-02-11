@@ -42,14 +42,14 @@ def iris_gbm_grid():
     total_grid_space.remove(combo)
 
   # test back-end sorting of model metrics:
-  locally_sorted = gs.sort_by("r2", H2OGridSearch.DESC)
-  remotely_sorted_desc = H2OGridSearch.get_grid(H2OGradientBoostingEstimator(distribution='multinomial'), hyper_parameters, gs.grid_id, sort_by='r2', sort_order='desc')
+  locally_sorted = gs.sort_by("r2")
+  remotely_sorted_desc = gs.get_grid("r2")
 
   assert len(locally_sorted.cell_values) == len(remotely_sorted_desc.model_ids), "Expected locally sorted and remotely sorted grids to have the same number of models"
   for i in range(len(remotely_sorted_desc.model_ids)):
     assert locally_sorted.cell_values[i][0] == remotely_sorted_desc.model_ids[i], "Expected back-end sort by r2 to be the same as locally-sorted: " + str(i)
 
-  remotely_sorted_asc = H2OGridSearch.get_grid(H2OGradientBoostingEstimator(distribution='multinomial'), hyper_parameters, gs.grid_id, sort_by='r2', sort_order='asc')
+  remotely_sorted_asc = gs.get_grid("r2",True)
   for model in remotely_sorted_asc:
     assert isinstance(model, H2OGradientBoostingEstimator)
 

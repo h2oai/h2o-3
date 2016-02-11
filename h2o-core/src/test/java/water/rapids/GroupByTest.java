@@ -3,6 +3,7 @@ package water.rapids;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.Keyed;
 import water.TestUtil;
@@ -134,10 +135,12 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testImpute() {
     Frame fr = null;
+    Frame fr2 =null;
     try {
       // Impute fuel economy via the "mean" method, no.
-      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [])";
-      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      String tree = "(h2o.impute hex 1 \"mean\" \"low\" [] _ _)";  // (h2o.impute data col method combine_method groupby groupByFrame values)
+      chkTree(tree,"smalldata/junit/cars.csv",1f);
+      fr = DKV.getGet("hex");
       chkDim(fr,8,406);
 
       Assert.assertEquals(0,fr.vec(1).naCnt()); // No NAs anymore
@@ -145,8 +148,9 @@ public class GroupByTest extends TestUtil {
       fr.delete();
 
       // Impute fuel economy via the "mean" method, after grouping by year.  Update in place.
-      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7])";
-      fr = chkTree(tree,"smalldata/junit/cars.csv");
+      tree = "(h2o.impute hex 1 \"mean\" \"low\" [7] _ _)";
+      fr2 = chkTree(tree,"smalldata/junit/cars.csv",1f);
+      fr = DKV.getGet("hex");
       chkDim(fr,8,406);
 
       Assert.assertEquals(0,fr.vec(1).naCnt()); // No NAs anymore
@@ -154,6 +158,7 @@ public class GroupByTest extends TestUtil {
 
     } finally {
       if( fr != null ) fr.delete();
+      if( fr2!=null ) fr2.delete();
       Keyed.remove(Key.make("hex"));
     }
   }
@@ -243,12 +248,19 @@ public class GroupByTest extends TestUtil {
     Assert.assertEquals(exp, dom[(int)fr.vec(col).at8(row)]);
   }
 
+  private Frame chkTree(String tree, String fname, float d) {
+    Frame fr = parse_test_file(Key.make("hex"),fname);
+    Val val = Exec.exec(tree);
+    System.out.println(val.toString());
+    if( val instanceof ValFrame )
+      return ((ValFrame)val)._fr;
+    return null;
+  }
   private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
   private Frame chkTree(String tree, String fname, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("hex"),fname);
     try {
       Val val = Exec.exec(tree);
-      Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
       if( val instanceof ValFrame )
         return ((ValFrame)val)._fr;

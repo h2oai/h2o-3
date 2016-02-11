@@ -161,7 +161,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
     if( !nFoldCV() )
-      return _job.start(trainModelImpl(), progressUnits());
+      return _job.start(trainModelImpl(), _parms.progressUnits());
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
@@ -170,7 +170,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           computeCrossValidation();
           tryComplete();
         }
-      }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * progressUnits());
+      }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * _parms.progressUnits());
   }
 
   /** Train a model as part of a larger Job; the Job already exists and has started. */
@@ -186,7 +186,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
-  abstract protected long progressUnits();
 
   /**
    * How many should be trained in parallel during N-fold cross-validation?
@@ -765,6 +764,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
       if(_response != null) {
+        if (_parms._distribution != Distribution.Family.tweedie) {
+          hide("_tweedie_power", "Tweedie power is only used for Tweedie distribution.");
+        }
+        if (_parms._distribution != Distribution.Family.quantile) {
+          hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
+        }
         if (expensive) checkDistributions();
         _nclass = _response.isCategorical() ? _response.cardinality() : 1;
         if (_response.isConst())
@@ -951,18 +956,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     abstract protected boolean filter(Vec v);
 
     void doIt( Frame f, String msg, boolean expensive ) {
-      boolean any=false;
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ ) {
         if( filter(f.vecs()[i]) ) {
-          if( any ) msg += ", "; // Log dropped cols
-          any = true;
-          msg += f._names[i];
           _removedCols.add(f._names[i]);
           f.remove(i);
           i--; // Re-run at same iteration after dropping a col
         }
       }
-      if( any ) {
+      if( !_removedCols.isEmpty() ) {
+        msg += _removedCols.toString();
         warn("_train", msg);
         if (expensive) Log.info(msg);
       }

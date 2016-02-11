@@ -8,7 +8,7 @@ This function creates a "Super Learner" (stacking) ensemble using the H2O base l
 }
 \usage{
 h2o.ensemble(x, y, training_frame,  
-  model_id = "", validation_frame = NULL,
+  model_id = NULL, validation_frame = NULL,
   family = c("AUTO", "binomial", "gaussian"),
   learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper", "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
@@ -101,6 +101,9 @@ The version of the h2oEnsemble R package.
 }
 }
 \references{
+\href{https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble}{H2O Ensemble Homepage}	\cr
+\href{http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html}{H2O Ensemble Tutorial}	\cr
+\cr	
 LeDell, E. (2015) Scalable Ensemble Learning and Computationally Efficient Variance Estimation (Doctoral Dissertation).  University of California, Berkeley, USA.\cr
 \url{http://www.stat.berkeley.edu/~ledell/papers/ledell-phd-thesis.pdf}\cr
 \cr

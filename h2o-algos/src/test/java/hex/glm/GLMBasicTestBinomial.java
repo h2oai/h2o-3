@@ -13,6 +13,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -418,6 +419,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._intercept = false;
     params._objective_epsilon = 0;
     params._gradient_epsilon = 1e-6;
+    params._missing_values_handling = MissingValuesHandling.Skip;
     params._max_iterations = 100; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS /*, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
       Frame scoreTrain = null, scoreTest = null;
@@ -1013,6 +1015,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._standardize = false;
     params._train = _prostateTrain._key;
     params._compute_p_values = true;
+    params._missing_values_handling = MissingValuesHandling.Skip;
     params._lambda = new double[]{0};
     GLM job0 = null;
     try {
@@ -1062,6 +1065,7 @@ public class GLMBasicTestBinomial extends TestUtil {
       double[] zvals_expected = new double[]{-2.99223901, 1.24208800, -0.14610616, 0.04428674, -0.46826589, 2.24843259, 3.13779030, 1.44550154, 1.18227779, 2.71377864, -1.11887108, 4.67333842};
       double[] pvals_expected = new double[]{2.769394e-03, 2.142041e-01, 8.838376e-01, 9.646758e-01, 6.395945e-01, 2.454862e-02, 1.702266e-03, 1.483171e-01, 2.370955e-01, 6.652060e-03, 2.631951e-01, 2.963429e-06};
       String[] names_actual = model._output.coefficientNames();
+      System.out.println("names actual = " + Arrays.toString(names_actual));
       HashMap<String, Integer> coefMap = new HashMap<>();
       for (int i = 0; i < names_expected.length; ++i)
         coefMap.put(names_expected[i], i);

@@ -9,7 +9,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                fold_assignment=None, keep_cross_validation_predictions=None,
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
-               compute_p_values=False, remove_collinear_columns=False):
+               compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
     """Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
     and a description of the error distribution.
@@ -33,13 +33,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       0 and a variance of 1 prior to training the models.
     family : str
       A character string specifying the distribution of the model:
-     gaussian, binomial, poisson, gamma, tweedie.
+     gaussian, binomial, multinomial, poisson, gamma, tweedie.
     link : str
       A character string specifying the link function.
       The default is the canonical link for the family.
       The supported links for each of the family specifications are:
           "gaussian": "identity", "log", "inverse"
           "binomial": "logit", "log"
+          "multinomial": "multinomial"
           "poisson": "log", "identity"
           "gamma": "inverse", "log", "identity"
           "tweedie": "tweedie"
@@ -63,7 +64,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       models are fit.
     prior : float, optional
       A numeric specifying the prior probability of class 1 in the response when
-      family = "binomial". The default prior is the observational frequency of class 1.
+      family = "binomial". The default prior is the observational frequency of class 1. Must be from (0,1) exclusive range or None (no prior).
     lambda_search : bool
       A logical value indicating whether to conduct a search over the space of lambda
       values starting from the lambda max, given lambda is interpreted as lambda minself.
@@ -93,6 +94,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       Logical, include constant term (intercept) in the model
     max_active_predictors : int, optional
       Convergence criteria for number of predictors when using L1 penalty.
+   missing_values_handling:  str
+      A character string specifying how to handle missing value:
+      "MeanImputation","Skip".
 
     Returns
     -------
@@ -317,3 +321,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @remove_collinear_columns.setter
   def remove_collinear_columns(self, value):
     self._parms["remove_collinear_columns"] = value
+
+  @property
+  def missing_values_handling(self):
+    return self._parms["missing_values_handling"]
+
+  @missing_values_handling.setter
+  def missing_values_handling(self, value):
+    self._parms["missing_values_handling"] = value
+

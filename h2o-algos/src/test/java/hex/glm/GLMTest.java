@@ -1397,15 +1397,20 @@ public class GLMTest  extends TestUtil {
       params._train = fr._key;
       params._lambda = new double[]{0};
       params._standardize = false;
+//      params._missing_values_handling = MissingValuesHandling.Skip;
       GLM glm = new GLM(params,glmkey("prostate_model"));
       model = glm.trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
+      System.out.println(coefs);
       for(int i = 0; i < cfs1.length; ++i)
         assertEquals(vals[i], coefs.get(cfs1[i]),1e-4);
       assertEquals(512.3, nullDeviance(model),1e-1);
       assertEquals(378.3, residualDeviance(model),1e-1);
       assertEquals(371,   resDOF(model),0);
       assertEquals(396.3, aic(model),1e-1);
+      Frame testFr = model.score(fr);
+      model.testJavaScoring(fr,testFr,1e-8);
+      testFr.delete();
       model.delete();
       // test scoring
       model.score(fr).delete();
@@ -1424,6 +1429,7 @@ public class GLMTest  extends TestUtil {
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
       model2 = glm.trainModel().get();
+
       for(int i = 0; i < model2.beta().length-1; ++i)
         assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
       assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu[0] * (1-prior)/(prior * (1-model._ymu[0]))),model2.beta()[model.beta().length-1],1e-10);

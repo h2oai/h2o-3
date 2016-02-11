@@ -47,6 +47,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       for (Distribution.Family dist : new Distribution.Family[]{
               Distribution.Family.gaussian,
               Distribution.Family.laplace,
+              Distribution.Family.quantile,
               Distribution.Family.huber,
               Distribution.Family.gamma,
               Distribution.Family.poisson,
@@ -90,6 +91,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._activation = act;
                 parms._adaptive_rate = adaptive;
                 parms._rate = 1e-4;
+                parms._quantile_alpha = 0.2;
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
                 DeepLearningModelInfo.gradientCheck = null;

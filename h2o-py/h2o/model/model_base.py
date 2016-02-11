@@ -8,7 +8,7 @@ from builtins import range
 from builtins import object
 
 import h2o
-import imp, traceback
+import imp, traceback, warnings
 from ..utils.shared_utils import can_use_pandas
 
 
@@ -225,24 +225,27 @@ class ModelBase(object):
           break
       return self._metrics_class(raw_metrics,algo=self._model_json["algo"])
 
-  def score_history(self):
+  
+  def scoring_history(self):
     """
     Retrieve Model Score History
     
     Returns
     -------
-      The score history as an H2OTwoDimTable.
+      The score history as an H2OTwoDimTable or a Pandas DataFrame.
     """
     model = self._model_json["output"]
-    if 'scoring_history' in list(model.keys()) and model["scoring_history"] != None:
-      s = model["scoring_history"]
-      if can_use_pandas():
-        import pandas
-        pandas.options.display.max_rows = 20
-        return pandas.DataFrame(s.cell_values,columns=s.col_header)
-      return s
-    else: print("No score history for this model")
+    if 'scoring_history' in list(model.keys()) and model["scoring_history"] is not None:
+      return model["scoring_history"].as_data_frame()
+    print("No score history for this model")
 
+  def score_history(self):
+    """
+    Deprecated for scoring_history
+    """
+    warnings.warn("`score_history` is deprecated. Use `scoring_history`", category=DeprecationWarning, stacklevel=2)
+    return self.scoring_history()
+  
   def summary(self):
     """
     Print a detailed summary of the model.
@@ -553,7 +556,7 @@ class ModelBase(object):
       print("matplotlib is required for this function!")
       return
 
-    scoring_history = self.score_history()
+    scoring_history = self.scoring_history()
     # Separate functionality for GLM since its output is different from other algos
     if self._model_json["algo"] == "glm":
       # GLM has only one timestep option, which is `iteration`

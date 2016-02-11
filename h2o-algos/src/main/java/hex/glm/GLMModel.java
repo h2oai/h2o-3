@@ -110,6 +110,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
+    @Override public long progressUnits() { return GLM.WORK_TOTAL; }
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public Family _family;
@@ -163,7 +164,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_obj_reg != -1 && _obj_reg <= 0)
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
-        glm.error("_prior","Prior must be in (exlusive) range (0,1)");
+        glm.error("_prior","Prior must be in (exclusive) range (0,1)");
       if(_family != Family.tweedie) {
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
@@ -586,8 +587,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
-      x.l = likelihood(y,x.mu);
-      x.dev = deviance(y,x.mu);
+      x.l = w*likelihood(y,x.mu);
+      x.dev = w*deviance(y,x.mu);
       return x;
     }
   }
@@ -678,6 +679,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
+  @Override
+  protected String[][] scoringDomains(){
+    String [][] domains = _output._domains;
+    if(_parms._family == Family.binomial && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
+      domains = domains.clone();
+      domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
+    }
+    return domains;
+  }
+
   public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
     _output._zvalues = zValues;
     _output._dispersion = dispersion;
@@ -711,7 +722,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double [] zValues(){return _zvalues.clone();}
     public double [] pValues(){
       double [] res = zValues();
-      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residualDegreesOfFreedom()):new NormalDistribution();
+      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residual_degrees_of_freedom()):new NormalDistribution();
       for(int i = 0; i < res.length; ++i)
         res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
       return res;
@@ -773,6 +784,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
+//      if(glm._parms._family == Family.binomial && domains[_dinfo.responseChunkId(0)] == null)
+//        domains[_dinfo.responseChunkId(0)] = new String[]{"0","1"};
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         String [] ns = new String[names.length-1];
