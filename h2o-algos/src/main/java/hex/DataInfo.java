@@ -697,12 +697,14 @@ public class DataInfo extends Keyed<DataInfo> {
     if(_weights)
       row.weight = chunks[weightChunkId()].atd(rid);
     if(row.weight == 0) return row;
-    if (_skipMissing)
-      for (Chunk c : chunks)
-        if(c.isNA(rid)) {
+    if (_skipMissing) {
+      int N = _cats + _nums;
+      for (int i = 0; i < N; ++i)
+        if (chunks[i].isNA(rid)) {
           row.bad = true;
           return row;
         }
+    }
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
       if (chunks[i].isNA(rid)) {
@@ -722,7 +724,6 @@ public class DataInfo extends Keyed<DataInfo> {
     row.nBins = nbins;
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
-
       double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
       if (Double.isNaN(d))
         d = _numMeans[i];
