@@ -1002,6 +1002,54 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     res[res.length - 1] = beta[beta.length - 1];
     return res;
   }
+
+
+  private static void doUpdateCD(double [] grads, double [][] xx, double [] betaold, double [] betanew , int variable) {
+    double diff = betaold[variable] - betanew[variable];
+    double[] ary = xx[variable];
+    for (int i = 0; i < variable; i++)
+      grads[i] += diff * ary[i];
+    for (int i = variable+1; i < grads.length; i++)
+      grads[i] += diff * ary[i];
+  }
+  public static double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
+    double wsumuInv = 1.0/gt.wsumu;
+    double wsumInv = 1.0/gt.wsum;
+    double l1pen = lambda * alpha;
+    double l2pen = lambda*(1-alpha);
+    double [][] xx = gt._gram.getXX();
+    double [] grads = gt._xy.clone();
+    double [] beta = gt._beta.clone();
+    double [] betaold = gt._beta.clone();
+    for(int i = 0; i < grads.length; ++i) {
+      double ip = 0;
+      for(int j = 0; j < beta.length; ++j)
+        ip += beta[j]*xx[i][j];
+      grads[i] = grads[i] - ip + beta[i]*xx[i][i];
+    }
+    double [] diagInv = MemoryManager.malloc8d(xx.length);
+    for(int i = 0; i < diagInv.length; ++i)
+      diagInv[i] = 1.0/(xx[i][i] * wsumuInv + l2pen);
+    int iter1 = 0;
+    int P = gt._xy.length - 1;
+    // CD loop
+    while (iter1++ < 1000) {
+      for (int i = 0; i < P; ++i) {
+        beta[i] = ADMM.shrinkage(grads[i] * wsumuInv, l1pen) * diagInv[i];
+        doUpdateCD(grads, xx, betaold, beta, i);
+      }
+      // intercept
+      beta[P] = grads[P] * wsumInv;
+      if (beta[P] != 0) // update all the grad entries
+        doUpdateCD(grads, xx, betaold, beta, P);
+      double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
+      System.arraycopy(beta, 0, betaold, 0, beta.length);
+      if (linf < 1e-4)
+        break;
+    }
+    System.out.println("iter1 = " + iter1);
+    return beta;
+  }
   /**
    * Created by tomasnykodym on 3/30/15.
    */
