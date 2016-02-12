@@ -13,8 +13,6 @@ import water.util.*;
 
 import java.util.Random;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningScoring;
-
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;
@@ -299,7 +297,7 @@ public class DeepLearningIrisTest extends TestUtil {
 
                             // get the actual best error on training data
                             float best_err = Float.MAX_VALUE;
-                            for (DeepLearningScoring err : mymodel.scoring_history()) {
+                            for (DeepLearningScoringInfo err : mymodel.scoring_history()) {
                               best_err = Math.min(best_err, (float) (Double.isNaN(err.scored_train._classError) ? best_err : err.scored_train._classError)); //multi-class classification
                             }
                             Log.info("Actual best error : " + best_err * 100 + "%.");
