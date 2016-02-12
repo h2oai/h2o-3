@@ -16,19 +16,22 @@
 
 gbmBooklet <-
 function() {
-    approvedRCodeExamples <- c(
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_uploadfile_example.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun_stochastic.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_extractmodelparams.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_predict.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch.R"),
-    h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch_result.R"))
+    story1 <- c(h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_uploadfile_example.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun_stochastic.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_extractmodelparams.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_predict.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch_result.R"),
+                h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_gridsearch_random.R"))
+    story2 <- c(h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_quantile.R"))
+
+    approvedRCodeExamples <- c(story1,story2)
 
     checkCodeExamplesInDir(approvedRCodeExamples, h2o:::.h2o.locate("GBM_Vignette_code_examples"))
 
-    story1 <- approvedRCodeExamples
     checkStory("story1",story1)
+    checkStory("story2",story2)
 }
 
 gbmBooklet()

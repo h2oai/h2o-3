@@ -679,6 +679,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
+  @Override
+  protected String[][] scoringDomains(){
+    String [][] domains = _output._domains;
+    if(_parms._family == Family.binomial && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
+      domains = domains.clone();
+      domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
+    }
+    return domains;
+  }
+
   public void setZValues(double [] zValues, double dispersion, boolean dispersionEstimated) {
     _output._zvalues = zValues;
     _output._dispersion = dispersion;
@@ -712,7 +722,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double [] zValues(){return _zvalues.clone();}
     public double [] pValues(){
       double [] res = zValues();
-      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residualDegreesOfFreedom()):new NormalDistribution();
+      RealDistribution rd = _dispersionEstimated?new TDistribution(_training_metrics.residual_degrees_of_freedom()):new NormalDistribution();
       for(int i = 0; i < res.length; ++i)
         res[i] = 2*rd.cumulativeProbability(-Math.abs(res[i]));
       return res;

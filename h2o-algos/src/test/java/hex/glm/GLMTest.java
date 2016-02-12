@@ -1408,6 +1408,9 @@ public class GLMTest  extends TestUtil {
       assertEquals(378.3, residualDeviance(model),1e-1);
       assertEquals(371,   resDOF(model),0);
       assertEquals(396.3, aic(model),1e-1);
+      Frame testFr = model.score(fr);
+      model.testJavaScoring(fr,testFr,1e-8);
+      testFr.delete();
       model.delete();
       // test scoring
       model.score(fr).delete();
@@ -1426,6 +1429,7 @@ public class GLMTest  extends TestUtil {
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
       model2 = glm.trainModel().get();
+
       for(int i = 0; i < model2.beta().length-1; ++i)
         assertEquals(model.beta()[i], model2.beta()[i], 1e-8);
       assertEquals(model.beta()[model.beta().length-1] -Math.log(model._ymu[0] * (1-prior)/(prior * (1-model._ymu[0]))),model2.beta()[model.beta().length-1],1e-10);

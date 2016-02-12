@@ -5,6 +5,7 @@ import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
+  public double residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
   public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma, double meanResidualDeviance) {
     super(model, frame, mse, null, sigma);

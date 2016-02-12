@@ -43,7 +43,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _scoring_time = System.currentTimeMillis();
   }
 
-  public long residualDegreesOfFreedom(){throw new UnsupportedOperationException("residual degrees of freedom is not supported for this metric class");}
+  public long residual_degrees_of_freedom(){throw new UnsupportedOperationException("residual degrees of freedom is not supported for this metric class");}
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("Model Metrics Type: " + this.getClass().getSimpleName().substring(12) + "\n");
@@ -63,77 +63,66 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public AUC2 auc_obj() { return null; }
   public double auc() { AUC2 auc = auc_obj(); if (null != auc) return auc._auc; else return 0; }
 
+  static public double getMetricFromModel(Key<Model> key, String criterion) {
+    Model model = DKV.getGet(key);
+    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    if (null == criterion || criterion.equals("")) throw new H2OIllegalArgumentException("Need a valid criterion, but got '" + criterion + "'.");
+    ModelMetrics m =
+            model._output._cross_validation_metrics != null ?
+                    model._output._cross_validation_metrics :
+                    model._output._validation_metrics != null ?
+                            model._output._validation_metrics :
+                            model._output._training_metrics;
+    Method method = null;
+    ConfusionMatrix cm = m.cm();
+    try {
+      method = m.getClass().getMethod(criterion);
+    }
+    catch (Exception e) {
+      // fall through
+    }
+
+    if (null == method && null != cm) {
+      try {
+        method = cm.getClass().getMethod(criterion);
+      }
+      catch (Exception e) {
+        // fall through
+      }
+    }
+    if (null == method)
+      throw new H2OIllegalArgumentException("Failed to find ModelMetrics for criterion: " + criterion);
+
+    double c;
+    try {
+      c = (double) method.invoke(m);
+    } catch(Exception fallthru) {
+      try {
+        c = (double)method.invoke(cm);
+      } catch (Exception e) {
+        throw new H2OIllegalArgumentException(
+                "Failed to get metric: " + criterion + " from ModelMetrics object: " + m,
+                "Failed to get metric: " + criterion + " from ModelMetrics object: " + m + ", criterion: " + method + ", exception: " + e
+        );
+      }
+    }
+    return c;
+  }
+
+
   private static class MetricsComparator implements Comparator<Key<Model>> {
     String _sort_by = null;
-    boolean descending = true;
-    Method criterion = null;
+    boolean decreasing = false;
 
-    public MetricsComparator(String sort_by, String sort_direction) {
+    public MetricsComparator(String sort_by, boolean decreasing) {
       this._sort_by = sort_by;
-      this.descending = ! "asc".equals(sort_direction);
+      this.decreasing = decreasing;
     }
 
     public int compare(Key<Model> key1, Key<Model> key2) {
-      Model model1 = DKV.getGet(key1);
-      Model model2 = DKV.getGet(key2);
-
-      if (null == model1 || null == model2) throw new H2OIllegalArgumentException("Tried to compare a Model against null: " + model1 + " and " + model2);
-
-      // TODO cross_validation_metrics
-      ModelMetrics m1 = model1._output._validation_metrics;
-      ModelMetrics m2 = model2._output._validation_metrics;
-
-      // TODO: pull this check up?
-      if (null == m1 ^ null == m2) throw new H2OIllegalArgumentException("Tried to compare two ModelMetrics objects, only one of which had a validation set: " + m1 + " and " + m2);
-
-      if (null == m1 && null == m2) {
-        m1 = model1._output._training_metrics;
-        m2 = model2._output._training_metrics;
-      }
-
-      if (m1.getClass() != m2.getClass()) throw new H2OIllegalArgumentException("Tried to compare two ModelMetrics objects of different types: " + m1 + " and " + m2);
-
-      if (null == criterion) {
-        ConfusionMatrix cm = m1.cm();
-        try {
-          criterion = m1.getClass().getMethod(_sort_by);
-        }
-        catch (Exception e) {
-          // fall through
-        }
-
-        if (null == criterion && null != cm) {
-          try {
-            criterion = cm.getClass().getMethod(_sort_by);
-          }
-          catch (Exception e) {
-            // fall through
-          }
-        }
-      }
-      if (null == criterion) throw new H2OIllegalArgumentException("Failed to find ModelMetrics criterion: " + _sort_by);
-
-      double c1, c2;
-      try {
-        c1 = (double) criterion.invoke(m1);
-      }
-      catch (Exception e) {
-        throw new H2OIllegalArgumentException(
-          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m1,
-          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m1 + ", criterion: " + criterion + ", exception: " + e
-          );
-      }
-      try {
-        c2 = (double) criterion.invoke(m2);
-      }
-      catch (Exception e) {
-        throw new H2OIllegalArgumentException(
-          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m2,
-          "Failed to get metric: " + _sort_by + " from ModelMetrics object: " + m2 + ", criterion: " + criterion + ", exception: " + e
-          );
-      }
-
-      if (descending) {
+      double c1 = getMetricFromModel(key1, _sort_by);
+      double c2 = getMetricFromModel(key2, _sort_by);
+      if (decreasing) {
         return (c2 - c1 > 0 ? 1 : -1);
       } else {
         return (c1 - c2 > 0 ? 1 : -1);
@@ -141,18 +130,55 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
   }
 
+  //
+  public static Set<String> getAllowedMetrics(Key<Model> key) {
+    Set<String> res = new HashSet<>();
+    Model model = DKV.getGet(key);
+    if (null == model) throw new H2OIllegalArgumentException("Cannot find model " + key);
+    ModelMetrics m =
+            model._output._cross_validation_metrics != null ?
+                    model._output._cross_validation_metrics :
+                    model._output._validation_metrics != null ?
+                            model._output._validation_metrics :
+                            model._output._training_metrics;
+    ConfusionMatrix cm = m.cm();
+    if (m!=null) {
+      for (Method meth : m.getClass().getMethods()) {
+        if (meth.getName().equals("makeSchema")) continue;
+        try {
+          double c = (double) meth.invoke(m);
+          res.add(meth.getName());
+        } catch (Exception e) {
+          // fall through
+        }
+      }
+    }
+    if (cm!=null) {
+      for (Method meth : cm.getClass().getMethods()) {
+        try {
+          double c = (double) meth.invoke(cm);
+          res.add(meth.getName());
+        } catch (Exception e) {
+          // fall through
+        }
+      }
+    }
+    return res;
+  }
+
   /**
    * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "errCount",
    * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "F1", "F2", "F0point5". . .
    * @param sort_by criterion by which we should sort
+   * @param decreasing sort by decreasing metrics or not
    * @param modelKeys keys of models to sortm
    * @return keys of the models, sorted by the criterion
    */
-  public static List<Key<Model>> sortModelsByMetric(String sort_by, String sort_order, List<Key<Model>>modelKeys) {
+  public static List<Key<Model>> sortModelsByMetric(String sort_by, boolean decreasing, List<Key<Model>>modelKeys) {
     List<Key<Model>> sorted = new ArrayList<>();
     sorted.addAll(modelKeys);
 
-    Comparator<Key<Model>> c = new MetricsComparator(sort_by, sort_order);
+    Comparator<Key<Model>> c = new MetricsComparator(sort_by, decreasing);
 
     Collections.sort(sorted, c);
     return sorted;
@@ -275,7 +301,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
      * Having computed a MetricBuilder, this method fills in a ModelMetrics
      * @param m Model
      * @param f Scored Frame
-     * @param adaptedFrame
+     * @param adaptedFrame Adapted Frame
      *@param preds Predictions of m on f (optional)  @return Filled Model Metrics object
      */
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);

@@ -1,10 +1,18 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
+import water.*;
+import water.api.StreamWriter;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.JCodeSB;
+import water.fvec.*;
+import water.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -13,15 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
-
-import hex.genmodel.GenModel;
-import water.*;
-import water.api.StreamWriter;
-import water.codegen.CodeGenerator;
-import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.JCodeSB;
-import water.fvec.*;
-import water.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -486,6 +485,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   } // Output
 
+  protected String[][] scoringDomains() {return _output._domains;}
   public O _output; // TODO: move things around so that this can be protected
 
   public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
@@ -615,6 +615,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an categorical
+          if (vec.isString())
+            vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             CategoricalWrappedVec evec;
             try {
@@ -1041,13 +1043,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     sb.nl();
     sb.ip("// Column domains. The last array contains domain of response column.").nl();
     sb.ip("public static final String[][] DOMAINS = new String[][] {").nl();
-    for (int i=0; i<_output._domains.length; i++) {
+    String [][] domains = scoringDomains();
+    for (int i=0; i< domains.length; i++) {
       final int idx = i;
-      final String[] dom = _output._domains[i];
+      final String[] dom = domains[i];
       final String colInfoClazz = modelName+"_ColInfo_"+i;
       sb.i(1).p("/* ").p(_output._names[i]).p(" */ ");
       if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
-      if (i!=_output._domains.length-1) sb.p(',');
+      if (i!=domains.length-1) sb.p(',');
       sb.nl();
       // Right now do not generate the class representing column
       // since it does not hold any interesting information except String array holding domain

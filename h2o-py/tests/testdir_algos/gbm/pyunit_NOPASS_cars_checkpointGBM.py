@@ -158,11 +158,11 @@ def cars_checkpoint():
     print(model4.summary())
 
     print("\n*** Score History for model 2:")
-    print(model2.score_history())
+    print(model2.scoring_history())
     print("\n*** Score History for model 3:")
-    print(model3.score_history())
+    print(model3.scoring_history())
     print("\n*** Score History for model 4:")
-    print(model4.score_history())
+    print(model4.scoring_history())
 
     # checks
     if problem == 0:

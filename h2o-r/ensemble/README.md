@@ -1,6 +1,6 @@
 # H2O Ensemble
 
-The `h2oEnsemble` R package provides functionality to create ensembles from the base learning algorithms that are accessible via the `h2o` R package (H2O version 3.0 and above).  This type of ensemble learning is called "super learning", "stacked regression" or "stacking."  The Super Learner algorithm learns the optimal combination of the base learner fits. In a 2007 article titled, "[Super Learner](http://dx.doi.org/10.2202/1544-6115.1309)," it was shown that the super learner ensemble represents an asymptotically optimal system for learning.
+The **h2oEnsemble** R package provides functionality to create ensembles from the base learning algorithms that are accessible via the **h2o** R package (H2O version 3.0 and above).  This type of ensemble learning is called "super learning", "stacked regression" or "stacking."  The Super Learner algorithm learns the optimal combination of the base learner fits. In a 2007 article titled, "[Super Learner](http://dx.doi.org/10.2202/1544-6115.1309)," it was shown that the super learner ensemble represents an asymptotically optimal system for learning.
 
 ![H2O Ensemble Super Learners](h2oEnsemble.png "H2O Ensemble Super Learners")
 
@@ -12,20 +12,37 @@ The [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stac
 ## Installation
 
 ### Prerequisites
-The current version of `h2oEnsemble` requires the latest version of the `h2o` R package to run.  At the [H2O download page](http://h2o.ai/download/), install the latest stable release of the `h2o` R package.  
+
+The **h2oEnsemble** R package requires the **h2o** R package (and its dependencies) to run.  We always recommend the latest stable version, which you can find on the [H2O R Downloads page](http://www.h2o.ai/download/h2o/r).
 
 
-### Install H2O Ensemble
-The `h2oEnsemble` package can be installed using either of the following methods.
+### Install H2O Ensemble (Stable)
+The latest stable version, compatible with the H2O "Tukey" release, be installed as follows:
 
-Recommended:
-- Install in R using `devtools::install_github`:
+```r
+install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz", repos = NULL)
+``` 
+
+To install **h2oEnsemble** for a previous stable release of H2O, you can replace the URL above with the URL in the table below that matches your H2O version.
+
+|H2O Stable Release| h2oEnsemble version|
+|:---------|:----------|
+|H2O [3.8.0.1](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/1/index.html) (Tukey)|[h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
+|H2O [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)|
+|H2O [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)|
+
+### Install Development Version
+The following are two ways that you can install the development version of the **h2oEnsemble** package. 
+
+- Install directly from GitHub in R using `devtools::install_github`:
+
 ```r
 library(devtools)
 install_github("h2oai/h2o-3/h2o-r/ensemble/h2oEnsemble-package")
 ```
-If you cloned the main h2o-3 repo:
-- Clone the main h2o repository and install the package:
+
+- Clone the main h2o-3 repository and install the package:
+
 ```bash
 git clone https://github.com/h2oai/h2o-3.git
 R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
@@ -65,7 +82,10 @@ Check out the `h2o.save_ensemble` and `h2o.load_ensemble` functions to save and 
 - Passing the `validation_frame` to `h2o.ensemble` does not currently do anything.  Right now, you must use the `predict.h2o.ensemble` function to generate predictions on a test set.
 
 
+## Bug Reports
+- Please report any bugs or issues you may be having (or just general questions) to [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
+
 ## Benchmarks
 
-Benchmarking code for `h2oEnsemble` Classic (compatible with H2O Classic (H2O version < 3.0)) is available here: [https://github.com/ledell/h2oEnsemble-benchmarks](https://github.com/ledell/h2oEnsemble-benchmarks)  These benchmarks are out of date -- a major rewrite of the `h2o.ensemble` backend occured in version 0.0.5, which speeds things up quite a bit.  New benchmarks forthcoming. 
+Benchmarking code for **h2oEnsemble Classic** (compatible with H2O version 2.0, aka "H2O Classic") is available here: [https://github.com/ledell/h2oEnsemble-benchmarks](https://github.com/ledell/h2oEnsemble-benchmarks)  These benchmarks are out of date -- a major rewrite of the `h2o.ensemble` backend occured in version 0.0.5, which speeds things up a lot.  New benchmarks forthcoming. 
 

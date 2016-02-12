@@ -62,12 +62,12 @@ public class ConfusionMatrix extends Iced {
 
   public final int size() { return _cm.length; }
 
-  public final double classErr(int c) {
+  public final double class_error(int c) {
     double s = ArrayUtils.sum(_cm[c]);
     if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer
     return (s - _cm[c][c]) / s;
   }
-  public double totalRows() {
+  public double total_rows() {
     double n = 0;
     for (double[] a_arr : _cm)
       n += ArrayUtils.sum(a_arr);
@@ -82,14 +82,14 @@ public class ConfusionMatrix extends Iced {
    * @return overall classification error
    */
   public double err() {
-    double n = totalRows();
+    double n = total_rows();
     double err = n;
     for( int d = 0; d < _cm.length; ++d )
       err -= _cm[d][d];
     return err / n;
   }
-  public double errCount() {
-    double err = totalRows();
+  public double err_count() {
+    double err = total_rows();
     for( int d = 0; d < _cm.length; ++d )
       err -= _cm[d][d];
     return err;
@@ -149,9 +149,9 @@ public class ConfusionMatrix extends Iced {
   public double max_per_class_error() {
     int n = nclasses();
     if(n == 0)throw new UnsupportedOperationException("max per class error is only defined for classification problems");
-    double res = classErr(0);
+    double res = class_error(0);
     for(int i = 1; i < n; ++i)
-      res = Math.max(res,classErr(i));
+      res = Math.max(res, class_error(i));
     return res;
   }
 

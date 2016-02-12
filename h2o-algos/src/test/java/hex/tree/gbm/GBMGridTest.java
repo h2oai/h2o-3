@@ -48,13 +48,14 @@ public class GBMGridTest extends TestUtil {
       DKV.put(fr);
 
       // Setup hyperparameter search space
-      HashMap<String, Object[]> hyperParms = new HashMap<>();
-      hyperParms.put("_ntrees", new Integer[]{1, 2});
-      hyperParms.put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
-      hyperParms.put("_max_depth", new Integer[]{1, 2, 5});
-      Float[] legalLearnRateOpts = new Float[]{0.01f, 0.1f, 0.3f};
-      Float[] illegalLearnRateOpts = new Float[]{-1f};
-      hyperParms.put("_learn_rate", ArrayUtils.join(legalLearnRateOpts, illegalLearnRateOpts));
+      final Float[] legalLearnRateOpts = new Float[]{0.01f, 0.1f, 0.3f};
+      final Float[] illegalLearnRateOpts = new Float[]{-1f};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_ntrees", new Integer[]{1, 2});
+        put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
+        put("_max_depth", new Integer[]{1, 2, 5});
+        put("_learn_rate", ArrayUtils.join(legalLearnRateOpts, illegalLearnRateOpts));
+      }};
 
       // Name of used hyper parameters
       String[] hyperParamNames = hyperParms.keySet().toArray(new String[hyperParms.size()]);
@@ -135,11 +136,12 @@ public class GBMGridTest extends TestUtil {
       DKV.put(fr);
 
       // Setup random hyperparameter search space
-      HashMap<String, Object[]> hyperParms = new HashMap<>();
-      hyperParms.put("_distribution", new Distribution.Family[]{Distribution.Family.gaussian});
-      hyperParms.put("_ntrees", new Integer[]{5, 5});
-      hyperParms.put("_max_depth", new Integer[]{2, 2});
-      hyperParms.put("_learn_rate", new Float[]{.1f, .1f});
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new Distribution.Family[]{Distribution.Family.gaussian});
+        put("_ntrees", new Integer[]{5, 5});
+        put("_max_depth", new Integer[]{2, 2});
+        put("_learn_rate", new Float[]{.1f, .1f});
+      }};
 
       // Fire off a grid search
       GBMModel.GBMParameters params = new GBMModel.GBMParameters();

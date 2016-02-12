@@ -16,7 +16,7 @@ def score_history_test():
     gbm_mult = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth","fMonth"]],
                        y=air_train["fDayOfWeek"].asfactor(),
                        distribution="multinomial")
-    score_history = gbm_mult.score_history()
+    score_history = gbm_mult.scoring_history()
     print(score_history)
 
 

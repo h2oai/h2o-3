@@ -1,9 +1,7 @@
 # News for the h2oEnsemble package. #
 
-h2oEnsemble 0.1.5.9000 (devel)
+h2oEnsemble (devel)
 -----------------
-* Updated default value for `model_id` in wrapper functions from `""` to `NULL`.  Was causing an NPE on the master branch of h2o-3. Issue documented here: https://0xdata.atlassian.net/browse/PUBDEV-2623
-* Updated default `prior` value in `h2o.glm.wrapper` from 0 (no longer supported in `h2o.glm`) to `NULL`.  Issue documented here: https://0xdata.atlassian.net/browse/PUBDEV-2624
 * TO DO: Add utility function, `h2o.stack` which takes as input a list of "H2OModel" objects and returns an object of class, "h2o.ensemble".  
 * TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
@@ -11,6 +9,15 @@ h2oEnsemble 0.1.5.9000 (devel)
 * TO DO: Add ability to generate predicted values using the `validation_frame` argument; currently this arg is ignored and doesn't do anything, and predictions must be made with the `predict.h2o.ensemble` function.  This should also include setting a new output object to store metrics.
 * TO DO: Add a utility function, `h2o.ensemble_metrics` to extract default performance metrics for binomial and gaussian family (AUC and MSE).  Also need functions to compute AUC and MSE from predicted y and true y (need use Java AUC and MSE functions).
 * TO DO: Add support for multi-class classification.
+
+
+h2oEnsemble 0.1.6 (2016-02-10)
+-----------------
+* Updated default value for `model_id` in wrapper functions from `""` to `NULL`.  Was causing an NPE on the master branch of h2o-3. Issue documen
+ted here: https://0xdata.atlassian.net/browse/PUBDEV-2623
+* Updated default `prior` value in `h2o.glm.wrapper` from 0 (no longer supported in `h2o.glm`) to `NULL`.  Issue documented here: https://0xdata.
+atlassian.net/browse/PUBDEV-2624
+* Updated wrapper arguments to match the master branch of h2o-3, which contained several new arguments for all four modeling functions.
 
 
 h2oEnsemble 0.1.5 (2015-12-16)

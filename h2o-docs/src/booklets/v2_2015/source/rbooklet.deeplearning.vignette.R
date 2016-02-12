@@ -16,25 +16,28 @@
 
 deeplearningBooklet <-
 function() {
-    approvedRCodeExamples <- c(
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_importfile_example.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_examplerun.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_crossval.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_inspect_model.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_predict.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_varimp.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_savemodel.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_getmodel.R"),
-    h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_anomaly.R"))
+    story1  <- c(h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_importfile_example.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_examplerun.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_crossval.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_inspect_model.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_predict.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_varimp.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_result.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_gridsearch_random.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_checkpoint.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_savemodel.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_loadmodel_checkpoint.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_getmodel.R"),
+                 h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_anomaly.R"))
+    story2  <- c(h2o:::.h2o.locate("DeepLearning_Vignette_code_examples/deeplearning_quantile.R"))
+
+    approvedRCodeExamples <- c(story1,story2)
 
     checkCodeExamplesInDir(approvedRCodeExamples, h2o:::.h2o.locate("DeepLearning_Vignette_code_examples"))
 
-    story1 <- approvedRCodeExamples
     checkStory("story1",story1)
+    checkStory("story2",story2)
 }
 
 deeplearningBooklet()

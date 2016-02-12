@@ -37,7 +37,7 @@
 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fifth Edition 
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 
 \bigskip
 \end{center}
@@ -72,7 +72,7 @@ Mountain View, CA 94043\\
 \textcopyright \the\year \hspace{1pt} H2O.ai, Inc. All Rights Reserved. 
 \bigskip
 
-\monthname \hspace{1pt}  \the\year: Fifth Edition 
+\monthname \hspace{1pt}  \the\year: Sixth Edition
 \bigskip
 
 Photos by \textcopyright H2O.ai, Inc.
@@ -130,7 +130,7 @@ R and Python code for the examples in this document are available here:\\
 
 To cite this booklet, use the following: 
 
-Click, C., Malohlava, M., Parmar, V., Roark, H., and Candel, A. (Nov. 2015). \textit{Gradient Boosted Models with H2O}. \url{http://h2o.ai/resources/}. 
+Click, C., Malohlava, M., Parmar, V., Roark, H., and Candel, A. (\shortmonthname\ \the\year). \textit{Gradient Boosted Models with H2O}. \url{http://h2o.ai/resources/}.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -155,7 +155,7 @@ H2O's GBM functionalities include:
 \item the ability to run H2O from R, Python, Scala, or the intuitive web UI (Flow)
 \item automatic early stopping based on convergence of user-specified metrics to user-specified relative tolerance
 \item stochastic gradient boosting with column and row sampling (per split and per tree) for better generalization
-\item support for exponential families (Poisson, Gamma, Tweedie) and loss functions in addition to binomial (Bernoulli), Gaussian and multinomial distributions, such as Quantile regression
+\item support for exponential families (Poisson, Gamma, Tweedie) and loss functions in addition to binomial (Bernoulli), Gaussian and multinomial distributions, such as Quantile regression (including Laplace)
 \item grid search for hyperparameter optimization and model selection
 \item model export in plain Java code for deployment in production environments
 \item additional parameters for model tuning (for a complete listing of parameters, refer to the {\textbf{\nameref{ssec:Model Parameters}}} section.)
@@ -219,7 +219,7 @@ The final procedure in the inner loop is to add the current model to the fitted 
 \subsection{Distributed Trees}
 
 H2O's implementation of GBM uses distributed trees. H2O overlays trees on the data by assigning a tree node to each row.
-The nodes are numbered and the number of each node is stored as {\texttt{Node\_ID}} in a temporary vector for each row. H2O makes a pass over all the rows using the most efficient method (not necessarily  numerical order). 
+The nodes are numbered and the number of each node is stored as {\texttt{Node\_ID}} in a temporary vector for each row. H2O makes a pass over all the rows using the most efficient method (not necessarily numerical order). 
 
 A local
 histogram using only local data is created in parallel for each row on each node. The histograms are then assembled and a split column is selected to make the decision. The rows are re-assigned to nodes and the entire process is repeated.
@@ -229,8 +229,7 @@ them to make an algorithmically-based decision, such as lowest mean squared erro
 tree (and the next MR task), a decision is made for each row: if X $<$ 1.5, go right in the tree; otherwise, go left.
 H2O computes the stats for each new leaf in the tree, and each pass across all the rows builds the entire layer.
 
-For multinomial or binomial models, each bin is inspected as a potential split point. The best split point is selected after evaluating all bins. For example, for a hundred-column dataset that uses twenty bins,
-there are 2000 (20x100) possible split points.
+Each bin is inspected as a potential split point. The best split point is selected after evaluating all bins. For example, for a hundred-column dataset that uses twenty bins, there are 2000 (20x100) possible split points.
 
 Each layer is computed using another MR task: a tree that is five layers deep requires five passes. Each tree
 level is fully data-parallelized. Each pass  builds a per-node histogram in the MR call over one layer in the tree.  During each pass, H2O analyzes the tree level and decides how to build the next level. In another pass, H2O reassigns rows to new levels by merging the two passes and then builds a histogram for each node. Each per-level histogram is done in parallel.
@@ -239,16 +238,9 @@ Scoring and building is done in the same pass. Each row is tested against the de
 to a new leaf, where a histogram is built. To score, H2O traverses the tree and obtains the results. The
 tree is compressed to a smaller object that can still be traversed, scored, and printed.
 
-Although the GBM algorithm builds each tree one level at a time, H2O is able to quickly run the entire level in
-parallel and distributed. The processing requirements for more data can be offset by more CPUs or nodes.
-The data can be very large for deep trees. Large trees that need to be sent over the network can be expensive, due to the size of the dataset, which can lead to slow model build times. 
-
-
-For the MSE reports, the zero-tree report uses the class distribution as the prediction. The one-tree report
-uses the first tree, so the first two reports are not equal. The reported MSE is the inclusive effect of all
-prior trees and generally decreases monotonically on the training dataset. However, the curve will generally
-bottom out and then begin to slowly rise on the validation set as overfitting sets in.
-
+Since the GBM algorithm builds each tree one level at a time, H2O is able to quickly run the entire level in
+parallel and distributed. Model building for large datasets can be sped up significantly by adding more CPUs or more compute nodes.
+Note that the communication requirements can be large for deep trees (not common for GBMs though) and can lead to slow model build times. 
 The computing cost is based on a number of factors, including the final count of leaves in all trees. Depending on the dataset, the number of leaves can be
 difficult to predict. The maximum number of leaves is $2^d$, where $d$ represents the tree depth.
 
@@ -300,6 +292,21 @@ To stop model training after a given amount of seconds, specify \texttt{max\_run
 
 \subsubsection{Stochastic GBM}
 Stochastic GBM is a way to improve generalization by sampling columns (per split) and rows (per tree) during the model building process. To control the sampling ratios use \texttt{sample\_rate} for rows (per tree), \texttt{col\_sample\_rate\_per\_tree} for columns per tree and \texttt{col\_sample\_rate} for columns per split. All three parameters must range from 0 to 1, and default to 1.
+
+\subsubsection{Distributions and Loss Functions}
+Distributions and loss functions are tightly coupled. By specifying the distribution, the loss function is automatically selected as well. For exponential families such as Poisson, Gamma, Tweedie, the canonical logarithmic link function is used.
+
+For example, to predict the 80-th percentile of the petal length of the Iris dataset in R, use the following:
+
+\waterExampleInR
+\lstinputlisting[style=R]{GBM_Vignette_code_examples/gbm_quantile.R}
+
+To predict the 80-th percentile of the petal length of the Iris dataset in Python, use the following:
+
+\waterExampleInPython
+\lstinputlisting[style=python]{GBM_Vignette_code_examples/gbm_quantile.py}
+
+
 
 \section{Use Case: Airline Data Classification}
 Download the Airline dataset from: {\url{https://github.com/h2oai/h2o-2/blob/master/smalldata/airlines/allyears2k_headers.zip}} and save the .csv file to your working directory. 
