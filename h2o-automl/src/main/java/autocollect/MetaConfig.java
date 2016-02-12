@@ -58,7 +58,7 @@ public class MetaConfig {
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
-    return metaConfigs.toArray(new MetaConfig[0]);
+    return metaConfigs.toArray(new MetaConfig[metaConfigs.size()]);
   }
 
   public int[] x() { return _x; }
@@ -66,6 +66,7 @@ public class MetaConfig {
   public String name() { return _datasetName; }
   public Frame frame() { return _fr; }
 
+  // some stupid public methods for testing
   public void setncol(int n) { _ncol=n; }
   public void setDefaultTypes() { _colTypes = new byte[_ncol]; Arrays.fill(_colTypes,Vec.T_NUM); }
   public void sety() { _y=_ncol-1; }
@@ -120,7 +121,6 @@ public class MetaConfig {
   private void readName(String line) { _datasetName = line.trim(); }
   private void parseFrame() {
     _ps.setColumnTypes(_colTypes);
-    _ps.setParseType(_parseType);
     _fr=AutoCollect.parseFrame(_ps,_nfskey);
   }
   private void readParseType(String line) {
@@ -145,6 +145,7 @@ public class MetaConfig {
       case "binary":
       case "binary_classification": _task=BCLASS; break;
       case "m":
+      case "multiclass":
       case "multinomial":
       case "multinomial_classification": _task=MCLASS; break;
       case "r":
@@ -164,6 +165,7 @@ public class MetaConfig {
         case "n":
         case "num":
         case "numeric":
+        case "enum":
         case "c":
         case "cat":
         case "categorical": fillColType(-1,line); break;
@@ -224,7 +226,7 @@ public class MetaConfig {
     assert f.exists():" file not found.";
     NFSFileVec nfs = NFSFileVec.make(f);
     _nfskey = nfs._key;
-    _ps = AutoCollect.paresSetup(nfs);
+    _ps = AutoCollect.paresSetup(nfs,_parseType);
     _ncol = _ps.getColumnNames().length;
     _colTypes = _ps.getColumnTypes();
   }
