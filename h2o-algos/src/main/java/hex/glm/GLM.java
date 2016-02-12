@@ -452,7 +452,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           throw new NonSPDMatrixException("Found collinear columns in the dataset. Can not compute compute p-values without removing them, set remove_collinear_columns flag to true. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
         }
         if(!chol.isSPD()) throw new NonSPDMatrixException();
-        _chol = chol;
         if(!ignoredCols.isEmpty()) { // got some redundant cols
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
@@ -530,7 +529,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
           long t2 = System.currentTimeMillis();
-          double[] betaCnd = solveGram(t._gram, t._xy);
+          double[] betaCnd = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(t,_state._alpha,_state.lambda()):solveGram(t._gram, t._xy);
           if (betaCnd.length < ls.getX().length) {
             ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
               ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
@@ -554,8 +553,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitLBFGS() {
       double [] beta = _state.beta();
       double lambda = _state.lambda();
-      final double l1pen = lambda * _parms._alpha[0];
-      final double l2pen = lambda * (1-_parms._alpha[0]);
+      final double l1pen = _state.l1pen();
+      final double l2pen = _state.l2pen();
       GLMGradientSolver gslvr = _state.gslvr();
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       if (_parms._family == Family.multinomial) {
