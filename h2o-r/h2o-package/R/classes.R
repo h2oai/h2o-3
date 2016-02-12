@@ -492,6 +492,7 @@ setClass("H2OModelFuture", representation(job_key="character", model_id="charact
 #' @slot failure_stack_traces  list of stack traces corresponding to model failures reported by
 #'                             failed_params and failure_details fields
 #' @slot failed_raw_params list of failed raw parameters
+#' @slot summary_table table of models built with parameters and metric information.
 #' @seealso \linkS4class{H2OModel} for the final model types.
 #' @aliases H2OGrid
 #' @export
@@ -501,7 +502,8 @@ setClass("H2OGrid", representation(grid_id = "character",
                                    failed_params = "list",
                                    failure_details = "list",
                                    failure_stack_traces = "list",
-                                   failed_raw_params = "matrix"))
+                                   failed_raw_params = "matrix",
+                                   summary_table = "ANY"))
 
 #' Format grid object in user-friendly way
 #'
@@ -518,28 +520,7 @@ setMethod("show", "H2OGrid", function(object) {
   cat("Number of failed models:", length(object@failed_params), "\n\n")
   hyper_names <- object@hyper_names
   model_ids <- sapply(object@model_ids, function(model_id) { model_id })
-  if (length(object@model_ids) > 0) {
-    # Fetch all models
-    all_models <- lapply(object@model_ids, function(model_id) { h2o.getModel(model_id) })
-    # Extract hyper parameters from models
-    params_ok <- lapply(hyper_names, function(name) {
-                      sapply(all_models, function(model) {
-                             v <- model@allparameters[[name]]
-                             if ((is.list(v) || is.array(v) || is.vector(v)) && length(v) > 1) {
-                               .collapse(v)
-                             } else {
-                               v
-                             }
-                      })
-                    })
-    names(params_ok) <- hyper_names # Assign correct names to items in params list
-    status_ok <- rep("OK", length(object@model_ids))
-    cat("Generated models\n")
-    cat("----------------\n")
-    if ( length(params_ok) > 0 ) { print(data.frame(params_ok, status_ok, model_ids), row.names = FALSE)
-    } else {                       print(data.frame(           status_ok, model_ids), row.names = FALSE) }
-
-  }
+  print(object@summary_table)
   if (length(object@failed_params) > 0) {
     # Extract failed parameters info
     params_failed <- lapply(1:length(hyper_names), function(idx) {

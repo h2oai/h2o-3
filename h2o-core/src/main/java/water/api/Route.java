@@ -1,12 +1,13 @@
 package water.api;
 
-import water.H2O;
-import water.Iced;
-import water.util.MarkdownBuilder;
+import com.google.code.regexp.Pattern;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import com.google.code.regexp.Pattern;
+
+import water.H2O;
+import water.Iced;
+import water.util.MarkdownBuilder;
 
 /**
 * Routing of an http request to a handler method, with path parameter parsing.
@@ -28,7 +29,16 @@ final class Route extends Iced {
   public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
   public Handler _handler;
 
-  public Route() { }
+  /** Handler factory configures a way how handler is instantiated.
+   *
+   * PLEASE: do not remove it even H2O is not using it. It is used by Sparkling Water, since
+   * it needs to pass a Spark context to a new handler
+   */
+  final HandlerFactory _handler_factory;
+
+  public Route() {
+    _handler_factory = null;
+  }
 
   public Route(String http_method,
                String url_pattern_raw,
@@ -37,8 +47,10 @@ final class Route extends Iced {
                Class<? extends Handler> handler_class,
                Method handler_method,
                Method doc_method,
-               String[] path_params) {
+               String[] path_params,
+               HandlerFactory handler_factory) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
+    assert handler_factory != null : "handler_factory should be not null, caller has to pass it!";
     _http_method = http_method;
     _url_pattern_raw = url_pattern_raw;
     _url_pattern = url_pattern;
@@ -47,8 +59,13 @@ final class Route extends Iced {
     _handler_method = handler_method;
     _doc_method = doc_method;
     _path_params = path_params;
-    try { _handler = handler_class.newInstance(); }
-    catch( Exception ie ) { H2O.fail("failed to register handler "+handler_class.getSimpleName()+"."+handler_method.getName(),ie); }
+    _handler_factory = handler_factory;
+    try {
+      _handler = _handler_factory.create(_handler_class);
+    } catch (Exception ie) {
+      H2O.fail("failed to register handler " + handler_class.getSimpleName() + "." + handler_method
+          .getName(), ie);
+    }
   }
 
   /**

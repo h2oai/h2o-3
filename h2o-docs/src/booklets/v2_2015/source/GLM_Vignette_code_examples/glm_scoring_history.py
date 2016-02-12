@@ -1,1 +1,1 @@
-binomial_fit.score_history
+binomial_fit.scoring_history

@@ -54,7 +54,7 @@ public class APIThrPriorTest extends TestUtil {
   
       // Block till the builder sets _driver_priority, and is blocked on state==1
       synchronized(blder) {
-        while( blder._state == 0 ) try { blder.wait(); } catch( InterruptedException _ ) { }
+        while( blder._state == 0 ) try { blder.wait(); } catch (InterruptedException ignore) { }
         assert blder._state == 1;
       }
       int driver_prior = blder._driver_priority;
@@ -186,7 +186,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;
         Bogus.this.notify();
-        while( _state==1 ) try { Bogus.this.wait(); } catch( InterruptedException _ ) { }
+        while( _state==1 ) try { Bogus.this.wait(); } catch (InterruptedException ignore) { }
       }
       tryComplete();
     }

@@ -17,7 +17,7 @@ def fiftycatRF():
   # Train H2O DRF Grid:
   hyper_parameters = {'ntrees':[10,50], 'max_depth':[20,10]}
   model = H2OGridSearch(H2ORandomForestEstimator, hyper_params=hyper_parameters )
-  model.show()
+  print(model)
   model.train(x=["x1", "x2"], y="y", training_frame=train)
   model.show()
   model.summary()
