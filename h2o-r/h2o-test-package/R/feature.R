@@ -10,6 +10,7 @@ function(testCase) {
 
     h2oEnv <- new.env() # new environment for do.call, that has the h2o args defined
     argsH2O <- .makeArgList(h2oFeatureParamsList, dataSets, testCase@feature, h2oEnv, FALSE)
+    names(argsH2O) <- lapply(argsH2O, function(x) { toString(x) })
 
     h2oRes <- do.call(what=testCase@feature, args=argsH2O, envir=h2oEnv)
     h2oTest.logInfo("The result of the H2O operation:")
@@ -21,6 +22,7 @@ function(testCase) {
 
         rEnv <- new.env()
         argsR <- .makeArgList(rFeatureParamsList, dataSets, testCase@feature, rEnv, TRUE)
+        names(argsR) <- lapply(argsR, function(x) { toString(x) })
 
         rRes  <- do.call(what=.whatR(testCase@feature), args=argsR, envir=rEnv)
         h2oTest.logInfo("The result of the R operation:")
@@ -90,15 +92,15 @@ function(dataSets) {
 # allow optional parameters.
 .makeH2OFeatureParamsList<-
 function(featureParamsString) {
-    featureParamsList <- as.list(strsplit(featureParamsString,";")[[1]])
+    featureParamsList <- lapply(strsplit(featureParamsString,";")[[1]], function (p) {
+        argNameValue <- strsplit(p,"=")[[1]]
+        argName <- argNameValue[1]
+        # evaluate the individual parameter strings
+        argValue <- eval(parse(text=argNameValue[2])) # parameters in the the parameter string should be valid R expressions
+        list(name=argName, value=argValue)
+    })
 
     if (length(featureParamsList) == 0) { return(featureParamsList) }
-    # evaluate the individual parameter strings
-    for (i in 1:length(featureParamsList)) {
-        p <- eval(parse(text=featureParamsList[[i]])) # parameters in the the parameter string should be valid R expressions
-        if (is.null(p)) { featureParamsList[i]   <- list(NULL)
-        } else {          featureParamsList[[i]] <- p }
-    }
     return(featureParamsList)
 }
 
@@ -126,7 +128,8 @@ function(feature, r) {
                            "tanh","atanh", "all", "&", "h2o.cbind", "colnames", "[", "h2o.hist", "h2o.impute",
                            "h2o.rep_len", "t", "h2o.var", "abs", "ceiling", "digamma", "exp", "gamma", "floor",
                            "expm1", "is.na", "lgamma", "log", "log2", "log1p", "log10", "!", "round", "sign",
-                           "signif", "trigamma", "trunc", "ncol", "nrow", "sqrt")) {
+                           "signif", "trigamma", "trunc", "ncol", "nrow", "sqrt", "|", "%%", "*", "-", "%/%", "scale",
+                           "^", "+", ">=", ">", "<=", "<", "==", "!=", "h2o.nlevels")) {
             return("data.frame")
         } else if (feature %in% c("h2o.table")) {
             return("data.frameORvector")
@@ -171,22 +174,22 @@ function(dataSet, dataArgsType) {
 # modifies env
 .makeArgList<-
 function(featureParamsList, dataSets, feature, env, r) {
-    parameterNameSpace <- LETTERS
-    symbolCount <- 0
 
+    argNames <- c()
     dataArgsType <- .getDataArgsType(feature, r)
 
     for (d in dataSets) {
         dArg <- .makeDataArg(d, dataArgsType)
-        assign(parameterNameSpace[symbolCount+1], dArg, envir=env)
-        symbolCount <- symbolCount + 1
+        assign(d@dataArgName, dArg, envir=env)
+        argNames <- c(argNames, d@dataArgName)
     }
 
     for (f in featureParamsList) {
-        assign(parameterNameSpace[symbolCount+1], f, envir=env)
-        symbolCount <- symbolCount + 1
+        assign(f$name, f$value, envir=env)
+        argNames <- c(argNames, f$name)
     }
-    return(lapply(LETTERS[1:symbolCount], function(s) { as.name(s) }))
+
+    return(lapply(argNames, function(s) { as.name(s) }))
 }
 
 
@@ -397,6 +400,7 @@ function(op) {
     } else if (op == "is.na")         { return("is.na")
     } else if (op == "lgamma")        { return("lgamma")
     } else if (op == "h2o.levels")    { return("levels")
+    } else if (op == "h2o.nlevels")   { return("nlevels")
     } else if (op == "log")           { return("log")
     } else if (op == "log2")          { return("log2")
     } else if (op == "log1p")         { return("log1p")
@@ -410,20 +414,21 @@ function(op) {
     } else if (op == "trigamma")      { return("trigamma")
     } else if (op == "trunc")         { return("trunc")
     } else if (op == "sqrt")          { return("sqrt")
+    } else if (op == "&")             { return("&")
+    } else if (op == "|")             { return("|")
+    } else if (op == "%%")            { return("%%")
+    } else if (op == "*")             { return("*")
+    } else if (op == "-")             { return("-")
+    } else if (op == "%/%")           { return("%/%")
+    } else if (op == "scale")         { return("scale")
+    } else if (op == "^")             { return("^")
+    } else if (op == "+")             { return("+")
+    } else if (op == ">=")            { return(">=")
+    } else if (op == ">")             { return(">")
+    } else if (op == "<=")            { return("<=")
+    } else if (op == "<")            { return("<")
+    } else if (op == "==")            { return("==")
+    } else if (op == "!=")            { return("!=")
+    } else if (op == "/")             { return("/")
     }
 }
-
-#h2oTest.loadFeatureTestCase<-
-#function(testCaseId) {
-#    testCase <- new("FeatureTestCase")
-#    h2oTest.logInfo(slotNames(testCase))
-#    print(testCase@featureTestCasesCSV)
-#    featureTestCasesCSVPath <- h2oTest.locate(testCase@featureTestCasesCSV)
-#    print(featureTestCasesCSVPath)
-#    if (file.exists(featureTestCasesCSVPath)) {
-#        featureTestCasesCSVTable <- read.table(featureTestCasesCSVPath,header=TRUE,sep="|")
-#    } else {
-#        h2oTest.fail(paste0("Couldn't find featureTestCases.csv which should be located in: ",featureTestCasesCSVPath))
-#    }
-#    print(featureTestCasesCSVTable)
-#}

@@ -1,5 +1,6 @@
 setClass("FeatureDataSet",
          slots=c(
+               dataArgName="character",
                dataSetId="integer",
                uri="character",
                key="character"
@@ -7,7 +8,15 @@ setClass("FeatureDataSet",
 )
 
 FeatureDataSet<-
-function(dataSetId, uri) {
+function(dataArgName, dataSetId, uri) {
+    if (missing(dataArgName)) {
+        stop("Missing `dataArgName`, which is required for proper FeatureDataSet object construction.")
+    } else {
+        if (!is.character(dataArgName) || !nzchar(dataArgName)) {
+            stop("FeatureDataSet slot `dataSetId` must be a non-empty character vector.")
+        }
+    }
+
     if (missing(dataSetId)) {
         stop("Missing `dataSetId`, which is required for proper FeatureDataSet object construction.")
     } else {
@@ -24,7 +33,7 @@ function(dataSetId, uri) {
         }
     }
 
-    new("FeatureDataSet", dataSetId=dataSetId, uri=uri)
+    new("FeatureDataSet", dataArgName=dataArgName, dataSetId=dataSetId, uri=uri)
 }
 
 setClassUnion("FeatureDataSetOrNULL", c("FeatureDataSet", "NULL"))

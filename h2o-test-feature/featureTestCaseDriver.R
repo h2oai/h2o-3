@@ -197,8 +197,8 @@ function(h2oRDir) {
 #'
 makeTestCase<-
 function(driverArgs, featureDataSetsCSV) {
-    ids <- strsplit(driverArgs$dataSetIds,";")[[1]]
-    dataSets <- lapply(ids, function (id) { makeDataSet(as.integer(id), featureDataSetsCSV) })
+    ds <- strsplit(driverArgs$dataSetIds,";")[[1]]
+    dataSets <- lapply(ds, function (d) { makeDataSet(d, featureDataSetsCSV) })
     validationDataSet <- makeDataSet(as.integer(driverArgs$validationDataSetId), featureDataSetsCSV)
     featureTestCase <- FeatureTestCase(
                        id = as.integer(driverArgs$testCaseId),
@@ -211,11 +211,14 @@ function(driverArgs, featureDataSetsCSV) {
 }
 
 makeDataSet<-
-function(id, featureDataSetsCSV) {
-    if (!is.na(id)) {
+function(d, featureDataSetsCSV) {
+    if (!is.na(d)) {
         featureDataSets <- read.csv(featureDataSetsCSV, header=TRUE)
+        nameAndId <- strsplit(d, "=")[[1]]
+        nm <- nameAndId[1]
+        id <- as.integer(nameAndId[2])
         uri <- featureDataSets[featureDataSets$data_set_id == id, 2]
-        return(FeatureDataSet(id, as.character(uri)))
+        return(FeatureDataSet(nm, id, as.character(uri)))
     }
     return(NULL)
 }
