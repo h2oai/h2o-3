@@ -449,7 +449,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
             collinear_cols[i] = ignoredCols.get(i);
-          throw new NonSPDMatrixException("Found collinear columns in the dataset. Can not compute compute p-values without removing them, set remove_collinear_columns flag to true. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
+          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove collinear columns automatically. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
         }
         if(!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
@@ -802,9 +802,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
-        double [] zvalues = new double[_state.activeData().fullN()+1];
+        double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
         double [] gInvDiag = _chol.getInvDiag();
-
         for(int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i]/Math.sqrt(_parms._obj_reg*gInvDiag[i]*se);
         _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
