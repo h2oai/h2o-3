@@ -46,7 +46,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     final boolean autoencoder;
 
-    DeepLearningScoring errors;
+    DeepLearningScoringInfo errors;
     Key[] weights;
     Key[] biases;
     double[] normmul;
@@ -112,8 +112,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public long training_rows;
   public long validation_rows;
 
-  private DeepLearningScoring[] scoringInfo;
-  public DeepLearningScoring[] scoring_history() { return scoringInfo; }
+  private DeepLearningScoringInfo[] scoringInfo;
+  public DeepLearningScoringInfo[] scoring_history() { return scoringInfo; }
   public ScoreKeeper[] scoreKeepers() {
     ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
     for (int i=0;i<sk.length;++i) {
@@ -129,7 +129,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public Key model_info_key;
 
   // return the most up-to-date model metrics
-  DeepLearningScoring last_scored() { return scoringInfo == null ? null : scoringInfo[scoringInfo.length-1]; }
+  DeepLearningScoringInfo last_scored() { return scoringInfo == null ? null : scoringInfo[scoringInfo.length-1]; }
 
   /**
    * Get the parameters actually used for model building, not the user-given ones (_parms)
@@ -271,7 +271,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[i] = cp.scoringInfo[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = DeepLearningScoring.createScoringHistoryTable(scoringInfo, get_params(), _output, _output.autoencoder);
+    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, get_params(), _output, _output.autoencoder);
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -300,12 +300,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
-      scoringInfo = new DeepLearningScoring[1];
-      scoringInfo[0] = new DeepLearningScoring();
+      scoringInfo = new DeepLearningScoringInfo[1];
+      scoringInfo[0] = new DeepLearningScoringInfo();
       scoringInfo[0].validation = (parms._valid != null);
       scoringInfo[0].time_stamp_ms = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = DeepLearningScoring.createScoringHistoryTable(scoringInfo, get_params(), _output, _output.autoencoder);
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, get_params(), _output, _output.autoencoder);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start_ms = System.currentTimeMillis();
@@ -398,7 +398,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
       model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
-      DeepLearningScoring scoringInfo = new DeepLearningScoring();
+      DeepLearningScoringInfo scoringInfo = new DeepLearningScoringInfo();
       scoringInfo.time_stamp_ms = _timeLastScoreStart;
       updateTiming(jobKey);
       scoringInfo.total_training_time_ms = total_training_time_ms;
@@ -493,9 +493,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo.this_scoring_time_ms = scoringTime;
       // enlarge the error array by one, push latest score back
       if (this.scoringInfo == null) {
-        this.scoringInfo = new DeepLearningScoring[]{scoringInfo};
+        this.scoringInfo = new DeepLearningScoringInfo[]{scoringInfo};
       } else {
-        DeepLearningScoring[] err2 = new DeepLearningScoring[this.scoringInfo.length + 1];
+        DeepLearningScoringInfo[] err2 = new DeepLearningScoringInfo[this.scoringInfo.length + 1];
         System.arraycopy(this.scoringInfo, 0, err2, 0, this.scoringInfo.length);
         err2[err2.length - 1] = scoringInfo;
         this.scoringInfo = err2;
@@ -518,7 +518,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!_parms._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = DeepLearningScoring.createScoringHistoryTable(this.scoringInfo, get_params(), _output, _output.autoencoder);
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, get_params(), _output, _output.autoencoder);
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
