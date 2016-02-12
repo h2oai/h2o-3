@@ -1,10 +1,18 @@
 package hex;
 
+import hex.genmodel.GenModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
+import water.*;
+import water.api.StreamWriter;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.JCodeSB;
+import water.fvec.*;
+import water.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -13,15 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
-
-import hex.genmodel.GenModel;
-import water.*;
-import water.api.StreamWriter;
-import water.codegen.CodeGenerator;
-import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.JCodeSB;
-import water.fvec.*;
-import water.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -616,6 +615,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       if( vec != null ) {          // I have a column with a matching name
         if( domains[i] != null ) { // Model expects an categorical
+          if (vec.isString())
+            vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
           if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             CategoricalWrappedVec evec;
             try {
