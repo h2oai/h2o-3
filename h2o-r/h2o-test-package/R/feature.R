@@ -10,7 +10,6 @@ function(testCase) {
 
     h2oEnv <- new.env() # new environment for do.call, that has the h2o args defined
     argsH2O <- .makeArgList(h2oFeatureParamsList, dataSets, testCase@feature, h2oEnv, FALSE)
-    names(argsH2O) <- lapply(argsH2O, function(x) { toString(x) })
 
     h2oRes <- do.call(what=testCase@feature, args=argsH2O, envir=h2oEnv)
     h2oTest.logInfo("The result of the H2O operation:")
@@ -22,7 +21,6 @@ function(testCase) {
 
         rEnv <- new.env()
         argsR <- .makeArgList(rFeatureParamsList, dataSets, testCase@feature, rEnv, TRUE)
-        names(argsR) <- lapply(argsR, function(x) { toString(x) })
 
         rRes  <- do.call(what=.whatR(testCase@feature), args=argsR, envir=rEnv)
         h2oTest.logInfo("The result of the R operation:")
@@ -129,7 +127,7 @@ function(feature, r) {
                            "h2o.rep_len", "t", "h2o.var", "abs", "ceiling", "digamma", "exp", "gamma", "floor",
                            "expm1", "is.na", "lgamma", "log", "log2", "log1p", "log10", "!", "round", "sign",
                            "signif", "trigamma", "trunc", "ncol", "nrow", "sqrt", "|", "%%", "*", "-", "%/%", "scale",
-                           "^", "+", ">=", ">", "<=", "<", "==", "!=", "h2o.nlevels")) {
+                           "^", "+", ">=", ">", "<=", "<", "==", "!=", "/")) {
             return("data.frame")
         } else if (feature %in% c("h2o.table")) {
             return("data.frameORvector")
@@ -137,7 +135,7 @@ function(feature, r) {
             return("numeric")
         } else if (feature %in% c("h2o.which")) {
             return("logical")
-        } else if (feature %in% c("h2o.match", "is.character", "is.numeric", "h2o.levels")) {
+        } else if (feature %in% c("h2o.match", "is.character", "is.numeric", "h2o.levels", "h2o.nlevels")) {
             return("vector")
         } else if (feature %in% c("h2o.strsplit", "h2o.toupper")) {
             return("character")
@@ -189,7 +187,21 @@ function(featureParamsList, dataSets, feature, env, r) {
         argNames <- c(argNames, f$name)
     }
 
-    return(lapply(argNames, function(s) { as.name(s) }))
+    args <- lapply(argNames, function(s) { as.name(s) })
+
+    if (r && feature == "[") { # h2o calls the slice parameters `data`, `row`, `col`, but r calls them `x`, `i`, `j`
+        names(args) <- lapply(args, function(x) {
+            n <- toString(x)
+            if (n == "data") { "x"
+            } else if (n == "row") { "i"
+            } else if (n == "col") { "j"
+            }
+        })
+    } else {
+        names(args) <- lapply(args, function(x) { toString(x) })
+    }
+
+    return(args)
 }
 
 
@@ -264,6 +276,8 @@ function(df1, df2) {
             y <- df2[r,c]
             if (is.factor(x)) { x <- as.character(x) }
             if (is.factor(y)) { y <- as.character(y) }
+            if (is.na(x)) { x <- as.numeric(x) }
+            if (is.na(y)) { y <- as.numeric(y) }
             tryCatch({
                 expect_equal(x, y, tolerance = 1e-6)
             }, error = function(e) {

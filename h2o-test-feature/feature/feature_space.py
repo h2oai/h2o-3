@@ -516,8 +516,8 @@ class SliceFeatureSpace(FeatureSpace):
                                                                              upper=10),
                                         max_array_size=10,
                                         sort=True)]
-    self.arg_subspaces = (RealDataArgSpace(), ParameterArgSpace(name="i", value_spaces=i_j_value_spaces),
-                          ParameterArgSpace(name="j", value_spaces=i_j_value_spaces)) if arg_subspaces is None \
+    self.arg_subspaces = (RealDataArgSpace(name="data"), ParameterArgSpace(name="row", value_spaces=i_j_value_spaces),
+                          ParameterArgSpace(name="col", value_spaces=i_j_value_spaces)) if arg_subspaces is None \
       else arg_subspaces
 
   def sample(self):
@@ -530,24 +530,24 @@ class TableFeatureSpace(FeatureSpace):
   def __init__(self, arg_subspaces=None, two_col=False):
     FeatureSpace.__init__(self, "h2o.table")
     if two_col:
-      self.arg_subspaces = (TableDataArgSpace(two_col=two_col),
-                            DataArgSpace(name="y",
-                                         col_value_spaces=[],
-                                         null=True)) if arg_subspaces is None else arg_subspaces
+      self.arg_subspaces = (TableDataArgSpace(two_col=two_col),) if arg_subspaces is None else arg_subspaces
     else:
       self.arg_subspaces = (TableDataArgSpace(),
-                            TableDataArgSpace(name="y",
-                                              null=True)) if arg_subspaces is None else arg_subspaces
+                            TableDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
 
   def sample(self):
-    return FeatureSpaceSample(self.name,
+    if len(self.arg_subspaces) == 2:
+      return FeatureSpaceSample(self.name,
                                 FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
                                                                                self.arg_subspaces[1].sample()]))
+    else:
+      return FeatureSpaceSample(self.name,
+                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample()]))
 
 class QuantileFeatureSpace(FeatureSpace):
   def __init__(self, arg_subspaces=None):
     FeatureSpace.__init__(self, "h2o.quantile")
-    data = RealDataArgSpace()
+    data = RealDataArgSpace(na=False)
     data.cols_set = [1]
     data.rows_set = [100]
     self.arg_subspaces = (data, ProbsParameterArgSpace()) if arg_subspaces is None else arg_subspaces
@@ -565,7 +565,6 @@ class CutFeatureSpace(FeatureSpace):
     data.rows_set = [100]
     self.arg_subspaces = (data,
                           BreaksParameterArgSpace(),
-                          LabelsParameterArgSpace(),
                           LogicalParameterArgSpace(name="include.lowest"),
                           LogicalParameterArgSpace(name="right"),
                           DigLabParameterArgSpace()) if arg_subspaces is None else arg_subspaces
@@ -576,8 +575,7 @@ class CutFeatureSpace(FeatureSpace):
                                                                                self.arg_subspaces[1].sample(),
                                                                                self.arg_subspaces[2].sample(),
                                                                                self.arg_subspaces[3].sample(),
-                                                                               self.arg_subspaces[4].sample(),
-                                                                               self.arg_subspaces[5].sample()]))
+                                                                               self.arg_subspaces[4].sample()]))
 
 class MatchFeatureSpace(FeatureSpace):
   def __init__(self, arg_subspaces=None):

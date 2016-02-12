@@ -198,4 +198,3 @@ data_set_id,uri
 197,s3://h2o-public-test-data/smalldata/featureData/197.csv
 198,s3://h2o-public-test-data/smalldata/featureData/198.csv
 199,s3://h2o-public-test-data/smalldata/featureData/199.csv
-200,s3://h2o-public-test-data/smalldata/featureData/200.csv

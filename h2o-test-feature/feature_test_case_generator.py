@@ -4,7 +4,7 @@ from feature.feature_space import *
 def main(argv):
 
   f = open("/Users/ece/0xdata/h2o-3/h2o-test-feature/featureTestCases.csv", "wb")
-  f.write(' _ '.join(["id", "feature", "feature_params", "data_set_ids", "validation_method", "validation_data_set_id",
+  f.write('~'.join(["id", "feature", "feature_params", "data_set_ids", "validation_method", "validation_data_set_id",
                       "description"]) + '\n')
 
   CosFeatureSpace().sample().make_R_tests(f)

@@ -168,7 +168,7 @@ class DigLabParameterArgSpace(ParameterArgSpace):
                name="dig.lab",
                value_spaces=[ScalerValueSpace(space_type="integer",
                                               lower=0,
-                                              upper=10000)],
+                                              upper=12)],
                null=False):
     ParameterArgSpace.__init__(self,
                                name=name,

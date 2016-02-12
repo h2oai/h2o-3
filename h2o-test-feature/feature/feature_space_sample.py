@@ -51,4 +51,4 @@ class FeatureSpaceSample():
                     "R", "", description])
       FeatureSpaceSample.test_case_id_counter += 1
 
-    for test in tests: f.write('_'.join([str(field) for field in test]) + '\n')
+    for test in tests: f.write('~'.join([str(field) for field in test]) + '\n')
