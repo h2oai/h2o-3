@@ -96,7 +96,8 @@ public final class ComputationState {
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
     _objVal = _objVal + ldiff * (l1pen + l2pen); //todo add proximal penalty?
   }
-  public double l1pen() {return _parms._applyL1ToActiveCols?_alpha*_lambda:0;}
+
+  public double l1pen() {return _alpha*_lambda;}
   public double l2pen() {return (1-_alpha)*_lambda;}
 
 
