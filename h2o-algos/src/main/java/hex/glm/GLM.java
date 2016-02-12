@@ -452,6 +452,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           throw new NonSPDMatrixException("Found collinear columns in the dataset. Can not compute compute p-values without removing them, set remove_collinear_columns flag to true. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
         }
         if(!chol.isSPD()) throw new NonSPDMatrixException();
+        _chol = chol;
         if(!ignoredCols.isEmpty()) { // got some redundant cols
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
