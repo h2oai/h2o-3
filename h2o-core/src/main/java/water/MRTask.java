@@ -575,6 +575,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     if( _fr==null ) {           // No Frame, so doing Keys?
       if( _keys == null ||     // Once-per-node mode
           _hi > _lo && _keys[_lo].home() ) {
+        assert(_keys == null || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
         if(_profile!=null) _profile._userstart = System.currentTimeMillis();
         if( _keys != null ) map(_keys[_lo]);
         _res = self();        // Save results since called map() at least once!
@@ -583,6 +584,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     } else if( _hi > _lo ) {    // Frame, Single chunk?
       Vec v0 = _fr.anyVec();
       if( _run_local || v0.chunkKey(_lo).home() ) { // And chunk is homed here?
+        assert(_run_local || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
 
         // Make decompression chunk headers for these chunks
         Vec vecs[] = _fr.vecs();
