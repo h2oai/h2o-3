@@ -43,7 +43,7 @@ public class TestUtil extends Iced {
       _stall_called_before = true;
     }
     if (JACOCO_ENABLED) {
-      H2O.waitForCloudSize(x, 120000);
+      H2O.waitForCloudSize(x, 300000);
     } else {
       H2O.waitForCloudSize(x, 30000);
     }
