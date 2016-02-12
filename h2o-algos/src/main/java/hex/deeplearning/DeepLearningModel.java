@@ -1900,6 +1900,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       if (_sparse && _elastic_averaging) {
         dl.error("_elastic_averaging", "Cannot use elastic averaging for sparse data handling.");
       }
+      if (_max_w2 <= 0) {
+        dl.error("_max_w2", "Cannot use max_w2 <= 0.");
+      }
       if (expensive) {
         if (!classification && _balance_classes) {
           dl.error("_balance_classes", "balance_classes requires classification.");
