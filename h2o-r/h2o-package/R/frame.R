@@ -1164,9 +1164,12 @@ Math.H2OFrame <- function(x,...) .newExprList(.Generic,list(x,...))
 #' @param na.rm logical. whether or not missing values should be removed
 #' @export
 Summary.H2OFrame <- function(x,...,na.rm) {
-  if( na.rm ) stop("na.rm versions not impl")
+#  if( na.rm ) stop("na.rm versions not impl")
   # Eagerly evaluation, to produce a scalar
-  res <- .eval.scalar(.newExprList(.Generic,list(x,...)))
+  if( na.rm )
+    res <- .eval.scalar(.newExprList(paste0(.Generic,"NA"),list(x,...)))
+  else
+    res <- .eval.scalar(.newExprList(.Generic,list(x,...)))
   if( .Generic=="all" ) as.logical(res) else res
 }
 
