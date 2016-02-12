@@ -508,7 +508,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // - - There's remote work, or Client mode (always remote work)
     if( (!_run_local) && ((nlo+1 < _nhi) || H2O.ARGS.client) ) {
       if(_profile!=null) _profile._rpcLstart = System.currentTimeMillis();
-      _nleft = remote_compute(nlo+1,nmid);
+      _nleft = remote_compute(H2O.ARGS.client ? nlo : nlo+1,nmid);
       if(_profile!=null) _profile._rpcRstart = System.currentTimeMillis();
       _nrite = remote_compute( nmid,_nhi);
       if(_profile!=null) _profile._rpcRdone  = System.currentTimeMillis();
