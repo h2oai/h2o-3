@@ -13,8 +13,6 @@ import water.util.*;
 
 import java.util.Random;
 
-import static hex.deeplearning.DeepLearningModel.DeepLearningScoring;
-
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;
