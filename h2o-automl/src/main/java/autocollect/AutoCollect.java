@@ -23,6 +23,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.parser.ParserType;
 import water.util.Log;
 
 import java.sql.*;
@@ -99,7 +100,9 @@ public class AutoCollect {
     for(MetaConfig mc: datasets) {
       if( mc != null ) {
         try {
-          computeMetaData(mc.name(), mc.frame(), mc.x(), mc.y(), mc.isClass());
+          setFields(mc.name(),mc.frame(),mc.x(),mc.y(),mc.isClass());
+          checkResponse();
+          computeMetaData(mc);
           collect();
           mc.delete();
         } finally {
@@ -110,7 +113,9 @@ public class AutoCollect {
   }
 
   protected static Frame parseFrame( ParseSetup ps, Key fkey ) { return ParseDataset.parse(Key.make(), new Key[]{fkey}, true, ps); }
-  protected static ParseSetup paresSetup(NFSFileVec nfs) { return ParseSetup.guessSetup(new Key[]{nfs._key}, false,0); }
+  protected static ParseSetup paresSetup(NFSFileVec nfs, ParserType parserType) {
+    return ParseSetup.guessSetup(new Key[]{nfs._key}, new ParseSetup(parserType, ParseSetup.GUESS_SEP, false, 0, ParseSetup.GUESS_COL_CNT, null));
+  }
   // TODO: ParseSetup(ParserType.GUESS, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null)
 
   private void collect() {
@@ -240,7 +245,7 @@ public class AutoCollect {
     byte algo=_algo;
     algo=GLM;
     ModelBuilder m;
-    if( algo == ANY || algo==DL ) algo = (byte)getRNG(new Random().nextLong()).nextInt((int)GLM);  // TODO: currently disabling DL+GLM
+    if( algo == ANY || algo==DL ) algo = (byte)getRNG(new Random().nextLong()).nextInt((int)DL);  // TODO: currently disabling DL
     switch(algo) {
       case RF:  m = makeDRF(seedSplit); break;
       case GBM: m = makeGBM(seedSplit); break;
@@ -379,17 +384,22 @@ public class AutoCollect {
   private int _resp;
   private boolean _isClass;
   private int _idFrame;
-  public void computeMetaData(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
+
+  private void setFields(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
     _fr=f; _preds=x; _resp=y; _isClass=isClassification; ignored(x, f);
-    if( _isClass ) {
-      _fr.replace(y, _fr.vec(y).toCategoricalVec()).remove();
+  }
+  private void checkResponse() {
+    if( _isClass && !_fr.vec(_resp).isCategorical() ) {
+      Log.warn("Expected response column to be categorical, but was " + _fr.vec(_resp).get_type_str());
+      Log.warn("Converting the response column to categorical.");
+      _fr.replace(_resp, _fr.vec(_resp).toCategoricalVec()).remove();
       DKV.put(_fr);
       _fr.reloadVecs();
     }
-    if( hasMeta(datasetName) )
-      _idFrame=getidFrameMeta(datasetName);
-    else {
-      FrameMeta fm = new FrameMeta(f, y, x, datasetName, isClassification);
+  }
+  public void computeMetaData(MetaConfig mc) {
+    if( (_idFrame=getidFrameMeta(mc.name()))==-1 ) {
+      FrameMeta fm = new FrameMeta(mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
       HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
       fm.fillSimpleMeta(frameMeta);
       fm.fillDummies(frameMeta);
@@ -432,10 +442,10 @@ public class AutoCollect {
   }
 
   int getidFrameMeta(String datasetName) {
-    String query = "SELECT idFrameMeta  AS id FROM FrameMeta WHERE DataSetName=\"" + datasetName + "\";";
+    String query = "SELECT idFrameMeta AS id FROM FrameMeta WHERE DataSetName='" + datasetName + "';";
     ResultSet rs = query(query);
     try {
-      rs.next();
+      if( !rs.next() ) return -1;
       return rs.getInt(1);
     } catch( SQLException ex) {
       System.out.println("SQLException: " + ex.getMessage());
@@ -445,19 +455,7 @@ public class AutoCollect {
     }
   }
 
-  public boolean hasMeta(String datasetName) {
-    String query = "SELECT COUNT(*) AS cnt FROM FrameMeta WHERE DataSetName=\"" + datasetName + "\";";
-    ResultSet rs = query(query);
-    try {
-      rs.next();
-      if (rs.getInt(1) != 0) return true;
-    } catch( SQLException ex) {
-      System.out.println("SQLException: " + ex.getMessage());
-      System.out.println("SQLState: " + ex.getSQLState());
-      System.out.println("VendorError: " + ex.getErrorCode());
-    }
-    return false;
-  }
+  public boolean hasMeta(String datasetName) { return getidFrameMeta(datasetName)!=-1; }
 
   // up to the caller to close the ResultSet
   // TODO: use AutoCloseable
