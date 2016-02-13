@@ -518,8 +518,8 @@ public class NetworkInit {
       bb.mark();
       for( H2ONode h2o : nodes ) {
         try {
+          bb.reset();
           if(H2O.ARGS.useUDP) {
-            bb.reset();
             CLOUD_DGRAM.send(bb, h2o._key);
           } else {
             h2o.sendMessage(bb,priority);
