@@ -2,6 +2,7 @@ package hex;
 
 import water.H2O;
 import water.Iced;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
@@ -10,7 +11,7 @@ import java.util.Arrays;
 
 /**
  * Low-weight keeper of scores
- * Solely intended for display (either direct or as helper to create scoring history TwoDimTable)
+ * solely intended for display (either direct or as helper to create scoring history TwoDimTable).
  * Not intended to store large AUC object or ConfusionMatrices, etc.
  */
 public class ScoreKeeper extends Iced {
@@ -24,8 +25,34 @@ public class ScoreKeeper extends Iced {
   public double _lift = Double.NaN; //Lift in top group
 
   public ScoreKeeper() {}
+
+  /**
+   * Keep score of mean squared error <i>only</i>.
+   * @param mse
+   */
   public ScoreKeeper(double mse) { _mse = mse; }
+
+  /**
+   * Keep score of a given ModelMetrics.
+   * @param mm ModelMetrics to keep track of.
+   */
   public ScoreKeeper(ModelMetrics mm) { fillFrom(mm); }
+
+  /**
+   * Keep score for a model using its validation_metrics if available and training_metrics if not.
+   * @param m model for which we should keep score
+   */
+  public ScoreKeeper(Model m) {
+    if (null == m) throw new H2OIllegalArgumentException("model", "ScoreKeeper(Model model)", null);
+    if (null == m._output) throw new H2OIllegalArgumentException("model._output", "ScoreKeeper(Model model)", null);
+
+    if (null != m._output._validation_metrics) {
+      fillFrom(m._output._validation_metrics);
+    } else {
+      fillFrom(m._output._training_metrics);
+    }
+  }
+
   public boolean isEmpty() {
     return Double.isNaN(_mse) && Double.isNaN(_logloss); // at least one of them should always be filled
   }

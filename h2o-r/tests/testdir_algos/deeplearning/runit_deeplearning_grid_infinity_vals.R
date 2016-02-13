@@ -8,10 +8,11 @@ test.grid.infinity.values <- function(conn){
   prostate[,5] <- as.factor(prostate[,5])
 
   grid_space <- list()
-  grid_space$max_w2 <- c(-Inf,Inf)
+  grid_space$max_w2 <- c(10,100,Inf)
   g <- h2o.grid(algo="deeplearning", x=c(2,3,4),y=5,training_frame=prostate, hyper_params=grid_space)
 
-  expect_true(-Inf %in% lapply(g@model_ids, function(x) h2o.getModel(x)@allparameters$max_w2))
+  expect_true(10 %in% lapply(g@model_ids, function(x) h2o.getModel(x)@allparameters$max_w2))
+  expect_true(100 %in% lapply(g@model_ids, function(x) h2o.getModel(x)@allparameters$max_w2))
   expect_true(Inf %in% lapply(g@model_ids, function(x) h2o.getModel(x)@allparameters$max_w2))
 
   
