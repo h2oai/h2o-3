@@ -121,11 +121,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public int compare(Key<Model> key1, Key<Model> key2) {
       double c1 = getMetricFromModel(key1, _sort_by);
       double c2 = getMetricFromModel(key2, _sort_by);
-      if (decreasing) {
-        return (c2 - c1 > 0 ? 1 : -1);
-      } else {
-        return (c1 - c2 > 0 ? 1 : -1);
-      }
+      double diff = decreasing ? c2 - c1 : c1 - c2;
+      if (diff > 0) { return 1; }
+      else if (diff < 0) { return -1; }
+      return 0;
     }
   }
 
