@@ -449,7 +449,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
             collinear_cols[i] = ignoredCols.get(i);
-          throw new NonSPDMatrixException("Found collinear columns in the dataset. Can not compute compute p-values without removing them, set remove_collinear_columns flag to true. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
+          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove collinear columns automatically. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
         }
         if(!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
@@ -530,7 +530,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
           long t2 = System.currentTimeMillis();
-          double[] betaCnd = solveGram(t._gram, t._xy);
+          double[] betaCnd = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(t,_state._alpha,_state.lambda()):solveGram(t._gram, t._xy);
           if (betaCnd.length < ls.getX().length) {
             ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
               ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
@@ -554,8 +554,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitLBFGS() {
       double [] beta = _state.beta();
       double lambda = _state.lambda();
-      final double l1pen = lambda * _parms._alpha[0];
-      final double l2pen = lambda * (1-_parms._alpha[0]);
+      final double l1pen = _state.l1pen();
+      final double l2pen = _state.l2pen();
       GLMGradientSolver gslvr = _state.gslvr();
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       if (_parms._family == Family.multinomial) {
@@ -802,9 +802,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());
         }
-        double [] zvalues = new double[_state.activeData().fullN()+1];
+        double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
         double [] gInvDiag = _chol.getInvDiag();
-
         for(int i = 0; i < zvalues.length; ++i)
           zvalues[i] = beta[i]/Math.sqrt(_parms._obj_reg*gInvDiag[i]*se);
         _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
@@ -875,6 +874,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
       }
       double testDevOld = Double.NaN;
+      double trainDevOld = Double.NaN;
+      int impcnt = 0;
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
@@ -1002,6 +1003,54 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       res[c] = beta[i++];
     res[res.length - 1] = beta[beta.length - 1];
     return res;
+  }
+
+
+  private static void doUpdateCD(double [] grads, double [][] xx, double [] betaold, double [] betanew , int variable) {
+    double diff = betaold[variable] - betanew[variable];
+    double[] ary = xx[variable];
+    for (int i = 0; i < variable; i++)
+      grads[i] += diff * ary[i];
+    for (int i = variable+1; i < grads.length; i++)
+      grads[i] += diff * ary[i];
+  }
+  public static double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
+    double wsumuInv = 1.0/gt.wsumu;
+    double wsumInv = 1.0/gt.wsum;
+    double l1pen = lambda * alpha;
+    double l2pen = lambda*(1-alpha);
+    double [][] xx = gt._gram.getXX();
+    double [] grads = gt._xy.clone();
+    double [] beta = gt._beta.clone();
+    double [] betaold = gt._beta.clone();
+    for(int i = 0; i < grads.length; ++i) {
+      double ip = 0;
+      for(int j = 0; j < beta.length; ++j)
+        ip += beta[j]*xx[i][j];
+      grads[i] = grads[i] - ip + beta[i]*xx[i][i];
+    }
+    double [] diagInv = MemoryManager.malloc8d(xx.length);
+    for(int i = 0; i < diagInv.length; ++i)
+      diagInv[i] = 1.0/(xx[i][i] * wsumuInv + l2pen);
+    int iter1 = 0;
+    int P = gt._xy.length - 1;
+    // CD loop
+    while (iter1++ < 1000) {
+      for (int i = 0; i < P; ++i) {
+        beta[i] = ADMM.shrinkage(grads[i] * wsumuInv, l1pen) * diagInv[i];
+        doUpdateCD(grads, xx, betaold, beta, i);
+      }
+      // intercept
+      beta[P] = grads[P] * wsumInv;
+      if (beta[P] != 0) // update all the grad entries
+        doUpdateCD(grads, xx, betaold, beta, P);
+      double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
+      System.arraycopy(beta, 0, betaold, 0, beta.length);
+      if (linf < 1e-4)
+        break;
+    }
+    System.out.println("iter1 = " + iter1);
+    return beta;
   }
   /**
    * Created by tomasnykodym on 3/30/15.

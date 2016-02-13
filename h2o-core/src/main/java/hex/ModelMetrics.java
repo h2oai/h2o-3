@@ -61,7 +61,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
-  public double auc() { AUC2 auc = auc_obj(); if (null != auc) return auc._auc; else return 0; }
 
   static public double getMetricFromModel(Key<Model> key, String criterion) {
     Model model = DKV.getGet(key);

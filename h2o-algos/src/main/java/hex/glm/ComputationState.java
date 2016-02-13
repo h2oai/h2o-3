@@ -91,19 +91,12 @@ public final class ComputationState {
     double ldiff = _lambda - _previousLambda;
     if(ldiff == 0) return;
     int N = _dinfo.fullN() + (_intercept ? 1 : 0);
-    double l1norm = 0, l2norm = 0;
-    for (int c = 0; c < _nclasses; ++c)
-      for (int i = 0; i < _activeData.fullN(); ++i) {
-        double b = _beta[c*N + i];
-        _ginfo._gradient[c*N + i] += ldiff * b;
-        l2norm += b * b;
-        l1norm += b >= 0 ? b : -b;
-      }
-    double l2pen = .5*(1-_alpha)*l2norm;
-    double l1pen = _alpha*l1norm;
+    double l2pen = .5*l2pen();
+    double l1pen = l1pen();
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
     _objVal = _objVal + ldiff * (l1pen + l2pen); //todo add proximal penalty?
   }
+
   public double l1pen() {return _alpha*_lambda;}
   public double l2pen() {return (1-_alpha)*_lambda;}
 
@@ -335,7 +328,7 @@ public final class ComputationState {
         l1norm += d >= 0?d:-d;
         l2norm += d*d;
       }
-    return l1pen()*l1norm + l2pen()*l2norm;
+    return l1pen()*l1norm + .5*l2pen()*l2norm;
   }
   private double objective() {
     return _likelihood * _parms._obj_reg + penalty(_beta) + _activeBC.proxPen(_beta);

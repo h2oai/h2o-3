@@ -243,8 +243,8 @@ abstract class ASTNARollupOp extends ASTRollupOp {
   }
 }
 
-class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l, r); } double rup( Vec vec ) { return vec.min(); } }
+class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*(vec.length() - vec.naCnt()); } }
+class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
 class ASTMaxNA extends ASTNARollupOp { public String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
 
 // ----------------------------------------------------------------------------

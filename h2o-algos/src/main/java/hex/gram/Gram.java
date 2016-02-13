@@ -1149,5 +1149,9 @@ public final class Gram extends Iced<Gram> {
     public NonSPDMatrixException(){}
     public NonSPDMatrixException(String msg){super(msg);}
   }
+  public static class CollinearColumnsException extends RuntimeException {
+    public CollinearColumnsException(){}
+    public CollinearColumnsException(String msg){super(msg);}
+  }
 }
 

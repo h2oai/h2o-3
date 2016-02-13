@@ -1,6 +1,8 @@
 package water.util;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 
 import org.apache.log4j.H2OPropertyConfigurator;
@@ -60,6 +62,11 @@ abstract public class Log {
   public static void info ( Object... objs ) { log(INFO ,objs); }
   public static void warn ( Object... objs ) { log(WARN ,objs); }
   public static void err  ( Object... objs ) { log(ERRR ,objs); }
+  public static void err(Throwable ex) {
+    StringWriter sw = new StringWriter();
+    ex.printStackTrace(new PrintWriter(sw));
+    err(sw.toString());
+  }
   public static void fatal( Object... objs ) { log(FATAL,objs); }
   public static void log  ( int level, Object... objs ) { if( _level >= level ) write(level, objs); }
 

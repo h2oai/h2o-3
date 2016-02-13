@@ -3,6 +3,7 @@ package water.rapids;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.DKV;
+import water.Job;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -32,7 +33,9 @@ class ASTQtile extends ASTPrim {
     parms._weights_column = asts[4].str().equals("_") ? null : asts[4].str();
 
     // Compute Quantiles
-    QuantileModel q = new Quantile(parms).trainModel().get();
+    Job j = new Quantile(parms).trainModel();
+    QuantileModel q = (QuantileModel)j.get();
+    DKV.remove(j._key);
 
     // Remove bogus Key
     DKV.remove(fr_wkey._key);
