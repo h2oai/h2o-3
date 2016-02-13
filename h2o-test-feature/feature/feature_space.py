@@ -1,512 +1,249 @@
 import itertools
 from data_arg_space import *
 from parameter_arg_space import *
-from feature_space_sample import FeatureSpaceSample
+from feature_arg_space_sample import FeatureArgSpaceSample
 
-class FeatureSpace():
-  def __init__(self, name):
-    self.name = name
-
-  def combine_subspace_samplings(self, subspace_samplings, method="cartesian"):
+class FeatureArgSpace():
+  def __init__(self, name=None, arg_subspaces=None):
     """
-    Combine subspace samplings. For example, given a DataArgSpace and a FeatureArgSpace, samplings of each subspace
-    can be computed with DataArgSpace.sample() and FeatureArgSpace.sample(), giving
+    A feature is simply a function that has been implemented in software. Like any other function, features have
+    arguments, each with their own domain. Each argument domain is a dimension in the feature's argument space, which
+    this class is used to represent.
+    
+    :param name: the name of the feature. (string)
+    :param arg_subspaces: a list of argument domains, or subspaces, which compose the overall feature argument space.
+                          see DataArgSpace and ParameterArgSpace for the specification of list elements. (tuple)
+    """
+
+    self.name = name
+    self.arg_subspaces = arg_subspaces
+
+  def sample(self):
+    """
+    Take a random sample of points each argument's sub-space. Combine the individual sub-space points to form
+    a list of points in the larger FeatureArgSpace. 
+    
+    :return: list of randomly sampled points in the FeatureArgSpace. (list)
+    """
+
+    points = self.combine_arg_samples([arg.sample() for arg in self.arg_subspaces])
+    return FeatureArgSpaceSample(name=self.name, points=points)
+
+  def combine_arg_samples(self, arg_samples, method="cartesian"):
+    """
+    Combine the samples take from argument subspaces. For example, given a DataArgSpace and FeatureArgSpace objects, 
+    samplings of each subspace can be computed with DataArgSpace.sample() and FeatureArgSpace.sample(). The results may
+    look something like
+    
     [{"DataArgSpace.name":Dataset1}, {"DataArgSpace.name":Dataset2}, ...] and
-    [{"ParameterArgSpace.name":Value1}, {"ParameterArgSpace.name":Value2}, ...], respectively. This routine combines
-    these samplings according to the `method` option. The result is a list of "points" in the FeatureSpace, which
-    may look something like
+    [{"ParameterArgSpace.name":Value1}, {"ParameterArgSpace.name":Value2}, ...], respectively. 
+    
+    This routine combines these samplings according to the `method` option. The result is a list of "points" in the 
+    FeatureArgSpace, which may look something like
+    
     [{"DataArgSpace.name":Dataset1, "ParameterArgSpace.name":Value1},
      {"DataArgSpace.name":Dataset2, "ParameterArgSpace.name":Value1},
      {"DataArgSpace.name":Dataset1, "ParameterArgSpace.name":Value2},
      {"DataArgSpace.name":Dataset2, "ParameterArgSpace.name":Value2}]
-    :param subspace_samplings: a list of samplings from various subspaces. (list)
-    :param method: the method of combination
-    :return:
+
+    :param arg_samples: a list of samplings from various argument subspaces. (list)
+    :param method: the method of combination ("cartesian" is the default). (string)
+    :return: a list of "feature points" in the FeatureArgSpace, where a "feature point" is a dictionary, where the keys
+             are the names of the feature's arguments, and the values are "argument points" in the respective argument
+             sub-spaces.
     """
 
     points = []
     if method == "cartesian":
-      for e in itertools.product(*subspace_samplings):
-        z = {}
-        for d in e: z.update(d)
-        points.append(z)
+      for p in itertools.product(*arg_samples):
+        point = {}
+        for kv in p: point.update(kv)
+        points.append(point)
     else:
       raise(ValueError, "Only cartesian method is implemented!")
 
     return points
 
-class CosFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "cos")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class CosFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "cos", (RealDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ACosFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "acos", (MinusOneToOneDataArgSpace(),))
 
-class ACosFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "acos")
-    self.arg_subspaces = (MinusOneToOneDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class CoshFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "cosh", (MinusTenToTenDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ACoshFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "acosh", (MinusOneToInfDataArgSpace(),))
 
-class CoshFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "cosh")
-    self.arg_subspaces = (MinusTenToTenDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class SinFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "sin", (RealDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ASinFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "asin", (MinusOneToOneDataArgSpace(),))
 
-class ACoshFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "acosh")
-    self.arg_subspaces = (MinusOneToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class SinhFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "sinh", (MinusTenToTenDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ASinhFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "asinh", (RealDataArgSpace(),))
 
-class SinFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "sin")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class TanFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "tan", (RealDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ATanFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "atan", (RealDataArgSpace(),))
 
-class ASinFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "asin")
-    self.arg_subspaces = (MinusOneToOneDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class TanhFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "tanh", (MinusTenToTenDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ATanhFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "atanh", (MinusOneToOneDataArgSpace(),))
 
-class SinhFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "sinh")
-    self.arg_subspaces = (MinusTenToTenDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class AbsFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "abs", (RealDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class CeilingFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "ceiling", (RealDataArgSpace(),))
 
-class ASinhFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "asinh")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class DigammaFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "digamma", (ZeroToInfDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class TrigammaFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "trigamma", (ZeroToInfDataArgSpace(),))
 
-class TanFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "tan")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class ExpFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "exp", (MinusTenToTenDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class Expm1FeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "expm1", (MinusTenToTenDataArgSpace(),))
 
-class ATanFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "atan")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class FloorFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "floor", (RealDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class TruncFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "trunc", (RealDataArgSpace(),))
 
-class TanhFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "tanh")
-    self.arg_subspaces = (MinusTenToTenDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class GammaFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "gamma", (ZeroToTenDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class IsCharFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "is.character", (IsCharDataArgSpace(),))
 
-class ATanhFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "atanh")
-    self.arg_subspaces = (MinusOneToOneDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class IsNaFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "is.na", (IsNaDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class IsNumericFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "is.numeric", (IsCharDataArgSpace(),))
 
-class AbsFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "abs")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class LGammaFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "lgamma", (ZeroToInfDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class LevelsFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.levels", (LevelsDataArgSpace(),))
 
-class CeilingFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "ceiling")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class LogFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "log", (ZeroToInfDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class Log10FeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "log10", (ZeroToInfDataArgSpace(),))
 
-class DigammaFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "digamma")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class Log1pFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "log1p", (MinusOneToInfDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class Log2FeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "log2", (ZeroToInfDataArgSpace(),))
 
-class TrigammaFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "trigamma")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class NLevelsFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.nlevels", (LevelsDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class NcolFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "ncol", (NcolDataArgSpace(),))
 
-class ExpFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "exp")
-    self.arg_subspaces = (MinusTenToTenDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class NrowFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "nrow", (NrowDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class NotFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "!", (NotDataArgSpace(),))
 
-class Expm1FeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "expm1")
-    self.arg_subspaces = (MinusTenToTenDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class SignFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "sign", (RealDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class SqrtFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "sqrt", (ZeroToInfDataArgSpace(),))
 
-class FloorFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "floor")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class RoundFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "round", (RealDataArgSpace(), DigitsParameterArgSpace()))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class SignifFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "signif", (RealDataArgSpace(), DigitsParameterArgSpace()))
 
-class TruncFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "trunc")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class AndFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "&", (ZeroOneDataArgSpace(), ZeroOneDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class OrFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "|", (ZeroOneDataArgSpace(), ZeroOneDataArgSpace(name="y")))
 
-class GammaFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "gamma")
-    self.arg_subspaces = (ZeroToTenDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class DivFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "/", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ModFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "%%", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-class IsCharFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "is.character")
-    self.arg_subspaces = (IsCharDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class IntDivFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "%/%", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class MultFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "*", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-class IsNaFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "is.na")
-    self.arg_subspaces = (IsNaDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class PlusFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "+", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class PowFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "^", (MinusTenToTenDataArgSpace(),
+                                                           MinusTenToTenDataArgSpace(name="y")))
 
-class IsNumericFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "is.numeric")
-    self.arg_subspaces = (IsCharDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class SubtFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "-", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class GEFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, ">=", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-class LGammaFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "lgamma")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class GTFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, ">", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class LEFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "<=", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-class LevelsFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.levels")
-    self.arg_subspaces = (LevelsDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class LTFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "<", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class EQFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "==", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-class LogFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "log")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class NEFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "!=", (RealDataArgSpace(), RealDataArgSpace(name="y")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class ScaleFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "scale", (RealDataArgSpace(),
+                                                               CenterScaleParameterArgSpace(),
+                                                               CenterScaleParameterArgSpace(name="scale")))
 
-class Log10FeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "log10")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class AllFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "all", (AllDataArgSpace(),))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
+class CbindFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.cbind", (RealDataArgSpace(name="x"),
+                                                                   RealDataArgSpace(name="y"),
+                                                                   RealDataArgSpace(name="z")))
 
-class Log1pFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "log1p")
-    self.arg_subspaces = (MinusOneToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class ColnamesFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "colnames", (RealDataArgSpace(name="x", colnames=True),
+                                                                  LogicalParameterArgSpace(name="do.NULL"),
+                                                                  StringParameterArgSpace(name="prefix")))
 
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class Log2FeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "log2")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class NLevelsFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.nlevels")
-    self.arg_subspaces = (LevelsDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class NcolFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "ncol")
-    self.arg_subspaces = (NcolDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class NrowFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "nrow")
-    self.arg_subspaces = (NrowDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class NotFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "!")
-    self.arg_subspaces = (NotDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class SignFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "sign")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class SqrtFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "sqrt")
-    self.arg_subspaces = (ZeroToInfDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self): return FeatureSpaceSample(self.name, self.arg_subspaces[0].sample())
-
-class RoundFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "round")
-    self.arg_subspaces = (RealDataArgSpace(), DigitsParameterArgSpace()) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class SignifFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "signif")
-    self.arg_subspaces = (RealDataArgSpace(), DigitsParameterArgSpace()) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class AndFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "&")
-    self.arg_subspaces = (ZeroOneDataArgSpace(), ZeroOneDataArgSpace(name="y")) if arg_subspaces is None \
-      else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class OrFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "|")
-    self.arg_subspaces = (ZeroOneDataArgSpace(), ZeroOneDataArgSpace(name="y")) if arg_subspaces is None \
-      else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class DivFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "/")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class ModFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "%%")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class IntDivFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "%/%")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class MultFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "*")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class PlusFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "+")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class PowFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "^")
-    self.arg_subspaces = (MinusTenToTenDataArgSpace(), MinusTenToTenDataArgSpace(name="y")) if arg_subspaces is None \
-      else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class SubtFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "-")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class GEFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, ">=")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class GTFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, ">")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-class LEFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "<=")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class LTFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "<")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class EQFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "==")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class NEFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "!=")
-    self.arg_subspaces = (RealDataArgSpace(), RealDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class ScaleFeatureSpace(FeatureSpace): # scale(x, center = TRUE, scale = TRUE)
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "scale")
-    self.arg_subspaces = (RealDataArgSpace(), CenterScaleParameterArgSpace(),
-                          CenterScaleParameterArgSpace(name="scale")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample()]))
-
-class AllFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "all")
-    self.arg_subspaces = (AllDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample()]))
-
-class CbindFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.cbind")
-    self.arg_subspaces = (RealDataArgSpace(name="x"), RealDataArgSpace(name="y"), RealDataArgSpace(name="z")) \
-      if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample()]))
-
-class ColnamesFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "colnames")
-    self.arg_subspaces = (RealDataArgSpace(name="x", colnames=True), LogicalParameterArgSpace(name="do.NULL"),
-                          StringParameterArgSpace(name="prefix")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample()]))
-
-class SliceFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "[")
+class SliceFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     i_j_value_spaces = [ScalerValueSpace(space_type="integer",
                                          lower=1,
                                          upper=10),
@@ -516,167 +253,83 @@ class SliceFeatureSpace(FeatureSpace):
                                                                              upper=10),
                                         max_array_size=10,
                                         sort=True)]
-    self.arg_subspaces = (RealDataArgSpace(name="data"), ParameterArgSpace(name="row", value_spaces=i_j_value_spaces),
-                          ParameterArgSpace(name="col", value_spaces=i_j_value_spaces)) if arg_subspaces is None \
-      else arg_subspaces
+    FeatureArgSpace.__init__(self, "[", (RealDataArgSpace(name="data"),
+                                         ParameterArgSpace(name="row", value_spaces=i_j_value_spaces),
+                                         ParameterArgSpace(name="col", value_spaces=i_j_value_spaces)))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample()]))
+class TableFeatureArgSpace(FeatureArgSpace):
+  def __init__(self, two_col=False):
+    if two_col: arg_subspaces = (TableDataArgSpace(two_col=two_col),)
+    else: arg_subspaces = (TableDataArgSpace(), TableDataArgSpace(name="y"))
+    FeatureArgSpace.__init__(self, "h2o.table", arg_subspaces=arg_subspaces)
 
-class TableFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None, two_col=False):
-    FeatureSpace.__init__(self, "h2o.table")
-    if two_col:
-      self.arg_subspaces = (TableDataArgSpace(two_col=two_col),) if arg_subspaces is None else arg_subspaces
-    else:
-      self.arg_subspaces = (TableDataArgSpace(),
-                            TableDataArgSpace(name="y")) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    if len(self.arg_subspaces) == 2:
-      return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-    else:
-      return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample()]))
-
-class QuantileFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.quantile")
+class QuantileFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     data = RealDataArgSpace(na=False)
     data.cols_set = [1]
     data.rows_set = [100]
-    self.arg_subspaces = (data, ProbsParameterArgSpace()) if arg_subspaces is None else arg_subspaces
+    FeatureArgSpace.__init__(self, "h2o.quantile", (data, ProbsParameterArgSpace()))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class CutFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "cut")
+class CutFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     data = ZeroToOneDataArgSpace()
     data.cols_set = [1]
     data.rows_set = [100]
-    self.arg_subspaces = (data,
-                          BreaksParameterArgSpace(),
-                          LogicalParameterArgSpace(name="include.lowest"),
-                          LogicalParameterArgSpace(name="right"),
-                          DigLabParameterArgSpace()) if arg_subspaces is None else arg_subspaces
+    FeatureArgSpace.__init__(self, "cut", (data,
+                                           BreaksParameterArgSpace(),
+                                           LogicalParameterArgSpace(name="include.lowest"),
+                                           LogicalParameterArgSpace(name="right"),
+                                           DigLabParameterArgSpace()))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample(),
-                                                                               self.arg_subspaces[3].sample(),
-                                                                               self.arg_subspaces[4].sample()]))
 
-class MatchFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.match")
-    self.arg_subspaces = (MatchDataArgSpace(),
-                          MatchTableParameterArgSpace(),
-                          IntegerParameterArgSpace(name="nomatch"),
-                          MatchIncomparablesParameterArgSpace()) if arg_subspaces is None else arg_subspaces
+class MatchFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.match", (MatchDataArgSpace(),
+                                                                   MatchTableParameterArgSpace(),
+                                                                   IntegerParameterArgSpace(name="nomatch"),
+                                                                   MatchIncomparablesParameterArgSpace()))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample(),
-                                                                               self.arg_subspaces[3].sample()]))
-
-class WhichFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.which")
+class WhichFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     data = ZeroOneDataArgSpace()
     data.cols_set = [1]
     data.rows_set = [100]
-    self.arg_subspaces = (data,) if arg_subspaces is None else arg_subspaces
+    FeatureArgSpace.__init__(self, "h2o.which", (data,))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample()]))
-
-class RepLenFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.rep_len")
+class RepLenFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     param = IntegerParameterArgSpace(name="length.out")
     param.value_spaces[0].lower = None
     param.value_spaces[0].upper = None
     param.value_spaces[0].set = [1, 10, 15, 42]
-    self.arg_subspaces = (RealDataArgSpace(), param) if arg_subspaces is None else arg_subspaces
+    FeatureArgSpace.__init__(self, "h2o.rep_len", (RealDataArgSpace(), param))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class StrSplitFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.strsplit")
+class StrSplitFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     param =  StringParameterArgSpace(name="split")
     param.value_spaces[0].upper = 1
-    self.arg_subspaces = (StringDataArgSpace(), param) if arg_subspaces is None else arg_subspaces
+    FeatureArgSpace.__init__(self, "h2o.strsplit", (StringDataArgSpace(), param))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
+class ToUpperFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.toupper", (StringDataArgSpace(),))
 
-class ToUpperFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "h2o.toupper")
-    self.arg_subspaces = (StringDataArgSpace(),) if arg_subspaces is None else arg_subspaces
+class TransposeFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "t", (RealDataArgSpace(),))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample()]))
-
-class TransposeFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "t")
-    self.arg_subspaces = (RealDataArgSpace(),) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample()]))
-
-class MMFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None):
-    FeatureSpace.__init__(self, "%*%")
+class MMFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
     data1 = RealDataArgSpace(name="x")
     data1.cols_set = [8]
     data1.rows_set = [10]
     data2 = RealDataArgSpace(name="y")
     data2.cols_set = [10]
     data2.rows_set = [8]
-    self.arg_subspaces = (data1, data2) if arg_subspaces is None else arg_subspaces
+    FeatureArgSpace.__init__(self, "%*%", (data1, data2))
 
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample()]))
-
-class VarFeatureSpace(FeatureSpace):
-  def __init__(self, arg_subspaces=None, na=True):
-    FeatureSpace.__init__(self, "h2o.var")
+class VarFeatureArgSpace(FeatureArgSpace):
+  def __init__(self, na=True):
     data2 = RealDataArgSpace(name="y", na=na)
     data2.null = True
-    self.arg_subspaces = (RealDataArgSpace(na=na),
-                          data2,
-                          LogicalParameterArgSpace(name="na.rm"),
-                          VarUseParameterArgSpace(na=na)) if arg_subspaces is None else arg_subspaces
-
-  def sample(self):
-    return FeatureSpaceSample(self.name,
-                                FeatureSpace.combine_subspace_samplings(self, [self.arg_subspaces[0].sample(),
-                                                                               self.arg_subspaces[1].sample(),
-                                                                               self.arg_subspaces[2].sample(),
-                                                                               self.arg_subspaces[3].sample()]))
+    FeatureArgSpace.__init__(self, "h2o.var", (RealDataArgSpace(na=na),
+                                               data2,
+                                               LogicalParameterArgSpace(name="na.rm"),
+                                               VarUseParameterArgSpace(na=na)))

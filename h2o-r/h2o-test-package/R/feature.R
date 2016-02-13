@@ -440,7 +440,7 @@ function(op) {
     } else if (op == ">=")            { return(">=")
     } else if (op == ">")             { return(">")
     } else if (op == "<=")            { return("<=")
-    } else if (op == "<")            { return("<")
+    } else if (op == "<")             { return("<")
     } else if (op == "==")            { return("==")
     } else if (op == "!=")            { return("!=")
     } else if (op == "/")             { return("/")

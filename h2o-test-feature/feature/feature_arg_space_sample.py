@@ -1,6 +1,6 @@
 from value_space import Value
 
-class FeatureSpaceSample():
+class FeatureArgSpaceSample():
 
   test_case_id_counter = 1
 
@@ -47,8 +47,8 @@ class FeatureSpaceSample():
       # make description
       description = "{0} feature test case.".format(self.name)
 
-      tests.append([FeatureSpaceSample.test_case_id_counter, self.name, feature_params_string, data_set_ids_string,
+      tests.append([FeatureArgSpaceSample.test_case_id_counter, self.name, feature_params_string, data_set_ids_string,
                     "R", "", description])
-      FeatureSpaceSample.test_case_id_counter += 1
+      FeatureArgSpaceSample.test_case_id_counter += 1
 
     for test in tests: f.write('~'.join([str(field) for field in test]) + '\n')

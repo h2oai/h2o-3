@@ -244,13 +244,13 @@ function() {
     h2oTest.logInfo("Feature Test Case Driver Arguments: ")
     print(driverArgs)
 
-    sb <- h2oTest.sandbox(create=TRUE, sandboxName=driverArgs$testCaseId)
-    h2oTest.logInfo(paste0("Created sandbox for feature test case ", driverArgs$testCaseId,
-                           " in directory ",sb,".\n"))
-
-    seed <- h2oTest.setupSeed(sb)
-    set.seed(seed)
-    h2o.logIt("[SEED] :", seed)
+#    sb <- h2oTest.sandbox(create=TRUE, sandboxName=driverArgs$testCaseId)
+#    h2oTest.logInfo(paste0("Created sandbox for feature test case ", driverArgs$testCaseId,
+#                           " in directory ",sb,".\n"))
+#
+#    seed <- h2oTest.setupSeed(sb)
+#    set.seed(seed)
+#    h2o.logIt("[SEED] :", seed)
 
     h2oTest.logInfo(paste0("Connecting to h2o on IP: ", driverArgs$ip, ", PORT: ", driverArgs$port))
     h2o.init(ip=driverArgs$ip, port=driverArgs$port, startH2O=FALSE, strict_version_check = FALSE)
