@@ -468,11 +468,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else { // todo add switch between COD and ADMM
         GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(),_state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _chol = slvr._chol;
-        if(_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+        if(_state.l1pen() == 0 && !_state.activeBC().hasBounds()) {
           slvr.solve(xy);
-        else {
+        } else {
           xy = MemoryManager.malloc8d(xy.length);
-          (_lslvr = new ADMM.L1Solver(1e-4, 10000)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+//          if(_parms._solver == Solver.IRLSM)
+            (_lslvr = new ADMM.L1Solver(1e-4, 10000)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+//          else if(_parms._solver == Solver.COORDINATE_DESCENT){
+
+//          } else throw new IllegalStateException("solver can only be IRLSM or COD at this point.");
+
         }
       }
       return _parms._intercept?xy:Arrays.copyOf(xy,xy.length+1);
@@ -1006,23 +1011,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
 
-  private static void doUpdateCD(double [] grads, double [][] xx, double [] betaold, double [] betanew , int variable) {
-    double diff = betaold[variable] - betanew[variable];
+  private static void doUpdateCD(double [] grads, double [][] xx, double diff , int variable) {
     double[] ary = xx[variable];
     for (int i = 0; i < variable; i++)
       grads[i] += diff * ary[i];
     for (int i = variable+1; i < grads.length; i++)
       grads[i] += diff * ary[i];
   }
-  public static double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
-    double wsumuInv = 1.0/gt.wsumu;
+  public double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
+    gt._gram.mul(_parms._obj_reg);
+    ArrayUtils.mult(gt._xy,_parms._obj_reg);
     double wsumInv = 1.0/gt.wsum;
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);
     double [][] xx = gt._gram.getXX();
     double [] grads = gt._xy.clone();
     double [] beta = gt._beta.clone();
-    double [] betaold = gt._beta.clone();
     for(int i = 0; i < grads.length; ++i) {
       double ip = 0;
       for(int j = 0; j < beta.length; ++j)
@@ -1031,22 +1035,29 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     double [] diagInv = MemoryManager.malloc8d(xx.length);
     for(int i = 0; i < diagInv.length; ++i)
-      diagInv[i] = 1.0/(xx[i][i] * wsumuInv + l2pen);
+      diagInv[i] = 1.0/(xx[i][i] + l2pen);
     int iter1 = 0;
     int P = gt._xy.length - 1;
     // CD loop
-    while (iter1++ < 1000) {
+    while (iter1++ < 1000 /*Math.max(P,500)*/) {
+      double bdiff = 0;
       for (int i = 0; i < P; ++i) {
-        beta[i] = ADMM.shrinkage(grads[i] * wsumuInv, l1pen) * diagInv[i];
-        doUpdateCD(grads, xx, betaold, beta, i);
+        double b = ADMM.shrinkage(grads[i], l1pen) * diagInv[i];
+        double bd = beta[i] - b;
+        if(bd > bdiff) bdiff = bd;
+        else if(-bd > bdiff) bdiff = -bd;
+        doUpdateCD(grads, xx, bd, i);
+        beta[i] = b;
       }
       // intercept
-      beta[P] = grads[P] * wsumInv;
+      double b = grads[P] * wsumInv;
+      double bd = beta[P] - b;
       if (beta[P] != 0) // update all the grad entries
-        doUpdateCD(grads, xx, betaold, beta, P);
-      double linf = ArrayUtils.linfnorm(ArrayUtils.subtract(beta, betaold), false); // false to keep the intercept
-      System.arraycopy(beta, 0, betaold, 0, beta.length);
-      if (linf < 1e-4)
+        doUpdateCD(grads, xx, bd, P);
+      if(bd > bdiff) bdiff = bd;
+      else if(-bd > bdiff) bdiff = -bd;
+      beta[P] = b;
+      if (bdiff < 1e-4)
         break;
     }
     System.out.println("iter1 = " + iter1);
