@@ -1,15 +1,24 @@
 package hex.deeplearning;
 
+import hex.ScoringInfo;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
 import hex.genmodel.GenModel;
-import org.junit.*;
-import water.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import water.DKV;
+import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.MathUtils;
+import water.util.RandomUtils;
 
 import java.util.Random;
 
@@ -297,7 +306,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
                             // get the actual best error on training data
                             float best_err = Float.MAX_VALUE;
-                            for (DeepLearningScoringInfo err : mymodel.scoring_history()) {
+                            for (ScoringInfo e : mymodel.scoring_history()) {
+                              DeepLearningScoringInfo err = (DeepLearningScoringInfo) e;
                               best_err = Math.min(best_err, (float) (Double.isNaN(err.scored_train._classError) ? best_err : err.scored_train._classError)); //multi-class classification
                             }
                             Log.info("Actual best error : " + best_err * 100 + "%.");
