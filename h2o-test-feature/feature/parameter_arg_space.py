@@ -1,23 +1,20 @@
 from value_space import *
 
-class ParameterArgSpace():
+class ArgSpace():
   def __init__(self, name, value_spaces, null=False):
     """
-    A parameter subspace in a FeatureSpace.
 
     :param name: the name of the space. (string)
-    :param value_spaces: list of allowable ValueSpaces for the columns. (list)
-    :param null: whether or not the argument can be NULL. (logical)
+    :param value_spaces: list of allowable ValueSpaces. (list)
     """
 
     self.name = name
     self.value_spaces = value_spaces
-    self.null = null
 
-  def sample(self, min_v=None, max_v=None, max_array_size=None, exact_array_size=None):
+  def sample(self):
     """
-    Retrieve one or more "points" from the ParameterArgSpace. Here, a point is represented by a single-element
-    dictionary, where the key is the name of the ParameterArgSpace and the value is a Value in that space.
+    Retrieve one or more "points" from the ArgSpace. Here, a point is represented by a single-element
+    dictionary, where the key is the name of the ArgSpace and the value is a Value in that space.
 
     For each ValueSpace in `value_spaces` if `set` option is specified, then each create a "point" for each `set`
     element, otherwise just create one "point" in the range of ValueSpace.
@@ -27,8 +24,8 @@ class ParameterArgSpace():
     :param max_array_size: passed to ValueSpace.sample().
     :param exact_array_size: passed to ValueSpace.sample().
 
-    :return: a list of dictionaries [{"ParameterArgSpace.name":Value1}, {"ParameterArgSpace.name":Value2}, ...],
-             where each dictionary key is the name of the ParameterArgSpace and the value is the Value that was
+    :return: a list of dictionaries [{"ArgSpace.name":Value1}, {"ArgSpace.name":Value2}, ...],
+             where each dictionary key is the name of the ArgSpace and the value is the Value that was
              generated.
     """
     points = []
@@ -46,18 +43,18 @@ class ParameterArgSpace():
 
     return points
 
-class DigitsParameterArgSpace(ParameterArgSpace):
+class DigitsArgSpace(ArgSpace):
   def __init__(self,
                name="digits",
                value_spaces=[ScalerValueSpace(space_type="integer",
                                               set=[0,1,2,3,4,5,6])],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class CenterScaleParameterArgSpace(ParameterArgSpace):
+class CenterScaleArgSpace(ArgSpace):
   def __init__(self,
                name="center",
                value_spaces=[ScalerValueSpace(space_type="logical",
@@ -68,59 +65,59 @@ class CenterScaleParameterArgSpace(ParameterArgSpace):
                                                                                   lower=-10000,
                                                                                   upper=10000))],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class LogicalParameterArgSpace(ParameterArgSpace):
+class LogicalArgSpace(ArgSpace):
   def __init__(self,
                name,
                value_spaces=[ScalerValueSpace(space_type="logical",
                                               set=[True, False])],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class IntegerParameterArgSpace(ParameterArgSpace):
+class IntegerArgSpace(ArgSpace):
   def __init__(self,
                name,
                value_spaces=[ScalerValueSpace(space_type="integer",
                                               lower=-10000,
                                               upper=10000)],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class StringParameterArgSpace(ParameterArgSpace):
+class StringArgSpace(ArgSpace):
   def __init__(self,
                name,
                value_spaces=[ScalerValueSpace(space_type="string",
                                               lower=1,
                                               upper=10)],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class VarUseParameterArgSpace(ParameterArgSpace):
+class VarUseArgSpace(ArgSpace):
   def __init__(self,
                name="use",
                null=False,
                na=True):
     value_spaces = [ScalerValueSpace(space_type="string", set=["everything", "complete.obs"])] if na else \
       [ScalerValueSpace(space_type="string", set=["all.obs"])]
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class ProbsParameterArgSpace(ParameterArgSpace):
+class ProbsArgSpace(ArgSpace):
   def __init__(self,
                name="probs",
                value_spaces=[ArrayValueSpace(space_type="real[]",
@@ -129,12 +126,12 @@ class ProbsParameterArgSpace(ParameterArgSpace):
                                                                                   lower=0,
                                                                                   upper=1))],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class BreaksParameterArgSpace(ParameterArgSpace):
+class BreaksArgSpace(ArgSpace):
   def __init__(self,
                name="breaks",
                value_spaces=[ArrayValueSpace(space_type="real[]",
@@ -143,12 +140,12 @@ class BreaksParameterArgSpace(ParameterArgSpace):
                                                                                   lower=0,
                                                                                   upper=1))],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class LabelsParameterArgSpace(ParameterArgSpace):
+class LabelsArgSpace(ArgSpace):
   def __init__(self,
                name="labels",
                value_spaces=[ArrayValueSpace(space_type="string[]",
@@ -157,25 +154,25 @@ class LabelsParameterArgSpace(ParameterArgSpace):
                                                                                   lower=1,
                                                                                   upper=3))],
                null=True):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
 
-class DigLabParameterArgSpace(ParameterArgSpace):
+class DigLabArgSpace(ArgSpace):
   def __init__(self,
                name="dig.lab",
                value_spaces=[ScalerValueSpace(space_type="integer",
                                               lower=0,
                                               upper=12)],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class MatchTableParameterArgSpace(ParameterArgSpace):
+class MatchTableArgSpace(ArgSpace):
   def __init__(self,
                name="table",
                value_spaces=[ArrayValueSpace(space_type="enum[]",
@@ -183,12 +180,12 @@ class MatchTableParameterArgSpace(ParameterArgSpace):
                                              element_value_space=ScalerValueSpace(space_type="enum",
                                                                                   set=["c"]))],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)
 
-class MatchIncomparablesParameterArgSpace(ParameterArgSpace):
+class MatchIncomparablesArgSpace(ArgSpace):
   def __init__(self,
                name="incomparables",
                value_spaces=[ArrayValueSpace(space_type="enum[]",
@@ -196,7 +193,7 @@ class MatchIncomparablesParameterArgSpace(ParameterArgSpace):
                                              element_value_space=ScalerValueSpace(space_type="enum",
                                                                                   set=["b"]))],
                null=False):
-    ParameterArgSpace.__init__(self,
+    ArgSpace.__init__(self,
                                name=name,
                                value_spaces=value_spaces,
                                null=null)

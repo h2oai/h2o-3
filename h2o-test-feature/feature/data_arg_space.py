@@ -1,17 +1,6 @@
-import csv
-import os
 from value_space import *
 
-class Dataset:
-  def __init__(self, id, rows, cols):
-    self.id = id
-    self.rows = rows
-    self.cols = cols
-
 class DataArgSpace():
-
-  data_set_dir = "/Users/ece/0xdata/h2o-3/smalldata/featureData"
-  data_set_counter = 1
 
   def __init__(self, name, col_value_spaces, rows_set=None, rows_lower=None, rows_upper=None, cols_set=None,
                cols_lower=None, cols_upper=None, mixed=False, null=False, na=False, colnames=False):
