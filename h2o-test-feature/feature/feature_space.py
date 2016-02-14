@@ -20,8 +20,8 @@ class FeatureArgSpace():
 
   def sample(self):
     """
-    Take a random sample of points each argument's sub-space. Combine the individual sub-space points to form
-    a list of points in the larger FeatureArgSpace. 
+    Take a random sample of points in each argument's sub-space. Combine the individual argument points to form
+    a list of feature points.
     
     :return: list of randomly sampled points in the FeatureArgSpace. (list)
     """
@@ -64,6 +64,11 @@ class FeatureArgSpace():
 
     return points
 
+"""
+########################################################################################################################
+                                          Some specific FeatureArgSpaces
+########################################################################################################################
+"""
 class CosFeatureArgSpace(FeatureArgSpace):
   def __init__(self): FeatureArgSpace.__init__(self, "cos", (RealDataArgSpace(),))
 

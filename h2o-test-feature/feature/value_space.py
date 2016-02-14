@@ -3,44 +3,64 @@ import string
 
 class Value:
   def __init__(self, value_type, value):
+    """
+    This class is used to represent an element in the domain of some value space. The allowable value spaces are the
+    ScalerValueSpace, ArrayValueSpace, and the DatasetValueSpace. See these classes for further details.
+
+    :param value_type: the type of the element. the allowable types are "integer", "real", "string", "enum", "logical",
+                       "integer[]", "real[]", "string[]", "enum[]", "logical[]", and "dataset". (string)
+    :param value: they python representation of the element.
+    """
+
     self.value_type = value_type
     self.value = value
 
 class ScalerValueSpace():
   def __init__(self, space_type, set=None, lower=None, upper=None):
     """
-    The allowable scaler values for a ParameterArgSpace or an element in a data set.
+    This class is used to represent an entire domain, or set, of Values. One restriction of this class is that
+    all Values in the domain must be of the same Value.value_type. Allowable Value.value_types for this class are
+    "integer", "real", "string", "enum", and "logical". Another restriction of this class is that either set OR (lower
+    AND upper) can be specified, but not both.
 
-    :param space_type: Allowable types are "integer", "real", "string", "enum", and "logical." (string)
-    :param set: set of allowable values. (list)
+    :param space_type: the Value.value_type of all elements in the space. (string)
+    :param set: set of allowable Values. (list of Values)
+    :param lower: for "integer" and "real" types this is the lower (upper) bound on the domain of values. for "string"
+                  types this is fewest (greatest) number of allowable characters in the string value. this parameter is
+                  undefined for "enum" and "logical" types. (integer/float)
+    :param upper: see lower. (integer/float)
     """
+
     self.space_type = space_type
     self.set = set
     self.lower = lower
     self.upper = upper
 
-  def sample(self, min_v=None, max_v=None, all=False):
+  def sample(self, size=1, all=False):
     """
-    Pick a Value from the set of values provided in `self.set` or in the range of allowable values specified by
-    `min_v` and `max_v`. `min_v` and `max_v` are ignored if `self.set` is specified.
-    :param min_v: the minimum value (in the range `self.lower` to `self.upper`) that can be selected.
-    :param max_v: the maximum value (in the range `self.lower` to `self.upper`) that can be selected.
+    Pick `size` elements randomly (with replacement) from `self.set` or from the range specified by `self.lower` and
+    `self.upper`
+
     :param all: return all of the values in `self.set`. ignored if `self.set` is None. (logical)
-    :return: a single Value from the ScalerValueSpace, or all Values from `self.set` if `all` is true
+    :param size: the number of samples to return. if `self.set` is specified and all is True, `size` is ignored.
+                 (integer)
+    :return: a list of Values from the ScalerValueSpace.
     """
 
     if self.set is None:
-      min_v, max_v  = (self.lower if min_v is None else min_v, self.upper if max_v is None else max_v)
       if self.space_type == "integer" or self.space_type == "real":
-        return Value(value_type=self.space_type,
-                     value=random.uniform(min_v, max_v) if self.space_type == "real" else int(random.uniform(min_v, max_v)))
-      elif self.space_type == "string" or self.space_type == "enum":
-        return Value(value_type=self.space_type,
-                     value=''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase)
-                                   for _ in range(random.choice(range(min_v, max_v+1)))))
+        vals = [random.uniform(self.lower, self.upper) for _ in range(size)]
+        if self.space_type == "integer": vals = [int(val) for val in vals]
+        return [Value(value_type=self.space_type, value=val) for val in vals]
+      elif self.space_type == "string":
+        vals = [''.join(random.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in
+                        range(random.choice(range(self.lower, self.upper+1)))) for _ in range(size)]
+        return [Value(value_type=self.space_type, value=val) for val in vals]
+      else: raise ValueError("ScalerValueSpace.sample() is not defined for space_type {0} when self.set is "
+                             "None".format(self.space_type))
     else:
-      if not all: return Value(value_type=self.space_type, value=random.choice(self.set))
-      else: return [Value(value_type=self.space_type, value=v) for v in self.set]
+      if all: return self.set
+      else:   return [random.choice(self.set) for _ in range(size)]
 
 class ArrayValueSpace:
   def __init__(self, space_type, element_value_space, max_array_size=None, exact_array_size=None, sort=False):
