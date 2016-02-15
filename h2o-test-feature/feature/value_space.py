@@ -17,10 +17,6 @@ class Value:
     self.value_type = value_type
     self.value = value
 
-class NullValueSpace():
-  def __init__(self, space_type=None): self.space_type = space_type
-  def sample(self): return [Value(value_type="null", value=None)]
-
 class ScalerValueSpace():
   def __init__(self, space_type, set=None, lower=None, upper=None):
     """
@@ -104,15 +100,19 @@ class ArrayValueSpace:
     """
 
     if self.set is None:
+      sample = []
       if self.exact_array_size is None:
-        return [Value(value_type=self.space_type,
-                      value=[self.element_value_space.sample()[0] for _ in
-                             range(1,random.choice(range(self.lower_array_size, 1+self.upper_array_size))+1)])
-                for s in range(size)]
+        for s in range(size):
+          value = [self.element_value_space.sample()[0].value
+                   for _ in range(1,random.choice(range(self.lower_array_size, 1+self.upper_array_size))+1)]
+          if self.sort: value = sorted(value)
+          sample.append(Value(value_type=self.space_type, value=value))
       else:
-        return [Value(value_type=self.space_type,
-                      value=[self.element_value_space.sample()[0] for _ in range(self.exact_array_size)])
-                for s in range(size)]
+        for s in range(size):
+          value = [self.element_value_space.sample()[0].value for _ in range(self.exact_array_size)]
+          if self.sort: value = sorted(value)
+          sample.append(Value(value_type=self.space_type, value=value))
+      return sample
     else:
       if all: return self.set
       else:   return [random.choice(self.set) for _ in range(size)]
@@ -122,13 +122,14 @@ class DatasetValueSpace():
   dataset_dir = "/Users/ece/0xdata/h2o-3/smalldata/featureData"
   dataset_counter = 1
 
-  def __init__(self, space_type="dataset", col_value_spaces=None, rows_set=None, rows_lower=None, rows_upper=None,
-               cols_set=None, cols_lower=None, cols_upper=None, mixed=False, na=False, colnames=False):
+  def __init__(self, space_type="dataset", set=None, col_value_spaces=None, rows_set=None, rows_lower=None,
+               rows_upper=None, cols_set=None, cols_lower=None, cols_upper=None, mixed=False, na=False, colnames=False):
     """
     This class is used to represent an entire domain, or set, of dataset Values. All Values in the domain must be of
     the "dataset" `space_type`.
 
     :param space_type: "dataset".
+    :param set: set of allowable Values. (list of Values)
     :param col_value_spaces: list of allowable ScalerValueSpaces for the columns. (list of ScalerValueSpaces)
     :param rows_set: set of the allowable number of rows. if this is specified, then `rows_lower` and `rows_upper`
                      should be None. (list of positive integers)
@@ -144,6 +145,7 @@ class DatasetValueSpace():
     """
 
     self.space_type = space_type
+    self.set = set
     self.col_value_spaces = col_value_spaces
     self.rows_set = rows_set
     self.rows_lower = rows_lower
@@ -155,7 +157,7 @@ class DatasetValueSpace():
     self.na = na
     self.colnames = colnames
 
-  def sample(self):
+  def sample(self, size=1, all=False):
     """
     !This method persists datasets to disk!
 
@@ -172,44 +174,52 @@ class DatasetValueSpace():
     :return: a list of Values from the DatasetValueSpace.
     """
 
-    if (self.rows_set is None) and (self.cols_set is None):
-      row_sizes = [int(random.choice(range(self.rows_lower, self.rows_upper + 1)))]
-      col_sizes = [int(random.choice(range(self.cols_lower, self.cols_upper + 1)))]
+    if self.set is None:
+      if (self.rows_set is None) and (self.cols_set is None):
+        row_sizes = [int(random.choice(range(self.rows_lower, self.rows_upper + 1)))]
+        col_sizes = [int(random.choice(range(self.cols_lower, self.cols_upper + 1)))]
+      else:
+        row_sizes = self.rows_set
+        col_sizes = self.cols_set
+
+      datasets = []
+      for cols in col_sizes:
+        for rows in row_sizes:
+          for val_space in self.col_value_spaces:
+            for na in [True, False] if self.na else [False]:
+              if na: data_set = [[val_space.sample()[0].value if random.uniform(0, 1) > 0.1 else "NA"
+                                  for c in range(cols)] for r in range(rows)]
+              else:  data_set = [[val_space.sample()[0].value for c in range(cols)] for r in range(rows)]
+              if self.colnames: data_set.insert(0,["C{0}".format(i+1) for i in range(cols)])
+              with open(os.path.join(DatasetValueSpace.dataset_dir, "{0}.csv".
+                      format(DatasetValueSpace.dataset_counter)), "wb") as f:
+                csv.writer(f).writerows(data_set)
+              print("{0},s3://h2o-public-test-data/smalldata/featureData/{0}.csv".
+                    format(DatasetValueSpace.dataset_counter))
+              datasets.append(Value(value_type="dataset", value=DatasetValueSpace.dataset_counter))
+              DatasetValueSpace.dataset_counter += 1
+
+      # one, mixed data set (uses max of col_sizes, row_sizes)
+      if self.mixed and self.col_value_spaces > 1 and max(col_sizes) > 1:
+        cols = max(col_sizes)
+        rows = max(row_sizes)
+        data_set = [[] for r in range(rows)]
+        for c in range(cols):
+          val_space = self.col_value_spaces[c % len(self.col_value_spaces)]
+          column = [[val_space.sample()[0].value] for r in range(rows)]
+          data_set = [d+c for d,c in zip(data_set, column)]
+        with open(os.path.join(DatasetValueSpace.dataset_dir, "{0}.csv".format(DatasetValueSpace.dataset_counter)),
+                  "wb") as f:
+          csv.writer(f).writerows(data_set)
+        print("{0},s3://h2o-public-test-data/smalldata/featureData/{0}.csv".format(DatasetValueSpace.dataset_counter))
+        datasets.append(Value(value_type="dataset", value=DatasetValueSpace.dataset_counter))
+        DatasetValueSpace.dataset_counter += 1
+
+      return datasets
     else:
-      row_sizes = self.rows_set
-      col_sizes = self.cols_set
+      if all: return self.set
+      else:   return [random.choice(self.set) for _ in range(size)]
 
-    datasets = []
-    for cols in col_sizes:
-      for rows in row_sizes:
-        for val_space in self.col_value_spaces:
-          for na in [True, False] if self.na else [False]:
-            if na: data_set = [[val_space.sample().value if random.uniform(0, 1) > 0.1 else "NA" for c in range(cols)]
-                               for r in range(rows)]
-            else:  data_set = [[val_space.sample().value for c in range(cols)] for r in range(rows)]
-            if self.colnames: data_set.insert(0,["C{0}".format(i+1) for i in range(cols)])
-            with open(os.path.join(DatasetValueSpace.dataset_dir, "{0}.csv".format(DatasetValueSpace.dataset_counter)),
-                      "wb") as f:
-              csv.writer(f).writerows(data_set)
-            print("{0},s3://h2o-public-test-data/smalldata/featureData/{0}.csv".
-                  format(DatasetValueSpace.dataset_counter))
-            datasets.append(Value(value_type="dataset", value=DatasetValueSpace.dataset_counter))
-            DatasetValueSpace.dataset_counter += 1
-
-    # one, mixed data set (uses max of col_sizes, row_sizes)
-    if self.mixed and self.col_value_spaces > 1 and max(col_sizes) > 1:
-      cols = max(col_sizes)
-      rows = max(row_sizes)
-      data_set = [[] for r in range(rows)]
-      for c in range(cols):
-        val_space = self.col_value_spaces[c % len(self.col_value_spaces)]
-        column = [[val_space.sample().value] for r in range(rows)]
-        data_set = [d+c for d,c in zip(data_set, column)]
-      with open(os.path.join(DatasetValueSpace.dataset_dir, "{0}.csv".format(DatasetValueSpace.dataset_counter)),
-                "wb") as f:
-        csv.writer(f).writerows(data_set)
-      print("{0},s3://h2o-public-test-data/smalldata/featureData/{0}.csv".format(DatasetValueSpace.dataset_counter))
-      datasets.append(Value(value_type="dataset", value=DatasetValueSpace.dataset_counter))
-      DatasetValueSpace.dataset_counter += 1
-
-    return datasets
+class NullValueSpace():
+  def __init__(self, space_type=None): self.space_type = space_type
+  def sample(self, all=False): return [Value(value_type="null", value=None)]

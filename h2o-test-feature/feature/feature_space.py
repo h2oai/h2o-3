@@ -1,7 +1,6 @@
 import itertools
-from data_arg_space import *
-from parameter_arg_space import *
-from feature_arg_space_sample import FeatureArgSpaceSample
+from arg_space import *
+from feature_space_sample import FeatureArgSpaceSample
 
 class FeatureArgSpace():
   def __init__(self, name=None, arg_subspaces=None):
@@ -12,7 +11,7 @@ class FeatureArgSpace():
     
     :param name: the name of the feature. (string)
     :param arg_subspaces: a list of argument domains, or subspaces, which compose the overall feature argument space.
-                          see DataArgSpace and ParameterArgSpace for the specification of list elements. (tuple)
+                          see ArgSpace and ArgSpace for the specification of list elements. (tuple)
     """
 
     self.name = name
@@ -31,20 +30,20 @@ class FeatureArgSpace():
 
   def combine_arg_samples(self, arg_samples, method="cartesian"):
     """
-    Combine the samples take from argument subspaces. For example, given a DataArgSpace and FeatureArgSpace objects, 
-    samplings of each subspace can be computed with DataArgSpace.sample() and FeatureArgSpace.sample(). The results may
+    Combine the samples take from argument subspaces. For example, given a ArgSpace and FeatureArgSpace objects, 
+    samplings of each subspace can be computed with ArgSpace.sample() and FeatureArgSpace.sample(). The results may
     look something like
     
-    [{"DataArgSpace.name":Dataset1}, {"DataArgSpace.name":Dataset2}, ...] and
-    [{"ParameterArgSpace.name":Value1}, {"ParameterArgSpace.name":Value2}, ...], respectively. 
+    [{"ArgSpace.name":Dataset1}, {"ArgSpace.name":Dataset2}, ...] and
+    [{"ArgSpace.name":Value1}, {"ArgSpace.name":Value2}, ...], respectively. 
     
     This routine combines these samplings according to the `method` option. The result is a list of "points" in the 
     FeatureArgSpace, which may look something like
     
-    [{"DataArgSpace.name":Dataset1, "ParameterArgSpace.name":Value1},
-     {"DataArgSpace.name":Dataset2, "ParameterArgSpace.name":Value1},
-     {"DataArgSpace.name":Dataset1, "ParameterArgSpace.name":Value2},
-     {"DataArgSpace.name":Dataset2, "ParameterArgSpace.name":Value2}]
+    [{"ArgSpace.name":Dataset1, "ArgSpace.name":Value1},
+     {"ArgSpace.name":Dataset2, "ArgSpace.name":Value1},
+     {"ArgSpace.name":Dataset1, "ArgSpace.name":Value2},
+     {"ArgSpace.name":Dataset2, "ArgSpace.name":Value2}]
 
     :param arg_samples: a list of samplings from various argument subspaces. (list)
     :param method: the method of combination ("cartesian" is the default). (string)
@@ -69,182 +68,183 @@ class FeatureArgSpace():
                                           Some specific FeatureArgSpaces
 ########################################################################################################################
 """
+
 class CosFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "cos", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "cos", (RealArgSpace(),))
 
 class ACosFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "acos", (MinusOneToOneDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "acos", (MinusOneToOneArgSpace(),))
 
 class CoshFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "cosh", (MinusTenToTenDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "cosh", (MinusTenToTenArgSpace(),))
 
 class ACoshFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "acosh", (MinusOneToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "acosh", (MinusOneToInfArgSpace(),))
 
 class SinFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "sin", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "sin", (RealArgSpace(),))
 
 class ASinFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "asin", (MinusOneToOneDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "asin", (MinusOneToOneArgSpace(),))
 
 class SinhFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "sinh", (MinusTenToTenDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "sinh", (MinusTenToTenArgSpace(),))
 
 class ASinhFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "asinh", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "asinh", (RealArgSpace(),))
 
 class TanFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "tan", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "tan", (RealArgSpace(),))
 
 class ATanFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "atan", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "atan", (RealArgSpace(),))
 
 class TanhFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "tanh", (MinusTenToTenDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "tanh", (MinusTenToTenArgSpace(),))
 
 class ATanhFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "atanh", (MinusOneToOneDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "atanh", (MinusOneToOneArgSpace(),))
 
 class AbsFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "abs", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "abs", (RealArgSpace(),))
 
 class CeilingFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "ceiling", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "ceiling", (RealArgSpace(),))
 
 class DigammaFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "digamma", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "digamma", (ZeroToInfArgSpace(),))
 
 class TrigammaFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "trigamma", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "trigamma", (ZeroToInfArgSpace(),))
 
 class ExpFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "exp", (MinusTenToTenDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "exp", (MinusTenToTenArgSpace(),))
 
 class Expm1FeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "expm1", (MinusTenToTenDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "expm1", (MinusTenToTenArgSpace(),))
 
 class FloorFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "floor", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "floor", (RealArgSpace(),))
 
 class TruncFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "trunc", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "trunc", (RealArgSpace(),))
 
 class GammaFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "gamma", (ZeroToTenDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "gamma", (ZeroToTenArgSpace(),))
 
 class IsCharFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "is.character", (IsCharDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "is.character", (IsCharArgSpace(),))
 
 class IsNaFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "is.na", (IsNaDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "is.na", (IsNaArgSpace(),))
 
 class IsNumericFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "is.numeric", (IsCharDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "is.numeric", (IsCharArgSpace(),))
 
 class LGammaFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "lgamma", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "lgamma", (ZeroToInfArgSpace(),))
 
 class LevelsFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "h2o.levels", (LevelsDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.levels", (LevelsArgSpace(),))
 
 class LogFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "log", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "log", (ZeroToInfArgSpace(),))
 
 class Log10FeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "log10", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "log10", (ZeroToInfArgSpace(),))
 
 class Log1pFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "log1p", (MinusOneToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "log1p", (MinusOneToInfArgSpace(),))
 
 class Log2FeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "log2", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "log2", (ZeroToInfArgSpace(),))
 
 class NLevelsFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "h2o.nlevels", (LevelsDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.nlevels", (LevelsArgSpace(),))
 
 class NcolFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "ncol", (NcolDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "ncol", (NcolArgSpace(),))
 
 class NrowFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "nrow", (NrowDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "nrow", (NrowArgSpace(),))
 
 class NotFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "!", (NotDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "!", (NotArgSpace(),))
 
 class SignFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "sign", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "sign", (RealArgSpace(),))
 
 class SqrtFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "sqrt", (ZeroToInfDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "sqrt", (ZeroToInfArgSpace(),))
 
 class RoundFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "round", (RealDataArgSpace(), DigitsParameterArgSpace()))
+  def __init__(self): FeatureArgSpace.__init__(self, "round", (RealArgSpace(), DigitsArgSpace()))
 
 class SignifFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "signif", (RealDataArgSpace(), DigitsParameterArgSpace()))
+  def __init__(self): FeatureArgSpace.__init__(self, "signif", (RealArgSpace(), DigitsArgSpace()))
 
 class AndFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "&", (ZeroOneDataArgSpace(), ZeroOneDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "&", (ZeroOneArgSpace(), ZeroOneArgSpace(name="y")))
 
 class OrFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "|", (ZeroOneDataArgSpace(), ZeroOneDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "|", (ZeroOneArgSpace(), ZeroOneArgSpace(name="y")))
 
 class DivFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "/", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "/", (RealArgSpace(), RealArgSpace(name="y")))
 
 class ModFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "%%", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "%%", (RealArgSpace(), RealArgSpace(name="y")))
 
 class IntDivFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "%/%", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "%/%", (RealArgSpace(), RealArgSpace(name="y")))
 
 class MultFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "*", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "*", (RealArgSpace(), RealArgSpace(name="y")))
 
 class PlusFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "+", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "+", (RealArgSpace(), RealArgSpace(name="y")))
 
 class PowFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "^", (MinusTenToTenDataArgSpace(),
-                                                           MinusTenToTenDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "^", (MinusTenToTenArgSpace(),
+                                                           MinusTenToTenArgSpace(name="y")))
 
 class SubtFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "-", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "-", (RealArgSpace(), RealArgSpace(name="y")))
 
 class GEFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, ">=", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, ">=", (RealArgSpace(), RealArgSpace(name="y")))
 
 class GTFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, ">", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, ">", (RealArgSpace(), RealArgSpace(name="y")))
 
 class LEFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "<=", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "<=", (RealArgSpace(), RealArgSpace(name="y")))
 
 class LTFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "<", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "<", (RealArgSpace(), RealArgSpace(name="y")))
 
 class EQFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "==", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "==", (RealArgSpace(), RealArgSpace(name="y")))
 
 class NEFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "!=", (RealDataArgSpace(), RealDataArgSpace(name="y")))
+  def __init__(self): FeatureArgSpace.__init__(self, "!=", (RealArgSpace(), RealArgSpace(name="y")))
 
 class ScaleFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "scale", (RealDataArgSpace(),
-                                                               CenterScaleParameterArgSpace(),
-                                                               CenterScaleParameterArgSpace(name="scale")))
+  def __init__(self): FeatureArgSpace.__init__(self, "scale", (RealArgSpace(),
+                                                               CenterScaleArgSpace(),
+                                                               CenterScaleArgSpace(name="scale")))
 
 class AllFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "all", (AllDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "all", (AllArgSpace(),))
 
 class CbindFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "h2o.cbind", (RealDataArgSpace(name="x"),
-                                                                   RealDataArgSpace(name="y"),
-                                                                   RealDataArgSpace(name="z")))
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.cbind", (RealArgSpace(name="x"),
+                                                                   RealArgSpace(name="y"),
+                                                                   RealArgSpace(name="z")))
 
 class ColnamesFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "colnames", (RealDataArgSpace(name="x", colnames=True),
-                                                                  LogicalParameterArgSpace(name="do.NULL"),
+  def __init__(self): FeatureArgSpace.__init__(self, "colnames", (RealArgSpace(name="x", colnames=True),
+                                                                  LogicalArgSpace(name="do.NULL"),
                                                                   StringParameterArgSpace(name="prefix")))
 
 class SliceFeatureArgSpace(FeatureArgSpace):
@@ -256,57 +256,61 @@ class SliceFeatureArgSpace(FeatureArgSpace):
                                         element_value_space=ScalerValueSpace(space_type="integer",
                                                                              lower=1,
                                                                              upper=10),
-                                        max_array_size=10,
+                                        lower_array_size=1,
+                                        upper_array_size=10,
                                         sort=True)]
-    FeatureArgSpace.__init__(self, "[", (RealDataArgSpace(name="data"),
-                                         ParameterArgSpace(name="row", value_spaces=i_j_value_spaces),
-                                         ParameterArgSpace(name="col", value_spaces=i_j_value_spaces)))
+    FeatureArgSpace.__init__(self, "[", (RealArgSpace(name="data"),
+                                         ArgSpace(name="row", value_spaces=i_j_value_spaces),
+                                         ArgSpace(name="col", value_spaces=i_j_value_spaces)))
 
 class TableFeatureArgSpace(FeatureArgSpace):
   def __init__(self, two_col=False):
-    if two_col: arg_subspaces = (TableDataArgSpace(two_col=two_col),)
-    else: arg_subspaces = (TableDataArgSpace(), TableDataArgSpace(name="y"))
+    if two_col: arg_subspaces = (TableArgSpace(two_col=two_col),)
+    else: arg_subspaces = (TableArgSpace(), TableArgSpace(name="y"))
     FeatureArgSpace.__init__(self, "h2o.table", arg_subspaces=arg_subspaces)
 
 class QuantileFeatureArgSpace(FeatureArgSpace):
   def __init__(self):
-    data = RealDataArgSpace(na=False)
+    data = RealArgSpace(na=False)
     data.cols_set = [1]
     data.rows_set = [100]
-    FeatureArgSpace.__init__(self, "h2o.quantile", (data, ProbsParameterArgSpace()))
+    FeatureArgSpace.__init__(self, "h2o.quantile", (data, ProbsArgSpace()))
 
 class CutFeatureArgSpace(FeatureArgSpace):
   def __init__(self):
-    data = ZeroToOneDataArgSpace()
+    data = ZeroToOneArgSpace()
     data.cols_set = [1]
     data.rows_set = [100]
     FeatureArgSpace.__init__(self, "cut", (data,
-                                           BreaksParameterArgSpace(),
-                                           LogicalParameterArgSpace(name="include.lowest"),
-                                           LogicalParameterArgSpace(name="right"),
-                                           DigLabParameterArgSpace()))
+                                           BreaksArgSpace(),
+                                           LogicalArgSpace(name="include.lowest"),
+                                           LogicalArgSpace(name="right"),
+                                           DigLabArgSpace()))
 
 
 class MatchFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "h2o.match", (MatchDataArgSpace(),
-                                                                   MatchTableParameterArgSpace(),
-                                                                   IntegerParameterArgSpace(name="nomatch"),
-                                                                   MatchIncomparablesParameterArgSpace()))
+  def __init__(self): FeatureArgSpace.__init__(self, "h2o.match", (MatchArgSpace(),
+                                                                   MatchTableArgSpace(),
+                                                                   IntegerArgSpace(name="nomatch"),
+                                                                   MatchIncomparablesArgSpace()))
 
 class WhichFeatureArgSpace(FeatureArgSpace):
   def __init__(self):
-    data = ZeroOneDataArgSpace()
+    data = ZeroOneArgSpace()
     data.cols_set = [1]
     data.rows_set = [100]
     FeatureArgSpace.__init__(self, "h2o.which", (data,))
 
 class RepLenFeatureArgSpace(FeatureArgSpace):
   def __init__(self):
-    param = IntegerParameterArgSpace(name="length.out")
+    param = IntegerArgSpace(name="length.out")
     param.value_spaces[0].lower = None
     param.value_spaces[0].upper = None
-    param.value_spaces[0].set = [1, 10, 15, 42]
-    FeatureArgSpace.__init__(self, "h2o.rep_len", (RealDataArgSpace(), param))
+    param.value_spaces[0].set = [Value(value_type="integer", value=1),
+                                 Value(value_type="integer", value=10),
+                                 Value(value_type="integer", value=15),
+                                 Value(value_type="integer", value=42)]
+    FeatureArgSpace.__init__(self, "h2o.rep_len", (RealArgSpace(), param))
 
 class StrSplitFeatureArgSpace(FeatureArgSpace):
   def __init__(self):
@@ -318,23 +322,21 @@ class ToUpperFeatureArgSpace(FeatureArgSpace):
   def __init__(self): FeatureArgSpace.__init__(self, "h2o.toupper", (StringDataArgSpace(),))
 
 class TransposeFeatureArgSpace(FeatureArgSpace):
-  def __init__(self): FeatureArgSpace.__init__(self, "t", (RealDataArgSpace(),))
+  def __init__(self): FeatureArgSpace.__init__(self, "t", (RealArgSpace(),))
 
 class MMFeatureArgSpace(FeatureArgSpace):
   def __init__(self):
-    data1 = RealDataArgSpace(name="x")
+    data1 = RealArgSpace(name="x")
     data1.cols_set = [8]
     data1.rows_set = [10]
-    data2 = RealDataArgSpace(name="y")
+    data2 = RealArgSpace(name="y")
     data2.cols_set = [10]
     data2.rows_set = [8]
     FeatureArgSpace.__init__(self, "%*%", (data1, data2))
 
 class VarFeatureArgSpace(FeatureArgSpace):
   def __init__(self, na=True):
-    data2 = RealDataArgSpace(name="y", na=na)
-    data2.null = True
-    FeatureArgSpace.__init__(self, "h2o.var", (RealDataArgSpace(na=na),
-                                               data2,
-                                               LogicalParameterArgSpace(name="na.rm"),
-                                               VarUseParameterArgSpace(na=na)))
+    FeatureArgSpace.__init__(self, "h2o.var", (RealArgSpace(na=na),
+                                               RealArgSpace(name="y", na=na, null=True),
+                                               LogicalArgSpace(name="na.rm"),
+                                               VarUseArgSpace(na=na)))

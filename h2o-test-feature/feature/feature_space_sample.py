@@ -27,19 +27,19 @@ class FeatureArgSpaceSample():
     for point in self.points:
       feature_params = []
       data_set_ids = []
-      for name, dim in zip(point.keys(), point.values()):
-        if isinstance(dim, Value) or dim is None: # make feature_params
+      for name, val in zip(point.keys(), point.values()):
+        if not (val.value_type is "dataset"): # make feature_params
           # turn value into a valid R expression
-          if   dim is None or dim.value is None:          value = "NULL"
-          elif dim.value_type == "logical":               value = "TRUE" if dim.value else "FALSE"
-          elif dim.value_type == "string":                value = "'{0}'".format(dim.value)
-          elif dim.value_type in ["integer[]", "real[]"]: value = 'c(' + ','.join(str(v) for v in dim.value) + ')'
-          elif dim.value_type in ["enum[]", "string[]"]:  value = 'c(' + ','.join("'"+v+"'".format(v) for v in
-                                                                                  dim.value) + ')'
-          else:                                           value = str(dim.value)
+          if   val.value_type is "null":                  value = "NULL"
+          elif val.value_type == "logical":               value = "TRUE" if val.value else "FALSE"
+          elif val.value_type == "string":                value = "'{0}'".format(val.value)
+          elif val.value_type in ["integer[]", "real[]"]: value = 'c(' + ','.join(str(v) for v in val.value) + ')'
+          elif val.value_type in ["enum[]", "string[]"]:  value = 'c(' + ','.join("'"+v+"'".format(v) for v in
+                                                                                  val.value) + ')'
+          else:                                           value = str(val.value)
           feature_params.append(name + "=" + value)
         else: # make test case data_set_ids
-          data_set_ids.append(name + "=" + str(dim.id))
+          data_set_ids.append(name + "=" + str(val.value))
 
       feature_params_string = ';'.join(feature_params)
       data_set_ids_string = ';'.join(data_set_ids)
