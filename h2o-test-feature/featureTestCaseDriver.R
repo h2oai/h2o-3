@@ -5,14 +5,19 @@ options(echo=FALSE)
 #'#####################################################
 #'
 #'
-#' feature test case execution procedure
+#' Feature test case driver.
+#'
+#' An individual feature test case can be executed with
+#' this driver using either run.py or R -f. See the
+#' run.py documentation and featureTestCaseDriverUsage()
+#' below, respectively for more details.
 #'
 #'
 #'#####################################################
 
 
 #'
-#' ------------- Command Arguments Parsing -------------
+#' ------------- Driver Argument Parsing -------------
 #'
 parseCommandArgs<-
 function(args) {
@@ -26,12 +31,6 @@ function(args) {
         argsplit <- strsplit(args[i], ":")[[1]]
         featureTestCaseArgs$ip <- argsplit[1]
         featureTestCaseArgs$port <- as.numeric(argsplit[2])
-      } else if (s == "--hadoopNamenode") {
-        i <- i + 1
-        if (i > length(args)) featureTestCaseDriverUsage()
-        HADOOP.NAMENODE <<- args[i]
-      } else if (s == "--onHadoop") {
-        featureTestCaseArgs$onHadoop <- TRUE
       } else if (s == "--resultsDir") {
         i <- i + 1
         if (i > length(args)) featureTestCaseDriverUsage()
@@ -84,14 +83,6 @@ function() {
   h2oTest.logInfo("    --usecloud IP:PORT            (optional) connect to h2o on the specified IP and PORT.")
   h2oTest.logInfo("                                  If unspecified, then localhost:54321 is used.")
   h2oTest.logInfo("")
-  h2oTest.logInfo("    --onHadoop                    (optional) Indication that tests will be run on h2o multinode hadoop")
-  h2oTest.logInfo("                                  clusters. `locate` and `sandbox` runit test utilities use this indication ")
-  h2oTest.logInfo("                                  in order to behave properly. --hadoopNamenode must be specified if ")
-  h2oTest.logInfo("                                  --onHadoop option is used.")
-  h2oTest.logInfo("")
-  h2oTest.logInfo("    --hadoopNamenode NN           (optional) Specifies that the feature tests have access to hadoop namenode,")
-  h2oTest.logInfo("                                  NN, where NN is a valid hadoop namenode.")
-  h2oTest.logInfo("")
   h2oTest.logInfo("    --resultsDir DIR              (optional) if specified, then `h2o.startLogging` places the REST logs in ")
   h2oTest.logInfo("                                  this directory. if unspecified, then REST logging with not occur.")
   h2oTest.logInfo("")
@@ -117,7 +108,7 @@ function() {
   h2oTest.logInfo("")
   h2oTest.logInfo("    --description DESC            (optional) short description of the test case.")
   h2oTest.logInfo("")
-  q("no",1,FALSE) #exit with nonzero exit code
+  q("no",1,FALSE)
 }
 
 unknownFeatureTestCaseArg<-
@@ -142,7 +133,7 @@ function(cArgs) {
     if (is.null(dArgs$feature) || is.null(dArgs$featureParams) || is.null(dArgs$dataSetIds) ||
         is.null(dArgs$validationMethod) || is.null(dArgs$validationDataSetId)) {
         if (file.exists(dArgs$featureTestCasesCSV)) {
-            testCases <- read.table(dArgs$featureTestCasesCSV,header=TRUE,sep="|")
+            testCases <- read.table(dArgs$featureTestCasesCSV,header=TRUE,sep="~")
         } else {
             h2oTest.fail(paste0("Couldn't find featureTestCases.csv which should be located in: ",
                                 dArgs$featureTestCasesCSV))
@@ -225,9 +216,9 @@ function(d, featureDataSetsCSV) {
 
 
 #'
-#' ----------------- Main -----------------
+#' ----------------- Main - Execute a single feature test case -----------------
 #'
-featureTest <-
+executeFeatureTest <-
 function() {
     driver <- R.utils::commandArgs(asValues=TRUE)$"f"
     h2oTestFeatureDir <- normalizePath(dirname(driver))
@@ -236,13 +227,14 @@ function() {
 
     loadH2ORPackage(h2oRDir)
     loadH2ORTestPackage(h2oRDir)
-    
     h2oTest.logInfo("Loading default R packages. Additional packages must be loaded explicitly.")
     h2oTest.loadDefaultRPackages()
 
-    driverArgs <- getDriverArgs(commandArgs(trailingOnly=TRUE))
+    h2oTest.logInfo("------------------------------------------------------------------------------------")
     h2oTest.logInfo("Feature Test Case Driver Arguments: ")
-    print(driverArgs)
+    driverArgs <- getDriverArgs(commandArgs(trailingOnly=TRUE))
+    for (argName in names(driverArgs)) { h2oTest.logInfo(paste0(argName, ": ", driverArgs[[argName]])) }
+    h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
 
 #    sb <- h2oTest.sandbox(create=TRUE, sandboxName=driverArgs$testCaseId)
 #    h2oTest.logInfo(paste0("Created sandbox for feature test case ", driverArgs$testCaseId,
@@ -252,8 +244,10 @@ function() {
 #    set.seed(seed)
 #    h2o.logIt("[SEED] :", seed)
 
+    h2oTest.logInfo("------------------------------------------------------------------------------------")
     h2oTest.logInfo(paste0("Connecting to h2o on IP: ", driverArgs$ip, ", PORT: ", driverArgs$port))
     h2o.init(ip=driverArgs$ip, port=driverArgs$port, startH2O=FALSE, strict_version_check = FALSE)
+    h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
 
     if (!is.null(driverArgs$resultsDir)) { # you don't get the rest logs, unless you specify a results directory
         restLog <- paste(driverArgs$resultsDir, "rest.log", sep = .Platform$file.sep)
@@ -269,13 +263,26 @@ function() {
     h2o.logAndEcho("------------------------------------------------------------")
 
     testCase <- makeTestCase(driverArgs, featureDataSetsCSV)
+    h2oTest.logInfo("------------------------------------------------------------------------------------")
     h2oTest.logInfo("Executing Test Case: ")
-    print(testCase)
+    for (slotName in slotNames(testCase)) {
+        s <- slot(testCase, slotName)
+        if (is(s, "list")) {
+            h2oTest.logInfo(paste0(slotName, ": ")); h2oTest.logInfo("")
+            for (dataset in s) {
+                for (dataSlotName in slotNames(dataset)) {
+                    h2oTest.logInfo(paste0("    ",dataSlotName, ": ", slot(dataset, dataSlotName)))
+                }; h2oTest.logInfo("")
+            }
+        } else {
+            h2oTest.logInfo(paste0(slotName, ": ", s))
+        }
+    }
+    h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
     h2oTest.executeFeatureTestCase(testCase)
 }
 
-HADOOP.NAMENODE <<- NULL # TODO: Does this need to be global?
-featureTest()
+executeFeatureTest()
 
 options(echo=.origEchoValue)
 

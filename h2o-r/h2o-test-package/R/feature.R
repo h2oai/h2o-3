@@ -1,39 +1,78 @@
 #'
-#' --------------- execute a given test case ---------------
+#' --------------- Execute a given test case ---------------
+#'
+#' Each test case has a feature, the name of which is the h2o R API name. In addition, test cases have named
+#' parameters, as well as values associated with those parameters. Once again, the names associated with these
+#' parameters are derived from the h2o R API. In the case of dataset parameters, the value corresponds to a dataset id.
+#' General flow of execution is as follows:
+#'
+#' 1. Load the datasets associated with the test case into h2o.
+#' 2. From the test case, make a named list of arguments to be passed to the h2o feature.
+#' 3. Execute the h2o feature with the above-constructed arguments.
+#' 4. Compare h2o's result to some "ground truth" result.
+#' 4a. Ground truth results can come from a number of sources, but the primary sources are R-equivalent features and
+#'     hard-coded datasets.
+#' 4b. If the source of ground truth is an R-equivalent feature, then the R result is constructed in a similar manner
+#'     as the h2o result, that is, we make a named list of arguments, which are then passed to the R function for
+#'     execution.
+#' 5. H2O's result is then compared to the ground truth result.
 #'
 h2oTest.executeFeatureTestCase<-
 function(testCase) {
 
+    h2oTest.logInfo("------------------------------------------------------------------------------------")
+    h2oTest.logInfo("Loading test case datasets into H2O...")
     dataSets <- .loadDataSets(testCase@dataSets)
+    h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
 
     h2oFeatureParamsList <- .makeH2OFeatureParamsList(testCase@featureParams)
 
     h2oEnv <- new.env() # new environment for do.call, that has the h2o args defined
     argsH2O <- .makeArgList(h2oFeatureParamsList, dataSets, testCase@feature, h2oEnv, FALSE)
 
+    h2oTest.logInfo("------------------------------------------------------------------------------------")
+    h2oTest.logInfo("Executing do.call for an h2o feature...")
+    h2oTest.logInfo(paste0("what: ", testCase@feature))
+    h2oTest.logInfo("args: ")
+    for (arg in argsH2O) { h2oTest.logInfo(paste0("    ", arg)) }
+    h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
+
     h2oRes <- do.call(what=testCase@feature, args=argsH2O, envir=h2oEnv)
+    h2oTest.logInfo("------------------------------------------------------------------------------------")
     h2oTest.logInfo("The result of the H2O operation:")
     print(h2oRes)
+    h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
 
     if (testCase@validationMethod == "R") {
 
-        rFeatureParamsList <- .translateH2OFeatureParamsListToR(h2oFeatureParamsList, testCase@feature)
+        rFeatureParamsList <- h2oFeatureParamsList
+        if (testCase@feature == "h2o.quantile") { rFeatureParamsList <- h2oFeatureParamsList[1] }
 
         rEnv <- new.env()
         argsR <- .makeArgList(rFeatureParamsList, dataSets, testCase@feature, rEnv, TRUE)
 
-        rRes  <- do.call(what=.whatR(testCase@feature), args=argsR, envir=rEnv)
-        h2oTest.logInfo("The result of the R operation:")
-        print(rRes)
+        h2oTest.logInfo("------------------------------------------------------------------------------------")
+        h2oTest.logInfo("Executing do.call for an R feature...")
+        whatR <- .whatR(testCase@feature)
+        h2oTest.logInfo(paste0("what: ", whatR))
+        h2oTest.logInfo("args: ")
+        for (arg in argsR) { h2oTest.logInfo(paste0("    ", arg)) }
+        h2oTest.logInfo("------------------------------------------------------------------------------------")
+        cat("\n\n")
 
-        h2oTest.logInfo("Transforming the R result, so that it can be compared to the h2o result properly...")
+        rRes  <- do.call(what=whatR, args=argsR, envir=rEnv)
         rResX <- .makeRResComparableToH2O(rRes, testCase@feature)
-
-        h2oTest.logInfo("The transformed R result:")
+        h2oTest.logInfo("------------------------------------------------------------------------------------")
+        h2oTest.logInfo("The result of the R operation:")
         print(rResX)
+        h2oTest.logInfo("------------------------------------------------------------------------------------")
+        cat("\n\n")
 
+        h2oTest.logInfo("------------------------------------------------------------------------------------")
         h2oTest.logInfo("Comparing the h2o result to the (transformed) R result...")
         .compare2Objects(h2oRes, rResX)
+        h2oTest.logInfo("------------------------------------------------------------------------------------")
+        cat("\n\n")
 
     } else if (testCase@validationMethod == "H") {
 
@@ -66,7 +105,8 @@ function(testCase) {
 #'
 #' --------------- load data sets into h2o ---------------
 #'
-# modifies @key slot
+#' return `dataSets`, but with each dataSets's @key slot set to its key in h2o.
+#'
 .loadDataSets<-
 function(dataSets) {
     lapply(dataSets, function(d) {
@@ -76,6 +116,7 @@ function(dataSets) {
             dataSetPath <- h2oTest.locate(paste0("bigdata",strsplit(d@uri,"bigdata")[[1]][2]))
         }
 
+        h2oTest.logInfo(paste0("Loading dataset: ", dataSetPath))
         h2oDataSet <- h2o.importFile(dataSetPath)
         d@key <- attr(h2oDataSet,"id")
         d
@@ -84,17 +125,18 @@ function(dataSets) {
 
 
 #'
-#' --------------- parse the semi-colon-seperated feature parameters string into a list of params ---------------
+#' --------------- Make a list of (non-dataset) arguments to be passed to the feature ---------------
 #'
-# TODO: doesn't allow empty parameters in parameter string. all parameters need to be specified (in order).
-# allow optional parameters.
+#' Parses the semi-colon-seperated feature parameters string into a list. Evaluates the RHS of the parameter token, so
+#' it must be a valid R expression. Returns a named list, where the names are the parameter names and the values are
+#' are the parameter values.
+#'
 .makeH2OFeatureParamsList<-
 function(featureParamsString) {
     featureParamsList <- lapply(strsplit(featureParamsString,";")[[1]], function (p) {
         argNameValue <- strsplit(p,"=")[[1]]
         argName <- argNameValue[1]
-        # evaluate the individual parameter strings
-        argValue <- eval(parse(text=argNameValue[2])) # parameters in the the parameter string should be valid R expressions
+        argValue <- eval(parse(text=argNameValue[2])) # parameter values should be valid R expressions
         list(name=argName, value=argValue)
     })
 
@@ -102,20 +144,14 @@ function(featureParamsString) {
     return(featureParamsList)
 }
 
-
 #'
-#' --------------- translate the list of h2o parameters into the proper R parameters ---------------
+#' --------------- Get the type of the feature's data arguments ---------------
 #'
-.translateH2OFeatureParamsListToR<-
-function(h2oFeatureParamsList, feature) {
-    if (feature == "h2o.quantile") { return(h2oFeatureParamsList[1])
-    } else                         { return(h2oFeatureParamsList)
-    }
-}
-
-
-#'
-#' --------------- return the data argument type for the given h2o or r feature ---------------
+#' For h2o, all data arguments are of type H2OFrame, but for R, the type
+#' varies, depending on the feature. For example, base::toupper operates on a characeter vector, whereas
+#' h2o::h2o.toupper operates on an H2OFrame. Since all datasets are initially ingested into h2o, when we construct
+#' the data arguments to be passed to the R features, we have to convert them to their appropriate type. Return the
+#' type of feature's data arguments.
 #'
 .getDataArgsType<-
 function(feature, r) {
@@ -141,7 +177,7 @@ function(feature, r) {
             return("character")
         } else if (feature %in% c("%*%")) {
             return("matrix")
-        }
+        } else { stop(paste0("Unrecognized feature: ", feature, ". Cannot .getDataArgsType.")) }
     }
 }
 
@@ -152,24 +188,30 @@ function(dataSet, dataArgsType) {
     } else if (dataArgsType == "data.frame") { dArg <- as.data.frame(fr)
     } else if (dataArgsType == "vector")     { dArg <- as.data.frame(fr[,1])[,1]
     } else if (dataArgsType == "data.frameORvector") {
-        if (ncol(fr) > 1) {
-            dArg <- as.data.frame(fr)
-        } else {
-            dArg <- as.data.frame(fr[,1])[,1]
-        }
+        if (ncol(fr) > 1) { dArg <- as.data.frame(fr)
+        } else {            dArg <- as.data.frame(fr[,1])[,1] }
     } else if (dataArgsType == "matrix")     { dArg <- as.matrix(as.data.frame(fr))
-    } else if (dataArgsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1]) # we only take the first column of the dataset source file
+    } else if (dataArgsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1])
     } else if (dataArgsType == "logical")    { dArg <- as.logical(as.data.frame(fr[,1])[,1])
     } else if (dataArgsType == "character")  { dArg <- as.character(as.data.frame(fr[,1])[,1])
-    }
+    } else { stop("Unrecognized dataArgsType: ", dataArgsType, "! Cannot .makeDataArg.") }
     return(dArg)
 }
 
 #'
-#' --------------- simple protocol. put the data sets (in the order given) on the arg list first. next, put the
-#' --------------- parameters (in the order given) on the arg list.
+#' --------------- Make the named list of arguments to be passed to the feature ---------------
 #'
-# modifies env
+#' 1. First, for data arguments, get their type. For h2o, all data arguments are of type H2OFrame, but for R, the type
+#'    varies, depending on the feature. For example, base::toupper operates on a characeter vector, whereas
+#'    h2o::h2o.toupper operates on an H2OFrame. Since all datasets are initially ingested into h2o, when we construct
+#'    the data arguments to be passed to the R features, we have to convert them to their appropriate type.
+#' 2. Next, for each data argument, transform it into the appropriate type, based upon data args type returned by
+#'    .getDataArgsType. At this time no transformation is performed on h2o data args.
+#' 3. For each data argument and each parameter argument, assign their values to variables in the environment that was
+#'    passed to this function.
+#' Return a named list, where each name is an argument name in the respective feature, and each value is a variable
+#' (defined in env), which holds the argument's value.
+#'
 .makeArgList<-
 function(featureParamsList, dataSets, feature, env, r) {
 
@@ -190,24 +232,19 @@ function(featureParamsList, dataSets, feature, env, r) {
     args <- lapply(argNames, function(s) { as.name(s) })
 
     if (r && feature == "[") { # h2o calls the slice parameters `data`, `row`, `col`, but r calls them `x`, `i`, `j`
-        names(args) <- lapply(args, function(x) {
-            n <- toString(x)
-            if (n == "data") { "x"
-            } else if (n == "row") { "i"
-            } else if (n == "col") { "j"
+        names(args) <- lapply(argNames, function(x) {
+            if (x == "data") { "x"
+            } else if (x == "row") { "i"
+            } else if (x == "col") { "j"
             }
         })
     } else {
-        names(args) <- lapply(args, function(x) { toString(x) })
+        names(args) <- argNames
     }
 
     return(args)
 }
 
-
-#'
-#' --------------- validation methods ---------------
-#'
 .makeRResComparableToH2O<-
 function(rRes, feature) {
     if (feature == "h2o.strsplit") { return(rbind.fill(lapply(rRes, function (r) { as.data.frame(t(r))} ))) }
@@ -229,6 +266,10 @@ function(hardRes, feature) {
     return(hardRes)
 }
 
+
+#'
+#' --------------- validation methods ---------------
+#'
 .compare2Objects<-
 function(obj1, obj2) {
     obj1Class <- class(obj1)
@@ -241,6 +282,7 @@ function(obj1, obj2) {
     } else if (obj1Class == "H2OFrame"  && obj2Class == "integer")    { .comp.H2OFrame.base(obj1, obj2)
     } else if (obj1Class == "H2OFrame"  && obj2Class == "logical")    { .comp.H2OFrame.base(obj1, obj2)
     } else if (obj1Class == "H2OFrame"  && obj2Class == "character")  { .comp.H2OFrame.base(obj1, obj2)
+    } else if (obj1Class == "H2OFrame"  && obj2Class == "numeric")    { .comp.H2OFrame.base(obj1, obj2)
     } else if (obj1Class == "H2OFrame"  && obj2Class == "list")       { .comp.H2OFrame.base(obj1, obj2)
     } else if (obj1Class == "character" && obj2Class == "H2OFrame")   { .comp.H2OFrame.base(obj2, obj1)
     } else if (obj1Class == "factor"    && obj2Class == "factor")     { .comp.base.base(obj1, obj2)
@@ -366,83 +408,22 @@ function(h2oRes) {
     print("Unimplemented!")
 }
 
-
-
 #'
-#' --------------- get what for subsequent do.call ---------------
+#' --------------- Translate the feature's name in the h2o R API to the appropriate R name ---------------
 #'
 .whatR<-
 function(op) {
-    if        (op == "cos")           { return("cos")
-    } else if (op == "acos")          { return("acos")
-    } else if (op == "cosh")          { return("cosh")
-    } else if (op == "acosh")         { return("acosh")
-    } else if (op == "sin")           { return("sin")
-    } else if (op == "asin")          { return("asin")
-    } else if (op == "sinh")          { return("sinh")
-    } else if (op == "asinh")         { return("asinh")
-    } else if (op == "tan")           { return("tan")
-    } else if (op == "atan")          { return("atan")
-    } else if (op == "tanh")          { return("tanh")
-    } else if (op == "atanh")         { return("atanh")
-    } else if (op == "&")             { return("&")
-    } else if (op == "all")           { return("all")
-    } else if (op == "as.factor")     { return("as.factor")
-    } else if (op == "h2o.cbind")     { return("cbind")
-    } else if (op == "colnames")      { return("colnames")
-    } else if (op == "[")             { return("[")
+    if        (op == "h2o.cbind")     { return("cbind")
     } else if (op == "h2o.table")     { return("table")
     } else if (op == "h2o.quantile")  { return("quantile")
-    } else if (op == "cut")           { return("cut")
     } else if (op == "h2o.match")     { return("match")
     } else if (op == "h2o.which")     { return("which")
     } else if (op == "h2o.rep_len")   { return("rep_len")
     } else if (op == "h2o.strsplit")  { return("strsplit")
     } else if (op == "h2o.toupper")   { return("toupper")
-    } else if (op == "t")             { return("t")
-    } else if (op == "%*%")           { return("%*%")
     } else if (op == "h2o.var")       { return("var")
-    } else if (op == "abs")           { return("abs")
-    } else if (op == "ceiling")       { return("ceiling")
-    } else if (op == "digamma")       { return("digamma")
-    } else if (op == "exp")           { return("exp")
-    } else if (op == "gamma")         { return("gamma")
-    } else if (op == "floor")         { return("floor")
-    } else if (op == "expm1")         { return("expm1")
-    } else if (op == "is.character")  { return("is.character")
-    } else if (op == "is.numeric")    { return("is.numeric")
-    } else if (op == "is.na")         { return("is.na")
-    } else if (op == "lgamma")        { return("lgamma")
     } else if (op == "h2o.levels")    { return("levels")
     } else if (op == "h2o.nlevels")   { return("nlevels")
-    } else if (op == "log")           { return("log")
-    } else if (op == "log2")          { return("log2")
-    } else if (op == "log1p")         { return("log1p")
-    } else if (op == "log10")         { return("log10")
-    } else if (op == "ncol")          { return("ncol")
-    } else if (op == "!")             { return("!")
-    } else if (op == "nrow")          { return("nrow")
-    } else if (op == "round")         { return("round")
-    } else if (op == "sign")          { return("sign")
-    } else if (op == "signif")        { return("signif")
-    } else if (op == "trigamma")      { return("trigamma")
-    } else if (op == "trunc")         { return("trunc")
-    } else if (op == "sqrt")          { return("sqrt")
-    } else if (op == "&")             { return("&")
-    } else if (op == "|")             { return("|")
-    } else if (op == "%%")            { return("%%")
-    } else if (op == "*")             { return("*")
-    } else if (op == "-")             { return("-")
-    } else if (op == "%/%")           { return("%/%")
-    } else if (op == "scale")         { return("scale")
-    } else if (op == "^")             { return("^")
-    } else if (op == "+")             { return("+")
-    } else if (op == ">=")            { return(">=")
-    } else if (op == ">")             { return(">")
-    } else if (op == "<=")            { return("<=")
-    } else if (op == "<")             { return("<")
-    } else if (op == "==")            { return("==")
-    } else if (op == "!=")            { return("!=")
-    } else if (op == "/")             { return("/")
+    } else                            { return(op)
     }
 }
