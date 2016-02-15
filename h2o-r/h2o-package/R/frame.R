@@ -2886,3 +2886,27 @@ h2o.substring <- function(x, start, stop="[]") .newExpr("substring", x, start-1,
 
 #' @rdname h2o.substring
 h2o.substr <- h2o.substring
+
+#'
+#' Strip set from left
+#'
+#' Return a copy of the target column with leading characters removed. The set argument
+#' is a string specifying the set of characters to be removed. If omitted, the set
+#' argument defaults to removing whitespace.
+#'
+#' @param x   The column whose strings should be lstrip-ed.
+#' @param set string of characters to be removed
+#' @export
+h2o.lstrip <- function(x, set = " ") .newExpr("lstrip", x, .quote(set))
+
+#'
+#' Strip set from right
+#'
+#' Return a copy of the target column with leading characters removed. The set argument
+#' is a string specifying the set of characters to be removed. If omitted, the set
+#' argument defaults to removing whitespace.
+#'
+#' @param x   The column whose strings should be rstrip-ed.
+#' @param set string of characters to be removed
+#' @export
+h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
