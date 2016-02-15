@@ -1657,8 +1657,21 @@ class TestRunner:
                 for each_cloud in self.clouds:
                     java_errors = grab_java_message(each_cloud.nodes,testcase_name)
                     if len(java_errors) > 0:    # found java message and can quit now
+                        if g_use_client:
+                            failure_message += "\n##### Java message from server node #####\n"
                         failure_message += java_errors
-                        break;
+                        break
+
+                # scrape the logs on client nodes as well
+                if g_use_client:
+                    # add the error message from Java side here, java filename is in self.clouds[].output_file_name
+                    for each_cloud in self.clouds:
+                        java_errors = grab_java_message(each_cloud.client_nodes,testcase_name)
+                        if len(java_errors) > 0:    # found java message and can quit now
+                            failure_message += "\n\n##### Java message from client node #####\n"
+                            failure_message += java_errors
+
+                            break
 
 
                 if len(java_errors) < 1:
