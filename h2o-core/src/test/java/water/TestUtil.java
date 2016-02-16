@@ -37,8 +37,11 @@ public class TestUtil extends Iced {
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
   public static void stall_till_cloudsize(int x) {
+    stall_till_cloudsize(new String[] {}, x);
+  }
+  public static void stall_till_cloudsize(String[] args, int x) {
     if( !_stall_called_before ) {
-      H2O.main(new String[]{});
+      H2O.main(args);
       H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }

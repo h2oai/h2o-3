@@ -221,8 +221,7 @@ public class ADMM {
   public static double shrinkage(double x, double kappa) {
     double sign = x < 0?-1:1;
     double sx = x*sign;
-    if(sx <= kappa) return 0;
-    return sign*(sx - kappa);
+    return sx <= kappa?0:sign*(sx - kappa);
   }
 
   public static void subgrad(final double lambda, final double [] beta, final double [] grad){

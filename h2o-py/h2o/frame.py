@@ -1651,6 +1651,52 @@ class H2OFrame(object):
     fr._ex._cache.ncol = self.ncol
     return fr
 
+  def lstrip(self, set = " "):
+    """Return a copy of the column with leading characters removed.
+    The set argument is a string specifying the set of characters to be removed.
+    If omitted, the set argument defaults to removing whitespace.
+
+    Parameters
+      ----------
+      set : str
+        Set of characters to lstrip from strings in column
+
+    Returns
+    -------
+      H2OFrame with lstripped strings.
+    """
+
+    # work w/ None; parity with python lstrip
+    if set is None: set = " "
+
+    fr = H2OFrame._expr(expr=ExprNode("lstrip", self, set))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
+  def rstrip(self, set = " "):
+    """Return a copy of the column with trailing characters removed.
+    The set argument is a string specifying the set of characters to be removed.
+    If omitted, the set argument defaults to removing whitespace.
+
+    Parameters
+      ----------
+      set : str
+        Set of characters to rstrip from strings in column
+
+    Returns
+    -------
+      H2OFrame with rstripped strings.
+    """
+
+    # work w/ None; parity with python rstrip
+    if set is None: set = " "
+
+    fr = H2OFrame._expr(expr=ExprNode("rstrip", self, set))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
   def nchar(self):
     """Count the number of characters in each string of single-column H2OFrame.
 
