@@ -530,26 +530,41 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
         : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
+      double [] betaCnd = _state.beta();
       try {
+        boolean needLs = _state.beta().length > 1000;// _state.beta().length > 5;
+        boolean firstIter = true;
         while (true) {
           long t1 = System.currentTimeMillis();
-          GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, ls.getX()).doAll(_state.activeData()._adaptedFrame);
+          GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
           long t2 = System.currentTimeMillis();
-          double[] betaCnd = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(t,_state._alpha,_state.lambda()):solveGram(t._gram, t._xy);
-          if (betaCnd.length < ls.getX().length) {
-            ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-              ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
-              : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+          if(!needLs && _state.objective(t._beta,t._likelihood) > _state.objVal()) {
+            betaCnd = t._beta;
+            needLs = true;
+          } else {
+            if(!(needLs || firstIter || progress(t._beta,t._likelihood)))
+              break;
+            firstIter = false;
+            betaCnd = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(t,_state._alpha,_state.lambda()):solveGram(t._gram, t._xy);
           }
           long t3 = System.currentTimeMillis();
-          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
-            Log.info(LogMsg("Ls failed " + ls));
-            break;
-          }
-          long t4 = System.currentTimeMillis();
-          if (!progress(ls.getX(), ls.ginfo()))
-            break;
-          Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          if(needLs) {
+            if (betaCnd.length < ls.getX().length) {
+              ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
+            }
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+              Log.info(LogMsg("Ls failed " + ls));
+              break;
+            }
+            betaCnd = ls.getX();
+            long t4 = System.currentTimeMillis();
+            if (!progress(ls.getX(), ls.ginfo()))
+              break;
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } else
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
         }
       } catch(NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
@@ -953,6 +968,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
     }
 
+    public boolean progress(double [] beta, double likelihood) {
+      _state.updateState(beta,likelihood);
+      if(!_parms._lambda_search)
+        updateProgress();
+      return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
+    }
+
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
 
     // update user visible progress
@@ -1010,18 +1032,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return res;
   }
 
-
-  private static void doUpdateCD(double [] grads, double [][] xx, double diff , int variable) {
+  private static double [] doUpdateCD(double [] grads, double [][] xx, double diff , int variable, int variable_min, int variable_max) {
     double[] ary = xx[variable];
-    for (int i = 0; i < variable; i++)
+    for (int i = 0; i < variable_min; i++)
       grads[i] += diff * ary[i];
-    for (int i = variable+1; i < grads.length; i++)
+    for (int i = variable_max; i < grads.length; i++)
       grads[i] += diff * ary[i];
+    return grads;
   }
   public double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
     gt._gram.mul(_parms._obj_reg);
     ArrayUtils.mult(gt._xy,_parms._obj_reg);
-    double wsumInv = 1.0/gt.wsum;
+    double wsumInv = 1.0/(gt.wsum*_parms._obj_reg);
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);
     double [][] xx = gt._gram.getXX();
@@ -1038,29 +1060,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       diagInv[i] = 1.0/(xx[i][i] + l2pen);
     int iter1 = 0;
     int P = gt._xy.length - 1;
+    DataInfo activeData = _state.activeData();
     // CD loop
     while (iter1++ < 1000 /*Math.max(P,500)*/) {
-      double bdiff = 0;
-      for (int i = 0; i < P; ++i) {
+      double bdiffPos = 0;
+      double bdiffNeg = 0;
+      for (int i = 0; i < activeData._cats; ++i) {
+        for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
+          double b = ADMM.shrinkage(grads[j], l1pen) * diagInv[j];
+          double bd = beta[j] - b;
+          bdiffPos = bd > bdiffPos?bd:bdiffPos;
+          bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
+          doUpdateCD(grads, xx, bd, j, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
+          beta[j] = b;
+        }
+      }
+      int numStart = activeData.numStart();
+      for (int i = numStart; i < P; ++i) {
         double b = ADMM.shrinkage(grads[i], l1pen) * diagInv[i];
         double bd = beta[i] - b;
-        if(bd > bdiff) bdiff = bd;
-        else if(-bd > bdiff) bdiff = -bd;
-        doUpdateCD(grads, xx, bd, i);
+        bdiffPos = bd > bdiffPos?bd:bdiffPos;
+        bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
+        doUpdateCD(grads, xx, bd, i,i,i+1);
         beta[i] = b;
       }
       // intercept
       double b = grads[P] * wsumInv;
       double bd = beta[P] - b;
-      if (beta[P] != 0) // update all the grad entries
-        doUpdateCD(grads, xx, bd, P);
-      if(bd > bdiff) bdiff = bd;
-      else if(-bd > bdiff) bdiff = -bd;
+      doUpdateCD(grads, xx, bd, P,P,P+1);
+      bdiffPos = bd > bdiffPos?bd:bdiffPos;
+      bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
       beta[P] = b;
-      if (bdiff < 1e-4)
+      if (-1e-4 < bdiffNeg && bdiffPos < 1e-4)
         break;
     }
-    System.out.println("iter1 = " + iter1);
     return beta;
   }
   /**

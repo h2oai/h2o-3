@@ -90,11 +90,9 @@ public final class ComputationState {
   private void adjustToNewLambda() {
     double ldiff = _lambda - _previousLambda;
     if(ldiff == 0) return;
-    int N = _dinfo.fullN() + (_intercept ? 1 : 0);
     double l2pen = .5*l2pen();
-    double l1pen = l1pen();
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
-    _objVal = _objVal + ldiff * (l1pen + l2pen); //todo add proximal penalty?
+    _objVal = objective();
   }
 
   public double l1pen() {return _alpha*_lambda;}
@@ -330,8 +328,10 @@ public final class ComputationState {
       }
     return l1pen()*l1norm + .5*l2pen()*l2norm;
   }
-  private double objective() {
-    return _likelihood * _parms._obj_reg + penalty(_beta) + _activeBC.proxPen(_beta);
+  private double objective() {return objective(_beta,_likelihood);}
+
+  public double objective(double [] beta, double likelihood) {
+    return likelihood * _parms._obj_reg + penalty(beta) + _activeBC.proxPen(beta);
   }
   protected double  updateState(double [] beta, double likelihood) {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
