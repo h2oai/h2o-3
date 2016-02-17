@@ -1255,20 +1255,20 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
+  public Vec[] makeCompatible( Frame f) {return makeCompatible(f,false);}
   /** Return array of Vectors if 'f' is compatible with 'this', else return a new
    *  array of Vectors compatible with 'this' and a copy of 'f's data otherwise.  Note
    *  that this can, in the worst case, copy all of {@code this}s' data.
    *  @return This Frame's data in an array of Vectors that is compatible with {@code f}. */
-  public Vec[] makeCompatible( Frame f) {
+  public Vec[] makeCompatible( Frame f, boolean force) {
     // Small data frames are always "compatible"
     if (anyVec() == null)      // Or it is small
       return f.vecs();                 // Then must be compatible
-    // Same VectorGroup is also compatible
     Vec v1 = anyVec();
     Vec v2 = f.anyVec();
     if(v1.length() != v2.length())
       throw new IllegalArgumentException("Can not make vectors of different length compatible!");
-    if (v2 == null || v1.checkCompatible(v2))
+    if (v2 == null || (!force && v1.checkCompatible(v2)))
       return f.vecs();
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
