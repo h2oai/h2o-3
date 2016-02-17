@@ -2178,8 +2178,8 @@ as.double.H2OFrame <- function(x, ...) {
 #' @export
 as.logical.H2OFrame <- function(x, ...) {
   res <- .fetch.data(x,1L) # Force evaluation
-  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element H2OFrame into a logical")
-  res <- res[1,1]
+#  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element H2OFrame into a logical")
+#  res <- res[1,1]
   .Primitive("as.logical")(res)
 }
 
