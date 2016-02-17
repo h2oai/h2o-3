@@ -2166,30 +2166,6 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @export
 as.vector.H2OFrame <- function(x, mode) base::as.vector(as.matrix.H2OFrame(x))
 
-##`
-##' @export
-#as.double.H2OFrame <- function(x, ...) {
-#  res <- .fetch.data(x,1L) # Force evaluation
-#  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element H2OFrame into a double")
-#  res <- res[1,1]
-#  .Primitive("as.double")(res)
-#}
-#
-##' @export
-#as.logical.H2OFrame <- function(x, ...) {
-#  res <- .fetch.data(x,1L) # Force evaluation
-#  if( ncol(res)!=1L ) stop("Error: (list) object cannot be coerced to type 'logical'")
-#  .Primitive("as.logical")(res[,1])
-#}
-#
-##' @export
-#as.integer.H2OFrame <- function(x, ...) {
-#  x <- .fetch.data(x,1L) # Force evaluation
-#  if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element H2OFrame into an integer")
-#  x <- x[1,1]
-#  .Primitive("as.integer")(x)
-#}
-
 #' Convert H2O Data to Factors
 #'
 #' Convert a column into a factor column.
