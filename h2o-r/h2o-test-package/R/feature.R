@@ -159,11 +159,12 @@ function(feature, r) {
         return("H2OFrame")
     } else {
         if (feature %in% c("as.factor", "cos", "acos", "cosh", "acosh", "sin", "asin", "sinh", "asinh", "tan", "atan",
-                           "tanh","atanh", "all", "&", "h2o.cbind", "colnames", "[", "h2o.hist", "h2o.impute",
+                           "tanh","atanh", "all", "any","&", "h2o.cbind", "colnames", "[", "h2o.hist", "h2o.impute",
                            "h2o.rep_len", "t", "h2o.var", "abs", "ceiling", "digamma", "exp", "gamma", "floor",
                            "expm1", "is.na", "lgamma", "log", "log2", "log1p", "log10", "!", "round", "sign",
                            "signif", "trigamma", "trunc", "ncol", "nrow", "sqrt", "|", "%%", "*", "-", "%/%", "scale",
-                           "^", "+", ">=", ">", "<=", "<", "==", "!=", "/")) {
+                           "^", "+", ">=", ">", "<=", "<", "==", "!=", "/", "cumsum", "cummax", "cummin", "cumprod",
+                           "max", "min", "prod", "sum")) {
             return("data.frame")
         } else if (feature %in% c("h2o.table")) {
             return("data.frameORvector")
@@ -171,7 +172,8 @@ function(feature, r) {
             return("numeric")
         } else if (feature %in% c("h2o.which")) {
             return("logical")
-        } else if (feature %in% c("h2o.match", "is.character", "is.numeric", "h2o.levels", "h2o.nlevels")) {
+        } else if (feature %in% c("h2o.match", "is.character", "is.numeric", "h2o.levels", "h2o.nlevels", "ifelse",
+                                  "mean", "h2o.median", "sd")) {
             return("vector")
         } else if (feature %in% c("h2o.strsplit", "h2o.toupper")) {
             return("character")
@@ -424,6 +426,7 @@ function(op) {
     } else if (op == "h2o.var")       { return("var")
     } else if (op == "h2o.levels")    { return("levels")
     } else if (op == "h2o.nlevels")   { return("nlevels")
+    } else if (op == "h2o.median")    { return("median")
     } else                            { return(op)
     }
 }

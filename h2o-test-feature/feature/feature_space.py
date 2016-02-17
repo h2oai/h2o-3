@@ -237,6 +237,74 @@ class ScaleFeatureArgSpace(FeatureArgSpace):
 class AllFeatureArgSpace(FeatureArgSpace):
   def __init__(self): FeatureArgSpace.__init__(self, "all", (AllArgSpace(),))
 
+class AnyFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "any", (AllArgSpace(),))
+
+class CummaxFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "cummax", (x,))
+
+class CumminFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "cummin", (x,))
+
+class CumsumFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "cumsum", (x,))
+
+class CumprodFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "cumprod", (x,))
+
+class MaxFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "max", (RealArgSpace(), LogicalArgSpace(name="na.rm")))
+
+class MinFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "min", (RealArgSpace(), LogicalArgSpace(name="na.rm")))
+
+class SumFeatureArgSpace(FeatureArgSpace):
+  def __init__(self): FeatureArgSpace.__init__(self, "sum", (RealArgSpace(), LogicalArgSpace(name="na.rm")))
+
+class SdevFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "sd", (x, LogicalArgSpace(name="na.rm")))
+
+class ProdFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [3]
+    x.value_spaces[0].cols_set = [3]
+    FeatureArgSpace.__init__(self, "prod", (x, LogicalArgSpace(name="na.rm")))
+
+class MeanFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "mean", (x, LogicalArgSpace(name="na.rm")))
+
+class MedianFeatureArgSpace(FeatureArgSpace):
+  def __init__(self):
+    x = RealArgSpace()
+    x.value_spaces[0].rows_set = [100]
+    x.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "h2o.median", (x, LogicalArgSpace(name="na.rm")))
+
 class CbindFeatureArgSpace(FeatureArgSpace):
   def __init__(self): FeatureArgSpace.__init__(self, "h2o.cbind", (RealArgSpace(name="x"),
                                                                    RealArgSpace(name="y"),
@@ -340,3 +408,17 @@ class VarFeatureArgSpace(FeatureArgSpace):
                                                RealArgSpace(name="y", na=na, null=True),
                                                LogicalArgSpace(name="na.rm"),
                                                VarUseArgSpace(na=na)))
+
+class IfElseFeatureArgSpace(FeatureArgSpace): # ifelse(test, yes, no)
+  def __init__(self, yes_no="integer"):
+    if yes_no == "integer":
+      yes = IntegerArgSpace(name="yes")
+      no = IntegerArgSpace(name="no")
+    elif yes_no == "string":
+      yes = StringParameterArgSpace(name="yes")
+      no = StringParameterArgSpace(name="no")
+    else: raise(ValueError, "yes_no")
+    test = ZeroOneArgSpace(name="test")
+    test.value_spaces[0].rows_set = [100]
+    test.value_spaces[0].cols_set = [1]
+    FeatureArgSpace.__init__(self, "ifelse", (test, yes, no))

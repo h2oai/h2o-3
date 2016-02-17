@@ -168,6 +168,9 @@ class MatchIncomparablesArgSpace(ArgSpace):
                                                                                              value="b")]))]):
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
+"""
+# Dataset arg spaces
+"""
 class RealArgSpace(ArgSpace):
   def __init__(self,
                name="x",
@@ -175,8 +178,8 @@ class RealArgSpace(ArgSpace):
                colnames=False,
                null=False):
     value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-10000,
-                                                                                    upper=10000)],
+                                                                         lower=-10000,
+                                                                         upper=10000)],
                                       rows_set = [10],
                                       cols_set = [10],
                                       na=na,
