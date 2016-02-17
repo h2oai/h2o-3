@@ -1119,17 +1119,7 @@ public class Vec extends Keyed<Vec> {
    * @return a copy of vec which shared the same {@link VectorGroup} with this vector
    */
   public Vec align(final Vec vec) {
-    assert ! this.group().equals(vec.group()) : "Vector align expects a vector from different vector group";
-    assert this.length() == vec.length() : "Trying to align vectors with different length!";
-    Vec avec = makeZero(); // aligned vector
-    new MRTask() {
-      @Override public void map(Chunk c0) {
-        long srow = c0._start;
-        for (int r = 0; r < c0._len; r++) c0.set(r, vec.at(srow + r));
-      }
-    }.doAll(avec);
-    avec._domain = vec._domain;
-    return avec;
+    return new Frame(this).makeCompatible(new Frame(vec),true)[0];
   }
 
 
