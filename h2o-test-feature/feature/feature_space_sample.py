@@ -47,8 +47,12 @@ class FeatureArgSpaceSample():
       # make description
       description = "{0} feature test case.".format(self.name)
 
+      # validation_method
+      if (self.name == "h2o.hist" or self.name == "h2o.impute"): validation_method = "O"
+      else: validation_method = "R"
+
       tests.append([FeatureArgSpaceSample.test_case_id_counter, self.name, feature_params_string, data_set_ids_string,
-                    "R", "", description])
+                    validation_method, "", description])
       FeatureArgSpaceSample.test_case_id_counter += 1
 
     for test in tests: f.write('~'.join([str(field) for field in test]) + '\n')

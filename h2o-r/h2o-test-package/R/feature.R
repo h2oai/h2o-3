@@ -33,8 +33,10 @@ function(testCase) {
     h2oTest.logInfo("------------------------------------------------------------------------------------")
     h2oTest.logInfo("Executing do.call for an h2o feature...")
     h2oTest.logInfo(paste0("what: ", testCase@feature))
-    h2oTest.logInfo("args: ")
+    h2oTest.logInfo("args (names): ")
     for (arg in argsH2O) { h2oTest.logInfo(paste0("    ", arg)) }
+    h2oTest.logInfo("args (values): ")
+    for (arg in argsH2O) { cat("-\n"); cat(arg); cat(":\n"); print(get(toString(arg), envir = h2oEnv)); }
     h2oTest.logInfo("------------------------------------------------------------------------------------"); cat("\n\n")
 
     h2oRes <- do.call(what=testCase@feature, args=argsH2O, envir=h2oEnv)
@@ -55,8 +57,10 @@ function(testCase) {
         h2oTest.logInfo("Executing do.call for an R feature...")
         whatR <- .whatR(testCase@feature)
         h2oTest.logInfo(paste0("what: ", whatR))
-        h2oTest.logInfo("args: ")
+        h2oTest.logInfo("args (names): ")
         for (arg in argsR) { h2oTest.logInfo(paste0("    ", arg)) }
+        h2oTest.logInfo("args (values): ")
+        for (arg in argsH2O) { cat("-\n"); cat(arg); cat(":\n"); print(get(toString(arg), envir = h2oEnv)); }
         h2oTest.logInfo("------------------------------------------------------------------------------------")
         cat("\n\n")
 
@@ -93,9 +97,10 @@ function(testCase) {
 
     } else if (testCase@validationMethod == "O") {
 
-        if (testCase@feature == "as.factor")        { .asFactorValidation(h2oRes)
-        } else if (testCase@feature == "h2o.hist")  { .h2oHistValidation(h2oRes)
-        }
+        if (testCase@feature == "as.factor")          { .asFactorValidation(h2oRes)
+        } else if (testCase@feature == "h2o.hist")    { .h2oHistValidation(h2oRes)
+        } else if (testCase@feature == "h2o.impute")  { .h2oImputeValidation(h2oRes)
+        } else { stop(paste0("No validation method for feature: ", testCase@feature)) }
 
     }
 
@@ -156,10 +161,14 @@ function(featureParamsString) {
 .getDataArgsType<-
 function(feature, r) {
     if (!r) {
-        return("H2OFrame")
+        if (feature %in% c("h2o.impute")) {
+            return("H2OFrame.string.to.factor")
+        } else {
+            return("H2OFrame")
+        }
     } else {
         if (feature %in% c("as.factor", "cos", "acos", "cosh", "acosh", "sin", "asin", "sinh", "asinh", "tan", "atan",
-                           "tanh","atanh", "all", "any","&", "h2o.cbind", "colnames", "[", "h2o.hist", "h2o.impute",
+                           "tanh","atanh", "all", "any","&", "h2o.cbind", "colnames", "[", "h2o.hist",
                            "h2o.rep_len", "t", "h2o.var", "abs", "ceiling", "digamma", "exp", "gamma", "floor",
                            "expm1", "is.na", "lgamma", "log", "log2", "log1p", "log10", "!", "round", "sign",
                            "signif", "trigamma", "trunc", "ncol", "nrow", "sqrt", "|", "%%", "*", "-", "%/%", "scale",
@@ -186,16 +195,19 @@ function(feature, r) {
 .makeDataArg<-
 function(dataSet, dataArgsType) {
     fr <- h2o.getFrame(dataSet@key)
-    if        (dataArgsType == "H2OFrame")   { dArg <- fr
-    } else if (dataArgsType == "data.frame") { dArg <- as.data.frame(fr)
-    } else if (dataArgsType == "vector")     { dArg <- as.data.frame(fr[,1])[,1]
+    if        (dataArgsType == "H2OFrame")        { dArg <- fr
+    } else if (dataArgsType == "H2OFrame.string.to.factor") {
+        if (is.character(fr[,1])) { fr[,1] <- as.factor(fr[,1]) }
+        dArg <- fr
+    } else if (dataArgsType == "data.frame")      { dArg <- as.data.frame(fr)
+    } else if (dataArgsType == "vector")          { dArg <- as.data.frame(fr[,1])[,1]
     } else if (dataArgsType == "data.frameORvector") {
         if (ncol(fr) > 1) { dArg <- as.data.frame(fr)
         } else {            dArg <- as.data.frame(fr[,1])[,1] }
-    } else if (dataArgsType == "matrix")     { dArg <- as.matrix(as.data.frame(fr))
-    } else if (dataArgsType == "numeric")    { dArg <- as.numeric(as.data.frame(fr[,1])[,1])
-    } else if (dataArgsType == "logical")    { dArg <- as.logical(as.data.frame(fr[,1])[,1])
-    } else if (dataArgsType == "character")  { dArg <- as.character(as.data.frame(fr[,1])[,1])
+    } else if (dataArgsType == "matrix")          { dArg <- as.matrix(as.data.frame(fr))
+    } else if (dataArgsType == "numeric")         { dArg <- as.numeric(as.data.frame(fr[,1])[,1])
+    } else if (dataArgsType == "logical")         { dArg <- as.logical(as.data.frame(fr[,1])[,1])
+    } else if (dataArgsType == "character")       { dArg <- as.character(as.data.frame(fr[,1])[,1])
     } else { stop("Unrecognized dataArgsType: ", dataArgsType, "! Cannot .makeDataArg.") }
     return(dArg)
 }
@@ -405,10 +417,8 @@ function(h2oRes) {
         stop("Expected column 1 of h2o frame to be a factor, but it's not.")
     }
 }
-.h2oHistValidation<-
-function(h2oRes) {
-    print("Unimplemented!")
-}
+.h2oHistValidation<- function(h2oRes)   { print("Unimplemented!") }
+.h2oImputeValidation<- function(h2oRes) { print("Unimplemented!") }
 
 #'
 #' --------------- Translate the feature's name in the h2o R API to the appropriate R name ---------------

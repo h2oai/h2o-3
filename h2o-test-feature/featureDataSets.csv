@@ -230,3 +230,9 @@ data_set_id,uri
 229,s3://h2o-public-test-data/smalldata/featureData/229.csv
 230,s3://h2o-public-test-data/smalldata/featureData/230.csv
 231,s3://h2o-public-test-data/smalldata/featureData/231.csv
+232,s3://h2o-public-test-data/smalldata/featureData/232.csv
+233,s3://h2o-public-test-data/smalldata/featureData/233.csv
+234,s3://h2o-public-test-data/smalldata/featureData/234.csv
+235,s3://h2o-public-test-data/smalldata/featureData/235.csv
+236,s3://h2o-public-test-data/smalldata/featureData/236.csv
+237,s3://h2o-public-test-data/smalldata/featureData/237.csv

@@ -92,6 +92,9 @@ def main():
   ProdFeatureArgSpace().sample().make_R_tests(f)
   SdevFeatureArgSpace().sample().make_R_tests(f)
   SumFeatureArgSpace().sample().make_R_tests(f)
+  HistFeatureArgSpace().sample().make_R_tests(f)
+  ImputeFeatureArgSpace().sample().make_R_tests(f)
+  ImputeFeatureArgSpace(numeric=False).sample().make_R_tests(f)
 
   f.close()
 

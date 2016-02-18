@@ -45,57 +45,57 @@ class ArgSpace():
 ########################################################################################################################
 """
 
-class DigitsArgSpace(ArgSpace):
+class DigitsParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="digits",
-               value_spaces=[ScalerValueSpace(space_type="integer",
-                                              set=[Value(value_type="integer", value=0),
-                                                   Value(value_type="integer", value=1),
-                                                   Value(value_type="integer", value=2),
-                                                   Value(value_type="integer", value=3),
-                                                   Value(value_type="integer", value=4),
-                                                   Value(value_type="integer", value=5),
-                                                   Value(value_type="integer", value=6)])]):
+               name="digits"):
+    value_spaces = [ScalerValueSpace(space_type="integer",
+                                     set=[Value(value_type="integer", value=0),
+                                          Value(value_type="integer", value=1),
+                                          Value(value_type="integer", value=2),
+                                          Value(value_type="integer", value=3),
+                                          Value(value_type="integer", value=4),
+                                          Value(value_type="integer", value=5),
+                                          Value(value_type="integer", value=6)])]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class CenterScaleArgSpace(ArgSpace):
+class CenterScaleParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="center",
-               value_spaces=[ScalerValueSpace(space_type="logical",
-                                              set=[Value(value_type="logical", value=True),
-                                                   Value(value_type="logical", value=False)]),
-                             ArrayValueSpace(space_type="real[]",
-                                             exact_array_size=10,
-                                             element_value_space=ScalerValueSpace(space_type="real",
-                                                                                  lower=-10000,
-                                                                                  upper=10000))]):
+               name="center"):
+    value_spaces = [ScalerValueSpace(space_type="logical",
+                                     set=[Value(value_type="logical", value=True),
+                                          Value(value_type="logical", value=False)]),
+                    ArrayValueSpace(space_type="real[]",
+                                    exact_array_size=10,
+                                    element_value_space=ScalerValueSpace(space_type="real",
+                                                                         lower=-10000,
+                                                                         upper=10000))]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class LogicalArgSpace(ArgSpace):
+class LogicalParameterArgSpace(ArgSpace):
   def __init__(self,
-               name,
-               value_spaces=[ScalerValueSpace(space_type="logical",
-                                              set=[Value(value_type="logical", value=True),
-                                                   Value(value_type="logical", value=False)])]):
+               name):
+    value_spaces = [ScalerValueSpace(space_type="logical",
+                                     set=[Value(value_type="logical", value=True),
+                                          Value(value_type="logical", value=False)])]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class IntegerArgSpace(ArgSpace):
+class IntegerParameterArgSpace(ArgSpace):
   def __init__(self,
-               name,
-               value_spaces=[ScalerValueSpace(space_type="integer",
-                                              lower=-10000,
-                                              upper=10000)]):
+               name):
+    value_spaces = [ScalerValueSpace(space_type="integer",
+                                     lower=-10000,
+                                     upper=10000)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
 class StringParameterArgSpace(ArgSpace):
   def __init__(self,
-               name,
-               value_spaces=[ScalerValueSpace(space_type="string",
-                                              lower=1,
-                                              upper=10)]):
+               name):
+    value_spaces=[ScalerValueSpace(space_type="string",
+                                   lower=1,
+                                   upper=10)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class VarUseArgSpace(ArgSpace):
+class VarUseParameterArgSpace(ArgSpace):
   def __init__(self,
                name="use",
                na=True):
@@ -108,70 +108,88 @@ class VarUseArgSpace(ArgSpace):
                                        set=[Value(value_type="string", value="all.obs")])]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class ProbsArgSpace(ArgSpace):
+class ProbsParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="probs",
-               value_spaces=[ArrayValueSpace(space_type="real[]",
-                                             exact_array_size=10,
-                                             element_value_space=ScalerValueSpace(space_type="real",
-                                                                                  lower=0,
-                                                                                  upper=1))]):
+               name="probs"):
+    value_spaces=[ArrayValueSpace(space_type="real[]",
+                                  exact_array_size=10,
+                                  element_value_space=ScalerValueSpace(space_type="real",
+                                                                       lower=0,
+                                                                       upper=1))]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class BreaksArgSpace(ArgSpace):
+class BreaksParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="breaks",
-               value_spaces=[ArrayValueSpace(space_type="real[]",
-                                             exact_array_size=3,
-                                             element_value_space=ScalerValueSpace(space_type="real",
-                                                                                  lower=0,
-                                                                                  upper=1))]):
+               name="breaks"):
+    value_spaces=[ArrayValueSpace(space_type="real[]",
+                                  exact_array_size=3,
+                                  element_value_space=ScalerValueSpace(space_type="real",
+                                                                       lower=0,
+                                                                       upper=1))]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class LabelsArgSpace(ArgSpace):
+class HistBreaksUseParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="labels",
-               value_spaces=[ArrayValueSpace(space_type="string[]",
-                                             exact_array_size=4,
-                                             element_value_space=ScalerValueSpace(space_type="string",
-                                                                                  lower=1,
-                                                                                  upper=3)),
-                             NullValueSpace()]):
+               name="breaks"):
+    value_spaces = [ScalerValueSpace(space_type="string",
+                                     set=[Value(value_type="string", value="Sturges"),
+                                          Value(value_type="string", value="Rice"),
+                                          Value(value_type="string", value="sqrt"),
+                                          Value(value_type="string", value="Doane"),
+                                          Value(value_type="string", value="FD"),
+                                          Value(value_type="string", value="Scott")])]
+    ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
+
+class LabelsParameterArgSpace(ArgSpace):
+  def __init__(self,
+               name="labels"):
+    value_spaces=[ArrayValueSpace(space_type="string[]",
+                                  exact_array_size=4,
+                                  element_value_space=ScalerValueSpace(space_type="string",
+                                                                       lower=1,
+                                                                       upper=3)),
+                  NullValueSpace()]
+    ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
+
+class NullParameterArgSpace(ArgSpace):
+  def __init__(self,
+               name):
+    value_spaces=[NullValueSpace()]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
 
-class DigLabArgSpace(ArgSpace):
+class DigLabParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="dig.lab",
-               value_spaces=[ScalerValueSpace(space_type="integer",
-                                              lower=0,
-                                              upper=12)]):
+               name="dig.lab"):
+    value_spaces=[ScalerValueSpace(space_type="integer",
+                                   lower=0,
+                                   upper=12)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class MatchTableArgSpace(ArgSpace):
+class MatchTableParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="table",
-               value_spaces=[ArrayValueSpace(space_type="enum[]",
-                                             exact_array_size=1,
-                                             element_value_space=ScalerValueSpace(space_type="enum",
-                                                                                  set=[Value(value_type="enum",
-                                                                                             value="c")]))]):
+               name="table"):
+    value_spaces=[ArrayValueSpace(space_type="enum[]",
+                                  exact_array_size=1,
+                                  element_value_space=ScalerValueSpace(space_type="enum",
+                                                                       set=[Value(value_type="enum",
+                                                                                  value="c")]))]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class MatchIncomparablesArgSpace(ArgSpace):
+class MatchIncomparablesParameterArgSpace(ArgSpace):
   def __init__(self,
-               name="incomparables",
-               value_spaces=[ArrayValueSpace(space_type="enum[]",
-                                             exact_array_size=1,
-                                             element_value_space=ScalerValueSpace(space_type="enum",
-                                                                                  set=[Value(value_type="enum",
-                                                                                             value="b")]))]):
+               name="incomparables"):
+    value_spaces=[ArrayValueSpace(space_type="enum[]",
+                                  exact_array_size=1,
+                                  element_value_space=ScalerValueSpace(space_type="enum",
+                                                                       set=[Value(value_type="enum",
+                                                                                  value="b")]))]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
 """
 # Dataset arg spaces
 """
-class RealArgSpace(ArgSpace):
+class RealDataArgSpace(ArgSpace):
   def __init__(self,
                name="x",
                na=True,
@@ -187,7 +205,7 @@ class RealArgSpace(ArgSpace):
     if null: value_spaces.append(NullValueSpace())
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class TableArgSpace(ArgSpace):
+class TableDataArgSpace(ArgSpace):
   def __init__(self,
                name="x",
                two_col = False):
@@ -199,218 +217,219 @@ class TableArgSpace(ArgSpace):
                                       na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class MinusOneToOneArgSpace(ArgSpace):
+class MinusOneToOneDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-1,
-                                                                                    upper=1)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-1,
+                                                                         upper=1)],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class MinusTenToTenArgSpace(ArgSpace):
+class MinusTenToTenDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-10,
-                                                                                    upper=10)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-10,
+                                                                         upper=10)],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class OneToInfArgSpace(ArgSpace):
+class OneToInfDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=1,
-                                                                                    upper=10000)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=1,
+                                                                         upper=10000)],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class ZeroToInfArgSpace(ArgSpace):
+class ZeroToInfDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
                                                                                     lower=0,
                                                                                     upper=10000)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class ZeroToTenArgSpace(ArgSpace):
+class ZeroToTenDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
                                                                                     lower=0,
                                                                                     upper=10)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class ZeroToOneArgSpace(ArgSpace):
+class ZeroToOneDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
                                                                                     lower=0,
                                                                                     upper=1)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class ZeroOneArgSpace(ArgSpace):
+class ZeroOneDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="integer",
-                                                                                    set=[Value(value_type="integer",
-                                                                                               value=0),
-                                                                                         Value(value_type="integer",
-                                                                                               value=1)])],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="integer",
+                                                                         set=[Value(value_type="integer",
+                                                                                    value=0),
+                                                                              Value(value_type="integer",
+                                                                                    value=1)])],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class IsCharArgSpace(ArgSpace):
+class IsCharDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-10000,
-                                                                                    upper=10000),
-                                                                   ScalerValueSpace(space_type="string",
-                                                                                    lower=1,
-                                                                                    upper=10)],
-                                                 rows_set = [100],
-                                                 cols_set = [1],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-10000,
+                                                                         upper=10000),
+                                                        ScalerValueSpace(space_type="string",
+                                                                         lower=1,
+                                                                         upper=10)],
+                                     rows_set = [100],
+                                     cols_set = [1],
+                                     na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class IsNaArgSpace(ArgSpace):
+class IsNaDataArgSpace(ArgSpace):
   def __init__(self, 
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                     lower=-10000,
-                                                                                     upper=10000),
-                                                                    ScalerValueSpace(space_type="string",
-                                                                                     lower=1,
-                                                                                     upper=10)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-10000,
+                                                                         upper=10000),
+                                                        ScalerValueSpace(space_type="string",
+                                                                         lower=1,
+                                                                         upper=10)],
+                                     rows_set = [10],
+                                     cols_set = [10],
+                                     na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
 # TODO: how does h2o determine whether or not a column is a string or factor?
-class LevelsArgSpace(ArgSpace):
+class LevelsDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="string",
-                                                                                    set=[Value(value_type="string",
-                                                                                               value="a"),
-                                                                                         Value(value_type="string",
-                                                                                               value="b"),
-                                                                                         Value(value_type="string",
-                                                                                               value="c"),
-                                                                                         Value(value_type="string",
-                                                                                               value="d")])],
-                                                 rows_set = [100],
-                                                 cols_set = [1],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="string",
+                                                                         set=[Value(value_type="string",
+                                                                                    value="a"),
+                                                                              Value(value_type="string",
+                                                                                    value="b"),
+                                                                              Value(value_type="string",
+                                                                                    value="c"),
+                                                                              Value(value_type="string",
+                                                                                    value="d")])],
+                                      rows_set = [100],
+                                      cols_set = [1],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class MinusOneToInfArgSpace(ArgSpace):
+class MinusOneToInfDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-1,
-                                                                                    upper=10000)],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-1,
+                                                                         upper=10000)],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class NcolArgSpace(ArgSpace):
+class NcolDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-10000,
-                                                                                    upper=10000)],
-                                                 rows_set = [10],
-                                                 cols_set = [1, 10, 33],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-10000,
+                                                                         upper=10000)],
+                                      rows_set = [10],
+                                      cols_set = [1, 10, 33],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class NrowArgSpace(ArgSpace):
+class NrowDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
-                                                                                    lower=-10000,
-                                                                                    upper=10000)],
-                                                 rows_set = [1, 10, 33],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="real",
+                                                                         lower=-10000,
+                                                                         upper=10000)],
+                                      rows_set = [1, 10, 33],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class NotArgSpace(ArgSpace):
+class NotDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="integer",
-                                                                                    set=[Value(value_type="integer",
-                                                                                               value=0),
-                                                                                         Value(value_type="integer",
-                                                                                               value=1)])],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="integer",
+                                                                         set=[Value(value_type="integer",
+                                                                                    value=0),
+                                                                              Value(value_type="integer",
+                                                                                    value=1)])],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class AllArgSpace(ArgSpace):
+class AllDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="integer",
-                                                                                    set=[Value(value_type="integer",
-                                                                                               value=0)]),
-                                                                   ScalerValueSpace(space_type="integer",
-                                                                                    set=[Value(value_type="integer",
-                                                                                               value=1)]),
-                                                                   ScalerValueSpace(space_type="integer",
-                                                                                    set=[Value(value_type="integer",
-                                                                                               value=0),
-                                                                                         Value(value_type="integer",
-                                                                                               value=1)])],
-                                                 rows_set = [10],
-                                                 cols_set = [10],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="integer",
+                                                                         set=[Value(value_type="integer",
+                                                                                    value=0)]),
+                                                        ScalerValueSpace(space_type="integer",
+                                                                         set=[Value(value_type="integer",
+                                                                                    value=1)]),
+                                                        ScalerValueSpace(space_type="integer",
+                                                                         set=[Value(value_type="integer",
+                                                                                    value=0),
+                                                                              Value(value_type="integer",
+                                                                                    value=1)])],
+                                      rows_set = [10],
+                                      cols_set = [10],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
-class MatchArgSpace(ArgSpace):
+class MatchDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="enum",
-                                                                                    set=[Value(value_type="enum",
-                                                                                               value="a"),
-                                                                                         Value(value_type="enum",
-                                                                                               value="b"),
-                                                                                         Value(value_type="enum",
-                                                                                               value="c")])],
-                                                 rows_set = [100],
-                                                 cols_set = [1],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="enum",
+                                                                         set=[Value(value_type="enum",
+                                                                                    value="a"),
+                                                                              Value(value_type="enum",
+                                                                                    value="b"),
+                                                                              Value(value_type="enum",
+                                                                                    value="c")])],
+                                     rows_set = [100],
+                                     cols_set = [1],
+                                     na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
 
 class StringDataArgSpace(ArgSpace):
   def __init__(self,
-               name="x",
-               value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="string",
-                                                                                    lower=1,
-                                                                                    upper=10)],
-                                                 rows_set = [100],
-                                                 cols_set = [1],
-                                                 na=True)]):
+               name="x"):
+    value_spaces = [DatasetValueSpace(col_value_spaces=[ScalerValueSpace(space_type="string",
+                                                                         lower=1,
+                                                                         upper=10)],
+                                      rows_set = [100],
+                                      cols_set = [1],
+                                      na=True)]
     ArgSpace.__init__(self, name=name, value_spaces=value_spaces)
