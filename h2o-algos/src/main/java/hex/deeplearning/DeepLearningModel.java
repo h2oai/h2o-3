@@ -209,7 +209,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[i] = cp.scoringInfo[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, get_params(), _output);
+    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -243,7 +243,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[0].validation = (parms._valid != null);
       scoringInfo[0].time_stamp_ms = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, get_params(), _output);
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start_ms = System.currentTimeMillis();
@@ -456,7 +456,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!_parms._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, get_params(), _output);
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
@@ -480,7 +480,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
           stopped_early = true;
         }
-        if (ScoreKeeper.earlyStopping(scoreKeepers(),
+        if (ScoreKeeper.stopEarly(scoreKeepers(),
                 get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance
         )) {
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
