@@ -93,7 +93,7 @@ function(args) {
     return_val <- 0
     sysRMajor <- R.version$major
     sysRMinor <- R.version$minor
-    wrong_r <- !(sysRMajor == JENKINS.R.VERSION.MAJOR && sysRMinor == JENKINS.R.VERSION.MINOR)
+    wrong_r <- !(sysRMajor == JENKINS.R.VERSION.MAJOR && sysRMinor >= JENKINS.R.VERSION.MINOR)
     if (wrong_r) {
         write("",stdout())
         write(paste0("ERROR: Jenkins has R version ",JENKINS.R.VERSION.MAJOR,".",JENKINS.R.VERSION.MINOR,
