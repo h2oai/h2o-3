@@ -427,6 +427,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
+    /** Is this model a binomial classification model? (v. a regression or clustering model) */
+    public boolean isBinomialClassifier() { return isSupervised() && nclasses() == 2; }
+
     public int nclasses() {
       assert isSupervised();
       String cns[] = classNames();
@@ -519,6 +522,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       sk[i] = scoringInfo[i].validation ? scoringInfo[i].scored_valid : scoringInfo[i].scored_train;
     }
     return sk;
+  }
+
+  /**
+   * Fill a ScoringInfo with data from the ModelMetrics for this model.
+   * @param scoringInfo
+   */
+  public void fillScoringInfo(ScoringInfo scoringInfo) {
+    scoringInfo.classification = this._output.isClassifier();
+    scoringInfo.scored_train = new ScoreKeeper(this._output._training_metrics);
+    scoringInfo.scored_valid = new ScoreKeeper(this._output._validation_metrics);
+
+    if (this._output.isBinomialClassifier()) {
+      scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
+      scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
+    }
   }
 
   // return the most up-to-date model metrics

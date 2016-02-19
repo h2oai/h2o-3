@@ -1,8 +1,6 @@
 package hex.grid;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelParametersBuilderFactory;
+import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -74,6 +72,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
+
+  private ScoringInfo[] scoringInfos = null;
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     _result = gkey;
@@ -202,7 +202,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           }
 
           try {
+            ScoringInfo scoringInfo = new ScoringInfo();
+            scoringInfo.time_stamp_ms = System.currentTimeMillis();
+
+            //// build the model!
             model = buildModel(params, grid, counter++, protoModelKey);
+
+            model.fillScoringInfo(scoringInfo);
+            this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
+            // TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO
+            ScoringInfo.sort(this.scoringInfos, ScoreKeeper.StoppingMetric.MSE);
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -222,7 +231,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Always update grid in DKV after model building attempt
           grid.update(_job);
         }
-      }
+      } // while (it.hasNext(model))
       Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
     } finally {
       grid.unlock(_job);
