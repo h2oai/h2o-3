@@ -516,13 +516,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected ScoringInfo[] scoringInfo;
   public ScoringInfo[] scoring_history() { return scoringInfo; }
-  public ScoreKeeper[] scoreKeepers() {
-    ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
-    for (int i=0;i<sk.length;++i) {
-      sk[i] = scoringInfo[i].validation ? scoringInfo[i].scored_valid : scoringInfo[i].scored_train;
-    }
-    return sk;
-  }
 
   /**
    * Fill a ScoringInfo with data from the ModelMetrics for this model.

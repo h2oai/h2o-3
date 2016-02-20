@@ -90,6 +90,7 @@ public class ScoreKeeper extends Iced {
     return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_group);
   }
 
+  /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
   public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
     if (k == 0) return false;
     int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)

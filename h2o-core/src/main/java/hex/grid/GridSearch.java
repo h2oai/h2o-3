@@ -177,7 +177,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         double time_remaining_secs = it.time_remaining_secs();
         double max_runtime_secs = it.max_runtime_secs();
 
-        if  (time_remaining_secs < 0) {
+        if (time_remaining_secs < 0) {
           Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
           return;
         }
@@ -186,6 +186,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
+
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
 
@@ -212,7 +213,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             model.fillScoringInfo(scoringInfo);
             this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
             // TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO
-            ScoringInfo.sort(this.scoringInfos, ScoreKeeper.StoppingMetric.MSE);
+            ScoringInfo.sort(this.scoringInfos, ScoreKeeper.StoppingMetric.AUTO);
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -231,6 +232,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           _job.update(1);
           // Always update grid in DKV after model building attempt
           grid.update(_job);
+        } // finally
+
+        // NOTE: n - 1
+        // TODO TODO TODO TODO TODO TODO TODO TODO TODO pass through params!
+        if (ScoringInfo.stopEarly(this.scoringInfos, 5, model._output.isClassifier(), ScoreKeeper.StoppingMetric.AUTO, 0.01)) {
+          Log.info("Convergence detected based on simple moving average of the loss function for the past " + 5 + " scoring events. Grid building completed.");
+          break;
         }
       } // while (it.hasNext(model))
       Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
