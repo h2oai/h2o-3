@@ -31,7 +31,7 @@ test <- function() {
 	hh = h2o.deeplearning(x = myX,y = "Loss",distribution ="tweedie",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
-                      training_frame = cancar) 
+                      training_frame = cancar, stopping_rounds=0)
 
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = cancar))
@@ -39,10 +39,10 @@ test <- function() {
   print(mean(ph[,1]))
   print(min(ph[,1]))
   print(max(ph[,1]))
-	expect_equal(0.001305, mean_deviance, tolerance=1e-2)
-	expect_equal(0.04437, mean(ph[,1]), tolerance=1e-2 )
-	expect_equal(0.02526, min(ph[,1]), tolerance=1e-1 )
-	expect_equal(0.07359, max(ph[,1]), tolerance=1e-1 )
+	expect_equal(0.0013053, mean_deviance, tolerance=1e-5)
+	expect_equal(0.0443739, mean(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0252619, min(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0735932, max(ph[,1]), tolerance=1e-5 )
 
 	#With weights
 	#gg = gbm(formula = Loss~Class+Merit + C1M3 + C4M3, distribution = "tweedie",data = data,
@@ -54,7 +54,7 @@ test <- function() {
 	hh = h2o.deeplearning(x = myX,y = "Loss",distribution ="tweedie",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
-                      weights_column = "Insured",training_frame = cancar) 
+                      weights_column = "Insured",training_frame = cancar, stopping_rounds=0)
 	hh@model$training_metrics@metrics$mean_residual_deviance  #0.0001958009   0.001300774
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = cancar)) #mean = 0.04399   mean = 0.04423
@@ -62,10 +62,10 @@ test <- function() {
   print(mean(ph[,1]))
   print(min(ph[,1]))
   print(max(ph[,1]))
-	expect_equal(0.0002007, mean_deviance, tolerance=1e-2)
-	expect_equal(0.0438, mean(ph[,1]), tolerance=1e-2 )
-	expect_equal(0.02265921, min(ph[,1]), tolerance=1e-1 )
-	expect_equal(0.0717, max(ph[,1]), tolerance=1e-1 )
+	expect_equal(0.0001834897, mean_deviance, tolerance=1e-5)
+	expect_equal(0.044396, mean(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.02282956, min(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0728277, max(ph[,1]), tolerance=1e-5 )
 		
 	
 }
