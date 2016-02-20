@@ -912,7 +912,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
 
     if (model_info().data_info()._nums > 0) {
-      JCodeGen.toStaticVarZeros(sb, "NUMS", new double[model_info().data_info()._nums], "Workspace for storing numerical input variables.");
+      sb.i(0).p("// Thread-local storage for input neuron activation values.").nl();
+      sb.i(0).p("final double[] NUMS = new double[" + model_info().data_info()._nums +"];").nl();
       JCodeGen.toClassWithArray(sb, "static", "NORMMUL", model_info().data_info()._normMul);//, "Standardization/Normalization scaling factor for numerical variables.");
       JCodeGen.toClassWithArray(sb, "static", "NORMSUB", model_info().data_info()._normSub);//, "Standardization/Normalization offset for numerical variables.");
     }
@@ -940,8 +941,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
 
     // Generate activation storage
-    sb.i(1).p("// Storage for neuron activation values.").nl();
-    sb.i(1).p("public static final double[][] ACTIVATION = new double[][] {").nl();
+    sb.i(1).p("// Thread-local storage for neuron activation values.").nl();
+    sb.i(1).p("final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
       String colInfoClazz = mname + "_Activation_"+i;
       sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
