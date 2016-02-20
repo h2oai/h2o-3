@@ -19,10 +19,11 @@ test <- function() {
 	#pr = predict(gg,newdata = fren,type = "response")
 	#summary(pr) #mean = 1.052; min = 1.004; max = 1.807; 
 	
-	hh = h2o.deeplearning(x = 4:12,y = "ClaimNb",distribution =  "poisson",hidden = c(30),epochs = 100,train_samples_per_iteration = -1,overwrite_with_best_model = F,
-                      reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
-                      seed = -8224042382692318000,score_training_samples = 0,score_validation_samples = 0,
-                      weights_column="Exposure" ,training_frame = fre, stopping_rounds=0)
+	hh = h2o.deeplearning(x = 4:12,y = "ClaimNb",distribution =  "poisson",hidden = c(30), epochs = 100,
+                      reproducible = T,activation = "Tanh", overwrite_with_best_model = F,
+                      force_load_balance = F,
+                      seed = -8224042382692318000, score_training_samples = 0, score_validation_samples = 0,
+                      weights_column="Exposure", training_frame = fre, stopping_rounds=0)
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = fre))
   print(mean_deviance)
