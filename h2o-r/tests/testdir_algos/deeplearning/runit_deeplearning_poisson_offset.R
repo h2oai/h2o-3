@@ -23,7 +23,7 @@ test <- function() {
 	hh = h2o.deeplearning(x = myX,y = "Claims",distribution ="poisson",hidden = c(6),epochs = 995,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 5313,score_training_samples = 0,score_validation_samples = 0,
-                      training_frame = cc) 
+                      training_frame = cc, stopping_rounds=0)
 	hh@model$training_metrics@metrics$mean_residual_deviance #-407674.1
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = cc))
@@ -31,10 +31,10 @@ test <- function() {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-408150, mean_deviance, tolerance=1e-2)
-	expect_equal(20126, mean(ph[,1]), tolerance=1e-2 )
-	expect_equal(351,    min(ph[,1]), tolerance=1e-1 )
-	expect_equal(216430, max(ph[,1]), tolerance=1e-1 )
+	expect_equal(-408150.7, mean_deviance, tolerance=1e-5)
+	expect_equal(20234.62, mean(ph[,1]), tolerance=1e-5 )
+	expect_equal(352.3058,    min(ph[,1]), tolerance=1e-5 )
+	expect_equal(217515.7, max(ph[,1]), tolerance=1e-5 )
 
 	#with offset
 	#gg = gbm(formula = Claims~factor(Class)+factor(Merit)+offset(log(Insured))  , distribution = "poisson",data = ca,
@@ -48,7 +48,7 @@ test <- function() {
 	hh = h2o.deeplearning(x = myX,y = "Claims",distribution ="poisson",hidden = c(6),epochs = 995,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 5313,score_training_samples = 0,score_validation_samples = 0,
-                      offset_column = "logInsured",training_frame = cc) 
+                      offset_column = "logInsured",training_frame = cc, stopping_rounds=0)
 	#hh@model$training_metrics@metrics$mean_residual_deviance 
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	ph = as.data.frame(h2o.predict(hh,newdata = cc))
@@ -57,10 +57,10 @@ test <- function() {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(-408156.8, mean_deviance, tolerance=1e-2)
-	expect_equal(20208.5, mean(ph[,1]), tolerance=1e-2 )
-	expect_equal(572.55, min(ph[,1]), tolerance=1e-2 )
-	expect_equal(217891.6, max(ph[,1]), tolerance=1e-2 )
+	expect_equal(-408156.9, mean_deviance, tolerance=1e-5)
+	expect_equal(20208.67, mean(ph[,1]), tolerance=1e-5 )
+	expect_equal(572.5512, min(ph[,1]), tolerance=1e-5 )
+	expect_equal(217348, max(ph[,1]), tolerance=1e-5 )
 
 	
 }

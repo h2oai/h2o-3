@@ -212,6 +212,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p._score_validation_samples = scorevalidation;
                                             p._classification_stop = -1;
                                             p._regression_stop = -1;
+                                            p._stopping_rounds = 0;
                                             p._balance_classes = classification && balance_classes;
                                             p._quiet_mode = true;
                                             p._score_validation_sampling = csm;
@@ -284,6 +285,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._quiet_mode = true;
                                             p2._epochs = 2*epochs; //final amount of training epochs
                                             p2._replicate_training_data = replicate2;
+                                            p2._stopping_rounds = 0;
                                             p2._seed = myseed;
 //                                              p2._loss = loss; //fall back to default
 //                                              p2._distribution = dist; //fall back to default
@@ -309,6 +311,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           assert(model1.model_info().get_params()._l1 == 0);
                                           assert(model1.model_info().get_params()._l2 == 0);
 
+                                          if (!overwrite_with_best_model)
                                           Assert.assertTrue(model2.model_info().get_processed_total() >= frame.numRows() * 2 * epochs);
 
                                           assert(p != p2);

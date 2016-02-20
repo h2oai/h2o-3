@@ -2227,11 +2227,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (fromParms._reproducible) {
           if (!fromParms._quiet_mode)
             Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                    + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+                    + "and setting train_samples_per_iteration to -1 and enabling score_each_iteration to enforce reproducibility.");
           toParms._force_load_balance = true;
           toParms._single_node_mode = false;
           toParms._train_samples_per_iteration = -1;
           toParms._replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+          toParms._score_each_iteration = true;
         }
       }
     }
