@@ -530,7 +530,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
           assert !firstIter || t._likelihood == _state.likelihood();
           long t2 = System.currentTimeMillis();
-          if (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective()) {
+          if (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective() + _parms._objective_epsilon) {
             assert !_state._lsNeeded;
             _state._lsNeeded = true;
           } else {
