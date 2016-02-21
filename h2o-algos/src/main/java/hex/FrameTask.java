@@ -213,8 +213,6 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         if (miniBatchCounter > 0 && miniBatchCounter % miniBatchSize == 0) {
           processMiniBatch(seed, responses, offsets, miniBatchCounter);
           miniBatchCounter = 0;
-          Arrays.fill(responses, 0);
-          Arrays.fill(offsets, 0);
         }
       }
     }

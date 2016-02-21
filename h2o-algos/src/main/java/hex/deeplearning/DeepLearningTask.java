@@ -115,6 +115,11 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   @Override public void processMiniBatch(long seed, double[] responses, double[] offsets, int n) {
     assert(_training);
+    if (_localmodel.get_params()._reproducible) {
+      seed += _localmodel.get_processed_global(); //avoid periodicity
+    } else {
+      seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
+    }
     fpropMiniBatch(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, responses, offsets, n);
     bpropMiniBatch(_neurons, n);
   }
