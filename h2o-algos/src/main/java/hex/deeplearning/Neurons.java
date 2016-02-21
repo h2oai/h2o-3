@@ -18,7 +18,7 @@ import java.util.Arrays;
  */
 public abstract class Neurons {
   short _k; //number of parallel channels
-  int[] _maxIncoming; //index of largest incoming signal (out of k channels)
+  int[/*minibatch*/][/*k*/] _maxIncoming; //index of largest incoming signal (out of k channels)
 
   Distribution _dist;
   protected int units;
@@ -249,7 +249,7 @@ public abstract class Neurons {
         int w = idx + col;
 
         // for Maxout, return the "winning" linear index into the matrix
-        if (_k != 0) w = _k * w + _maxIncoming[row];
+        if (_k != 0) w = _k * w + _maxIncoming[mb][row];
 
         final double weight = _w.raw()[w];
         if( update_prev ) _previous._e[mb].add(col, partial_grad[mb] * weight); // propagate the error dE/dnet to the previous layer, via connecting weights
@@ -293,21 +293,23 @@ public abstract class Neurons {
       }
     }
     if (max_w2 != Float.POSITIVE_INFINITY)
-      rescale_weights(_w, row, max_w2);
+      for( int mb = 0; mb < n; mb++ )
+        rescale_weights(_w, row, max_w2, mb);
     if (have_ada) avg_grad2 /= cols * n;
     for( int mb = 0; mb < n; mb++ ) {
       update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum, mb);
     }
   }
 
-  private void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2) {
+  private void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2, int mb) {
     final int cols = _previous._a[0].size();
     int start;
     int end;
     if (_k != 0) {
-      start = _k * (row*cols           ) + _maxIncoming[row];
-      end =   _k * (row*cols + (cols-1)) + _maxIncoming[row];
+      start = _k * (row*cols           ) + _maxIncoming[mb][row];
+      end =   _k * (row*cols + (cols-1)) + _maxIncoming[mb][row];
     } else {
+      if (mb>0) return; //already done rescaling for mb=0
       start = row * cols;
       end =   row * cols + cols;
     }
@@ -377,9 +379,10 @@ public abstract class Neurons {
    */
   void compute_sparsity() {
     if (_avg_a != null) {
+      if (params._mini_batch_size > 1) throw H2O.unimpl("Sparsity constraint is not yet implemented for mini-batch size > 1.");
       for (int mb = 0; mb < _minfo.get_params()._mini_batch_size; ++mb) {
         for (int row = 0; row < _avg_a.size(); row++) {
-          _avg_a.set(row, 0.999 * (_avg_a.get(row)) + 0.001 * (_a[mb].get(row)));
+          _avg_a.set(row, 0.999 * (_avg_a.get(row)) + 0.001 * (_a[mb].get(row))); //TODO: fix for mini-batch size > 1
         }
       }
     }
@@ -403,7 +406,7 @@ public abstract class Neurons {
     final boolean have_ada = _minfo.adaDelta();
     final float l1 = (float)params._l1;
     final float l2 = (float)params._l2;
-    final int b = _k != 0 ? _k*row+_maxIncoming[row] : row;
+    final int b = _k != 0 ? _k*row+_maxIncoming[mb][row] : row;
     final double bias = _b.get(b);
 
     partial_grad[mb] -= Math.signum(bias) * l1 + bias * l2;
@@ -667,18 +670,19 @@ public abstract class Neurons {
    */
   public static class Maxout extends Neurons {
 
-    public Maxout(short k, int units) { super(units);
+    public Maxout(DeepLearningParameters params, short k, int units) { super(units);
       _k = k;
-      _maxIncoming=new int[units];
+      _maxIncoming=new int[params._mini_batch_size][];
+      for (int i=0;i<_maxIncoming.length;++i) _maxIncoming[i]=new int[units];
       if (_k!=2) throw H2O.unimpl("Maxout is currently hardcoded for 2 channels. Trivial to enable k > 2 though.");
     }
     @Override protected void fprop(long seed, boolean training, int n) {
-      for (int mb=0;mb<n;++mb) {
-        assert(_b.size() == _a[mb].size() * _k);
-        assert(_w.size() == _a[mb].size() * _previous._a[mb].size() * _k);
-        final int rows = _a[mb].size();
-        double[] channel = new double[_k];
-        for( int row = 0; row < rows; row++ ) {
+      assert(_b.size() == _a[0].size() * _k);
+      assert(_w.size() == _a[0].size() * _previous._a[0].size() * _k);
+      final int rows = _a[0].size();
+      double[] channel = new double[_k];
+      for( int row = 0; row < rows; row++ ) {
+        for (int mb=0;mb<n;++mb) {
           _a[mb].set(row, 0);
           if( !training || _dropout == null || _dropout.unit_active(row) ) {
             final int cols = _previous._a[mb].size();
@@ -694,7 +698,7 @@ public abstract class Neurons {
               channel[k] += _b.raw()[_k*row+k];
               if (channel[k] > channel[maxK]) maxK=k;
             }
-            _maxIncoming[row] = maxK;
+            _maxIncoming[mb][row] = maxK;
             _a[mb].set(row, channel[maxK]);
           }
         }
@@ -720,7 +724,7 @@ public abstract class Neurons {
    * Maxout neurons with dropout
    */
   public static class MaxoutDropout extends Maxout {
-    public MaxoutDropout(short k, int units) { super(k,units); }
+    public MaxoutDropout(DeepLearningParameters params, short k, int units) { super(params,k,units); }
     @Override protected void fprop(long seed, boolean training, int n) {
       if (training) {
         seed += params._seed + 0x51C8D00D;
