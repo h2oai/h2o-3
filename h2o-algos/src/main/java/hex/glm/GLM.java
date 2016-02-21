@@ -363,12 +363,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_weights != null) vecs.add(_weights);
       if(_offset != null) vecs.add(_offset);
       vecs.add(_response);
-      if(_valid != null) {
-        ArrayList<Vec> testVecs = new ArrayList<>();
-        boolean testWeights = false; // todo
-        boolean testOffset = false;
-        testVecs.add(_valid.vec(_parms._response_column));
-      }
       _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
       String[] warns = _model.adaptTestForTrain(_valid, true, true);
       for (String s : warns) warn("_validation_frame", s);
@@ -536,7 +530,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
           assert !firstIter || t._likelihood == _state.likelihood();
           long t2 = System.currentTimeMillis();
-          if (_state.objective(t._beta, t._likelihood) > _state.objective()) {
+          if (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective()) {
             assert !_state._lsNeeded;
             _state._lsNeeded = true;
           } else {

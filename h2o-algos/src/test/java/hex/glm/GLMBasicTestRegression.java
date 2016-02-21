@@ -276,9 +276,10 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._standardize = false;
     parms._lambda = new double[]{0};
     parms._alpha = new double[]{0};
-    parms._objective_epsilon = 0;
     parms._gradient_epsilon = 1e-10;
     parms._max_iterations = 1000;
+    parms._objective_epsilon = 0;
+    parms._beta_epsilon = 1e-6;
     for(int x = 0; x < varPow.length; ++x) {
       double p = varPow[x];
       parms._tweedie_variance_power = p;
@@ -337,6 +338,7 @@ public class GLMBasicTestRegression extends TestUtil {
       parms._lambda = new double[]{0};
       parms._alpha = new double[]{0};
       parms._objective_epsilon = 0;
+      parms._beta_epsilon = 1e-6;
       parms._gradient_epsilon = 1e-10;
       parms._max_iterations = 1000;
       for (Solver s : GLMParameters.Solver.values()) {

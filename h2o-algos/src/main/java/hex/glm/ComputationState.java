@@ -123,7 +123,7 @@ public final class ComputationState {
         }
       }
       // merge already active columns in
-      int active = oldActiveCols.length + newlySelected;
+      int active = newlySelected;
       _allIn = active == P;
       if(!_allIn) {
         int [] cols = newCols;
@@ -334,7 +334,7 @@ public final class ComputationState {
       }
     return l1pen()*l1norm + .5*l2pen()*l2norm;
   }
-  public double objective() {return objective(_beta,_likelihood);}
+  public double objective() {return _beta == null?Double.MAX_VALUE:objective(_beta,_likelihood);}
 
   public double objective(double [] beta, double likelihood) {
     return likelihood * _parms._obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
