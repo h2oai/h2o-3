@@ -94,45 +94,49 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * Process one training row at a time (online learning)
    * @param seed Seed is only used if reproducible mode is enabled
    * @param r Row (must be dense for now)
+   * @param mb mini-batch internal index
    */
-  @Override public final void processRow(long seed, DataInfo.Row r) {
+  @Override public final void processRow(long seed, DataInfo.Row r, int mb) {
     if (_localmodel.get_params()._reproducible) {
       seed += _localmodel.get_processed_global(); //avoid periodicity
     } else {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     _localmodel.checkMissingCats(r.binIds);
-    ((Neurons.Input) _neurons[0]).setInput(seed, r.isSparse() ? r.numIds : null, r.numVals, r.nBins, r.binIds);
-    step(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, r.response, r.offset);
+    ((Neurons.Input) _neurons[0]).setInput(seed, r.isSparse() ? r.numIds : null, r.numVals, r.nBins, r.binIds, mb);
   }
 
   /**
    * Apply the gradient to update the weights
-   * @param n number of trained examples in this last mini batch
+   * @param seed
+   * @param responses
+   * @param offsets
+   * @param n number of trained examples in this last mini batch (usually == mini_batch_size, but can be less)
    */
-  @Override public void applyMiniBatchUpdate(int n) {
+  @Override public void processMiniBatch(long seed, double[] responses, double[] offsets, int n) {
     assert(_training);
-    assert(n==1);
-    applyModelUpdates(_neurons);
+    fpropMiniBatch(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, responses, offsets, n);
+    bpropMiniBatch(_neurons, n);
   }
 
   /**
    * Helper to apply back-propagation without clearing out the gradients afterwards
    * Used for gradient checking
    * @param neurons
+   * @param n number of trained examples in this last mini batch (usually == mini_batch_size, but can be less)
    */
-  static public void applyModelUpdates(Neurons[] neurons) {
-    // last layer - just use gradient and push backwards
-    neurons[neurons.length - 1].bpropOutputLayer();
-    // non-last layers: Apply mini batch (need to know mini-batch size n)
+  static public void bpropMiniBatch(Neurons[] neurons, int n) {
+    neurons[neurons.length - 1].bpropOutputLayer(n);
     for (int i = neurons.length - 2; i > 0; --i)
-      neurons[i].bprop();
+      neurons[i].bprop(n);
 
-    // all errors are reset to 0
-    for (int i = 0; i<neurons.length ;++i) {
-      Storage.DenseVector e = neurons[i]._e;
-      if (e==null) continue;
-      Arrays.fill(e.raw(), 0);
+    for (int mb=0;mb<n;++mb) {
+      // all errors are reset to 0
+      for (int i = 0; i<neurons.length ;++i) {
+        Storage.DenseVector e = neurons[i]._e == null ? null : neurons[i]._e[mb];
+        if (e==null) continue;
+        Arrays.fill(e.raw(), 0);
+      }
     }
   }
 
@@ -237,7 +241,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     final int[] h = params._hidden;
     Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
     // input
-    neurons[0] = new Neurons.Input(minfo.units[0], dinfo);
+    neurons[0] = new Neurons.Input(params, minfo.units[0], dinfo);
     // hidden
     for( int i = 0; i < h.length + (params._autoencoder ? 1 : 0); i++ ) {
       int n = params._autoencoder && i == h.length ? minfo.units[0] : h[i];
@@ -294,35 +298,37 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    * @param minfo
    * @param consensus_minfo
    * @param training
-   * @param responses Standardized response(s)
+   * @param n Number of actually trained samples in this mini-batch
    */
-  public static void step(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
-                          DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double offset) {
+  public static void fpropMiniBatch(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
+                                    DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double[] offset, int n) {
     // Forward propagation
     for (int i=1; i<neurons.length; ++i)
-      neurons[i].fprop(seed, training);
+      neurons[i].fprop(seed, training, n);
 
     // Add offset (in link space) if applicable
-    if (offset > 0) {
-      assert (!minfo._classification); // Regression
-      double[] m = minfo.data_info()._normRespMul;
-      double[] s = minfo.data_info()._normRespSub;
-      double mul = m == null ? 1 : m[0];
-      double sub = s == null ? 0 : s[0];
-      neurons[neurons.length - 1]._a.add(0, ((offset - sub) * mul));
-    }
+    for (int mb=0;mb<n;++mb) {
+      if (offset!=null && offset[mb] > 0) {
+        assert (!minfo._classification); // Regression
+        double[] m = minfo.data_info()._normRespMul;
+        double[] s = minfo.data_info()._normRespSub;
+        double mul = m == null ? 1 : m[0];
+        double sub = s == null ? 0 : s[0];
+        neurons[neurons.length - 1]._a[mb].add(0, ((offset[mb] - sub) * mul));
+      }
 
-    if (training) {
-      // Compute the gradient at the output layer
-      // auto-encoder: pass a dummy "response" (ignored)
-      // otherwise: class label or regression target
-      neurons[neurons.length - 1].setOutputLayerGradient(minfo.get_params()._autoencoder ? Double.NaN : responses[0]);
+      if (training) {
+        // Compute the gradient at the output layer
+        // auto-encoder: pass a dummy "response" (ignored)
+        // otherwise: class label or regression target
+        neurons[neurons.length - 1].setOutputLayerGradient(responses[mb], mb);
 
-      // Elastic Averaging - set up helpers needed during back-propagation
-      if (consensus_minfo != null) {
-        for (int i = 1; i < neurons.length; i++) {
-          neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
-          neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
+        // Elastic Averaging - set up helpers needed during back-propagation
+        if (consensus_minfo != null) {
+          for (int i = 1; i < neurons.length; i++) {
+            neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
+            neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
+          }
         }
       }
     }

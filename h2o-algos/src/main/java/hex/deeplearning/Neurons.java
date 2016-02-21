@@ -53,9 +53,9 @@ public abstract class Neurons {
   /**
    * Layer state (one per neuron): activity, error
    */
-  public transient Storage.DenseVector _origa;
-  public transient Storage.DenseVector _a;
-  public transient Storage.DenseVector _e;
+  public transient Storage.DenseVector[] _origa;
+  public transient Storage.DenseVector[] _a;
+  public transient Storage.DenseVector[] _e;
 
   /**
    * References for feed-forward connectivity
@@ -135,11 +135,14 @@ public abstract class Neurons {
     params._rate *= Math.pow(params._rate_decay, index-1);
     params._distribution = minfo.get_params()._distribution;
     _dist = new Distribution(params);
-    _a = new Storage.DenseVector(units);
+    _a = new Storage.DenseVector[params._mini_batch_size];
+    for (int mb=0;mb<_a.length;++mb) _a[mb] = new Storage.DenseVector(units);
     if (!(this instanceof Input)) {
-      _e = new Storage.DenseVector(units);
+      _e = new Storage.DenseVector[params._mini_batch_size];
+      for (int mb=0;mb<_e.length;++mb) _e[mb] = new Storage.DenseVector(units);
     } else if (params._autoencoder && params._input_dropout_ratio > 0) {
-      _origa = new Storage.DenseVector(units);
+      _origa = new Storage.DenseVector[params._mini_batch_size];
+      for (int mb=0;mb<_origa.length;++mb) _origa[mb] = new Storage.DenseVector(units);
     }
     if (training && (this instanceof MaxoutDropout || this instanceof TanhDropout
             || this instanceof RectifierDropout || this instanceof ExpRectifierDropout || this instanceof Input) ) {
@@ -174,25 +177,30 @@ public abstract class Neurons {
    * Forward propagation
    * @param seed For seeding the RNG inside (for dropout)
    * @param training Whether training is done or just testing (no need for dropout)
+   * @param n number of actually trained samples in this mini-batch
    */
-  protected abstract void fprop(long seed, boolean training);
+  protected abstract void fprop(long seed, boolean training, int n);
 
   /**
    *  Back propagation of error terms stored in _e (for non-final layers)
    */
-  protected abstract void bprop();
+  protected abstract void bprop(int n);
 
   /**
    * Back-propagate gradient in output layer
    */
-  final protected void bpropOutputLayer() {
+  final protected void bpropOutputLayer(int n) {
     assert(_index == params._hidden.length);
-    final int rows = _a.size();
+    assert(_a.length == params._mini_batch_size);
+
+    final int rows = _a[0].size();
     float m = _minfo.adaDelta() ? 0 : momentum();
     float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
     for( int row = 0; row < rows; row++ ) {
-      final double g = _e.raw()[row];
-      bprop(row, g, r, m);
+      double[] g = new double[n];
+      for (int mb=0;mb<n;++mb)
+        g[mb]=_e[mb].raw()[row];
+      bprop(row, g, r, m, n);
     }
   }
 
@@ -200,11 +208,11 @@ public abstract class Neurons {
    * Accumulation of reconstruction errors for a generic Neurons class
    * (This is only used for AutoEncoders)
    */
-  protected void setOutputLayerGradient(double ignored) {
+  protected void setOutputLayerGradient(double ignored, int mb) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    final int rows = _a.size();
+    final int rows = _a[mb].size();
     for (int row = 0; row < rows; row++) {
-      _e.set(row, autoEncoderGradient(row));
+      _e[mb].set(row, autoEncoderGradient(row, mb));
     }
   }
 
@@ -215,9 +223,9 @@ public abstract class Neurons {
    * @param partial_grad partial derivative dE/dnet = dE/dy * dy/net
    * @param rate learning rate
    * @param momentum momentum factor (needed only if ADADELTA isn't used)
+   * @param n Actual mini-batch size
    */
-  final void bprop(final int row, final double partial_grad, final float rate, final float momentum) {
-    if (_shortcut && partial_grad == 0f) return;
+  final void bprop(final int row, final double[/*actual mini-batch size*/] partial_grad, final float rate, final float momentum, int n) {
     final float rho = (float)params._rho;
     final float eps = (float)params._epsilon;
     final float l1 = (float)params._l1;
@@ -226,68 +234,74 @@ public abstract class Neurons {
     final boolean have_momenta = _minfo.has_momenta();
     final boolean have_ada = _minfo.adaDelta();
     final boolean nesterov = params._nesterov_accelerated_gradient;
-    final boolean update_prev = _previous._e != null;
     final boolean fast_mode = params._fast_mode;
-    final int cols = _previous._a.size();
+    final int cols = _previous._a[0].size();
+    assert(partial_grad.length == n);
 
     double avg_grad2 = 0;
 
     final int idx = row * cols;
 
-    for( int col = 0; col < cols; col++ ) {
-      int w = idx + col;
+    for( int mb = 0; mb < n; mb++ ) {
+      if (_shortcut && partial_grad[mb] == 0f) return;
+      final boolean update_prev = _previous._e != null && _previous._e[mb] != null;
+      for( int col = 0; col < cols; col++ ) {
+        int w = idx + col;
 
-      // for Maxout, return the "winning" linear index into the matrix
-      if (_k != 0) w = _k * w + _maxIncoming[row];
+        // for Maxout, return the "winning" linear index into the matrix
+        if (_k != 0) w = _k * w + _maxIncoming[row];
 
-      final double weight = _w.raw()[w];
-      if( update_prev ) _previous._e.add(col, partial_grad * weight); // propagate the error dE/dnet to the previous layer, via connecting weights
-      final double previous_a = _previous._a.get(col);
-      if (fast_mode && previous_a == 0) continue;
+        final double weight = _w.raw()[w];
+        if( update_prev ) _previous._e[mb].add(col, partial_grad[mb] * weight); // propagate the error dE/dnet to the previous layer, via connecting weights
+        final double previous_a = _previous._a[mb].get(col);
+        if (fast_mode && previous_a == 0) continue;
 
-      //this is the actual gradient dE/dw
-      double grad = partial_grad * previous_a - Math.signum(weight) * l1 - weight * l2;
-      if (_wEA !=null) {
-        grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+        //this is the actual gradient dE/dw
+        double grad = partial_grad[mb] * previous_a - Math.signum(weight) * l1 - weight * l2;
+        if (_wEA !=null) {
+          grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
 //        Log.info("weight: my: " + _w.raw()[w] + ", consensus: " + _wEA.raw()[w] + ", delta: " + (_w.raw()[w] -_wEA.raw()[w]) + ", relative delta: " + (_w.raw()[w] -_wEA.raw()[w])/_w.raw()[w]);
-      }
+        }
 
-      // store the gradient (grad is the negative gradient)
-      if (DeepLearningModelInfo.gradientCheck != null)
-        DeepLearningModelInfo.gradientCheck.apply(_index, row, col, -grad);
+        // store the gradient (grad is the negative gradient)
+        if (DeepLearningModelInfo.gradientCheck != null)
+          DeepLearningModelInfo.gradientCheck.apply(_index, row, col, -grad);
 
-      if (have_ada) {
-        final double grad2 = grad*grad;
-        avg_grad2 += grad2;
-        float brate = computeAdaDeltaRateForWeight(grad, w, _ada_dx_g, rho, eps);
-        _w.raw()[w] += brate * grad;
-      } else {
-        if (!nesterov) {
-          final double delta = rate * grad;
-          _w.raw()[w] += delta;
-          if( have_momenta ) {
-            _w.raw()[w] += momentum * _wm.raw()[w];
-            _wm.raw()[w] = (float)delta;
-          }
+        if (have_ada) {
+          final double grad2 = grad*grad;
+          avg_grad2 += grad2;
+          float brate = computeAdaDeltaRateForWeight(grad, w, _ada_dx_g, rho, eps);
+          _w.raw()[w] += brate * grad;
         } else {
-          double tmp = grad;
-          if( have_momenta ) {
-            _wm.raw()[w] *= momentum;
-            _wm.raw()[w] += tmp;
-            tmp = _wm.raw()[w];
+          if (!nesterov) {
+            final double delta = rate * grad;
+            _w.raw()[w] += delta;
+            if( have_momenta ) {
+              _w.raw()[w] += momentum * _wm.raw()[w];
+              _wm.raw()[w] = (float)delta;
+            }
+          } else {
+            double tmp = grad;
+            if( have_momenta ) {
+              _wm.raw()[w] *= momentum;
+              _wm.raw()[w] += tmp;
+              tmp = _wm.raw()[w];
+            }
+            _w.raw()[w] += rate * tmp;
           }
-          _w.raw()[w] += rate * tmp;
         }
       }
     }
     if (max_w2 != Float.POSITIVE_INFINITY)
       rescale_weights(_w, row, max_w2);
-    if (have_ada) avg_grad2 /= cols;
-    update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum);
+    if (have_ada) avg_grad2 /= cols * n;
+    for( int mb = 0; mb < n; mb++ ) {
+      update_bias(_b, _bEA, _bm, row, partial_grad, avg_grad2, rate, momentum, mb);
+    }
   }
 
   private void rescale_weights(final Storage.DenseRowMatrix w, final int row, final float max_w2) {
-    final int cols = _previous._a.size();
+    final int cols = _previous._a[0].size();
     int start;
     int end;
     if (_k != 0) {
@@ -309,12 +323,13 @@ public abstract class Neurons {
   /**
    * Helper to compute the reconstruction error for auto-encoders (part of the gradient computation)
    * @param row neuron index
+   * @param mb minibatch-internal index
    * @return difference between the output (auto-encoder output layer activation) and the target (input layer activation)
    */
-  protected double autoEncoderGradient(int row) {
+  protected double autoEncoderGradient(int row, int mb) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
-    final double t = _input._origa != null ? _input._origa.get(row) : _input._a.get(row);
-    final double y = _a.get(row);
+    final double t = _input._origa != null ? _input._origa[mb].get(row) : _input._a[mb].get(row);
+    final double y = _a[mb].get(row);
     return _dist.gradient(t, y);
   }
 
@@ -362,8 +377,10 @@ public abstract class Neurons {
    */
   void compute_sparsity() {
     if (_avg_a != null) {
-      for (int row = 0; row < _avg_a.size(); row++) {
-        _avg_a.set(row, 0.999 * (_avg_a.get(row)) + 0.001 * (_a.get(row)));
+      for (int mb = 0; mb < _minfo.get_params()._mini_batch_size; ++mb) {
+        for (int row = 0; row < _avg_a.size(); row++) {
+          _avg_a.set(row, 0.999 * (_avg_a.get(row)) + 0.001 * (_a[mb].get(row)));
+        }
       }
     }
   }
@@ -378,9 +395,10 @@ public abstract class Neurons {
    * @param avg_grad2 average squared gradient for this neuron's incoming weights (only for ADADELTA)
    * @param rate learning rate
    * @param momentum momentum factor (needed only if ADADELTA isn't used)
+   * @param mb which mini-batch index
    */
   private void update_bias(final Storage.DenseVector _b, final Storage.DenseVector _bEA, final Storage.DenseVector _bm, final int row,
-                   double partial_grad, final double avg_grad2, double rate, final double momentum) {
+                   double[/*actual mini-batch size*/] partial_grad, final double avg_grad2, double rate, final double momentum, int mb) {
     final boolean have_momenta = _minfo.has_momenta();
     final boolean have_ada = _minfo.adaDelta();
     final float l1 = (float)params._l1;
@@ -388,8 +406,8 @@ public abstract class Neurons {
     final int b = _k != 0 ? _k*row+_maxIncoming[row] : row;
     final double bias = _b.get(b);
 
-    partial_grad -= Math.signum(bias) * l1 + bias * l2;
-    if (_bEA != null) partial_grad -= (bias - _bEA.get(b)) * params._elastic_averaging_regularization;
+    partial_grad[mb] -= Math.signum(bias) * l1 + bias * l2;
+    if (_bEA != null) partial_grad[mb] -= (bias - _bEA.get(b)) * params._elastic_averaging_regularization;
 
     if (have_ada) {
       final float rho = (float)params._rho;
@@ -397,14 +415,14 @@ public abstract class Neurons {
       rate = computeAdaDeltaRateForBias(avg_grad2, b, _bias_ada_dx_g, rho, eps);
     }
     if (!params._nesterov_accelerated_gradient) {
-      final double delta = rate * partial_grad;
+      final double delta = rate * partial_grad[mb];
       _b.add(b, delta);
       if (have_momenta) {
         _b.add(b, momentum * _bm.get(b));
         _bm.set(b, delta);
       }
     } else {
-      double d = partial_grad;
+      double d = partial_grad[mb];
       if (have_momenta) {
         _bm.set(b, _bm.get(b) * momentum);
         _bm.add(b, d);
@@ -459,22 +477,24 @@ public abstract class Neurons {
 
     private DataInfo _dinfo; //training data
 
-    Input(int units, final DataInfo d) {
+    Input(DeepLearningParameters params, int units, final DataInfo d) {
       super(units);
       _dinfo = d;
-      _a = new Storage.DenseVector(units);
+      _a = new Storage.DenseVector[params._mini_batch_size];
+      for (int i=0;i<_a.length;++i) _a[i] = new Storage.DenseVector(units);
     }
 
-    @Override protected void bprop() { throw new UnsupportedOperationException(); }
-    @Override protected void fprop(long seed, boolean training) { throw new UnsupportedOperationException(); }
+    @Override protected void bprop(int n) { throw new UnsupportedOperationException(); }
+    @Override protected void fprop(long seed, boolean training, int n) { throw new UnsupportedOperationException(); }
 
     /**
      * One of two methods to set layer input values. This one is for raw double data, e.g. for scoring
      * @param seed For seeding the RNG inside (for input dropout)
      * @param data Data (training columns and responses) to extract the training columns
      *             from to be mapped into the input neuron layer
+     * @param mb Mini-Batch index (which point inside this mini-batch)
      */
-    public void setInput(long seed, final double[] data) {
+    public void setInput(long seed, final double[] data, int mb) {
 //      Log.info("Data: " + ArrayUtils.toString(data));
       assert(_dinfo != null);
       double [] nums = MemoryManager.malloc8d(_dinfo._nums); // a bit wasteful - reallocated each time
@@ -504,7 +524,7 @@ public abstract class Neurons {
         if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
         nums[i-_dinfo._cats] = d; //can be NaN for missing numerical data
       }
-      setInput(seed, null, nums, ncats, cats);
+      setInput(seed, null, nums, ncats, cats, mb);
     }
 
     /**
@@ -514,9 +534,10 @@ public abstract class Neurons {
      * @param numcat Number of horizontalized categorical non-zero values (i.e., those not being the first factor of a class)
      * @param cats Array of indices, the first numcat values are the input layer unit (==column) indices for the non-zero categorical values
      *             (This allows this array to be re-usable by the caller, without re-allocating each time)
+     * @param mb Mini-Batch index (which point inside this mini-batch)
      */
-    public void setInput(long seed, final int[] numIds, final double[] nums, final int numcat, final int[] cats) {
-      Arrays.fill(_a.raw(), 0f);
+    public void setInput(long seed, final int[] numIds, final double[] nums, final int numcat, final int[] cats, int mb) {
+      Arrays.fill(_a[mb].raw(), 0f);
 
       // random projection from fullN down to max_categorical_features
       if (params._max_categorical_features < _dinfo.fullN() - _dinfo._nums) {
@@ -550,31 +571,31 @@ public abstract class Neurons {
 //          }
 //        } else if (hash_trick) {
           // Use hash trick for categorical features
-          assert (_a.size() == M);
+          assert (_a[mb].size() == M);
           // hash N-nums.length down to M-nums.length = cM (#categorical slots - always use all numerical features)
           final int cM = params._max_categorical_features;
 
-          assert (_a.size() == M);
+          assert (_a[mb].size() == M);
           MurmurHash murmur = MurmurHash.getInstance();
           for (int i = 0; i < numcat; ++i) {
             ByteBuffer buf = ByteBuffer.allocate(4);
             int hashval = murmur.hash(buf.putInt(cats[i]).array(), 4, (int)params._seed); // turn horizontalized categorical integer into another integer, based on seed
-            _a.add(Math.abs(hashval % cM), 1f); // restrict to limited range
+            _a[mb].add(Math.abs(hashval % cM), 1f); // restrict to limited range
           }
           for (int i = 0; i < nums.length; ++i)
-            _a.set(cM + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
+            _a[mb].set(cM + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
 //        }
       } else {
-        assert(_a.size() == _dinfo.fullN());
-        for (int i = 0; i < numcat; ++i) _a.set(cats[i], 1f); // one-hot encode categoricals
+        assert(_a[mb].size() == _dinfo.fullN());
+        for (int i = 0; i < numcat; ++i) _a[mb].set(cats[i], 1f); // one-hot encode categoricals
         if (numIds != null) {
           //sparse
           for (int i = 0; i < numIds.length; ++i)
-            _a.set(numIds[i], Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
+            _a[mb].set(numIds[i], Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
         } else {
           //dense
           for (int i = 0; i < nums.length; ++i)
-            _a.set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
+            _a[mb].set(_dinfo.numStart() + i, Double.isNaN(nums[i]) ? 0f /*Always do MeanImputation during scoring*/ : nums[i]);
         }
       }
 
@@ -582,10 +603,10 @@ public abstract class Neurons {
       if (_dropout == null) return;
       if (params._autoencoder && params._input_dropout_ratio > 0) {
         // copy input into _origa -- needed for reconstruction error
-        System.arraycopy(_a.raw(), 0, _origa.raw(), 0, _a.raw().length);
+        System.arraycopy(_a[mb].raw(), 0, _origa[mb].raw(), 0, _a[mb].raw().length);
       }
       seed += params._seed + 0x1337B4BE;
-      _dropout.randomlySparsifyActivation(_a, seed);
+      _dropout.randomlySparsifyActivation(_a[mb], seed);
     }
 
   }
@@ -595,23 +616,28 @@ public abstract class Neurons {
    */
   public static class Tanh extends Neurons {
     public Tanh(int units) { super(units); }
-    @Override protected void fprop(long seed, boolean training) {
-      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
-      final int rows = _a.size();
-      for( int row = 0; row < rows; row++ )
-        _a.set(row, 1. - 2. / (1. + Math.exp(2*_a.get(row)))); //evals faster than tanh(x), but is slightly less numerically stable - OK
+    @Override protected void fprop(long seed, boolean training, int n) {
+      // TODO: implement GEMM
+      for (int mb=0;mb<n;++mb)
+        gemv(_a[mb], _w, _previous._a[mb], _b, _dropout != null ? _dropout.bits() : null);
+      final int rows = _a[0].size();
+      for (int mb=0;mb<n;++mb)
+        for( int row = 0; row < rows; row++ )
+          _a[mb].set(row, 1. - 2. / (1. + Math.exp(2*_a[mb].get(row)))); //evals faster than tanh(x), but is slightly less numerically stable - OK
       compute_sparsity();
     }
     // Computing partial derivative g = dE/dnet = dE/dy * dy/dnet, where dE/dy is the backpropagated error
     // dy/dnet = (1 - a^2) for y(net) = tanh(net)
-    @Override protected void bprop() {
+    @Override protected void bprop(int n) {
       assert (_index < _minfo.get_params()._hidden.length);
       float m = _minfo.adaDelta() ? 0 : momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-      final int rows = _a.size();
+      final int rows = _a[0].size();
+      double[] g = new double[n];
       for (int row = 0; row < rows; row++) {
-        double g = _e.get(row) * (1 - _a.get(row) * _a.get(row));
-        bprop(row, g, r, m);
+        for (int mb=0;mb<n;++mb)
+          g[mb] = _e[mb].get(row) * (1 - _a[mb].get(row) * _a[mb].get(row));
+        bprop(row, g, r, m, n);
       }
     }
   }
@@ -621,15 +647,16 @@ public abstract class Neurons {
    */
   public static class TanhDropout extends Tanh {
     public TanhDropout(int units) { super(units); }
-    @Override protected void fprop(long seed, boolean training) {
+    @Override protected void fprop(long seed, boolean training, int n) {
       if (training) {
         seed += params._seed + 0xDA7A6000;
         _dropout.fillBytes(seed);
-        super.fprop(seed, true);
+        super.fprop(seed, true, n);
       }
       else {
-        super.fprop(seed, false);
-        ArrayUtils.mult(_a.raw(), 1-params._hidden_dropout_ratios[_index]);
+        super.fprop(seed, false, n);
+        for (int mb=0;mb<n;++mb)
+          ArrayUtils.mult(_a[mb].raw(), 1-params._hidden_dropout_ratios[_index]);
       }
     }
   }
@@ -645,42 +672,46 @@ public abstract class Neurons {
       _maxIncoming=new int[units];
       if (_k!=2) throw H2O.unimpl("Maxout is currently hardcoded for 2 channels. Trivial to enable k > 2 though.");
     }
-    @Override protected void fprop(long seed, boolean training) {
-      assert(_b.size() == _a.size() * _k);
-      assert(_w.size() == _a.size() * _previous._a.size() * _k);
-      final int rows = _a.size();
-      double[] channel = new double[_k];
-      for( int row = 0; row < rows; row++ ) {
-        _a.set(row, 0);
-        if( !training || _dropout == null || _dropout.unit_active(row) ) {
-          final int cols = _previous._a.size();
-          // For each neuron in the previous layer, there's k channels
-          // Each channel has its own weight and bias values
-          // The channel leading to the highest incoming value (W*x + b) is the "winner" and will activate this neuron
-          short maxK = 0;
-          for( short k = 0; k < _k; k++ ) {
-            channel[k] = 0;
-            for( int col = 0; col < cols; col++ ) {
-              channel[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a.get(col);
+    @Override protected void fprop(long seed, boolean training, int n) {
+      for (int mb=0;mb<n;++mb) {
+        assert(_b.size() == _a[mb].size() * _k);
+        assert(_w.size() == _a[mb].size() * _previous._a[mb].size() * _k);
+        final int rows = _a[mb].size();
+        double[] channel = new double[_k];
+        for( int row = 0; row < rows; row++ ) {
+          _a[mb].set(row, 0);
+          if( !training || _dropout == null || _dropout.unit_active(row) ) {
+            final int cols = _previous._a[mb].size();
+            // For each neuron in the previous layer, there's k channels
+            // Each channel has its own weight and bias values
+            // The channel leading to the highest incoming value (W*x + b) is the "winner" and will activate this neuron
+            short maxK = 0;
+            for( short k = 0; k < _k; k++ ) {
+              channel[k] = 0;
+              for( int col = 0; col < cols; col++ ) {
+                channel[k] += _w.raw()[_k*(row * cols + col) + k] * _previous._a[mb].get(col);
+              }
+              channel[k] += _b.raw()[_k*row+k];
+              if (channel[k] > channel[maxK]) maxK=k;
             }
-            channel[k] += _b.raw()[_k*row+k];
-            if (channel[k] > channel[maxK]) maxK=k;
+            _maxIncoming[row] = maxK;
+            _a[mb].set(row, channel[maxK]);
           }
-          _maxIncoming[row] = maxK;
-          _a.set(row, channel[maxK]);
         }
+        compute_sparsity();
       }
-      compute_sparsity();
     }
 
-    @Override protected void bprop() {
+    @Override protected void bprop(int n) {
       assert(_index != params._hidden.length);
       float m = _minfo.adaDelta() ? 0 : momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-      final int rows = _a.size();
+      double[] g = new double[n];
+      final int rows = _a[0].size();
       for (int row = 0; row < rows; row++) {
-        double g = _e.get(row);
-        bprop(row, g, r, m);
+        for (int mb=0;mb<n;++mb)
+          g[mb] = _e[mb].get(row);
+        bprop(row, g, r, m, n);
       }
     }
   }
@@ -690,15 +721,16 @@ public abstract class Neurons {
    */
   public static class MaxoutDropout extends Maxout {
     public MaxoutDropout(short k, int units) { super(k,units); }
-    @Override protected void fprop(long seed, boolean training) {
+    @Override protected void fprop(long seed, boolean training, int n) {
       if (training) {
         seed += params._seed + 0x51C8D00D;
         _dropout.fillBytes(seed);
-        super.fprop(seed, true);
+        super.fprop(seed, true, n);
       }
       else {
-        super.fprop(seed, false);
-        ArrayUtils.mult(_a.raw(), 1-params._hidden_dropout_ratios[_index]);
+        super.fprop(seed, false, n);
+        for (int mb=0;mb<n;++mb)
+          ArrayUtils.mult(_a[mb].raw(), 1-params._hidden_dropout_ratios[_index]);
       }
     }
   }
@@ -708,25 +740,31 @@ public abstract class Neurons {
    */
   public static class Rectifier extends Neurons {
     public Rectifier(int units) { super(units); }
-    @Override protected void fprop(long seed, boolean training) {
-      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
-      final int rows = _a.size();
-      for( int row = 0; row < rows; row++ ) {
-        _a.set(row, 0.5f* (_a.get(row) + Math.abs(_a.get(row)))); //faster than max(a, 0)
+    @Override protected void fprop(long seed, boolean training, int n) {
+      // TODO: implement GEMM
+      for (int mb=0;mb<n;++mb)
+        gemv(_a[mb], _w, _previous._a[mb], _b, _dropout != null ? _dropout.bits() : null);
+      final int rows = _a[0].size();
+      for (int mb=0;mb<n;++mb) {
+        for( int row = 0; row < rows; row++ ) {
+          _a[mb].set(row, 0.5f* (_a[mb].get(row) + Math.abs(_a[mb].get(row)))); //faster than max(a, 0)
 //        _a.set(row, Math.max(_a.get(row), 0f));
-        compute_sparsity();
+        }
       }
+      compute_sparsity();
     }
 
-    @Override protected void bprop() {
+    @Override protected void bprop(int n) {
       assert (_index < _minfo.get_params()._hidden.length);
       float m = _minfo.adaDelta() ? 0 : momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-      final int rows = _a.size();
+      final int rows = _a[0].size();
+      double[] g = new double[n];
       for (int row = 0; row < rows; row++) {
-        //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
-        double g = _a.get(row) > 0f ? _e.get(row) : 0f;
-        bprop(row, g, r, m);
+        for (int mb=0;mb<n;++mb)
+          //(d/dx)(max(0,x)) = 1 if x > 0, otherwise 0
+          g[mb] = _a[mb].get(row) > 0f ? _e[mb].get(row) : 0f;
+        bprop(row, g, r, m, n);
       }
     }
   }
@@ -736,60 +774,68 @@ public abstract class Neurons {
    */
   public static class RectifierDropout extends Rectifier {
     public RectifierDropout(int units) { super(units); }
-    @Override protected void fprop(long seed, boolean training) {
+    @Override protected void fprop(long seed, boolean training, int n) {
       if (training) {
         seed += params._seed + 0x3C71F1ED;
         _dropout.fillBytes(seed);
-        super.fprop(seed, true);
+        super.fprop(seed, true, n);
       }
       else {
-        super.fprop(seed, false);
-        ArrayUtils.mult(_a.raw(), 1-params._hidden_dropout_ratios[_index]);
+        super.fprop(seed, false, n);
+        for (int mb=0;mb<n;++mb)
+          ArrayUtils.mult(_a[mb].raw(), 1-params._hidden_dropout_ratios[_index]);
       }
     }
   }
 
   public static class ExpRectifier extends Neurons {
     public ExpRectifier(int units) { super(units); }
-    @Override protected void fprop(long seed, boolean training) {
-      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
-      final int rows = _a.size();
+    @Override protected void fprop(long seed, boolean training, int n) {
+      for (int mb=0;mb<n;++mb)
+        gemv(_a[mb], _w, _previous._a[mb], _b, _dropout != null ? _dropout.bits() : null);
+      final int rows = _a[0].size();
       for( int row = 0; row < rows; row++ ) {
-        double x = _a.get(row);
-        double val = x >= 0 ? x : Math.exp(x)-1;
-        _a.set(row, val);
+        for (int mb=0;mb<n;++mb) {
+          double x = _a[mb].get(row);
+          double val = x >= 0 ? x : Math.exp(x) - 1;
+          _a[mb].set(row, val);
+        }
       }
       compute_sparsity();
     }
     // Computing partial derivative g = dE/dnet = dE/dy * dy/dnet, where dE/dy is the backpropagated error
-    @Override protected void bprop() {
+    @Override protected void bprop(int n) {
       assert (_index < _minfo.get_params()._hidden.length);
       float m = _minfo.adaDelta() ? 0 : momentum();
       float r = _minfo.adaDelta() ? 0 : rate(_minfo.get_processed_total()) * (1f - m);
-      final int rows = _a.size();
+      final int rows = _a[0].size();
       for (int row = 0; row < rows; row++) {
-        double x = _a.get(row);
-        double val = x >= 0 ? 1 : Math.exp(x);
-        double g = _e.get(row) * val;
-        bprop(row, g, r, m);
+        double [] g = new double[n];
+        for (int mb=0;mb<n;++mb) {
+          double x = _a[mb].get(row);
+          double val = x >= 0 ? 1 : Math.exp(x);
+          g[mb] = _e[mb].get(row) * val;
+        }
+        bprop(row, g, r, m, n);
       }
     }
   }
 
   /**
-   * Tanh neurons with dropout
+   * Exponential Rectifier with dropout
    */
   public static class ExpRectifierDropout extends ExpRectifier {
     public ExpRectifierDropout(int units) { super(units); }
-    @Override protected void fprop(long seed, boolean training) {
+    @Override protected void fprop(long seed, boolean training, int n) {
       if (training) {
         seed += params._seed + 0xDA7A6000;
         _dropout.fillBytes(seed);
-        super.fprop(seed, true);
+        super.fprop(seed, true, n);
       }
       else {
-        super.fprop(seed, false);
-        ArrayUtils.mult(_a.raw(), 1-params._hidden_dropout_ratios[_index]);
+        super.fprop(seed, false, n);
+        for (int mb=0;mb<n;++mb)
+          ArrayUtils.mult(_a[mb].raw(), 1-params._hidden_dropout_ratios[_index]);
       }
     }
   }
@@ -799,7 +845,7 @@ public abstract class Neurons {
    */
   public static abstract class Output extends Neurons {
     Output(int units) { super(units); }
-    protected void bprop() { throw new UnsupportedOperationException(); }
+    protected void bprop(int n) { throw new UnsupportedOperationException(); }
   }
 
   /**
@@ -807,17 +853,20 @@ public abstract class Neurons {
    */
   public static class Softmax extends Output {
     public Softmax(int units) { super(units); }
-    protected void fprop(long seed, boolean training) {
-      gemv(_a, _w, _previous._a, _b, null);
-      final double max = ArrayUtils.maxValue(_a.raw());
-      double scaling = 0;
-      final int rows = _a.size();
-      for( int row = 0; row < rows; row++ ) {
-        _a.set(row, Math.exp(_a.get(row) - max));
-        scaling += _a.get(row);
-      }
-      for( int row = 0; row < rows; row++ ) {
-        _a.raw()[row] /= scaling;
+    protected void fprop(long seed, boolean training, int n) {
+      for (int mb=0;mb<n;++mb)
+        gemv(_a[mb], _w, _previous._a[mb], _b, null);
+      for (int mb=0;mb<n;++mb) {
+        final double max = ArrayUtils.maxValue(_a[mb].raw());
+        double scaling = 0;
+        final int rows = _a[mb].size();
+        for( int row = 0; row < rows; row++ ) {
+          _a[mb].set(row, Math.exp(_a[mb].get(row) - max));
+          scaling += _a[mb].get(row);
+        }
+        for( int row = 0; row < rows; row++ ) {
+          _a[mb].raw()[row] /= scaling;
+        }
       }
     }
 
@@ -827,13 +876,13 @@ public abstract class Neurons {
      * Compute dE/dw via chain rule: dE/dw = dE/dy * dy/dnet * dnet/dw, where net = sum(xi*wi)+b and y = activation function
      * @param target actual class label (integer)
      */
-    @Override protected void setOutputLayerGradient(double target) {
+    @Override protected void setOutputLayerGradient(double target, int mb) {
       assert(target == (int)target);
       double g; //partial derivative dE/dy * dy/dnet
-      final int rows = _a.size();
+      final int rows = _a[mb].size();
       for( int row = 0; row < rows; row++ ) {
         final double t = (row == (int)target ? 1 : 0);
-        final double y = _a.get(row);
+        final double y = _a[mb].get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
         switch(params._loss) {
           case Automatic:
@@ -868,7 +917,7 @@ public abstract class Neurons {
           default:
             throw H2O.unimpl();
         }
-        _e.set(row, g);
+        _e[mb].set(row, g);
       }
     }
   }
@@ -880,19 +929,20 @@ public abstract class Neurons {
     public Linear() {
       super(1);
     }
-    protected void fprop(long seed, boolean training) {
-      gemv(_a, _w, _previous._a, _b, _dropout != null ? _dropout.bits() : null);
+    protected void fprop(long seed, boolean training, int n) {
+      for (int mb=0;mb<n;++mb)
+        gemv(_a[mb], _w, _previous._a[mb], _b, _dropout != null ? _dropout.bits() : null);
     }
 
     /**
      * Backpropagation for regression
      * @param target floating-point target value
      */
-    @Override protected void setOutputLayerGradient(double target) {
+    @Override protected void setOutputLayerGradient(double target, int mb) {
       final int row = 0;
-      final double y = _a.get(row);
+      final double y = _a[mb].get(row);
       double g = _dist.gradient(target, y); //y is in link space
-      _e.set(row, g);
+      _e[mb].set(row, g);
     }
   }
 

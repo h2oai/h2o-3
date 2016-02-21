@@ -67,17 +67,23 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
   protected void processRow(long gid, DataInfo.Row r){throw new RuntimeException("should've been overridden!");}
   protected void processRow(long gid, DataInfo.Row r, NewChunk [] outputs){throw new RuntimeException("should've been overridden!");}
 
+  // mini-batch version - for DL only for now
+  protected void processRow(long gid, DataInfo.Row r, int mb){throw new RuntimeException("should've been overridden!");}
+
   /**
    * Mini-Batch update of model parameters
-   * @param n number of trained examples in this last mini batch
+   * @param seed
+   * @param responses
+   * @param offsets
+   * @param n actual number of rows in this minibatch
    */
-  protected void applyMiniBatchUpdate(int n){}
+  protected void processMiniBatch(long seed, double[] responses, double[] offsets, int n){}
 
   /**
    * Note: If this is overridden, then applyMiniBatch must be overridden as well to perform the model/weight mini-batch update
    * @return Return the mini-batch size
    */
-  protected int getMiniBatchSize(){ return 1; }
+  protected int getMiniBatchSize(){ return 0; }
 
   /**
    * Override this to initialize at the beginning of chunk processing.
@@ -148,6 +154,10 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       ArrayUtils.shuffleArray(shufIdx, skip_rng);
     }
 
+    double[] responses = new double[getMiniBatchSize()];
+    double[] offsets   = new double[getMiniBatchSize()];
+
+    long seed = 0;
     final int miniBatchSize = getMiniBatchSize();
     long num_processed_rows = 0;
     long num_skipped_rows = 0;
@@ -183,22 +193,34 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
           continue;
         } else {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
-          long seed = offset + rep * nrows + r;
-          miniBatchCounter++;
-          if (outputs != null && outputs.length > 0)
+          seed = offset + rep * nrows + r;
+          if (outputs != null && outputs.length > 0) {
+            assert(miniBatchSize==0);
             processRow(seed, row, outputs);
-          else
-            processRow(seed, row);
+          }
+          else {
+            if (miniBatchSize > 0) { //DL
+              processRow(seed, row, miniBatchCounter);
+              responses[miniBatchCounter] = row.response != null && row.response.length > 0 ? row.response(0) : 0 /*autoencoder dummy*/;
+              offsets[miniBatchCounter] = row.offset;
+              miniBatchCounter++;
+            }
+            else //all other algos
+              processRow(seed, row);
+          }
         }
         num_processed_rows++;
         if (miniBatchCounter > 0 && miniBatchCounter % miniBatchSize == 0) {
-          applyMiniBatchUpdate(miniBatchCounter);
+          processMiniBatch(seed, responses, offsets, miniBatchCounter);
           miniBatchCounter = 0;
+          Arrays.fill(responses, 0);
+          Arrays.fill(offsets, 0);
         }
       }
     }
-    if (miniBatchCounter>0)
-      applyMiniBatchUpdate(miniBatchCounter); //finish up the last piece
+    if (miniBatchCounter>0) {
+      processMiniBatch(seed, responses, offsets, miniBatchCounter); //last bit
+    }
 
     assert(fraction != 1 || num_processed_rows + num_skipped_rows == repeats * nrows);
     chunkDone(num_processed_rows);

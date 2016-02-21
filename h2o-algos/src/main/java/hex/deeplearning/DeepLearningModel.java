@@ -579,34 +579,47 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
     final double prefactor = _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.quantile ? 1 : 0.5;
-    for (DataInfo.Row myRow : myRows) {
+    long seed = -1; //ignored
+
+    double[] responses = new double[myRows.length];
+    double[] offsets   = new double[myRows.length];
+    for (int mb=0; mb<myRows.length; ++mb) {
+      DataInfo.Row myRow = myRows[mb];
       if (myRow == null) continue;
-      long seed = -1; //ignored
+      ((Neurons.Input) neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, mb);
+      responses[mb] = myRow.response(0);
+      offsets[mb] = myRow.offset;
+
       // check that all non-last layer errors/gradients are empty
-      for (int i = 0; i<neurons.length-1;++i) {
-        Storage.DenseVector e = neurons[i]._e;
-        if (e==null) continue;
-        assert(ArrayUtils.sum(e.raw()) == 0);
+      for (int i = 0; i < neurons.length - 1; ++i) {
+        Storage.DenseVector e = neurons[i]._e == null ? null : neurons[i]._e[mb];
+        if (e == null) continue;
+        assert (ArrayUtils.sum(e.raw()) == 0);
       }
-      ((Neurons.Input)neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds);
-      DeepLearningTask.step(seed, neurons, model_info(), null, false, null, myRow.offset);
-      // check that all non-last layer errors/gradients are empty
+    }
+
+    DeepLearningTask.fpropMiniBatch(seed, neurons, model_info(), null, false, responses, offsets, myRows.length);
+
+    for (int mb=0; mb<myRows.length; ++mb) {
+      DataInfo.Row myRow = myRows[mb];
+
+      // check that all non-last layer errors/gradients are still empty
       for (int i = 0; i<neurons.length-1;++i) {
-        Storage.DenseVector e = neurons[i]._e;
+        Storage.DenseVector e = neurons[i]._e == null ? null : neurons[i]._e[mb];
         if (e==null) continue;
-        assert(ArrayUtils.sum(e.raw()) == 0);
+        assert (ArrayUtils.sum(e.raw()) == 0);
       }
 
       if (get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
         if (_parms._balance_classes) throw H2O.unimpl();
         int actual = (int) myRow.response[0];
-        double pred = neurons[neurons.length - 1]._a.get(actual);
+        double pred = neurons[neurons.length - 1]._a[mb].get(actual);
         loss += -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
       } else {
         if (model_info.get_params()._autoencoder) throw H2O.unimpl();
 
         //prediction and actual response in standardized response space
-        double pred = neurons[neurons.length - 1]._a.get(0);
+        double pred = neurons[neurons.length - 1]._a[mb].get(0);
         double actual = myRow.response[0];
 
         // FIXME: re-enable this such that the loss is computed from the de-standardized prediction/response
@@ -647,14 +660,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    */
   @Override
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
+    int mb=0;
+    int n=1;
+
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-    ((Neurons.Input)neurons[0]).setInput(-1, data);
-    DeepLearningTask.step(-1, neurons, model_info, null, false, null, offset);
-    double[] out = neurons[neurons.length - 1]._a.raw();
+    ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
+    DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, new double[]{offset}, n);
+    double[] out = neurons[neurons.length - 1]._a[mb].raw();
     if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
@@ -755,6 +771,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
+    final int mb=0;
+    final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         double tmp [] = new double[len];
@@ -762,9 +780,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp); //FIXME: No weights yet
-          DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/);
-          double[] out = neurons[layer+1]._a.raw(); //extract the layer-th hidden feature
+          ((Neurons.Input)neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
+          DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
+          double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
@@ -797,15 +815,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param neurons Array of neurons to work with (will call fprop on them)
    */
   private void score_autoencoder(double[] data, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
+    final int mb=0;
+    final int n=1;
     assert(model_info().get_params()._autoencoder);
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data);
-    DeepLearningTask.step(-1, neurons, model_info, null, false, null, 0 /*no offset*/); // reconstructs data in expanded space
-    double[] in  = neurons[0]._a.raw(); //input (expanded)
-    double[] out = neurons[neurons.length - 1]._a.raw(); //output (expanded)
+    ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
+    DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n); // reconstructs data in expanded space
+    double[] in  = neurons[0]._a[mb].raw(); //input (expanded)
+    double[] out = neurons[neurons.length - 1]._a[mb].raw(); //output (expanded)
     assert(in.length == out.length);
 
     if (reconstruction) {
@@ -1671,8 +1691,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)
         dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
-      if (_mini_batch_size > 1)
-        dl.error("_mini_batch_size", "Mini-batch size > 1 is not yet supported.");
       if (!_diagnostics)
         dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
   
