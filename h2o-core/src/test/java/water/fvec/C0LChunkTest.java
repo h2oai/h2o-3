@@ -15,7 +15,7 @@ public class C0LChunkTest extends TestUtil {
       NewChunk nc = new NewChunk(null, 0);
       for (int i=0;i<K;++i) nc.addNum(l,0);
       Assert.assertEquals(K, nc._len);
-      if (l != 0l) Assert.assertEquals(l == 0l ? 0 : K, nc.sparseLen()); //special case for sparse length
+      if (l != 0l) Assert.assertEquals(l == 0l ? 0 : K, nc._sparseLen); //special case for sparse length
 
       Chunk cc = nc.compress();
       Assert.assertEquals(K, cc._len);
@@ -26,7 +26,7 @@ public class C0LChunkTest extends TestUtil {
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);
-      Assert.assertEquals(l == 0 ? 0 : K, nc.sparseLen());
+      Assert.assertEquals(l == 0 ? 0 : K, nc._sparseLen);
 
       Iterator<NewChunk.Value> it = nc.values(0, K);
       if (l != 0l) { //if all 0s, then we're already at end

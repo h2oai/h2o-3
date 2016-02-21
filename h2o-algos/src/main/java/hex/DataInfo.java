@@ -782,7 +782,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public Rows rows(Chunk [] chks) {
     int cnt = 0;
     for(Chunk c:chks)
-      if(c.isSparse())
+      if(c.isSparseZero())
         ++cnt;
     return rows(chks,cnt > (chks.length >> 1));
   }

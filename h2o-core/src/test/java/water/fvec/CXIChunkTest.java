@@ -37,7 +37,7 @@ public class CXIChunkTest extends TestUtil {
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
       Assert.assertEquals(vals.length+l+1, nc._len);
-      Assert.assertEquals(2+1+l, nc.sparseLen());
+      Assert.assertEquals(2+1+l, nc._sparseLen);
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);
       if (l==1) Assert.assertTrue(it.next().rowId0() == 0);
       Assert.assertTrue(it.next().rowId0() == 3+l);
