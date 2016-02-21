@@ -1669,7 +1669,7 @@ h2o.quantile <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
-  tr <- as.matrix(t(res))
+  tr <- as.matrix(t(as.data.frame(res)))
   rownames(tr) <- colnames(res)
   colnames(tr) <- paste0(100*tr[1,],"%")
   tr[-1,]

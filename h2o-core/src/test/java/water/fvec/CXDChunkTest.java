@@ -38,7 +38,7 @@ public class CXDChunkTest extends TestUtil {
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length+l+1, nc._len);
-      Assert.assertEquals(2+1+l, nc.sparseLen());
+      Assert.assertEquals(2+1+l, nc._sparseLen);
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+l+1);
       if (l==1) Assert.assertTrue(it.next().rowId0() == 0);
       Assert.assertTrue(it.next().rowId0() == 3+l);
@@ -55,7 +55,7 @@ public class CXDChunkTest extends TestUtil {
       Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
       Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length+1+l, cc._len);
+      Assert.assertEquals(vals.length+1+l, cc2._len);
       Assert.assertTrue(cc2 instanceof CXDChunk);
       if (l==1) {
         Assert.assertTrue(cc2.isNA(0));

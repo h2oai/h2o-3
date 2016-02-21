@@ -208,7 +208,7 @@ public class FrameUtils {
     int cnt = 0;
     double reg = 1.0/chks.length;
     for(Chunk c :chks)
-      if(c.isSparse())
+      if(c.isSparseZero()||c.isSparseNA())
         ++cnt;
     return cnt * reg;
   }

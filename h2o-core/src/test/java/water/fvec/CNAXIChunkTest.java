@@ -1,0 +1,66 @@
+package water.fvec;
+
+
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import water.TestUtil;
+
+import java.util.Arrays;
+import java.util.Iterator;
+
+public class CNAXIChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @Test
+  public void test_inflate_impl() {
+    //extra == 1 tests bool representation, extra == 2 tests int representation
+    for (double extra : new double[]{1,2}) { 
+      NewChunk nc = new NewChunk(null, 0);
+      int K = 100;
+      double[] vals = new double[K];
+      for (int i = 0; i < K - 1; i++) vals[i] = Double.NaN;
+      for (double v : vals) nc.addNum(v);
+      nc.addNum(extra);
+      //nc: {(K-1)* NaN, 0, extra}  
+
+      Chunk cc = nc.compress();
+      Assert.assertEquals(K + 1, cc._len);
+      Assert.assertTrue(cc instanceof CNAXIChunk);
+      for (int i = 0; i < K; ++i) Assert.assertEquals(vals[i], cc.atd(i), 0);
+      for (int i = 0; i < K; ++i) Assert.assertEquals(vals[i], cc.at_abs(i), 0);
+      for (int i = 0; i < K - 1; ++i) Assert.assertTrue(cc.isNA(i));
+      for (int i = 0; i < K - 1; ++i) Assert.assertTrue(cc.isNA_abs(i));
+      Assert.assertEquals(extra, cc.atd(K), 0);
+      Assert.assertEquals(extra, cc.at_abs(K), 0);
+      Assert.assertFalse(cc.isNA(K));
+      Assert.assertFalse(cc.isNA_abs(K));
+
+      nc = new NewChunk(null, 0);
+      cc.inflate_impl(nc);
+      nc.values(0, nc._len);
+      Assert.assertEquals(K + 1, nc._len);
+      Assert.assertEquals(2, nc._sparseLen);
+      Iterator<NewChunk.Value> it = nc.values(0, K + 1);
+      Assert.assertTrue(it.next().rowId0() == K - 1);
+      Assert.assertTrue(it.next().rowId0() == K);
+      Assert.assertFalse(it.hasNext());
+      for (int i = 0; i < K; ++i) Assert.assertEquals(vals[i], nc.atd(i), 0);
+      for (int i = 0; i < K; ++i) Assert.assertEquals(vals[i], nc.at_abs(i), 0);
+      for (int i = 0; i < K - 1; ++i) Assert.assertTrue(nc.isNA(i));
+      for (int i = 0; i < K - 1; ++i) Assert.assertTrue(nc.isNA_abs(i));
+
+      Chunk cc2 = nc.compress();
+      Assert.assertEquals(K + 1, cc2._len);
+      Assert.assertTrue(cc2 instanceof CNAXIChunk);
+      for (int i = 0; i < K; ++i) Assert.assertEquals(vals[i], cc2.atd(i), 0);
+      for (int i = 0; i < K; ++i) Assert.assertEquals(vals[i], cc2.at_abs(i), 0);
+      for (int i = 0; i < K - 1; ++i) Assert.assertTrue(cc2.isNA(i));
+      for (int i = 0; i < K - 1; ++i) Assert.assertTrue(cc2.isNA_abs(i));
+      Assert.assertEquals(extra, cc2.atd(K), 0);
+      Assert.assertEquals(extra, cc2.at_abs(K), 0);
+      Assert.assertFalse(cc2.isNA(K));
+      Assert.assertFalse(cc2.isNA_abs(K));
+      Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
+    }
+  }
+}

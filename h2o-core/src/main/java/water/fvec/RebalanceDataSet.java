@@ -106,8 +106,6 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
     private void rebalanceChunk(Vec srcVec, Chunk chk){
       NewChunk dst = new NewChunk(chk);
-      dst.set_len(0);
-      dst.set_sparseLen(dst._len);
       int rem = chk._len;
       while(rem > 0 && dst._len < chk._len){
         Chunk srcRaw = srcVec.chunkForRow(chk._start+ dst._len);
@@ -115,11 +113,6 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         src = srcRaw.inflate_impl(src);
         assert src._len == srcRaw._len;
         int srcFrom = (int)(chk._start+ dst._len - src._start);
-        // check if the result is sparse (not exact since we only take subset of training_frame in general)
-        if ((src.sparse() && dst.sparse()) || ((src.sparseLen() + dst.sparseLen()) * NewChunk.MIN_SPARSE_RATIO < (src._len + dst._len))) {
-          src.set_sparse(src.sparseLen());
-          dst.set_sparse(dst.sparseLen());
-        }
         final int srcTo = srcFrom + rem;
         int off = srcFrom-1;
         Iterator<NewChunk.Value> it = src.values(Math.max(0,srcFrom),srcTo);
@@ -129,13 +122,15 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
           assert  rid < srcTo;
           int add = rid - off;
           off = rid;
-          dst.addZeros(add-1);
+          if (src.isSparseZero()) dst.addZeros(add-1);
+          else dst.addNAs(add-1);
           v.add2Chunk(dst);
           rem -= add;
           assert rem >= 0;
         }
         int trailingZeros = Math.min(rem, src._len - off -1);
-        dst.addZeros(trailingZeros);
+        if (src.isSparseZero()) dst.addZeros(trailingZeros);
+        else dst.addNAs(trailingZeros);
         rem -= trailingZeros;
       }
       assert rem == 0:"rem = " + rem;

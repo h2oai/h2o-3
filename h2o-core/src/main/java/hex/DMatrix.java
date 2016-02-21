@@ -101,6 +101,7 @@ public class DMatrix  {
           tgtChunks[j] = new NewChunk(tgt.vec(j + colStart), fi);
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
           NewChunk nc = chks[c].inflate();
+          if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
           Iterator<Value> it = nc.values();
           while (it.hasNext()) {
             Value v = it.next();
@@ -220,7 +221,7 @@ public class DMatrix  {
     @Override public void map(Chunk c){
       int istart = (int)c.start();
       assert (c.start() + c._len) == (istart + c._len);
-      final int n = c.sparseLen();
+      final int n = c.sparseLenZero();
       _idxs = MemoryManager.malloc4(n);
       _vals = MemoryManager.malloc8d(n);
       int j = 0;
