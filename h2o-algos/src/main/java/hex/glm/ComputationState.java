@@ -70,7 +70,7 @@ public final class ComputationState {
   public double [] beta(){
     return _beta;
   }
-  public GLMGradientInfo ginfo(){return _ginfo;}
+  public GLMGradientInfo ginfo(){return _ginfo == null?(_ginfo = gslvr().getGradient(beta())):_ginfo;}
   public BetaConstraint activeBC(){return _activeBC;}
   public double likelihood() {return _likelihood;}
 
@@ -105,7 +105,7 @@ public final class ComputationState {
     if(_parms._family == Family.multinomial)
       return applyStrongRulesMultinomial();
     int P = _dinfo.fullN();
-    int selected = 0;
+    int newlySelected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
     if (!_allIn) {
@@ -116,38 +116,39 @@ public final class ComputationState {
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
       for (int i = 0; i < P; ++i) {
         if (j < oldActiveCols.length && i == oldActiveCols[j]) {
-          newCols[selected++] = i; // todo
           ++j;
+          newCols[newlySelected++] = i; // todo
         } else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs) {
-          newCols[selected++] = i;
+          newCols[newlySelected++] = i;
         }
       }
-      // merge already active columsn in
-      if(_iter == 25)
-        System.out.println("haha");
-      int active = oldActiveCols.length + selected;
+      // merge already active columns in
+      int active = oldActiveCols.length + newlySelected;
       _allIn = active == P;
       if(!_allIn) {
         int [] cols = newCols;
-//        if(selected != active) {
+//        if(newlySelected != active) {
+//          cols = new int[active];
 //
 //        }
-        cols[selected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
-        cols = Arrays.copyOf(cols, selected);
+        cols[newlySelected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
+        cols = Arrays.copyOf(cols, newlySelected);
         double [] b = ArrayUtils.select(_beta, cols);
         assert Arrays.equals(_beta,ArrayUtils.expandAndScatter(b,_dinfo.fullN()+1,cols));
         _beta = b;
-        _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, selected));
+        _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, newlySelected));
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,(1-_alpha)*_lambda,_bc);
-        assert _beta.length == selected;
-        return selected;
+        assert _beta.length == newlySelected;
+        return newlySelected;
       }
     }
     _activeData = _dinfo;
     return _dinfo.fullN();
   }
+
+  public boolean _lsNeeded = false;
 
   private DataInfo [] _activeDataMultinomial;
 //  private int [] _classOffsets = new int[]{0};

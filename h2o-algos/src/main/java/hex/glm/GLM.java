@@ -527,7 +527,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitIRLSM() {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      boolean lsNeeded = false;
       double [] betaCnd = _state.beta();
       LineSearchSolver ls = null;
       boolean firstIter = true;
@@ -535,18 +534,19 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         while (true) {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
+          assert !firstIter || t._likelihood == _state.likelihood();
           long t2 = System.currentTimeMillis();
           if (_state.objective(t._beta, t._likelihood) > _state.objective()) {
-            assert !lsNeeded;
-            lsNeeded = true;
+            assert !_state._lsNeeded;
+            _state._lsNeeded = true;
           } else {
-            if (!firstIter && !lsNeeded && !progress(t._beta, t._likelihood))
+            if (!firstIter && !_state._lsNeeded && !progress(t._beta, t._likelihood))
               return;
             betaCnd = _parms._solver == Solver.COORDINATE_DESCENT ? COD_solve(t, _state._alpha, _state.lambda()) : solveGram(t._gram, t._xy);
           }
           firstIter = false;
           long t3 = System.currentTimeMillis();
-          if(lsNeeded) {
+          if(_state._lsNeeded) {
             if(ls == null)
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
