@@ -183,12 +183,12 @@ public class DataInfo extends Keyed<DataInfo> {
     int len = _catOffsets[0] = 0;
 
     for(int i = 0; i < ncats; ++i) {
-      _catModes[i] = imputeCat(train.vec(cats[i]));
-      _permutation[i] = cats[i];
       names[i]  =   train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
+      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?_catOffsets[i+1] - _catOffsets[i] - 1:-1;
+      _permutation[i] = cats[i];
     }
     _numMeans = new double[_nums];
     for(int i = 0; i < _nums; ++i){
@@ -258,7 +258,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   // private constructor called by filterExpandedColumns
-  private DataInfo(Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
+  private DataInfo(Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
     _offset = offset;
     _weights = weight;
     _fold = fold;
@@ -284,12 +284,10 @@ public class DataInfo extends Keyed<DataInfo> {
     _cats = catLevels.length;
     _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
     _useAllFactorLevels = true;
-    _catModes = new int[_cats];
     _numMeans = new double[_nums];
     _normMul = normMul;
     _normSub = normSub;
-    for(int i = 0; i < _cats; i++)
-      _catModes[i] = imputeCat(_adaptedFrame.vec(i));
+    _catModes = catModes;
     for(int i = 0; i < _nums; i++)
       _numMeans[i] = _adaptedFrame.vec(_cats+i).mean();
   }
@@ -322,14 +320,19 @@ public class DataInfo extends Keyed<DataInfo> {
         ++j;
       }
     }
+    int [] catModes = _catModes;
     for(int k =0; k < catLvls.length; ++k)
       if(catLvls[k] == null)ignoredCols[ignoredCnt++] = k;
     if(ignoredCnt > 0){
-      int [][] c = new int[_cats-ignoredCnt][];
+      int [][] cs = new int[_cats-ignoredCnt][];
+      catModes = new int[_cats-ignoredCnt];
       int y = 0;
-      for (int[] catLvl : catLvls) if (catLvl != null) c[y++] = catLvl;
-      assert y == c.length;
-      catLvls = c;
+      for (int c = 0; c < catLvls.length; ++c) if (catLvls[c] != null) {
+        catModes[y] = _catModes[c];
+        cs[y++] = catLvls[c];
+      }
+      assert y == cs.length;
+      catLvls = cs;
     }
     // now numerics
     int prev = j = 0;
@@ -362,7 +365,7 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     // public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
-    DataInfo dinfo = new DataInfo(f, normMul, normSub, catLvls, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
+    DataInfo dinfo = new DataInfo(f, normMul, normSub, catLvls, catModes, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
     dinfo._activeCols = cols;
     return dinfo;
   }
@@ -652,18 +655,8 @@ public class DataInfo extends Keyed<DataInfo> {
         }
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
-      if (Double.isNaN(vals[i])) {
-        if (_imputeMissing) {
-          int c = getCategoricalId(i,_catModes[i]);
-          if(c >= 0)
-            row.binIds[nbins++] = c;
-        } else if(_catMissing[i])  // TODO: What if missingBucket = false?
-          row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
-      } else {
-        int c = getCategoricalId(i,(int)vals[i]);
-        if(c >= 0)
-          row.binIds[nbins++] = c;
-      }
+      int c = getCategoricalId(i,Double.isNaN(vals[i])?_catModes[i]:(int)vals[i]);
+      if(c >= 0)row.binIds[nbins++] = c;
     }
     row.nBins = nbins;
     final int n = _nums;
@@ -707,19 +700,9 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
-      if (chunks[i].isNA(rid)) {
-          if (_imputeMissing) {
-            int c = getCategoricalId(i,_catModes[i]);
-            if(c >= 0)
-              row.binIds[nbins++] = c;
-          } else if(_catMissing[i])  // TODO: What if missingBucket = false?
-            row.binIds[nbins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
-          // else skip
-      } else {
-        int c = getCategoricalId(i,(int)chunks[i].at8(rid));
-        if(c >= 0)
-          row.binIds[nbins++] = c;
-      }
+      int cid = getCategoricalId(i,chunks[i].isNA(rid)?_catModes[i]:(int)chunks[i].at8(rid));
+      if(cid >= 0)
+        row.binIds[nbins++] = cid;
     }
     row.nBins = nbins;
     final int n = _nums;
@@ -815,16 +798,9 @@ public class DataInfo extends Keyed<DataInfo> {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
         if(row.bad)continue;
-        if (chunks[i].isNA(r)) {
-          if (_skipMissing) {
-            row.bad = true;
-          } else
-            row.binIds[row.nBins++] = _catOffsets[i + 1] - 1; // missing value turns into extra (last) factor
-        } else {
-          int c = getCategoricalId(i,(int)chunks[i].at8(r));
-          if(c >=0)
-            row.binIds[row.nBins++] = c;
-        }
+        int cid = getCategoricalId(i,chunks[i].isNA(r)?_catModes[i]:(int)chunks[i].at8(r));
+        if(cid >=0)
+          row.binIds[row.nBins++] = cid;
       }
     }
     int numStart = numStart();

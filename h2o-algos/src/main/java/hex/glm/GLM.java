@@ -486,7 +486,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void fitIRLSM_multinomial(){
       assert _dinfo._responses == 3;
       double relImprovement = 1;
-      double obj = _state.objVal();
+      double obj = _state.objective();
       while(_state._iter < _parms._max_iterations && relImprovement > _parms._objective_epsilon) {
         for (int c = 0; c < _nclass; ++c) {
           if (_state.activeDataMultinomial(c).fullN() == 0) continue;
@@ -515,8 +515,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             updateProgress();
           Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "") + " bdiff = " + bdiff));
         }
-        relImprovement = (obj - _state.objVal())/obj;
-        obj = _state.objVal();
+        relImprovement = (obj - _state.objective())/obj;
+        obj = _state.objective();
       }
     }
 
@@ -526,42 +526,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private void fitIRLSM() {
-      LineSearchSolver ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-        ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-        : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
+      boolean lsNeeded = false;
       double [] betaCnd = _state.beta();
+      LineSearchSolver ls = null;
+      boolean firstIter = true;
       try {
-        boolean needLs = _state.beta().length > 1000;// _state.beta().length > 5;
-        boolean firstIter = true;
         while (true) {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
           long t2 = System.currentTimeMillis();
-          if(!needLs && _state.objective(t._beta,t._likelihood) > _state.objVal()) {
-            betaCnd = t._beta;
-            needLs = true;
+          if (_state.objective(t._beta, t._likelihood) > _state.objective()) {
+            assert !lsNeeded;
+            lsNeeded = true;
           } else {
-            if(!(needLs || firstIter || progress(t._beta,t._likelihood)))
-              break;
-            firstIter = false;
-            betaCnd = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(t,_state._alpha,_state.lambda()):solveGram(t._gram, t._xy);
+            if (!firstIter && !lsNeeded && !progress(t._beta, t._likelihood))
+              return;
+            betaCnd = _parms._solver == Solver.COORDINATE_DESCENT ? COD_solve(t, _state._alpha, _state.lambda()) : solveGram(t._gram, t._xy);
           }
+          firstIter = false;
           long t3 = System.currentTimeMillis();
-          if(needLs) {
-            if (betaCnd.length < ls.getX().length) {
+          if(lsNeeded) {
+            if(ls == null)
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
-                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
-            }
+                 ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
+                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
+
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
               Log.info(LogMsg("Ls failed " + ls));
-              break;
+              return;
             }
             betaCnd = ls.getX();
+            if(!progress(betaCnd,ls.ginfo()))
+              return;
             long t4 = System.currentTimeMillis();
-            if (!progress(ls.getX(), ls.ginfo()))
-              break;
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } else
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
@@ -650,7 +648,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] denums;
       boolean skipFirstLevel = !_state.activeData()._useAllFactorLevels;
       double [] betaold = beta.clone();
-      double objold = _state.objVal();
+      double objold = _state.objective();
       int iter2=0; // total cd iters
       // get reweighted least squares vectors
       Vec[] newVecs = _state.activeData()._adaptedFrame.anyVec().makeZeros(3);
@@ -980,7 +978,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     // update user visible progress
     protected void updateProgress(){
       assert !_parms._lambda_search;
-      _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objVal());
+      _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
       _job.update(_workPerIteration,_state.toString());
       if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval) {
         _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
