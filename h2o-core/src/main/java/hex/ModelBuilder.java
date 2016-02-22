@@ -303,7 +303,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
   public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
     final long old_cs = _parms.checksum();
-    final String origDest = _job._result.toString();
+    final String origDest = _result.toString();
 
     final String weightName = "__internal_cv_weights__";
     if (train().find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");

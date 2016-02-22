@@ -268,7 +268,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get()).checksum() == checksum;
+        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get())._parms.checksum() == checksum;
       }
     }).keys();
 
