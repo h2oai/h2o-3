@@ -46,6 +46,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     final boolean autoencoder;
 
+    @Override
+    public boolean isAutoencoder() { return autoencoder; }
+
     DeepLearningScoringInfo errors;
     Key[] weights;
     Key[] biases;
@@ -63,7 +66,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     @Override public boolean isSupervised() {
       return !autoencoder;
     }
-  }
+  } // DeepLearningModelOutput
 
   /**
    * Deviance of given distribution function at predicted value f
@@ -112,24 +115,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public long training_rows;
   public long validation_rows;
 
-  private DeepLearningScoringInfo[] scoringInfo;
-  public DeepLearningScoringInfo[] scoring_history() { return scoringInfo; }
-  public ScoreKeeper[] scoreKeepers() {
-    ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
-    for (int i=0;i<sk.length;++i) {
-      sk[i] = scoringInfo[i].validation ? scoringInfo[i].scored_valid : scoringInfo[i].scored_train;
-    }
-    return sk;
-  }
-
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
   private float _bestLoss = Float.POSITIVE_INFINITY;
 
   public Key actual_best_model_key;
   public Key model_info_key;
 
-  // return the most up-to-date model metrics
-  DeepLearningScoringInfo last_scored() { return scoringInfo == null ? null : scoringInfo[scoringInfo.length-1]; }
+  public DeepLearningScoringInfo last_scored() { return (DeepLearningScoringInfo) super.last_scored(); }
 
   /**
    * Get the parameters actually used for model building, not the user-given ones (_parms)
@@ -137,26 +129,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return actually used parameters
    */
   public final DeepLearningParameters get_params() { return model_info.get_params(); }
-
-  // Lower is better
-  public float loss() {
-    switch (_parms._stopping_metric) {
-      case MSE:
-        return (float) mse();
-      case logloss:
-        return (float) logloss();
-      case deviance:
-        return (float) deviance();
-      case misclassification:
-        return (float) classification_error();
-      case AUC:
-        return (float)(1-auc());
-      case AUTO:
-      default:
-        return (float) (_output.isClassifier() ? logloss() : _output.autoencoder ? mse() : deviance());
-
-    }
-  }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
@@ -166,40 +138,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
       default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
     }
-  }
-
-  public int compareTo(DeepLearningModel o) {
-    if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
-    if (o._output.isClassifier()) {
-      if (o._output.nclasses() != _output.nclasses())
-        throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
-    }
-    return (loss() < o.loss() ? -1 : loss() > o.loss() ? 1 : 0);
-  }
-
-  public double classification_error() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
-  }
-
-  public double mse() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
-  }
-
-  public double auc() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
-  }
-
-  public double deviance() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
-  }
-
-  public double logloss() {
-    if (scoringInfo == null) return Double.NaN;
-    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
   }
 
   /**
@@ -271,7 +209,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[i] = cp.scoringInfo[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, get_params(), _output, _output.autoencoder);
+    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -305,7 +243,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[0].validation = (parms._valid != null);
       scoringInfo[0].time_stamp_ms = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, get_params(), _output, _output.autoencoder);
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start_ms = System.currentTimeMillis();
@@ -518,7 +456,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!_parms._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, get_params(), _output, _output.autoencoder);
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
@@ -542,7 +480,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           Log.info("Achieved requested predictive accuracy on the training data. Model building completed.");
           stopped_early = true;
         }
-        if (ScoreKeeper.earlyStopping(scoreKeepers(),
+        if (ScoreKeeper.stopEarly(scoreKeepers(),
                 get_params()._stopping_rounds, _output.isClassifier(), get_params()._stopping_metric, get_params()._stopping_tolerance
         )) {
           Log.info("Convergence detected based on simple moving average of the loss function for the past " + get_params()._stopping_rounds + " scoring events. Model building completed.");
@@ -974,7 +912,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb.ip("public int nclasses() { return "+ (p._autoencoder ? neurons[neurons.length-1].units : _output.nclasses()) + "; }").nl();
 
     if (model_info().data_info()._nums > 0) {
-      JCodeGen.toStaticVarZeros(sb, "NUMS", new double[model_info().data_info()._nums], "Workspace for storing numerical input variables.");
+      sb.i(0).p("// Thread-local storage for input neuron activation values.").nl();
+      sb.i(0).p("final double[] NUMS = new double[" + model_info().data_info()._nums +"];").nl();
       JCodeGen.toClassWithArray(sb, "static", "NORMMUL", model_info().data_info()._normMul);//, "Standardization/Normalization scaling factor for numerical variables.");
       JCodeGen.toClassWithArray(sb, "static", "NORMSUB", model_info().data_info()._normSub);//, "Standardization/Normalization offset for numerical variables.");
     }
@@ -1002,8 +941,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
 
     // Generate activation storage
-    sb.i(1).p("// Storage for neuron activation values.").nl();
-    sb.i(1).p("public static final double[][] ACTIVATION = new double[][] {").nl();
+    sb.i(1).p("// Thread-local storage for neuron activation values.").nl();
+    sb.i(1).p("final double[][] ACTIVATION = new double[][] {").nl();
     for (int i=0; i<neurons.length; i++) {
       String colInfoClazz = mname + "_Activation_"+i;
       sb.i(2).p("/* ").p(neurons[i].getClass().getSimpleName()).p(" */ ");
@@ -2228,11 +2167,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (fromParms._reproducible) {
           if (!fromParms._quiet_mode)
             Log.info("_reproducibility: Automatically enabling force_load_balancing, disabling single_node_mode and replicate_training_data\n"
-                    + "and setting train_samples_per_iteration to -1 to enforce reproducibility.");
+                    + "and setting train_samples_per_iteration to -1 and enabling score_each_iteration to enforce reproducibility.");
           toParms._force_load_balance = true;
           toParms._single_node_mode = false;
           toParms._train_samples_per_iteration = -1;
           toParms._replicate_training_data = false; //there's no benefit from having multiple nodes compute the exact same thing, and then average it back to the same
+          toParms._score_each_iteration = true;
         }
       }
     }

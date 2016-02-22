@@ -10,7 +10,7 @@ import water.*;
 import water.nbhm.NonBlockingHashMap;
 
 public class WordCountTest extends TestUtil {
-  @BeforeClass static public void setup() {  stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   // ==========================================================================
   @Test public void testWordCount() throws IOException {

@@ -598,8 +598,10 @@ class ASTIfElse extends ASTPrim {
           new MRTask() {
             @Override
             public void map(Chunk c) {
-              for (int i = 0; i < c._len; ++i)
-                c.set(i, ArrayUtils.find(dom, c.at8(i)));
+              for (int i = 0; i < c._len; ++i) {
+                if( !c.isNA(i) )
+                  c.set(i, ArrayUtils.find(dom, c.at8(i)));
+              }
             }
           }.doAll(res.vec(i));
           res.vec(i).setDomain(newDomain); // needs a DKVput?

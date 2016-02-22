@@ -8,6 +8,7 @@ import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * Low-weight keeper of scores
@@ -84,33 +85,12 @@ public class ScoreKeeper extends Iced {
     }
   }
 
-  /**
-   * Compare this ScoreKeeper with that ScoreKeeper
-   * @param that
-   * @return true if they are equal (up to 1e-6 absolute and relative error, or both contain NaN for the same values)
-   */
-  @Override public boolean equals(Object that) {
-    if (! (that instanceof ScoreKeeper)) return false;
-    ScoreKeeper o = (ScoreKeeper)that;
-    if (_hitratio == null && ((ScoreKeeper) that)._hitratio != null) return false;
-    if (_hitratio != null && ((ScoreKeeper) that)._hitratio == null) return false;
-    if (_hitratio != null && ((ScoreKeeper) that)._hitratio != null) {
-      if (_hitratio.length != ((ScoreKeeper) that)._hitratio.length) return false;
-      for (int i=0; i<_hitratio.length; ++i) {
-        if (!MathUtils.compare(_hitratio[i], ((ScoreKeeper) that)._hitratio[i], 1e-6, 1e-6)) return false;
-      }
-    }
-    return MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
-            && MathUtils.compare(_mean_residual_deviance, o._mean_residual_deviance, 1e-6, 1e-6)
-            && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
-            && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
-            && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
-            && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, lift_top_group, r2, misclassification}
+  public static boolean moreIsBetter(StoppingMetric criterion) {
+    return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_group);
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, AUC, lift_top_group, r2, misclassification}
-
-  public static boolean earlyStopping(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
+  public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
     if (k == 0) return false;
     int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)
     if (len < 2*k) return false; //need at least k for SMA and another k to tell whether the model got better or not
@@ -119,7 +99,7 @@ public class ScoreKeeper extends Iced {
       criterion = classification ? StoppingMetric.logloss : StoppingMetric.deviance;
     }
 
-    boolean moreIsBetter = (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_group);
+    boolean moreIsBetter = moreIsBetter(criterion);
     double movingAvg[] = new double[k+1]; //need one moving average value for the last k+1 scoring events
     double lastBeforeK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
     double bestInLastK = moreIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
@@ -191,5 +171,85 @@ public class ScoreKeeper extends Iced {
     boolean improved = moreIsBetter ? ratio > 1+rel_improvement : ratio < 1-rel_improvement;
     Log.info("Checking model convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
     return !improved;
+  } // stopEarly
+
+  /**
+   * Compare this ScoreKeeper with that ScoreKeeper
+   * @param that
+   * @return true if they are equal (up to 1e-6 absolute and relative error, or both contain NaN for the same values)
+   */
+  @Override public boolean equals(Object that) {
+    if (! (that instanceof ScoreKeeper)) return false;
+    ScoreKeeper o = (ScoreKeeper)that;
+    if (_hitratio == null && ((ScoreKeeper) that)._hitratio != null) return false;
+    if (_hitratio != null && ((ScoreKeeper) that)._hitratio == null) return false;
+    if (_hitratio != null && ((ScoreKeeper) that)._hitratio != null) {
+      if (_hitratio.length != ((ScoreKeeper) that)._hitratio.length) return false;
+      for (int i=0; i<_hitratio.length; ++i) {
+        if (!MathUtils.compare(_hitratio[i], ((ScoreKeeper) that)._hitratio[i], 1e-6, 1e-6)) return false;
+      }
+    }
+    return MathUtils.compare(_r2, o._r2, 1e-6, 1e-6)
+            && MathUtils.compare(_mean_residual_deviance, o._mean_residual_deviance, 1e-6, 1e-6)
+            && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
+            && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
+            && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
+            && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
   }
+
+  public static Comparator<ScoreKeeper> comparator(StoppingMetric criterion) {
+    switch (criterion) {
+      case AUC:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o2._AUC - o1._AUC); // moreIsBetter
+          }
+        };
+      case MSE:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o1._mse - o2._mse); // moreIsBetter
+          }
+        };
+      case deviance:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o1._mean_residual_deviance - o2._mean_residual_deviance); // moreIsBetter
+          }
+        };
+      case logloss:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o1._logloss - o2._logloss); // moreIsBetter
+          }
+        };
+      case r2:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o2._r2 - o1._r2); // moreIsBetter
+          }
+        };
+      case misclassification:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o1._classError - o2._classError); // moreIsBetter
+          }
+        };
+      case lift_top_group:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o2._lift - o1._lift); // moreIsBetter
+          }
+        };
+      default:
+        throw H2O.unimpl("Undefined stopping criterion.");
+    } // switch
+  } // comparator
 }

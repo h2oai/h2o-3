@@ -427,6 +427,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
+    /** Is this model a binomial classification model? (v. a regression or clustering model) */
+    public boolean isBinomialClassifier() { return isSupervised() && nclasses() == 2; }
+
     public int nclasses() {
       assert isSupervised();
       String cns[] = classNames();
@@ -443,6 +446,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 ModelCategory.Regression);
       return ModelCategory.Unknown;
     }
+    public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
     public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
       DKV.put(mm);
@@ -509,6 +513,89 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double deviance(double w, double y, double f) {
     return new Distribution(Distribution.Family.gaussian).deviance(w, y, f);
   }
+
+  protected ScoringInfo[] scoringInfo;
+  public ScoringInfo[] scoring_history() { return scoringInfo; }
+  public ScoreKeeper[] scoreKeepers() {
+    ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
+    for (int i=0;i<sk.length;++i) {
+      sk[i] = scoringInfo[i].validation ? scoringInfo[i].scored_valid : scoringInfo[i].scored_train;
+    }
+    return sk;
+  }
+
+  /**
+   * Fill a ScoringInfo with data from the ModelMetrics for this model.
+   * @param scoringInfo
+   */
+  public void fillScoringInfo(ScoringInfo scoringInfo) {
+    scoringInfo.classification = this._output.isClassifier();
+    scoringInfo.scored_train = new ScoreKeeper(this._output._training_metrics);
+    scoringInfo.scored_valid = new ScoreKeeper(this._output._validation_metrics);
+
+    if (this._output.isBinomialClassifier()) {
+      scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
+      scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
+    }
+  }
+
+  // return the most up-to-date model metrics
+  public ScoringInfo last_scored() { return scoringInfo == null ? null : scoringInfo[scoringInfo.length-1]; }
+
+  // Lower is better
+  public float loss() {
+    switch (_parms._stopping_metric) {
+      case MSE:
+        return (float) mse();
+      case logloss:
+        return (float) logloss();
+      case deviance:
+        return (float) deviance();
+      case misclassification:
+        return (float) classification_error();
+      case AUC:
+        return (float)(1-auc());
+      case AUTO:
+      default:
+        return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());
+
+    }
+  } // loss()
+
+  public int compareTo(M o) {
+    if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
+    if (o._output.isClassifier()) {
+      if (o._output.nclasses() != _output.nclasses())
+        throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
+    }
+    return (loss() < o.loss() ? -1 : loss() > o.loss() ? 1 : 0);
+  }
+
+  public double classification_error() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
+  }
+
+  public double mse() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double auc() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
+  }
+
+  public double deviance() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
+  }
+
+  public double logloss() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+  }
+
 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
    *  intention here is that ModelBuilders can assume the test set has the same

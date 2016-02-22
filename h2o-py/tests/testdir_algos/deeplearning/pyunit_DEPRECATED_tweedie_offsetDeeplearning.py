@@ -16,7 +16,7 @@ def tweedie_offset():
     dl = h2o.deeplearning(x=insurance[0:3],y=insurance["Claims"],distribution="tweedie",hidden=[1],epochs=1000,
                           train_samples_per_iteration=-1,reproducible=True,activation="Tanh",single_node_mode=False,
                           balance_classes=False,force_load_balance=False,seed=23123,tweedie_power=1.5,
-                          score_training_samples=0,score_validation_samples=0)
+                          score_training_samples=0,score_validation_samples=0,stopping_rounds=0)
 
     mean_residual_deviance = dl.mean_residual_deviance()
     assert abs(0.556 - mean_residual_deviance) < 1e-3, "Expected mean residual deviance to be 0.556, but got " \
@@ -34,12 +34,12 @@ def tweedie_offset():
                           train_samples_per_iteration=-1,reproducible=True,activation="Tanh",single_node_mode=False,
                           balance_classes=False,force_load_balance=False,seed=23123,tweedie_power=1.5,
                           score_training_samples=0,score_validation_samples=0,offset_column="offset",
-                          training_frame=insurance)
+                          training_frame=insurance,stopping_rounds=0)
     mean_residual_deviance = dl.mean_residual_deviance()
     assert abs(0.261-mean_residual_deviance) < 1e-2, "Expected mean residual deviance to be 0.261, but got " \
                                                          "{0}".format(mean_residual_deviance)
     predictions = dl.predict(insurance)
-    assert abs(49.53-predictions[0].mean()[0]) < 1e-1, "Expected mean of predictions to be 49.53, but got " \
+    assert abs(49.23-predictions[0].mean()[0]) < 1e-1, "Expected mean of predictions to be 49.53, but got " \
                                                           "{0}".format(predictions[0].mean()[0])
     assert abs(1.074-predictions[0].min()) < 1e-1, "Expected min of predictions to be 1.074, but got " \
                                                           "{0}".format(predictions[0].min())

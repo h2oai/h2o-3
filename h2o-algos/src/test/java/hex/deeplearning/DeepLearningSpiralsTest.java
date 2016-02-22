@@ -60,6 +60,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._score_training_samples = 1000;
           p._score_validation_samples = 10000;
           p._shuffle_training_data = false;
+          p._stopping_rounds = 0;
           p._force_load_balance = false;
           p._replicate_training_data = false;
           p._adaptive_rate = true;

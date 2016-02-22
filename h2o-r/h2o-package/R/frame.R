@@ -1669,7 +1669,7 @@ h2o.quantile <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
-  tr <- as.matrix(t(res))
+  tr <- as.matrix(t(as.data.frame(res)))
   rownames(tr) <- colnames(res)
   colnames(tr) <- paste0(100*tr[1,],"%")
   tr[-1,]
@@ -2165,31 +2165,6 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' @method as.vector H2OFrame
 #' @export
 as.vector.H2OFrame <- function(x, mode) base::as.vector(as.matrix.H2OFrame(x))
-
-#`
-#' @export
-as.double.H2OFrame <- function(x, ...) {
-  res <- .fetch.data(x,1L) # Force evaluation
-  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element H2OFrame into a double")
-  res <- res[1,1]
-  .Primitive("as.double")(res)
-}
-
-#' @export
-as.logical.H2OFrame <- function(x, ...) {
-  res <- .fetch.data(x,1L) # Force evaluation
-  if( nrow(res)!=1L || ncol(res)!=1L ) stop("Cannot convert multi-element H2OFrame into a logical")
-  res <- res[1,1]
-  .Primitive("as.logical")(res)
-}
-
-#' @export
-as.integer.H2OFrame <- function(x, ...) {
-  x <- .fetch.data(x,1L) # Force evaluation
-  if( nrow(x)!=1L || ncol(x)!=1L ) stop("Cannot convert multi-element H2OFrame into an integer")
-  x <- x[1,1]
-  .Primitive("as.integer")(x)
-}
 
 #' Convert H2O Data to Factors
 #'

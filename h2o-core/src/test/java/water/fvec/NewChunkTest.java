@@ -1,12 +1,16 @@
 package water.fvec;
 
-import org.junit.*;
-import static org.junit.Assert.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import water.DKV;
 import water.Futures;
 import water.TestUtil;
+
 import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class NewChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -256,6 +260,72 @@ public class NewChunkTest extends TestUtil {
       Assert.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
     } finally { remove(); }
   }
+  @Test public void testCXIChunk_setPostSparse() {
+    try { pre();
+      double extra = 3.5;
+      nc.addZeros(K - 5);
+      nc.addNum(extra);
+      nc.addNum(0);
+      nc.addNA();
+      nc.addZeros(2);
+      assertTrue(nc.isSparseZero());
+      assertEquals(nc._sparseLen, 2);
+      assertEquals(nc.sparseLenZero(), 2);
+      assertEquals(nc.sparseLenNA(), K);
 
+      for (int i = 0; i < K-5; i++) assertEquals(0, nc.atd(0), Math.ulp(0));
+      assertEquals(extra, nc.atd(K-5), Math.ulp(extra));
+      assertEquals(0, nc.atd(K-4), Math.ulp(0));
+      assertEquals(Double.NaN, nc.atd(K-3), Math.ulp(Double.NaN));
+      for (int i = K-2; i < K; i++) assertEquals(0, nc.atd(i), Math.ulp(0));
+      
+      post();
+      cc.set(K-5, 0);
+      post_write();
+      assertEquals(K, nc._len);
+      assertEquals(0,cc.atd(K-5),Math.ulp(0));
+      assertTrue(cc.chk2() instanceof CXIChunk);
+      
+      for (int i = 0; i < K-3; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
+      assertEquals(Double.NaN, cc.atd(K-3), Math.ulp(Double.NaN));
+      for (int i = K-2; i < K; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
+      assertEquals(1,cc.chk2().sparseLenZero());
+      
+    } finally { remove();}
+  }
+  
+  @Test public void testCNAXDChunk_setPostSparse() {
+    try {
+      pre();
+      double extra = 3.5;
+      nc.addNAs(K - 5);
+      nc.addNum(extra);
+      nc.addNAs(2);
+      nc.addZeros(2);
+      assertTrue(nc.isSparseNA());
+      assertEquals(nc._sparseLen, 3);
+      assertEquals(nc.sparseLenZero(), K);
+      assertEquals(nc.sparseLenNA(), 3);
+
+      for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, nc.atd(i), Math.ulp(0));
+      assertEquals(extra, nc.atd(K - 5), Math.ulp(extra));
+      for (int i = K - 4; i < K -2; i++) assertEquals(Double.NaN, nc.atd(i), Math.ulp(0));
+      for (int i = K - 2; i < K; i++) assertEquals(0, nc.atd(i), Math.ulp(0));
+
+      post();
+      cc.set(K - 3, 0);
+      post_write();
+      assertEquals(K, nc._len);
+      assertEquals(0, cc.atd(K - 3), Math.ulp(0));
+      assertTrue(cc.chk2() instanceof CNAXDChunk);
+
+      for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, cc.atd(i), Math.ulp(0));
+      assertEquals(extra, cc.atd(K - 5), Math.ulp(extra));
+      assertEquals(Double.NaN, cc.atd(K-4), Math.ulp(0));
+      for (int i = K - 3; i < K; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
+      assertEquals(4,cc.chk2().sparseLenNA());
+    } finally {remove();}
+  }
+  
 }
 

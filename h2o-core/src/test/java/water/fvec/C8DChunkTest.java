@@ -76,7 +76,7 @@ public class C8DChunkTest extends TestUtil {
     NewChunk nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
     nc.values(0, nc._len);
-    Assert.assertEquals(vals.length, nc.sparseLen());
+    Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
 
     Iterator<NewChunk.Value> it = nc.values(0, vals.length);
