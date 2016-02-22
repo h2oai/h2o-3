@@ -1,0 +1,2095 @@
+diff --git a/h2o-algos/src/main/java/hex/deeplearning/DeepLearning.java b/h2o-algos/src/main/java/hex/deeplearning/DeepLearning.java
+index bbaeb9b..1215534 100755
+--- a/h2o-algos/src/main/java/hex/deeplearning/DeepLearning.java
++++ b/h2o-algos/src/main/java/hex/deeplearning/DeepLearning.java
+@@ -40,7 +40,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
+   @Override public boolean isSupervised() { return !_parms._autoencoder; }
+ 
+   @Override protected int nModelsInParallel() {
+-    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
++    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
+     if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+     return 1;
+   }
+diff --git a/h2o-algos/src/main/java/hex/tree/gbm/GBM.java b/h2o-algos/src/main/java/hex/tree/gbm/GBM.java
+index 4af32b3..8ab3c4d 100755
+--- a/h2o-algos/src/main/java/hex/tree/gbm/GBM.java
++++ b/h2o-algos/src/main/java/hex/tree/gbm/GBM.java
+@@ -36,7 +36,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
+   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
+ 
+   @Override protected int nModelsInParallel() {
+-    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
++    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
+     if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+     return 2; //GBM always has some serial work, so it's fine to build two models at once
+   }
+diff --git a/h2o-core/src/main/java/hex/Model.java b/h2o-core/src/main/java/hex/Model.java
+index 01ce4ae..7b776a4 100755
+--- a/h2o-core/src/main/java/hex/Model.java
++++ b/h2o-core/src/main/java/hex/Model.java
+@@ -119,7 +119,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters,
+ 
+     /**
+      * Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-     * For cross-validation and grid searches, this time limit applies to all sub-models.
+      */
+     public double _max_runtime_secs = 0;
+ 
+diff --git a/h2o-core/src/main/java/hex/ModelBuilder.java b/h2o-core/src/main/java/hex/ModelBuilder.java
+index 7b98580..ac8889e 100644
+--- a/h2o-core/src/main/java/hex/ModelBuilder.java
++++ b/h2o-core/src/main/java/hex/ModelBuilder.java
+@@ -194,7 +194,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
+    * @return How many models to train in parallel during cross-validation
+    */
+   protected int nModelsInParallel() {
+-    if (!_parms._parallelize_cross_validation) return 1; //user demands serial building
++    if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
+     if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+     return 1; //safe fallback
+   }
+@@ -356,7 +356,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
+       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
+       cvModelBuilders[i]._start_time = System.currentTimeMillis();
+       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
+-      if(nRunning++ == nModelsInParallel()) //piece-wise advance in training the CV models
++      if(++nRunning == nModelsInParallel()) //piece-wise advance in training the CV models
+         while (nRunning>0) submodel_tasks[i+1-nRunning--].join();
+     }
+     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
+diff --git a/h2o-core/src/main/java/hex/grid/GridSearch.java b/h2o-core/src/main/java/hex/grid/GridSearch.java
+index 9c58c83..9755c6b 100644
+--- a/h2o-core/src/main/java/hex/grid/GridSearch.java
++++ b/h2o-core/src/main/java/hex/grid/GridSearch.java
+@@ -74,6 +74,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
+    *  used only locally to fire new model builders.  */
+   private final transient HyperSpaceWalker<MP> _hyperSpaceWalker;
+ 
++  /** For advanced search methods we can put a time limit on the overall grid search.  This doesn't make much sense
++   * for strict Cartesian.
++   */
++  private long _max_time_ms = Long.MAX_VALUE;
++
+ 
+   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP> hyperSpaceWalker) {
+     _result = gkey;
+@@ -153,6 +158,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
+       int counter = 0;
+       while (it.hasNext(model)) {
+         if(_job.stop_requested() ) return;  // Handle end-user cancel request
++        if  (it.timeRemaining() < 0) {
++          Log.info("Grid max_time_ms has expired; stopping early.");
++          return;
++        }
++
+         MP params;
+         try {
+           // Get parameters for next model
+@@ -160,7 +170,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
+           // Sequential model building, should never propagate
+           // exception up, just mark combination of model parameters as wrong
+           try {
+-            model = buildModel(params, grid, counter++, protoModelKey);
++            model = buildModel(params, grid, counter++, protoModelKey); // TODO: pass in remaining time!
+           } catch (RuntimeException e) { // Catch everything
+             StringWriter sw = new StringWriter();
+             PrintWriter pw = new PrintWriter(sw);
+diff --git a/h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java b/h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java
+index 1897787..05174de 100644
+--- a/h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java
++++ b/h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java
+@@ -35,6 +35,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
+      */
+     boolean hasNext(Model previousModel);
+ 
++    long timeRemaining();
++
+     /**
+      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
+      * @param failedModel
+@@ -244,6 +246,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
+         }
+ 
+         @Override
++        public long timeRemaining() { return Long.MAX_VALUE; }
++
++        @Override
+         public void modelFailed(Model failedModel) {
+           // nada
+         }
+@@ -318,6 +323,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
+         /** One-based count of the permutations we've visited, primarily used as an index into _visitedHyperparamIndices. */
+         private int _currentPermutationNum = 0;
+ 
++        /** Start time of this grid */
++        private long _start_time = System.currentTimeMillis();
++
+         // TODO: override into a common subclass:
+         @Override
+         public MP nextModelParameters(Model previousModel) {
+@@ -352,6 +360,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters> {
+         }
+ 
+         @Override
++        public long timeRemaining() {
++          return _max_time_ms - (System.currentTimeMillis() - _start_time);
++        }
++
++        @Override
+         public void modelFailed(Model failedModel) {
+           // Leave _visitedPermutations, _visitedPermutationHashes and _currentHyperparamIndices alone
+           // so we don't revisit bad parameters. Note that if a model build fails for other reasons we
+diff --git a/h2o-core/src/main/java/water/api/ModelParametersSchema.java b/h2o-core/src/main/java/water/api/ModelParametersSchema.java
+index a9f7a07..db06251 100644
+--- a/h2o-core/src/main/java/water/api/ModelParametersSchema.java
++++ b/h2o-core/src/main/java/water/api/ModelParametersSchema.java
+@@ -133,6 +133,7 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
+ 
+     impl._train = (null == this.  training_frame ? null : Key.<Frame>make(this.  training_frame.name));
+     impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
++    impl._max_runtime_secs = nfolds > 0 ? max_runtime_secs / (nfolds+1) : max_runtime_secs;
+ 
+     return impl;
+   }
+diff --git a/h2o-core/src/main/java/water/fvec/CStrChunk.java b/h2o-core/src/main/java/water/fvec/CStrChunk.java
+index 7c33427..6e3d7d7 100644
+--- a/h2o-core/src/main/java/water/fvec/CStrChunk.java
++++ b/h2o-core/src/main/java/water/fvec/CStrChunk.java
+@@ -150,6 +150,35 @@ public class CStrChunk extends Chunk {
+     }
+     return nc;
+   }
++  
++  /**
++   * Optimized substring() method for a buffer of only ASCII characters.
++   * The presence of UTF-8 multi-byte characters would give incorrect results
++   * for the string length, which is required here.
++   *
++   * @param nc NewChunk to be filled with substrings in this chunk
++   * @param startIndex The beginning index of the substring, inclusive
++   * @param endIndex The ending index of the substring, exclusive
++   * @return Filled NewChunk
++   */
++  public NewChunk asciiSubstring(NewChunk nc, int startIndex, int endIndex) {
++    // copy existing data
++    nc = this.inflate_impl(nc);
++    
++    //update offsets and byte array
++    for (int i = 0; i < _len; i++) {
++      int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
++      if (off != NA) {
++        int len = 0;
++        while (_mem[_valstart + off + len] != 0) len++; //Find length
++        nc._is[i] = startIndex < len ? off + startIndex : off + len;
++        for (; len > endIndex - 1; len--) {
++          nc._ss[off + len] = 0; //Set new end
++        }
++      }
++    }
++    return nc;
++  }
+ 
+   /**
+    * Optimized length() method for a buffer of only ASCII characters.
+diff --git a/h2o-core/src/main/java/water/fvec/NewChunk.java b/h2o-core/src/main/java/water/fvec/NewChunk.java
+index e1b32fa..5360c41 100644
+--- a/h2o-core/src/main/java/water/fvec/NewChunk.java
++++ b/h2o-core/src/main/java/water/fvec/NewChunk.java
+@@ -63,7 +63,7 @@ public class NewChunk extends Chunk {
+   public int _timCnt = 0;
+   protected static final int MIN_SPARSE_RATIO = 32;
+   private int _sparseRatio = MIN_SPARSE_RATIO;
+-  public boolean _isAllASCII = false; //For cat/string col, are all characters in chunk ASCII? FIXME: this is never updated anywhere... setting to false
++  public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
+ 
+   public NewChunk( Vec vec, int cidx ) { _vec = vec; _cidx = cidx; }
+ 
+diff --git a/h2o-core/src/main/java/water/rapids/AST.java b/h2o-core/src/main/java/water/rapids/AST.java
+index 785ed90..a988581 100644
+--- a/h2o-core/src/main/java/water/rapids/AST.java
++++ b/h2o-core/src/main/java/water/rapids/AST.java
+@@ -212,6 +212,7 @@ abstract public class AST extends Iced<AST> {
+     init(new ASTCountMatches());
+     init(new ASTToUpper());
+     init(new ASTStrLength());
++    init(new ASTSubstring());
+ 
+     // Functional data mungers
+     init(new ASTApply());
+diff --git a/h2o-core/src/main/java/water/rapids/ASTStrOp.java b/h2o-core/src/main/java/water/rapids/ASTStrOp.java
+index 0a07ee0..c75b111 100644
+--- a/h2o-core/src/main/java/water/rapids/ASTStrOp.java
++++ b/h2o-core/src/main/java/water/rapids/ASTStrOp.java
+@@ -5,11 +5,9 @@ import water.MRTask;
+ import water.MemoryManager;
+ import water.fvec.*;
+ import water.parser.BufferedString;
++import water.util.VecUtils;
+ 
+-import java.util.ArrayList;
+-import java.util.Arrays;
+-import java.util.HashSet;
+-import java.util.Locale;
++import java.util.*;
+ 
+ public class ASTStrOp { /*empty*/}
+ 
+@@ -280,7 +278,7 @@ class ASTToLower extends ASTPrim {
+   }
+ 
+   private Vec toLowerCategoricalCol(Vec vec) {
+-    String[] dom = vec.domain();
++    String[] dom = vec.domain().clone();
+     for (int i = 0; i < dom.length; ++i)
+       dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
+ 
+@@ -344,7 +342,7 @@ class ASTToUpper extends ASTPrim {
+   }
+ 
+   private Vec toUpperCategoricalCol(Vec vec) {
+-    String[] dom = vec.domain();
++    String[] dom = vec.domain().clone();
+     for (int i = 0; i < dom.length; ++i)
+       dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
+ 
+@@ -495,7 +493,7 @@ class ASTReplaceAll extends ASTPrim {
+   }
+ 
+   private Vec replaceAllCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
+-    String[] doms = vec.domain();
++    String[] doms = vec.domain().clone();
+     for (int i = 0; i < doms.length; ++i)
+       doms[i] = ignoreCase
+           ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
+@@ -567,12 +565,28 @@ class ASTTrim extends ASTPrim {
+     return new ValFrame(new Frame(nvs));
+   }
+ 
+-  // FIXME: this should resolve any categoricals that now have the same value after the trim
+   private Vec trimCategoricalCol(Vec vec) {
+-    String[] doms = vec.domain();
+-    for (int i = 0; i < doms.length; ++i) doms[i] = doms[i].trim();
+-    Vec v = vec.makeCopy(doms);
+-    return v;
++    String[] doms = vec.domain().clone();
++    
++    HashMap<String, ArrayList<Integer>> trimmedToOldDomainIndices = new HashMap<>();
++    String trimmed;
++    for (int i = 0; i < doms.length; ++i) {
++      trimmed = doms[i].trim();
++      doms[i] = trimmed;
++      
++      if(!trimmedToOldDomainIndices.containsKey(trimmed)) {
++        ArrayList<Integer> val = new ArrayList<>();
++        val.add(i);
++        trimmedToOldDomainIndices.put(trimmed, val);
++      } else {
++        trimmedToOldDomainIndices.get(trimmed).add(i);
++      }
++    }
++    //Check for duplicated domains
++    if (trimmedToOldDomainIndices.size() < doms.length)
++      return VecUtils.DomainDedupe.domainDeduper(vec, trimmedToOldDomainIndices);
++    
++    return vec.makeCopy(doms);
+   }
+ 
+   private Vec trimStringCol(Vec vec) {
+@@ -622,9 +636,9 @@ class ASTStrLength extends ASTPrim {
+   }
+ 
+   private Vec lengthCategoricalCol(Vec vec) {
+-    String[] doms = vec.domain();
+-    int[] catLengths = new int[doms.length];
+-    for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
++    //String[] doms = vec.domain();
++    //int[] catLengths = new int[doms.length];
++    //for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
+     Vec res = new MRTask() {
+         transient int[] catLengths;
+         @Override public void setupLocal() {
+@@ -665,3 +679,95 @@ class ASTStrLength extends ASTPrim {
+     }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+   }
+ }
++
++class ASTSubstring extends ASTPrim {
++  @Override public String[] args() { return new String[]{"ary", "startIndex", "endIndex"}; }
++  @Override int nargs() {return 4; } // (substring x startIndex [endIndex])
++  @Override public String str() { return "substring"; }
++  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
++    Frame fr = stk.track(asts[1].exec(env)).getFrame();
++    int startIndex = (int) asts[2].exec(env).getNum();
++    if (startIndex < 0) startIndex = 0;
++    int endIndex = asts[3] instanceof ASTNumList ? Integer.MAX_VALUE : (int) asts[3].exec(env).getNum();
++    // Type check
++    for (Vec v : fr.vecs())
++      if (!(v.isCategorical() || v.isString()))
++        throw new IllegalArgumentException("substring() requires a string or categorical column. "
++                +"Received "+fr.anyVec().get_type_str()
++                +". Please convert column to a string or categorical first.");
++    
++    // Transform each vec
++    Vec nvs[] = new Vec[fr.numCols()];
++    int i = 0;
++    for (Vec v: fr.vecs()) {
++      if (v.isCategorical())
++        nvs[i] = substringCategoricalCol(v, startIndex, endIndex);
++      else
++        nvs[i] = substringStringCol(v, startIndex, endIndex);
++      i++;
++    }
++    
++    return new ValFrame(new Frame(nvs));
++  }
++
++  private Vec substringCategoricalCol(Vec vec, int startIndex, int endIndex) {
++    if (startIndex >= endIndex) {
++      Vec v = Vec.makeZero(vec.length());
++      v.setDomain(new String[]{""});
++      return v;
++    }
++    String[] dom = vec.domain().clone();
++    
++    HashMap<String, ArrayList<Integer>> substringToOldDomainIndices = new HashMap<>();
++    String substr;
++    for (int i = 0; i < dom.length; i++) {
++      substr = dom[i].substring(startIndex < dom[i].length() ? startIndex : dom[i].length(),
++              endIndex < dom[i].length() ? endIndex : dom[i].length());
++      dom[i] = substr;
++
++      if (!substringToOldDomainIndices.containsKey(substr)) {
++        ArrayList<Integer> val = new ArrayList<>();
++        val.add(i);
++        substringToOldDomainIndices.put(substr, val);
++      } else {
++        substringToOldDomainIndices.get(substr).add(i);
++      }
++    }
++    //Check for duplicated domains
++    if (substringToOldDomainIndices.size() < dom.length)
++      return VecUtils.DomainDedupe.domainDeduper(vec, substringToOldDomainIndices);
++    
++    return vec.makeCopy(dom);
++  }
++  
++  private Vec substringStringCol(Vec vec, final int startIndex, final int endIndex) {
++    return new MRTask() {
++      @Override
++      public void map(Chunk chk, NewChunk newChk) {
++        if (chk instanceof C0DChunk) // all NAs
++          for (int i = 0; i < chk.len(); i++)
++            newChk.addNA();
++        else if (startIndex >= endIndex) {
++          for (int i = 0; i < chk.len(); i++)
++            newChk.addStr("");
++        }
++        else if (((CStrChunk) chk)._isAllASCII) { // fast-path operations
++          ((CStrChunk) chk).asciiSubstring(newChk, startIndex, endIndex);
++        } 
++        else { //UTF requires Java string methods
++          BufferedString tmpStr = new BufferedString();
++          for (int i = 0; i < chk._len; i++) {
++            if (chk.isNA(i))
++              newChk.addNA();
++            else {
++              String str = chk.atStr(tmpStr, i).toString();
++              newChk.addStr(str.substring(startIndex < str.length() ? startIndex : str.length(), 
++                      endIndex < str.length() ? endIndex : str.length()));
++            }
++          }
++        }
++      }
++    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
++  }
++  
++}
+diff --git a/h2o-core/src/main/java/water/util/VecUtils.java b/h2o-core/src/main/java/water/util/VecUtils.java
+index 608f8c1..3fe46fb 100644
+--- a/h2o-core/src/main/java/water/util/VecUtils.java
++++ b/h2o-core/src/main/java/water/util/VecUtils.java
+@@ -15,7 +15,7 @@ import water.nbhm.NonBlockingHashMapLong;
+ import water.parser.BufferedString;
+ import water.parser.Categorical;
+ 
+-import java.util.Arrays;
++import java.util.*;
+ 
+ public class VecUtils {
+   /**
+@@ -430,6 +430,44 @@ public class VecUtils {
+     }
+   }
+ 
++  /**
++   * Create a new categorical {@link Vec} with deduplicated domains from a categorical {@link Vec}.
++   * 
++   * Categoricals may have the same values after munging, and should have the same domain index in the numerical chunk 
++   * representation. Unify categoricals that are the same by remapping their domain indices. 
++   * 
++   * Could be more efficient with a vec copy and replace domain indices as needed. PUBDEV-2587
++   */
++
++  public static class DomainDedupe extends MRTask<DomainDedupe> {
++    private final HashMap<Integer, Integer> _oldToNewDomainIndex;
++    public DomainDedupe(HashMap<Integer, Integer> oldToNewDomainIndex) {_oldToNewDomainIndex = oldToNewDomainIndex; }
++    @Override public void map(Chunk c, NewChunk nc) {
++      for( int row=0; row < c._len; row++) {
++        if ( !c.isNA(row) ) {
++          int oldDomain = (int) c.at8(row);
++          nc.addNum(_oldToNewDomainIndex.get(oldDomain));
++        } else {
++          nc.addNA();
++        }
++      }
++    }
++    public static Vec domainDeduper(Vec vec, HashMap<String, ArrayList<Integer>> substringToOldDomainIndices) {
++      HashMap<Integer, Integer> oldToNewDomainIndex = new HashMap<>();
++      int newDomainIndex = 0;
++      SortedSet<String> alphabetizedSubstrings = new TreeSet<>(substringToOldDomainIndices.keySet());
++      for (String sub : alphabetizedSubstrings) {
++        for (int oldDomainIndex : substringToOldDomainIndices.get(sub)) {
++          oldToNewDomainIndex.put(oldDomainIndex, newDomainIndex);
++        }
++        newDomainIndex++;
++      }
++      VecUtils.DomainDedupe domainDedupe = new VecUtils.DomainDedupe(oldToNewDomainIndex);
++      String[][] dom2D = {Arrays.copyOf(alphabetizedSubstrings.toArray(), alphabetizedSubstrings.size(), String[].class)};
++      return domainDedupe.doAll(new byte[]{Vec.T_CAT}, vec).outputFrame(null, null, dom2D).anyVec();
++    }
++  }
++
+   // >11x faster than CollectDomain
+   /** (Optimized for positive ints) Collect numeric domain of given {@link Vec}
+    *  A map-reduce task to collect up the unique values of an integer {@link Vec}
+@@ -455,7 +493,7 @@ public class VecUtils {
+       for (int i = 0; i < _u.length;++i)
+         if (_u[i])
+           _d[id++]=i;
+-      Arrays.sort(_d);
++      Arrays.sort(_d); //is this necessary? 
+     }
+ 
+     /** Returns exact numeric domain of given {@link Vec} computed by this task.
+diff --git a/h2o-docs/src/product/architecture/Architecture.md b/h2o-docs/src/product/architecture/Architecture.md
+index be95abf..d284432 100644
+--- a/h2o-docs/src/product/architecture/Architecture.md
++++ b/h2o-docs/src/product/architecture/Architecture.md
+@@ -16,7 +16,7 @@ JVM process.
+ The color scheme in the diagram shows each layer in a consistent color
+ but always shows user-added customer algorithm code as gray.
+ 
+-![H2O stack](images/h2o_stack.pdf)
++![H2O stack](images/h2o_stack.png)
+ 
+ 
+ ### REST API Clients
+@@ -110,13 +110,13 @@ The following sequence of three steps shows how an R program tells an H2O cluste
+ 
+ #### Step 1: The R user calls the importFile function
+ 
+-![](images/r_hdfs_read_step1.pdf)
++![](images/r_hdfs_read_step1.png)
+ 
+ #### Step 2: The R client tells the cluster to read the data
+ 
+ The thin arrows show control information.
+ 
+-![](images/r_hdfs_read_step2.pdf)
++![](images/r_hdfs_read_step2.png)
+ 
+ #### Step 3: The data is returned from HDFS into a distributed H2O Frame
+ 
+@@ -124,7 +124,7 @@ The thin arrows show control information.
+ The thick arrows show data being returned from HDFS.
+ The blocks of data live in the distributed H2O Frame cluster memory.
+ 
+-![](images/r_hdfs_read_step3.pdf)
++![](images/r_hdfs_read_step3.png)
+ 
+ 
+ ### How R Scripts Call H2O GLM
+@@ -147,14 +147,14 @@ In the R program, the different components are:
+ * dependent packages (RCurl, rjson, etc.)
+ * the R core runtime
+ 
+-![](images/start_glm_from_r.pdf)
++![](images/start_glm_from_r.png)
+ 
+ The following diagram shows the R program retrieving the resulting GLM
+ model.  (Not shown: the GLM model executing subtasks within
+ H2O and depositing the result into the K/V store or R
+ polling the /3/Jobs URL for the GLM model to complete.)
+ 
+-![](images/retrieve_glm_result_from_r.pdf)
++![](images/retrieve_glm_result_from_r.png)
+ 
+ An end-to-end sequence diagram of the same transaction is below.
+ This gives a different perspective of the R and H2O interactions for the same 
+diff --git a/h2o-docs/src/product/architecture/images/h2o_stack.pdf b/h2o-docs/src/product/architecture/images/h2o_stack.pdf
+deleted file mode 100644
+index 92d082a..0000000
+Binary files a/h2o-docs/src/product/architecture/images/h2o_stack.pdf and /dev/null differ
+diff --git a/h2o-docs/src/product/architecture/images/h2o_stack.png b/h2o-docs/src/product/architecture/images/h2o_stack.png
+new file mode 100644
+index 0000000..3b7dac9
+Binary files /dev/null and b/h2o-docs/src/product/architecture/images/h2o_stack.png differ
+diff --git a/h2o-docs/src/product/architecture/images/r_hdfs_read_step1.pdf b/h2o-docs/src/product/architecture/images/r_hdfs_read_step1.pdf
+deleted file mode 100644
+index 636ade0..0000000
+Binary files a/h2o-docs/src/product/architecture/images/r_hdfs_read_step1.pdf and /dev/null differ
+diff --git a/h2o-docs/src/product/architecture/images/r_hdfs_read_step1.png b/h2o-docs/src/product/architecture/images/r_hdfs_read_step1.png
+new file mode 100644
+index 0000000..d26e4fc
+Binary files /dev/null and b/h2o-docs/src/product/architecture/images/r_hdfs_read_step1.png differ
+diff --git a/h2o-docs/src/product/architecture/images/r_hdfs_read_step2.pdf b/h2o-docs/src/product/architecture/images/r_hdfs_read_step2.pdf
+deleted file mode 100644
+index 205cd27..0000000
+Binary files a/h2o-docs/src/product/architecture/images/r_hdfs_read_step2.pdf and /dev/null differ
+diff --git a/h2o-docs/src/product/architecture/images/r_hdfs_read_step2.png b/h2o-docs/src/product/architecture/images/r_hdfs_read_step2.png
+new file mode 100644
+index 0000000..e8024a7
+Binary files /dev/null and b/h2o-docs/src/product/architecture/images/r_hdfs_read_step2.png differ
+diff --git a/h2o-docs/src/product/architecture/images/r_hdfs_read_step3.pdf b/h2o-docs/src/product/architecture/images/r_hdfs_read_step3.pdf
+deleted file mode 100644
+index 0675121..0000000
+Binary files a/h2o-docs/src/product/architecture/images/r_hdfs_read_step3.pdf and /dev/null differ
+diff --git a/h2o-docs/src/product/architecture/images/r_hdfs_read_step3.png b/h2o-docs/src/product/architecture/images/r_hdfs_read_step3.png
+new file mode 100644
+index 0000000..62d4e47
+Binary files /dev/null and b/h2o-docs/src/product/architecture/images/r_hdfs_read_step3.png differ
+diff --git a/h2o-docs/src/product/architecture/images/retrieve_glm_result_from_r.pdf b/h2o-docs/src/product/architecture/images/retrieve_glm_result_from_r.pdf
+deleted file mode 100644
+index 2cc62cc..0000000
+Binary files a/h2o-docs/src/product/architecture/images/retrieve_glm_result_from_r.pdf and /dev/null differ
+diff --git a/h2o-docs/src/product/architecture/images/retrieve_glm_result_from_r.png b/h2o-docs/src/product/architecture/images/retrieve_glm_result_from_r.png
+new file mode 100644
+index 0000000..8049f7a
+Binary files /dev/null and b/h2o-docs/src/product/architecture/images/retrieve_glm_result_from_r.png differ
+diff --git a/h2o-docs/src/product/architecture/images/start_glm_from_r.pdf b/h2o-docs/src/product/architecture/images/start_glm_from_r.pdf
+deleted file mode 100644
+index a6c7ef9..0000000
+Binary files a/h2o-docs/src/product/architecture/images/start_glm_from_r.pdf and /dev/null differ
+diff --git a/h2o-docs/src/product/architecture/images/start_glm_from_r.png b/h2o-docs/src/product/architecture/images/start_glm_from_r.png
+new file mode 100644
+index 0000000..9c15df9
+Binary files /dev/null and b/h2o-docs/src/product/architecture/images/start_glm_from_r.png differ
+diff --git a/h2o-py/h2o/estimators/estimator_base.py b/h2o-py/h2o/estimators/estimator_base.py
+index dc367e1..e41d174 100644
+--- a/h2o-py/h2o/estimators/estimator_base.py
++++ b/h2o-py/h2o/estimators/estimator_base.py
+@@ -96,7 +96,6 @@ class H2OEstimator(ModelBase):
+       H2OFrame with validation data to be scored on while training.
+     max_runtime_secs : float
+       Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-      For cross-validation and grid searches, this time limit applies to all sub-models.
+     """
+     algo_params = locals()
+     parms = self._parms.copy()
+diff --git a/h2o-py/h2o/frame.py b/h2o-py/h2o/frame.py
+index 9e28040..92cf475 100644
+--- a/h2o-py/h2o/frame.py
++++ b/h2o-py/h2o/frame.py
+@@ -588,7 +588,7 @@ class H2OFrame(object):
+     lol = H2OFrame._expr(expr=ExprNode("levels", self)).as_data_frame(False)
+     lol.pop(0)  # Remove column headers
+     lol = list(zip(*lol))
+-    lol = [[ll for ll in l if ll!=''] for l in lol]
++    lol = [[ll for ll in l] for l in lol]
+     
+     return lol
+ 
+@@ -1602,6 +1602,28 @@ class H2OFrame(object):
+     fr._ex._cache.nrows = self.nrow
+     fr._ex._cache.ncol = self.ncol
+     return fr
++  
++  def substring(self, start_index, end_index=None):
++    """For each string, return a new string that is a substring of the original string. If end_index is not 
++    specified, then the substring extends to the end of the original string. If the start_index is longer than
++    the length of the string, or is greater than or equal to the end_index, an empty string is returned. Negative
++    start_index is coerced to 0. 
++
++    Parameters
++    ----------
++    start_index : int
++      The index of the original string at which to start the substring, inclusive.
++    end_index: int, optional
++      The index of the original string at which to end the substring, exclusive. 
++
++    Returns
++    -------
++      An H2OFrame containing the specified substrings.
++    """
++    fr = H2OFrame._expr(expr=ExprNode("substring", self, start_index, end_index)) 
++    fr._ex._cache.nrows = self.nrow
++    fr._ex._cache.ncol = self.ncol
++    return fr
+ 
+   def nchar(self):
+     """Count the number of characters in each string of single-column H2OFrame.
+diff --git a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_anomaly_largeDeepLearning.py b/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_anomaly_largeDeepLearning.py
+deleted file mode 100644
+index 1afc682..0000000
+--- a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_anomaly_largeDeepLearning.py
++++ /dev/null
+@@ -1,57 +0,0 @@
+-from __future__ import print_function
+-from builtins import range
+-import sys, os
+-sys.path.insert(1, os.path.join("..","..",".."))
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-def anomaly():
+-    
+-
+-    print("Deep Learning Anomaly Detection MNIST")
+-
+-    train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+-    test = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
+-
+-    predictors = list(range(0,784))
+-    resp = 784
+-
+-    # unsupervised -> drop the response column (digit: 0-9)
+-    train = train[predictors]
+-    test = test[predictors]
+-
+-    # 1) LEARN WHAT'S NORMAL
+-    # train unsupervised Deep Learning autoencoder model on train_hex
+-
+-    ae_model = h2o.deeplearning(x=train[predictors],
+-                                       autoencoder=True,
+-                                       activation="Tanh",
+-                                       hidden=[2],
+-                                       l1=1e-5,
+-                                       ignore_const_cols=False,
+-                                       epochs=1
+-                                       )
+-
+-    ae_model.anomaly(test).show()
+-
+-    # 2) DETECT OUTLIERS
+-    # anomaly app computes the per-row reconstruction error for the test data set
+-    # (passing it through the autoencoder model and computing mean square error (MSE) for each row)
+-    test_rec_error = ae_model.anomaly(test)
+-
+-    # 3) VISUALIZE OUTLIERS
+-    # Let's look at the test set points with low/median/high reconstruction errors.
+-    # We will now visualize the original test set points and their reconstructions obtained
+-    # by propagating them through the narrow neural net.
+-
+-    # Convert the test data into its autoencoded representation (pass through narrow neural net)
+-    test_recon = ae_model.predict(test)
+-
+-    # In python, the visualization could be done with tools like numpy/matplotlib or numpy/PIL
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(anomaly)
+-else:
+-    anomaly()
+diff --git a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_autoencoderDeepLearning_large.py b/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_autoencoderDeepLearning_large.py
+deleted file mode 100644
+index e71f534..0000000
+--- a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_autoencoderDeepLearning_large.py
++++ /dev/null
+@@ -1,69 +0,0 @@
+-import sys, os
+-sys.path.insert(1, os.path.join("..","..",".."))
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-def deeplearning_autoencoder():
+-
+-
+-    resp = 784
+-    nfeatures = 20 # number of features (smallest hidden layer)
+-
+-    train_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+-    train_hex[resp] = train_hex[resp].asfactor()
+-
+-    test_hex = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))
+-    test_hex[resp] = test_hex[resp].asfactor()
+-
+-    # split data into two parts
+-    sid = train_hex[0].runif(0)
+-
+-    # unsupervised data for autoencoder
+-    train_unsupervised = train_hex[sid >= 0.5]
+-    train_unsupervised.pop(resp)
+-    #train_unsupervised.describe()
+-
+-    # supervised data for drf
+-    train_supervised = train_hex[sid < 0.5]
+-    #train_supervised.describe()
+-
+-    # train autoencoder
+-    ae_model = h2o.deeplearning(x=train_unsupervised[0:resp],
+-                                activation="Tanh",
+-                                autoencoder=True,
+-                                hidden=[nfeatures],
+-                                epochs=1,
+-                                reproducible=True, #slow, turn off for real problems
+-                                seed=1234)
+-
+-    # convert train_supervised with autoencoder to lower-dimensional space
+-    train_supervised_features = ae_model.deepfeatures(train_supervised[0:resp], 0)
+-
+-    assert train_supervised_features.ncol == nfeatures, "Dimensionality of reconstruction is wrong!"
+-
+-    train_supervised_features = train_supervised_features.cbind(train_supervised[resp])
+-    # Train DRF on extracted feature space
+-    drf_model = h2o.random_forest(x=train_supervised_features[0:nfeatures],
+-                                  y=train_supervised_features[train_supervised_features.ncol-1],
+-                                  ntrees=10,
+-                                  min_rows=10,
+-                                  seed=1234)
+-
+-    # Test the DRF model on the test set (processed through deep features)
+-    test_features = ae_model.deepfeatures(test_hex[0:resp], 0)
+-    test_features = test_features.cbind(test_hex[resp])
+-
+-    # Confusion Matrix and assertion
+-    cm = drf_model.confusion_matrix(test_features)
+-    cm.show()
+-
+-    # 10% error +/- 0.001
+-    assert abs(cm.cell_values[10][10] - 0.0882) < 0.001, "Error. Expected 0.0882, but got {0}".format(cm.cell_values[10][10])
+-
+-if __name__ == "__main__":
+-  pyunit_utils.standalone_test(deeplearning_autoencoder)
+-else:
+-  deeplearning_autoencoder()
+-
+-
+diff --git a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_cv_cars_mediumDeepLearning.py b/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_cv_cars_mediumDeepLearning.py
+deleted file mode 100644
+index 0cd8f15..0000000
+--- a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_cv_cars_mediumDeepLearning.py
++++ /dev/null
+@@ -1,119 +0,0 @@
+-from __future__ import print_function
+-from builtins import zip
+-from builtins import range
+-import sys, os
+-sys.path.insert(1, os.path.join("..","..",".."))
+-import h2o
+-from tests import pyunit_utils
+-import random
+-
+-
+-def cv_carsDL():
+-
+-    # read in the dataset and construct training set (and validation set)
+-    cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+-
+-    # choose the type model-building exercise (multinomial classification or regression). 0:regression, 1:binomial,
+-    # 2:multinomial
+-    problem = random.sample(list(range(3)),1)[0]
+-
+-    # pick the predictors and the correct response column
+-    predictors = ["displacement","power","weight","acceleration","year"]
+-    if problem == 1   :
+-        response_col = "economy_20mpg"
+-        cars[response_col] = cars[response_col].asfactor()
+-    elif problem == 2 :
+-        response_col = "cylinders"
+-        cars[response_col] = cars[response_col].asfactor()
+-    else              :
+-        response_col = "economy"
+-
+-    print("Response column: {0}".format(response_col))
+-
+-    ## cross-validation
+-    # 1. basic
+-    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10), fold_assignment="Modulo")
+-
+-    # 2. check that cv metrics are different over repeated "Random" runs
+-    nfolds = random.randint(3,10)
+-    dl1 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
+-    dl2 = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=nfolds, fold_assignment="Random")
+-    try:
+-        pyunit_utils.check_models(dl1, dl2, True)
+-        assert False, "Expected models to be different over repeated Random runs"
+-    except AssertionError:
+-        assert True
+-
+-    # 3. folds_column
+-    num_folds = random.randint(2,5)
+-    fold_assignments = h2o.H2OFrame([[random.randint(0,num_folds-1)] for _ in range(cars.nrow)])
+-    fold_assignments.set_names(["fold_assignments"])
+-    cars = cars.cbind(fold_assignments)
+-    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], training_frame=cars,
+-                          fold_column="fold_assignments", keep_cross_validation_predictions=True)
+-    num_cv_models = len(dl._model_json['output']['cross_validation_models'])
+-    assert num_cv_models==num_folds, "Expected {0} cross-validation models, but got " \
+-                                     "{1}".format(num_folds, num_cv_models)
+-    cv_model1 = h2o.get_model(dl._model_json['output']['cross_validation_models'][0]['name'])
+-    cv_model2 = h2o.get_model(dl._model_json['output']['cross_validation_models'][1]['name'])
+-    assert isinstance(cv_model1, type(dl)), "Expected cross-validation model to be the same model type as the " \
+-                                            "constructed model, but got {0} and {1}".format(type(cv_model1),type(dl))
+-    assert isinstance(cv_model2, type(dl)), "Expected cross-validation model to be the same model type as the " \
+-                                            "constructed model, but got {0} and {1}".format(type(cv_model2),type(dl))
+-
+-    # 4. keep_cross_validation_predictions
+-    cv_predictions = dl1._model_json['output']['cross_validation_predictions']
+-    assert cv_predictions is None, "Expected cross-validation predictions to be None, but got {0}".format(cv_predictions)
+-
+-    cv_predictions = dl._model_json['output']['cross_validation_predictions']
+-    assert len(cv_predictions)==num_folds, "Expected the same number of cross-validation predictions " \
+-                                           "as folds, but got {0}".format(len(cv_predictions))
+-
+-
+-    ## boundary cases
+-    # 1. nfolds = number of observations (leave-one-out cross-validation)
+-    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow, fold_assignment="Modulo")
+-
+-    # 2. nfolds = 0
+-    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=0)
+-
+-    # 3. cross-validation and regular validation attempted
+-    dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=random.randint(3,10),
+-                           validation_y=cars[response_col], validation_x=cars[predictors])
+-
+-
+-    ## error cases
+-    # 1. nfolds == 1 or < 0
+-    try:
+-        dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=random.sample([-1,1], 1)[0])
+-        assert False, "Expected model-build to fail when nfolds is 1 or < 0"
+-    except EnvironmentError:
+-        assert True
+-
+-    # 2. more folds than observations
+-    try:
+-        dl = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=cars.nrow+1, fold_assignment="Modulo")
+-        assert False, "Expected model-build to fail when nfolds > nobs"
+-    except EnvironmentError:
+-        assert True
+-
+-    # 3. fold_column and nfolds both specified
+-    try:
+-        rf = h2o.deeplearning(y=cars[response_col], x=cars[predictors], nfolds=3, fold_column="fold_assignments",
+-                              training_frame=cars)
+-        assert False, "Expected model-build to fail when fold_column and nfolds both specified"
+-    except EnvironmentError:
+-        assert True
+-
+-    # # 4. fold_column and fold_assignment both specified
+-    # try:
+-    #     rf = h2o.deeplearning(y=cars[response_col], x=cars[predictors], fold_assignment="Random",
+-    #                           fold_column="fold_assignments", training_frame=cars)
+-    #     assert False, "Expected model-build to fail when fold_column and fold_assignment both specified"
+-    # except EnvironmentError:
+-    #     assert True
+-
+-if __name__ == "__main__":
+-  pyunit_utils.standalone_test(cv_carsDL)
+-else:
+-  cv_carsDL()
+\ No newline at end of file
+diff --git a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_imbalance_largeDeepLearning.py b/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_imbalance_largeDeepLearning.py
+deleted file mode 100644
+index 78e4e07..0000000
+--- a/h2o-py/tests/testdir_algos/deeplearning/pyunit_DEPRECATED_imbalance_largeDeepLearning.py
++++ /dev/null
+@@ -1,50 +0,0 @@
+-from __future__ import print_function
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-def imbalance():
+-    
+-
+-    print("Test checks if Deep Learning works fine with an imbalanced dataset")
+-
+-    covtype = h2o.upload_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
+-    covtype[54] = covtype[54].asfactor()
+-    hh_imbalanced = h2o.deeplearning(x=covtype[0:54], y=covtype[54], l1=1e-5, activation="Rectifier", loss="CrossEntropy",
+-                                     hidden=[200,200], epochs=1, training_frame=covtype, balance_classes=False,
+-                                     reproducible=True, seed=1234)
+-    print(hh_imbalanced)
+-
+-    hh_balanced = h2o.deeplearning(x=covtype[0:54], y=covtype[54], l1=1e-5, activation="Rectifier", loss="CrossEntropy",
+-                                   hidden=[200,200], epochs=1, training_frame=covtype, balance_classes=True,
+-                                   reproducible=True, seed=1234)
+-    print(hh_balanced)
+-
+-    #compare overall logloss
+-    class_6_err_imbalanced = hh_imbalanced.logloss()
+-    class_6_err_balanced = hh_balanced.logloss()
+-
+-    if class_6_err_imbalanced < class_6_err_balanced:
+-        print("--------------------")
+-        print("")
+-        print("FAIL, balanced error greater than imbalanced error")
+-        print("")
+-        print("")
+-        print("class_6_err_imbalanced")
+-        print(class_6_err_imbalanced)
+-        print("")
+-        print("class_6_err_balanced")
+-        print(class_6_err_balanced)
+-        print("")
+-        print("--------------------")
+-
+-    assert class_6_err_imbalanced >= class_6_err_balanced, "balance_classes makes it worse!"
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(imbalance)
+-else:
+-    imbalance()
+diff --git a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_bernoulli_synthetic_data_mediumGBM.py b/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_bernoulli_synthetic_data_mediumGBM.py
+deleted file mode 100644
+index 00648ab..0000000
+--- a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_bernoulli_synthetic_data_mediumGBM.py
++++ /dev/null
+@@ -1,70 +0,0 @@
+-from builtins import zip
+-import sys, os
+-sys.path.insert(1, os.path.join("..","..",".."))
+-import h2o
+-from tests import pyunit_utils
+-from h2o import H2OFrame
+-import numpy as np
+-import scipy.stats
+-from sklearn import ensemble
+-from sklearn.metrics import roc_auc_score
+-
+-
+-def bernoulli_synthetic_data_gbm_medium():
+-
+-  # Generate training dataset (adaptation of http://www.stat.missouri.edu/~speckman/stat461/boost.R)
+-  train_rows = 10000
+-  train_cols = 10
+-
+-  #  Generate variables V1, ... V10
+-  X_train = np.random.randn(train_rows, train_cols)
+-
+-  #  y = +1 if sum_i x_{ij}^2 > chisq median on 10 df
+-  y_train = np.asarray([1 if rs > scipy.stats.chi2.ppf(0.5, 10) else -1 for rs in [sum(r) for r in
+-                                                                                   np.multiply(X_train,X_train).tolist()]])
+-
+-  # Train scikit gbm
+-  # TODO: grid-search
+-  distribution = "bernoulli"
+-  ntrees = 150
+-  min_rows = 1
+-  max_depth = 2
+-  learn_rate = .01
+-  nbins = 20
+-
+-  gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learn_rate, n_estimators=ntrees, max_depth=max_depth,
+-                                                min_samples_leaf=min_rows, max_features=None)
+-  gbm_sci.fit(X_train,y_train)
+-
+-  # Generate testing dataset
+-  test_rows = 2000
+-  test_cols = 10
+-
+-  #  Generate variables V1, ... V10
+-  X_test = np.random.randn(test_rows, test_cols)
+-
+-  #  y = +1 if sum_i x_{ij}^2 > chisq median on 10 df
+-  y_test = np.asarray([1 if rs > scipy.stats.chi2.ppf(0.5, 10) else -1 for rs in [sum(r) for r in
+-                                                                                  np.multiply(X_test,X_test).tolist()]])
+-
+-  # Score (AUC) the scikit gbm model on the test data
+-  auc_sci = roc_auc_score(y_test, gbm_sci.predict_proba(X_test)[:,1])
+-
+-  # Compare this result to H2O
+-  train_h2o = H2OFrame(np.column_stack((y_train, X_train)).tolist())
+-  test_h2o = H2OFrame(np.column_stack((y_test, X_test)).tolist())
+-
+-  gbm_h2o = h2o.gbm(x=train_h2o[1:], y=train_h2o["C1"].asfactor(), distribution=distribution, ntrees=ntrees,
+-                    min_rows=min_rows, max_depth=max_depth, learn_rate=learn_rate, nbins=nbins)
+-  gbm_perf = gbm_h2o.model_performance(test_h2o)
+-  auc_h2o = gbm_perf.auc()
+-
+-  #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
+-  assert abs(auc_h2o - auc_sci) < 1e-2, "h2o (auc) performance degradation, with respect to scikit. h2o auc: {0} " \
+-                                        "scickit auc: {1}".format(auc_h2o, auc_sci)
+-
+-
+-if __name__ == "__main__":
+-  pyunit_utils.standalone_test(bernoulli_synthetic_data_gbm_medium)
+-else:
+-  bernoulli_synthetic_data_gbm_medium()
+diff --git a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_cup98_01GBM_medium.py b/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_cup98_01GBM_medium.py
+deleted file mode 100755
+index fcd92e6..0000000
+--- a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_cup98_01GBM_medium.py
++++ /dev/null
+@@ -1,26 +0,0 @@
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-def cupMediumGBM():
+-  
+-
+-  train = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/usecases/cup98LRN_z.csv"))
+-  test = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/usecases/cup98VAL_z.csv"))
+-
+-  train["TARGET_B"] = train["TARGET_B"].asfactor()
+-
+-  # Train H2O GBM Model:
+-  train_cols = train.names
+-  for c in ['C1', "TARGET_D", "TARGET_B", "CONTROLN"]:
+-    train_cols.remove(c)
+-  model = h2o.gbm(x=train[train_cols], y=train["TARGET_B"], distribution = "bernoulli", ntrees = 5)
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(cupMediumGBM)
+-else:
+-   cupMediumGBM()
+diff --git a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_milsongs_largeGBM.py b/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_milsongs_largeGBM.py
+deleted file mode 100644
+index f1eb166..0000000
+--- a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_milsongs_largeGBM.py
++++ /dev/null
+@@ -1,56 +0,0 @@
+-from __future__ import print_function
+-from builtins import range
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-import os
+-
+-import random
+-
+-def milsong_checkpoint():
+-
+-    milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+-    milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+-    distribution = "gaussian"
+-
+-    # build first model
+-    ntrees1 = random.sample(list(range(50,100)),1)[0]
+-    max_depth1 = random.sample(list(range(2,6)),1)[0]
+-    min_rows1 = random.sample(list(range(10,16)),1)[0]
+-    print("ntrees model 1: {0}".format(ntrees1))
+-    print("max_depth model 1: {0}".format(max_depth1))
+-    print("min_rows model 1: {0}".format(min_rows1))
+-    model1 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees1,max_depth=max_depth1, min_rows=min_rows1,
+-                     distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
+-
+-    # save the model, then load the model
+-    path = pyunit_utils.locate("results")
+-
+-    assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
+-    model_path = h2o.save_model(model1, path=path, force=True)
+-
+-    assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
+-    restored_model = h2o.load_model(model_path)
+-
+-    # continue building the model
+-    ntrees2 = ntrees1 + 50
+-    max_depth2 = max_depth1
+-    min_rows2 = min_rows1
+-    print("ntrees model 2: {0}".format(ntrees2))
+-    print("max_depth model 2: {0}".format(max_depth2))
+-    print("min_rows model 2: {0}".format(min_rows2))
+-    model2 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
+-                     distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0],
+-                     checkpoint=restored_model.model_id)
+-
+-    # build the equivalent of model 2 in one shot
+-    model3 = h2o.gbm(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
+-                     distribution=distribution,validation_x=milsong_valid[1:],validation_y=milsong_valid[0])
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(milsong_checkpoint)
+-else:
+-    milsong_checkpoint()
+diff --git a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_mnist_manyCols_largeGBM.py b/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_mnist_manyCols_largeGBM.py
+deleted file mode 100644
+index 16dea15..0000000
+--- a/h2o-py/tests/testdir_algos/gbm/pyunit_DEPRECATED_mnist_manyCols_largeGBM.py
++++ /dev/null
+@@ -1,27 +0,0 @@
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-
+-def mnist_manyCols_largeGBM():
+-    
+-    
+-
+-    #Log.info("Importing mnist train data...\n")
+-    train = h2o.import_file(path=pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
+-    #Log.info("Check that tail works...")
+-    train.tail()
+-
+-    #Log.info("Doing gbm on mnist training data.... \n")
+-    gbm_mnist = h2o.gbm(x=train[0:784], y=train[784], ntrees=1, max_depth=1, min_rows=10, learn_rate=0.01)
+-    gbm_mnist.show()
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(mnist_manyCols_largeGBM)
+-else:
+-    mnist_manyCols_largeGBM()
+diff --git a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOFEATURE_getLambdaModel_mediumGLM.py b/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOFEATURE_getLambdaModel_mediumGLM.py
+deleted file mode 100644
+index 25cf3cc..0000000
+--- a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOFEATURE_getLambdaModel_mediumGLM.py
++++ /dev/null
+@@ -1,51 +0,0 @@
+-from __future__ import print_function
+-from builtins import range
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-import random
+-
+-def getLambdaModel():
+-	
+-	
+-
+-	print("Read data")
+-	prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+-
+-	myX = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+-	myY = "CAPSULE"
+-	family = random.choice(["gaussian","binomial"])
+-	print(family)
+-
+-	print("Do lambda search and build models")
+-	if family == "gaussian":
+-		model = h2o.glm(x=prostate[myX], y=prostate[myY], family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
+-	else:
+-		model = h2o.glm(x=prostate[myX], y=prostate[myY].asfactor(), family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
+-
+-	print("the models were built over the following lambda values: ")
+-	all_lambdas = model.models(1).lambda_all()
+-	print(all_lambdas)
+-
+-	for i in range(10):
+-		Lambda = random.sample(all_lambdas,1)
+-		print("For Lambda we get this model:")
+-		m1 = h2o.getGLMLambdaModel(model.models(random.randint(0,len(model.models()-1)),Lambda=Lambda))
+-		m1.show()
+-		print("this model should be same as the one above:")
+-		m2 = h2o.getGLMLambdaModel(model.models(random.randint(0,len(model.models()-1)),Lambda=Lambda))
+-		m2.show()
+-		assert m1==m2, "expected models to be equal"
+-
+-
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(getLambdaModel)
+-else:
+-	getLambdaModel()
+diff --git a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOFEATURE_lambda_search_largeGLM.py b/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOFEATURE_lambda_search_largeGLM.py
+deleted file mode 100644
+index 656308b..0000000
+--- a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOFEATURE_lambda_search_largeGLM.py
++++ /dev/null
+@@ -1,48 +0,0 @@
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-import random
+-
+-def lambda_search():
+-    
+-    
+-
+-    #Log.info("Importing prostate.csv data...\n")
+-    prostate = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+-    #prostate.summary()
+-
+-    # GLM without lambda search, lambda is single user-provided value
+-    #Log.info("H2O GLM (binomial) with parameters: lambda_search = TRUE, nfolds: 2\n")
+-    prostate_nosearch = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = False, n_folds = 2)
+-    params_nosearch = prostate_nosearch.params()
+-
+-    try:
+-      prostate_nosearch.getGLMLambdaModel(0.5)
+-      assert False, "expected an error"
+-    except EnvironmentError:
+-      assert True
+-
+-    # GLM with lambda search, return only model corresponding to best lambda as determined by H2O
+-    #Log.info("H2O GLM (binomial) with parameters: lambda_search: TRUE, nfolds: 2\n")
+-    prostate_search = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = True, n_folds = 2)
+-    params_search = prostate_search.params()
+-
+-    random_lambda = random.choice(prostate_search.lambda_all())
+-    #Log.info(cat("Retrieving model corresponding to randomly chosen lambda", random_lambda, "\n"))
+-    random_model = prostate_search.getGLMLambdaModel(random_lambda)
+-    assert random_model.getLambda() == random_lambda, "expected equal lambdas"
+-
+-    #Log.info(cat("Retrieving model corresponding to best lambda", params.bestlambda$lambda_best, "\n"))
+-    best_model = prostate_search.getGLMLambdaModel(params_search.bestlambda())
+-    assert best_model.model() == prostate_search.model(), "expected models to be equal"
+-  
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(lambda_search)
+-else:
+-    lambda_search()
+diff --git a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOPASS_random_attack_medium.py b/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOPASS_random_attack_medium.py
+deleted file mode 100644
+index 6e0c871..0000000
+--- a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_NOPASS_random_attack_medium.py
++++ /dev/null
+@@ -1,120 +0,0 @@
+-from __future__ import print_function
+-from builtins import zip
+-from builtins import range
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-import random
+-
+-def random_attack():
+-
+-
+-
+-    def attack(family, train, valid, x, y):
+-        kwargs = {}
+-        kwargs['family'] = family
+-        gaussian_links = ["inverse", "log", "identity"]
+-        binomial_links = ["logit"]
+-        poisson_links =  ["log", "identity"]
+-        gamma_links = ["inverse", "log", "identity"]
+-
+-        # randomly select parameters and their corresponding values
+-        if random.randint(0,1): kwargs['max_iterations'] = random.randint(1,50)
+-        if random.random() > 0.8: kwargs['beta_epsilon'] = random.random()
+-        if random.randint(0,1): kwargs['solver'] = ["AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE",
+-                                                    "COORDINATE_DESCENT"][random.randint(0,1)]
+-        if random.randint(0,1): kwargs['standardize'] = [True, False][random.randint(0,1)]
+-        if random.randint(0,1):
+-            if   family == "gaussian": kwargs['link'] = gaussian_links[random.randint(0,2)]
+-            elif family == "binomial": kwargs['link'] = binomial_links[random.randint(0,0)]
+-            elif family == "poisson" : kwargs['link'] = poisson_links[random.randint(0,1)]
+-            elif family == "gamma"   : kwargs['link'] = gamma_links[random.randint(0,2)]
+-        if random.randint(0,1): kwargs['alpha'] = [random.random()]
+-        if family == "binomial":
+-            if random.randint(0,1): kwargs['prior'] = random.random()
+-        if random.randint(0,1): kwargs['lambda_search'] = [True, False][random.randint(0,1)]
+-        if 'lambda_search' in list(kwargs.keys()):
+-            if random.randint(0,1): kwargs['nlambdas'] = random.randint(2,10)
+-        do_validation = [True, False][random.randint(0,1)]
+-        # beta constraints
+-        if random.randint(0,1):
+-            bc = []
+-            for n in x:
+-                if train[n].isnumeric():
+-                    name = train.names[n]
+-                    lower_bound = random.uniform(-1,1)
+-                    upper_bound = lower_bound + random.random()
+-                    bc.append([name, lower_bound, upper_bound])
+-            if len(bc) > 0:
+-                beta_constraints = h2o.H2OFrame(bc)
+-                beta_constraints.set_names(['names', 'lower_bounds', 'upper_bounds'])
+-                kwargs['beta_constraints'] = beta_constraints.frame_id
+-
+-        # display the parameters and their corresponding values
+-        print("-----------------------")
+-        print("x: {0}".format(x))
+-        print("y: {0}".format(y))
+-        print("validation: {0}".format(do_validation))
+-        for k, v in zip(list(kwargs.keys()), list(kwargs.values())):
+-            if k == 'beta_constraints':
+-                print(k + ": ")
+-                beta_constraints.show()
+-            else:
+-                print(k + ": {0}".format(v))
+-        if do_validation: h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
+-        else: h2o.glm(x=train[x], y=train[y], **kwargs)
+-        print("-----------------------")
+-
+-    print("Import and data munging...")
+-    seed = random.randint(1,10000)
+-    print("SEED: {0}".format(seed))
+-    pros = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
+-    pros[1] = pros[1].asfactor()
+-    r = pros[0].runif(seed=seed) # a column of length pros.nrow with values between 0 and 1
+-    # ~80/20 train/validation split
+-    pros_train = pros[r > .2]
+-    pros_valid = pros[r <= .2]
+-
+-    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars.csv"))
+-    r = cars[0].runif(seed=seed)
+-    cars_train = cars[r > .2]
+-    cars_valid = cars[r <= .2]
+-
+-    print()
+-    print("======================================================================")
+-    print("============================== Binomial ==============================")
+-    print("======================================================================")
+-    for i in range(10):
+-        attack("binomial", pros_train, pros_valid, random.sample([2,3,4,5,6,7,8],random.randint(1,7)), 1)
+-
+-    print()
+-    print("======================================================================")
+-    print("============================== Gaussian ==============================")
+-    print("======================================================================")
+-    for i in range(10):
+-        attack("gaussian", cars_train, cars_valid, random.sample([2,3,4,5,6,7],random.randint(1,6)), 1)
+-
+-    print()
+-    print("======================================================================")
+-    print("============================== Poisson  ==============================")
+-    print("======================================================================")
+-    for i in range(10):
+-        attack("poisson", cars_train, cars_valid, random.sample([1,3,4,5,6,7],random.randint(1,6)), 2)
+-
+-    print()
+-    print("======================================================================")
+-    print("==============================  Gamma   ==============================")
+-    print("======================================================================")
+-    for i in range(10):
+-        attack("gamma", pros_train, pros_valid, random.sample([1,2,3,5,6,7,8],random.randint(1,7)), 4)
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(random_attack)
+-else:
+-    random_attack()
+diff --git a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_link_correct_default_largeGLM.py b/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_link_correct_default_largeGLM.py
+deleted file mode 100644
+index 15bad16..0000000
+--- a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_link_correct_default_largeGLM.py
++++ /dev/null
+@@ -1,47 +0,0 @@
+-from __future__ import print_function
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-
+-def link_correct_default():
+-	
+-	
+-
+-	print("Reading in original prostate data.")
+-	h2o_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
+-
+-	print("Compare models with link unspecified and canonical link specified.")
+-	print("GAUSSIAN: ")
+-	h2o_model_unspecified = h2o.glm(x=h2o_data[1:8], y=h2o_data[8], family="gaussian")
+-	h2o_model_specified = h2o.glm(x=h2o_data[1:8], y=h2o_data[8], family="gaussian", link="identity")
+-	assert h2o_model_specified._model_json['output']['coefficients_table'].cell_values == \
+-		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
+-
+-	print("BINOMIAL: ")
+-	h2o_model_unspecified = h2o.glm(x=h2o_data[2:9], y=h2o_data[1], family="binomial")
+-	h2o_model_specified = h2o.glm(x=h2o_data[2:9], y=h2o_data[1], family="binomial", link="logit")
+-	assert h2o_model_specified._model_json['output']['coefficients_table'].cell_values == \
+-		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
+-
+-	print("POISSON: ")
+-	h2o_model_unspecified = h2o.glm(x=h2o_data[2:9], y=h2o_data[1], family="poisson")
+-	h2o_model_specified = h2o.glm(x=h2o_data[2:9], y=h2o_data[1], family="poisson", link="log")
+-	assert h2o_model_specified._model_json['output']['coefficients_table'].cell_values == \
+-		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
+-
+-	print("GAMMA: ")
+-	h2o_model_unspecified = h2o.glm(x=h2o_data[3:9], y=h2o_data[2], family="gamma")
+-	h2o_model_specified = h2o.glm(x=h2o_data[3:9], y=h2o_data[2], family="gamma", link="inverse")
+-	assert h2o_model_specified._model_json['output']['coefficients_table'].cell_values == \
+-		   h2o_model_unspecified._model_json['output']['coefficients_table'].cell_values, "coefficient should be equal"
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(link_correct_default)
+-else:
+-	link_correct_default()
+diff --git a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_shuffling_largeGLM.py b/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_shuffling_largeGLM.py
+deleted file mode 100644
+index 20ccbaa..0000000
+--- a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_shuffling_largeGLM.py
++++ /dev/null
+@@ -1,53 +0,0 @@
+-from __future__ import print_function
+-from builtins import zip
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-
+-def shuffling_large():
+-    
+-    
+-
+-    print("Reading in Arcene training data for binomial modeling.")
+-    train_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/arcene/shuffle_test_version/arcene.csv"))
+-    train_data_shuffled = h2o.upload_file(path=pyunit_utils.locate("smalldata/arcene/shuffle_test_version/arcene_shuffled.csv"))
+-
+-
+-    print("Create model on original Arcene dataset.")
+-    h2o_model = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5])
+-
+-    print("Create second model on original Arcene dataset.")
+-    h2o_model_2 = h2o.glm(x=train_data[0:1000], y=train_data[1000], family="binomial", lambda_search=True, alpha=[0.5])
+-
+-    print("Create model on shuffled Arcene dataset.")
+-    h2o_model_s = h2o.glm(x=train_data_shuffled[0:1000], y=train_data_shuffled[1000], family="binomial",
+-                          lambda_search=True, alpha=[0.5])
+-
+-    print("Assert that number of predictors remaining and their respective coefficients are equal.")
+-
+-    for x, y in zip(h2o_model._model_json['output']['coefficients_table'].cell_values,h2o_model_2.
+-            _model_json['output']['coefficients_table'].cell_values):
+-        assert (type(x[1]) == type(y[1])) and (type(x[2]) == type(y[2])), "coefficients should be the same type"
+-        if isinstance(x[1],float):
+-            assert abs(x[1] - y[1]) < 5e-10, "coefficients should be equal"
+-        if isinstance(x[2],float):
+-            assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
+-
+-    for x, y in zip(h2o_model._model_json['output']['coefficients_table'].cell_values,h2o_model_s.
+-            _model_json['output']['coefficients_table'].cell_values):
+-        assert (type(x[1]) == type(y[1])) and (type(x[2]) == type(y[2])), "coefficients should be the same type"
+-        if isinstance(x[1],float):
+-            assert abs(x[1] - y[1]) < 5e-10, "coefficients should be equal"
+-        if isinstance(x[2],float):
+-            assert abs(x[2] - y[2]) < 5e-10, "coefficients should be equal"
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(shuffling_large)
+-else:
+-    shuffling_large()
+diff --git a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_wide_dataset_largeGLM.py b/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_wide_dataset_largeGLM.py
+deleted file mode 100644
+index 0e6941e..0000000
+--- a/h2o-py/tests/testdir_algos/glm/pyunit_DEPRECATED_wide_dataset_largeGLM.py
++++ /dev/null
+@@ -1,43 +0,0 @@
+-from __future__ import print_function
+-from builtins import zip
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-import numpy as np
+-
+-def wide_dataset_large():
+-
+-
+-
+-    print("Reading in Arcene training data for binomial modeling.")
+-    trainDataResponse = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_train_labels.labels"), delimiter=' ')
+-    trainDataResponse = np.where(trainDataResponse == -1, 0, 1)
+-    trainDataFeatures = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_train.data"), delimiter=' ')
+-    trainData = h2o.H2OFrame(np.column_stack((trainDataResponse, trainDataFeatures)).tolist())
+-
+-    print("Run model on 3250 columns of Arcene with strong rules off.")
+-    model = h2o.glm(x=trainData[1:3250], y=trainData[0].asfactor(), family="binomial", lambda_search=False, alpha=[1])
+-
+-    print("Test model on validation set.")
+-    validDataResponse = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_valid_labels.labels"), delimiter=' ')
+-    validDataResponse = np.where(validDataResponse == -1, 0, 1)
+-    validDataFeatures = np.genfromtxt(pyunit_utils.locate("smalldata/arcene/arcene_valid.data"), delimiter=' ')
+-    validData = h2o.H2OFrame(np.column_stack((validDataResponse, validDataFeatures)).tolist())
+-    prediction = model.predict(validData)
+-
+-    print("Check performance of predictions.")
+-    performance = model.model_performance(validData)
+-
+-    print("Check that prediction AUC better than guessing (0.5).")
+-    assert performance.auc() > 0.5, "predictions should be better then pure chance"
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(wide_dataset_large)
+-else:
+-    wide_dataset_large()
+diff --git a/h2o-py/tests/testdir_algos/kmeans/pyunit_DEPRECATED_random_attack_medium.py b/h2o-py/tests/testdir_algos/kmeans/pyunit_DEPRECATED_random_attack_medium.py
+deleted file mode 100644
+index 0d9874f..0000000
+--- a/h2o-py/tests/testdir_algos/kmeans/pyunit_DEPRECATED_random_attack_medium.py
++++ /dev/null
+@@ -1,59 +0,0 @@
+-from __future__ import print_function
+-from builtins import zip
+-from builtins import range
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-import random
+-
+-def random_attack():
+-
+-
+-
+-    def attack(train, x):
+-        kwargs = {}
+-
+-        # randomly select parameters and their corresponding values
+-        kwargs['k'] = random.randint(1,20)
+-        if random.randint(0,1): kwargs['model_id'] = "my_model"
+-        if random.randint(0,1): kwargs['max_iterations'] = random.randint(1,1000)
+-        if random.randint(0,1): kwargs['standardize'] = [True, False][random.randint(0,1)]
+-        if random.randint(0,1):
+-            method = random.randint(0,3)
+-            if method == 3:
+-                s = [[random.uniform(train[c].mean()[0]-100,train[c].mean()[0]+100) for p in range(kwargs['k'])] for c in x]
+-                print("s: {0}".format(s))
+-                start = h2o.H2OFrame(list(zip(*s)))
+-                kwargs['user_points'] = start
+-            else:
+-                kwargs['init'] = ["Furthest","Random", "PlusPlus"][method]
+-        if random.randint(0,1): kwargs['seed'] = random.randint(1,10000)
+-
+-        # display the parameters and their corresponding values
+-        print("-----------------------")
+-        print("x: {0}".format(x))
+-        for k, v in zip(list(kwargs.keys()), list(kwargs.values())):
+-            if k == 'user_points':
+-                print(k + ": ")
+-                start.show()
+-            else:
+-                print(k + ": {0}".format(v))
+-        h2o.kmeans(x=train[x],  **kwargs)
+-        print("-----------------------")
+-
+-    print("Import and data munging...")
+-    ozone = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/ozone.csv"))
+-
+-    for i in range(50):
+-        attack(ozone, random.sample([0,1,2,3],random.randint(1,4)))
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(random_attack)
+-else:
+-    random_attack()
+diff --git a/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_czechboard_mediumRF.py b/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_czechboard_mediumRF.py
+deleted file mode 100644
+index 3425492..0000000
+--- a/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_czechboard_mediumRF.py
++++ /dev/null
+@@ -1,28 +0,0 @@
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-
+-def czechboardRF():
+-
+-    
+-    
+-
+-    # Training set has checkerboard pattern
+-    board = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/czechboard_300x300.csv"))
+-    board["C3"] = board["C3"].asfactor()
+-    board.summary()
+-
+-    # Train H2O DRF Model:
+-    model = h2o.random_forest(x=board[["C1", "C2"]], y=board["C3"], ntrees=50, max_depth=20, nbins=500)
+-    model.show()
+-  
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(czechboardRF)
+-else:
+-    czechboardRF()
+diff --git a/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_milsongs_largeRF.py b/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_milsongs_largeRF.py
+deleted file mode 100644
+index 0eb31e3..0000000
+--- a/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_milsongs_largeRF.py
++++ /dev/null
+@@ -1,58 +0,0 @@
+-from __future__ import print_function
+-from builtins import range
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-import os
+-
+-import random
+-
+-def milsong_checkpoint():
+-
+-    milsong_train = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-train.csv.gz"))
+-    milsong_valid = h2o.upload_file(pyunit_utils.locate("bigdata/laptop/milsongs/milsongs-test.csv.gz"))
+-
+-    # build first model
+-    ntrees1 = random.sample(list(range(50,100)),1)[0]
+-    max_depth1 = random.sample(list(range(2,6)),1)[0]
+-    min_rows1 = random.sample(list(range(10,16)),1)[0]
+-    print("ntrees model 1: {0}".format(ntrees1))
+-    print("max_depth model 1: {0}".format(max_depth1))
+-    print("min_rows model 1: {0}".format(min_rows1))
+-    model1 = h2o.random_forest(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees1,max_depth=max_depth1, min_rows=min_rows1,
+-                               validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
+-
+-    # save the model, then load the model
+-    path = pyunit_utils.locate("results")
+-
+-    assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
+-    model_path = h2o.save_model(model1, path=path, force=True)
+-
+-    assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
+-    restored_model = h2o.load_model(model_path)
+-
+-    # continue building the model
+-    ntrees2 = ntrees1 + 50
+-    max_depth2 = max_depth1
+-    min_rows2 = min_rows1
+-    print("ntrees model 2: {0}".format(ntrees2))
+-    print("max_depth model 2: {0}".format(max_depth2))
+-    print("min_rows model 2: {0}".format(min_rows2))
+-    model2 = h2o.random_forest(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
+-                               validation_x=milsong_valid[1:],validation_y=milsong_valid[0],
+-                               checkpoint=restored_model._id,seed=1234)
+-
+-    # build the equivalent of model 2 in one shot
+-    model3 = h2o.random_forest(x=milsong_train[1:],y=milsong_train[0],ntrees=ntrees2,max_depth=max_depth2, min_rows=min_rows2,
+-                               validation_x=milsong_valid[1:],validation_y=milsong_valid[0],seed=1234)
+-
+-    assert isinstance(model2,type(model3))
+-    assert model2.mse(valid=True)==model3.mse(valid=True), "Expected Model 2 MSE: {0} to be the same as Model 4 MSE: {1}".format(model2.mse(valid=True), model3.mse(valid=True))
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(milsong_checkpoint)
+-else:
+-    milsong_checkpoint()
+diff --git a/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_random_attack_medium.py b/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_random_attack_medium.py
+deleted file mode 100644
+index 9ce8037..0000000
+--- a/h2o-py/tests/testdir_algos/rf/pyunit_DEPRECATED_random_attack_medium.py
++++ /dev/null
+@@ -1,88 +0,0 @@
+-from __future__ import print_function
+-from builtins import zip
+-from builtins import range
+-import sys
+-sys.path.insert(1,"../../../")
+-import h2o
+-from tests import pyunit_utils
+-
+-
+-
+-import random
+-
+-def random_attack():
+-    
+-    
+-
+-    def attack(train, valid, x, y):
+-        kwargs = {}
+-
+-        # randomly select parameters and their corresponding values
+-        if random.randint(0,1): kwargs['mtries'] = random.randint(1,len(x))
+-        if random.randint(0,1): kwargs['sample_rate'] = random.random()
+-        if random.randint(0,1): kwargs['build_tree_one_node'] = True
+-        if random.randint(0,1): kwargs['ntrees'] = random.randint(1,10)
+-        if random.randint(0,1): kwargs['max_depth'] = random.randint(1,5)
+-        if random.randint(0,1): kwargs['min_rows'] = random.randint(1,10)
+-        if random.randint(0,1): kwargs['nbins'] = random.randint(2,20)
+-        if random.randint(0,1):
+-            kwargs['balance_classes'] = True
+-            if random.randint(0,1): kwargs['max_after_balance_size'] = random.uniform(0,10)
+-        if random.randint(0,1): kwargs['seed'] = random.randint(1,10000)
+-        do_validation = [True, False][random.randint(0,1)]
+-
+-        # display the parameters and their corresponding values
+-        print("-----------------------")
+-        print("x: {0}".format(x))
+-        print("y: {0}".format(y))
+-        print("validation: {0}".format(do_validation))
+-        for k, v in zip(list(kwargs.keys()), list(kwargs.values())): print(k + ": {0}".format(v))
+-        if do_validation: h2o.random_forest(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
+-        else: h2o.random_forest(x=train[x], y=train[y], **kwargs)
+-        print("-----------------------")
+-
+-    print("Import and data munging...")
+-    pros = h2o.upload_file(pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
+-    pros[1] = pros[1].asfactor()
+-    pros[4] = pros[4].asfactor()
+-    pros[5] = pros[5].asfactor()
+-    pros[8] = pros[8].asfactor()
+-    r = pros[0].runif() # a column of length pros.nrow with values between 0 and 1
+-    # ~80/20 train/validation split
+-    pros_train = pros[r > .2]
+-    pros_valid = pros[r <= .2]
+-
+-    cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars.csv"))
+-    r = cars[0].runif()
+-    cars_train = cars[r > .2]
+-    cars_valid = cars[r <= .2]
+-
+-    print()
+-    print("======================================================================")
+-    print("============================== Binomial ==============================")
+-    print("======================================================================")
+-    for i in range(10):
+-        attack(pros_train, pros_valid, random.sample([2,3,4,5,6,7,8],random.randint(1,7)), 1)
+-
+-    print()
+-    print("======================================================================")
+-    print("============================== Gaussian ==============================")
+-    print("======================================================================")
+-    for i in range(10):
+-        attack(cars_train, cars_valid, random.sample([2,3,4,5,6,7],random.randint(1,6)), 1)
+-
+-    print()
+-    print("======================================================================")
+-    print("============================= Multinomial ============================")
+-    print("======================================================================")
+-    cars_train[2] = cars_train[2].asfactor()
+-    cars_valid[2] = cars_valid[2].asfactor()
+-    for i in range(10):
+-        attack(cars_train, cars_valid, random.sample([1,3,4,5,6,7],random.randint(1,6)), 2)
+-
+-
+-
+-if __name__ == "__main__":
+-    pyunit_utils.standalone_test(random_attack)
+-else:
+-    random_attack()
+diff --git a/h2o-py/tests/testdir_munging/pyunit_substring.py b/h2o-py/tests/testdir_munging/pyunit_substring.py
+new file mode 100644
+index 0000000..6e10d71
+--- /dev/null
++++ b/h2o-py/tests/testdir_munging/pyunit_substring.py
+@@ -0,0 +1,47 @@
++import sys
++sys.path.insert(1,"../../")
++import h2o
++from tests import pyunit_utils
++
++
++def substring_check():
++
++  for parse_type in ('string', 'enum'):
++    frame = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"), col_types={"C5":parse_type})
++    py_data = frame["C5"].as_data_frame()[1:]
++    indices = [(1,3),(0,22),(5,6),(6,5),(5,None),(9,9)]
++    for s_i, e_i in indices:
++      g = frame["C5"].substring(s_i, e_i)
++      assert g[0,0] == py_data[0][0][s_i:e_i]
++      if parse_type == 'enum':
++        data_levels = set(map(lambda x: x[s_i:e_i], list(zip(*py_data))[0]))
++        assert set(g.levels()[0]) == data_levels
++        assert g.nlevels()[0] == len(data_levels)
++
++
++  #test negative index args
++  string = h2o.H2OFrame.from_python(("nothing",), column_types=['string'])
++  enum = h2o.H2OFrame.from_python(("nothing",), column_types=['enum'])
++  assert string.substring(-4)[0,0] == 'nothing'
++  assert string.substring(-4,-9)[0,0] == ''
++  assert enum.substring(-5)[0,0] == 'nothing'
++  assert enum.substring(-43,-3)[0,0] == ''
++  
++  #test NA values
++  string = h2o.H2OFrame.from_python([["nothing"],["NA"]], column_types=['string'], na_strings=["NA"])
++  enum = h2o.H2OFrame.from_python([["nothing"],["NA"]], column_types=['enum'], na_strings=["NA"])
++  assert ((string.substring(2,5)).isna() == h2o.H2OFrame([[0],[1]])).all()
++  assert ((enum.substring(2,5)).isna() == h2o.H2OFrame([[0],[1]])).all()
++  
++  #test empty strings
++  string = h2o.H2OFrame.from_python([''], column_types=['string'])
++  enum = h2o.H2OFrame.from_python([''], column_types=['enum'])
++  assert string.substring(3,6)[0,0] == ''
++  assert string.substring(0,0)[0,0] == ''
++  assert enum.substring(3,6)[0,0] == ''
++  assert enum.substring(0,0)[0,0] == ''
++
++if __name__ == "__main__":
++  pyunit_utils.standalone_test(substring_check)
++else:
++  substring_check()
+diff --git a/h2o-r/H2O_Load.R b/h2o-r/H2O_Load.R
+index e07b39c..39442fd 100755
+--- a/h2o-r/H2O_Load.R
++++ b/h2o-r/H2O_Load.R
+@@ -2,7 +2,7 @@
+ CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/"
+ SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
+ LUDI.ROOT.PATH <- "/Users/ludirehak/"
+-ROOT.PATH <- SPENCER.ROOT.PATH
++ROOT.PATH <- LUDI.ROOT.PATH
+ DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
+ FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
+ 
+diff --git a/h2o-r/h2o-package/R/communication.R b/h2o-r/h2o-package/R/communication.R
+index cd99111..da258a4 100755
+--- a/h2o-r/h2o-package/R/communication.R
++++ b/h2o-r/h2o-package/R/communication.R
+@@ -672,11 +672,33 @@ h2o.clusterInfo <- function() {
+ #' @export
+ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
+ 
++
++#'
++#' Disable Progress Bar
++#' 
++#' @export
++h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
++
++#'
++#' Enable Progress Bar
++#' 
++#' @export
++h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
++
++#'
++#' Check if Progress Bar is Enabled 
++#' 
++.h2o.is_progress <- function() get("PROGRESS_BAR", .pkg.env)
++
++h2o.show_progress()
++
++
+ #-----------------------------------------------------------------------------------------------------------------------
+ #   Job Polling
+ #-----------------------------------------------------------------------------------------------------------------------
+ 
+-.h2o.__waitOnJob <- function(job_key, pollInterval = 1, progressBar = TRUE) {
++.h2o.__waitOnJob <- function(job_key, pollInterval = 1) {
++  progressBar <- .h2o.is_progress()
+   if (progressBar) pb <- txtProgressBar(style = 3L)
+   keepRunning <- TRUE
+   tryCatch({
+diff --git a/h2o-r/h2o-package/R/deeplearning.R b/h2o-r/h2o-package/R/deeplearning.R
+index 1106ea6..6b09d0e 100755
+--- a/h2o-r/h2o-package/R/deeplearning.R
++++ b/h2o-r/h2o-package/R/deeplearning.R
+@@ -75,7 +75,6 @@
+ #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
+ #'        improvement is not at least this much, stop).
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @param quiet_mode Enable quiet mode for less output to standard output.
+ #' @param max_confusion_matrix_size Max. size (number of classes) for confusion matrices to be shown
+ #' @param max_hit_ratio_k Max number (top K) of predictions to use for hit ratio computation (for
+diff --git a/h2o-r/h2o-package/R/frame.R b/h2o-r/h2o-package/R/frame.R
+index 856df41..3a52282 100644
+--- a/h2o-r/h2o-package/R/frame.R
++++ b/h2o-r/h2o-package/R/frame.R
+@@ -643,6 +643,15 @@ h2o.table <- function(x, y = NULL, dense = TRUE) {
+ #' @export
+ table.H2OFrame <- h2o.table
+ 
++
++#' H2O Unique
++#'
++#' Extract unique values in the column.
++#'
++#' @param x An H2OFrame object.
++#' @export
++h2o.unique <- function(x) .newExpr("unique", x)
++
+ #' H2O Median
+ #'
+ #' Compute the median of an H2OFrame.
+@@ -2753,3 +2762,22 @@ h2o.trim <- function(x) .newExpr("trim", x)
+ #' @param x The column whose string lengths will be returned.
+ #' @export
+ h2o.nchar <- function(x) .newExpr("length", x)
++
++#'
++#' Substring
++#'
++#' 
++#' Returns a copy of the target column that is a substring at the specified start 
++#' and stop indices, inclusive. If the stop index is not specified, then the substring extends
++#' to the end of the original string. If start is longer than the number of characters
++#' in the original string, or is greater than stop, an empty string is returned. Negative start
++#' is coerced to 0. 
++#'
++#' @param x The column on which to operate.
++#' @param start The index of the first element to be included in the substring.
++#' @param stop Optional, The index of the last element to be included in the substring. 
++#' @export
++h2o.substring <- function(x, start, stop="[]") .newExpr("substring", x, start-1, stop)
++
++#' @rdname h2o.substring
++h2o.substr <- h2o.substring
+\ No newline at end of file
+diff --git a/h2o-r/h2o-package/R/gbm.R b/h2o-r/h2o-package/R/gbm.R
+index 8a97005..386640d 100755
+--- a/h2o-r/h2o-package/R/gbm.R
++++ b/h2o-r/h2o-package/R/gbm.R
+@@ -54,7 +54,6 @@
+ #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
+ #'        improvement is not at least this much, stop)
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @param offset_column Specify the offset column.
+ #' @param weights_column Specify the weights column.
+ #' @seealso \code{\link{predict.H2OModel}} for prediction.
+diff --git a/h2o-r/h2o-package/R/glm.R b/h2o-r/h2o-package/R/glm.R
+index 48d33f8..2b9240f 100755
+--- a/h2o-r/h2o-package/R/glm.R
++++ b/h2o-r/h2o-package/R/glm.R
+@@ -59,7 +59,6 @@
+ #' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are collinear predictors.
+ #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @param ... (Currently Unimplemented)
+ #'        coefficients.
+ #'
+diff --git a/h2o-r/h2o-package/R/glrm.R b/h2o-r/h2o-package/R/glrm.R
+index c148952..9a6ab67 100644
+--- a/h2o-r/h2o-package/R/glrm.R
++++ b/h2o-r/h2o-package/R/glrm.R
+@@ -79,7 +79,6 @@
+ #'        should be recovered during post-processing of the generalized low rank decomposition.
+ #' @param seed (Optional) Random seed used to initialize the X and Y matrices.
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+ #' @seealso \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
+ #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department.
+diff --git a/h2o-r/h2o-package/R/kmeans.R b/h2o-r/h2o-package/R/kmeans.R
+index 868cd0e..fb73c8a 100755
+--- a/h2o-r/h2o-package/R/kmeans.R
++++ b/h2o-r/h2o-package/R/kmeans.R
+@@ -36,7 +36,6 @@
+ #'        Must be "AUTO", "Random" or "Modulo"
+ #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
+ #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
+ #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
+diff --git a/h2o-r/h2o-package/R/naivebayes.R b/h2o-r/h2o-package/R/naivebayes.R
+index 2e96b83..6b80a77 100644
+--- a/h2o-r/h2o-package/R/naivebayes.R
++++ b/h2o-r/h2o-package/R/naivebayes.R
+@@ -25,7 +25,6 @@
+ #' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
+ #'        FALSE to reduce the runtime of the algorithm.
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @details The naive Bayes classifier assumes independence between predictor variables conditional
+ #'        on the response, and a Gaussian distribution of numeric predictors with mean and standard
+ #'        deviation computed from the training dataset. When building a naive Bayes classifier,
+diff --git a/h2o-r/h2o-package/R/pca.R b/h2o-r/h2o-package/R/pca.R
+index 0b66313..1ab3f8a 100644
+--- a/h2o-r/h2o-package/R/pca.R
++++ b/h2o-r/h2o-package/R/pca.R
+@@ -42,7 +42,6 @@
+ #' @param seed (Optional) Random seed used to initialize the right singular vectors
+ #'        at the beginning of each power method iteration.
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+ #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
+ #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
+diff --git a/h2o-r/h2o-package/R/randomforest.R b/h2o-r/h2o-package/R/randomforest.R
+index e583618..35aa520 100644
+--- a/h2o-r/h2o-package/R/randomforest.R
++++ b/h2o-r/h2o-package/R/randomforest.R
+@@ -55,7 +55,6 @@
+ #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
+ #'        improvement is not at least this much, stop)
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @param ... (Currently Unimplemented)
+ #' @return Creates a \linkS4class{H2OModel} object of the right type.
+ #' @seealso \code{\link{predict.H2OModel}} for prediction.
+diff --git a/h2o-r/h2o-package/R/svd.R b/h2o-r/h2o-package/R/svd.R
+index 6d08def..837498d 100644
+--- a/h2o-r/h2o-package/R/svd.R
++++ b/h2o-r/h2o-package/R/svd.R
+@@ -31,7 +31,6 @@
+ #'        If FALSE, the indicator column corresponding to the first factor level
+ #'        of every categorical variable will be dropped. Defaults to TRUE.
+ #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+-#'        For cross-validation and grid searches, this time limit applies to all sub-models.
+ #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+ #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
+ #' @examples
+diff --git a/py/h2o_test_utils.py b/py/h2o_test_utils.py
+index 569c7db..5bca230 100644
+--- a/py/h2o_test_utils.py
++++ b/py/h2o_test_utils.py
+@@ -615,9 +615,11 @@ class GridSpec(dict):
+         for k, vals in self['grid_params'].iteritems():
+             combos *= len(vals)
+ 
++        # NOTE: if we have a stopping critereon which is not a fixed number we don't know how many models to expect
++        expected = None
+         if self['search_criteria'] is None or self['search_criteria']['strategy'] is 'Cartesian':
+             expected = combos
+-        elif self['search_criteria'] is not None and 'max_models' in self['search_criteria']:
++        elif self['search_criteria'] is not None and 'max_models' in self['search_criteria'] and 'max_time_ms' not in self['search_criteria']:
+             expected = min(combos, self['search_criteria']['max_models'])
+ 
+         if expected is not None:
+diff --git a/py/rest_tests/test_models.py b/py/rest_tests/test_models.py
+index d625533..44c90e1 100644
+--- a/py/rest_tests/test_models.py
++++ b/py/rest_tests/test_models.py
+@@ -62,6 +62,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
+ 
+         # Test stopping criteria:
+         GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 3 } ),
++        GridSpec.for_dataset('gbm_prostate_regression_grid_max_10mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_time_ms': 10 } ),
+        ]
+     
+     for grid_spec in grids_to_build:
