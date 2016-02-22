@@ -527,7 +527,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         while (true) {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
-          assert !firstIter || t._likelihood == _state.likelihood():LogMsg("likelihoods don't match, " + t._likelihood + " != " + _state.likelihood());
+          assert !firstIter || MathUtils.compare(t._likelihood,_state.likelihood(),1e-15,1e-15):LogMsg("likelihoods don't match, " + t._likelihood + " != " + _state.likelihood());
           long t2 = System.currentTimeMillis();
           if (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective() + _parms._objective_epsilon) {
             assert !_state._lsNeeded;
