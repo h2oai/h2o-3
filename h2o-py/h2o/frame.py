@@ -870,12 +870,12 @@ class H2OFrame(object):
       else:
         print("num {}".format(" ".join(it[0] for it in h2o.as_list(self[:10,i], False)[1:])))
 
-  def as_data_frame(self, use_pandas=False):
+  def as_data_frame(self, use_pandas=True):
     """Obtain the dataset as a python-local object.
 
     Parameters
     ----------
-      use_pandas : bool, default=False
+      use_pandas : bool, default=True
         A flag specifying whether or not to return a pandas DataFrame.
 
     Returns
