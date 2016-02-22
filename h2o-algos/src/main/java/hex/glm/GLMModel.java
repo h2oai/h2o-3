@@ -582,20 +582,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
-      x.mu = linkInv(eta + off);
+      double etaOff = eta + off;
+      x.mu = linkInv(etaOff);
       double var = Math.max(1e-6, variance(x.mu)); // avoid numerical problems with 0 variance
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
       if(_family == Family.binomial && _link == Link.logit) {
         // use the same likelihood computation as GLMBinomialGradientTask to have exactly the same values for same inputs
-        x.l = w * Math.log(1 + Math.exp((eta - 2 * y * eta)));
+        x.l = w * Math.log(1 + Math.exp((etaOff - 2 * y * etaOff)));
         x.dev = 2*x.l;
       } else {
         x.l = w * likelihood(y, x.mu);
         x.dev = w * deviance(y, x.mu);
       }
-
       return x;
     }
   }
