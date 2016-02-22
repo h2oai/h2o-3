@@ -587,8 +587,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
-      x.l = w*likelihood(y,x.mu);
-      x.dev = w*deviance(y,x.mu);
+      if(_family == Family.binomial && _link == Link.logit) {
+        // use the same likelihood computation as GLMBinomialGradientTask to have exactly the same values for same inputs
+        x.l = w * Math.log(1 + Math.exp((eta - 2 * y * eta)));
+        x.dev = 2*x.l;
+      } else {
+        x.l = w * likelihood(y, x.mu);
+        x.dev = w * deviance(y, x.mu);
+      }
+
       return x;
     }
   }
