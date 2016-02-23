@@ -2059,27 +2059,27 @@ def parse_args(argv):
 
         if (s == "--baseport"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_base_port = int(argv[i])
         elif s == "--py3":
             i += 1
-            if i > len(argv):
+            if i >= len(argv):
                 usage()
             g_py3 = True
         elif s == "--coverage":
             i += 1
-            if i > len(argv):
+            if i >= len(argv):
               usage()
             g_pycoverage = True
         elif (s == "--numclouds"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_num_clouds = int(argv[i])
         elif (s == "--numnodes"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_nodes_per_cloud = int(argv[i])
         elif (s == "--wipeall"):
@@ -2089,27 +2089,27 @@ def parse_args(argv):
             g_wipe_output_dir = True
         elif (s == "--test"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_test_to_run = TestRunner.find_test(argv[i])
         elif (s == "--testlist"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_test_list_file = argv[i]
         elif (s == "--excludelist"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_exclude_list_file = argv[i]
         elif (s == "--testgroup"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_test_group = argv[i]
         elif (s == "--testsize"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             v = argv[i]
             if (re.match(r'(s)?(m)?(l)?', v)):
@@ -2125,7 +2125,7 @@ def parse_args(argv):
                 bad_arg(s)
         elif (s == "--usecloud"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             s = argv[i]
             m = re.match(r'(\S+):([1-9][0-9]*)', s)
@@ -2137,7 +2137,7 @@ def parse_args(argv):
             g_use_port = int(port_string)
         elif (s == "--usecloud2"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             s = argv[i]
             if (s is None):
@@ -2169,7 +2169,7 @@ def parse_args(argv):
             g_path_to_whl = os.path.abspath(argv[i])
         elif (s == "--jvm.xmx"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_jvm_xmx = argv[i]
         elif (s == "--norun"):
@@ -2184,29 +2184,29 @@ def parse_args(argv):
             g_on_hadoop = True
         elif (s == "--hadoopNamenode"):
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_hadoop_namenode = argv[i]
         elif (s == "--perf"):
             g_perf = True
 
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_git_hash = argv[i]
 
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_git_branch = argv[i]
 
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_build_id = argv[i]
 
             i += 1
-            if (i > len(argv)):
+            if (i >= len(argv)):
                 usage()
             g_job_name = argv[i]
         elif (s == "--geterrs"):
