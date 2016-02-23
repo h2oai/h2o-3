@@ -1,11 +1,11 @@
 package hex.deeplearning;
 
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.Distribution;
 import hex.ModelMetricsAutoEncoder;
 import hex.ModelMetricsRegression;
 import hex.ScoreKeeper;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -19,13 +19,13 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 
 import static hex.Distribution.Family.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import water.util.RandomUtils;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -362,7 +362,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            1.6201002863836856E-4,
+            4.628994955036487E-6,
             DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -969,6 +969,7 @@ public class DeepLearningTest extends TestUtil {
         DeepLearningParameters.Loss.Quadratic,
         DeepLearningParameters.Loss.Huber,
         DeepLearningParameters.Loss.Absolute,
+        DeepLearningParameters.Loss.Quantile,
     }) {
       Scope.enter();
       try {
@@ -1453,7 +1454,7 @@ public class DeepLearningTest extends TestUtil {
       dl = new DeepLearning(parms).trainModel().get();
 
       Assert.assertEquals(dl._output._training_metrics._MSE,12.892871729257042,1e-6);
-      Assert.assertEquals(dl._output._cross_validation_metrics._MSE,17.42844560821736,1e-6);
+      Assert.assertEquals(dl._output._cross_validation_metrics._MSE,17.2918678,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();

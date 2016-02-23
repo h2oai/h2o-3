@@ -50,22 +50,18 @@ public class CStrChunk extends Chunk {
     while( _mem[_valstart+off+len] != 0 ) len++;
     return bStr.set(_mem,_valstart+off,len);
   }
-
-  @Override public boolean isSparse() { return false; }
-  @Override public int sparseLen() { return _len; }
-
+  
   @Override public CStrChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     _valstart = UnsafeUtils.get4(_mem,0);
     byte b = UnsafeUtils.get1(_mem,4);
-    if (b == 0) _isAllASCII = false; else _isAllASCII = true;
+    _isAllASCII = b != 0;
     set_len((_valstart-_OFF)>>2);
     return this;
   }
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(_len);
-    nc.set_sparseLen(sparseLen());
+    nc.set_sparseLen(nc.set_len(_len));
     nc._isAllASCII = _isAllASCII;
     nc._is = MemoryManager.malloc4(_len);
     for( int i = 0; i < _len; i++ )

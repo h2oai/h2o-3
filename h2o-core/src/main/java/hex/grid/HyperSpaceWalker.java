@@ -2,8 +2,9 @@ package hex.grid;
 
 import hex.Model;
 import hex.ModelParametersBuilderFactory;
+import hex.ScoreKeeper;
+import hex.ScoringInfo;
 import water.exceptions.H2OIllegalArgumentException;
-import water.util.Log;
 
 import java.util.*;
 
@@ -70,6 +71,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    */
   public C search_criteria();
 
+  /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
+  public boolean stopEarly(Model model, ScoringInfo[] sk);
+
   /**
    * Returns an iterator to traverse this hyper-space.
    *
@@ -122,6 +126,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * when to stop the search.
      */
     public C search_criteria() { return _search_criteria; }
+
+    /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
+    @Override
+    public boolean stopEarly(Model model, ScoringInfo[] sk) {
+      return false;
+    }
 
     /**
      * Parameters builder factory to create new instance of parameters.
@@ -364,7 +374,21 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria) {
       super(params, hyperParams, paramsBuilderFactory, search_criteria);
-      random = new Random(search_criteria.seed());
+
+      if (-1 == search_criteria.seed())
+        random = new Random();                       // true random
+      else
+        random = new Random(search_criteria.seed()); // seeded repeatable pseudorandom
+    }
+
+    /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
+    @Override
+    public boolean stopEarly(Model model, ScoringInfo[] sk) {
+      return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
+                                   search_criteria().stopping_rounds(),
+                                   model._output.isClassifier(),
+                                   search_criteria().stopping_metric(),
+                                   search_criteria().stopping_tolerance());
     }
 
     @Override

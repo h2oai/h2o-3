@@ -137,6 +137,8 @@ public class XMLTestReporter extends RunListener {
                                   StringEscapeUtils.escapeXml(dateFormat.format(new Date(testSuiteStartTime))));
     testSuiteElement.setAttribute("hostname",
                                   StringEscapeUtils.escapeXml(InetAddress.getLocalHost().getHostName()));
+    testSuiteElement.setAttribute("ncpu",
+      StringEscapeUtils.escapeXml(Integer.toString(Runtime.getRuntime().availableProcessors())));
 
     // system properties
     Element propertiesElement = document.createElement("properties");

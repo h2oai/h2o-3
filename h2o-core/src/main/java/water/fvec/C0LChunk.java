@@ -29,20 +29,18 @@ public class C0LChunk extends Chunk {
   @Override double min() { return _con; }
   @Override double max() { return _con; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    if(_con != 0) {
+    if(_con == 0) {
+      nc.set_len(nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
+      nc.set_sparse(0, NewChunk.Compress.ZERO);//so that sparse() is true in addZeros()
+      nc.addZeros(_len);
+    } else {
       nc.alloc_mantissa(_len);
       Arrays.fill(nc.mantissa(), _con);
       nc.alloc_exponent(_len);
       nc.set_len(nc.set_sparseLen(_len));
-    } else {
-      nc.set_len(nc.set_sparseLen(0));
-      nc.set_sparse(0);
-      nc.addZeros(_len);
-      assert(nc.sparseLen() == 0);
     }
     return nc;
   }
-  @Override public int sparseLen(){return _con == 0?0: _len;}
   @Override public C0LChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
@@ -50,9 +48,12 @@ public class C0LChunk extends Chunk {
     set_len(UnsafeUtils.get4(_mem,8));
     return this;
   }
-
-  @Override public int nextNZ(int rid) {
-    return _con == 0?_len:rid+1;
+  @Override public boolean isSparseZero(){return _con == 0;}
+  @Override public int sparseLenZero(){return _con == 0?0: _len;}
+  @Override public int nextNZ(int rid){return _con == 0?_len:rid+1;}
+  @Override public int nonzeros(int [] arr) {
+    if (_con == 0) return 0;
+    for (int i = 0; i < _len; ++i) arr[i] = i;
+    return _len;
   }
-  @Override public boolean isSparse(){return _con == 0;}
 }

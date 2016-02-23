@@ -26,7 +26,7 @@ Method: POST  , URI: /99/Grid/gbm, route: /99/Grid/gbm, parms:{hyper_parameters=
 Grid search in R provides the following capabilities: 
 
 - `H2OGrid class`: Represents the results of the grid search
-- `h2o.getGrid(<grid_id>)`: Display the specified grid
+- `h2o.getGrid(<grid_id>, sort_by, decreasing)`: Display the specified grid
 - `h2o.grid`: Start a new grid search parameterized by
 	- model builder name (e.g., `gbm`)
 	- model parameters (e.g., `ntrees=100`)
@@ -44,7 +44,105 @@ grid_models <- lapply(grid@model_ids, function(mid) {
   })
 ```
 
+### Random Hyper-Parmameter Grid Search Example
+
+```r
+# The following two commands remove any previously installed H2O packages for R.
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+
+# Next, we download packages that H2O depends on.
+pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+for (pkg in pkgs) {
+  if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }
+}
+
+# Now we download, install and initialize the H2O package for R.
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/4/R")))
+
+
+library(h2o)
+h2o.init(nthreads=-1)
+train <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz")
+dim(train)
+response <- 1
+predictors <- c(2:ncol(train))
+
+splits<-h2o.splitFrame(train,0.9,destination_frames = c("trainSplit","validSplit"),seed=123456)
+trainSplit <- splits[[1]]
+validSplit <- splits[[2]]
+
+
+## Hyper-Parameter Search
+
+## Construct a large Cartesian hyper-parameter space
+ntrees_opts <- c(10000) ## early stopping will stop earlier
+max_depth_opts <- seq(1,20)
+min_rows_opts <- c(1,5,10,20,50,100)
+learn_rate_opts <- seq(0.001,0.01,0.001)
+sample_rate_opts <- seq(0.3,1,0.05)
+col_sample_rate_opts <- seq(0.3,1,0.05)
+col_sample_rate_per_tree_opts = seq(0.3,1,0.05)
+#nbins_cats_opts = seq(100,10000,100) ## no categorical features in this dataset
+
+hyper_params = list( ntrees = ntrees_opts, 
+                     max_depth = max_depth_opts, 
+                     min_rows = min_rows_opts, 
+                     learn_rate = learn_rate_opts,
+                     sample_rate = sample_rate_opts,
+                     col_sample_rate = col_sample_rate_opts,
+                     col_sample_rate_per_tree = col_sample_rate_per_tree_opts
+                     #,nbins_cats = nbins_cats_opts
+)
+
+
+## Search a random subset of these hyper-parmameters (max runtime and max models are enforced)
+search_criteria = list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 20, seed=123456)
+
+gbm.grid <- h2o.grid("gbm", 
+                     grid_id = "mygrid",
+                     x = predictors, 
+                     y = response, 
+                     
+                     # faster to use a 80/20 split
+                     training_frame = trainSplit,
+                     validation_frame = validSplit,
+                     nfolds = 0,
+                     
+                     # alternatively, use N-fold cross-validation
+                     #training_frame = train,
+                     #nfolds = 5,
+                     
+                     distribution="gaussian", ## best for MSE loss, but can try other distributions ("laplace", "quantile")
+                     
+                     ## stop as soon as mse doesn't improve by more than 0.1% on the validation set, 
+                     ## for 2 consecutive scoring events
+                     stopping_rounds = 2,
+                     stopping_tolerance = 1e-3,
+                     stopping_metric = "MSE",
+                     
+                     score_tree_interval = 100, ## how often to score (affects early stopping)
+                     seed = 123456, ## seed to control the sampling of the Cartesian hyper-parameter space
+                     hyper_params = hyper_params,
+                     search_criteria = search_criteria)
+
+gbm.sorted.grid <- h2o.getGrid(grid_id = "mygrid", sort_by = "mse")
+print(gbm.sorted.grid)
+
+best_model <- h2o.getModel(gbm.sorted.grid@model_ids[[1]])
+summary(best_model)
+
+scoring_history <- as.data.frame(best_model@model$scoring_history)
+plot(scoring_history$number_of_trees, scoring_history$training_MSE, type="p") #training mse
+points(scoring_history$number_of_trees, scoring_history$validation_MSE, type="l") #validation mse
+
+## get the actual number of trees
+ntrees <- best_model@model$model_summary$number_of_trees
+print(ntrees)
+```
+
 For more information, refer to the [R grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R). 
+
 
 ##Grid Search in Python
 

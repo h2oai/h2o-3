@@ -94,6 +94,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._quantile_alpha = 0.2;
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
+                parms._mini_batch_size = 13;
                 DeepLearningModelInfo.gradientCheck = null;
 
                 // Build a first model; all remaining models should be equal
@@ -123,16 +124,16 @@ public class DeepLearningGradientCheck extends TestUtil {
                     final DataInfo di = dl.model_info().data_info();
 
                     // populate miniBatch (consecutive rows)
-                    final DataInfo.Row[] miniBatch = new DataInfo.Row[miniBatchSize];
-                    for (int i=0; i<miniBatch.length; ++i) {
+                    final DataInfo.Row[] rowsMiniBatch = new DataInfo.Row[miniBatchSize];
+                    for (int i=0; i<rowsMiniBatch.length; ++i) {
                       if (0 <= rId+i && rId+i < tfr.numRows()) {
-                        miniBatch[i] = new FrameTask.ExtractDenseRow(di, rId+i).doAll(di._adaptedFrame)._row;
+                        rowsMiniBatch[i] = new FrameTask.ExtractDenseRow(di, rId+i).doAll(di._adaptedFrame)._row;
                       }
                     }
 
                     // loss at weight
                     long cs = dl.model_info().checksum_impl();
-                    double loss = dl.loss(miniBatch);
+                    double loss = dl.loss(rowsMiniBatch);
                     assert(cs == before);
                     assert(before == dl.model_info().checksum_impl());
                     meanLoss += loss;
@@ -149,11 +150,17 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
                           Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
-                          for (DataInfo.Row myRow : miniBatch) {
+                          double [] responses = new double[miniBatchSize];
+                          double [] offsets = new double[miniBatchSize];
+                          int n=0;
+                          for (DataInfo.Row myRow : rowsMiniBatch) {
                             if (myRow == null) continue;
-                            ((Neurons.Input) neurons[0]).setInput(-1, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds);
-                            DeepLearningTask.step(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, new double[]{myRow.response[0]}, myRow.offset);
+                            ((Neurons.Input) neurons[0]).setInput(-1, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, n);
+                            responses[n] = myRow.response(0);
+                            offsets[n] = myRow.offset;
+                            n++;
                           }
+                          DeepLearningTask.fpropMiniBatch(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, responses, offsets, n);
 
                           // check that we didn't change the model's weights/biases
                           long after = dl.model_info().checksum_impl();
@@ -161,7 +168,7 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                           // record the gradient since gradientChecking is enabled
                           DeepLearningModelInfo.gradientCheck = new DeepLearningModelInfo.GradientCheck(layer, row, col); //tell it what gradient to collect
-                          DeepLearningTask.applyModelUpdates(neurons); //update the weights
+                          DeepLearningTask.bpropMiniBatch(neurons, n); //update the weights
                           assert (before != dl.model_info().checksum_impl());
 
                           // reset the model back to the trained model
@@ -189,11 +196,11 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                           // loss at weight + eps
                           dl.model_info().get_weights(layer).set(row, col, (float)(weight + eps));
-                          double up = dl.loss(miniBatch);
+                          double up = dl.loss(rowsMiniBatch);
 
                           // loss at weight - eps
                           dl.model_info().get_weights(layer).set(row, col, (float)(weight - eps));
-                          double down = dl.loss(miniBatch);
+                          double down = dl.loss(rowsMiniBatch);
 
                           if (Math.abs(up-down)/Math.abs(up+down) < 1e-8) {
                             continue; //relative change in loss function is too small -> skip

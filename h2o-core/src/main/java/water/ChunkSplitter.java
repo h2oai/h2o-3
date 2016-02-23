@@ -28,13 +28,16 @@ public class ChunkSplitter {
         assert rid < startRow + nrows;
         int add = rid - off; // number of values to add
         off = rid;
-        dst.addZeros(add - 1); // append (add-1) zeros
+        if(src.isSparseNA()) dst.addNAs(add-1);
+        else dst.addZeros(add - 1); // append (add-1) zeros
         v.add2Chunk(dst);    // followed by a value
         remain -= add;
         assert remain >= 0;
       }
       // Handle case when last added value is followed by zeros till startRow+nrows
-      dst.addZeros(remain);
+
+      if(src.isSparseNA()) dst.addNAs(remain);
+      else dst.addZeros(remain);
 
       assert dst._len == oc._len : "NewChunk.dst.len = " + dst._len + ", oc._len = " + oc._len;
       dst.close(dst.cidx(), fs);

@@ -36,7 +36,7 @@
 #` E$types  <- the H2O column types
 
 
-is.H2OFrame <- function(fr) !missing(fr) && class(fr)[1]=="H2OFrame"
+is.H2OFrame <- function(fr)  base::`&&`(!missing(fr), class(fr)[1]=="H2OFrame") 
 chk.H2OFrame <- function(fr) if( is.H2OFrame(fr) ) fr else stop("must be an H2OFrame")
 # Horrible internal shortcut to set our fields, using a more "normal"
 # parameter order
@@ -2084,7 +2084,7 @@ as.h2o <- function(x, destination_frame= "") {
 }
 
 #'
-#' Converts a Parsed H2O data into a Data H2OFrame
+#' Converts parsed H2O data into an R data frame
 #'
 #' Downloads the H2O data and then scans it in to an R data frame.
 #'
@@ -2160,11 +2160,35 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' Convert an H2OFrame to a vector
 #'
 #' @param x An H2OFrame object
-#' @param mode Unused
+#' @param mode Mode to coerce vector to
 #' @usage \method{as.vector}{H2OFrame}(x,mode)
 #' @method as.vector H2OFrame
 #' @export
-as.vector.H2OFrame <- function(x, mode) base::as.vector(as.matrix.H2OFrame(x))
+as.vector.H2OFrame <- function(x, mode="any") base::as.vector(as.matrix.H2OFrame(x), mode=mode)
+
+#' @export		
+as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
+
+
+#' Logical or for H2OFrames
+#' @name Logical-or
+#' @param x An H2OFrame object
+#' @param y An H2OFrame object
+#' @export	
+`||` <- function (x, y) {
+  if( is.H2OFrame(x) ) .newExpr("||", x,y)
+  else base::`||`(x,y)
+}
+
+#' Logical and for H2OFrames
+#' 
+#' @param x An H2OFrame object
+#' @param y An H2OFrame object
+#' @export	
+`&&` <- function (x, y) {
+  if( is.H2OFrame(x)  ) .newExpr("&&", x,y)
+  else base::`&&`(x,y)
+}
 
 #' Convert H2O Data to Factors
 #'

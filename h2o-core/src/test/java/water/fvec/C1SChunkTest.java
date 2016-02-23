@@ -38,7 +38,7 @@ public class C1SChunkTest extends TestUtil {
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
-      Assert.assertEquals(man.length + 1 + l, nc.sparseLen());
+      Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
         Assert.assertTrue(nc.isNA_abs(0));
@@ -87,7 +87,7 @@ public class C1SChunkTest extends TestUtil {
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
-      Assert.assertEquals(man.length + 1 + l, nc.sparseLen());
+      Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
         Assert.assertTrue(nc.isNA_abs(0));
@@ -140,7 +140,7 @@ public class C1SChunkTest extends TestUtil {
     NewChunk nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);
     nc.values(0, nc._len);
-    Assert.assertEquals(vals.length, nc.sparseLen());
+    Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
 
     Iterator<NewChunk.Value> it = nc.values(0, vals.length);
