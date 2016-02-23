@@ -969,7 +969,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // racing resizing threads.  Extra CHM's will be GC'd.
       if( CAS_newkvs( newkvs ) ) { // NOW a resize-is-in-progress!
         //notifyAll();            // Wake up any sleepers
-        Log.info("Resizing NBHM: "+oldlen+" -> "+(1<<log2));
+//        Log.info("Resizing NBHM: "+oldlen+" -> "+(1<<log2));
         topmap.rehash();        // Call for Hashtable's benefit
       } else                    // CAS failed?
         newkvs = _newkvs;       // Reread new table
