@@ -1669,7 +1669,7 @@ h2o.quantile <- function(x,
   #if(type != 2 && type != 7) stop("type must be either 2 (mean interpolation) or 7 (linear interpolation)")
   #if(type != 7) stop("Unimplemented: Only type 7 (linear interpolation) is supported from the console")
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
-  tr <- as.matrix(t(as.data.frame(res)))
+  tr <- as.matrix(t(res))
   rownames(tr) <- colnames(res)
   colnames(tr) <- paste0(100*tr[1,],"%")
   tr[-1,]
@@ -2160,11 +2160,15 @@ as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
 #' Convert an H2OFrame to a vector
 #'
 #' @param x An H2OFrame object
-#' @param mode Unused
+#' @param mode Mode to coerce vector to
 #' @usage \method{as.vector}{H2OFrame}(x,mode)
 #' @method as.vector H2OFrame
 #' @export
-as.vector.H2OFrame <- function(x, mode) base::as.vector(as.matrix.H2OFrame(x))
+as.vector.H2OFrame <- function(x, mode="any") base::as.vector(as.matrix.H2OFrame(x), mode=mode)
+
+#' @export		
+as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
+
 
 #' Convert H2O Data to Factors
 #'
