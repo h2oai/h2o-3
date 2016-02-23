@@ -118,7 +118,7 @@ final class RollupStats extends Iced {
 
     // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
     if( min==0 && max==1 ) {
-      int zs = c._len-c.sparseLen(); // Easy zeros
+      int zs = c._len-c.sparseLenZero(); // Easy zeros
       int nans = 0;
       // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) )
@@ -190,8 +190,8 @@ final class RollupStats extends Iced {
       // _mean is the mean of non-zero rows
       // _sigma is the mean of non-zero rows
       // handle the zeros
-      if( c.isSparse() ) {
-        int zeros = c._len - c.sparseLen();
+      if( c.isSparseZero() ) {
+        int zeros = c._len - c.sparseLenZero();
         if (zeros > 0) {
           for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
           double zeromean = 0;
@@ -336,8 +336,8 @@ final class RollupStats extends Iced {
         if( !Double.isNaN(d) ) _bins[idx(d)]++;
       }
       // Sparse?  We skipped all the zeros; do them now
-      if( c.isSparse() )
-        _bins[idx(0.0)] += (c._len - c.sparseLen());
+      if( c.isSparseZero() )
+        _bins[idx(0.0)] += (c._len - c.sparseLenZero());
     }
     private int idx( double d ) { int idx = (int)((d-_base)/_stride); return Math.min(idx,_bins.length-1); }
 

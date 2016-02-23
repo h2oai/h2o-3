@@ -1,12 +1,15 @@
 package water.fvec;
 
+
 import water.H2O;
 import water.util.UnsafeUtils;
 
 import java.util.Iterator;
 
-public class CXDChunk extends CXIChunk {
-  protected CXDChunk(int len, int valsz, byte [] buf){super(len,valsz,buf);}
+//NA sparse double chunk
+public class CNAXDChunk extends CNAXIChunk {
+  
+  protected CNAXDChunk(int len, int valsz, byte [] buf){super(len,valsz,buf);}
 
   // extract fp value from an (byte)offset
   protected final double getFValue(int off){
@@ -16,23 +19,18 @@ public class CXDChunk extends CXIChunk {
 
   @Override protected long at8_impl(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx) throw new IllegalArgumentException("at8_abs but value is missing");
     double d = getFValue(off);
-    if(Double.isNaN(d)) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)d;
   }
   @Override protected double atd_impl(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx)return Double.NaN;
     return getFValue(off);
   }
 
-  @Override protected boolean isNA_impl( int i ) {
-    int off = findOffset(i);
-    return getId(off) == i && Double.isNaN(getFValue(off));
-  }
-
   @Override public NewChunk inflate_impl(NewChunk nc) {
+    nc.setSparseNA();
     nc.set_len(_len);
     nc.set_sparseLen(_sparseLen);
     nc.alloc_doubles(_sparseLen);
@@ -47,22 +45,13 @@ public class CXDChunk extends CXIChunk {
 
   public Iterator<Value> values(){
     return new SparseIterator(new Value(){
-      @Override public final long asLong(){
-        double d = getFValue(_off);
-        if(Double.isNaN(d)) throw new IllegalArgumentException("at8_abs but value is missing");
-        return (long)d;
-      }
+      @Override public final long asLong() {return (long) getFValue(_off);}
       @Override public final double asDouble() {return getFValue(_off);}
-      @Override public final boolean isNA(){
-        double d = getFValue(_off);
-        return Double.isNaN(d);
-      }
+      @Override public final boolean isNA(){return false;}
     });
   }
   @Override
   public boolean hasFloat() {return true;}
 
-//  public int pformat_len0() { return 22; }
-//  public String pformat0() { return "% 21.15e"; }
 
 }

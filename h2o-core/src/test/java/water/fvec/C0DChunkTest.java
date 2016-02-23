@@ -14,7 +14,9 @@ public class C0DChunkTest extends TestUtil {
       NewChunk nc = new NewChunk(null, 0);
       for (int i=0;i<K;++i) nc.addNum(d);
       Assert.assertEquals(K, nc._len);
-      Assert.assertEquals(K, nc.sparseLen());
+      Assert.assertEquals(Double.isNaN(d) ? 0: K, nc._sparseLen);
+      Assert.assertEquals(K, nc.sparseLenZero());
+      Assert.assertEquals(Double.isNaN(d) ? 0: K, nc.sparseLenNA());
 
       Chunk cc = nc.compress();
       Assert.assertEquals(K, cc._len);
@@ -25,7 +27,9 @@ public class C0DChunkTest extends TestUtil {
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);
-      Assert.assertEquals(K, nc.sparseLen());
+      Assert.assertEquals(Double.isNaN(d) ? 0: K, nc._sparseLen);
+      Assert.assertEquals(K, nc.sparseLenZero());
+      Assert.assertEquals(Double.isNaN(d) ? 0: K, nc.sparseLenNA());
       for (int i=0;i<K;++i) Assert.assertEquals(d, nc.atd(i), Math.ulp(d));
       for (int i=0;i<K;++i) Assert.assertEquals(d, nc.at_abs(i), Math.ulp(d));
 

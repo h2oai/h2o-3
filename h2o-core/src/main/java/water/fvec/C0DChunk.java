@@ -3,6 +3,8 @@ package water.fvec;
 import water.AutoBuffer;
 import water.util.UnsafeUtils;
 
+import java.util.Arrays;
+
 /**
  * The constant 'double' column.
  */
@@ -31,11 +33,18 @@ public class C0DChunk extends Chunk {
   @Override double min() { return _con; }
   @Override double max() { return _con; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(0));
-    if(_con == 0) {
+    if(Double.isNaN(_con)) {
+      nc.set_sparseLen(nc.set_len(0));//so that addNAs(_len) can add _len
+      nc.set_sparse(0, NewChunk.Compress.NA); //so that sparseNA() is true in addNAs()
+      nc.addNAs(_len);
+    } else if (_con == 0) {
+      nc.set_len(nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
+      nc.set_sparse(0, NewChunk.Compress.ZERO);//so that sparseZero() is true in addZeros()
       nc.addZeros(_len);
     } else {
-      for (int i=0; i<_len; ++i) nc.addNum(_con);
+      nc.alloc_doubles(_len);
+      Arrays.fill(nc.doubles(), _con);
+      nc.set_len(nc.set_sparseLen(_len));
     }
     return nc;
   }
@@ -53,8 +62,21 @@ public class C0DChunk extends Chunk {
     return this;
   }
 
-  @Override public int nextNZ(int rid) {
-    return _con == 0?_len:rid+1;
+  @Override public boolean isSparseZero(){return _con == 0;}
+  @Override public int sparseLenZero() {return  _con ==0?0:_len;}
+  @Override public int nextNZ(int rid) {return _con==0?_len:rid+1;}
+  @Override public int nonzeros(int [] arr) {
+    if (_con == 0) return 0;
+    for (int i = 0; i < _len; ++i) arr[i] = i;
+    return _len;
   }
-  @Override public boolean isSparse(){return _con == 0;}
+  
+  @Override public boolean isSparseNA(){return Double.isNaN(_con);}
+  @Override public int sparseLenNA() {return  Double.isNaN(_con)?0:_len;}
+  @Override public int nextNNA(int rid) {return Double.isNaN(_con)?_len:rid+1;}
+  @Override public int nonnas(int [] arr) {
+    if (Double.isNaN(_con)) return 0;
+    for (int i = 0; i < _len; ++i) arr[i] = i;
+    return _len;
+  }
 }

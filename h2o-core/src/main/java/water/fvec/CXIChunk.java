@@ -13,13 +13,13 @@ public class CXIChunk extends Chunk {
   private transient int _valsz_log; //
   private transient int _ridsz; // byte size of stored (chunk-relative) row nums
   protected final int ridsz() { return _ridsz; }
-  private transient int _sparse_len;
+  protected transient int _sparseLen;
   protected static final int _OFF = 6;
   private transient int _lastOff = _OFF;
 
   private static final long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
-  protected CXIChunk(int len, int nzs, int valsz, byte [] buf){
+  protected CXIChunk(int len, int valsz, byte [] buf){
     assert (valsz == 0 || valsz == 1 || valsz == 2 || valsz == 4 || valsz == 8);
     set_len(len);
     int log = 0;
@@ -33,22 +33,29 @@ public class CXIChunk extends Chunk {
     buf[4] = b;
     buf[5] = (byte) _valsz;
     _mem = buf;
-    _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
+    _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
   }
 
-  @Override public final boolean isSparse() {return true;}
-  @Override public final int sparseLen(){ return _sparse_len; }
+  @Override public boolean isSparseZero() {return true;}
+  @Override public int sparseLenZero(){ return _sparseLen; }
+  @Override public int nextNZ(int rid){
+    final int off = rid == -1?_OFF:findOffset(rid);
+    int x = getId(off);
+    if(x > rid)return x;
+    if(off < _mem.length - _ridsz - _valsz)
+      return getId(off + _ridsz + _valsz);
+    return _len;
+  }
   /** Fills in a provided (recycled/reused) temp array of the NZ indices, and
    *  returns the count of them.  Array must be large enough. */
-  @Override public final int nonzeros(int [] arr){
-    int len = sparseLen();
+  @Override public int nonzeros(int [] arr){
     int off = _OFF;
     final int inc = _valsz + _ridsz;
-    for(int i = 0; i < len; ++i, off += inc) arr[i] = getId(off);
-    return len;
+    for(int i = 0; i < _sparseLen; ++i, off += inc) arr[i] = getId(off);
+    return _sparseLen;
   }
-
+  
   @Override boolean set_impl(int idx, long l)   { return false; }
   @Override boolean set_impl(int idx, double d) { return false; }
   @Override boolean set_impl(int idx, float f ) { return false; }
@@ -71,19 +78,17 @@ public class CXIChunk extends Chunk {
 
   @Override protected boolean isNA_impl( int i ) {
     int off = findOffset(i);
-    if(getId(off) != i)return false;
-    return getIValue(off) == NAS[_valsz_log];
+    return getId(off) == i && getIValue(off) == NAS[_valsz_log];
   }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    final int slen = sparseLen();
     nc.set_len(_len);
-    nc.set_sparseLen(slen);
-    nc.alloc_mantissa(slen);
-    nc.alloc_exponent(slen);
-    nc.alloc_indices(slen);
+    nc.set_sparseLen(_sparseLen);
+    nc.alloc_mantissa(_sparseLen);
+    nc.alloc_exponent(_sparseLen);
+    nc.alloc_indices(_sparseLen);
     int off = _OFF;
-    for( int i = 0; i < slen; ++i, off += _ridsz + _valsz) {
+    for( int i = 0; i < _sparseLen; ++i, off += _ridsz + _valsz) {
       nc.indices()[i] = getId(off);
       long v = getIValue(off);
       if(v == NAS[_valsz_log])
@@ -114,7 +119,6 @@ public class CXIChunk extends Chunk {
   }
 
   // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
-  // find offset of the chunk-relative row id, or -1 if not stored (i.e. sparse zero)
   protected final int findOffset(int idx) {
     final byte [] mem = _mem;
     if(idx >= _len)throw new IndexOutOfBoundsException();
@@ -139,8 +143,7 @@ public class CXIChunk extends Chunk {
       }
     }
     // binary search
-    int sparseLen = sparseLen();
-    int lo=0, hi = sparseLen;
+    int lo=0, hi = _sparseLen;
     while( lo+1 != hi ) {
       int mid = (hi+lo)>>>1;
       if( idx < getId(getOff(mid))) hi = mid;
@@ -149,15 +152,6 @@ public class CXIChunk extends Chunk {
     int y =  getOff(lo);
     _lastOff = y;
     return y;
-  }
-
-  @Override public final int nextNZ(int rid){
-    final int off = rid == -1?_OFF:findOffset(rid);
-    int x = getId(off);
-    if(x > rid)return x;
-    if(off < _mem.length - _ridsz - _valsz)
-      return getId(off + _ridsz + _valsz);
-    return _len;
   }
 
   @Override public CXIChunk read_impl(AutoBuffer bb) {
@@ -173,7 +167,7 @@ public class CXIChunk extends Chunk {
       ++log;
     }
     _valsz_log = log;
-    _sparse_len = (_mem.length - _OFF) / (_valsz+_ridsz);
+    _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: meme.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
     return this;
   }
