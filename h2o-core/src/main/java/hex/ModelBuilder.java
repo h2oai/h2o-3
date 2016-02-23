@@ -914,7 +914,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       return original_fr;
     }
     Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
-    Key newKey = Key.make(name + ".chunks" + chunks);
+    Key newKey = Key.makeUserHidden(name + ".chunks" + chunks);
     RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
     H2O.submitTask(rb).join();
     Frame rebalanced_fr = DKV.get(newKey).get();
