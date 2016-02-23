@@ -118,7 +118,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       while (it.hasNext(model)) {
         try {
-          gridWork += it.nextModelParameters(model).progressUnits();
+          Model.Parameters parms = it.nextModelParameters(model);
+          gridWork += (parms._nfolds+2/*pre+post-fold workd*/)*parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
         }
