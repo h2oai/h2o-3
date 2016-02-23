@@ -347,7 +347,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo.training_samples = (double)model_info().get_processed_total();
       scoringInfo.validation = fTest != null;
       scoringInfo.score_training_samples = fTrain.numRows();
-      scoringInfo.classification = _output.isClassifier();
+      scoringInfo.is_classification = _output.isClassifier();
+      scoringInfo.is_autoencoder = _output.isAutoencoder();
 
       if (get_params()._autoencoder) {
         if (printme) Log.info("Scoring the auto-encoder.");

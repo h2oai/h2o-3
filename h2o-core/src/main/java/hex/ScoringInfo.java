@@ -22,7 +22,8 @@ public class ScoringInfo extends Iced {
   public long total_scoring_time_ms; //total scoring time until this scoring event (including checkpoints)
   public long total_setup_time_ms; //total setup time until this scoring event (including checkpoints)
   public long this_scoring_time_ms;   //scoring time for this scoring event (only)
-  public boolean classification;
+  public boolean is_classification;
+  public boolean is_autoencoder;
   public AUC2 training_AUC;
   public AUC2 validation_AUC;
   public boolean validation;
@@ -106,7 +107,7 @@ public class ScoringInfo extends Iced {
 
     // handle StoppingMetric.AUTO
     if (criterion == ScoreKeeper.StoppingMetric.AUTO)
-      criterion = scoringInfos[0].classification ? ScoreKeeper.StoppingMetric.logloss : /* TODO scoringInfos[0].isAutoencoder ? mse() : */ ScoreKeeper.StoppingMetric.deviance;
+      criterion = scoringInfos[0].is_classification ? ScoreKeeper.StoppingMetric.logloss : scoringInfos[0].is_autoencoder ? ScoreKeeper.StoppingMetric.MSE : ScoreKeeper.StoppingMetric.deviance;
 
     Arrays.sort(scoringInfos, ScoringInfo.comparator(criterion));
   }

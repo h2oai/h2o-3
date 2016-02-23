@@ -212,8 +212,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
             model.fillScoringInfo(scoringInfo);
             this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
-            // TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO
-            ScoringInfo.sort(this.scoringInfos, ScoreKeeper.StoppingMetric.AUTO);
+            ScoringInfo.sort(this.scoringInfos, _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -234,10 +233,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
         } // finally
 
-        // NOTE: n - 1
-        // TODO TODO TODO TODO TODO TODO TODO TODO TODO pass through params!
-        if (ScoringInfo.stopEarly(this.scoringInfos, 5, model._output.isClassifier(), ScoreKeeper.StoppingMetric.AUTO, 0.01)) {
-          Log.info("Convergence detected based on simple moving average of the loss function for the past " + 5 + " scoring events. Grid building completed.");
+        if (_hyperSpaceWalker.stopEarly(model, this.scoringInfos)) {
+          Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
           break;
         }
       } // while (it.hasNext(model))

@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria;
 import water.api.API;
 import water.api.Schema;
@@ -41,7 +42,7 @@ public class HyperSpaceSearchCriteriaV99<I, S> extends Schema<HyperSpaceSearchCr
       this.max_runtime_secs = max_runtime_secs;
     }
 
-    @API(help = "Seed for random number generator; used for reproducibility.", required = false, direction = API.Direction.INOUT)
+    @API(help = "Seed for random number generator; set to a value other than -1 for reproducibility.", required = false, direction = API.Direction.INOUT)
     public long seed;
 
     @API(help = "Maximum number of models to build (optional).", required = false, direction = API.Direction.INOUT)
@@ -49,6 +50,15 @@ public class HyperSpaceSearchCriteriaV99<I, S> extends Schema<HyperSpaceSearchCr
 
     @API(help = "Maximum time to spend building models (optional).", required = false, direction = API.Direction.INOUT)
     public double max_runtime_secs;
+
+    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public int stopping_rounds;
+
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", values = {"AUTO", "deviance", "logloss", "MSE", "AUC", "lift_top_group", "r2", "misclassification"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public ScoreKeeper.StoppingMetric stopping_metric;
+
+    @API(help = "Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public double stopping_tolerance;
   }
 
   /**
