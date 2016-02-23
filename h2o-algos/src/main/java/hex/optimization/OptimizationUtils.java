@@ -110,7 +110,6 @@ public class OptimizationUtils {
           _step = step;
           return true;
         }
-
       }
       return false;
     }

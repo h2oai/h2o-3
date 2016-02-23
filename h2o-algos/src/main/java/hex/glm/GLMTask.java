@@ -973,6 +973,7 @@ public abstract class GLMTask  {
         _glmf.computeWeights(y, r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _w);
         w = _w.w;
         wz = w*_w.z;
+        _likelihood += _w.l;
       } else {
         w = r.weight;
         wz = w*(y - r.offset);
