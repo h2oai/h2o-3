@@ -138,9 +138,7 @@ abstract class ASTBinOp extends ASTPrim {
     final Vec oldvecs[] = oldfr.vecs();
     final Vec newvecs[] = newfr.vecs();
     for( int i=0; i<oldvecs.length; i++ )
-      if( !oldvecs[i].isNumeric() && // Must be numeric OR
-          !oldvecs[i].isTime() &&    // time OR
-          !(oldvecs[i].isCategorical() && categoricalOK) ) // categorical are OK (op is EQ/NE)
+      if( (oldvecs[i].isCategorical() && !categoricalOK) ) // categorical are OK (op is EQ/NE)
         newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(newfr);
   }
@@ -430,15 +428,15 @@ class ASTLAnd extends ASTBinOp {
   public String str() { return "&&"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
-    // If the left is zero or NA, do not evaluate the right, just return the left
+    // If the left is zero, just return the left
     if( left.isNum() ) {
       double d = ((ValNum)left)._d;
-      if( d==0 || Double.isNaN(d) ) return left;
+      if( d==0 ) return left;
     }
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
   }
-  // Weird R semantics, zero trumps NA
+  // 0 trumps NA, and NA trumps 1
   double op( double l, double r ) { return and_op(l,r); }
   static double and_op( double l, double r ) {
     return (l==0||r==0) ? 0 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 1);
@@ -450,18 +448,19 @@ class ASTLOr extends ASTBinOp {
   public String str() { return "||"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Val left = stk.track(asts[1].exec(env));
-    // If the left is non-zero or NA, do not evaluate the right, just return the left
+    // If the left is 1, just return the left
     if( left.isNum() ) {
       double d = ((ValNum)left)._d;
-      if( d!=0 || Double.isNaN(d) ) return left;
+      if( d == 1 ) return left;
     }
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
   }
-  // Weird R semantics, zero trumps NA
+  //  1 trumps NA, and NA trumps 0.
   double op( double l, double r ) { return or_op(l, r); }
   static double or_op( double l, double r ) {
-    return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0);
+    double a= (l == 1 || r == 1) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0);
+    return  a;
   }
 }
 

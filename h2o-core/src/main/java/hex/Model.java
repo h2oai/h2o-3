@@ -125,18 +125,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /**
      * Early stopping based on convergence of stopping_metric.
-     * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
+     * Stop if simple moving average of the stopping_metric does not improve by stopping_tolerance for
+     * k scoring events.
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
     public int _stopping_rounds = 0;
 
     /**
-     * Metric to use for convergence checking, only for _stopping_rounds > 0
+     * Metric to use for convergence checking, only for _stopping_rounds > 0.
      */
     public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
 
     /**
-     * Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+     * Relative tolerance for metric-based stopping criterion: stop if relative improvement is not at least this much.
      */
     public double _stopping_tolerance = defaultStoppingTolerance();
 
@@ -516,20 +517,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected ScoringInfo[] scoringInfo;
   public ScoringInfo[] scoring_history() { return scoringInfo; }
-  public ScoreKeeper[] scoreKeepers() {
-    ScoreKeeper[] sk = new ScoreKeeper[scoring_history().length];
-    for (int i=0;i<sk.length;++i) {
-      sk[i] = scoringInfo[i].validation ? scoringInfo[i].scored_valid : scoringInfo[i].scored_train;
-    }
-    return sk;
-  }
 
   /**
    * Fill a ScoringInfo with data from the ModelMetrics for this model.
    * @param scoringInfo
    */
   public void fillScoringInfo(ScoringInfo scoringInfo) {
-    scoringInfo.classification = this._output.isClassifier();
+    scoringInfo.is_classification = this._output.isClassifier();
+    scoringInfo.is_autoencoder = _output.isAutoencoder();
     scoringInfo.scored_train = new ScoreKeeper(this._output._training_metrics);
     scoringInfo.scored_valid = new ScoreKeeper(this._output._validation_metrics);
 

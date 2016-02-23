@@ -405,7 +405,9 @@ final public class H2O {
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.nthreads = (char)s.parseInt(args[i]);
+        int nthreads = s.parseInt(args[i]);
+        if (nthreads >= 1) //otherwise keep default (all cores)
+          ARGS.nthreads = (char) nthreads;
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);

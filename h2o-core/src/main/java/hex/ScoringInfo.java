@@ -22,7 +22,8 @@ public class ScoringInfo extends Iced {
   public long total_scoring_time_ms; //total scoring time until this scoring event (including checkpoints)
   public long total_setup_time_ms; //total setup time until this scoring event (including checkpoints)
   public long this_scoring_time_ms;   //scoring time for this scoring event (only)
-  public boolean classification;
+  public boolean is_classification;
+  public boolean is_autoencoder;
   public AUC2 training_AUC;
   public AUC2 validation_AUC;
   public boolean validation;
@@ -49,6 +50,16 @@ public class ScoringInfo extends Iced {
     }
   }
 
+  /** For a given array of ScoringInfo return an array of the validation or training ScoreKeepers, as available. */
+  public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history) {
+    ScoreKeeper[] sk = new ScoreKeeper[scoring_history.length];
+    for (int i=0;i<sk.length;++i) {
+      // TODO: don't allow mixing of training and validation metrics
+      sk[i] = scoring_history[i].validation ? scoring_history[i].scored_valid : scoring_history[i].scored_train;
+    }
+    return sk;
+  }
+
   public double metric(ScoreKeeper.StoppingMetric criterion) {
       switch (criterion) {
         case AUC:               { return validation ? scored_valid._AUC : scored_train._AUC; }
@@ -58,7 +69,7 @@ public class ScoringInfo extends Iced {
         case r2:                { return validation ? scored_valid._r2 : scored_train._r2; }
         case misclassification: { return validation ? scored_valid._classError : scored_train._classError; }
         case lift_top_group:    { return validation ? scored_valid._lift : scored_train._lift; }
-        default:                throw H2O.unimpl("Undefined stopping criterion.");
+        default:                throw H2O.unimpl("Undefined stopping criterion: " + criterion);
       }
   }
 
@@ -94,7 +105,16 @@ public class ScoringInfo extends Iced {
     if (null == scoringInfos) return;
     if (scoringInfos.length == 0) return;
 
+    // handle StoppingMetric.AUTO
+    if (criterion == ScoreKeeper.StoppingMetric.AUTO)
+      criterion = scoringInfos[0].is_classification ? ScoreKeeper.StoppingMetric.logloss : scoringInfos[0].is_autoencoder ? ScoreKeeper.StoppingMetric.MSE : ScoreKeeper.StoppingMetric.deviance;
+
     Arrays.sort(scoringInfos, ScoringInfo.comparator(criterion));
+  }
+
+  /** Based on the given array of ScoringInfo and stopping criteria should we stop early? */
+  public static boolean stopEarly(ScoringInfo[] sk, int k, boolean classification, ScoreKeeper.StoppingMetric criterion, double rel_improvement) {
+    return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk), k, classification, criterion, rel_improvement);
   }
 
   /**
