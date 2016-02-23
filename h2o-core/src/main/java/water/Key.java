@@ -290,6 +290,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   public static <P extends Keyed> Key<P> makeSystem(String s) {
     return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY, false);
   }
+  public static <P extends Keyed> Key<P> makeUserHidden(String s) {
+    return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,HIDDEN_USER_KEY, false);
+  }
 
   /**
    * Make a random key, homed to a given node.
