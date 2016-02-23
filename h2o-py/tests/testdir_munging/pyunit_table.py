@@ -36,10 +36,10 @@ def table_check():
   assert (table3 == iris[["C1","C5"]].table(dense=False)).all()
 
   cars = h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
-  table = cars[2].table().as_data_frame()
+  table = cars[2].table().as_data_frame(False)
   table = dict(table[1:])
   table = {k:int(v) for k,v in list(table.items())}
-  expected = Counter(itertools.chain(*cars[2].as_data_frame()[1:]))
+  expected = Counter(itertools.chain(*cars[2].as_data_frame(False)[1:]))
   assert table == expected, "Expected {} for table counts but got {}".format(expected, table)
   
 if __name__ == "__main__":
