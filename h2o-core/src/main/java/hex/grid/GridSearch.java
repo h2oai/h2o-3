@@ -119,7 +119,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       while (it.hasNext(model)) {
         try {
           Model.Parameters parms = it.nextModelParameters(model);
-          gridWork += (parms._nfolds+2/*pre+post-fold workd*/)*parms.progressUnits();
+          gridWork += (parms._nfolds > 1 ? (parms._nfolds+2/*pre+post-fold workd*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
         }
