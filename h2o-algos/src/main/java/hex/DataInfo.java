@@ -257,8 +257,12 @@ public class DataInfo extends Keyed<DataInfo> {
     return beta;
   }
 
+  private int [] _fullCatOffsets;
+
+  protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
-  private DataInfo(Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
+  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
+    _fullCatOffsets = dinfo._catOffsets;
     _offset = offset;
     _weights = weight;
     _fold = fold;
@@ -365,7 +369,7 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     // public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
-    DataInfo dinfo = new DataInfo(f, normMul, normSub, catLvls, catModes, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
+    DataInfo dinfo = new DataInfo(this,f, normMul, normSub, catLvls, catModes, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
     dinfo._activeCols = cols;
     return dinfo;
   }
@@ -621,23 +625,20 @@ public class DataInfo extends Keyed<DataInfo> {
     public String toString() {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
-
     public void setResponse(int i, double z) {response[i] = z;}
-
-
   }
 
   public final int getCategoricalId(int cid, int val) {
+    if(val >= fullCatOffsets()[cid+1]) {  // previously unseen level
+      assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
+      val = _catModes[cid];
+    }
     final int c;
     if (_catLvls[cid] != null)  // some levels are ignored?
       c = Arrays.binarySearch(_catLvls[cid], val);
     else c = val - (_useAllFactorLevels?0:1);
     if( c < 0) return -1;
     int v = c + _catOffsets[cid];
-    if(v >= _catOffsets[cid+1]) { // previously unseen level
-      assert _valid:"categorical value out of bounds, got " + v + ", next cat starts at " + _catOffsets[cid+1];
-      return _catMissing[cid]?_catOffsets[cid+1]-1:-2;// if we have NA bucket, treat previously unseen as NA.
-    }
     return v;
   }
 
