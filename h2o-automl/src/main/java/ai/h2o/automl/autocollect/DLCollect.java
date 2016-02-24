@@ -36,5 +36,4 @@ public class DLCollect extends Collector{
   };
   @Override protected ModelBuilder makeModelBuilder(Model.Parameters p) { return new DeepLearning((DeepLearningModel.DeepLearningParameters)p); }
   @Override protected String configId(Model.Parameters p, int idFrame) { return null; } // return getConfigId((DeepLearningModel.DeepLearningParameters)p, idFrame); }
-
 }
