@@ -20,8 +20,7 @@ public abstract class Collector {
   protected static final double[] SPLITRATIOS = new double[]{0.8,0.2};
   static {
     resourceCollector=new Thread(new Runnable() {
-      @Override
-      public void run() {
+      @Override public void run() {
         //Collect resources info...
 
         //HashMap to store resource info
@@ -47,7 +46,7 @@ public abstract class Collector {
       ModelBuilder mb = makeModelBuilder(genParms(seedSplit,idFrame,fr.numCols(),configs));
       mb._parms._train=fs[0]._key;
       mb._parms._valid=fs[1]._key;
-      collect0(mb, idFrame, configId(mb._parms, idFrame));
+      collect0(mb, configId(mb._parms, idFrame));
     } catch( Exception ex ) {
       ex.printStackTrace();
     } finally {
@@ -55,7 +54,9 @@ public abstract class Collector {
     }
   }
 
-  private void collect0(ModelBuilder mb, int idFrame, String configID){
+
+  // the default collector, custom collect call in GLMCollect
+  private void collect0(ModelBuilder mb, String configID) {
     Model m = null;
     try {
       resourceCollector.start();
