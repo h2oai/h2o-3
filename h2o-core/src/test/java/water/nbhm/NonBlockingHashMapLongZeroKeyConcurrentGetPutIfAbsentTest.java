@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 
 public class NonBlockingHashMapLongZeroKeyConcurrentGetPutIfAbsentTest extends TestCase {
     private static final int N_THREADS = 4;
-    private static final int ITERATIONS = 1000000;
+    private static final int ITERATIONS = 100000;
     private ExecutorService service;
 
     protected void setUp() {
