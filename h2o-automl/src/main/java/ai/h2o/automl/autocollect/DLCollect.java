@@ -1,15 +1,14 @@
 package ai.h2o.automl.autocollect;
 
 import hex.Model;
+import hex.ModelBuilder;
+import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningModel;
 import water.H2O;
-import water.fvec.Frame;
 
 import java.util.HashSet;
 
 public class DLCollect extends Collector{
-  @Override protected void collect(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
-
-  }
 
   @Override protected Model.Parameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs) {
     throw H2O.unimpl();
@@ -35,4 +34,7 @@ public class DLCollect extends Collector{
           "rate_decay", "momentum_ramp", "momentum_stable", "input_dropout_ratio", "l1",
           "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale"
   };
+  @Override protected ModelBuilder makeModelBuilder(Model.Parameters p) { return new DeepLearning((DeepLearningModel.DeepLearningParameters)p); }
+  @Override protected String configId(Model.Parameters p, int idFrame) { return null; } // return getConfigId((DeepLearningModel.DeepLearningParameters)p, idFrame); }
+
 }

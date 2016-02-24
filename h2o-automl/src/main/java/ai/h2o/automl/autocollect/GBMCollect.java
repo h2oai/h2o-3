@@ -1,7 +1,8 @@
 package ai.h2o.automl.autocollect;
 
+import hex.Model;
+import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import water.fvec.Frame;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,10 +17,6 @@ public class GBMCollect extends Collector {
   public static int MAXNBINSCATS=1000;
   public static int MAXNTREES=50;
   public static int MAXNROWS=50;
-
-  @Override protected void collect0(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
-
-  }
 
   protected GBMModel.GBMParameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs) {
     String configID;
@@ -40,11 +37,12 @@ public class GBMCollect extends Collector {
       config.put("ConfigID", configID = getConfigId(p, idFrame));
     } while(!isValidConfig(configID, configs));
     configs.add(configID);
-    AutoCollect.pushMeta(config, config.keySet().toArray(new String[config.size()]), "GBMConfig",null);
+    AutoCollect.pushMeta(config, config.keySet().toArray(new String[config.size()]), "GBMConfig", null);
     return p;
   }
-
-  static String getConfigId(GBMModel.GBMParameters p, int idFrame) {
+  @Override protected String configId(Model.Parameters p, int idFrame) { return getConfigId((GBMModel.GBMParameters)p, idFrame); }
+  @Override protected GBM makeModelBuilder(Model.Parameters p) { return new GBM((GBMModel.GBMParameters)p); }
+  private static String getConfigId(GBMModel.GBMParameters p, int idFrame) {
     return "gbm_"+idFrame+"_"+p._ntrees+"_"+p._max_depth+"_"+
             p._min_rows+"_"+p._learn_rate+"_"+p._sample_rate+"_"+
             p._col_sample_rate+"_"+p._col_sample_rate_per_tree+"_"+
