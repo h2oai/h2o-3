@@ -1,7 +1,6 @@
 package ai.h2o.automl.autocollect;
 
 import ai.h2o.automl.TestUtil;
-import autocollect.AutoCollect;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
