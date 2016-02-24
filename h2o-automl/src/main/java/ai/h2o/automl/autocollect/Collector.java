@@ -44,7 +44,10 @@ public abstract class Collector {
     Key[] trainTestKeys = new Key[]{Key.make(),Key.make()};
     fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS, seedSplit);  // split data
     try {
-      collect0(fs[0], fs[1], idFrame, seedSplit, configs);
+      ModelBuilder mb = makeModelBuilder(genParms(seedSplit,idFrame,fr.numCols(),configs));
+      mb._parms._train=fs[0]._key;
+      mb._parms._valid=fs[1]._key;
+      collect0(mb, idFrame, configId(mb._parms, idFrame));
     } catch( Exception ex ) {
       ex.printStackTrace();
     } finally {
@@ -52,14 +55,29 @@ public abstract class Collector {
     }
   }
 
-  protected abstract void collect0(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs);
+  private void collect0(ModelBuilder mb, int idFrame, String configID){
+    Model m = null;
+    try {
+      resourceCollector.start();
+      m = (Model)mb.trainModel().get();
+      resourceCollector.interrupt();
+      logScoreHistory(mb,m,configID);
+    } catch( Exception ex ) {
+      ex.printStackTrace();
+    } finally {
+      if( !resourceCollector.isInterrupted() ) resourceCollector.interrupt();
+      if( m!=null ) m.delete();
+    }
+  }
   protected abstract Model.Parameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs);
+  protected abstract ModelBuilder makeModelBuilder(Model.Parameters p);
+  protected abstract String configId(Model.Parameters p, int idFrame);
 
-
-    protected void logScoreHistory(ModelBuilder mb, Model m, String configID) {
+  protected void logScoreHistory(ModelBuilder mb, Model m, String configID) {
     HashMap<String,Object> scoreHistory = newScoreHist();
     List<String> colHeaders = Arrays.asList(m._output._scoring_history.getColHeaders());
     for( IcedWrapper[] iw: m._output._scoring_history.getCellValues() ) {
+      scoreHistory.put("ConfigID", configID);
       int idx;
       if( (idx=colHeaders.indexOf("Timestamp"))!=-1 )                       scoreHistory.put("ts",                                  iw[idx].get());
       if( (idx=colHeaders.indexOf("Training MSE"))!=-1 )                    scoreHistory.put("train_mse",                  sanitize(iw[idx].get()));
@@ -75,17 +93,18 @@ public abstract class Collector {
   }
   private static double sanitize(Object d) { return Double.isNaN((double)d) ? AutoML.SQLNAN : (double)d; }
   protected HashMap<String,Object> newScoreHist() {
-    HashMap<String, Object> hm = new HashMap<>();
-    hm.put("ts",AutoML.SQLNAN);
-    hm.put("train_mse", AutoML.SQLNAN);
-    hm.put("train_logloss",AutoML.SQLNAN);
-    hm.put("train_classification_error", AutoML.SQLNAN);
-    hm.put("test_mse", AutoML.SQLNAN);
-    hm.put("test_logloss",AutoML.SQLNAN);
-    hm.put("test_classification_error", AutoML.SQLNAN);
-    hm.put("train_deviance", AutoML.SQLNAN);
-    hm.put("test_deviance", AutoML.SQLNAN);
-    return hm;
+    HashMap<String, Object> sh = new HashMap<>();
+    sh.put("ConfigID","");
+    sh.put("ts", AutoML.SQLNAN);
+    sh.put("train_mse", AutoML.SQLNAN);
+    sh.put("train_logloss", AutoML.SQLNAN);
+    sh.put("train_classification_error", AutoML.SQLNAN);
+    sh.put("test_mse", AutoML.SQLNAN);
+    sh.put("test_logloss", AutoML.SQLNAN);
+    sh.put("test_classification_error", AutoML.SQLNAN);
+    sh.put("train_deviance", AutoML.SQLNAN);
+    sh.put("test_deviance", AutoML.SQLNAN);
+    return sh;
   }
 
   protected boolean isValidConfig(String configID, HashSet<String> configs) { return !configs.contains(configID); }

@@ -1,7 +1,8 @@
 package ai.h2o.automl.autocollect;
 
+import hex.Model;
+import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
-import water.fvec.Frame;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,10 +17,6 @@ public class DRFCollect extends Collector {
   public static int MAXNBINSCATS=1000;
   public static int MAXNTREES=50;
   public static int MAXNROWS=50;
-
-  @Override protected void collect0(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
-
-  }
 
   protected DRFModel.DRFParameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs) {
     String configID;
@@ -41,8 +38,9 @@ public class DRFCollect extends Collector {
     AutoCollect.pushMeta(config, config.keySet().toArray(new String[config.size()]), "RFConfig",null);
     return p;
   }
-
-  static String getConfigId(DRFModel.DRFParameters p, int idFrame) {
+  @Override protected DRF makeModelBuilder(Model.Parameters p) { return new DRF((DRFModel.DRFParameters)p); }
+  @Override protected String configId(Model.Parameters p, int idFrame) { return getConfigId((DRFModel.DRFParameters)p,idFrame); }
+  private static String getConfigId(DRFModel.DRFParameters p, int idFrame) {
     return "rf_" + idFrame + "_" + p._mtries + "_" + p._sample_rate +
             "_"  + p._ntrees + "_" + p._max_depth + "_" + p._min_rows +
             "_"  + p._nbins + "_" + p._nbins_cats;
