@@ -39,12 +39,12 @@ public abstract class Collector {
     });
   }
 
-  public void collect0(int idFrame, Frame fr, long seedSplit, HashSet<String> configs) {
+  public void collect(int idFrame, Frame fr, long seedSplit, HashSet<String> configs) {
     Frame[] fs;
     Key[] trainTestKeys = new Key[]{Key.make(),Key.make()};
     fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS, seedSplit);  // split data
     try {
-      collect(fs[0], fs[1], idFrame, seedSplit, configs);
+      collect0(fs[0], fs[1], idFrame, seedSplit, configs);
     } catch( Exception ex ) {
       ex.printStackTrace();
     } finally {
@@ -52,7 +52,7 @@ public abstract class Collector {
     }
   }
 
-  protected abstract void collect(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs);
+  protected abstract void collect0(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs);
   protected abstract Model.Parameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs);
 
 

@@ -100,7 +100,7 @@ public class AutoCollect {
       double elapsed = 0;
       long start = System.currentTimeMillis();
       while (elapsed <= _seconds) {
-        selectCollector().collect0(_idFrame, _fr, getRNG(new Random().nextLong()).nextLong(), configs);
+        selectCollector().collect(_idFrame, _fr, getRNG(new Random().nextLong()).nextLong(), configs);
         elapsed = (System.currentTimeMillis() - start)/1000.;
         conn.commit();
       }
@@ -179,7 +179,7 @@ public class AutoCollect {
       fm.fillDummies(frameMeta);
       _idFrame = pushFrameMeta(frameMeta);
       computeAndPushColMeta(fm, _idFrame);
-      new GLMCollect().collect0(_idFrame, _fr, getRNG(new Random().nextLong()).nextLong(),configs);
+      new GLMCollect().collect(_idFrame, _fr, getRNG(new Random().nextLong()).nextLong(),configs);
     }
   }
 

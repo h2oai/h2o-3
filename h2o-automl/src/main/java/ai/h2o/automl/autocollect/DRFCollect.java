@@ -17,7 +17,7 @@ public class DRFCollect extends Collector {
   public static int MAXNTREES=50;
   public static int MAXNROWS=50;
 
-  @Override protected void collect(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
+  @Override protected void collect0(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
 
   }
 
