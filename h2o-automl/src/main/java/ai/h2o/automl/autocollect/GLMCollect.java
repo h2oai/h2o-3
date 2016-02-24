@@ -29,7 +29,7 @@ import java.util.HashSet;
  * The collection of GLMs runs once per dataset as part of the collectMeta call
  */
 public class GLMCollect extends Collector {
-  @Override public void collect(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
+  @Override public void collect0(Frame train, Frame valid, int idFrame, long seed, HashSet<String> configs) {
     GLM[] glms = new GLM[3];
 
     // alpha = 1 + lambda search
