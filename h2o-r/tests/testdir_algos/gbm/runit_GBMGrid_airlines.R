@@ -32,16 +32,26 @@ gbm.grid.test <- function() {
     expect_model_param(grid_models, "learn_rate", learn_rate_opts)
 
     #
-    # test random/max_models search criterion
-    size_of_hyper_space <- 5
-    search_criteria = list(strategy = "RandomDiscrete", max_models = size_of_hyper_space)
+    # test random/max_models search criterion: max_models
+    max_models <- 5
+    search_criteria = list(strategy = "RandomDiscrete", max_models = max_models)
     air.grid <- h2o.grid("gbm", y = "IsDepDelayed", x = myX,
                          distribution="bernoulli",
                          training_frame = air.hex,
                          hyper_params = hyper_params,
                          search_criteria = search_criteria)
     print(air.grid)
-    expect_equal(length(air.grid@model_ids), size_of_hyper_space)
+    expect_equal(length(air.grid@model_ids), max_models)
+
+    # test random/max_models search criterion: asymptotic
+    search_criteria = list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 3)
+    air.grid <- h2o.grid("gbm", y = "IsDepDelayed", x = myX,
+                         distribution="bernoulli",
+                         training_frame = air.hex,
+                         hyper_params = hyper_params,
+                         search_criteria = search_criteria)
+    print(air.grid)
+    expect_that(length(air.grid@model_ids) < size_of_hyper_space, is_true())
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)
