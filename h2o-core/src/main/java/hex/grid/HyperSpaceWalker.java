@@ -430,8 +430,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public boolean hasNext(Model previousModel) {
+          // Note: we compare _currentPermutationNum to max_models, because it counts successfully created models, but
+          // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
+          //
           // _currentPermutationNum is 1-based
-          return _currentPermutationNum < _maxHyperSpaceSize && _currentPermutationNum < search_criteria().max_models();
+          return (_visitedPermutationHashes.size() < _maxHyperSpaceSize && _currentPermutationNum < search_criteria().max_models());
         }
 
         @Override
@@ -475,13 +478,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     private int[] nextModelIndices() {
       int[] hyperparamIndices =  new int[_hyperParamNames.length];
-      for (int i = 0; i < _hyperParamNames.length; i++) {
-        hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
-      }
 
-      // check for aliases and recurse if we've visited this combo before
-      if (_visitedPermutationHashes.contains(integerHash(hyperparamIndices)))
-        return nextModelIndices();
+      do {
+        // generate random indices
+        for (int i = 0; i < _hyperParamNames.length; i++) {
+          hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
+        }
+        // check for aliases and loop if we've visited this combo before
+      } while (_visitedPermutationHashes.contains(integerHash(hyperparamIndices)));
 
       return hyperparamIndices;
     } // nextModel
