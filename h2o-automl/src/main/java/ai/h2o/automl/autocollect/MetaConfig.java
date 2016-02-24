@@ -1,4 +1,4 @@
-package autocollect;
+package ai.h2o.automl.autocollect;
 
 import water.Key;
 import water.fvec.Frame;

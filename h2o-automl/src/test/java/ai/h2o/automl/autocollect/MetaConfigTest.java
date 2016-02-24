@@ -1,6 +1,5 @@
 package ai.h2o.automl.autocollect;
 
-import autocollect.MetaConfig;
 import org.junit.Test;
 
 public class MetaConfigTest {
