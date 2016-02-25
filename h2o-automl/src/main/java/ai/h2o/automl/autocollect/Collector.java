@@ -2,7 +2,6 @@ package ai.h2o.automl.autocollect;
 
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.collectors.AutoLinuxProcFileReader;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
@@ -16,52 +15,50 @@ import java.util.HashSet;
 import java.util.List;
 
 public abstract class Collector {
-  protected static Thread resourceCollector; // special collector for RSS & CPU
+  private Thread resourceCollector; // special collector for RSS & CPU
   protected static final double[] SPLITRATIOS = new double[]{0.8,0.2};
-  static {
-    resourceCollector=new Thread(new Runnable() {
+
+  protected void startResourceCollection() {
+    resourceCollector = new Thread(new Runnable() {
       @Override public void run() {
-        //Collect resources info...
-
-        //HashMap to store resource info
-        HashMap<String, Object> getProc = new HashMap<>();
-
-        //Put elements into hash map
-        getProc.put("RSS", AutoLinuxProcFileReader.getSystemTotalTicks());
-        getProc.put("SysCPU", AutoLinuxProcFileReader.getSystemTotalTicks());
-        getProc.put("ProcCPU", AutoLinuxProcFileReader.getProcessTotalTicks());
-        getProc.put("timestamp",AutoLinuxProcFileReader.getTimeStamp());
-
-        //Push to ResourceMeta
-        AutoCollect.pushResourceMeta(getProc);
+        try {
+          Thread.sleep(3000);
+        } catch (InterruptedException e) {
+          // ignore
+        }
       }
     });
+    resourceCollector.start();
   }
 
-  public void collect(int idFrame, Frame fr, long seedSplit, HashSet<String> configs) {
+  protected void stopResourceCollection() {
+    if( !resourceCollector.isInterrupted() ) resourceCollector.interrupt();
+  }
+
+  public void collect(int idFrame, Frame fr, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
+    System.out.println("Collecting: " + getClass());
     Frame[] fs;
     Key[] trainTestKeys = new Key[]{Key.make(),Key.make()};
-    fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS, seedSplit);  // split data
+    fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS.clone(), seedSplit);  // split data
     try {
       ModelBuilder mb = makeModelBuilder(genParms(seedSplit,idFrame,fr.numCols(),configs));
       mb._parms._train=fs[0]._key;
       mb._parms._valid=fs[1]._key;
+      mb._parms._ignored_columns = ignored;
+      mb._parms._response_column = y;
       collect0(mb, configId(mb._parms, idFrame));
-    } catch( Exception ex ) {
-      ex.printStackTrace();
     } finally {
       for( Frame f: fs) f.delete();
     }
   }
 
-
   // the default collector, custom collect call in GLMCollect
   private void collect0(ModelBuilder mb, String configID) {
     Model m = null;
     try {
-      resourceCollector.start();
+      startResourceCollection();
       m = (Model)mb.trainModel().get();
-      resourceCollector.interrupt();
+      stopResourceCollection();
       logScoreHistory(mb,m,configID);
     } catch( Exception ex ) {
       ex.printStackTrace();
@@ -85,7 +82,7 @@ public abstract class Collector {
       if( (idx=colHeaders.indexOf("Training LogLoss"))!=-1 )                scoreHistory.put("train_logloss",              sanitize(iw[idx].get()));
       if( (idx=colHeaders.indexOf("Training Classification Error"))!=-1 )   scoreHistory.put("train_classification_error", sanitize(iw[idx].get()));
       if( (idx=colHeaders.indexOf("Validation MSE"))!=-1 )                  scoreHistory.put("test_mse",                   sanitize(iw[idx].get()));
-      if( (idx=colHeaders.indexOf("validation LogLoss"))!=-1 )              scoreHistory.put("test_logloss",               sanitize(iw[idx].get()));
+      if( (idx=colHeaders.indexOf("Validation LogLoss"))!=-1 )              scoreHistory.put("test_logloss",               sanitize(iw[idx].get()));
       if( (idx=colHeaders.indexOf("Validation Classification Error"))!=-1 ) scoreHistory.put("test_classification_error",  sanitize(iw[idx].get()));
       if( (idx=colHeaders.indexOf("Training Deviance"))!=-1 )               scoreHistory.put("train_deviance",             sanitize(iw[idx].get()));
       if( (idx=colHeaders.indexOf("Validation Deviance"))!=-1 )             scoreHistory.put("test_deviance",              sanitize(iw[idx].get()));

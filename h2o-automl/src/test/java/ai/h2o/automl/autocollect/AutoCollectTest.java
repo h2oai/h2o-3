@@ -42,20 +42,20 @@ public class AutoCollectTest extends TestUtil { // requires mysql-connector-java
 //    }
 //  }
 
-  @Test public void testGetFrameId() {
-    ResultSet rs = AutoCollect.query("SELECT idFrameMeta  AS id FROM FrameMeta WHERE DataSetName='asdf';");
-    try {
-      rs.next();
-    } catch(SQLException ex) {
-      //
-    }
-  }
-
-  @Test public void hasDataSetMissing() {
-    AutoCollect ac = new AutoCollect(3600,"");
-    System.out.println(ac.hasMeta("iris"));
-    System.out.println(ac.hasMeta("iriz"));
-  }
+//  @Test public void testGetFrameId() {
+//    ResultSet rs = AutoCollect.query("SELECT idFrameMeta  AS id FROM FrameMeta WHERE DataSetName='asdf';");
+//    try {
+//      rs.next();
+//    } catch(SQLException ex) {
+//      //
+//    }
+//  }
+//
+//  @Test public void hasDataSetMissing() {
+//    AutoCollect ac = new AutoCollect(3600,"");
+//    System.out.println(ac.hasMeta("iris"));
+//    System.out.println(ac.hasMeta("iriz"));
+//  }
 
 
 

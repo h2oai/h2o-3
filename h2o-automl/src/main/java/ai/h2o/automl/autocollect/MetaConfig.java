@@ -1,5 +1,6 @@
 package ai.h2o.automl.autocollect;
 
+import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -29,6 +30,7 @@ public class MetaConfig {
   private static final byte MCLASS=1;  // multiclass classification
   private static final byte REG=2;     // regression
 
+  private File _f;
   private int[] _x;
   private int _y;
   private String _datasetName;
@@ -81,7 +83,6 @@ public class MetaConfig {
       readTask(task);
       readTypes(types);
       readX(x);
-      parseFrame();
     } catch(Exception ex) {
       ex.printStackTrace();
       return null;
@@ -119,7 +120,9 @@ public class MetaConfig {
   }
   private void readY(String line) { _y = Integer.valueOf(line.trim()); }
   private void readName(String line) { _datasetName = line.trim(); }
-  private void parseFrame() {
+  public void parseFrame() {
+    if( DKV.getGet(_nfskey)==null )
+      _nfskey = NFSFileVec.make(_f)._key;
     _ps.setColumnTypes(_colTypes);
     _fr=AutoCollect.parseFrame(_ps,_nfskey);
   }
@@ -169,9 +172,7 @@ public class MetaConfig {
         case "c":
         case "cat":
         case "categorical": fillColType(-1,line); break;
-        default:  // assumes ',' separated list of pairs <colidx:type>
-          if( !line.contains(",") )
-            throw new IllegalArgumentException("Expected column separated list of types. Junk types: " + line);
+        default:  // assumes ',' separated list of pairs <colidx:type>, could be single <colidx:type>
           String[] types = line.split(",");
           if( line.contains(":") ) parseColTypesSVMLightStyle(types);
           else                     parseColTypesCommaSep(types);
@@ -222,15 +223,15 @@ public class MetaConfig {
   }
 
   private void parseSetup(String line) {
-    File f = new File(line);
-    assert f.exists():" file not found.";
-    NFSFileVec nfs = NFSFileVec.make(f);
+    _f = new File(line);
+    assert _f.exists():" file not found.";
+    NFSFileVec nfs = NFSFileVec.make(_f);
     _nfskey = nfs._key;
     _ps = AutoCollect.paresSetup(nfs,_parseType);
-    _ncol = _ps.getColumnNames().length;
+    _ncol = _ps.getColumnTypes().length;
     _colTypes = _ps.getColumnTypes();
   }
 
-  void delete() { _fr.delete(); _fr=null; }
+  void delete() { if(_fr!=null) _fr.delete(); _fr=null; }
   boolean isClass() { return _task==MCLASS || _task==BCLASS; }
 }
