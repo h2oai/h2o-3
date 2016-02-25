@@ -24,7 +24,9 @@
 #'        strategy 'Cartesian' covers the entire space of hyperparameter combinations.  Specify the
 #'        'RandomDiscrete' strategy to get random search of all the combinations of your hyperparameters.  RandomDiscrete
 #'        should be usually combined with at least one early stopping criterion,
-#'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}.
+#'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}
+#'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 10)}
+#'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \donttest{

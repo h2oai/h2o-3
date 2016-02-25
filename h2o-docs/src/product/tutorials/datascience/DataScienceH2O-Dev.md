@@ -280,19 +280,19 @@ By default, the following output displays:
 
 - **How does the algorithm handle missing values during training?**
 
-  GLM skips rows with missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level.   
+  Optionally, glm can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
-
-  GLM will predict Double.NaN for rows containg missing values.
+  Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 - **What happens if the response has missing values?**
 
-  It is handled properly, but verify the results are correct.
+  The rows with missing response are ignored during model training and validation.
 
 - **What happens during prediction if the new sample has categorical levels not seen in training?**
-
-  It will predict Double.NaN.
+  The value will be filled with either special missing level (if trained with missing values and missing_value_handling was set to MeanImputation) or 0.
 
 - **Does it matter if the data is sorted?** 
 
