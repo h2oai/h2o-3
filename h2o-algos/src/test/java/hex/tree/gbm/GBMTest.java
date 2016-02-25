@@ -1493,7 +1493,7 @@ public class GBMTest extends TestUtil {
           parms._seed = 234;
           parms._min_rows = 2;
           parms._max_depth = 10;
-          parms._ntrees = 10;
+          parms._ntrees = 2;
           parms._col_sample_rate = col_sample_rate;
           parms._sample_rate = sample_rate;
 
