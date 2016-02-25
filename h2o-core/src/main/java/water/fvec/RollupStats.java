@@ -7,6 +7,7 @@ import jsr166y.ForkJoinTask;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
@@ -286,18 +287,25 @@ final class RollupStats extends Iced {
       }).call());
   }
 
+  private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+
   static RollupStats get(Vec vec, boolean computeHisto) {
     if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
-
     if( vec.isString() ) computeHisto = false; // No histogram for string columns
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
       if(rs != null && rs.isMutating())
         throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
-      // 1. compute
+      // 1. compute only once
       try {
-        RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+        RPC rpcNew = new RPC(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto));
+        RPC rpcOld = _pendingRollups.putIfAbsent(rskey, rpcNew);
+        if(rpcOld == null) {  // no prior pending task, need to send this one
+          rpcNew.call().get();
+          _pendingRollups.remove(rskey);
+        } else // rollups computation is already in progress, wait for it to finish
+          rpcOld.get();
       } catch( Throwable t ) {
         System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
         throw new RuntimeException(t);
@@ -358,7 +366,7 @@ final class RollupStats extends Iced {
     final boolean _computeHisto;
 
     public ComputeRollupsTask(Vec v, boolean computeHisto){
-      super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-2));
+      super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-3));
       _vecKey = v._key;
       _rsKey = v.rollupStatsKey();
       _computeHisto = computeHisto;
@@ -420,17 +428,13 @@ final class RollupStats extends Iced {
           Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
           fs.blockForPending();
           if(oldv == v){ // got the lock, compute the rollups
-            addToPendingCount(1);
-            new Roll(new H2OCallback<Roll>(this) {
-              @Override
-              public void callback(Roll rs) {
+            Roll r = new Roll(null,_rsKey).doAll(vec);
                 // computed the stats, now compute histo if needed and install the response and quit
-                rs._rs._checksum ^= vec.length();
-                if(_computeHisto)
-                  computeHisto(rs._rs, vec, nnn);
-                else installResponse(nnn, rs._rs);
-              }
-            },_rsKey).dfork(vec);
+            r._rs._checksum ^= vec.length();
+            if(_computeHisto)
+              computeHisto(r._rs, vec, nnn);
+            else
+              installResponse(nnn, r._rs);
             break;
           } // else someone else is modifying the rollups => try again
         }

@@ -58,7 +58,7 @@ for (pkg in pkgs) {
 }
 
 # Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/4/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/7/R")))
 
 
 library(h2o)
@@ -96,8 +96,8 @@ hyper_params = list( ntrees = ntrees_opts,
 )
 
 
-## Search a random subset of these hyper-parmameters (max runtime and max models are enforced)
-search_criteria = list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 20, seed=123456)
+## Search a random subset of these hyper-parmameters (max runtime and max models are enforced, and the search will stop after we don't improve much over the best 5 random models)
+search_criteria = list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO", stopping_tolerance = 0.00001, stopping_rounds = 5, seed=123456)
 
 gbm.grid <- h2o.grid("gbm", 
                      grid_id = "mygrid",
