@@ -7,6 +7,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.H2O;
+import water.IcedWrapper;
 import water.Key;
 import water.fvec.Frame;
 
@@ -33,72 +34,87 @@ import java.util.HashSet;
  * The collection of GLMs runs once per dataset as part of the collectMeta call
  */
 public class GLMCollect extends Collector {
-  @Override public void collect(int idFrame, Frame fr, long seedSplit, HashSet<String> configs) {
-    Frame[] fs;
-    Key[] trainTestKeys = new Key[]{Key.make(),Key.make()};
-    fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS, seedSplit);  // split data
+  @Override public void collect(int idFrame, Frame fr, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
+    Frame[] fs=null;
+    try {
+      Key[] trainTestKeys = new Key[]{Key.make(), Key.make()};
+      fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS.clone(), seedSplit);  // split data
 
-    Frame train = fs[0];
-    Frame valid = fs[1];
+      Frame train = fs[0];
+      Frame valid = fs[1];
 
-    GLM[] glms = new GLM[3];
+      GLM[] glms = new GLM[3];
+      GLMModel.GLMParameters p;
 
-    // alpha = 1 + lambda search
-    glms[0] = new GLM(genParms(seedSplit, idFrame, train.numCols(), configs));
-    glms[0]._parms._alpha= new double[]{0.99};
+      // alpha = 1 + lambda search
+      glms[0] = (p=genParms(0.99, false, seedSplit, idFrame, configs))==null ? null : new GLM(p);
 
+      // alpha = 0 + lambda search
+      glms[1] = (p=genParms(0, false, seedSplit, idFrame, configs))==null ? null: new GLM(p);
 
-    // alpha = 0 + lambda search
-    glms[1] = new GLM(genParms(seedSplit, idFrame, train.numCols(), configs));
-    glms[1]._parms._alpha=new double[]{0};
+      // alpha = 0 + LBFGS solver
+      glms[2] = (p=genParms(0, true, seedSplit, idFrame, configs))==null ? null : new GLM(p);
 
-
-    // alpha = 0 + LBFGS solver
-    glms[2] = new GLM(genParms(seedSplit, idFrame, train.numCols(), configs));
-    glms[2]._parms._alpha = new double[]{0};
-    glms[2]._parms._solver = GLMModel.GLMParameters.Solver.L_BFGS;
-
-    GLMModel m=null;
+      GLMModel m = null;
       for (GLM mb : glms) {
+        if( mb==null ) continue;
         try {
           mb._parms._train = train._key;
           mb._parms._valid = valid._key;
-          resourceCollector.start();
+          mb._parms._ignored_columns = ignored;
+          mb._parms._response_column = y;
+          startResourceCollection();
           m = mb.trainModel().get();
-          resourceCollector.interrupt();
+          stopResourceCollection();
           logScoreHistory(mb, m, getConfigId(m._parms, idFrame));
         } catch (Exception ex) {
           ex.printStackTrace();
         } finally {
-          if (!resourceCollector.isInterrupted()) resourceCollector.interrupt();
-          if( m!=null ) m.delete();
+          stopResourceCollection();
+          if (m != null) m.delete();
         }
       }
-    for( Frame f: fs) f.delete();
+    } finally {
+      if( fs!=null )
+        for (Frame f : fs) f.delete();
+    }
   }
 
-  @Override protected GLMModel.GLMParameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs) {
+  private GLMModel.GLMParameters genParms(double alpha, boolean lbfgs, long seedSplit, int idFrame, HashSet<String> configs) {
     String configID;
     GLMModel.GLMParameters p = new GLMModel.GLMParameters();
     HashMap<String, Object> config = new HashMap<>();
     config.put("idFrame", idFrame);
     config.put("SplitSeed", seedSplit);
     p._lambda_search = true;
+    p._alpha = new double[]{alpha};
+    if( lbfgs ) p._solver = GLMModel.GLMParameters.Solver.L_BFGS;
+    config.put("alpha", p._alpha[0]);
+    config.put("Solver", p._solver.toString());
     config.put("ConfigId", configID = getConfigId(p, idFrame));
     if( configs.contains(configID) ) return null;
     configs.add(configID);
     AutoCollect.pushMeta(config, config.keySet().toArray(new String[config.size()]), "GLMConfig", null);
     return p;
   }
+  protected GLMModel.GLMParameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs) { throw H2O.unimpl(); }
   @Override protected ModelBuilder makeModelBuilder(Model.Parameters p) { return new GLM((GLMModel.GLMParameters)p); }
   @Override protected String configId(Model.Parameters p, int idFrame) { return getConfigId((GLMModel.GLMParameters)p, idFrame); }
-  @Override protected void logScoreHistory(ModelBuilder glm, Model m, String configID) {
+  @Override protected void logScoreHistory(ModelBuilder mb, Model mm, String configID) {
     // for each lambda, generate new configID, log it in the GLMConfig table and continue
-    assert glm instanceof GLM;
-    assert   m instanceof GLMModel;
-    throw H2O.unimpl();
-
-    // TODO: GLM score histories
+    assert mb instanceof GLM;
+    assert mm instanceof GLMModel;
+    GLMModel m = (GLMModel)mm;
+    HashMap<String,Object> sh = newScoreHist();
+    for(IcedWrapper[] iw: m._output._scoring_history.getCellValues()) {
+      sh.put("ConfigID", configID);
+      sh.put("duration",  Double.valueOf( ((String)iw[1].get()).trim().split(" ")[0]));
+      sh.put("lambda", iw[3].get());
+      sh.put("num_predictors", iw[4].get());
+      sh.put("train_deviance", iw[5].get());
+      sh.put("test_deviance",  iw[6].get());
+      AutoCollect.pushMeta(sh, sh.keySet().toArray(new String[sh.size()]), "GLMScoreHistory", null);
+    }
   }
 
    protected HashMap<String, Object> newScoreHist() {
@@ -113,6 +129,6 @@ public class GLMCollect extends Collector {
   }
 
   private static String getConfigId(GLMModel.GLMParameters p, int idFrame) {
-    return "glm_"+idFrame+"_"+p._alpha[0]+"_"+p._lambda[0];
+    return "glm_"+idFrame+"_"+p._alpha[0]+"_"+p._solver;
   }
 }

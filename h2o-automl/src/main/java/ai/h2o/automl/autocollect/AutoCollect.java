@@ -75,11 +75,11 @@ public class AutoCollect {
     for(MetaConfig mc: datasets) {
       if( mc != null ) {
         try {
-          setFields(mc.name(),mc.frame(),mc.x(),mc.y(),mc.isClass());
+          mc.parseFrame();
+          setFields(mc.name(), mc.frame(), mc.x(), mc.y(), mc.isClass());
           checkResponse();
           computeMetaData(mc);
           collect();
-          mc.delete();
         } finally {
           mc.delete();
         }
@@ -100,14 +100,16 @@ public class AutoCollect {
       double elapsed = 0;
       long start = System.currentTimeMillis();
       while (elapsed <= _seconds) {
-        selectCollector().collect(_idFrame, _fr, getRNG(new Random().nextLong()).nextLong(), configs);
+        selectCollector().collect(_idFrame, _fr, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
         elapsed = (System.currentTimeMillis() - start)/1000.;
         conn.commit();
       }
-    } catch(SQLException ex){
+    } catch(SQLException ex) {
       System.out.println("SQLException: " + ex.getMessage());
       System.out.println("SQLState: " + ex.getSQLState());
       System.out.println("VendorError: " + ex.getErrorCode());
+    } catch (Exception ex2) {
+      ex2.printStackTrace();
     } finally {
       try {
         conn.setAutoCommit(true);
@@ -121,7 +123,7 @@ public class AutoCollect {
 
   private static void logNewCollection() {
     String s =
-    "================================================\n" +
+    "================================================\n"+
     "             Beginning New Collection           \n"+
     "================================================";
     Log.info(s);
@@ -179,7 +181,7 @@ public class AutoCollect {
       fm.fillDummies(frameMeta);
       _idFrame = pushFrameMeta(frameMeta);
       computeAndPushColMeta(fm, _idFrame);
-      new GLMCollect().collect(_idFrame, _fr, getRNG(new Random().nextLong()).nextLong(),configs);
+      new GLMCollect().collect(_idFrame, _fr, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
     }
   }
 

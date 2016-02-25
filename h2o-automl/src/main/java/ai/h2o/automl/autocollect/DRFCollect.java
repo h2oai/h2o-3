@@ -25,7 +25,7 @@ public class DRFCollect extends Collector {
     config.put("idFrame", idFrame);
     config.put("SplitSeed", seedSplit);
     do {
-      config.put("mtries", p._mtries = 1+getRNG(new Random().nextLong()).nextInt(ncol));
+      config.put("mtries", p._mtries = 1+getRNG(new Random().nextLong()).nextInt(ncol-1));
       config.put("sample_rate", p._sample_rate = getRNG(new Random().nextLong()).nextFloat());
       config.put("ntrees", p._ntrees = 1+getRNG(new Random().nextLong()).nextInt(MAXNTREES));
       config.put("max_depth", p._max_depth = 1+getRNG(new Random().nextLong()).nextInt(MAXDEPTH));
