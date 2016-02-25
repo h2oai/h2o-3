@@ -77,7 +77,7 @@ public class AutoCollect {
         try {
           mc.parseFrame();
           mc.parseTestFrame();
-          setFields(mc.name(), mc.frame(), mc.x(), mc.y(), mc.isClass());
+          setFields(mc.name(), mc.frame(), mc.testFrame(), mc.x(), mc.y(), mc.isClass());
           checkResponse();
           computeMetaData(mc);
           collect();
@@ -101,7 +101,7 @@ public class AutoCollect {
       double elapsed = 0;
       long start = System.currentTimeMillis();
       while (elapsed <= _seconds) {
-        selectCollector().collect(_idFrame, _fr, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
+        selectCollector().collect(_idFrame, _fr, _test, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
         elapsed = (System.currentTimeMillis() - start)/1000.;
         conn.commit();
       }
@@ -156,14 +156,15 @@ public class AutoCollect {
 
   // member fields updated upon each call to computeMetaData
   private Frame _fr;
+  private Frame _test;
   private int[] _preds;
   private int[] _ignored;
   private int _resp;
   private boolean _isClass;
   private int _idFrame;
 
-  private void setFields(String datasetName, Frame f, int[] x, int y, boolean isClassification) {
-    _fr=f; _preds=x; _resp=y; _isClass=isClassification; ignored(x, f);
+  private void setFields(String datasetName, Frame f, Frame ftest, int[] x, int y, boolean isClassification) {
+    _fr=f; _test=ftest; _preds=x; _resp=y; _isClass=isClassification; ignored(x, f);
   }
   private void checkResponse() {
     if( _isClass && !_fr.vec(_resp).isCategorical() ) {
@@ -182,7 +183,7 @@ public class AutoCollect {
       fm.fillDummies(frameMeta);
       _idFrame = pushFrameMeta(frameMeta);
       computeAndPushColMeta(fm, _idFrame);
-      new GLMCollect().collect(_idFrame, _fr, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
+      new GLMCollect().collect(_idFrame, _fr, _test, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
     }
   }
 
