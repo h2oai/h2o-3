@@ -35,20 +35,21 @@ public abstract class Collector {
     if( !resourceCollector.isInterrupted() ) resourceCollector.interrupt();
   }
 
-  public void collect(int idFrame, Frame fr, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
+  public void collect(int idFrame, Frame fr, Frame test, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
     System.out.println("Collecting: " + getClass());
-    Frame[] fs;
-    Key[] trainTestKeys = new Key[]{Key.make(),Key.make()};
-    fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS.clone(), seedSplit);  // split data
+    Frame[] fs=null;
+    if( test==null )
+      fs = ShuffleSplitFrame.shuffleSplitFrame(fr, new Key[]{Key.make(),Key.make()}, SPLITRATIOS.clone(), seedSplit);  // split data
     try {
       ModelBuilder mb = makeModelBuilder(genParms(seedSplit,idFrame,fr.numCols(),configs));
-      mb._parms._train=fs[0]._key;
-      mb._parms._valid=fs[1]._key;
+      mb._parms._train=fs==null?fr._key:fs[0]._key;
+      mb._parms._valid=fs==null?test._key:fs[1]._key;
       mb._parms._ignored_columns = ignored;
       mb._parms._response_column = y;
       collect0(mb, configId(mb._parms, idFrame));
     } finally {
-      for( Frame f: fs) f.delete();
+      if( fs!=null )
+        for( Frame f: fs) f.delete();
     }
   }
 

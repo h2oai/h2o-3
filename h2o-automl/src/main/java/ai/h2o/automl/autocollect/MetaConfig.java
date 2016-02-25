@@ -30,13 +30,17 @@ public class MetaConfig {
   private static final byte MCLASS=1;  // multiclass classification
   private static final byte REG=2;     // regression
 
-  private File _f;
+  private File _trainFile;
+  private File _testFile;
   private int[] _x;
   private int _y;
   private String _datasetName;
-  private ParseSetup _ps;
-  private Key _nfskey;
-  private Frame _fr;
+  private ParseSetup _trainParseSetup;
+  private ParseSetup _testParseSetup;
+  private Key _trainNFSKey;
+  private Key _testNFSKey;
+  private Frame _trainFrame;
+  private Frame _testFrame;
   private byte[] _colTypes;
   private byte _task;
   private ParserType _parseType;  // GUESS(false), ARFF(true), XLS(false), XLSX(false), CSV(true), SVMLight(true);
@@ -50,7 +54,8 @@ public class MetaConfig {
       while((line=br.readLine())!=null) {
         metaConfigs.add(new MetaConfig().parseLines(
                 line          /*datasetName*/,
-                br.readLine() /*relPath*/,
+                br.readLine() /*relPathTrain*/,
+                br.readLine() /*relPathTest*/,
                 br.readLine() /*parseType*/,
                 br.readLine() /*task*/,
                 br.readLine() /*x*/,
@@ -66,7 +71,8 @@ public class MetaConfig {
   public int[] x() { return _x; }
   public int   y() { return _y; }
   public String name() { return _datasetName; }
-  public Frame frame() { return _fr; }
+  public Frame frame() { return _trainFrame; }
+  public Frame testFrame() { return _testFrame; }
 
   // some stupid public methods for testing
   public void setncol(int n) { _ncol=n; }
@@ -74,12 +80,13 @@ public class MetaConfig {
   public void sety() { _y=_ncol-1; }
   public void setx() { _x= ArrayUtils.seq(0, _ncol); }
 
-  private MetaConfig parseLines(String datasetName, String relPathToDataset, String parseType, String task, String x, String types, String y) {
+  private MetaConfig parseLines(String datasetName, String relPathToDataset, String relPathToTest, String parseType, String task, String x, String types, String y) {
     try {
       readName(datasetName);
       readParseType(parseType);
       readY(y);
       parseSetup(relPathToDataset);
+      testSetup(relPathToTest);
       readTask(task);
       readTypes(types);
       readX(x);
@@ -121,10 +128,18 @@ public class MetaConfig {
   private void readY(String line) { _y = Integer.valueOf(line.trim()); }
   private void readName(String line) { _datasetName = line.trim(); }
   public void parseFrame() {
-    if( DKV.getGet(_nfskey)==null )
-      _nfskey = NFSFileVec.make(_f)._key;
-    _ps.setColumnTypes(_colTypes);
-    _fr=AutoCollect.parseFrame(_ps,_nfskey);
+    if( DKV.getGet(_trainNFSKey)==null )
+      _trainNFSKey = NFSFileVec.make(_trainFile)._key;
+    _trainParseSetup.setColumnTypes(_colTypes);
+    _trainFrame =AutoCollect.parseFrame(_trainParseSetup, _trainNFSKey);
+  }
+  public void parseTestFrame() {
+    if( _testParseSetup!=null ) {
+      if( DKV.getGet(_testNFSKey)==null )
+        _testNFSKey = NFSFileVec.make(_testFile)._key;
+      _testParseSetup.setColumnTypes(_colTypes);
+      _testFrame =AutoCollect.parseFrame(_testParseSetup, _testNFSKey);
+    }
   }
   private void readParseType(String line) {
     line = line.trim().toLowerCase();
@@ -223,15 +238,28 @@ public class MetaConfig {
   }
 
   private void parseSetup(String line) {
-    _f = new File(line);
-    assert _f.exists():" file not found.";
-    NFSFileVec nfs = NFSFileVec.make(_f);
-    _nfskey = nfs._key;
-    _ps = AutoCollect.paresSetup(nfs,_parseType);
-    _ncol = _ps.getColumnTypes().length;
-    _colTypes = _ps.getColumnTypes();
+    _trainFile = new File(line);
+    assert _trainFile.exists():" file not found: " + line;
+    NFSFileVec nfs = NFSFileVec.make(_trainFile);
+    _trainNFSKey = nfs._key;
+    _trainParseSetup = AutoCollect.paresSetup(nfs,_parseType);
+    _ncol = _trainParseSetup.getColumnTypes().length;
+    _colTypes = _trainParseSetup.getColumnTypes();
   }
 
-  void delete() { if(_fr!=null) _fr.delete(); _fr=null; }
+  private void testSetup(String line) {
+    if( !(line.isEmpty() || line.equals("")) ) {
+      _testFile = new File(line);
+      assert _testFile.exists():" file not found: " + line;
+      NFSFileVec nfs = NFSFileVec.make(_testFile);
+      _testNFSKey = nfs._key;
+      _testParseSetup = AutoCollect.paresSetup(nfs,_parseType);
+    }
+  }
+
+  void delete() {
+    if( _trainFrame!=null ) _trainFrame.delete(); _trainFrame = null;
+    if( _testFrame !=null ) _testFrame.delete();  _testFrame  = null;
+  }
   boolean isClass() { return _task==MCLASS || _task==BCLASS; }
 }

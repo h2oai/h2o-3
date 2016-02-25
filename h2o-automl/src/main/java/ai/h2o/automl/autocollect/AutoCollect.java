@@ -76,6 +76,7 @@ public class AutoCollect {
       if( mc != null ) {
         try {
           mc.parseFrame();
+          mc.parseTestFrame();
           setFields(mc.name(), mc.frame(), mc.x(), mc.y(), mc.isClass());
           checkResponse();
           computeMetaData(mc);
