@@ -187,7 +187,7 @@ public class DataInfo extends Keyed<DataInfo> {
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?_catOffsets[i+1] - _catOffsets[i] - 1:-1;
+      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length:-1;
       _permutation[i] = cats[i];
     }
     _numMeans = new double[_nums];
@@ -261,22 +261,22 @@ public class DataInfo extends Keyed<DataInfo> {
 
   protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
-  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes, int responses, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean weight, boolean offset, boolean fold){
+  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes){
     _fullCatOffsets = dinfo._catOffsets;
-    _offset = offset;
-    _weights = weight;
-    _fold = fold;
+    _offset = dinfo._offset;
+    _weights = dinfo._weights;
+    _fold = dinfo._fold;
     _valid = false;
-    assert predictor_transform != null;
-    assert  response_transform != null;
-    _predictor_transform = predictor_transform;
-    _response_transform  =  response_transform;
-    _skipMissing = skipMissing;
-    _imputeMissing = imputeMissing;
+    assert dinfo._predictor_transform != null;
+    assert  dinfo._response_transform != null;
+    _predictor_transform = dinfo._predictor_transform;
+    _response_transform  =  dinfo._response_transform;
+    _skipMissing = dinfo._skipMissing;
+    _imputeMissing = dinfo._imputeMissing;
     _adaptedFrame = fr;
     _catOffsets = MemoryManager.malloc4(catLevels.length + 1);
     _catMissing = new boolean[catLevels.length];
-    Arrays.fill(_catMissing,!(imputeMissing || skipMissing));
+    Arrays.fill(_catMissing,!(dinfo._imputeMissing || dinfo._skipMissing));
     int s = 0;
     for(int i = 0; i < catLevels.length; ++i){
       _catOffsets[i] = s;
@@ -284,10 +284,10 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     _catLvls = catLevels;
     _catOffsets[_catOffsets.length-1] = s;
-    _responses = responses;
+    _responses = dinfo._responses;
     _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
-    _useAllFactorLevels = true;
+    _nums = fr.numCols()-_cats - dinfo._responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
+    _useAllFactorLevels = dinfo._useAllFactorLevels;
     _numMeans = new double[_nums];
     _normMul = normMul;
     _normSub = normSub;
@@ -313,12 +313,11 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);
     // first do categoricals...
     if(_catOffsets != null) {
-      int coff = _useAllFactorLevels?0:1;
       while (i < cols.length && cols[i] < _catOffsets[_catOffsets.length - 1]) {
         int[] levels = MemoryManager.malloc4(_catOffsets[j + 1] - _catOffsets[j]);
         int k = 0;
         while (i < cols.length && cols[i] < _catOffsets[j + 1])
-          levels[k++] = cols[i++] - _catOffsets[j] + coff;
+          levels[k++] = cols[i++] - _catOffsets[j];
         if (k > 0)
           catLvls[j] = Arrays.copyOf(levels, k);
         ++j;
@@ -369,7 +368,7 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     // public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
-    DataInfo dinfo = new DataInfo(this,f, normMul, normSub, catLvls, catModes, _responses, _predictor_transform, _response_transform, _skipMissing, _imputeMissing, _weights, _offset, _fold);
+    DataInfo dinfo = new DataInfo(this,f, normMul, normSub, catLvls, catModes);
     dinfo._activeCols = cols;
     return dinfo;
   }
@@ -467,7 +466,7 @@ public class DataInfo extends Keyed<DataInfo> {
           continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
       }
-      if (_catMissing[i] && getCategoricalId(i,vecs[i].domain().length) >=0 ) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     final int nums = n-k;
     System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
@@ -629,17 +628,15 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final int getCategoricalId(int cid, int val) {
+    if(!_useAllFactorLevels) val -= 1;
     if(val >= fullCatOffsets()[cid+1]) {  // previously unseen level
       assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
-      val = _catModes[cid];
+      val = _catModes[cid] - (_useAllFactorLevels?0:1);
     }
-    final int c;
     if (_catLvls[cid] != null)  // some levels are ignored?
-      c = Arrays.binarySearch(_catLvls[cid], val);
-    else c = val - (_useAllFactorLevels?0:1);
-    if( c < 0) return -1;
-    int v = c + _catOffsets[cid];
-    return v;
+      val = Arrays.binarySearch(_catLvls[cid], val);
+    if( val < 0) return -1;
+    return val + _catOffsets[cid];
   }
 
   public final Row extractDenseRow(double [] vals, Row row) {
