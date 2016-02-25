@@ -34,14 +34,14 @@ import java.util.HashSet;
  * The collection of GLMs runs once per dataset as part of the collectMeta call
  */
 public class GLMCollect extends Collector {
-  @Override public void collect(int idFrame, Frame fr, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
+  @Override public void collect(int idFrame, Frame fr, Frame test, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
     Frame[] fs=null;
     try {
-      Key[] trainTestKeys = new Key[]{Key.make(), Key.make()};
-      fs = ShuffleSplitFrame.shuffleSplitFrame(fr, trainTestKeys, SPLITRATIOS.clone(), seedSplit);  // split data
+      if( test==null )
+        fs = ShuffleSplitFrame.shuffleSplitFrame(fr, new Key[]{Key.make(), Key.make()}, SPLITRATIOS.clone(), seedSplit);  // split data
 
-      Frame train = fs[0];
-      Frame valid = fs[1];
+      Frame train = fs==null?fr:fs[0];
+      Frame valid = fs==null?test:fs[1];
 
       GLM[] glms = new GLM[3];
       GLMModel.GLMParameters p;
