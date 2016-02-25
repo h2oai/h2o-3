@@ -34,7 +34,7 @@ public class DRFCollect extends Collector {
       config.put("nbins_cats", p._nbins_cats = 10+getRNG(new Random().nextLong()).nextInt(MAXNBINSCATS));
       config.put("ConfigID", configID = getConfigId(p,idFrame));
     } while(!isValidConfig(configID, configs));
-    assert configs.add(configID);
+    configs.add(configID);
     AutoCollect.pushMeta(config, config.keySet().toArray(new String[config.size()]), "RFConfig",null);
     return p;
   }
