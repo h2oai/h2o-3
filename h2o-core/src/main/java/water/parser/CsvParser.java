@@ -467,7 +467,7 @@ MAIN_LOOP:
       String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
       if (_setup._column_names != null) {
         for (int i = 0; hasHdr && i < firstLine.length; ++i)
-          hasHdr = _setup._column_names[i].equalsIgnoreCase(firstLine[i]);
+          hasHdr = (_setup._column_names[i] == firstLine[i]) || (_setup._column_names[i] != null && _setup._column_names[i].equalsIgnoreCase(firstLine[i]));
       } else { // declared to have header, but no column names provided, assume header exist in all files
         _setup._column_names = firstLine;
       }

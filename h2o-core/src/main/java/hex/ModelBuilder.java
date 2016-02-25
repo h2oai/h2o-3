@@ -948,7 +948,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
-  protected transient HashSet<String> _removedCols = new HashSet<String>();
+  transient public HashSet<String> _removedCols = new HashSet<>();
   abstract class FilterCols {
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
@@ -956,14 +956,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     abstract protected boolean filter(Vec v);
 
     void doIt( Frame f, String msg, boolean expensive ) {
-      for( int i = 0; i < f.vecs().length - _specialVecs; i++ ) {
-        if( filter(f.vecs()[i]) ) {
-          _removedCols.add(f._names[i]);
-          f.remove(i);
-          i--; // Re-run at same iteration after dropping a col
+      List<Integer> rmcolsList = new ArrayList<>();
+      for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
+        if( filter(f.vecs()[i]) ) rmcolsList.add(i);
+      if( !rmcolsList.isEmpty() ) {
+        _removedCols = new HashSet<>(rmcolsList.size());
+        int[] rmcols = new int[rmcolsList.size()];
+        for (int i=0;i<rmcols.length;++i) {
+          rmcols[i]=rmcolsList.get(i);
+          _removedCols.add(f._names[rmcols[i]]);
         }
-      }
-      if( !_removedCols.isEmpty() ) {
+        f.remove(rmcols); //bulk-remove
         msg += _removedCols.toString();
         warn("_train", msg);
         if (expensive) Log.info(msg);

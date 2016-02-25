@@ -233,7 +233,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
         } // finally
 
-        if (_hyperSpaceWalker.stopEarly(model, this.scoringInfos)) {
+        if (model != null && this.scoringInfos!= null && // did model build and scoringInfo creation succeed?
+            _hyperSpaceWalker.stopEarly(model, this.scoringInfos)) {
           Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
           break;
         }
