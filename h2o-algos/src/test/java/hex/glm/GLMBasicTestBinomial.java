@@ -1015,8 +1015,10 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._standardize = false;
     params._train = _prostateTrain._key;
     params._compute_p_values = true;
+    params._objective_epsilon = 0;
     params._missing_values_handling = MissingValuesHandling.Skip;
     params._lambda = new double[]{0};
+    params._beta_epsilon = 1e-4;
     GLM job0 = null;
     try {
       job0 = new GLM(params);
@@ -1160,7 +1162,6 @@ public class GLMBasicTestBinomial extends TestUtil {
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-
     _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
     _prostateTest  = parse_test_file("smalldata/glm_test/prostate_cat_test.csv");
     _prostateTrainUpsampled = parse_test_file("smalldata/glm_test/prostate_cat_train_upsampled.csv");
@@ -1169,7 +1170,6 @@ public class GLMBasicTestBinomial extends TestUtil {
 
   @AfterClass
   public static void cleanUp() {
-
     if(_abcd != null)  _abcd.delete();
     if(_prostateTrainUpsampled != null) _prostateTrainUpsampled.delete();
     if(_prostateTest != null) _prostateTest.delete();

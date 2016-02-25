@@ -407,8 +407,7 @@ h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
   expect_equal(length(df_h2o_obj), length(df_r_obj))
   
   #Check NAs are in same places 
-  df_h2o_nas <- if (length(df_h2o_obj) == 1) df_h2o_obj == "NaN" else is.na(df_h2o_obj)
-  if (length(df_h2o_nas) ==1 && is.na(df_h2o_nas)) df_h2o_nas <- is.na(df_h2o_obj)
+  df_h2o_nas <- is.na(df_h2o_obj)
   df_r_nas <- is.na(df_r_obj)
   expect_true(all(df_h2o_nas == df_r_nas))
   

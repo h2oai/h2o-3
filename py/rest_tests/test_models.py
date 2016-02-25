@@ -63,6 +63,9 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         # Test stopping criteria:
         GridSpec.for_dataset('gbm_prostate_regression_grid_max_3', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_models': 3 } ),
         GridSpec.for_dataset('gbm_prostate_regression_grid_max_20mS', 'gbm', datasets['prostate_regression'], { 'max_depth': 3 }, { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "RandomDiscrete", 'max_runtime_secs': 0.020 } ),
+
+        GridSpec.for_dataset('gbm_prostate_regression_grid_stopping_deviance', 'gbm', datasets['prostate_regression'], {  }, { 'max_depth': [1, 2, 3, 4, 5, 6, 7], 'ntrees': [1, 2, 3, 4, 5, 6], 'distribution': ["gaussian", "poisson", "gamma"] }, { 'strategy': "RandomDiscrete", 'seed': 42, 'stopping_metric': 'deviance', 'stopping_tolerance': 0.00001, 'stopping_rounds': 5 } ),
+        GridSpec.for_dataset('gbm_prostate_regression_grid_stopping_auto', 'gbm', datasets['prostate_regression'], {  }, { 'max_depth': [1, 2, 3, 4, 5, 6, 7], 'ntrees': [1, 2, 3, 4, 5, 6], 'distribution': ["gaussian", "poisson", "gamma"] }, { 'strategy': "RandomDiscrete", 'seed': 42, 'stopping_metric': 'AUTO', 'stopping_tolerance': 0.00001, 'stopping_rounds': 5 } ),
        ]
     
     for grid_spec in grids_to_build:
@@ -79,6 +82,19 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     # test search limits: max_runtime_secs
     grid = a_node.grid(key='gbm_prostate_regression_grid_max_20mS')
     assert len(grid['model_ids']) < 12, "FAIL: using max_runtime_secs, expected less than 12 models, got: " + str(len(grid['model_ids']))
+
+    # test search limits: stopping_deviance
+    grid = a_node.grid(key='gbm_prostate_regression_grid_stopping_deviance')
+    deviance_model_count = len(grid['model_ids'])
+    assert len(grid['model_ids']) < 126, "FAIL: using asymptotic deviance stopping criterion, expected less than 126 models, got: " + str(len(grid['model_ids']))
+
+    # test search limits: stopping_auto
+    grid = a_node.grid(key='gbm_prostate_regression_grid_stopping_auto')
+    auto_model_count = len(grid['model_ids'])
+    assert len(grid['model_ids']) < 126, "FAIL: using asymptotic auto stopping criterion, expected less than 126 models, got: " + str(len(grid['model_ids']))
+
+    # test that AUTO gave the same answer as deviance
+    assert deviance_model_count == auto_model_count, "FAIL: using asymptotic auto stopping criterion, expected the same number of models as deviance, got: " + str(auto_model_count) + " instead of: " + str(deviance_model_count)
 
 #    grid = a_node.grid(key='kmeans_prostate_grid', sort_by='', decreasing=True)
     h2o_test_utils.fetch_and_validate_grid_sort(a_node, key='kmeans_prostate_grid', sort_by='totss', decreasing=True)

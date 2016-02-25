@@ -2,7 +2,7 @@
 CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/"
 SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 LUDI.ROOT.PATH <- "/Users/ludirehak/"
-ROOT.PATH <- SPENCER.ROOT.PATH
+ROOT.PATH <- LUDI.ROOT.PATH
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 

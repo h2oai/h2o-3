@@ -118,7 +118,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       while (it.hasNext(model)) {
         try {
-          gridWork += it.nextModelParameters(model).progressUnits();
+          Model.Parameters parms = it.nextModelParameters(model);
+          gridWork += (parms._nfolds > 1 ? (parms._nfolds+2/*pre+post-fold workd*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
         }
@@ -176,7 +177,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         double time_remaining_secs = it.time_remaining_secs();
         double max_runtime_secs = it.max_runtime_secs();
 
-        if  (time_remaining_secs < 0) {
+        if (time_remaining_secs < 0) {
           Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
           return;
         }
@@ -185,6 +186,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
+
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
 
@@ -210,8 +212,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
             model.fillScoringInfo(scoringInfo);
             this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
-            // TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO// TODO TODO TODO
-            ScoringInfo.sort(this.scoringInfos, ScoreKeeper.StoppingMetric.MSE);
+            ScoringInfo.sort(this.scoringInfos, _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
@@ -230,6 +231,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           _job.update(1);
           // Always update grid in DKV after model building attempt
           grid.update(_job);
+        } // finally
+
+        if (model != null && this.scoringInfos!= null && // did model build and scoringInfo creation succeed?
+            _hyperSpaceWalker.stopEarly(model, this.scoringInfos)) {
+          Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+          break;
         }
       } // while (it.hasNext(model))
       Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
@@ -277,7 +284,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get()).checksum() == checksum;
+        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get())._parms.checksum() == checksum;
       }
     }).keys();
 

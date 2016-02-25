@@ -79,7 +79,7 @@ public final class ParseDataset {
   public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup setup, boolean deleteOnDone) {
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
-    if ( !x.equals(""))
+    if ( x != null && !x.equals(""))
       throw new IllegalArgumentException("Found duplicate column name "+x);
     // Some quick sanity checks: no overwriting your input key, and a resource check.
     long totalParseSize=0;

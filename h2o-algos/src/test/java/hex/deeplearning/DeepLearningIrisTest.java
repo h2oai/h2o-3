@@ -177,6 +177,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             p._force_load_balance = false; //keep just 1 chunk for reproducibility
                             p._overwrite_with_best_model = false;
                             p._replicate_training_data = false;
+                            p._mini_batch_size = 1;
                             p._single_node_mode = true;
                             p._epochs = 0;
                             p._elastic_averaging = false;
@@ -187,8 +188,8 @@ public class DeepLearningIrisTest extends TestUtil {
 
                             // use the same random weights for the reference implementation
                             Neurons l = neurons[1];
-                            for (int o = 0; o < l._a.size(); o++) {
-                              for (int i = 0; i < l._previous._a.size(); i++) {
+                            for (int o = 0; o < l._a[0].size(); o++) {
+                              for (int i = 0; i < l._previous._a[0].size(); i++) {
 //                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
                                 ref._nn.ihWeights[i][o] = l._w.get(o, i);
                               }
@@ -196,8 +197,8 @@ public class DeepLearningIrisTest extends TestUtil {
 //                              System.out.println("initial bias[" + o + "]=" + l._b[o]);
                             }
                             l = neurons[2];
-                            for (int o = 0; o < l._a.size(); o++) {
-                              for (int i = 0; i < l._previous._a.size(); i++) {
+                            for (int o = 0; o < l._a[0].size(); o++) {
+                              for (int i = 0; i < l._previous._a[0].size(); i++) {
 //                                System.out.println("initial weight[" + o + "]=" + l._w[o * l._previous._a.length + i]);
                                 ref._nn.hoWeights[i][o] = l._w.get(o, i);
                               }
@@ -225,8 +226,8 @@ public class DeepLearningIrisTest extends TestUtil {
                              */
                             neurons = DeepLearningTask.makeNeuronsForTesting(mymodel.model_info()); //link the weights to the neurons, for easy access
                             l = neurons[1];
-                            for (int o = 0; o < l._a.size(); o++) {
-                              for (int i = 0; i < l._previous._a.size(); i++) {
+                            for (int o = 0; o < l._a[0].size(); o++) {
+                              for (int i = 0; i < l._previous._a[0].size(); i++) {
                                 double a = ref._nn.ihWeights[i][o];
                                 double b = l._w.get(o, i);
                                 compareVal(a, b, abseps, releps);
@@ -242,8 +243,8 @@ public class DeepLearningIrisTest extends TestUtil {
                              * Compare weights and biases for output layer
                              */
                             l = neurons[2];
-                            for (int o = 0; o < l._a.size(); o++) {
-                              for (int i = 0; i < l._previous._a.size(); i++) {
+                            for (int o = 0; o < l._a[0].size(); o++) {
+                              for (int i = 0; i < l._previous._a[0].size(); i++) {
                                 double a = ref._nn.hoWeights[i][o];
                                 double b = l._w.get(o, i);
                                 compareVal(a, b, abseps, releps);
@@ -265,7 +266,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             try {
                               for (int i = 0; i < _test.numRows(); ++i) {
                                 // Reference predictions
-                                double[] xValues = new double[neurons[0]._a.size()];
+                                double[] xValues = new double[neurons[0]._a[0].size()];
                                 System.arraycopy(ref._testData[i], 0, xValues, 0, xValues.length);
                                 double[] ref_preds = ref._nn.ComputeOutputs(xValues);
 
