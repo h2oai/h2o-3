@@ -187,7 +187,7 @@ public class DataInfo extends Keyed<DataInfo> {
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length:-1;
+      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels?0:1):-100;
       _permutation[i] = cats[i];
     }
     _numMeans = new double[_nums];
@@ -287,7 +287,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _responses = dinfo._responses;
     _cats = catLevels.length;
     _nums = fr.numCols()-_cats - dinfo._responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
-    _useAllFactorLevels = dinfo._useAllFactorLevels;
+    _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _numMeans = new double[_nums];
     _normMul = normMul;
     _normSub = normSub;
@@ -313,17 +313,19 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);
     // first do categoricals...
     if(_catOffsets != null) {
+      int coff = _useAllFactorLevels?0:1;
       while (i < cols.length && cols[i] < _catOffsets[_catOffsets.length - 1]) {
         int[] levels = MemoryManager.malloc4(_catOffsets[j + 1] - _catOffsets[j]);
         int k = 0;
         while (i < cols.length && cols[i] < _catOffsets[j + 1])
-          levels[k++] = cols[i++] - _catOffsets[j];
+          levels[k++] = (cols[i++] - _catOffsets[j]) + coff;
         if (k > 0)
           catLvls[j] = Arrays.copyOf(levels, k);
         ++j;
       }
     }
-    int [] catModes = _catModes;
+    int [] catModes = _catModes.clone();
+
     for(int k =0; k < catLvls.length; ++k)
       if(catLvls[k] == null)ignoredCols[ignoredCnt++] = k;
     if(ignoredCnt > 0){
@@ -336,6 +338,10 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       assert y == cs.length;
       catLvls = cs;
+    }
+    if(!_useAllFactorLevels) {
+      for(int c = 0; c < catModes.length; ++c)
+        catModes[c] += 1;
     }
     // now numerics
     int prev = j = 0;
@@ -635,8 +641,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     if (_catLvls[cid] != null)  // some levels are ignored?
       val = Arrays.binarySearch(_catLvls[cid], val);
-    if( val < 0) return -1;
-    return val + _catOffsets[cid];
+    return val < 0?-1:val + _catOffsets[cid];
   }
 
   public final Row extractDenseRow(double [] vals, Row row) {
