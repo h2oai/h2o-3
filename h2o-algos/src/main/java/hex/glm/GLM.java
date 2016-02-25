@@ -437,7 +437,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
-        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols, _parms._standardize):gram.cholesky(null));
         if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
