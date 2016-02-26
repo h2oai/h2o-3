@@ -12,3 +12,4 @@ six
 seaborn
 future
 matplotlib
+MySQL-python

@@ -210,9 +210,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             //// build the model!
             model = buildModel(params, grid, counter++, protoModelKey);
 
-            model.fillScoringInfo(scoringInfo);
-            this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
-            ScoringInfo.sort(this.scoringInfos, _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+            if (model!=null) {
+              model.fillScoringInfo(scoringInfo);
+              this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
+              ScoringInfo.sort(this.scoringInfos, _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+            }
           } catch (RuntimeException e) { // Catch everything
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
