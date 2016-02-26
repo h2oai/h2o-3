@@ -215,10 +215,10 @@ public class FrameMeta extends Iced {
 
     @Override public void compute2() {
       long start = System.currentTimeMillis();
-      HistTask t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
+      HistTask  t = new HistTask(_colMeta._histo, _mean).doAll(_colMeta._v);
       _elapsed = System.currentTimeMillis() - start;
-      _colMeta._thirdMoment = t._thirdMoment / (_colMeta._v.length()-1);
-      _colMeta._fourthMoment = t._fourthMoment / (_colMeta._v.length()-1);
+      _colMeta._thirdMoment = t._thirdMoment / ((_colMeta._v.length() - _colMeta._v.naCnt())-1);
+      _colMeta._fourthMoment = t._fourthMoment / ((_colMeta._v.length() - _colMeta._v.naCnt())-1);
       _colMeta._MRTaskMillis = _elapsed;
       _colMeta._skew = _colMeta._thirdMoment / Math.sqrt(_colMeta._variance*_colMeta._variance*_colMeta._variance);
       _colMeta._kurtosis = _colMeta._fourthMoment / (_colMeta._variance * _colMeta._variance);
@@ -239,7 +239,7 @@ public class FrameMeta extends Iced {
         double[] bins = new double[_h._nbin];
         double colData;
         for(int r=0; r<C._len; ++r) {
-          colData=C.atd(r);
+          if( Double.isNaN(colData=C.atd(r)) ) continue;
           if( colData < min ) min = colData;
           if( colData > max ) max = colData;
           bins[_h.bin(colData)]++;          double delta = colData - _mean;
@@ -258,8 +258,16 @@ public class FrameMeta extends Iced {
         if( _h==null ) _h=t._h;
         else if( t._h!=null )
           _h.add(t._h);
-        _thirdMoment+=t._thirdMoment;
-        _fourthMoment+= t._fourthMoment;
+
+        if( !Double.isNaN(t._thirdMoment) ) {
+          if( Double.isNaN(_thirdMoment) ) _thirdMoment = t._thirdMoment;
+          else _thirdMoment += t._thirdMoment;
+        }
+
+        if( !Double.isNaN(t._fourthMoment) ) {
+          if( Double.isNaN(_fourthMoment) ) _fourthMoment = t._fourthMoment;
+          else _fourthMoment += t._fourthMoment;
+        }
       }
     }
   }

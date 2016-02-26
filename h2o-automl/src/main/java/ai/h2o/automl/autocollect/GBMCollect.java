@@ -12,7 +12,7 @@ import static water.util.RandomUtils.getRNG;
 
 public class GBMCollect extends Collector {
 
-  public static int MAXDEPTH=50;
+  public static int MAXDEPTH=10;
   public static int MAXNBINS=1000;
   public static int MAXNBINSCATS=1000;
   public static int MAXNTREES=50;

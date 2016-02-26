@@ -1,11 +1,13 @@
 package ai.h2o.automl.tasks;
 
+import ai.h2o.automl.AutoML;
 import hex.Model;
 import hex.ModelMetricsSupervised;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 /**
@@ -23,14 +25,18 @@ import water.util.ArrayUtils;
  */
 public class VIF extends DTask<VIF> {
 
+  private final static int LBFGS_THRESHOLD=3000;
+
   private GLM _glm;
   private double _vif;
 
+  private VIF() { _glm=null; _vif=AutoML.SQLNAN; }
   private VIF(Key<Frame> trainFrame, String response, String[] include, String[] colNames) {
     GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
     params._train = trainFrame;
     params._lambda = new double[]{0};
     params._standardize=false;
+    if( nPredictors((Frame)DKV.getGet(trainFrame),include) > LBFGS_THRESHOLD ) params._solver = GLMModel.GLMParameters.Solver.L_BFGS;
     params._ignored_columns = ArrayUtils.difference(colNames, include);
     params._response_column = response;
     _glm = new GLM(params);
@@ -38,12 +44,31 @@ public class VIF extends DTask<VIF> {
 
   public static VIF[] make(Key<Frame> trainFrame, String[] predictors, String[] colNames) {
     VIF[] vifs = new VIF[predictors.length];
-    for(int i=0;i<vifs.length;++i)
-      vifs[i] = new VIF(trainFrame, predictors[i], predictors, colNames);
+
+    if( nPredictors((Frame)DKV.getGet(trainFrame), predictors) > 10000 ) {
+      for(int i=0;i<vifs.length;++i) { vifs[i] = new VIF(); }
+    } else {
+      for (int i = 0; i < vifs.length; ++i) {
+        vifs[i] = new VIF(trainFrame, predictors[i], predictors, colNames);
+        if( ((Frame) DKV.getGet(trainFrame)).vec(predictors[i]).isCategorical() ) {  // don't bother with cat columns
+          vifs[i]._glm = null;
+          vifs[i]._vif = AutoML.SQLNAN;
+        }
+      }
+    }
     return vifs;
   }
 
-  @Override public void compute2() { _glm.trainModel(); tryComplete(); }
+  private static long nPredictors(Frame fr, String[] cols) {
+    long cnt=0;
+    for(String col: cols) {
+      Vec v = fr.vec(col);
+      cnt += v.isCategorical() ? v.domain().length : 1;
+    }
+    return cnt;
+  }
+
+  @Override public void compute2() { if(_glm!=null) _glm.trainModel(); vif(); tryComplete(); }
 
   public double vif() {
     if( _glm!=null ) {
@@ -67,6 +92,7 @@ public class VIF extends DTask<VIF> {
 
   // blocking call for launching and collecting the VIFs
   public static void launchVIFs(VIF[] vifs) {
+    if( vifs==null ) return;
     Futures fs = new Futures();
     for( int i=0; i<vifs.length; i++ )
       fs.add(RPC.call(H2O.CLOUD._memary[i%H2O.getCloudSize()], vifs[i]));
