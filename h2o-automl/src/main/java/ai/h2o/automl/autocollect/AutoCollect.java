@@ -300,7 +300,9 @@ public class AutoCollect {
   public static void main(String[] args) {
     H2O.main(new String[]{});
     H2O.registerRestApis(System.getProperty("user.dir"));
-    AutoCollect ac = new AutoCollect(30, "meta");
+    System.out.println("Beginning AutoCollect...");
+    AutoCollect ac = new AutoCollect(3*3600, "meta");
     ac.start();
+    System.out.println("AutoCollect end.");
   }
 }

@@ -62,9 +62,7 @@ public class MetaConfig {
                 br.readLine() /*xTypes*/,
                 br.readLine() /*y*/));
       }
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
+    } catch (IOException ex) { throw new RuntimeException(ex); }
     return metaConfigs.toArray(new MetaConfig[metaConfigs.size()]);
   }
 
