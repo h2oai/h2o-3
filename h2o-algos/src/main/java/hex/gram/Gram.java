@@ -217,9 +217,10 @@ public final class Gram extends Iced<Gram> {
   public Cholesky qrCholesky(ArrayList<Integer> dropped_cols, boolean standardized) {
     final double [][] Z = getXX(true,true);
     final double [][] R = new double[Z.length][];
+    final double [] Zdiag = new double[Z.length];
     final double [] ZdiagInv = new double[Z.length];
     for(int i = 0; i < Z.length; ++i)
-      ZdiagInv[i] = 1.0/Z[i][i];
+      ZdiagInv[i] = 1.0/(Zdiag[i] = Z[i][i]);
     for(int j = 0; j < Z.length; ++j) {
       final double [] gamma = R[j] = new double[j+1];
       for(int l = 0; l <= j; ++l) // compute gamma_l_j
@@ -227,7 +228,8 @@ public final class Gram extends Iced<Gram> {
       double zjj = Z[j][j];
       for(int k = 0; k < j; ++k) // only need the diagonal, the rest is 0 (dot product of orthogonal vectors)
         zjj += gamma[k] * (gamma[k] * Z[k][k] - 2*Z[j][k]);
-      if(j > 0 && (standardized?zjj*ZdiagInv[j]:zjj/(Z[j][j]-Z[j][0])) < r2_eps) { // collinear column, drop it!
+      double rs_tot = (standardized?ZdiagInv[j]*ZdiagInv[0]:1.0/(Zdiag[j]*ZdiagInv[0]-Z[j][0]*ZdiagInv[0]*Z[j][0]*ZdiagInv[0]));
+      if(j > 0 && zjj*ZdiagInv[0]*rs_tot  < r2_eps) { // collinear column, drop it!
         zjj = 0;
         dropped_cols.add(j-1);
         ZdiagInv[j] = 0;
@@ -675,7 +677,6 @@ public final class Gram extends Iced<Gram> {
         int c = _pending;
         while(c != 0 && !U.compareAndSwapInt(this,PENDING,c,c-1))
           c = _pending;
-//        System.out.println(" tryFork of " + this + ". c = " + c);
         if(c == 0) fork();
       }
     }
