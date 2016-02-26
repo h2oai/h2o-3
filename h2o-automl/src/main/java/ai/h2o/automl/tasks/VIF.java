@@ -1,6 +1,6 @@
 package ai.h2o.automl.tasks;
 
-import ai.h2o.automl.AutoML;
+import ai.h2o.automl.autocollect.AutoCollect;
 import hex.Model;
 import hex.ModelMetricsSupervised;
 import hex.glm.GLM;
@@ -30,7 +30,7 @@ public class VIF extends DTask<VIF> {
   private GLM _glm;
   private double _vif;
 
-  private VIF() { _glm=null; _vif=AutoML.SQLNAN; }
+  private VIF() { _glm=null; _vif= AutoCollect.SQLNAN; }
   private VIF(Key<Frame> trainFrame, String response, String[] include, String[] colNames) {
     GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
     params._train = trainFrame;
@@ -52,7 +52,7 @@ public class VIF extends DTask<VIF> {
         vifs[i] = new VIF(trainFrame, predictors[i], predictors, colNames);
         if( ((Frame) DKV.getGet(trainFrame)).vec(predictors[i]).isCategorical() ) {  // don't bother with cat columns
           vifs[i]._glm = null;
-          vifs[i]._vif = AutoML.SQLNAN;
+          vifs[i]._vif = AutoCollect.SQLNAN;
         }
       }
     }

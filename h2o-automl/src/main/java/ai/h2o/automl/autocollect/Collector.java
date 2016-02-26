@@ -1,7 +1,6 @@
 package ai.h2o.automl.autocollect;
 
 
-import ai.h2o.automl.AutoML;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
@@ -90,19 +89,19 @@ public abstract class Collector {
       AutoCollect.pushMeta(scoreHistory, scoreHistory.keySet().toArray(new String[scoreHistory.size()]), "ScoreHistory", null);
     }
   }
-  private static double sanitize(Object d) { return Double.isNaN((double)d) ? AutoML.SQLNAN : (double)d; }
+  private static double sanitize(Object d) { return Double.isNaN((double)d) ? AutoCollect.SQLNAN : (double)d; }
   protected HashMap<String,Object> newScoreHist() {
     HashMap<String, Object> sh = new HashMap<>();
     sh.put("ConfigID","");
-    sh.put("ts", AutoML.SQLNAN);
-    sh.put("train_mse", AutoML.SQLNAN);
-    sh.put("train_logloss", AutoML.SQLNAN);
-    sh.put("train_classification_error", AutoML.SQLNAN);
-    sh.put("test_mse", AutoML.SQLNAN);
-    sh.put("test_logloss", AutoML.SQLNAN);
-    sh.put("test_classification_error", AutoML.SQLNAN);
-    sh.put("train_deviance", AutoML.SQLNAN);
-    sh.put("test_deviance", AutoML.SQLNAN);
+    sh.put("ts", AutoCollect.SQLNAN);
+    sh.put("train_mse", AutoCollect.SQLNAN);
+    sh.put("train_logloss", AutoCollect.SQLNAN);
+    sh.put("train_classification_error", AutoCollect.SQLNAN);
+    sh.put("test_mse", AutoCollect.SQLNAN);
+    sh.put("test_logloss", AutoCollect.SQLNAN);
+    sh.put("test_classification_error", AutoCollect.SQLNAN);
+    sh.put("train_deviance", AutoCollect.SQLNAN);
+    sh.put("test_deviance", AutoCollect.SQLNAN);
     return sh;
   }
 

@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 
+import ai.h2o.automl.autocollect.AutoCollect;
 import ai.h2o.automl.guessers.ColNameScanner;
 import hex.tree.DHistogram;
 import water.Iced;
@@ -106,22 +107,22 @@ public class ColMeta extends Iced {
     cm.put("ColumnName", _name);
     cm.put("ColumnType", _v.get_type_str()); // TODO:
     if( !_v.isNumeric() ) {
-      cm.put("Min", AutoML.SQLNAN);
-      cm.put("Max", AutoML.SQLNAN);
-      cm.put("Mean", AutoML.SQLNAN);
-      cm.put("Median", AutoML.SQLNAN);
-      cm.put("Variance", AutoML.SQLNAN);
+      cm.put("Min", AutoCollect.SQLNAN);
+      cm.put("Max", AutoCollect.SQLNAN);
+      cm.put("Mean", AutoCollect.SQLNAN);
+      cm.put("Median", AutoCollect.SQLNAN);
+      cm.put("Variance", AutoCollect.SQLNAN);
       cm.put("Cardinality", _v.cardinality());
-      cm.put("Kurtosis", AutoML.SQLNAN);
-      cm.put("Skew", AutoML.SQLNAN);
-      cm.put("VIF", AutoML.SQLNAN);
+      cm.put("Kurtosis", AutoCollect.SQLNAN);
+      cm.put("Skew", AutoCollect.SQLNAN);
+      cm.put("VIF", AutoCollect.SQLNAN);
     } else {
       cm.put("Min", _v.min());
       cm.put("Max", _v.max());
       cm.put("Mean", _v.mean());
       cm.put("Median", _v.pctiles()[8/*p=0.5 pctile; see Vec.PERCENTILES*/]);
       cm.put("Variance", _v.sigma()*_v.sigma());
-      cm.put("Cardinality", AutoML.SQLNAN);
+      cm.put("Cardinality", AutoCollect.SQLNAN);
       cm.put("Kurtosis", _kurtosis);
       cm.put("Skew", _skew);
       cm.put("VIF", _vif);

@@ -1,6 +1,5 @@
 package ai.h2o.automl.autocollect;
 
-import ai.h2o.automl.AutoML;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.glm.GLM;
@@ -120,11 +119,11 @@ public class GLMCollect extends Collector {
    protected HashMap<String, Object> newScoreHist() {
     HashMap<String, Object> sh = new HashMap<>();
     sh.put("ConfigID","");
-    sh.put("duration",       AutoML.SQLNAN);
-    sh.put("lambda",         AutoML.SQLNAN);
-    sh.put("num_predictors", AutoML.SQLNAN);
-    sh.put("test_deviance",  AutoML.SQLNAN);
-    sh.put("train_deviance", AutoML.SQLNAN);
+    sh.put("duration",       AutoCollect.SQLNAN);
+    sh.put("lambda",         AutoCollect.SQLNAN);
+    sh.put("num_predictors", AutoCollect.SQLNAN);
+    sh.put("test_deviance",  AutoCollect.SQLNAN);
+    sh.put("train_deviance", AutoCollect.SQLNAN);
     return sh;
   }
 
