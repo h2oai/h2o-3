@@ -263,6 +263,11 @@ public class DataInfo extends Keyed<DataInfo> {
   // private constructor called by filterExpandedColumns
   private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes){
     _fullCatOffsets = dinfo._catOffsets;
+    if(!dinfo._useAllFactorLevels) {
+      _fullCatOffsets = dinfo._catOffsets.clone();
+      for (int i = 0; i < _fullCatOffsets.length; ++i)
+        _fullCatOffsets[i] += i; // add for the skipped zeros.
+    }
     _offset = dinfo._offset;
     _weights = dinfo._weights;
     _fold = dinfo._fold;
