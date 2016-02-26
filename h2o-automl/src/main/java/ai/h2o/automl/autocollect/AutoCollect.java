@@ -33,6 +33,7 @@ public class AutoCollect {
   public static final byte GBM=1;
   public static final byte DL=2;
   public static final byte ANY=3; // randomly select algo on each iteration in collect;
+  public static final double SQLNAN = -99999;
 
   private HashSet<String> configs;      // set of configs across all runs
   private final int _seconds;           // time allocated per dataset

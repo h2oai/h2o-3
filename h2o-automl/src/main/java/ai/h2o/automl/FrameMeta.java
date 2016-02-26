@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.autocollect.AutoCollect;
 import ai.h2o.automl.collectors.MetaCollector;
 import ai.h2o.automl.guessers.ProblemTypeGuesser;
 import ai.h2o.automl.tasks.DummyClassifier;
@@ -71,14 +72,14 @@ public class FrameMeta extends Iced {
 
   public void fillDummies(HashMap<String, Object> fm) {
     double[][] dummies = getDummies();
-    fm.put("DummyStratMSE", _isClassification?dummies[0][0]:AutoML.SQLNAN);
-    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]:AutoML.SQLNAN);
-    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]:AutoML.SQLNAN);
-    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]:AutoML.SQLNAN);
-    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]:AutoML.SQLNAN);
-    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]:AutoML.SQLNAN);
-    fm.put("DummyMedianMSE", _isClassification?AutoML.SQLNAN:dummies[0][1]);
-    fm.put("DummyMeanMSE", _isClassification?AutoML.SQLNAN:dummies[0][0]);
+    fm.put("DummyStratMSE", _isClassification?dummies[0][0]: AutoCollect.SQLNAN);
+    fm.put("DummyStratLogLoss", _isClassification?dummies[1][0]: AutoCollect.SQLNAN);
+    fm.put("DummyMostFreqMSE", _isClassification?dummies[0][2]: AutoCollect.SQLNAN);
+    fm.put("DummyMostFreqLogLoss", _isClassification?dummies[1][2]: AutoCollect.SQLNAN);
+    fm.put("DummyRandomMSE", _isClassification?dummies[0][1]: AutoCollect.SQLNAN);
+    fm.put("DummyRandomLogLoss", _isClassification?dummies[1][1]: AutoCollect.SQLNAN);
+    fm.put("DummyMedianMSE", _isClassification? AutoCollect.SQLNAN:dummies[0][1]);
+    fm.put("DummyMeanMSE", _isClassification? AutoCollect.SQLNAN:dummies[0][0]);
     fm.put("NClass", _nclass);
   }
 
