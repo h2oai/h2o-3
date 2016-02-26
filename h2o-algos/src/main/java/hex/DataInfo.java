@@ -187,7 +187,7 @@ public class DataInfo extends Keyed<DataInfo> {
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels?0:1):-100;
+      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length:-100;
       _permutation[i] = cats[i];
     }
     _numMeans = new double[_nums];
@@ -329,8 +329,7 @@ public class DataInfo extends Keyed<DataInfo> {
         ++j;
       }
     }
-    int [] catModes = _catModes.clone();
-
+    int [] catModes = _catModes;
     for(int k =0; k < catLvls.length; ++k)
       if(catLvls[k] == null)ignoredCols[ignoredCnt++] = k;
     if(ignoredCnt > 0){
@@ -343,10 +342,6 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       assert y == cs.length;
       catLvls = cs;
-    }
-    if(!_useAllFactorLevels) {
-      for(int c = 0; c < catModes.length; ++c)
-        catModes[c] += 1;
     }
     // now numerics
     int prev = j = 0;
@@ -639,13 +634,16 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final int getCategoricalId(int cid, int val) {
-    if(!_useAllFactorLevels) val -= 1;
+    if(!_useAllFactorLevels)
+      val -= 1;
     if(val >= fullCatOffsets()[cid+1]) {  // previously unseen level
       assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
       val = _catModes[cid] - (_useAllFactorLevels?0:1);
     }
-    if (_catLvls[cid] != null)  // some levels are ignored?
+    if (_catLvls[cid] != null) {  // some levels are ignored?
+      assert _useAllFactorLevels;
       val = Arrays.binarySearch(_catLvls[cid], val);
+    }
     return val < 0?-1:val + _catOffsets[cid];
   }
 
