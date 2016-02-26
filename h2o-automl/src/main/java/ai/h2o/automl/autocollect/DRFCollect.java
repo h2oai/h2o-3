@@ -15,7 +15,7 @@ public class DRFCollect extends Collector {
   public static int MAXDEPTH=50;
   public static int MAXNBINS=1000;
   public static int MAXNBINSCATS=1000;
-  public static int MAXNTREES=50;
+  public static int MAXNTREES=30;
   public static int MAXNROWS=50;
 
   protected DRFModel.DRFParameters genParms(long seedSplit, int idFrame, int ncol, HashSet<String> configs) {
