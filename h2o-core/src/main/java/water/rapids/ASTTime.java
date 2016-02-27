@@ -58,7 +58,7 @@ class ASTSetTimeZone extends ASTPrim {
 
 /** Basic time accessors; extract hours/days/years/etc from H2O's internal
  *  msec-since-Unix-epoch time */
-abstract class ASTTime extends ASTPrim {
+public abstract class ASTTime extends ASTPrim {
   @Override public String[] args() { return new String[]{"time"}; }
   @Override int nargs() { return 1+1; } // (op time)
   // Override for e.g. month and day-of-week

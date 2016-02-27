@@ -1704,7 +1704,7 @@ class H2OFrame(object):
     -------
       A single-column H2OFrame containing the per-row character count.
     """
-    return H2OFrame._expr(expr=ExprNode("length", self))
+    return H2OFrame._expr(expr=ExprNode("strlen", self))
 
   def table(self, data2=None, dense=True):
     """Compute the counts of values appearing in a column, or co-occurence counts between

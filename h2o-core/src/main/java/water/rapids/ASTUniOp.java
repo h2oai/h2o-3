@@ -16,7 +16,7 @@ import static water.util.RandomUtils.getRNG;
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument
  */
-abstract class ASTUniOp extends ASTPrim {
+public abstract class ASTUniOp extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
