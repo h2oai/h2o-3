@@ -533,9 +533,9 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slow( ) {
-    if( _sparseLen > FileVec.DFLT_CHUNK_SIZE )
-      throw new ArrayIndexOutOfBoundsException(_sparseLen);
-
+// PUBDEV-2639 - don't die for many rows, few columns -> can be long chunks
+//    if( _sparseLen > FileVec.DFLT_CHUNK_SIZE )
+//      throw new ArrayIndexOutOfBoundsException(_sparseLen);
     assert _ds==null;
     if(_ls != null && _ls.length > 0){
       if(_id == null) { // check for sparseness
