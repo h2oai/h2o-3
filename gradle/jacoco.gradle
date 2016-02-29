@@ -7,7 +7,7 @@ apply plugin: 'jacoco'
 // JaCoCo version needs to be v0.7.5+
 // 
 jacoco {
-    toolVersion = "0.7.5.201505241946"
+    toolVersion = "0.7.6.201602180812"
     reportsDir = file("${buildDir}/reports/jacoco/")
 }
 

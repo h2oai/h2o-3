@@ -312,12 +312,15 @@ class H2OCloudNode:
             jresults_dir = os.path.join(self.output_dir,"jacoco")
             if not os.path.exists(jresults_dir):
                 os.mkdir(jresults_dir)
-            jresults_dir += "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num)
+            jresults_dir = os.path.join(jresults_dir, "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num))
             jacoco = "-javaagent:" + agent_dir + "=destfile=" + \
                      os.path.join(jresults_dir,"{cloud}_{node}.exec".format(cloud=self.cloud_num,
-                                                                            node=self.node_num)) + \
-                     ",includes={inc},excludes={ex}:jsr166y".format(inc=g_jacoco_options[0].replace(',',':'),
-                                                                    ex=g_jacoco_options[1].replace(',',':'))
+                                                                            node=self.node_num))
+            if g_jacoco_options[0]:
+                jacoco += ",includes={inc}".format(inc=g_jacoco_options[0].replace(',',':'))
+            if g_jacoco_options[1]:
+                jacoco += ",excludes={ex}".format(ex=g_jacoco_options[1].replace(',',':'))
+
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
 
@@ -1875,7 +1878,7 @@ g_nopass = False
 g_nointernal = False
 g_convenient = False
 g_jacoco_include = False
-g_jacoco_options = ["",""]
+g_jacoco_options = [None,None]
 g_path_to_h2o_jar = None
 g_path_to_tar = None
 g_path_to_whl = None

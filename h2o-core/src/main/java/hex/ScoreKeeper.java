@@ -47,7 +47,10 @@ public class ScoreKeeper extends Iced {
     if (null == m) throw new H2OIllegalArgumentException("model", "ScoreKeeper(Model model)", null);
     if (null == m._output) throw new H2OIllegalArgumentException("model._output", "ScoreKeeper(Model model)", null);
 
-    if (null != m._output._validation_metrics) {
+
+    if (null != m._output._cross_validation_metrics) {
+      fillFrom(m._output._cross_validation_metrics);
+    } else if (null != m._output._validation_metrics) {
       fillFrom(m._output._validation_metrics);
     } else {
       fillFrom(m._output._training_metrics);
