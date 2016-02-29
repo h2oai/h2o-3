@@ -70,9 +70,6 @@ class ASTTanPi extends ASTUniOp { public String str(){ return "tanpi"; } double 
 class ASTAbs  extends ASTUniOp { public String str(){ return "abs";  } double op(double d) { return Math.abs(d);}}
 class ASTSgn  extends ASTUniOp { public String str(){ return "sign" ; } double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniOp { public String str(){ return "sqrt"; } double op(double d) { return Math.sqrt(d);}}
-class ASTTrun extends ASTUniOp { public String str(){ return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
-class ASTCeil extends ASTUniOp { public String str(){ return "ceiling"; } double op(double d) { return Math.ceil(d);}}
-class ASTFlr  extends ASTUniOp { public String str(){ return "floor";} double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniOp { public String str(){ return "log";  } double op(double d) { return Math.log(d);}}
 class ASTLog10  extends ASTUniOp { public String str(){ return "log10";  } double op(double d) { return Math.log10(d);}}
 class ASTLog2  extends ASTUniOp { public String str(){ return "log2";  } double op(double d) { return Math.log(d)/Math.log(2);}}
