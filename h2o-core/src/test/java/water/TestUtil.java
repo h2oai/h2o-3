@@ -100,7 +100,7 @@ public class TestUtil extends Iced {
 
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
-      if (Arrays.asList(ignoreTestsNames).contains(testName)) {
+      if (ignoreTestsNames!=null && Arrays.asList(ignoreTestsNames).contains(testName)) {
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
           @Override
