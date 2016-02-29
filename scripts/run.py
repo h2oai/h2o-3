@@ -9,7 +9,8 @@ import random
 import getpass
 import re
 import subprocess
-import ConfigParser
+if sys.version_info[0] < 3: import ConfigParser as configparser
+else: import configparser
 import requests
 from requests import exceptions
 import socket
@@ -1009,7 +1010,7 @@ class TestRunner:
     @staticmethod
     def read_config(config_file):
         clouds = []  # a list of lists. Inner lists have [node_num, ip, port]
-        cfg = ConfigParser.RawConfigParser()
+        cfg = configparser.RawConfigParser()
         cfg.read(config_file)
         for s in cfg.sections():
             items = cfg.items(s)
