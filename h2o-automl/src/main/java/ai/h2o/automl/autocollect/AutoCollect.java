@@ -80,8 +80,7 @@ public class AutoCollect {
           mc.parseTestFrame();
           setFields(mc.name(), mc.frame(), mc.testFrame(), mc.x(), mc.y(), mc.isClass());
           checkResponse();
-          computeMetaData(mc);
-          collect();
+          if( computeMetaData(mc) ) collect();  // only collect for successful collection of meta data on frame
         } finally {
           mc.delete();
         }
@@ -176,16 +175,26 @@ public class AutoCollect {
       _fr.reloadVecs();
     }
   }
-  public void computeMetaData(MetaConfig mc) {
-    if( (_idFrame=getidFrameMeta(mc.name()))==-1 ) {
-      FrameMeta fm = new FrameMeta(mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
-      HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
-      fm.fillSimpleMeta(frameMeta);
-      fm.fillDummies(frameMeta);
-      _idFrame = pushFrameMeta(frameMeta);
-      computeAndPushColMeta(fm, _idFrame);
-      new GLMCollect().collect(_idFrame, _fr, _test, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
+  public boolean computeMetaData(MetaConfig mc) {
+    try {
+      conn.setAutoCommit(false);  // transactionally set metadata...
+      if( (_idFrame=getidFrameMeta(mc.name()))==-1 ) {
+        FrameMeta fm = new FrameMeta(mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
+        HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
+        fm.fillSimpleMeta(frameMeta);
+        fm.fillDummies(frameMeta);
+        _idFrame = pushFrameMeta(frameMeta);
+        computeAndPushColMeta(fm, _idFrame);
+        new GLMCollect().collect(_idFrame, _fr, _test, ignored(), _fr.name(_resp), getRNG(new Random().nextLong()).nextLong(), configs);
+      }
+      conn.commit();
+    } catch(SQLException ex) {
+      System.out.println("SQLException: " + ex.getMessage());
+      System.out.println("SQLState: " + ex.getSQLState());
+      System.out.println("VendorError: " + ex.getErrorCode());
+      return false;
     }
+    return true;
   }
 
   private void ignored(int[] x, Frame f) {
@@ -305,5 +314,6 @@ public class AutoCollect {
     AutoCollect ac = new AutoCollect(3*3600, "meta");
     ac.start();
     System.out.println("AutoCollect end.");
+    H2O.orderlyShutdown();
   }
 }

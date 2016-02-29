@@ -181,6 +181,7 @@ public class MetaConfig {
         case "n":
         case "num":
         case "numeric":
+        case "e":
         case "enum":
         case "c":
         case "cat":
@@ -205,6 +206,8 @@ public class MetaConfig {
         } else _colTypes[idx] = Vec.T_NUM;
         break;
       }
+      case "e":
+      case "enum":
       case "c":
       case "cat":
       case "categorical": {
