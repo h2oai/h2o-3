@@ -610,7 +610,7 @@ class ASTTrim extends ASTPrim {
 class ASTStrLength extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override public String str() { return "length"; }
+  @Override public String str() { return "strlen"; }
   @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 

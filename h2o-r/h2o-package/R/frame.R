@@ -2865,7 +2865,7 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #'
 #' @param x The column whose string lengths will be returned.
 #' @export
-h2o.nchar <- function(x) .newExpr("length", x)
+h2o.nchar <- function(x) .newExpr("strlen", x)
 
 #'
 #' Substring

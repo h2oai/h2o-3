@@ -147,10 +147,10 @@ public final class ParseSetup extends Iced {
   // Set of duplicated column names
   HashSet<String> checkDupColumnNames() {
     HashSet<String> conflictingNames = new HashSet<>();
-    if( _column_names ==null ) return conflictingNames;
+    if( null==_column_names ) return conflictingNames;
     HashSet<String> uniqueNames = new HashSet<>();
     for( String n : _column_names)
-      (uniqueNames.contains(n) ? conflictingNames : uniqueNames).add(n);
+      if( !uniqueNames.add(n) ) conflictingNames.add(n);
     return conflictingNames;
   }
 
