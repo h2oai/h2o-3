@@ -188,7 +188,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         assert (_parms._checkpoint == parms._checkpoint);
         assert (_parms._checkpoint == cp._key);
       }
-//      _parms._checkpoint = cp._key; //it's only a "real" checkpoint if job != null, otherwise a best model copy
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     actual_best_model_key = cp.actual_best_model_key;
@@ -454,7 +453,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         for (int i = 0; i < _output.biases.length; ++i) {
           model_info.get_biases(i).toFrame(_output.biases[i]);
         }
-        if (!_parms._quiet_mode)
+        if (!get_params()._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
       _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
@@ -492,7 +491,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     if (stopped_early) {
       // pretend as if we finished all epochs to get the progress bar pretty (especially for N-fold and grid-search)
-      ((Job) DKV.getGet(jobKey)).update((long) (_parms._epochs * training_rows));
+      ((Job) DKV.getGet(jobKey)).update((long) (get_params()._epochs * training_rows));
       update(jobKey);
       return false;
     }
@@ -579,7 +578,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     double loss = 0;
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
-    final double prefactor = _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.quantile ? 1 : 0.5;
+    final double prefactor = get_params()._distribution == Distribution.Family.laplace || get_params()._distribution == Distribution.Family.quantile ? 1 : 0.5;
     long seed = -1; //ignored
 
     double[] responses = new double[myRows.length];
@@ -612,7 +611,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
 
       if (get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
-        if (_parms._balance_classes) throw H2O.unimpl();
+        if (get_params()._balance_classes) throw H2O.unimpl();
         int actual = (int) myRow.response[0];
         double pred = neurons[neurons.length - 1]._a[mb].get(actual);
         loss += -Math.log(Math.max(1e-15, pred)); //cross-entropy (same as log loss)
@@ -636,17 +635,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
 
       // add L1/L2 penalty of model coefficients (weights & biases)
-      for (int i = 0; i < _parms._hidden.length + 1; ++i) {
+      for (int i = 0; i < get_params()._hidden.length + 1; ++i) {
         if (neurons[i]._w == null) continue;
         for (int row = 0; row < neurons[i]._w.rows(); ++row) {
           for (int col = 0; col < neurons[i]._w.cols(); ++col) {
-            loss += _parms._l1 * Math.abs(neurons[i]._w.get(row, col));
-            loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+            loss += get_params()._l1 * Math.abs(neurons[i]._w.get(row, col));
+            loss += 0.5 * get_params()._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
           }
         }
         for (int row = 0; row < neurons[i]._b.size(); ++row) {
-          loss += _parms._l1 * Math.abs(neurons[i]._b.get(row));
-          loss += 0.5 * _parms._l2 * Math.pow(neurons[i]._b.get(row), 2);
+          loss += get_params()._l1 * Math.abs(neurons[i]._b.get(row));
+          loss += 0.5 * get_params()._l2 * Math.pow(neurons[i]._b.get(row), 2);
         }
       }
     }
@@ -768,7 +767,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
-    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, _parms.missingColumnsType(), true, true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, get_params().missingColumnsType(), true, true);
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
@@ -1237,7 +1236,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     if (_output.autoencoder) return;
     if (_output.isClassifier()) {
-      if (_parms._balance_classes)
+      if (get_params()._balance_classes)
         bodySb.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
       bodySb.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold()+");").nl();
     } else {
