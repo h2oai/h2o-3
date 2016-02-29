@@ -1981,7 +1981,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
        * @param oldP old DL parameters (from checkpoint)
        * @param newP new DL parameters (user-given, to restart from checkpoint)
        */
-      static void checkpoint(final DeepLearningParameters oldP, final DeepLearningParameters newP) {
+      static void checkIfParameterChangeAllowed(final DeepLearningParameters oldP, final DeepLearningParameters newP) {
         checkCompleteness();
         if (newP._nfolds != 0)
           throw new UnsupportedOperationException("nfolds must be 0: Cross-validation is not supported during checkpoint restarts.");
@@ -2021,21 +2021,24 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       /**
        * Update the parameters from checkpoint to user-specified
        *
-       * @param actualNewP parameters in the model (that will be trained from a checkpoint restart)
-       * @param newP       user-specified parameters
+       * @param srcParms     source: user-specified parameters
+       * @param tgtParms     target: parameters to be modified
+       * @param doIt         whether to overwrite target parameters (or just print the message)
+       * @param quiet        whether to suppress the notifications about parameter changes
        */
-      static void update(DeepLearningParameters actualNewP, DeepLearningParameters newP, int nClasses) {
-        for (Field fBefore : actualNewP.getClass().getDeclaredFields()) {
-          if (ArrayUtils.contains(cp_modifiable, fBefore.getName())) {
-            for (Field fAfter : newP.getClass().getDeclaredFields()) {
-              if (fBefore.equals(fAfter)) {
+      static void updateParametersDuringCheckpointRestart(DeepLearningParameters srcParms, DeepLearningParameters tgtParms/*actually used during training*/, boolean doIt, boolean quiet) {
+        for (Field fTarget : tgtParms.getClass().getFields()) {
+          if (ArrayUtils.contains(cp_modifiable, fTarget.getName())) {
+            for (Field fSource : srcParms.getClass().getFields()) {
+              if (fTarget.equals(fSource)) {
                 try {
-                  if (fAfter.get(newP) == null || fBefore.get(actualNewP) == null || !fBefore.get(actualNewP).toString().equals(fAfter.get(newP).toString())) { // if either of the two parameters is null, skip the toString()
-                    if (fBefore.get(actualNewP) == null && fAfter.get(newP) == null)
+                  if (fSource.get(srcParms) == null || fTarget.get(tgtParms) == null || !fTarget.get(tgtParms).toString().equals(fSource.get(srcParms).toString())) { // if either of the two parameters is null, skip the toString()
+                    if (fTarget.get(tgtParms) == null && fSource.get(srcParms) == null)
                       continue; //if both parameters are null, we don't need to do anything
-                    if (!actualNewP._quiet_mode)
-                      Log.info("Applying user-requested modification of '" + fBefore.getName() + "': " + fBefore.get(actualNewP) + " -> " + fAfter.get(newP));
-                    fBefore.set(actualNewP, fAfter.get(newP));
+                    if (!tgtParms._quiet_mode && !quiet)
+                      Log.info("Applying user-requested modification of '" + fTarget.getName() + "': " + fTarget.get(tgtParms) + " -> " + fSource.get(srcParms));
+                    if (doIt)
+                      fTarget.set(tgtParms, fSource.get(srcParms));
                   }
                 } catch (IllegalAccessException e) {
                   e.printStackTrace();
@@ -2044,15 +2047,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             }
           }
         }
-        // update parameters in place to set defaults etc.
-        modifyParms(actualNewP, actualNewP, nClasses);
       }
   
       /**
        * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
        *
-       * @param fromParms      raw user-given parameters from the REST API
-       * @param toParms        modified set of parameters, with defaults filled in
+       * @param fromParms      raw user-given parameters from the REST API (READ ONLY)
+       * @param toParms        modified set of parameters, with defaults filled in (WILL BE MODIFIED)
        * @param nClasses       number of classes (1 for regression or autoencoder)
        */
       static void modifyParms(DeepLearningParameters fromParms, DeepLearningParameters toParms, int nClasses) {
