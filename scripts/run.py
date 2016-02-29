@@ -855,8 +855,11 @@ class Test:
       return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
-        return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
-               g_phantomjs_packs]
+        if g_perf: return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+                           "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
+                           str(g_ncpu), g_os, g_job_name, g_output_dir]
+        else: return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+                      "--packs", g_phantomjs_packs]
 
     def _scrape_output_for_seed(self):
         """
@@ -1605,7 +1608,7 @@ class TestRunner:
         duration = finish_seconds - test.start_seconds
         test_name = test.get_test_name()
         if not test.get_skipped():
-            if self.perf: self._report_perf(test, finish_seconds)
+            if self.perf and not is_javascript_test_file(test.test_name): self._report_perf(test, finish_seconds)
         if (test.get_passed()):
             s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
