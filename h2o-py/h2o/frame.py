@@ -1085,7 +1085,7 @@ class H2OFrame(object):
       elif isinstance(col_expr, slice):    # Col by slice
         if col_expr.start is None and col_expr.stop is None:
           col_expr = slice(0,self.ncol)    # Slice of all
-    elif isinstance(b, ExprNode): row_expr = b # Row slicing
+    elif isinstance(b, (ExprNode, H2OFrame)): row_expr = b # Row slicing
     elif isinstance(b, list): col_expr = b
 
     src = float("nan") if c is None else c
