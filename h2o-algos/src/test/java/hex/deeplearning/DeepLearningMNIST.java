@@ -50,34 +50,39 @@ public class DeepLearningMNIST extends TestUtil {
 
   @Test @Ignore public void run() {
     Scope.enter();
+    Frame frame=null;
+    Frame vframe=null;
     try {
       File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
       File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
       if (file != null) {
         NFSFileVec trainfv = NFSFileVec.make(file);
-        Frame frame = ParseDataset.parse(Key.make(), trainfv._key);
+        frame = ParseDataset.parse(Key.make(), trainfv._key);
         NFSFileVec validfv = NFSFileVec.make(valid);
-        Frame vframe = ParseDataset.parse(Key.make(), validfv._key);
+        vframe = ParseDataset.parse(Key.make(), validfv._key);
         DeepLearningParameters p = new DeepLearningParameters();
 
         // populate model parameters
         p._train = frame._key;
-//        p._valid = vframe._key;
+        p._valid = vframe._key;
         p._response_column = "C785"; // last column is the response
-        p._activation = DeepLearningParameters.Activation.Rectifier;
+        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
 //        p._activation = DeepLearningParameters.Activation.MaxoutWithDropout;
-        p._hidden = new int[]{128,64};
+        p._hidden = new int[]{128,128,128};
         p._input_dropout_ratio = 0.0;
+        p._score_training_samples = 0;
         p._adaptive_rate = false;
-        p._rate = 0.01;
-        p._momentum_start = 0.9;
-        p._momentum_stable = 0.9;
+        p._rate = 0.005;
+        p._rate_annealing = 0;
+        p._momentum_start = 0;
+        p._momentum_stable = 0;
         p._mini_batch_size = 1;
         p._train_samples_per_iteration = -1;
 //        p._score_duty_cycle = 0.1;
-//        p._shuffle_training_data = true;
+        p._shuffle_training_data = true;
+//        p._reproducible = true;
 //        p._l1= 1e-5;
-//        p._max_w2= 10;
+        p._max_w2= 1;
         p._epochs = 20; //1000*10*5./6;
         p._sparse = true; //faster as activations remain sparse
 
@@ -98,8 +103,6 @@ public class DeepLearningMNIST extends TestUtil {
 
         DeepLearning dl = new DeepLearning(p,Key.<DeepLearningModel>make("dl_mnist_model"));
         DeepLearningModel model = dl.trainModel().get();
-        vframe.remove();
-        frame.remove();
         if (model != null)
           model.delete();
       } else {
@@ -107,6 +110,8 @@ public class DeepLearningMNIST extends TestUtil {
       }
     } finally {
       Scope.exit();
+      if (vframe!=null) vframe.remove();
+      if (frame!=null) frame.remove();
     }
   }
 }

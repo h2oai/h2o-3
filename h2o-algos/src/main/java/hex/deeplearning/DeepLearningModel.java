@@ -209,7 +209,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[i] = cp.scoringInfo[i].deep_clone();
     _output.errors = last_scored();
     makeWeightsBiases(destKey);
-    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
+    _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
@@ -243,7 +243,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo[0].validation = (parms._valid != null);
       scoringInfo[0].time_stamp_ms = System.currentTimeMillis();
       _output.errors = last_scored();
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
     }
     time_of_start_ms = System.currentTimeMillis();
@@ -457,7 +457,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!_parms._quiet_mode)
           Log.info("Writing weights and biases to Frames took " + t.time()/1000. + " seconds.");
       }
-      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), _output.getModelCategory(), _output.isAutoencoder());
+      _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
 
