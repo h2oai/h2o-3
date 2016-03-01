@@ -15,7 +15,7 @@ master_jobname_plot = ggplot(master_jobname, aes(x=JobName, y=AvgDuration, fill 
 master_jobname_plot = master_jobname_plot + ggtitle(paste("Average Duration per Jenkins Job in Master on ", master_jobname$Date)) 
 master_jobname_plot = master_jobname_plot + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Jenkins Job",y="Average Duration") 
 #Save plot
-ggsave(master_jobname_plot,file = "plotsMySQL/master_jobname.png",height = 15,width = 15)
+ggsave(master_jobname_plot,file = "plots/master_jobname.png",height = 15,width = 15)
 
 #######################################################################################
 #subset master_testname to get top 20 tests in terms of average duration
@@ -24,7 +24,7 @@ master_testname_plot = ggplot(master_testname_subset, aes(x=TestName, y=AvgDurat
 master_testname_plot = master_testname_plot + ggtitle(paste("Average Duration per Tests in Master (Top 20) on ", master_testname$Date)) 
 master_testname_plot = master_testname_plot + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Test Name",y="Average Duration") 
 #save plot
-ggsave(master_testname_plot,file = "plotsMySQL/master_testname.png",height = 20,width = 20)
+ggsave(master_testname_plot,file = "plots/master_testname.png",height = 20,width = 20)
 
 #######################################################################################
 #subset master_jobname_testname to get top 20 tests in terms of average duration. This is grouped by jobname and testname
@@ -33,4 +33,4 @@ master_jobname_testname_plot = ggplot(master_jobname_testname_subset, aes(x=JobN
 master_jobname_testname_plot = master_jobname_testname_plot + ggtitle(paste("Average Duration per Jenkins Job per Tests in Master (Top 20) on ", master_jobname_testname$Date)) 
 master_jobname_testname_plot = master_jobname_testname_plot + theme(text = element_text(size=30),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Jenkins Job",y="Average Duration") 
 #save plot
-ggsave(master_jobname_testname_plot,file = "plotsMySQL/master_jobname_testname.png",height = 30,width = 30) 
+ggsave(master_jobname_testname_plot,file = "plots/master_jobname_testname.png",height = 30,width = 30) 
