@@ -1,5 +1,5 @@
 # TODO: ugh:
-import sys, pprint, argparse, string, errno, sets, re
+import sys, pprint, argparse, errno, re
 
 sys.path.insert(1, '../../py')
 import h2o
@@ -10,7 +10,7 @@ import os
 here=os.path.dirname(os.path.realpath(__file__))
 
 parser = argparse.ArgumentParser(
-    description='Attach to an H2O instance and call its REST API to generate the Java REST API bindings docs and write them to the filesystem.',
+        description='Attach to an H2O instance and call its REST API to generate the Java REST API bindings docs and write them to the filesystem.',
 )
 parser.add_argument('--verbose', '-v', help='verbose output', action='store_true')
 parser.add_argument('--usecloud', help='ip:port to attach to', default='')
@@ -24,16 +24,16 @@ pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
 
 def cons_java_type(pojo_name, name, h2o_type, schema_name):
     if schema_name is None or h2o_type.startswith('enum'):
-        simple_type = string.replace(h2o_type, '[]', '')
-        idx = string.find(h2o_type, '[]')
+        simple_type = h2o_type.replace('[]', '')
+        idx = h2o_type.find('[]')
         brackets = '' if idx is -1 else h2o_type[idx:]
     else:
         simple_type = schema_name
-        idx = string.find(h2o_type, '[]')
+        idx = h2o_type.find('[]')
         brackets = '' if idx is -1 else h2o_type[idx:]
 
     if simple_type == 'string':
-        return string.capitalize(simple_type) + brackets
+        return simple_type.capitalize() + brackets
     if h2o_type.startswith('Key<'): # Key<Frame> is a schema of FrameKeyVx
         return 'String' + brackets
     if simple_type in ['int', 'float', 'double', 'long', 'boolean', 'byte', 'short']:
@@ -60,7 +60,7 @@ def generate_pojo(schema, pojo_name):
     global args
     global enums
 
-    if args.verbose: print 'Generating POJO: ', pojo_name
+    if args.verbose: print('Generating POJO: ', pojo_name)
 
     pojo = []
     pojo.append("package water.bindings.pojos;")
@@ -97,7 +97,7 @@ def generate_pojo(schema, pojo_name):
             java_type = type
         else:
             java_type = cons_java_type(pojo_name, name, type, schema_name)
-        
+
         if type.startswith('enum'):
             enum_name = field['schema_name']
             if enum_name not in enums:
@@ -113,11 +113,11 @@ def generate_pojo(schema, pojo_name):
 
     pojo.append("}")
     return pojo
-    
+
 
 def generate_enum(name, values):
 
-    if args.verbose: print 'Generating enum: ', name
+    if args.verbose: print('Generating enum: ', name)
 
     pojo = []
     pojo.append("package water.bindings.pojos;")
@@ -129,7 +129,7 @@ def generate_enum(name, values):
 
     pojo.append("}")
     return pojo
-    
+
 
 def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
     '''
@@ -204,19 +204,19 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 parms = ""
                 path_parm_names = meta['path_params']
                 input_schema = all_schemas_map[input_schema_name]
-                
+
                 first_parm = True
                 for parm in path_parm_names:
                     # find the metadata for the field from the input schema:
                     fields = [field for field in input_schema['fields'] if field['name'] == parm]
                     if len(fields) != 1:
-                        print 'Failed to find parameter: ' + parm + ' for endpoint: ' + repr(meta)
+                        print('Failed to find parameter: ' + parm + ' for endpoint: ' + repr(meta))
                     field = fields[0]
 
                     # cons up the proper Java type:
                     parm_type = field['schema_name'] if field['is_schema'] else field['type']
                     if parm_type in java_type_map: parm_type = java_type_map[parm_type]
-                    
+
                     if not first_parm: parms += ', '
                     parms += parm_type
                     parms += ' '
@@ -235,7 +235,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 pojo.append('    @Headers("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")')
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
             pojo.append('    {output_schema_name} {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
-            
+
             first = False
 
         pojo.append("}")
@@ -256,7 +256,7 @@ h2o.H2O.verboseprint("connecting to: ", args.host, ":", args.port)
 
 a_node = h2o.H2O(args.host, args.port)
 
-print 'creating the Java bindings in {}. . .'.format(args.dest)
+print('creating the Java bindings in {}. . .'.format(args.dest))
 
 
 #################################################################
@@ -270,7 +270,7 @@ all_schemas = a_node.schemas()['schemas']
 all_schemas_map = {}  # save for later use
 
 for schema in all_schemas:
-    if 'void' == schema['name']: 
+    if 'void' == schema['name']:
         continue;
 
     schema_name = schema['name']
@@ -295,7 +295,7 @@ for schema in all_schemas:
 ########################
 # Generate Enum classes.
 ########################
-for name, values in enums.iteritems():
+for name, values in enums.items():
     pojo_name = name;
 
     save_full = args.dest + os.sep + 'water/bindings/pojos/' + pojo_name + '.java'
@@ -319,7 +319,7 @@ endpoints_result = a_node.endpoints()
 endpoints = endpoints_result['routes']
 
 if h2o.H2O.verbose:
-    print 'Endpoints: '
+    print('Endpoints: ')
     pp.pprint(endpoints)
 
 # Collect all the endpoints:
