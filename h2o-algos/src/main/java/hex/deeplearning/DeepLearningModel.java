@@ -446,7 +446,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         for (int i = 0; i < _output.weights.length; ++i) {
           Frame f = model_info.get_weights(i).toFrame(_output.weights[i]);
           if (i==0) {
-            f._names = model_info.data_info.coefNames();
+            f.setNames(model_info.data_info.coefNames());
             DKV.put(f);
           }
         }
