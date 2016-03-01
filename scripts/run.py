@@ -1323,7 +1323,7 @@ class TestRunner:
         print("Checking cloud health...")
         for c in self.clouds:
             self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
-            print("Node {} healthy.").format(c)
+            print("Node {} healthy.".format(c))
 
     def stop_clouds(self):
         """
