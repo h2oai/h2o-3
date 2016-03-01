@@ -42,34 +42,34 @@ def green_print(*args):
     if getpass.getuser()=='jenkins':
         b.disable()
     for msg in args:
-        print b.GREEN + str(msg) + b.ENDC,
+        print(b.GREEN + str(msg) + b.ENDC)
     print
 
 def blue_print(*args):
     if getpass.getuser()=='jenkins':
         b.disable()
     for msg in args:
-        print b.BLUE + str(msg) + b.ENDC,
+        print (b.BLUE + str(msg) + b.ENDC)
     print
 
 def yellow_print(*args):
     if getpass.getuser()=='jenkins':
         b.disable()
     for msg in args:
-        print b.YELLOW + str(msg) + b.ENDC, 
+        print(b.YELLOW + str(msg) + b.ENDC)
     print
 
 def red_print(*args):
     if getpass.getuser()=='jenkins':
         b.disable()
     for msg in args:
-        print b.RED + str(msg) + b.ENDC,
+        print(b.RED + str(msg) + b.ENDC)
     print
 
 def purple_print(*args):
     if getpass.getuser()=='jenkins':
         b.disable()
     for msg in args:
-        print b.PURPLE + str(msg) + b.ENDC,
+        print(b.PURPLE + str(msg) + b.ENDC)
     print
 

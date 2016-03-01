@@ -9,7 +9,8 @@ import random
 import getpass
 import re
 import subprocess
-import ConfigParser
+if sys.version_info[0] < 3: import ConfigParser as configparser
+else: import configparser
 import requests
 from requests import exceptions
 import socket
@@ -642,6 +643,7 @@ class Test:
         @param test_short_dir: Path from h2o/R/tests to the test directory.
         @param test_name: Test filename with the directory removed.
         @param output_dir: The directory where we can create an output file for this process.
+        @param exclude_flows: A a semicolon-separated string of names of flows to be ignored by headless-test.js
         @return: The test object.
         """
         self.test_dir = test_dir
@@ -651,6 +653,7 @@ class Test:
         self.output_file_name = ""
         self.hadoop_namenode = hadoop_namenode
         self.on_hadoop = on_hadoop
+        self.exclude_flows = None
 
         self.cancelled = False
         self.terminated = False
@@ -877,8 +880,11 @@ class Test:
       return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
-        return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
-               g_phantomjs_packs]
+        if g_perf: return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+                           "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
+                           str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+        else: return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+                      "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
 
     def _scrape_output_for_seed(self):
         """
@@ -1027,7 +1033,7 @@ class TestRunner:
     @staticmethod
     def read_config(config_file):
         clouds = []  # a list of lists. Inner lists have [node_num, ip, port]
-        cfg = ConfigParser.RawConfigParser()
+        cfg = configparser.RawConfigParser()
         cfg.read(config_file)
         for s in cfg.sections():
             items = cfg.items(s)
@@ -1222,7 +1228,8 @@ class TestRunner:
         test_short_dir = self._calc_test_short_dir(test_path)
 
         test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.hadoop_namenode, self.on_hadoop)
-        if (test_path.split('/')[-1] in self.exclude_list):
+        if is_javascript_test_file(test.test_name): test.exclude_flows = ';'.join(self.exclude_list)
+        if (test.test_name in self.exclude_list):
             print("INFO: Skipping {0} because it was placed on the exclude list.".format(test_path))
         else:
             self.tests.append(test)
@@ -1341,7 +1348,7 @@ class TestRunner:
         print("Checking cloud health...")
         for c in self.clouds:
             self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
-            print("Node {} healthy.").format(c)
+            print("Node {} healthy.".format(c))
 
     def stop_clouds(self):
         """
@@ -1663,7 +1670,7 @@ class TestRunner:
         duration = finish_seconds - test.start_seconds
         test_name = test.get_test_name()
         if not test.get_skipped():
-            if self.perf: self._report_perf(test, finish_seconds)
+            if self.perf and not is_javascript_test_file(test.test_name): self._report_perf(test, finish_seconds)
         if (test.get_passed()):
             s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)

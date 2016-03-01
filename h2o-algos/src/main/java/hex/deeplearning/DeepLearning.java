@@ -231,15 +231,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if( isSupervised() != previous._output.isSupervised() )
           throw new H2OIllegalArgumentException("Model type must be the same as for the checkpointed model.");
 
-        // check the user-given arguments for consistency
-        DeepLearningParameters oldP = previous._parms; //sanitized parameters for checkpointed model
-        DeepLearningParameters newP = _parms; //user-given parameters for restart
-
-        DeepLearningParameters oldP2 = (DeepLearningParameters)oldP.clone();
-        DeepLearningParameters newP2 = (DeepLearningParameters)newP.clone();
-        DeepLearningParameters.Sanity.modifyParms(oldP, oldP2, nclasses()); //sanitize the user-given parameters
-        DeepLearningParameters.Sanity.modifyParms(newP, newP2, nclasses()); //sanitize the user-given parameters
-        DeepLearningParameters.Sanity.checkpoint(oldP2, newP2);
+        //READ ONLY
+        DeepLearningParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
 
         DataInfo dinfo;
         try {
@@ -265,12 +258,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             throw new H2OIllegalArgumentException("Total number of epochs must be larger than the number of epochs already trained for the checkpointed model (" + previous.epoch_counter + ").");
           }
 
-          // these are the mutable parameters that are to be used by the model (stored in model_info._parms)
-          final DeepLearningParameters actualNewP = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
-          assert (actualNewP != previous.model_info().get_params());
-          assert (actualNewP != newP);
-          assert (actualNewP != oldP);
-          DeepLearningParameters.Sanity.update(actualNewP, newP, nclasses());
+          // these are the mutable parameters that are to be used by the model (stored in model_info.parameters)
+          final DeepLearningParameters actualParms = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          assert (actualParms != previous.model_info().get_params());
+          assert (actualParms != _parms);
+          assert (actualParms != previous._parms);
+
+          // Update actualNewP parameters based on what the user wants (cp_modifiable parameters only), was cloned from the previous model so far
+
+          //show the user only the changes in the user-facing parameters
+          DeepLearningParameters.Sanity.updateParametersDuringCheckpointRestart(_parms, previous._parms, false /*doIt*/, false /*quiet*/);
+
+          //actually change the parameters in the "insider" version of parameters
+          DeepLearningParameters.Sanity.updateParametersDuringCheckpointRestart(_parms /*user-given*/, cp.model_info().get_params() /*model_info.parameters that will be used*/, true /*doIt*/, true /*quiet*/);
+
+          // update/sanitize parameters (in place) to set defaults etc.
+          DeepLearningParameters.Sanity.modifyParms(_parms, cp.model_info().get_params(), nclasses());
 
           Log.info("Continuing training after " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
           cp.update(_job);
