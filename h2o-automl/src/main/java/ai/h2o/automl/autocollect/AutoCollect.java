@@ -88,7 +88,7 @@ public class AutoCollect {
     }
   }
 
-  protected static Frame parseFrame( ParseSetup ps, Key fkey ) { return ParseDataset.parse(Key.make(), new Key[]{fkey}, true, ps); }
+  protected static Frame parseFrame( ParseSetup ps, Key fkey, String name ) { return ParseDataset.parse(Key.make(name), new Key[]{fkey}, true, ps); }
   protected static ParseSetup paresSetup(NFSFileVec nfs, ParserType parserType) {
     return ParseSetup.guessSetup(new Key[]{nfs._key}, new ParseSetup(parserType, ParseSetup.GUESS_SEP, false, 0, ParseSetup.GUESS_COL_CNT, null));
   }

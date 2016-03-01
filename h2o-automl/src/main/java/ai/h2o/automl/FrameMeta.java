@@ -61,8 +61,8 @@ public class FrameMeta extends Iced {
     fm.put("NAFraction", (double) naCount() / (double) (_fr.numCols() * _fr.numRows()));
     fm.put("NumberNumericFeat", (double)numberOfNumericFeatures());
     fm.put("NumberCatFeat", (double) numberOfCategoricalFeatures());
-    fm.put("RatioNumericToCatFeat", (double) fm.get("NumberNumericFeat") / (double) fm.get("NumberCatFeat"));
-    fm.put("RatioCatToNumericFeat", (double) fm.get("NumberCatFeat") / (double) fm.get("NumberNumericFeat"));
+    fm.put("RatioNumericToCatFeat", Double.isInfinite((double) fm.get("NumberCatFeat"))     ? AutoCollect.SQLNAN : (double) fm.get("NumberNumericFeat") / (double) fm.get("NumberCatFeat"));
+    fm.put("RatioCatToNumericFeat", Double.isInfinite((double) fm.get("NumberNumericFeat")) ? AutoCollect.SQLNAN : (double) fm.get("NumberCatFeat")     / (double) fm.get("NumberNumericFeat"));
     fm.put("DatasetRatio", (double) _fr.numCols() / (double) _fr.numRows());
     fm.put("LogDatasetRatio", Math.log((double) fm.get("DatasetRatio")));
     fm.put("InverseDatasetRatio", (double)_fr.numRows() / (double) _fr.numCols() );

@@ -129,14 +129,14 @@ public class MetaConfig {
     if( DKV.getGet(_trainNFSKey)==null )
       _trainNFSKey = NFSFileVec.make(_trainFile)._key;
     _trainParseSetup.setColumnTypes(_colTypes);
-    _trainFrame =AutoCollect.parseFrame(_trainParseSetup, _trainNFSKey);
+    _trainFrame =AutoCollect.parseFrame(_trainParseSetup, _trainNFSKey, name());
   }
   public void parseTestFrame() {
     if( _testParseSetup!=null ) {
       if( DKV.getGet(_testNFSKey)==null )
         _testNFSKey = NFSFileVec.make(_testFile)._key;
       _testParseSetup.setColumnTypes(_colTypes);
-      _testFrame =AutoCollect.parseFrame(_testParseSetup, _testNFSKey);
+      _testFrame =AutoCollect.parseFrame(_testParseSetup, _testNFSKey, name()+"Test");
     }
   }
   private void readParseType(String line) {
