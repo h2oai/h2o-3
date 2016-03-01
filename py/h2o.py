@@ -135,9 +135,9 @@ class H2O(object):
     def verboseprint(*args, **kwargs):
         if H2O.verbose:
             for x in args: # so you don't have to create a single string
-                print x,
+                print(x),
             for x in kwargs: # so you don't have to create a single string
-                print x,
+                print(x),
             print
             sys.stdout.flush()
 
@@ -262,7 +262,7 @@ class H2O(object):
             else:
                 raise ValueError("Unknown HTTP command (expected 'get', 'post' or 'delete'): " + cmd)
 
-        except Exception, e:
+        except Exception as e:
             # rethrow the exception after we've checked for stack trace from h2o
             # out of memory errors maybe don't show up right away? so we should wait for h2o
             # to get it out to h2o stdout. We don't want to rely on cloud teardown to check
@@ -277,7 +277,7 @@ class H2O(object):
                 H2O.check_sandbox_for_errors(python_test_name=H2O.python_test_name);
             log_rest("")
             log_rest("EXCEPTION CAUGHT DOING REQUEST: " + str(e.message))
-            raise exc_info[1], None, exc_info[2]
+            raise (exc_info[1], None, exc_info[2])
 
             H2O.verboseprint("r: " + repr(r))
 
@@ -320,10 +320,10 @@ class H2O(object):
                             log_rest(r.text)
                     else:
                         log_rest("r does not have attr text")
-        except Exception, e:
+        except Exception as e:
             # Paranoid exception catch.  
             # Ignore logging exceptions in the case that the above error checking isn't sufficient.
-            print "Caught exception from result logging: ", e, "; result: ", repr(r)
+            print("Caught exception from result logging: ", e, "; result: ", repr(r))
 
         # fatal if no response
         if raiseIfNon200 and not r:
@@ -341,7 +341,7 @@ class H2O(object):
         try:
             rjson = r.json()
         except:
-            print h2o_test_utils.dump_json(r.text)
+            print(h2o_test_utils.dump_json(r.text))
             if not isinstance(r, (list, dict)):
                 raise Exception("h2o json responses should always be lists or dicts, see previous for text")
 
@@ -359,16 +359,16 @@ class H2O(object):
                 emsg = 'rjson %s in %s: %s' % (e, inspect.stack()[1][3], rjson[e])
                 if ignoreH2oError:
                     # well, we print it..so not totally ignore. test can look at rjson returned
-                    print emsg
+                    print(emsg)
                 else:
-                    print emsg
+                    print(emsg)
                     raise Exception(emsg)
 
         for w in ['warning', 'Warning', 'warnings', 'Warnings']:
             # warning can be null (python None).
             if w in rjson and rjson[w]:
                 H2O.verboseprint(dump_json(rjson))
-                print 'rjson %s in %s: %s' % (w, inspect.stack()[1][3], rjson[w])
+                print('rjson %s in %s: %s' % (w, inspect.stack()[1][3], rjson[w]))
 
         
         # Allow the caller to check things like __http_request.status_code.
@@ -490,7 +490,7 @@ class H2O(object):
                 return result
 
             if time.time() - start_time > timeoutSecs:
-                print 'Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.'
+                print('Job: ' + job_key + ' timed out in: ' + str(timeoutSecs) + '.')
                 # downstream checkers should tolerate None. Print msg in case it's overlooked.
                 return None
 
