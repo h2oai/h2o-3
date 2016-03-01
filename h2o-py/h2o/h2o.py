@@ -3,11 +3,16 @@ from __future__ import absolute_import
 import warnings
 
 warnings.simplefilter('always', DeprecationWarning)
-import os
+import os, sys
 import os.path
 from future.standard_library import install_aliases
 from past.builtins import basestring
-install_aliases()
+try:
+  install_aliases()
+except AttributeError:
+  if os.path.exists(os.path.join(sys.path[0], "test.py")):
+    print("File named `test` is conflicting with python module `test` used by the future library.")
+
 import re
 from six import PY3
 from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
