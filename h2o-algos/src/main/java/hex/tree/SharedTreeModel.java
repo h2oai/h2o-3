@@ -205,7 +205,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
             Key[] keys = _output._treeKeys[tidx];
             for (int c = 0; c < keys.length; c++) {
               if (keys[c] != null) {
-                names[col] = "Tree" + (tidx+1) + (keys.length == 1 ? "" : (".Class" + (c+1))) + ".Leaf";
+                names[col] = "tree" + (tidx+1) + (keys.length == 1 ? "" : ("_class" + (c+1))) + "_leaf";
                 String pred = DKV.get(keys[c]).<CompressedTree>get().getDecisionPath(input);
                 output[col++] = pred;
               }
