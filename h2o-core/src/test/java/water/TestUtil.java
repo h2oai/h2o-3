@@ -27,11 +27,16 @@ import static org.junit.Assert.assertTrue;
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
   private static boolean _stall_called_before = false;
+  private static String[] ignoreTestsNames;
   protected static int _initial_keycnt = 0;
   protected static int MINCLOUDSIZE;
 
   public TestUtil() { this(1); }
-  public TestUtil(int minCloudSize) { MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize); }
+  public TestUtil(int minCloudSize) {
+    MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize);
+    String ignoreTests = System.getProperty("ignore.tests");
+    ignoreTestsNames = ignoreTests != null ? ignoreTests.split(",") : null;
+  }
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
@@ -87,6 +92,21 @@ public class TestUtil extends Iced {
       Log.info("  * Test method name: " + description.getMethodName());
       Log.info("###########################################################");
       return base;
+    }
+  };
+
+  /* Ignore tests specified in the ignore.tests system property */
+  @Rule transient public TestRule runRule = new TestRule() {
+
+    @Override public Statement apply(Statement base, Description description) {
+      String testName = description.getClassName() + "#" + description.getMethodName();
+      if (ignoreTestsNames!=null && Arrays.asList(ignoreTestsNames).contains(testName)) {
+        Log.info("#### TEST " + testName + " IGNORED");
+        return new Statement() {
+          @Override
+          public void evaluate() throws Throwable {}
+        };
+      } else { return base; }
     }
   };
 

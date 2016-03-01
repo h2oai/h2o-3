@@ -527,6 +527,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     scoringInfo.is_autoencoder = _output.isAutoencoder();
     scoringInfo.scored_train = new ScoreKeeper(this._output._training_metrics);
     scoringInfo.scored_valid = new ScoreKeeper(this._output._validation_metrics);
+    scoringInfo.scored_xval = new ScoreKeeper(this._output._cross_validation_metrics);
+    scoringInfo.validation = _output._validation_metrics != null;
+    scoringInfo.cross_validation = _output._cross_validation_metrics != null;
 
     if (this._output.isBinomialClassifier()) {
       scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;

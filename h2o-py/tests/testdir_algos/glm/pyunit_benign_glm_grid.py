@@ -12,7 +12,7 @@ def benign_grid():
   training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))
 
   Y = 3
-  X = list(range(3)) + list(range(4,11))
+  X = [4,5,6,7,8,9,10,11]
 
   # NOTE: this tests bad parameter value handling; 'a' is not a float:
   hyper_parameters = {'alpha': [0.01,0.3,0.5,'a'], 'lambda': [1e-5,1e-6,1e-7,1e-8]}
@@ -46,7 +46,7 @@ def benign_grid():
 
   # test search_criteria plumbing and asymptotic stopping
   search_criteria = { 'strategy': "RandomDiscrete", 'seed': 42, 'stopping_metric': "AUTO", 'stopping_tolerance': 0.1, 'stopping_rounds': 2 }
-  asymp_g = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters, search_criteria=search_criteria)
+  asymp_g = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial', nfolds=5), hyper_parameters, search_criteria=search_criteria)
   asymp_g.train(x=X,y=Y, training_frame=training_data)
 
   asymp_g.show()
