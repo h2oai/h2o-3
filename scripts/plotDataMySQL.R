@@ -1,7 +1,7 @@
 #######################################################################################
-#A way to get relevant information from Master Jenkins.
-#Plot queries from getData.R
-#@author navdeepgill
+#' A way to get relevant information from Master Jenkins.
+#' Plot queries from getData.R
+#' @author  navdeepgill
 #######################################################################################
 #Plot data from getData.R
 source("scripts/getDataMySQL.R")
