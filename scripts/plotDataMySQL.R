@@ -4,7 +4,7 @@
 #@author navdeepgill
 #######################################################################################
 #Plot data from getData.R
-source("getDataMySQL.R")
+source("scripts/getDataMySQL.R")
 
 #Pull in ggplot2
 library(ggplot2)
