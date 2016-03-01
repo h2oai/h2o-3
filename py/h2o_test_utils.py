@@ -1,4 +1,6 @@
-import sys, os, time, json, datetime, errno, urlparse, stat, getpass, requests, pprint
+import sys, os, time, json, datetime, errno, stat, getpass, requests, pprint
+if sys.version_info[0] < 3: import urlparse
+else: import urllib.parse as urlparse
 import h2o
 
 debug_rest = False
@@ -43,7 +45,7 @@ def check_params_update_kwargs(params_dict, kw, function, print_params):
             raise Exception("illegal parameter '%s' in %s" % (k, function))
 
     if print_params:
-        print "%s parameters:" % function + repr(params_dict)
+        print("%s parameters:" % function + repr(params_dict))
         sys.stdout.flush()
 
 ######################
@@ -98,9 +100,9 @@ def assertKeysDontExist(d, path, keys):
 # LOGGING STUFF
 # used to rename the sandbox when running multiple tests in same dir (in different shells)
 def get_sandbox_name():
-    if os.environ.has_key("H2O_SANDBOX_NAME"):
+    if "H2O_SANDBOX_NAME" in os.environ:
         a = os.environ["H2O_SANDBOX_NAME"]
-        print "H2O_SANDBOX_NAME", a
+        print("H2O_SANDBOX_NAME", a)
         return a
     else:
         return "sandbox"
@@ -188,23 +190,23 @@ def validate_model_builder_result(result, original_params, model_name):
     global pp
     error = False
     if result is None:
-        print 'FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result)
+        print('FAIL: result for model %s is None, timeout during build? result: %s' % (model_name, result))
         error = True
 
     elif result['__http_response']['status_code'] != requests.codes.ok:
         error = True
-        print "FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code'])
-        print "dev_msg: " + result['dev_msg']
+        print("FAIL: expected 200 OK from a good validation request, got: " + str(result['__http_response']['status_code']))
+        print("dev_msg: " + result['dev_msg'])
 
     elif 'error_count' in result and result['error_count'] > 0:
         # error case
-        print 'FAIL: Parameters validation error for model: ', model_name
+        print('FAIL: Parameters validation error for model: ', model_name)
         error = True
 
     if error:
-        print 'Input parameters: '
+        print('Input parameters: ')
         pp.pprint(original_params)
-        print 'Returned result: '
+        print('Returned result: ')
         pp.pprint(result)
         assert result['error_count'] == 0, "FAIL: Non-zero error_count for model: " + model_name
 
@@ -222,20 +224,20 @@ def validate_grid_builder_result(result, original_params, grid_params, grid_id):
     global pp
     error = False
     if result is None:
-        print 'FAIL: result for grid %s is None, timeout during build? result: %s' % (grid_id, result)
+        print('FAIL: result for grid %s is None, timeout during build? result: %s' % (grid_id, result))
         error = True
 
     elif result['__http_response']['status_code'] != requests.codes.ok:
         error = True
-        print "FAIL: expected 200 OK from a good grid validation request, got: " + str(result['__http_response']['status_code'])
-        print "dev_msg: " + result['dev_msg']
+        print("FAIL: expected 200 OK from a good grid validation request, got: " + str(result['__http_response']['status_code']))
+        print("dev_msg: " + result['dev_msg'])
 
     if error:
-        print 'Input parameters: '
+        print('Input parameters: ')
         pp.pprint(original_params)
-        print 'Grid parameters: '
+        print('Grid parameters: ')
         pp.pprint(grid_params)
-        print 'Returned result: '
+        print('Returned result: ')
         pp.pprint(result)
         assert result['job']['error_count'] == 0, "FAIL: Non-zero error_count for model: " + grid_id
 
@@ -539,7 +541,7 @@ class ModelSpec(dict):
 
     def build_and_validate_model(self, a_node):
         before = time.time()
-        if isVerbose(): print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params'])
+        if isVerbose(): print('About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params']))
         result = a_node.build_model(algo=self['algo'], model_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], timeoutSecs=240) # synchronous
         validate_model_builder_result(result, self['params'], self['dest_key'])
 
@@ -551,7 +553,7 @@ class ModelSpec(dict):
         assert 'model_category' in model['output'], 'FAIL: Failed to find model_category in model: ' + self['dest_key']
         assert model['output']['model_category'] == self['model_category'], 'FAIL: Expected model_category: ' + self['model_category'] + ' but got: ' + model['output']['model_category'] + ' for model: ' + self['dest_key']
 
-        if isVerbose(): print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
+        if isVerbose(): print('Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")")
         return model
 
 
@@ -588,13 +590,13 @@ class GridSpec(dict):
 
     def build_and_validate_grid(self, a_node):
         before = time.time()
-        if isVerbose(): print 'About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model grid on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params']) + ' and grid_params: ' + repr(self['grid_params'])
+        if isVerbose(): print('About to build: ' + self['dest_key'] + ', a ' + self['algo'] + ' model grid on frame: ' + self['frame_key'] + ' with params: ' + repr(self['params']) + ' and grid_params: ' + repr(self['grid_params']))
 
         # returns a GridSearchSchema:
         result = a_node.build_model_grid(algo=self['algo'], grid_id=self['dest_key'], training_frame=self['frame_key'], parameters=self['params'], grid_parameters=self['grid_params'], search_criteria=self['search_criteria'], timeoutSecs=240) # synchronous
-        if isVerboser(): print 'result: ' + repr(result)
+        if isVerboser(): print('result: ' + repr(result))
         grid = a_node.grid(key=self['dest_key'])
-        if isVerboser(): print 'grid: ' + repr(grid)
+        if isVerboser(): print('grid: ' + repr(grid))
         
         validate_grid_builder_result(grid, self['params'], self['grid_params'], self['dest_key'])
 
@@ -625,7 +627,7 @@ class GridSpec(dict):
         if expected is not None:
             assert expected == len(grid['model_ids']), 'FAIL: Expected ' + str(expected) + ' models; got: ' + str(len(grid['model_ids']))
 
-        if isVerbose(): print 'Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")"
+        if isVerbose(): print('Done building: ' + self['dest_key'] + " (" + str(time.time() - before) + ")")
         return grid
 
 
@@ -656,12 +658,12 @@ class DatasetSpec(dict):
 
 
     def import_and_validate_dataset(self, a_node):
-        if isVerbose(): print "About to import and validate: " + self['path']
+        if isVerbose(): print("About to import and validate: " + self['path'])
         import_result = a_node.import_files(path=self['path'])
         if isVerboser():
-            print "import_result: "
+            print("import_result: ")
             pp.pprint(import_result)
-            print "frames: "
+            print("frames: ")
             pp.pprint(a_node.frames(key=import_result['destination_frames'][0], row_count=5))
 
         frames = a_node.frames(key=import_result['destination_frames'][0], row_count=5)['frames']
@@ -673,7 +675,7 @@ class DatasetSpec(dict):
 
         self['dataset'] = parse_result['frames'][0]  # save the imported dataset object
 
-        if isVerbose(): print "Imported and validated key: " + self['dataset']['frame_id']['name']
+        if isVerbose(): print("Imported and validated key: " + self['dataset']['frame_id']['name'])
         return self['dataset']
 
 
