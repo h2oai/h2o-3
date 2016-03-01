@@ -43,6 +43,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
   }
 
+  public interface LeafNodeAssignment {
+    Frame scoreLeafNodeAssignment(Frame frame, Key destination_key);
+  }
+
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
