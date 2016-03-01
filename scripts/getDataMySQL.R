@@ -95,4 +95,4 @@ master_testname_failures = dbSendQuery(mr_unit, "SELECT date as Date, job_name a
 
 #Send query to a dataframe
 master_testname_failures = fetch(master_testname_failures, n = -1)
-master_testname_failures_subset = subset(master_testname_failures,PassRatio < 1)
+master_testname_failures_subset = subset(master_testname_failures,PassRatio < 1 & JobName != "template_win7_pyunit_small")
