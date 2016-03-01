@@ -50,6 +50,14 @@ public class DiffFile {
         };
     }
 
+    public Path getPathA() {
+        return _a_path;
+    }
+
+    public Path getPathB() {
+        return _b_path;
+    }
+
     public Type getType() {
         if (!_a_path.getFileName().toString().equals("null")) {
             if (!_b_path.getFileName().toString().equals("null")) {

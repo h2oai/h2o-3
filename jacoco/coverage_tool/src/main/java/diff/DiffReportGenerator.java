@@ -26,11 +26,6 @@ public class DiffReportGenerator {
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.directory(root_dir.toFile());
         Process p = pb.start();
-        String readLine;
-        BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        while (((readLine = br.readLine()) != null)) {
-            System.out.println(readLine);
-        }
         DiffReport dr = generateReport(p.getInputStream(), root_dir);
         return dr;
     }

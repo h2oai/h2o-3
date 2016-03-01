@@ -34,22 +34,11 @@ public class ClassParser {
         NONE, BLOCK, CLASS_BLOCK, CLASS_HEADER, CLASS_NAME, CLASS_BLOCK_START, PACKAGE_HEADER, PACKAGE_NAME,  LINE_COMMENT, BLOCK_COMMENT, SINGLE_QUOTE, DOUBLE_QUOTE
     }
 
-    public List<ClassHunk> parse(Path p) throws IOException {
+    public static List<ClassHunk> parse(Path p) throws IOException {
         return parse(p, System.getProperty("file.encoding"));
     }
 
-    class Tuple {
-        private Type _t;
-        private ClassHunkBuilder _c;
-
-        public Tuple(Type t) { _t=t; _c=new InvalidClassHunkBuilder(); }
-        public Tuple(Type t, ClassHunkBuilder chb) { _t=t; _c=chb; }
-
-        public Type getType() { return _t; }
-        public ClassHunkBuilder getBuilder() { return _c; }
-    }
-
-    public List<ClassHunk> parse (Path p, String encoding) throws IOException {
+    public static List<ClassHunk> parse (Path p, String encoding) throws IOException {
         FileChannel fc = FileChannel.open(p);
         Stack<Tuple> s = new Stack<Tuple>();
         Stack<String> className = new Stack<String>();
@@ -412,58 +401,7 @@ public class ClassParser {
         return classList;
     }
 
-    class ClassHunkBuilder {
-        private int _start;
-        private String _name;
-
-        public ClassHunkBuilder() {}
-
-        public ClassHunkBuilder(String name, int start) {
-            if (start < 0) {
-                throw new IllegalArgumentException("Arguments must be non-negative");
-            } else {
-                _name = name;
-                _start = start;
-            }
-        }
-
-        public ClassHunk end(int end) {
-            if (end < _start) {
-                throw new IllegalArgumentException("Ending line number must be greater or equal to start");
-            } else {
-                return new ClassHunk(_name, _start, end);
-            }
-        }
-    }
-
-    class InvalidClassHunkBuilder extends ClassHunkBuilder {
-        @Override
-        public ClassHunk end(int end) {
-            throw new IllegalStateException("ClassHunkBuilder is Invalid");
-        }
-    }
-
-    class ClassHunk {
-        private int _start;
-        private int _end;
-        private String _name;
-
-        public ClassHunk(String name, int start, int end) {
-            if (start < 0 || end < 0) {
-                throw new IllegalArgumentException("Arguments must be non-negative");
-            } else {
-                _name = name;
-                _start = start;
-                _end = end;
-            }
-        }
-
-        public String toString() {
-            return "Class " + _name + " from line " + _start + " to " + _end;
-        }
-    }
-
-    private boolean lookingAt(Matcher m) {
+    private static boolean lookingAt(Matcher m) {
         try {
             return m.lookingAt();
         } catch (IndexOutOfBoundsException ioobe) {
@@ -473,10 +411,20 @@ public class ClassParser {
         }
     }
 
+    static class Tuple {
+        private Type _t;
+        private ClassHunkBuilder _c;
+
+        public Tuple(Type t) { _t=t; _c=new InvalidClassHunkBuilder(); }
+        public Tuple(Type t, ClassHunkBuilder chb) { _t=t; _c=chb; }
+
+        public Type getType() { return _t; }
+        public ClassHunkBuilder getBuilder() { return _c; }
+    }
+
     public static void main (String[] args) {
         try {
-            ClassParser p = new ClassParser();
-            List<ClassHunk> l = p.parse(Paths.get("/Users/nkalonia1/h2o-3/jacoco/coverage_tool/test_files/GLM.java"));
+            List<ClassHunk> l = ClassParser.parse(Paths.get("/Users/nkalonia1/h2o-3/jacoco/coverage_tool/test_files/GLM.java"));
             for (ClassHunk ch : l) {
                 System.out.println(ch);
             }
