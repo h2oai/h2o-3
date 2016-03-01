@@ -389,6 +389,7 @@ h2o.predict <- predict.H2OModel
 #'        desired
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
+#' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame object with categorical leaf assignment identifiers for
 #'         each tree in the model.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
