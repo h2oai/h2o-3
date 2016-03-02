@@ -19,7 +19,6 @@ public class TypeMap {
     water.FetchClazz.class.getName(),   // used to fetch IDs from leader
     water.FetchId.class.getName(),      // used to fetch IDs from leader
     water.DTask.class.getName(),        // Needed for those first Tasks
-    water.DException.class.getName(),   // Needed for those first Tasks: can pass exceptions
 
     water.fvec.Chunk.class.getName(),   // parent of Chunk
     water.fvec.C1NChunk.class.getName(),// used as constant in parser

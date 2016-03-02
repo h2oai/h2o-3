@@ -6,7 +6,6 @@ import org.junit.*;
 import java.io.File;
 
 import water.*;
-import water.DException.DistributedException;
 import water.util.ArrayUtils;
 
 
@@ -203,11 +202,11 @@ public class FVecTest extends TestUtil {
       try {
         v2.min();
         assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
-      } catch( DistributedException de ) {
-        assertTrue(de.getMessage().contains("IllegalArgumentException"));
-        // expect to get IAE since we're requesting rollups while also changing the vec
       } catch( IllegalArgumentException ie ) {
         // if on local node can get iae directly
+      } catch( RuntimeException re ) {
+        assertTrue(re.getCause() instanceof IllegalArgumentException);
+        // expect to get IAE since we're requesting rollups while also changing the vec
       }
       w.close(fs);
       fs.blockForPending();
