@@ -216,10 +216,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
               ScoringInfo.sort(this.scoringInfos, _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
             }
           } catch (RuntimeException e) { // Catch everything
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+            if (!Job.isCancelledException(e)) {
+              StringWriter sw = new StringWriter();
+              PrintWriter pw = new PrintWriter(sw);
+              e.printStackTrace(pw);
+              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+            }
             grid.appendFailedModelParameters(params, e);
           }
         } catch (IllegalArgumentException e) {
