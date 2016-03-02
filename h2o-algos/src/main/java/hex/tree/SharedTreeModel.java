@@ -182,7 +182,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
 
   public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
-    final int len = _output._names.length;
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     int classTrees = 0;
@@ -191,13 +190,22 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
     final int outputcols = _output._treeKeys.length * classTrees;
     final String[] names = new String[outputcols];
+    int col=0;
+    for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
+      Key[] keys = _output._treeKeys[tidx];
+      for (int c = 0; c < keys.length; c++) {
+        if (keys[c] != null) {
+          names[col++] = "T" + (tidx + 1) + (keys.length == 1 ? "" : (".C" + (c + 1)));
+        }
+      }
+    }
     Frame res = new MRTask() {
       @Override public void map(Chunk chks[], NewChunk[] idx ) {
-        double input [] = new double[len];
+        double input [] = new double[chks.length];
         final String output[] = new String[outputcols];
 
         for( int row=0; row<chks[0]._len; row++ ) {
-          for( int i=0; i<len; i++ )
+          for( int i=0; i<chks.length; i++ )
             input[i] = chks[i].atd(row);
 
           int col=0;
@@ -205,7 +213,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
             Key[] keys = _output._treeKeys[tidx];
             for (int c = 0; c < keys.length; c++) {
               if (keys[c] != null) {
-                names[col] = "tree" + (tidx+1) + (keys.length == 1 ? "" : ("_class" + (c+1))) + "_leaf";
                 String pred = DKV.get(keys[c]).<CompressedTree>get().getDecisionPath(input);
                 output[col++] = pred;
               }
