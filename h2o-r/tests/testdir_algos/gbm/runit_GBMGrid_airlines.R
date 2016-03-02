@@ -44,7 +44,7 @@ gbm.grid.test <- function() {
     expect_equal(length(air.grid@model_ids), max_models)
 
     # test random/max_models search criterion: asymptotic
-    search_criteria = list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 3)
+    search_criteria = list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.01, stopping_rounds = 3)
     air.grid <- h2o.grid("gbm", y = "IsDepDelayed", x = myX,
                          distribution="bernoulli",
                          training_frame = air.hex,

@@ -956,14 +956,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(beta,gginfo);
       if(!_parms._lambda_search)
         updateProgress();
-      return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
+      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !_state.converged();
     }
 
     public boolean progress(double [] beta, double likelihood) {
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
         updateProgress();
-      return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
+      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !_state.converged();
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;

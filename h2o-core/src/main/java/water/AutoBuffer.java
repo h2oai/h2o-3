@@ -1427,20 +1427,35 @@ public final class AutoBuffer {
     return put1(x==null ? -1 : x.ordinal());
   }
 
+  public static byte[] javaSerializeWritePojo(Object o) {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    ObjectOutputStream out = null;
+    try {
+      out = new ObjectOutputStream(bos);
+      out.writeObject(o);
+      out.close();
+      return bos.toByteArray();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
+  public static Object javaSerializeReadPojo(byte [] bytes) {
+    try {
+      return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    } catch (ClassNotFoundException e) {
+      throw Log.throwErr(e);
+    }
+  }
   // ==========================================================================
   // Java Serializable objects
   // Note: These are heck-a-lot more expensive than their Freezable equivalents.
 
   @SuppressWarnings("unused") public AutoBuffer putSer( Object obj ) {
     if (obj == null) return putA1(null);
-    try {
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      ObjectOutputStream oos = new ObjectOutputStream(bos);
-      oos.writeObject(obj);
-      byte[] ba = bos.toByteArray();
-      oos.close(); bos.close();
-      return putA1(ba);
-    } catch( IOException e ) { throw Log.throwErr(e); }
+    return putA1(javaSerializeWritePojo(obj));
   }
 
   @SuppressWarnings("unused") public AutoBuffer putASer(Object[] fs) {
@@ -1474,12 +1489,8 @@ public final class AutoBuffer {
   }
 
   @SuppressWarnings("unused") public Object getSer() {
-    try {
-      byte[] ba = getA1();
-      return ba == null ? null : new ObjectInputStream(new ByteArrayInputStream(ba)).readObject();
-    } catch(ClassNotFoundException|IOException e) {
-      throw Log.throwErr(e);
-    }
+    byte[] ba = getA1();
+    return ba == null ? null : javaSerializeReadPojo(ba);
   }
 
   @SuppressWarnings("unused") public <T> T getSer(Class<T> tc) {

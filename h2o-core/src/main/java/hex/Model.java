@@ -43,6 +43,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
   }
 
+  public interface LeafNodeAssignment {
+    Frame scoreLeafNodeAssignment(Frame frame, Key destination_key);
+  }
+
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
@@ -527,6 +531,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     scoringInfo.is_autoencoder = _output.isAutoencoder();
     scoringInfo.scored_train = new ScoreKeeper(this._output._training_metrics);
     scoringInfo.scored_valid = new ScoreKeeper(this._output._validation_metrics);
+    scoringInfo.scored_xval = new ScoreKeeper(this._output._cross_validation_metrics);
+    scoringInfo.validation = _output._validation_metrics != null;
+    scoringInfo.cross_validation = _output._cross_validation_metrics != null;
 
     if (this._output.isBinomialClassifier()) {
       scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
@@ -699,7 +706,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( domains[i] != null ) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             CategoricalWrappedVec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
@@ -712,8 +719,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
-            if (expensive) { vec = evec;  good++; } // Keep it
-            else { evec.remove(); vec = null; } // No leaking if not-expensive
+            vec = evec;  good++;
           } else {
             good++;
           }

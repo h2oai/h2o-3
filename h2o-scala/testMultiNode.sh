@@ -59,6 +59,9 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
 (cd src/test/scala; /usr/bin/find . -name '*.scala' | cut -c3- | sed 's/.scala$//' | sed -e 's/\//./g') > $OUTDIR/tests.txt
 
+# Output the comma-separated list of ignored tests
+echo $IGNORE > $OUTDIR/tests.ignore.txt
+
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$
 CLUSTER_BASEPORT=45000
@@ -69,6 +72,6 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-scala junit tests...
-($JVM -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM -Dignore.tests=$IGNORE -Dbuild.id=$BUILD_ID -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 cleanup

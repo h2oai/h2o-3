@@ -127,6 +127,12 @@ public class Frame extends Lockable<Frame> {
     assert _names.length == vecs.length;
   }
 
+  public void setNames(String[] columns){
+    if(columns.length!= _vecs.length){
+      throw new IllegalArgumentException("Size of array containing column names does not correspond to the number of vecs!");
+    }
+    _names = columns;
+  }
   /** Deep copy of Vecs and Keys and Names (but not data!) to a new random Key.
    *  The resulting Frame does not share with the original, so the set of Vecs
    *  can be freely hacked without disturbing the original Frame. */
