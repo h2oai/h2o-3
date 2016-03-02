@@ -274,7 +274,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
 
   static public boolean isCancelledException(Throwable ex) {
-    return ex instanceof Job.JobCancelledException || ex.getMessage().contains("class water.Job$JobCancelledException");
+    return ex instanceof Job.JobCancelledException || ex.getMessage() != null && ex.getMessage().contains("class water.Job$JobCancelledException");
   }
 
   private static class Barrier1OnCom extends JAtomic {
