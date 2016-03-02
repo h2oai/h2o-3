@@ -106,7 +106,7 @@ abstract public class Log {
       String host = H2O.SELF_ADDRESS.getHostAddress();
       _preHeader = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
       ArrayList<String> bufmsgs = INIT_MSGS;  INIT_MSGS = null;
-      for( String s : bufmsgs ) write0(INFO, true, s);
+      if (bufmsgs != null) for( String s : bufmsgs ) write0(INFO, true, s);
     }
     write0(lvl, stdout, res);
   }
