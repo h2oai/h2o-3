@@ -12,7 +12,8 @@ class ASTApply extends ASTPrim {
   public String[] args() { return new String[]{"ary", "margin", "fun"}; }
   @Override int nargs() { return 1+3; } // (apply frame 1/2 fun) 
   @Override public String str() { return "apply"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr     = stk.track(asts[1].exec(env)).getFrame();
     double margin= stk.track(asts[2].exec(env)).getNum();
     AST fun      = stk.track(asts[3].exec(env)).getFun();
@@ -120,7 +121,8 @@ class ASTComma extends ASTPrim {
   public String[] args() { return new String[]{"..."}; }
   @Override int nargs() { return -1; } // variable args
   @Override public String str() { return ","; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = new ValNum(0);
     for( int i=1; i<asts.length; i++ )
       val = stk.track(asts[i].exec(env)); // Evaluate all expressions for side-effects

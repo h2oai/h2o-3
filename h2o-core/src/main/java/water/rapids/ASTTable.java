@@ -12,7 +12,6 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
 // TODO:  Define "table" in terms of "groupby"
@@ -26,7 +25,8 @@ class ASTTable extends ASTPrim {
   public String[] args() { return new String[]{"X", "Y", "dense"}; }
   @Override int nargs() { return -1; } // (table X dense)  or (table X Y dense)
   @Override public String str() { return "table"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr1 = stk.track(asts[1].exec(env)).getFrame();
     final boolean dense = asts[asts.length-1].exec(env).getNum()==1;
     Frame fr2 = asts.length==4 ? stk.track(asts[2].exec(env)).getFrame() : null;
@@ -332,7 +332,8 @@ class ASTUnique extends ASTPrim {
   @Override
   public String str() { return "unique"; }
 
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec v;
     if( fr.numCols()!=1 )

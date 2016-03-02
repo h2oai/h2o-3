@@ -1,18 +1,10 @@
 package water.rapids;
 
+import water.*;
+import water.fvec.Frame;
+
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-
-import water.AutoBuffer;
-import water.DKV;
-import water.Futures;
-import water.Iced;
-import water.Key;
-import water.Value;
-import water.fvec.Frame;
-import water.fvec.Vec;
 
 /** Execute a set of instructions in the context of an H2O cloud.
  *
@@ -35,7 +27,7 @@ public class Env extends Iced {
 
   // Session holds the ref-cnts across multiple executions.
   final Session _ses;
-  Env( Session ses ) { _ses = ses; }
+  public Env( Session ses ) { _ses = ses; }
 
   // Frames that are alive in mid-execution; usually because we have evaluated
   // some first expression and need to hang onto it while evaluating the next
@@ -47,7 +39,7 @@ public class Env extends Iced {
   // Deletes dead Frames & forces good stack cleanliness at opcode end.  One
   // per Opcode implementation.  Track frames that are alive mid-execution, but
   // dead at Opcode end.
-  StackHelp stk() { return new StackHelp(); }
+  public StackHelp stk() { return new StackHelp(); }
   class StackHelp implements Closeable {
     final int _sp = sp();
     // Push & track.  Called on every Val that spans a (nested) exec call.

@@ -17,7 +17,8 @@ class ASTStrSplit extends ASTPrim {
   @Override int nargs() { return 1+2; } // (strsplit x split)
   @Override
   public String str() { return "strsplit"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String splitRegEx = asts[2].exec(env).getStr();
 
@@ -169,7 +170,8 @@ class ASTCountMatches extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "pattern"}; }
   @Override int nargs() { return 1+2; } // (countmatches x pattern)
   @Override public String str() { return "countmatches"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final String[] pattern = asts[2] instanceof ASTStrList 
       ? ((ASTStrList)asts[2])._strs 
@@ -254,7 +256,8 @@ class ASTToLower extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(tolower x)
   @Override public String str() { return "tolower"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())
@@ -318,7 +321,8 @@ class ASTToUpper extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(toupper x)
   @Override public String str() { return "toupper"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())
@@ -384,7 +388,8 @@ class ASTReplaceFirst extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replacefirst"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     final String pattern     = asts[2].exec(env).getStr();
     final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -465,7 +470,8 @@ class ASTReplaceAll extends ASTPrim {
   public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replaceall"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     final String pattern     = asts[2].exec(env).getStr();
     final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -542,7 +548,8 @@ class ASTTrim extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (trim x)
   @Override public String str() { return "trim"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())
@@ -611,7 +618,8 @@ class ASTStrLength extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
   @Override public String str() { return "strlen"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 
     // Type check
@@ -684,7 +692,8 @@ class ASTSubstring extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "startIndex", "endIndex"}; }
   @Override int nargs() {return 4; } // (substring x startIndex [endIndex])
   @Override public String str() { return "substring"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int startIndex = (int) asts[2].exec(env).getNum();
     if (startIndex < 0) startIndex = 0;
@@ -781,7 +790,8 @@ class ASTLStrip extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "set"}; }
   @Override int nargs() { return 1+2; }
   @Override public String str() { return "lstrip"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
@@ -863,7 +873,8 @@ class ASTRStrip extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "set"}; }
   @Override int nargs() { return 1+2; }
   @Override public String str() { return "rstrip"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
