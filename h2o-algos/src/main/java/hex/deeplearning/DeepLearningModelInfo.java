@@ -728,8 +728,7 @@ final public class DeepLearningModelInfo extends Iced {
     double gradient;
     void apply(int l, int r, int c, double g) {
       if (r==row && c==col && l==layer) {
-        assert(gradient == 0); //there can only be one match
-        gradient = g;
+        gradient += g;
       }
     }
   }
