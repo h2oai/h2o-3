@@ -79,7 +79,7 @@ class ModelBase(object):
 
   def predict_leaf_node_assignment(self, test_data):
     """
-    Predict on a dataset.
+    Predict on a dataset and return the leaf node assignment (only for tree-based models)
 
     Parameters
     ----------
