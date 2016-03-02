@@ -6,13 +6,17 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
+public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> implements Model.LeafNodeAssignment {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 
@@ -176,6 +180,60 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
+
+  public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
+    final int len = _output._names.length;
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    int classTrees = 0;
+    for (int i=0;i<_output._treeKeys[0].length;++i) {
+      if (_output._treeKeys[0][i] != null) classTrees++;
+    }
+    final int outputcols = _output._treeKeys.length * classTrees;
+    final String[] names = new String[outputcols];
+    Frame res = new MRTask() {
+      @Override public void map(Chunk chks[], NewChunk[] idx ) {
+        double input [] = new double[len];
+        final String output[] = new String[outputcols];
+
+        for( int row=0; row<chks[0]._len; row++ ) {
+          for( int i=0; i<len; i++ )
+            input[i] = chks[i].atd(row);
+
+          int col=0;
+          for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
+            Key[] keys = _output._treeKeys[tidx];
+            for (int c = 0; c < keys.length; c++) {
+              if (keys[c] != null) {
+                names[col] = "tree" + (tidx+1) + (keys.length == 1 ? "" : ("_class" + (c+1))) + "_leaf";
+                String pred = DKV.get(keys[c]).<CompressedTree>get().getDecisionPath(input);
+                output[col++] = pred;
+              }
+            }
+          }
+          assert(col==outputcols);
+          for (int i=0; i<outputcols; ++i)
+            idx[i].addStr(output[i]);
+        }
+      }
+    }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
+
+    Vec vv;
+    Vec[] nvecs = new Vec[res.vecs().length];
+    for(int c=0;c<res.vecs().length;++c) {
+      vv = res.vec(c);
+      try {
+        nvecs[c] = vv.toCategoricalVec();
+      } catch (Exception e) {
+        VecUtils.deleteVecs(nvecs, c);
+        throw e;
+      }
+    }
+    res.delete();
+    res = new Frame(destination_key, names, nvecs);
+    DKV.put(res);
+    return res;
+  }
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     return score0(data, preds, 1.0, 0.0);

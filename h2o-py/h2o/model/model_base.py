@@ -77,6 +77,23 @@ class ModelBase(object):
       self.show()
     return ""
 
+  def predict_leaf_node_assignment(self, test_data):
+    """
+    Predict on a dataset.
+
+    Parameters
+    ----------
+    test_data: H2OFrame
+      Data on which to make predictions.
+
+    Returns
+    -------
+      A new H2OFrame of predictions.
+    """
+    if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, leaf_node_assignment=True)
+    return h2o.get_frame(j["predictions_frame"]["name"])
+
   def predict(self, test_data):
     """
     Predict on a dataset.

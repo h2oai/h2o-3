@@ -69,10 +69,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * Search criteria for the hyperparameter search including directives for how to search and
    * when to stop the search.
    */
-  public C search_criteria();
+  C search_criteria();
 
   /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
-  public boolean stopEarly(Model model, ScoringInfo[] sk);
+  boolean stopEarly(Model model, ScoringInfo[] sk);
 
   /**
    * Returns an iterator to traverse this hyper-space.
@@ -388,7 +388,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                                    search_criteria().stopping_rounds(),
                                    model._output.isClassifier(),
                                    search_criteria().stopping_metric(),
-                                   search_criteria().stopping_tolerance());
+                                   search_criteria().stopping_tolerance(), "grid's best");
     }
 
     @Override

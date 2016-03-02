@@ -59,8 +59,9 @@ public class ScoringInfo extends Iced {
   public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history) {
     ScoreKeeper[] sk = new ScoreKeeper[scoring_history.length];
     for (int i=0;i<sk.length;++i) {
-      // TODO: don't allow mixing of training and validation metrics
-      sk[i] = scoring_history[i].validation ? scoring_history[i].scored_valid : scoring_history[i].scored_train;
+      sk[i] = scoring_history[i].cross_validation ? scoring_history[i].scored_xval
+              : scoring_history[i].validation ? scoring_history[i].scored_valid
+              : scoring_history[i].scored_train;
     }
     return sk;
   }
@@ -83,7 +84,7 @@ public class ScoringInfo extends Iced {
    * on a stopping criterion / metric.  Uses cross-validation or validation metrics if
    * available, otherwise falls back to training metrics.  Understands whether more is
    * better for the given criterion and will order the array so that the best models are
-   * first.
+   * last (to fit into the behavior of a model that improves over time)
    * @param criterion scalar model metric / stopping criterion by which to sort
    * @return a Comparator on a stopping criterion / metric
    */
@@ -93,10 +94,10 @@ public class ScoringInfo extends Iced {
       public int compare(ScoringInfo o1, ScoringInfo o2) {
         boolean moreIsBetter = ScoreKeeper.moreIsBetter(criterion);
 
-        if (moreIsBetter)
-          return (int)Math.signum(o2.metric(criterion) - o1.metric(criterion)); // moreIsBetter
+        if (!moreIsBetter)
+          return (int)Math.signum(o2.metric(criterion) - o1.metric(criterion));
         else
-          return (int)Math.signum(o1.metric(criterion) - o2.metric(criterion)); // lessIsBetter
+          return (int)Math.signum(o1.metric(criterion) - o2.metric(criterion));
       }
     };
   }
@@ -105,7 +106,7 @@ public class ScoringInfo extends Iced {
    * Sort an array of ScoringInfo based on a stopping criterion / metric.  Uses
    * cross-validation or validation metrics if available, otherwise falls back to training
    * metrics.  Understands whether more is better for the given criterion and will order
-   * the array so that the best models are first.
+   * the array so that the best models are last
    * @param scoringInfos array of ScoringInfo to sort
    * @param criterion scalar model metric / stopping criterion by which to sort
    */
@@ -118,11 +119,6 @@ public class ScoringInfo extends Iced {
       criterion = scoringInfos[0].is_classification ? ScoreKeeper.StoppingMetric.logloss : scoringInfos[0].is_autoencoder ? ScoreKeeper.StoppingMetric.MSE : ScoreKeeper.StoppingMetric.deviance;
 
     Arrays.sort(scoringInfos, ScoringInfo.comparator(criterion));
-  }
-
-  /** Based on the given array of ScoringInfo and stopping criteria should we stop early? */
-  public static boolean stopEarly(ScoringInfo[] sk, int k, boolean classification, ScoreKeeper.StoppingMetric criterion, double rel_improvement) {
-    return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk), k, classification, criterion, rel_improvement);
   }
 
   /**
