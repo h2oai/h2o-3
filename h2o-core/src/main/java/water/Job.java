@@ -258,7 +258,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       _barrier = null;          // Free for GC
     }
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if(ex.getMessage().contains("class water.Job$Job")){
+      if(Job.isCancelledException(ex)) {
         new Barrier1OnCom().apply(Job.this);
         _barrier = null;
       } else {
@@ -272,6 +272,11 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       return true;
     }
   }
+
+  static public boolean isCancelledException(Throwable ex) {
+    return ex instanceof Job.JobCancelledException || ex.getMessage().contains("class water.Job$JobCancelledException");
+  }
+
   private static class Barrier1OnCom extends JAtomic {
     @Override boolean abort(Job job) { return false; }
     @Override public void update(Job old) {
