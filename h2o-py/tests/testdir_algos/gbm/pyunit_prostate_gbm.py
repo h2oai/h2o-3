@@ -39,6 +39,11 @@ def prostate_gbm():
                validation_frame=train)
   my_gbm.show()
 
+  p = my_gbm.predict(train)
+  p.describe()
+  ln = my_gbm.predict_leaf_node_assignment(train)
+  ln.describe()
+
   my_gbm_metrics = my_gbm.model_performance(train)
   my_gbm_metrics.show()
 
