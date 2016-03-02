@@ -288,6 +288,8 @@ class ModelMetricsHandler extends Handler {
       mm = new ModelMetricsListSchemaV3();
 
     mm.predictions_frame = new KeyV3.FrameKeyV3(predictions._key);
+    if (parms._leaf_node_assignment) //don't show metrics in leaf node assignments are made
+      mm.model_metrics = null;
 
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       // There was no response in the test set -> cannot make a model_metrics object
