@@ -62,10 +62,12 @@ public class GLMCollect extends Collector {
           mb._parms._valid = valid._key;
           mb._parms._ignored_columns = ignored;
           mb._parms._response_column = y;
-          startResourceCollection();
+          String configID=getConfigId(mb._parms, idFrame);
+          collectJVMSettings(configID);
+          startResourceCollection(configID);
           m = mb.trainModel().get();
           stopResourceCollection();
-          logScoreHistory(mb, m, getConfigId(m._parms, idFrame));
+          logScoreHistory(mb, m, configID);
         } catch (Exception ex) {
           ex.printStackTrace();
         } finally {

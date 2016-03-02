@@ -144,8 +144,10 @@ public class AutoCollect {
   }
 
   private Collector selectCollector() {
-    switch( _algo ) {
-      case ANY: _algo = (byte) getRNG(new Random().nextLong()).nextInt(_algo);
+    byte algo =_algo;
+    if( algo == ANY )
+      algo = (byte) getRNG(new Random().nextLong()).nextInt(_algo);
+    switch( algo ) {
       case RF:  return new DRFCollect();
       case GBM: return new GBMCollect();
       case DL:  return new DLCollect();
