@@ -4,9 +4,11 @@ package ai.h2o.automl.autocollect;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
+import water.H2O;
 import water.IcedWrapper;
 import water.Key;
 import water.fvec.Frame;
+import water.util.LinuxProcFileReader;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,23 +18,6 @@ import java.util.List;
 public abstract class Collector {
   private Thread resourceCollector; // special collector for RSS & CPU
   protected static final double[] SPLITRATIOS = new double[]{0.8,0.2};
-
-  protected void startResourceCollection() {
-    resourceCollector = new Thread(new Runnable() {
-      @Override public void run() {
-        try {
-          Thread.sleep(3000);
-        } catch (InterruptedException e) {
-          // ignore
-        }
-      }
-    });
-    resourceCollector.start();
-  }
-
-  protected void stopResourceCollection() {
-    if( !resourceCollector.isInterrupted() ) resourceCollector.interrupt();
-  }
 
   public void collect(int idFrame, Frame fr, Frame test, String[] ignored, String y, long seedSplit, HashSet<String> configs) {
     System.out.println("Collecting: " + getClass());
@@ -56,7 +41,8 @@ public abstract class Collector {
   private void collect0(ModelBuilder mb, String configID) {
     Model m = null;
     try {
-      startResourceCollection();
+      collectJVMSettings(configID);
+      startResourceCollection(configID);
       m = (Model)mb.trainModel().get();
       stopResourceCollection();
       logScoreHistory(mb,m,configID);
@@ -106,4 +92,71 @@ public abstract class Collector {
   }
 
   protected boolean isValidConfig(String configID, HashSet<String> configs) { return !configs.contains(configID); }
+
+  protected static void collectJVMSettings(String configID) {
+    HashMap<String, Object> hm = new HashMap<>();
+    hm.put("ConfigID", configID);
+    hm.put("build_branch", H2O.ABV.branchName());
+    hm.put("build_date", H2O.ABV.compiledOn());
+    hm.put("build_sha",  H2O.ABV.lastCommitHash());
+    hm.put("java_version", System.getProperty("java.version"));
+    hm.put("Xmx_GB", (double)Runtime.getRuntime().maxMemory() / (1<<30) );
+    AutoCollect.pushMeta(hm, hm.keySet().toArray(new String[hm.size()]), "JVMSettings", null);
+  }
+
+  protected void startResourceCollection(final String ConfigID) {
+    resourceCollector = new Thread(new Runnable() {
+      private long[][] _ticks;
+      @Override public void run() {
+        HashMap<String, Object> hm = new HashMap<>();
+        while(true) {
+          if( LinuxProcFileReader.refresh() ) {
+            hm.put("ConfigID", ConfigID);
+            hm.put("ts", System.currentTimeMillis());
+            hm.put("rss", AutoCollect.SQLNAN);
+            hm.put("sys_cpu", AutoCollect.SQLNAN);
+            hm.put("proc_cpu", AutoCollect.SQLNAN);
+            hm.put("num_cpu", AutoCollect.SQLNAN);
+            hm.put("rss", LinuxProcFileReader.getProcessRss());
+            long[][] newTicks = new long[LinuxProcFileReader.getCpuTicks().length][];
+            for(int i=0;i<newTicks.length;++i)
+              newTicks[i] = LinuxProcFileReader.getCpuTicks()[i].clone();
+            if( _ticks == null ) _ticks = newTicks;
+            else {
+              double deltaUser = deltaAv(_ticks, newTicks, 0);
+              double deltaSys = deltaAv(_ticks, newTicks, 1);
+              double deltaOther = deltaAv(_ticks, newTicks, 2);
+              double deltaIdle = deltaAv(_ticks, newTicks, 3);
+              double deltaTotal = deltaUser + deltaSys + deltaOther + deltaIdle;
+              if (deltaTotal > 0) {
+                hm.put("sys_cpu", deltaSys / deltaTotal);
+                hm.put("proc_cpu", deltaUser / deltaTotal);
+              }
+              hm.put("num_cpu", _ticks.length);
+              _ticks = newTicks;
+            }
+            AutoCollect.pushResourceMeta(hm);
+          }
+          try {
+            Thread.sleep(5000);
+          } catch (InterruptedException ex) {
+            // ignore
+          }
+        }
+      }
+    });
+    resourceCollector.start();
+  }
+
+  private double deltaAv(long[][] Old, long[][] New, int i) { // averaged over num CPUs
+    int div=Old.length; // number of CPUs
+    long val=0;
+    for(int j=0;j<div;++j)
+      val += New[j][i] - Old[j][i];
+    return (double)val/(double)div;
+  }
+
+  protected void stopResourceCollection() {
+    if( !resourceCollector.isInterrupted() ) resourceCollector.interrupt();
+  }
 }
