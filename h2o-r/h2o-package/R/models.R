@@ -394,6 +394,17 @@ h2o.predict <- predict.H2OModel
 #'         each tree in the model.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
+#' h2o.predict(prostate.gbm, prostate.hex)
+#' h2o.predictLeafNodeAssignment(prostate.gbm, prostate.hex)
+#' }
 #' @export
 predictLeafNodeAssignment.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
