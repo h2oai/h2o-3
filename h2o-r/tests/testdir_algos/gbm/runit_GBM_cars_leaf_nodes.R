@@ -44,7 +44,7 @@ test.checkpointing <- function() {
                     min_rows=min_rows1,validation_frame=valid,distribution=distribution)
   preds1 <- h2o.predict(model1, train)
   print(preds1)
-  preds2 <- h2o.predictLeafNodeAssignment(model1, train)
+  preds2 <- h2o.predict_leaf_node_assignment(model1, train)
   print(preds2)
 }
 
