@@ -54,7 +54,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // Simple state accessors; public ones do a DKV update check
   public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
   public long   end_time()   { update_from_remote(); assert  stopped(); return   _end_time; }
-  public boolean isRunning() { update_from_remote(); return  running(); }
+  public boolean isRunning() {
+    update_from_remote();
+    return  running();
+  }
   public boolean isStopped() { update_from_remote(); return  stopped(); }
   // Slightly more involved state accessors
   public boolean isStopping(){ return isRunning() && _stop_requested; }
@@ -242,6 +245,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public void reduce( AssertNoKey ank ) { _found |= ank._found; }
   }
 
+  public static class JobCancelledException extends RuntimeException {}
+
   // A simple barrier.  Threads blocking on the job will block on this
   // "barrier" task, which will block until the fjtask runs the onCompletion or
   // onExceptionCompletion code.
@@ -253,9 +258,16 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       _barrier = null;          // Free for GC
     }
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      final DException dex = new DException(ex,caller.getClass());
-      try {Log.err(ex);} catch(Throwable t) {/* do nothing */}
-      new Barrier1OnExCom(dex).apply(Job.this);
+      if(ex.getMessage().contains("class water.Job$Job")){
+        new Barrier1OnCom().apply(Job.this);
+        _barrier = null;
+      } else {
+        final DException dex = new DException(ex, caller.getClass());
+        try {
+          Log.err(ex);
+        } catch (Throwable t) {/* do nothing */}
+        new Barrier1OnExCom(dex).apply(Job.this);
+      }
       _barrier = null;          // Free for GC
       return true;
     }
