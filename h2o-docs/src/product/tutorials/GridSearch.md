@@ -329,7 +329,7 @@ The current test infrastructure includes:
 - Basic tests verifying consistency of the results for DRF, GBM, and KMeans
 - JUnit test assertions for grid results
 
-There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R) and and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
+There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
 
 ##Caveats/In Progress
 
