@@ -1,6 +1,7 @@
 package water.parser;
 
 import com.google.common.base.Charsets;
+import water.AutoBuffer;
 import water.Iced;
 
 import java.util.Arrays;
@@ -18,6 +19,18 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    BufferedString(BufferedString from) { this(Arrays.copyOfRange(from._buf,from._off,from._off+from._len)); }
    // Used to make a temp recycling BufferedString in hot loops
    public BufferedString() { }
+
+   public final AutoBuffer write_impl(AutoBuffer ab) {
+     if( _buf == null ) return ab.putInt(-1);
+     ab.putInt(_buf.length);
+     return ab.putA1(_buf,_off,_len);
+   }
+
+  public final BufferedString read_impl(AutoBuffer ab){
+    _buf = ab.getA1();
+    if(_buf != null) _len = _buf.length;
+    return this;
+  }
 
    @Override public int compareTo( BufferedString o ) {
      int len = Math.min(_len,o._len);

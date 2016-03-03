@@ -768,7 +768,7 @@ public final class AutoBuffer {
   // Int will take 1+4 bytes, and bigger values 1+8 bytes.  This compression is
   // optimized for small integers (including -1 which is often used as a "array
   // is null" flag when passing the array length).
-  AutoBuffer putInt( int x ) {
+  public AutoBuffer putInt(int x) {
     if( 0 <= (x+1)&& (x+1) <= 253 ) return put1(x+1);
     if( Short.MIN_VALUE <= x && x <= Short.MAX_VALUE ) return put1(255).put2((short)x);
     return put1(254).put4(x);
