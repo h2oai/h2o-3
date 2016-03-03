@@ -69,7 +69,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                     false
             }) {
               for (int miniBatchSize : new int[]{
-                      1, 2
+                      1
               }) {
                 boolean classification = response.equals("Class");
                 if (classification && dist != Distribution.Family.multinomial) continue;
