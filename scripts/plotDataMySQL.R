@@ -1,6 +1,6 @@
 #######################################################################################
 #' A way to get relevant information from Master Jenkins.
-#' Plot queries from getData.R
+#' Plot queries from getDataMySQL.R
 #' @author  navdeepgill
 #######################################################################################
 #Plot data from getData.R
