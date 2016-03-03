@@ -1,0 +1,15 @@
+runit_kmeans_emptyclus.R
+runit_GLM_offset_poisson_comparison2.R
+runit_pca_scoring.R
+runit_GLM_link_incompatible_error.R
+runit_GLM_benign.R
+runit_deeplearning_iris_basic.R
+runit_naivebayes_init_err_cases.R
+runit_GLM_perfectSeparation_unbalanced.R
+runit_deeplearning_multiclass.R
+runit_GLM_perfectSeparation_balanced.R
+runit_RF_bigcat.R
+runit_GLM_libR_prostate.R
+runit_GLM_offset_poisson_comparison1.R
+runit_kmeans_iris_h2o_vs_r.R
+runit_kmeans_grid_iris_negative.R
