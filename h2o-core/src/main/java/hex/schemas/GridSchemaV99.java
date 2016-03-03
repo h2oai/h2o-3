@@ -66,6 +66,9 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   @API(help="Summary", direction=API.Direction.OUTPUT)
   TwoDimTableBase summary_table;
 
+  @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  TwoDimTableBase scoring_history;
+
   @Override
   public Grid createImpl() {
     return Grid.GRID_PROTO;
@@ -149,6 +152,10 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     TwoDimTable t = grid.createSummaryTable(keys, sort_by, decreasing);
     if (t!=null)
       summary_table = new TwoDimTableBase().fillFromImpl(t);
+
+    TwoDimTable h = grid.createScoringHistoryTable();
+    if (h != null)
+      scoring_history = new TwoDimTableBase().fillFromImpl(h);
     return this;
   }
 

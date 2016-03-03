@@ -1506,7 +1506,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(dl._output._training_metrics._MSE,15.239353442877333,1e-6);
+      Assert.assertEquals(15.664562089179249, dl._output._training_metrics._MSE, 1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1532,7 +1532,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(dl._output._training_metrics._MSE,20.508653203484297,1e-6);
+      Assert.assertEquals(23.14666210443877,dl._output._training_metrics._MSE,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();

@@ -574,7 +574,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param myRows Mini-Batch Array of denseRow's containing numerical/categorical predictor and response data (standardized)
    * @return loss
    */
-  public double loss(DataInfo.Row[] myRows) {
+  public double meanLoss(DataInfo.Row[] myRows) {
     double loss = 0;
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
@@ -583,9 +583,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     double[] responses = new double[myRows.length];
     double[] offsets   = new double[myRows.length];
+    int n=0;
     for (int mb=0; mb<myRows.length; ++mb) {
       DataInfo.Row myRow = myRows[mb];
       if (myRow == null) continue;
+      n++;
       ((Neurons.Input) neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, mb);
       responses[mb] = myRow.response(0);
       offsets[mb] = myRow.offset;
@@ -602,6 +604,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     for (int mb=0; mb<myRows.length; ++mb) {
       DataInfo.Row myRow = myRows[mb];
+      if (myRow==null) continue;
 
       // check that all non-last layer errors/gradients are still empty
       for (int i = 0; i<neurons.length-1;++i) {
@@ -649,7 +652,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }
     }
-    return loss;
+    return n>0?loss/n:loss;
   }
 
   /**

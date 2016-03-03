@@ -208,12 +208,11 @@ public abstract class Neurons {
    * Accumulation of reconstruction errors for a generic Neurons class
    * (This is only used for AutoEncoders)
    */
-  protected void setOutputLayerGradient(double ignored, int mb) {
+  protected void setOutputLayerGradient(double ignored, int mb, int n) {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final int rows = _a[mb].size();
-    for (int row = 0; row < rows; row++) {
-      _e[mb].set(row, autoEncoderGradient(row, mb));
-    }
+    for (int row = 0; row < rows; row++)
+      _e[mb].set(row, autoEncoderGradient(row, mb)/n);
   }
 
   /**
@@ -880,7 +879,7 @@ public abstract class Neurons {
      * Compute dE/dw via chain rule: dE/dw = dE/dy * dy/dnet * dnet/dw, where net = sum(xi*wi)+b and y = activation function
      * @param target actual class label (integer)
      */
-    @Override protected void setOutputLayerGradient(double target, int mb) {
+    @Override protected void setOutputLayerGradient(double target, int mb, int n) {
       assert(target == (int)target);
       double g; //partial derivative dE/dy * dy/dnet
       final int rows = _a[mb].size();
@@ -921,7 +920,7 @@ public abstract class Neurons {
           default:
             throw H2O.unimpl();
         }
-        _e[mb].set(row, g);
+        _e[mb].set(row, g/n); //minibatch normalization
       }
     }
   }
@@ -942,11 +941,11 @@ public abstract class Neurons {
      * Backpropagation for regression
      * @param target floating-point target value
      */
-    @Override protected void setOutputLayerGradient(double target, int mb) {
+    @Override protected void setOutputLayerGradient(double target, int mb, int n) {
       final int row = 0;
       final double y = _a[mb].get(row);
-      double g = _dist.gradient(target, y); //y is in link space
-      _e[mb].set(row, g);
+      double g = _dist.gradient(target, y);
+      _e[mb].set(row, g/n); //minibatch normalization
     }
   }
 

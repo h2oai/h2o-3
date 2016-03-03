@@ -1,7 +1,7 @@
 #######################################################################################
-#A way to get relevant information from Master Jenkins.
-#Plot queries from getData.R
-#@author navdeepgill
+#' A way to get relevant information from Master Jenkins.
+#' Plot queries from getData.R
+#' @author  navdeepgill
 #######################################################################################
 #Plot data from getData.R
 source("scripts/getDataMySQL.R")
@@ -23,7 +23,6 @@ master_testname_subset = master_testname[1:20,]
 master_testname_plot = ggplot(master_testname_subset, aes(x=TestName, y=AvgDuration, fill = TestName)) + geom_bar(stat="identity") 
 master_testname_plot = master_testname_plot + ggtitle(paste("Average Duration per Tests in Master (Top 20) on ", master_testname$Date)) 
 master_testname_plot = master_testname_plot + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Test Name",y="Average Duration") 
-#save plot
 ggsave(master_testname_plot,file = "plots/master_testname.png",height = 20,width = 20)
 
 #######################################################################################
@@ -34,3 +33,20 @@ master_jobname_testname_plot = master_jobname_testname_plot + ggtitle(paste("Ave
 master_jobname_testname_plot = master_jobname_testname_plot + theme(text = element_text(size=30),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Jenkins Job",y="Average Duration") 
 #save plot
 ggsave(master_jobname_testname_plot,file = "plots/master_jobname_testname.png",height = 30,width = 30) 
+
+#######################################################################################
+#Top 20 tests in terms of pass ratio This is grouped by testname
+master_testname_failures_subset_plot = ggplot(master_testname_failures_subset[1:20,], aes(x=TestName, y=PassRatio, fill = TestName)) + geom_bar(stat="identity")
+master_testname_failures_subset_plot = master_testname_failures_subset_plot + ggtitle(paste("Pass Ratio per Tests in Master (Top 20) on ", master_jobname_testname$Date)) 
+master_testname_failures_subset_plot = master_testname_failures_subset_plot + theme(text = element_text(size=30),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="TestName",y="PassRatio")
+master_testname_failures_subset_plot = master_testname_failures_subset_plot + geom_text(aes(label=PassRatio), vjust=1.5, colour="black",size = 10)
+#save plot
+ggsave(master_testname_failures_subset_plot,file = "plots/master_testname_failures_plot.png",height = 40,width = 40)
+
+#######################################################################################
+#Failure rates for Windows and Linux machines
+master_os_failures_ts = ggplot(master_os_failures,aes(x=Date,y=PassRatio,colour=OS,group=OS)) + geom_line()
+master_os_failures_ts = master_os_failures_ts + ggtitle(paste("Pass Ratio by Date per OS"))
+master_os_failures_ts = master_os_failures_ts + theme(text = element_text(size=10),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Date",y="PassRatio")
+#save plot
+ggsave(master_os_failures_ts,file = "plots/master_os_failures_ts.png",height = 40,width = 40)
