@@ -78,3 +78,6 @@ pyunit_weights_and_distributions_deeplearning.py
 pyunit_checkpoint_new_category_in_predictorDL.py
 pyunit_init_err_casesKmeans.py
 pyunit_convergeKmeans.py
+pyunit_gbm_grid.py
+pyunit_link_functions_tweedie_vpow_glm.py
+pyunit_iris_grid_deeplearning.py
