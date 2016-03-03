@@ -2,18 +2,17 @@
 
 ##H2O
 
+###Turan (3.8.1.1) - 3/3/16
 
-<h2>    Release Notes - H2O - Turan (3.8.1.1) - 03/02/2016  </h2>
-    
-<h2>        Technical task
-</h2>
+<h4>        Technical task
+</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2705'>PUBDEV-2705</a>] -         implement random (stochastic) hyperparameter search
 </li>
 </ul>
             
-<h2>        Bug
-</h2>
+<h4>        Bug
+</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2639'>PUBDEV-2639</a>] -         Parse: Incorrect assertion error caused by very large few column data
 </li>
@@ -33,8 +32,8 @@
 </li>
 </ul>
         
-<h2>        New Feature
-</h2>
+<h4>        New Feature
+</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1883'>PUBDEV-1883</a>] -         Add option to train with mini-batch updates for DL
 </li>
@@ -42,8 +41,8 @@
 </li>
 </ul>
         
-<h2>        Improvement
-</h2>
+<h4>        Improvement
+</h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2674'>PUBDEV-2674</a>] -         Change default functionality of as_data_frame method in Py H2O
 </li>
