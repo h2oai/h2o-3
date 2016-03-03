@@ -3,7 +3,7 @@
 ##H2O
 
 
-<h1>    Release Notes - H2O - Turan (3.8.1.1) - 03/02/2016  </h1>
+<h2>    Release Notes - H2O - Turan (3.8.1.1) - 03/02/2016  </h2>
     
 <h2>        Technical task
 </h2>
