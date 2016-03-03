@@ -1,7 +1,8 @@
 package hex;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.C8DChunk;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -163,7 +164,7 @@ public class DataInfo extends Keyed<DataInfo> {
         nums[nnums++] = i;
     _nums = nnums;
     _cats = ncats;
-    _catLvls = new int[_cats][];
+    _catLvls = new int[ncats][];
 
     // sort the cats in the decreasing order according to their size
     for(int i = 0; i < ncats; ++i)
@@ -177,7 +178,7 @@ public class DataInfo extends Keyed<DataInfo> {
     Vec[] tvecs2 = new Vec[train.numCols()];
 
     // Compute the cardinality of each cat
-    _catModes = new int[_cats];
+    _catModes = new int[ncats];
     _catOffsets = MemoryManager.malloc4(ncats+1);
     _catMissing = new boolean[ncats];
     int len = _catOffsets[0] = 0;
