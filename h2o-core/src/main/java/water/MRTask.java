@@ -3,6 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
+import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
 
@@ -466,9 +467,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         Throwable ex = getDException();
         if (ex != null) throw ex;
       } catch (InterruptedException ignore) {
-        // do nithing
+        // do nothing
       } catch (Throwable re) {
-        throw new RuntimeException(re);
+        throw (re instanceof DistributedException)?new DistributedException(re.getMessage(),re.getCause()):new DistributedException(re);
       }
     }
     assert _topGlobal:"lost top global flag";

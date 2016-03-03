@@ -2,6 +2,7 @@ package water;
 
 import jsr166y.CountedCompleter;
 import water.H2O.H2OCountedCompleter;
+import water.util.DistributedException;
 
 import java.io.*;
 
@@ -29,20 +30,19 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
   protected DTask() { super(); }
 
   /** A distributable exception object, thrown by {@link #dinvoke}.  */
-  protected byte [] _ex;
+  protected byte[] _ex;
   /** True if {@link #dinvoke} threw an exception.
    *  @return True if _ex is non-null */
   public final boolean hasException() { return _ex != null; }
   /** Capture the first exception in _ex.  Later setException attempts are ignored. */
   public synchronized void setException(Throwable ex) {
-    if(_ex == null)_ex = AutoBuffer.javaSerializeWritePojo(ex);
+    if(_ex == null) {
+      _ex = AutoBuffer.javaSerializeWritePojo(((ex instanceof DistributedException) ? (DistributedException) ex : new DistributedException(ex)));
+    }
   }
   /** The _ex field as a RuntimeException or null.
    *  @return The _ex field as a RuntimeException or null. */
-  public Throwable getDException() {
-    if(_ex == null) return null;
-    return (Throwable) AutoBuffer.javaSerializeReadPojo(_ex);
-  }
+  public Throwable getDException() {return _ex == null?null:(Throwable)AutoBuffer.javaSerializeReadPojo(_ex);}
 
   // Track if the reply came via TCP - which means a timeout on ACKing the TCP
   // result does NOT need to get the entire result again, just that the client
