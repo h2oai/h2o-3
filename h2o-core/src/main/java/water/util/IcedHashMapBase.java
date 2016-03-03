@@ -39,7 +39,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   // Keys that existed at the time the table write began.  If elements are
   // being deleted, they may be written anyways.  If the Values are changing, a
   // random Value is written.
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+  public final AutoBuffer write_impl( AutoBuffer ab ) {
     if( map().size()==0 ) return ab.put1(0); // empty map
     Entry<K,V> entry = map().entrySet().iterator().next();
     K key = entry.getKey();  V val = entry.getValue();
@@ -88,7 +88,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
    * Helper for serialization - fills the mymap() from K-V pairs in the AutoBuffer object
    * @param ab Contains the serialized K-V pairs
    */
-  @Override public IcedHashMapBase read_impl(AutoBuffer ab) {
+  public final IcedHashMapBase read_impl(AutoBuffer ab) {
     assert map() == null; // Fresh from serializer, no constructor has run
     Map<K,V> map = init();
     int mode = ab.get1();
@@ -107,9 +107,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     }
     return this;
   }
-
-  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    // ab.put1('{'); // NOTE: the serialization framework adds this automagically
+  public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     boolean first = true;
     for (Entry<K, V> entry : map().entrySet()) {
       K key = entry.getKey();
@@ -136,5 +134,4 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     // ab.put1('}'); // NOTE: the serialization framework adds this automagically
     return ab;
   }
-  @Override public IcedHashMapBase<K, V> readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
 }

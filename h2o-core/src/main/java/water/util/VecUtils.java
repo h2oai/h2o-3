@@ -403,11 +403,11 @@ public class VecUtils {
       if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
     }
 
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+    public AutoBuffer write_impl( AutoBuffer ab ) {
       return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
 
-    @Override public CollectDomain read_impl( AutoBuffer ab ) {
+    public CollectDomain read_impl( AutoBuffer ab ) {
       long ls[] = ab.getA8();
       assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
       _uniques = new NonBlockingHashMapLong<>();
@@ -563,13 +563,11 @@ public class VecUtils {
       }
     }
 
-    @Override
     public AutoBuffer write_impl(AutoBuffer ab) {
       return ab.putAStr(
           (_uniques == null) ? null : _uniques.keySet().toArray(new String[_uniques.size()]));
     }
 
-    @Override
     public CollectStringVecDomain read_impl(AutoBuffer ab) {
       String[] arys = ab.getAStr();
       _uniques = new NonBlockingHashMap<String, Object>();

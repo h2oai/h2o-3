@@ -503,6 +503,8 @@ public final class AutoBuffer {
   //int zeros() { return _zeros; }
 
   public int position () { return _bb.position(); }
+
+  public AutoBuffer position(int p) {_bb.position(p); return this;}
   /** Skip over some bytes in the byte buffer.  Caller is responsible for not
    *  reading off end of the bytebuffer; generally this is easy for
    *  array-backed autobuffers and difficult for i/o-backed bytebuffers. */
@@ -513,6 +515,7 @@ public final class AutoBuffer {
     assert _h2o==null && _chan==null && !_read && !_bb.isDirect();
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
+
 
   public final byte[] bufClose() {
     byte[] res = _bb.array();
@@ -630,6 +633,7 @@ public final class AutoBuffer {
     }
     return _bb;
   }
+
   // Do something with partial results, because the ByteBuffer is full.
   // If we are doing I/O, ship the bytes we have now and flip the ByteBuffer.
   private ByteBuffer sendPartial() {

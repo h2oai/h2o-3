@@ -43,7 +43,7 @@ public class C2Chunk extends Chunk {
     }
     return nc;
   }
-  @Override public C2Chunk read_impl(AutoBuffer bb) {
+  @Override public final C2Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>1);

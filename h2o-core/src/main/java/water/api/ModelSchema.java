@@ -79,9 +79,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     return (S)this; // have to cast because the definition of S doesn't include ModelSchema
   }
 
-  @Override
-  public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    ab.put1(','); // the schema and version fields get written before we get called
+  public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.putJSONStr("algo", algo);
     ab.put1(',');
     ab.putJSONStr("algo_full_name", algo_full_name);

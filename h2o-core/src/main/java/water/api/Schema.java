@@ -203,14 +203,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
     // TODO: make private in Iced:
     /** Override the JSON serializer to prevent a recursive loop in AutoBuffer.  User code should not call this, and soon it should be made protected. */
-    @Override
-    public final water.AutoBuffer writeJSON_impl(water.AutoBuffer ab) {
-      // Overridden because otherwise we get in a recursive loop trying to serialize this$0.
-      ab.putJSON4("schema_version", schema_version)
-        .put1(',').putJSONStr("schema_name", schema_name)
-        .put1(',').putJSONStr("schema_type", schema_type);
-      return ab;
-    }
+//    public final water.AutoBuffer writeJSON_impl(water.AutoBuffer ab) {
+//      // Overridden because otherwise we get in a recursive loop trying to serialize this$0.
+//      ab.putJSON4("schema_version", schema_version)
+//        .put1(',').putJSONStr("schema_name", schema_name)
+//        .put1(',').putJSONStr("schema_type", schema_type);
+//      return ab;
+//    }
   }
 
   @API(help="Metadata on this schema instance, to make it self-describing.", direction=API.Direction.OUTPUT)

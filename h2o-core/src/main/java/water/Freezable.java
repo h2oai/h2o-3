@@ -40,33 +40,4 @@ public interface Freezable<T extends Freezable> extends Cloneable {
   /** Make clone public, but without the annoying exception.
    *  @return Returns this object cloned. */
   public Object clone();
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   *  auto-genned code.  Not intended to be called by user code.  Override only
-   *  for custom Iced serializers.
-   *  @param ab <code>AutoBuffer</code> to write this object to.
-   *  @return Returns the original {@link AutoBuffer} for flow-coding. */
-  //noninspection UnusedDeclaration
-  AutoBuffer write_impl( AutoBuffer ab );
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   *  auto-genned code.  Not intended to be called by user code.  Override only
-   *  for custom Iced serializers.
-   *  @param ab <code>AutoBuffer</code> to read this object from.
-   *  @return Returns a new instance of object reconstructed from AutoBuffer.
-   */
-  //noninspection UnusedDeclaration
-  T read_impl( AutoBuffer ab );
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   *  auto-genned code.  Not intended to be called by user code.  Override only
-   *  for custom Iced serializers.
-   *  @param ab <code>AutoBuffer</code> to write this object to.
-   *  @return Returns the original {@link AutoBuffer} for flow-coding. */
-  //noninspection UnusedDeclaration
-  AutoBuffer writeJSON_impl( AutoBuffer ab );
-  /** Implementation of the {@link Iced} serialization protocol, only called by
-   *  auto-genned code.  Not intended to be called by user code.  Override only
-   *  for custom Iced serializers.
-   *  @param ab <code>AutoBuffer</code> to read this object from.
-   *  @return Returns an instance of object reconstructed from JSON data. */
-  //noninspection UnusedDeclaration
-  T readJSON_impl( AutoBuffer ab );
 }

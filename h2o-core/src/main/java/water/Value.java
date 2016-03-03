@@ -346,11 +346,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Custom serializers: the _mem field is racily cleared by the MemoryManager
   // and the normal serializer then might ship over a null instead of the
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+  public final AutoBuffer write_impl( AutoBuffer ab ) {
     return ab.put1(_persist).put2(_type).putA1(memOrLoad());
   }
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
-  @Override public Value read_impl(AutoBuffer bb) {
+  public final Value read_impl(AutoBuffer bb) {
     assert _key == null;        // Not set yet
     // Set persistence backend but... strip off saved-to-disk bit
     _persist = (byte)(bb.get1()&BACKEND_MASK); 

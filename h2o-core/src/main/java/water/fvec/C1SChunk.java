@@ -54,7 +54,7 @@ public class C1SChunk extends Chunk {
   //public int pformat_len0() { return hasFloat() ? pformat_len0(_scale,3) : super.pformat_len0(); }
   //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
-  @Override public C1SChunk read_impl(AutoBuffer bb) {
+  @Override public final C1SChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     set_len(_mem.length-_OFF);

@@ -35,7 +35,7 @@ public class C16Chunk extends Chunk {
     }
     return nc;
   }
-  @Override public C16Chunk read_impl(AutoBuffer bb) {
+  @Override public final C16Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>4);

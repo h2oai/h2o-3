@@ -86,7 +86,6 @@ public class TypeMap {
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
     // Fill in some pre-cooked delegates so serialization has a base-case
-    GOLD[ICED ] = Icer.ICER;
   }
 
   // The major complexity of this code is that the are FOUR major data forms

@@ -98,7 +98,7 @@ public class CBSChunk extends Chunk {
   }
   @Override double min() { return 0; }
   @Override double max() { return 1; }
-  @Override public CBSChunk read_impl(AutoBuffer bb) {
+  @Override public final CBSChunk read_impl(AutoBuffer bb) {
     _mem   = bb.bufClose();
     _start = -1;  _cidx = -1;
     _gap   = _mem[0];

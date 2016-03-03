@@ -84,22 +84,22 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+//  @Override public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public D read_impl( AutoBuffer ab ) { return (D)this; }
+//  @Override public D read_impl( AutoBuffer ab ) { return (D)this; }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
+//  public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
+//  @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
 
   // Java serializers use H2Os Icing
   @Override public void readExternal( ObjectInput ois )  throws IOException, ClassNotFoundException {
@@ -114,4 +114,5 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     oos.writeInt(buf.length);
     oos.write(buf);
   }
+
 }

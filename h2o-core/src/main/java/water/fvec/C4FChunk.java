@@ -39,7 +39,7 @@ public class C4FChunk extends Chunk {
   // 3.3333333e33
 //  public int pformat_len0() { return 14; }
 //  public String pformat0() { return "% 13.7e"; }
-  @Override public C4FChunk read_impl(AutoBuffer bb) {
+  @Override public final C4FChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>2);

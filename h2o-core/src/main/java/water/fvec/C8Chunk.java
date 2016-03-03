@@ -30,7 +30,7 @@ public class C8Chunk extends Chunk {
     nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }
-  @Override public C8Chunk read_impl(AutoBuffer bb) {
+  @Override public final C8Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);

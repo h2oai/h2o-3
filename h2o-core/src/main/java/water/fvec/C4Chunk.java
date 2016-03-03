@@ -38,7 +38,7 @@ public class C4Chunk extends Chunk {
     }
     return nc;
   }
-  @Override public C4Chunk read_impl(AutoBuffer bb) {
+  @Override public final C4Chunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>2);

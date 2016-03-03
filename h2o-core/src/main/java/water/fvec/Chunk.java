@@ -606,9 +606,7 @@ public abstract class Chunk extends Iced implements Cloneable {
 
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
-  @Override public AutoBuffer write_impl(AutoBuffer bb) {
-    return bb.putA1(_mem, _mem.length);
-  }
+  public static AutoBuffer write_impl(Chunk c, AutoBuffer bb) {return bb.putA1(c._mem, c._mem.length);}
 
   /** Custom deserializers, implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already.  Init _start to -1, so we know we have

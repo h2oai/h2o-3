@@ -41,7 +41,7 @@ public class C0LChunk extends Chunk {
     }
     return nc;
   }
-  @Override public C0LChunk read_impl(AutoBuffer bb) {
+  @Override public final C0LChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     _con = UnsafeUtils.get8(_mem,0);

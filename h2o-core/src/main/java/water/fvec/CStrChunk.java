@@ -51,7 +51,7 @@ public class CStrChunk extends Chunk {
     return bStr.set(_mem,_valstart+off,len);
   }
   
-  @Override public CStrChunk read_impl(AutoBuffer bb) {
+  @Override public final CStrChunk read_impl(AutoBuffer bb) {
     _mem = bb.bufClose();
     _start = -1;  _cidx = -1;
     _valstart = UnsafeUtils.get4(_mem,0);
