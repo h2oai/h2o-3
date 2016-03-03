@@ -103,6 +103,7 @@ public class OOMTest extends TestUtil {
       for(File f: ice.listFiles()) {
         FileUtils.delete(f);
       }
+      dirs = ice.list();
     }
     Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty before we start
     Assert.assertTrue(MemoryManager.MEM_MAX <= 1536L*1024L*1024L); // No more than 1.5Gig of heap; forces swapping
