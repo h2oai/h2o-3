@@ -531,9 +531,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -749,7 +749,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param layer index of the hidden layer for which to extract the features
    * @return Frame containing the deep features (#cols = hidden[layer])
    */
-  public Frame scoreDeepFeatures(Frame frame, final int layer) {
+   
+   public Frame scoreDeepFeatures(Frame frame, final int layer) {
+     return  scoreDeepFeatures(frame, layer, null);
+   }
+  
+  public Frame scoreDeepFeatures(Frame frame, final int layer, final Job job) {
     if (layer < 0 || layer >= model_info().get_params()._hidden.length)
       throw new H2OIllegalArgumentException("hidden layer (index) to extract must be between " + 0 + " and " + (model_info().get_params()._hidden.length-1),"");
     final int len = _output.nfeatures();
@@ -778,6 +783,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
+        if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
@@ -789,6 +795,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
+        if (job != null) job.update(1);
       }
     }.doAll(adaptFrm);
 

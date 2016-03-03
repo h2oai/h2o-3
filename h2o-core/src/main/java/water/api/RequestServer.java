@@ -222,7 +222,10 @@ public class RequestServer extends NanoHTTPD {
       "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame will be generated and the metrics will be returned.");
     register("/3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict", null,
       "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
-
+    
+    register("/4/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict2", null,
+            "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
+    
     register("/3/WaterMeterCpuTicks/(?<nodeidx>.*)"                       ,"GET"   ,WaterMeterCpuTicksHandler.class, "fetch", null,
       "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
     register("/3/WaterMeterIo/(?<nodeidx>.*)"                             ,"GET"   ,WaterMeterIoHandler.class, "fetch", null,
