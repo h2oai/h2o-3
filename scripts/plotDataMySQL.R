@@ -45,8 +45,12 @@ ggsave(master_testname_failures_subset_plot,file = "plots/master_testname_failur
 
 #######################################################################################
 #Failure rates for Windows and Linux machines
-master_os_failures_ts = ggplot(master_os_failures,aes(x=Date,y=PassRatio,colour=OS,group=OS)) + geom_line()
+master_os_failures_ts = ggplot(master_os_failures,aes(x=Date,y=PassRatio,colour=OS,group=OS)) + geom_line(size = 2)
 master_os_failures_ts = master_os_failures_ts + ggtitle(paste("Pass Ratio by Date per OS"))
-master_os_failures_ts = master_os_failures_ts + theme(text = element_text(size=10),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Date",y="PassRatio")
+master_os_failures_ts = master_os_failures_ts + theme(text = element_text(size=40),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(x="Date",y="PassRatio")
+master_os_failures_ts = master_os_failures_ts + scale_x_date(date_labels = "%b %d %Y")
 #save plot
 ggsave(master_os_failures_ts,file = "plots/master_os_failures_ts.png",height = 40,width = 40)
+
+#######################################################################################
+
