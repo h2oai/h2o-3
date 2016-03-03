@@ -58,7 +58,7 @@ public class IcedHashMap<K, V> extends IcedHashMapBase<K,V> implements Concurren
       for( int i=2;i<kvs.length; i+=2 )
         if( kvs[i] instanceof String && kvs[i+1] instanceof Iced[] ) {
           Iced[] vals = (Iced[])kvs[i+1];
-          ab.put((Iced)kvs[i]).put4(vals.length);  // key len vals
+          ab.putStr((String)kvs[i]).put4(vals.length);  // key len vals
           for(Iced v: vals) ab.put(v);
         }
       break;
