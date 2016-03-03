@@ -2,6 +2,57 @@
 
 ##H2O
 
+
+<h1>    Release Notes - H2O - Turan (3.8.1.1) - 03/02/2016  </h1>
+    
+<h2>        Technical task
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2705'>PUBDEV-2705</a>] -         implement random (stochastic) hyperparameter search
+</li>
+</ul>
+            
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2639'>PUBDEV-2639</a>] -         Parse: Incorrect assertion error caused by very large few column data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2649'>PUBDEV-2649</a>] -         h2o::|,&amp; operator handles NA&#39;s differently than base::|,&amp;
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2655'>PUBDEV-2655</a>] -         h2o::as.logical behavior is different than base::as.logical
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2682'>PUBDEV-2682</a>] -         Importing CSV file is not working with &quot;java -jar h2o.jar -nthreads -1&quot;
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2685'>PUBDEV-2685</a>] -         Allow DL reproducible mode to work with user-given train_samples_per_iteration &gt;= 0
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2690'>PUBDEV-2690</a>] -         Grid Search NPE during Flow display after grid was cancelled
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2693'>PUBDEV-2693</a>] -         NPE in initialMSE computation for GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2696'>PUBDEV-2696</a>] -         DL checkpoint restart doesn&#39;t honor a change in stopping_rounds
+</li>
+</ul>
+        
+<h2>        New Feature
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1883'>PUBDEV-1883</a>] -         Add option to train with mini-batch updates for DL
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2698'>PUBDEV-2698</a>] -         Return leaf node assignments for DRF + GBM
+</li>
+</ul>
+        
+<h2>        Improvement
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2674'>PUBDEV-2674</a>] -         Change default functionality of as_data_frame method in Py H2O
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2697'>PUBDEV-2697</a>] -         Add method setNames for setting column names on H2O Frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2703'>PUBDEV-2703</a>] -         NPE in Log.write during cluster shutdown
+</li>
+</ul>
+
 ###Tukey (3.8.0.6) - 2/23/16
 
 ####Enhancements
