@@ -4,6 +4,7 @@
 #' Will output to a html file
 #' @author  navdeepgill
 #######################################################################################
+source("scripts/getDataMySQL.R")
 library(xtable)
 print(xtable(master_jobname), type="html", file="plots/JobName.html")
 print(xtable(master_testname), type="html", file="plots/TestName.html")
