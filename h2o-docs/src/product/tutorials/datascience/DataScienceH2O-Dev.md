@@ -561,6 +561,10 @@ By default, the following output displays:
 - Maximum metrics (metric, threshold, value, IDX)
 - Variable importances in tabular format
 
+
+###Leaf Node Assignment
+Trees cluster observations into leaf nodes, and this information can be useful for feature engineering or model interpretability. Use **h2o.predict\_leaf\_node\_assignment\(model, frame\)** to get an H2OFrame with the leaf node assignments, or click the checkbox when making predictions from Flow. Those leaf nodes represent decision rules that can be fed to other models (i.e., GLM with lambda search and strong rules) to obtain a limited set of the most important rules.
+
 ###FAQ
 
 - **How does the algorithm handle missing values during training?**
@@ -1155,6 +1159,9 @@ The output for GBM includes the following:
 - Scoring history in tabular format
 - Training metrics (model name, model checksum name, frame name, description, model category, duration in ms, scoring time, predictions, MSE, R2)
 - Variable importances in tabular format
+
+###Leaf Node Assignment
+Trees cluster observations into leaf nodes, and this information can be useful for feature engineering or model interpretability. Use **h2o.predict\_leaf\_node\_assignment\(model, frame\)** to get an H2OFrame with the leaf node assignments, or click the checkbox when making predictions from Flow. Those leaf nodes represent decision rules that can be fed to other models (i.e., GLM with lambda search and strong rules) to obtain a limited set of the most important rules.
 
 ###FAQ
 

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.FileUtils;
 import water.util.Log;
 
 @Ignore
@@ -97,9 +98,15 @@ public class OOMTest extends TestUtil {
     if( find_test_file_static("bigdata/laptop/usecases/cup98VAL_z.csv") == null ) return;
     ArrayList<Frame> frames = new ArrayList<>();
     File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
-    Assert.assertTrue(MemoryManager.MEM_MAX <= 1536L*1024L*1024L); // No more than 1.5Gig of heap; forces swapping
     String[] dirs = ice.list();
+    if (dirs != null && dirs.length > 0) {
+      for(File f: ice.listFiles()) {
+        FileUtils.delete(f);
+      }
+      dirs = ice.list();
+    }
     Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty before we start
+    Assert.assertTrue(MemoryManager.MEM_MAX <= 1536L*1024L*1024L); // No more than 1.5Gig of heap; forces swapping
     try {
       // Force much swap-to-disk
       for( int i=0; i<4; i++ ) {
@@ -117,6 +124,7 @@ public class OOMTest extends TestUtil {
     // Assert nothing remains
     dirs = ice.list();
     Assert.assertTrue(dirs.length==0);
+    FileUtils.delete(ice);
   }
 
   public static void main(String[] args) {

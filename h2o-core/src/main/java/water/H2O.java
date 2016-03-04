@@ -1098,9 +1098,11 @@ final public class H2O {
     /** Exceptional completion path; mostly does printing if the exception was
      *  not handled earlier in the stack.  */
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if( this.getCompleter() == null ) { // nobody else to handle this exception, so print it out
-        System.err.println("onExCompletion for "+this);
-        ex.printStackTrace();
+      if(!Job.isCancelledException(ex)) {
+        if (this.getCompleter() == null) { // nobody else to handle this exception, so print it out
+          System.err.println("onExCompletion for " + this);
+          ex.printStackTrace();
+        }
       }
       return true;
     }

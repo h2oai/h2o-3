@@ -326,7 +326,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
         // Compute the gradient at the output layer
         // auto-encoder: pass a dummy "response" (ignored)
         // otherwise: class label or regression target
-        neurons[neurons.length - 1].setOutputLayerGradient(responses[mb], mb);
+        neurons[neurons.length - 1].setOutputLayerGradient(responses[mb], mb, n);
 
         // Elastic Averaging - set up helpers needed during back-propagation
         if (consensus_minfo != null) {

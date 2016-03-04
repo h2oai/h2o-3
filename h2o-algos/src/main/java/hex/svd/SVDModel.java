@@ -135,13 +135,14 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     }
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
 
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
+        if (isCancelled() || j != null && j.stop_requested()) return;
         double tmp [] = new double[_output._names.length];
         double preds[] = new double[_parms._nv];
         for( int row = 0; row < chks[0]._len; row++) {
@@ -149,6 +150,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
           for( int c=0; c<preds.length; c++ )
             chks[_output._names.length+c].set(row, p[c]);
         }
+        if (j !=null) j.update(1);
       }
     }.doAll(adaptFrm);
 

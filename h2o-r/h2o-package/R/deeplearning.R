@@ -436,9 +436,10 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
   url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
-  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
-  key <- res$predictions$name
-
-  h2o.getFrame(key)
+  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 
