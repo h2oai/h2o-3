@@ -251,30 +251,10 @@ class H2OFrame(object):
       col_names : list, optional
         A list of column names for the file.
       col_types : list or dict, optional
-        A list of types or a dictionary of column names to types to specify whether columns
-        should be forced to a certain type upon import parsing. If a list, the types for
-        elements that are None will be guessed. The possible types a column may have are:
-            "unknown" - this will force the column to be parsed as all NA
-            "uuid"    - the values in the column must be true UUID or will be parsed as NA
-            "string"  - force the column to be parsed as a string
-            "numeric" - force the column to be parsed as numeric. H2O will handle the
-                        compression of the numeric data in the optimal manner.
-            "enum"    - force the column to be parsed as a categorical column.
-            "time"    - force the column to be parsed as a time column. H2O will attempt to
-                        parse the following list of date time formats.
-                          date:
-                            "yyyy-MM-dd"
-                            "yyyy MM dd"
-                            "dd-MMM-yy"
-                            "dd MMM yy"
-                          time:
-                            "HH:mm:ss"
-                            "HH:mm:ss:SSS"
-                            "HH:mm:ss:SSSnnnnnn"
-                            "HH.mm.ss"
-                            "HH.mm.ss.SSS"
-                            "HH.mm.ss.SSSnnnnnn"
-                        Times can also contain "AM" or "PM".
+        A list of types or a dictionary of column names to types to specify whether
+        columns should be forced to a certain type upon import parsing. If a list, the
+        types for elements that are None will be guessed. The possible types a column may
+        have are.
       na_strings : list or dict, optional
         A list of strings, or a list of lists of strings (one list per column), or a
         dictionary of column names to strings which are to be interpreted as missing values.
@@ -551,6 +531,15 @@ class H2OFrame(object):
   def trigamma(self):    return H2OFrame._expr(expr=ExprNode("trigamma", self), cache=self._ex._cache)
 
 
+  def diff(self):
+    """
+    Returns
+    -------
+      The lag1 difference for a numeric column (expects operation to occur over H2OFrame
+      of a single column).
+    """
+    return H2OFrame._expr(expr=ExprNode("difflag1", self))
+
   @staticmethod
   def mktime(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0):
     """All units are zero-based (including months and days).
@@ -707,6 +696,7 @@ class H2OFrame(object):
 
   def cummin(self):
     """
+
     Returns
     -------
       The cumulative min over the column.
@@ -894,8 +884,8 @@ class H2OFrame(object):
     
     Returns
     -------
-      A local python string, each line is a row and each element separated by commas, containing this H2OFrame 
-      instance's data.
+      A local python string, each line is a row and each element separated by commas,
+      containing this H2OFrame instance's data.
     """
     url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
     return requests.get(url, headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')},
@@ -1554,13 +1544,14 @@ class H2OFrame(object):
     return fr
 
   def isfactor(self):
-    #TODO: list for fr.ncol > 1 ?
     """Test if the selection is a factor column.
+
     Returns
     -------
-      True if the column is categorical; otherwise False. For String columns, the result is
-      False.
+      True if the column is categorical; otherwise False. For String columns, the result
+      is False.
     """
+    #TODO: list for fr.ncol > 1 ?
     if self._ex._cache.types_valid():
       return [str(list(itervalues(self._ex._cache.types))[0]) == "enum"]
     return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]

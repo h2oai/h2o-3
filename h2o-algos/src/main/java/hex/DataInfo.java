@@ -135,6 +135,30 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
+    this(train,valid,nResponses,useAllFactorLevels,predictor_transform,response_transform,skipMissing,imputeMissing,missingBucket,weight,offset,fold,null);
+  }
+
+
+  /**
+   * Build an instance of DataInfo
+   *
+   *
+   *
+   * @param train
+   * @param valid
+   * @param nResponses
+   * @param useAllFactorLevels
+   * @param predictor_transform
+   * @param response_transform
+   * @param skipMissing
+   * @param imputeMissing
+   * @param missingBucket
+   * @param weight
+   * @param offset
+   * @param fold
+   * @param interactions
+   */
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold,int[][] interactions) {
     super(Key.<DataInfo>make());
     _valid = valid != null;
     assert predictor_transform != null;
@@ -162,6 +186,12 @@ public class DataInfo extends Keyed<DataInfo> {
         cats[ncats++] = i;
       else
         nums[nnums++] = i;
+
+    // build up the interactions
+    if( interactions!=null ) {
+
+    }
+
     _nums = nnums;
     _cats = ncats;
     _catLvls = new int[ncats][];
@@ -191,12 +221,12 @@ public class DataInfo extends Keyed<DataInfo> {
       _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?_catOffsets[i+1] - _catOffsets[i] - 1:-1;
       _permutation[i] = cats[i];
     }
-    _numMeans = new double[_nums];
-    for(int i = 0; i < _nums; ++i){
-      names[i+_cats] = train._names[nums[i]];
-      tvecs2[i+_cats] = train.vec(nums[i]);
+    _numMeans = new double[nnums];
+    for(int i = 0; i < nnums; ++i) {
+      names[i+ncats] = train._names[nums[i]];
+      tvecs2[i+ncats] = train.vec(nums[i]);
       _numMeans[i] = train.vec(nums[i]).mean();
-      _permutation[i+_cats] = nums[i];
+      _permutation[i+ncats] = nums[i];
     }
     for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
       names[i] = train._names[i];

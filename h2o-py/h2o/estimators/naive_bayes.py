@@ -2,11 +2,7 @@ from .estimator_base import *
 
 
 class H2ONaiveBayesEstimator(H2OEstimator):
-  def __init__(self,model_id=None, laplace=None, threshold=None, eps=None,
-               compute_metrics=None, balance_classes=None,
-               max_after_balance_size=None, nfolds=None, fold_assignment=None,
-               keep_cross_validation_predictions=None, checkpoint=None):
-    """
+  """
     The naive Bayes classifier assumes independence between predictor variables
     conditional on the response, and a Gaussian distribution of numeric predictors with
     mean and standard deviation computed from the training dataset. When building a naive
@@ -38,7 +34,11 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     Returns
     -------
       Returns instance of H2ONaiveBayesEstimator
-    """
+  """
+  def __init__(self,model_id=None, laplace=None, threshold=None, eps=None,
+               compute_metrics=None, balance_classes=None,
+               max_after_balance_size=None, nfolds=None, fold_assignment=None,
+               keep_cross_validation_predictions=None, checkpoint=None):
     super(H2ONaiveBayesEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}

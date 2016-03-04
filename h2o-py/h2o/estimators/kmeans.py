@@ -2,11 +2,7 @@ from .estimator_base import *
 
 
 class H2OKMeansEstimator(H2OEstimator):
-  def __init__(self, model_id=None, k=None, max_iterations=None,standardize=None,init=None,seed=None,
-               nfolds=None,fold_assignment=None, user_points=None,ignored_columns=None,
-               score_each_iteration=None, keep_cross_validation_predictions=None,
-               ignore_const_cols=None,checkpoint=None):
-    """
+  """
     Performs k-means clustering on an H2O dataset.
 
     Parameters
@@ -44,8 +40,14 @@ class H2OKMeansEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified
         Must be "AUTO", "Random" or "Modulo"
 
-    :return: An instance of H2OClusteringModel.
+    Returns
+    -------
+      An instance of H2OClusteringModel.
     """
+  def __init__(self, model_id=None, k=None, max_iterations=None,standardize=None,init=None,seed=None,
+               nfolds=None,fold_assignment=None, user_points=None,ignored_columns=None,
+               score_each_iteration=None, keep_cross_validation_predictions=None,
+               ignore_const_cols=None,checkpoint=None):
     super(H2OKMeansEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}

@@ -2,15 +2,7 @@ from .estimator_base import H2OEstimator
 
 
 class H2OGeneralizedLinearEstimator(H2OEstimator):
-  def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
-               standardize=None, family=None, link=None, tweedie_variance_power=None,
-               tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
-               nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
-               fold_assignment=None, keep_cross_validation_predictions=None,
-               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
-               objective_epsilon=None, gradient_epsilon=None, non_negative=False,
-               compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
-    """Build a Generalized Linear Model
+  """Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
     and a description of the error distribution.
 
@@ -109,6 +101,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       model metrics including MSE, AUC (for logistic regression), degrees of freedom, and
       confusion matrices.
     """
+  def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
+               standardize=None, family=None, link=None, tweedie_variance_power=None,
+               tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
+               nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
+               fold_assignment=None, keep_cross_validation_predictions=None,
+               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
+               objective_epsilon=None, gradient_epsilon=None, non_negative=False,
+               compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.items() if k != "self"}

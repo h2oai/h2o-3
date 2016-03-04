@@ -155,6 +155,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTWeek());
     init(new ASTYear());
     init(new ASTasDate());
+    init(new ASTDiffLag1());
 
     // Complex Math
     init(new ASTHist());

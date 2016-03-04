@@ -841,9 +841,11 @@ class Test:
 
     def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
       if g_pycoverage:
-        pyver = "coverage" if g_py3 else "coverage-3.5"
+        pyver = "coverage-3.5" if g_py3 else "coverage"
         cmd = [pyver,"run", "-a", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+        print("Running Python test with coverage:")
+        print(cmd)
       else:
         pyver = "python3.5" if g_py3 else "python"
         cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
