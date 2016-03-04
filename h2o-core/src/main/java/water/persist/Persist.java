@@ -216,6 +216,18 @@ public abstract class Persist {
     throw new RuntimeException("Not implemented");
   }
 
+  /**
+   * Create a new file and return OutputStream for writing.
+   *
+   * The method creates all directories which does not exists on the
+   * referenced path.
+   *
+   * @param path  persist layer specific path
+   * @param overwrite  overwrite destination file
+   * @return output stream
+   *
+   * @throws IOException  in case of underlying FS error
+   */
   public OutputStream create(String path, boolean overwrite) {
     throw new RuntimeException("Not implemented");
   }
