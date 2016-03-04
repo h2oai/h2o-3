@@ -26,7 +26,8 @@ public class MRThrow extends TestUtil {
         try {
           bh.doAll(vec); // invoke should throw DistributedException wrapped up in RunTimeException
         } catch( RuntimeException e ) {
-          assertTrue((ex=e).getMessage().contains("test"));
+          ex = e;
+          assertTrue(e.getMessage().contains("test") || e.getCause().getMessage().contains("test"));
         } catch( Throwable e2 ) {
           (ex=e2).printStackTrace();
           fail("Expected RuntimeException, got " + ex.toString());
@@ -59,7 +60,7 @@ public class MRThrow extends TestUtil {
           // and so no exception is thrown.
           cc.join();
         } catch( RuntimeException re ) {
-          assertTrue(re.getCause().getMessage().contains("test"));
+          assertTrue(re.getMessage().contains("test") || re.getCause().getMessage().contains("test"));
 //        } catch( ExecutionException e ) { // caught on self
 //          assertTrue(e.getMessage().contains("test"));
         } catch( java.lang.AssertionError ae ) {

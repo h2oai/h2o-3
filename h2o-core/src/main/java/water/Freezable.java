@@ -37,6 +37,8 @@ public interface Freezable<T extends Freezable> extends Cloneable {
    *  Useful as an array index.
    *  @return Small integer, unique per-type */
   int frozenType();
+  byte [] asBytes();
+  T reloadFromBytes(byte [] ary);
   /** Make clone public, but without the annoying exception.
    *  @return Returns this object cloned. */
   public Object clone();

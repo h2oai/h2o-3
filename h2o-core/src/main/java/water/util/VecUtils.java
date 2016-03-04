@@ -1,9 +1,6 @@
 package water.util;
 
-import water.AutoBuffer;
-import water.Futures;
-import water.MRTask;
-import water.MemoryManager;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.C0DChunk;
@@ -538,11 +535,11 @@ public class VecUtils {
 
     private static String PLACEHOLDER = "nothing";
 
-    transient private NonBlockingHashMap<String, Object> _uniques = null;
+    private IcedHashMap<String, Integer> _uniques = null;
 
     @Override
     protected void setupLocal() {
-      _uniques = new NonBlockingHashMap<>();
+      _uniques = new IcedHashMap<>();
     }
 
     @Override
@@ -551,7 +548,7 @@ public class VecUtils {
       for (int i = 0; i < c.len(); i++) {
         if (!c.isNA(i)) {
           c.atStr(bs, i);
-          _uniques.put(bs.bytesToString(), PLACEHOLDER);
+          _uniques.put(bs.bytesToString(), 1);
         }
       }
     }
@@ -561,27 +558,6 @@ public class VecUtils {
       if (_uniques != mrt._uniques) { // this is not local reduce
         _uniques.putAll(mrt._uniques);
       }
-    }
-
-    public AutoBuffer write_impl(AutoBuffer ab) {
-      return ab.putAStr(
-          (_uniques == null) ? null : _uniques.keySet().toArray(new String[_uniques.size()]));
-    }
-
-    public CollectStringVecDomain read_impl(AutoBuffer ab) {
-      String[] arys = ab.getAStr();
-      _uniques = new NonBlockingHashMap<String, Object>();
-      if (arys != null) {
-        for (String s : arys) {
-          _uniques.put(s, PLACEHOLDER);
-        }
-      }
-      return this;
-    }
-
-    @Override
-    protected void copyOver(CollectStringVecDomain src) {
-      _uniques = src._uniques;
     }
 
     public String[] domain(Vec vec) {

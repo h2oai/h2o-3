@@ -71,6 +71,6 @@ public class SubsetVec extends WrappedVec {
     @Override
     public NewChunk inflate_impl(NewChunk nc)     { throw H2O.fail(); }
     public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw H2O.fail(); }
-    @Override public final Chunk read_impl(AutoBuffer bb)       { throw H2O.fail(); }
+    @Override protected final void initFromBytes () { throw H2O.fail(); }
   }
 }

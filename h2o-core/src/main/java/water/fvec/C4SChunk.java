@@ -9,9 +9,9 @@ import water.util.UnsafeUtils;
 public class C4SChunk extends Chunk {
   static private final long _NA = Integer.MIN_VALUE;
   static protected final int _OFF=8+8;
-  private double _scale;
+  private transient double _scale;
   public double scale() { return _scale; }
-  private long _bias;
+  private transient long _bias;
   @Override public boolean hasFloat(){ return _scale != (long)_scale; }
   C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length - _OFF) >> 2);
     _bias = bias; _scale = scale;
@@ -55,12 +55,10 @@ public class C4SChunk extends Chunk {
 //  public int pformat_len0() { return pformat_len0(_scale,5); }
 //  public String pformat0() { return "% 10.4e"; }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
-  @Override public final C4SChunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len((_mem.length-_OFF)>>2);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);
-    return this;
   }
 }

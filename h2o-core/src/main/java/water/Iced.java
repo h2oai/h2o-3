@@ -33,11 +33,24 @@ import java.io.*;
 abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizable {
 
   // The serialization flavor / delegate.  Lazily set on first use.
-  private short _ice_id;
+  transient private volatile short _ice_id = 0;
+
+
+  @Override
+  public byte [] asBytes(){
+    return write(new AutoBuffer()).buf();
+  }
+
+  @Override
+  public D reloadFromBytes(byte [] ary){
+    return read(new AutoBuffer(ary));
+  }
 
   // Return the icer for this instance+class.  Will set on 1st use.
   private Icer<D> icer() {
     int id = _ice_id;
+    int tyid;
+    if(id != 0) assert id == (tyid =TypeMap.onIce(this)):"incorrectly cashed id " + id + ", typemap has " + tyid + ", type = " + getClass().getName();
     return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
   }
 

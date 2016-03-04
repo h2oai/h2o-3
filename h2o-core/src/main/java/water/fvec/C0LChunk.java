@@ -41,12 +41,10 @@ public class C0LChunk extends Chunk {
     }
     return nc;
   }
-  @Override public final C0LChunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     _con = UnsafeUtils.get8(_mem,0);
     set_len(UnsafeUtils.get4(_mem,8));
-    return this;
   }
   @Override public boolean isSparseZero(){return _con == 0;}
   @Override public int sparseLenZero(){return _con == 0?0: _len;}

@@ -757,7 +757,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // catch & ignore, keeping only the first one we already got.
     if( _nleft != null ) try { _nleft.get(); } catch( Throwable ignore ) { } _nleft = null;
     if( _nrite != null ) try { _nrite.get(); } catch( Throwable ignore ) { } _nrite = null;
-
     return super.onExceptionalCompletion(ex, caller);
   }
 

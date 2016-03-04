@@ -742,7 +742,7 @@ public final class AutoBuffer {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
     if( _is!=null ) id = _typeMap[id];
-    assert tc.isInstance(TypeMap.theFreezable(id));
+    assert tc.isInstance(TypeMap.theFreezable(id)):tc.getName() + " != " + TypeMap.theFreezable(id).getClass().getName() + ", id = " + id;
     return (T)TypeMap.newFreezable(id).read(this);
   }
 

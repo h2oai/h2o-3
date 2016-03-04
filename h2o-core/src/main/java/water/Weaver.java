@@ -37,7 +37,7 @@ public class Weaver {
 
 
   private static final ClassPool _pool;
-  private static final CtClass _dtask, _enum, _iced, _h2cc, _freezable, _serialize;
+  private static final CtClass _dtask, _enum, _serialize;//, _iced, _h2cc, _freezable;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
@@ -46,10 +46,11 @@ public class Weaver {
       _pool.insertClassPath(new ClassClassPath(Weaver.class));
       _dtask= _pool.get("water.DTask");    // these also need copyOver
       _enum = _pool.get("java.lang.Enum"); // Special serialization
-      _iced = _pool.get("water.Iced");     // Base of serialization
-      _h2cc = _pool.get("water.H2O$H2OCountedCompleter"); // Base of serialization
-      _freezable = _pool.get("water.Freezable");      // Base of serialization
       _serialize = _pool.get("java.io.Serializable"); // Base of serialization
+//      _iced = _pool.get("water.Iced");     // Base of serialization
+//      _h2cc = _pool.get("water.H2O$H2OCountedCompleter"); // Base of serialization
+//      _freezable = _pool.get("water.Freezable");      // Base of serialization
+
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
@@ -75,25 +76,25 @@ public class Weaver {
     return name + "$Icer";
   }
 
-  private static boolean hasWovenJSONFields( CtClass cc ) throws NotFoundException {
-    if( !cc.subtypeOf(_freezable) &&
-        !cc.subtypeOf(_serialize) ) return false; // Cannot serialize in any case
-    // Iced & H2O$CountedCompleters are interesting oddballs: they have a short
-    // typeid that is desired field for Freezable-style serialization but not for
-    // JSON-style.  The field is fairly expensively filled in the first time any
-    // given object is serialized and used in all subsequent fast serializations.
-    // However, the value is not valid outside *this* execution of the cluster,
-    // and should not be persisted via e.g. saving the JSON and restoring from
-    // it later.
-    if( cc.equals(_iced) ||
-        cc.equals(_h2cc) ) return false;
-    if( hasWovenJSONFields(cc.getSuperclass()) ) return true;
-    for( CtField ctf : cc.getDeclaredFields() ) {
-      int mods = ctf.getModifiers();
-      if( !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods) ) return true;
-    }
-    return false;
-  }
+//  private static boolean hasWovenJSONFields( CtClass cc ) throws NotFoundException {
+//    if( !cc.subtypeOf(_freezable) &&
+//        !cc.subtypeOf(_serialize) ) return false; // Cannot serialize in any case
+//    // Iced & H2O$CountedCompleters are interesting oddballs: they have a short
+//    // typeid that is desired field for Freezable-style serialization but not for
+//    // JSON-style.  The field is fairly expensively filled in the first time any
+//    // given object is serialized and used in all subsequent fast serializations.
+//    // However, the value is not valid outside *this* execution of the cluster,
+//    // and should not be persisted via e.g. saving the JSON and restoring from
+//    // it later.
+//    if( cc.equals(_iced) ||
+//        cc.equals(_h2cc) ) return false;
+//    if( hasWovenJSONFields(cc.getSuperclass()) ) return true;
+//    for( CtField ctf : cc.getDeclaredFields() ) {
+//      int mods = ctf.getModifiers();
+//      if( !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods) ) return true;
+//    }
+//    return false;
+//  }
 
   // See if javaassist can find this class, already generated
   private static Class javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException, InvocationTargetException {
@@ -129,7 +130,7 @@ public class Weaver {
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
-    boolean super_has_jfields = hasWovenJSONFields(iced_cc.getSuperclass());
+    boolean super_has_jfields = true;//hasWovenJSONFields(iced_cc.getSuperclass());
 
     // Lock on the Iced class (prevent multiple class-gens of the SAME Iced
     // class, but also to allow parallel class-gens of unrelated Iced).
@@ -196,7 +197,7 @@ public class Weaver {
               "  }");
     if( debug_print ) System.out.println(debug);
     String debugJ= 
-    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", super_has_jfields ? null : super_id == -1?"ab.":null, "    ab.put1(',').",
+    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", "(supers?ab.put1(','):ab).", "    ab.put1(',').",
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               super_id == -1?"":"    writeJSON"+super_id+"(ab,ice);\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
@@ -308,7 +309,16 @@ public class Weaver {
                                   ) throws CannotCompileException, NotFoundException, NoSuchFieldException {
     StringBuilder sb = new StringBuilder();
     sb.append(header);
-    sb.append(supers);
+    if(impl.equals("writeJSON")) {
+      if (supers.isEmpty()) {
+        sb.append("  boolean supers = false;");
+      } else {
+        sb.append("  int position = ab.position();\n");
+        sb.append(supers);
+        sb.append("  boolean supers = ab.position() != position;\n");
+      }
+    } else
+      sb.append(supers);
     // Customer serializer?
     String mimpl = impl+"_impl";
 
@@ -335,11 +345,13 @@ public class Weaver {
           sb.append(impl.startsWith("write") ? "    return ab;\n  }" : "    return ice;\n  }");
         else {
           if (!supers.isEmpty() && impl.equals("writeJSON")) {
-            sb.append("    ab.put1(',');\n");
-            sb.append("    int pos = ab.position();\n");
+            sb.append("    if(supers) {\n");
+            sb.append("       ab.put1(',');\n");
+            sb.append("       int pos = ab.position();\n");
             sb.append("    " + ice_handle).append(mimpl).append(ice_args).append(";\n");
-            sb.append("    if(ab.position() == pos) ab.position(pos-1);\n"); // empty json serialization, drop the comma
-            sb.append("    return ab;\n  }");
+            sb.append("      if(ab.position() == pos) ab.position(pos-1);\n"); // empty json serialization, drop the comma
+            sb.append("      return ab;\n    } \n");
+            sb.append("    return " + ice_handle).append(mimpl).append(ice_args).append(";\n  }");
           } else
             sb.append("    return " + ice_handle).append(mimpl).append(ice_args).append(";\n  }");
         }

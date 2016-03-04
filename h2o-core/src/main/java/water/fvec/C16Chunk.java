@@ -35,12 +35,10 @@ public class C16Chunk extends Chunk {
     }
     return nc;
   }
-  @Override public final C16Chunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>4);
     assert _mem.length == _len <<4;
-    return this;
   }
 //  @Override protected int pformat_len0() { return 36; }
 }

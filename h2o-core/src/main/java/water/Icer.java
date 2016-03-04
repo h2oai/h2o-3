@@ -9,7 +9,10 @@ import water.nbhm.UtilUnsafe;
 public abstract class Icer<T extends Freezable> {
   protected static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
   private final T _new;
-  public Icer(T iced) { _new=iced; }
+  public Icer(T iced) {
+    assert iced != null:"null freezable";
+    _new=iced;
+  }
   final T theFreezable() { return _new; }
   protected AutoBuffer write    (AutoBuffer ab, T ice) { /*base of the write call chain; no fields to write*/return ab; } 
   protected AutoBuffer writeJSON(AutoBuffer ab, T ice) { return ab.put1('{').put1('}'); }
