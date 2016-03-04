@@ -67,15 +67,12 @@ task testOOM(type: Exec) {
     // This is first action for Exec task
     doFirst {
       File sandbox = new File(project.projectDir, "sandbox")
-      if (!sandbox.exists()) { sandbox.mkdir() }
+      if (sandbox.exists()) { sandbox.deleteDir() }
+      sandbox.mkdir()
       FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "sandbox" + File.separator +
               "water.OOMTest.out"))
       standardOutput = fos;
       errorOutput = fos;
-    }
-    doLast {
-      File iceDir = new File(iceRoot)
-      if (iceDir.exists()) { iceDir.deleteDir() }
     }
 }
 

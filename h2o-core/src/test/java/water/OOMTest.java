@@ -117,6 +117,10 @@ public class OOMTest extends TestUtil {
     }
     // Assert nothing remains
     dirs = ice.list();
+    if (dirs.length > 0) {
+      Log.info("Remaining swap files at test end:");
+      for (String dir : dirs) { Log.info(dir); }
+    }
     Assert.assertTrue(dirs.length==0);
   }
 
