@@ -10,6 +10,7 @@ from builtins import object
 import h2o
 import imp, traceback, warnings
 from ..utils.shared_utils import can_use_pandas
+from ..h2o import H2OJob
 
 
 class ModelBase(object):
@@ -77,6 +78,23 @@ class ModelBase(object):
       self.show()
     return ""
 
+  def predict_leaf_node_assignment(self, test_data):
+    """
+    Predict on a dataset and return the leaf node assignment (only for tree-based models)
+
+    Parameters
+    ----------
+    test_data: H2OFrame
+      Data on which to make predictions.
+
+    Returns
+    -------
+      A new H2OFrame of predictions.
+    """
+    if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, leaf_node_assignment=True)
+    return h2o.get_frame(j["predictions_frame"]["name"])
+
   def predict(self, test_data):
     """
     Predict on a dataset.
@@ -91,9 +109,9 @@ class ModelBase(object):
       A new H2OFrame of predictions.
     """
     if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id)
-    # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    return h2o.get_frame(j["predictions_frame"]["name"])
+    j = H2OJob(h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, _rest_version=4), self._model_json['algo'] + " prediction")
+    j.poll()
+    return h2o.get_frame(j.dest_key)
 
   def is_cross_validated(self):
     """
@@ -133,8 +151,9 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
-    j = h2o.H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer)
-    return h2o.get_frame(j["predictions_frame"]["name"])
+    j = H2OJob(h2o.H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer, _rest_version=4), "deepfeatures")
+    j.poll()
+    return h2o.get_frame(j.dest_key)
 
   def weights(self, matrix_id=0):
     """

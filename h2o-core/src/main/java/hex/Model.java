@@ -36,11 +36,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
+    Frame scoreDeepFeatures(Frame frame, final int layer, final Job j);
   }
 
   public interface GLRMArchetypes {
     Frame scoreReconstruction(Frame frame, Key destination_key, boolean reverse_transform);
     Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
+  }
+
+  public interface LeafNodeAssignment {
+    Frame scoreLeafNodeAssignment(Frame frame, Key destination_key);
   }
 
   /**
@@ -702,7 +707,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( domains[i] != null ) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             CategoricalWrappedVec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
@@ -715,8 +720,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
-            if (expensive) { vec = evec;  good++; } // Keep it
-            else { evec.remove(); vec = null; } // No leaking if not-expensive
+            vec = evec;  good++;
           } else {
             good++;
           }
@@ -763,10 +767,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IllegalArgumentException
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
+    return score(fr, destination_key, null);
+  }
+  
+  public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     boolean computeMetrics = (!isSupervised() || adaptFr.find(_output.responseName()) != -1);
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Predict & Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j); // Predict & Score
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -814,7 +822,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param adaptFrm Already adapted frame
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
+ 
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -834,7 +843,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols, Vec.T_NUM, adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(ncols, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
@@ -864,7 +873,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/).doAll(adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
   }
 
@@ -876,8 +885,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean _computeMetrics;  // Column means of test frame
     final boolean _hasWeights;
     final boolean _makePreds;
-
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds ) {
+    final Job _j;
+    
+    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+      _j = j;  
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
@@ -885,7 +896,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      if (isCancelled()) return;
+      if (isCancelled() || _j != null && _j.stop_requested()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
       Chunk responseChunk = null;
@@ -926,6 +937,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             cpreds[c].addNum(p[c]);
         }
       }
+      if ( _j != null) _j.update(1);
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }

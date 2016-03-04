@@ -59,10 +59,12 @@ jar {
 
 // Run a single small JVM under heavy memory load, and confirm spilling works
 task testOOM(type: Exec) {
-    dependsOn jar, testJar
+    dependsOn cpLibs, jar, testJar
     commandLine 'java', '-ea', '-Xmx1500m', '-Xms1500m', '-XX:+PrintGC', '-Dai.h2o.cleaner', '-cp', 'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*', 'water.OOMTest'
     // This is first action for Exec task
     doFirst {
+      File sandbox = new File(project.projectDir, "sandbox")
+      if (!sandbox.exists()) { sandbox.mkdir() }
       FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "sandbox/water.OOMTest.out"))
 
       standardOutput = fos;

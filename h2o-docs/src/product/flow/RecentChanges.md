@@ -2,6 +2,56 @@
 
 ##H2O
 
+###Turan (3.8.1.1) - 3/3/16
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2705'>PUBDEV-2705</a>] -         implement random (stochastic) hyperparameter search
+</li>
+</ul>
+            
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2639'>PUBDEV-2639</a>] -         Parse: Incorrect assertion error caused by very large few column data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2649'>PUBDEV-2649</a>] -         h2o::|,&amp; operator handles NA&#39;s differently than base::|,&amp;
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2655'>PUBDEV-2655</a>] -         h2o::as.logical behavior is different than base::as.logical
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2682'>PUBDEV-2682</a>] -         Importing CSV file is not working with &quot;java -jar h2o.jar -nthreads -1&quot;
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2685'>PUBDEV-2685</a>] -         Allow DL reproducible mode to work with user-given train_samples_per_iteration &gt;= 0
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2690'>PUBDEV-2690</a>] -         Grid Search NPE during Flow display after grid was cancelled
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2693'>PUBDEV-2693</a>] -         NPE in initialMSE computation for GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2696'>PUBDEV-2696</a>] -         DL checkpoint restart doesn&#39;t honor a change in stopping_rounds
+</li>
+</ul>
+        
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1883'>PUBDEV-1883</a>] -         Add option to train with mini-batch updates for DL
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2698'>PUBDEV-2698</a>] -         Return leaf node assignments for DRF + GBM
+</li>
+</ul>
+        
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2674'>PUBDEV-2674</a>] -         Change default functionality of as_data_frame method in Py H2O
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2697'>PUBDEV-2697</a>] -         Add method setNames for setting column names on H2O Frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2703'>PUBDEV-2703</a>] -         NPE in Log.write during cluster shutdown
+</li>
+</ul>
+
 ###Tukey (3.8.0.6) - 2/23/16
 
 ####Enhancements
@@ -638,7 +688,7 @@ The following changes resolve incorrect software behavior:
 
 - [GitHub commit](https://github.com/h2oai/h2o-3/commit/bc6f15ab71f5d41553bbe566bcc0585ef2a2bdf1): Fix Java 6 compatibility
 
-	The Java 7 API call
+    The Java 7 API call
 `_rawChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);`
 has been replaced by the Java 6 API call
 `_rawChannel.socket().setTcpNoDelay(true);`
@@ -1480,7 +1530,7 @@ The following changes are to resolve incorrect software behavior:
 
 - [GitHub](https://github.com/h2oai/h2o-3/commit/eb68b384ff43a94f6dd0468b2bc4c67de6c23350): Set Content-Type: application/x-www-form-urlencoded for regular POST requests.
 - [HEXDEV-272](https://0xdata.atlassian.net/browse/HEXDEV-272): Move `response_column` parameter above `ignored_columns` parameter [GitHub](https://github.com/h2oai/h2o-3/commit/522b45f1339eefc21b7b0a76e1d42a6cc77bcc00)
-	- All of the fields of a schema are now stored in the leaf child of the class hierarchy. Changed the implementation of fields() to simply return the fields variable of a schema. The function calls `H2O.fail()` if it attempts to access a field from a non-leaf child. `response_column` is now moved above `ignored_columns` for every applicable schema. 'own_fields' is also now renamed to 'fields'
+    - All of the fields of a schema are now stored in the leaf child of the class hierarchy. Changed the implementation of fields() to simply return the fields variable of a schema. The function calls `H2O.fail()` if it attempts to access a field from a non-leaf child. `response_column` is now moved above `ignored_columns` for every applicable schema. 'own_fields' is also now renamed to 'fields'
 - [GitHub](https://github.com/h2oai/h2o-3/commit/11ae769255c2502ecb1ae7438752b2449210b580): Don't use features from servlet api 3.0 or later anymore. Instead save the response status in a thread local variable and fish it out when needed.
 
 #####Python
@@ -1522,7 +1572,7 @@ The following changes are to resolve incorrect software behavior:
 
 - [PUBDEV-1641](https://0xdata.atlassian.net/browse/PUBDEV-1641): gbm w poisson: get  java.lang.AssertionError' at hex.tree.gbm.GBM$GBMDriver.buildNextKTrees on attached data
 - [PUBDEV-1672](https://0xdata.atlassian.net/browse/PUBDEV-1672): kmeans: get AIOOB with user specified centroids [GitHub](https://github.com/h2oai/h2o-3/commit/231e33b42b5408ec4e664f7f614a8f37aabbab10)
-	-  Throw an error if the number of rows in the user-specified initial centers is not equal to k.
+    -  Throw an error if the number of rows in the user-specified initial centers is not equal to k.
 - [PUBDEV-1654](https://0xdata.atlassian.net/browse/PUBDEV-1654): pca: gram-svd std dev differs for v2 vs v3 for attached data
 - [GitHub](https://github.com/h2oai/h2o-3/commit/42831143c9b208596fa60f3d8f86c5bd1109ec64): Fix DL
 - [GitHub](https://github.com/h2oai/h2o-3/commit/19794673a5e2a5cf4b5f5d550f4184266ae8799a): Fix a bug in PCA utilities for k = 1
@@ -3203,9 +3253,9 @@ The following changes are to resolve incorrect software behavior:
 #####R
 
 - PUBDEV-578, PUBDEV-541, PUBDEV-566.
-	-R client now sends the data frame column names and data types to ParseSetup.
-	-R client can get column names from a parsed frame or a list.
-	-Respects client request for column data types [(github)](https://github.com/h2oai/h2o-dev/commit/ba063be25d3fbb658b016ff514083284e2d95d78)
+    -R client now sends the data frame column names and data types to ParseSetup.
+    -R client can get column names from a parsed frame or a list.
+    -Respects client request for column data types [(github)](https://github.com/h2oai/h2o-dev/commit/ba063be25d3fbb658b016ff514083284e2d95d78)
 - R: Cannot create new columns through R [(PUBDEV-571)](https://0xdata.atlassian.net/browse/PUBDEV-571)
 - H2O-R: it would be more useful if h2o.confusion matrix reports the actual class labels instead of [,1] and [,2] [(PUBDEV-553)](https://0xdata.atlassian.net/browse/PUBDEV-553)
 - Support both multinomial and binomial CM [(github)](https://github.com/h2oai/h2o-dev/commit/4ad2ed007635a7e8c2fd4fb0ae985cf00a81df15)
@@ -3633,9 +3683,9 @@ The following changes are improvements to existing features (which includes chan
 
 #####R
 - PUBDEV-578, PUBDEV-541, PUBDEV-566.
-	-R client now sends the data frame column names and data types to ParseSetup.
-	-R client can get column names from a parsed frame or a list.
-	-Respects client request for column data types [(github)](https://github.com/h2oai/h2o-dev/commit/ba063be25d3fbb658b016ff514083284e2d95d78)
+    -R client now sends the data frame column names and data types to ParseSetup.
+    -R client can get column names from a parsed frame or a list.
+    -Respects client request for column data types [(github)](https://github.com/h2oai/h2o-dev/commit/ba063be25d3fbb658b016ff514083284e2d95d78)
 
 #####System
 

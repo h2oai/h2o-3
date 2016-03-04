@@ -73,8 +73,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
 
-  private ScoringInfo[] scoringInfos = null;
-
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
@@ -212,14 +210,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
             if (model!=null) {
               model.fillScoringInfo(scoringInfo);
-              this.scoringInfos = ScoringInfo.prependScoringInfo(scoringInfo, this.scoringInfos);
-              ScoringInfo.sort(this.scoringInfos, _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+              grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
+              ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
             }
           } catch (RuntimeException e) { // Catch everything
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+            if (!Job.isCancelledException(e)) {
+              StringWriter sw = new StringWriter();
+              PrintWriter pw = new PrintWriter(sw);
+              e.printStackTrace(pw);
+              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+            }
             grid.appendFailedModelParameters(params, e);
           }
         } catch (IllegalArgumentException e) {
@@ -235,8 +235,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
         } // finally
 
-        if (model != null && this.scoringInfos!= null && // did model build and scoringInfo creation succeed?
-            _hyperSpaceWalker.stopEarly(model, this.scoringInfos)) {
+        if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+            _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
           Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
           break;
         }
