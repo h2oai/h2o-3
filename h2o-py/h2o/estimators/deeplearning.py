@@ -2,7 +2,7 @@ from .estimator_base import H2OEstimator
 
 
 class H2ODeepLearningEstimator(H2OEstimator):
-  def __init__(self, model_id=None, overwrite_with_best_model=None, checkpoint=None,
+  def __init__(self, model_id=None, overwrite_with_best_model=None, checkpoint=None, pretrained_autoencoder=None,
                use_all_factor_levels=None, standardize=None, activation=None, hidden=None, epochs=None,
                train_samples_per_iteration=None, seed=None, adaptive_rate=None, rho=None,
                epsilon=None, rate=None, rate_annealing=None, rate_decay=None,
@@ -39,6 +39,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
       Defaults to True.
     checkpoint : H2ODeepLearningModel, optional
       Model checkpoint (either key or H2ODeepLearningModel) to resume training with.
+    pretrained_autoencoder : H2ODeepLearningModel, optional
+      Pretrained autoencoder (either key or H2ODeepLearningModel) to initialize the model state of a supervised DL model with.
     use_all_factor_levels : bool
       Use all factor levels of categorical variance. Otherwise the first factor level is
       omitted (without loss of accuracy). Useful for variable importances and auto-enabled
@@ -228,6 +230,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
   @checkpoint.setter
   def checkpoint(self, value):
     self._parms["checkpoint"] = value
+
+  @property
+  def pretrained_autoencoder(self):
+    return self._parms["pretrained_autoencoder"]
+
+  @pretrained_autoencoder.setter
+  def pretrained_autoencoder(self, value):
+    self._parms["pretrained_autoencoder"] = value
 
   @property
   def use_all_factor_levels(self):

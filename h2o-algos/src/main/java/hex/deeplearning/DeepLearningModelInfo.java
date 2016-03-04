@@ -432,6 +432,33 @@ final public class DeepLearningModelInfo extends Iced {
   }
 
   /**
+   * Fill weights and biases from a pretrained autoencoder model
+   * @param autoencoder Autoencoder DL model with matching inputs and hidden layers
+   */
+  void initializeFromPretrainedModel(DeepLearningModelInfo autoencoder) {
+    assert(autoencoder.parameters._autoencoder);
+    randomizeWeights();
+    // now overwrite the weights with those from the pretrained model
+    for (int w = 0; w < dense_row_weights.length-1 /*skip output layer*/; ++w) {
+      if (get_weights(w).rows() != autoencoder.get_weights(w).rows())
+        throw new IllegalArgumentException("Mismatch between weights in pretrained model and this model: rows in layer " + w + ": " + autoencoder.get_weights(w).rows() + " vs " + get_weights(w).rows());
+      if (get_weights(w).cols() != autoencoder.get_weights(w).cols())
+        throw new IllegalArgumentException("Mismatch between weights in pretrained model and this model: cols in layer " + w + ": " + autoencoder.get_weights(w).cols() + " vs " + get_weights(w).cols());
+      for (int i = 0; i < get_weights(w).rows(); i++) {
+        for (int j = 0; j < get_weights(w).cols(); j++) {
+          get_weights(w).set(i, j, autoencoder.get_weights(w).get(i, j));
+        }
+      }
+    }
+    for (int i = 0; i < get_params()._hidden.length; ++i) {
+      for (int j = 0; j < biases[i].raw().length; ++j) {
+        biases[i].set(j, autoencoder.biases[i].get(j));
+      }
+    }
+    Arrays.fill(biases[biases.length - 1].raw(), 0f); //output layer
+  }
+
+  /**
    * Add another model info into this
    * This will add the weights/biases/learning rate helpers, and the number of processed training samples
    * Note: It will NOT add the elastic averaging helpers, which are always kept constant (they already are the result of a reduction)
