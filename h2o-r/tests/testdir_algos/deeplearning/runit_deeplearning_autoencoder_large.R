@@ -58,7 +58,7 @@ check.deeplearning_autoencoder <- function() {
      print(cm)
 
      # compare to pyunit_autoencoderDeepLearning_large.py
-     expect_equal(cm$Error[11], 0.0880, tolerance = 0.001, scale = 1) # absolute difference: scale = 1
+     expect_equal(cm$Error[11], 0.088, tolerance = 0.01, scale = 1) # absolute difference: scale = 1
 
 
      ## Another usecase: Use pretrained unsupervised autoencoder model to initialize a supervised Deep Learning model

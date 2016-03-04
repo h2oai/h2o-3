@@ -64,9 +64,9 @@ def deeplearning_autoencoder():
   cm = drf_model.confusion_matrix(test_features)
   cm.show()
 
-  # 8.61% error +/- 1%
+  # 8.8% error +/- 1%
   #compare to runit_deeplearning_autoencoder_large.py
-  assert abs(cm.cell_values[10][10] - 0.0861) < 0.01, "Error. Expected 0.0861, but got {0}".format(cm.cell_values[10][10])
+  assert abs(cm.cell_values[10][10] - 0.088) < 0.01, "Error. Expected 0.088, but got {0}".format(cm.cell_values[10][10])
 
   ## Another usecase: Use pretrained unsupervised autoencoder model to initialize a supervised Deep Learning model
   pretrained_model = H2ODeepLearningEstimator(activation="Tanh", hidden=[nfeatures], epochs=1, reproducible=True, seed=1234,ignore_const_cols=False,pretrained_autoencoder="ae_model")
