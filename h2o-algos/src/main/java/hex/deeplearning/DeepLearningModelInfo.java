@@ -441,9 +441,11 @@ final public class DeepLearningModelInfo extends Iced {
     // now overwrite the weights with those from the pretrained model
     for (int w = 0; w < dense_row_weights.length-1 /*skip output layer*/; ++w) {
       if (get_weights(w).rows() != autoencoder.get_weights(w).rows())
-        throw new IllegalArgumentException("Mismatch between weights in pretrained model and this model: rows in layer " + w + ": " + autoencoder.get_weights(w).rows() + " vs " + get_weights(w).rows());
+        throw new IllegalArgumentException("Mismatch between weights in pretrained model and this model: rows in layer " + w + ": " + autoencoder.get_weights(w).rows() + " vs " + get_weights(w).rows() +
+        ". Enable ignored_const_cols for both models and/or check categorical levels for consistency.");
       if (get_weights(w).cols() != autoencoder.get_weights(w).cols())
-        throw new IllegalArgumentException("Mismatch between weights in pretrained model and this model: cols in layer " + w + ": " + autoencoder.get_weights(w).cols() + " vs " + get_weights(w).cols());
+        throw new IllegalArgumentException("Mismatch between weights in pretrained model and this model: cols in layer " + w + ": " + autoencoder.get_weights(w).cols() + " vs " + get_weights(w).cols() +
+      ". Enable ignored_const_cols for both models and/or check categorical levels for consistency.");
       for (int i = 0; i < get_weights(w).rows(); i++) {
         for (int j = 0; j < get_weights(w).cols(); j++) {
           get_weights(w).set(i, j, autoencoder.get_weights(w).get(i, j));
