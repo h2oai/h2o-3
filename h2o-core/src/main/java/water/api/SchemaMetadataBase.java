@@ -93,8 +93,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
    * @param ab
    * @return
    */
-  public AutoBuffer writeJSON_impl(AutoBuffer ab) {
-
+  public final AutoBuffer writeJSON_impl(AutoBuffer ab) {
     ab.putJSONStr("name", name);                                      ab.put1(',');
     ab.putJSONStr("type", type);                                      ab.put1(',');
     ab.putJSONStrUnquoted("is_schema", is_schema ? "true" : "false"); ab.put1(',');
