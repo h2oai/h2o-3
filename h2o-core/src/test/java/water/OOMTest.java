@@ -99,12 +99,6 @@ public class OOMTest extends TestUtil {
     ArrayList<Frame> frames = new ArrayList<>();
     File ice = new File(water.H2O.ICE_ROOT.toString(),"ice" + water.H2O.API_PORT);
     String[] dirs = ice.list();
-    if (dirs != null && dirs.length > 0) {
-      for(File f: ice.listFiles()) {
-        FileUtils.delete(f);
-      }
-      dirs = ice.list();
-    }
     Assert.assertTrue(dirs == null || dirs.length==0); // ICE empty before we start
     Assert.assertTrue(MemoryManager.MEM_MAX <= 1536L*1024L*1024L); // No more than 1.5Gig of heap; forces swapping
     try {
@@ -124,11 +118,10 @@ public class OOMTest extends TestUtil {
     // Assert nothing remains
     dirs = ice.list();
     Assert.assertTrue(dirs.length==0);
-    FileUtils.delete(ice);
   }
 
   public static void main(String[] args) {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(args, 1);
     try {
       new OOMTest().testParseMemoryStress();    // Throws on assertion error
     } catch( Throwable e ) {
