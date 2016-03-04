@@ -108,7 +108,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk<D extends Chunk> extends Iced<D> {
+public abstract class Chunk extends Iced<Chunk> {
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
@@ -615,10 +615,10 @@ public abstract class Chunk<D extends Chunk> extends Iced<D> {
   public final byte [] asBytes(){return _mem;}
 
   @Override
-  public final D reloadFromBytes(byte [] ary){
+  public final Chunk reloadFromBytes(byte [] ary){
     _mem = ary;
     initFromBytes();
-    return (D)this;
+    return this;
   }
 
   protected abstract void initFromBytes();
