@@ -2,6 +2,35 @@
 
 ##H2O
 
+###Turan (3.8.1.2) - 3/4/16
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2713'>PUBDEV-2713</a>] -         /3/scalaint fails with a 404
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2711'>PUBDEV-2711</a>] -         Allow DL models to be pretrained on unlabeled data with an autoencoder
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2708'>PUBDEV-2708</a>] -         H2O Flow does not contain CodeMirror library
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2710'>PUBDEV-2710</a>] -         Model export fails: parent directory does not exist
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2712'>PUBDEV-2712</a>] -         Flow doesn&#39;t show DL AE error (MSE) plot
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2717'>PUBDEV-2717</a>] -         Do not compute expensive quantiles during h2o.summary call
+</li>
+</ul>
+
 ###Turan (3.8.1.1) - 3/3/16
 
 <h4>        Technical task
@@ -10,7 +39,7 @@
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2705'>PUBDEV-2705</a>] -         implement random (stochastic) hyperparameter search
 </li>
 </ul>
-            
+
 <h4>        Bug
 </h4>
 <ul>
@@ -31,7 +60,7 @@
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2696'>PUBDEV-2696</a>] -         DL checkpoint restart doesn&#39;t honor a change in stopping_rounds
 </li>
 </ul>
-        
+
 <h4>        New Feature
 </h4>
 <ul>
@@ -40,7 +69,7 @@
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2698'>PUBDEV-2698</a>] -         Return leaf node assignments for DRF + GBM
 </li>
 </ul>
-        
+
 <h4>        Improvement
 </h4>
 <ul>
