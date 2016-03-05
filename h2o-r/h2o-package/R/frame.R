@@ -2928,3 +2928,12 @@ h2o.lstrip <- function(x, set = " ") .newExpr("lstrip", x, .quote(set))
 #' @export
 h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
 
+
+#'
+#' Shannon entropy
+#'
+#' Return the Shannon entropy of a string column. If the string is empty, the entropy is 0.
+#'
+#' @param x   The column on which to calculate the entropy.
+#' @export
+h2o.entropy <- function(x) .newExpr("entropy", x)
