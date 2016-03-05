@@ -19,14 +19,18 @@ public final class DistributedException extends RuntimeException  {
   }
   public DistributedException(String msg, Throwable cause){
     super(msg,cause);
-    truncateStackTrace();
+    try {
+      truncateStackTrace();
+    }catch(Throwable t) {
+      // just in case it throws, do nothing, truncating stacktrace not really that important
+    }
   }
   public String toString(){return getMessage() + ", caused by " + getCause().toString();}
   private void truncateStackTrace(){
     StackTraceElement [] stackTrace = getStackTrace();
     int i = 0;
     for(; i < stackTrace.length; ++i)
-      if(stackTrace[i].getFileName().equals("JettyHTTPD.java"))
+      if(stackTrace[i].getFileName() != null && stackTrace[i].getFileName().equals("JettyHTTPD.java"))
         break;
     setStackTrace(Arrays.copyOf(stackTrace,i));
   }

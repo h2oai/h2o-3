@@ -400,18 +400,18 @@ public class VecUtils {
       if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
     }
 
-    public AutoBuffer write_impl( AutoBuffer ab ) {
+    public final AutoBuffer write_impl( AutoBuffer ab ) {
       return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
 
-    public CollectDomain read_impl( AutoBuffer ab ) {
+    public final CollectDomain read_impl( AutoBuffer ab ) {
       long ls[] = ab.getA8();
       assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
       _uniques = new NonBlockingHashMapLong<>();
       if( ls != null ) for( long l : ls ) _uniques.put(l, "");
       return this;
     }
-    @Override public void copyOver(CollectDomain that) {
+    @Override public final void copyOver(CollectDomain that) {
       _uniques = that._uniques;
     }
 
