@@ -103,7 +103,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
    */
   public final IcedHashMapBase read_impl(AutoBuffer ab) {
     try {
-      assert map() == null; // Fresh from serializer, no constructor has run
+      assert map() == null || map().isEmpty(); // Fresh from serializer, no constructor has run
       Map<K, V> map = init();
       int mode = ab.get1();
       if (mode == 0) return this;
