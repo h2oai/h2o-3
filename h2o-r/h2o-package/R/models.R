@@ -367,9 +367,11 @@ predict.H2OModel <- function(object, newdata, ...) {
 
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-  res <- .h2o.__remoteSend(url, method = "POST")
-  res <- res$predictions_frame
-  h2o.getFrame(res$name)
+  res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 
 #' @rdname predict.H2OModel
@@ -403,10 +405,10 @@ h2o.predict <- predict.H2OModel
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.predict(prostate.gbm, prostate.hex)
-#' h2o.predictLeafNodeAssignment(prostate.gbm, prostate.hex)
+#' h2o.predict_leaf_node_assignment(prostate.gbm, prostate.hex)
 #' }
 #' @export
-predictLeafNodeAssignment.H2OModel <- function(object, newdata, ...) {
+predict_leaf_node_assignment.H2OModel <- function(object, newdata, ...) {
   if (missing(newdata)) {
     stop("predictions with a missing `newdata` argument is not implemented yet")
   }
@@ -417,9 +419,9 @@ predictLeafNodeAssignment.H2OModel <- function(object, newdata, ...) {
   h2o.getFrame(res$name)
 }
 
-#' @rdname predictLeafNodeAssignment.H2OModel
+#' @rdname predict_leaf_node_assignment.H2OModel
 #' @export
-h2o.predictLeafNodeAssignment <- predictLeafNodeAssignment.H2OModel
+h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random")) {
   output <- data.frame()

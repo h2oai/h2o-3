@@ -385,7 +385,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName);
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName, null);
       }
       // free resources as early as possible
       if (adaptFr != null) {

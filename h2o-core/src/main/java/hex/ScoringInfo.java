@@ -209,7 +209,7 @@ public class ScoringInfo extends Iced {
     } // (hasCrossValidation)
 
 
-    final int rows = scoringInfos.length;
+    final int rows = scoringInfos == null ? 0 : scoringInfos.length;
     String[] s = new String[0];
     TwoDimTable table = new TwoDimTable(
       "Scoring History", null,
@@ -219,6 +219,10 @@ public class ScoringInfo extends Iced {
       colFormat.toArray(s),
       "");
     int row = 0;
+
+    if (null == scoringInfos)
+      return table;
+
     for (ScoringInfo si : scoringInfos) {
       int col = 0;
       assert (row < table.getRowDim());

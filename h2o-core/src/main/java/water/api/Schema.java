@@ -140,7 +140,7 @@ import java.util.*;
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private transient Class<I> _impl_class;
-  private static final int HIGHEST_SUPPORTED_VERSION = 3;
+  private static final int HIGHEST_SUPPORTED_VERSION = 4;
   private static final int EXPERIMENTAL_VERSION = 99;
 
   /**
