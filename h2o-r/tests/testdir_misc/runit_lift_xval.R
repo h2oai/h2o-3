@@ -13,6 +13,7 @@ test.xval.lift <- function(conn){
 
 	rowss =45211
 	#Sample rows for 2-fold xval
+        set.seed(1)
 	ss = sample(1:rowss,size = 22000)
 	ww = rep(1,rowss)
 	ww[ss]=2

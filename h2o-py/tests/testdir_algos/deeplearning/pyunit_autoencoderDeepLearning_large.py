@@ -6,6 +6,7 @@ from tests import pyunit_utils
 
 
 from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+from h2o.estimators.deeplearning import H2ODeepLearningEstimator
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 
 
@@ -36,7 +37,9 @@ def deeplearning_autoencoder():
   # train autoencoder
   ae_model = H2OAutoEncoderEstimator(activation="Tanh",
                                      hidden=[nfeatures],
+                                     model_id="ae_model",
                                      epochs=1,
+                                     ignore_const_cols=False,
                                      reproducible=True,
                                      seed=1234)
 
@@ -61,10 +64,20 @@ def deeplearning_autoencoder():
   cm = drf_model.confusion_matrix(test_features)
   cm.show()
 
-  # 8.8% error +/- 0.001
+  # 8.8% error +/- 1%
   #compare to runit_deeplearning_autoencoder_large.py
-  assert abs(cm.cell_values[10][10] - 0.0880) < 0.001, "Error. Expected 0.0880, but got {0}".format(cm.cell_values[10][10])
+  assert abs(cm.cell_values[10][10] - 0.088) < 0.01, "Error. Expected 0.088, but got {0}".format(cm.cell_values[10][10])
 
+  ## Another usecase: Use pretrained unsupervised autoencoder model to initialize a supervised Deep Learning model
+  pretrained_model = H2ODeepLearningEstimator(activation="Tanh", hidden=[nfeatures], epochs=1, reproducible=True, seed=1234,ignore_const_cols=False,pretrained_autoencoder="ae_model")
+  pretrained_model.train(list(range(resp)),resp,training_frame=train_supervised,validation_frame=test_hex)
+  print(pretrained_model.logloss(train=False,valid=True))
+
+  model_from_scratch = H2ODeepLearningEstimator(activation="Tanh", hidden=[nfeatures], epochs=1, reproducible=True, seed=1234,ignore_const_cols=False)
+  model_from_scratch.train(list(range(resp)),resp,training_frame=train_supervised,validation_frame=test_hex)
+  print(model_from_scratch.logloss(train=False,valid=True))
+
+  assert pretrained_model.logloss(train=False,valid=True) < model_from_scratch.logloss(train=False,valid=True), "Error. Pretrained model should lead to lower logloss than training from scratch."
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(deeplearning_autoencoder)

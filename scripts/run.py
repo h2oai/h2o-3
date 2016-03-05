@@ -2259,20 +2259,59 @@ def wipe_test_state(test_root_dir):
                 print("")
                 sys.exit(1)
     for d, subdirs, files in os.walk(test_root_dir):
-        for s in subdirs:
-            if ("Rsandbox" in s):
-                rsandbox_dir = os.path.join(d, s)
-                try:
-                    if sys.platform == "win32":
-                        os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
-                    else: shutil.rmtree(rsandbox_dir)
-                except OSError as e:
-                    print("")
-                    print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)
-                    print("       (errno {0}): {1}".format(e.errno, e.strerror))
-                    print("")
-                    sys.exit(1)
+        for s in subdirs:   # top level directory off tests directory
+            remove_sandbox(d,s) # attempt to remove sandbox directory if they exist
 
+            # need to get down to second level
+            for e,subdirs2,files in os.walk(os.path.join(d,s)):
+                for s2 in subdirs2:
+                    remove_sandbox(e,s2)
+
+                    # need to get down to third level
+                    for f,subdirs3,files in os.walk(os.path.join(e,s2)):
+                        for s3 in subdirs3:
+                            remove_sandbox(f,s3)
+
+                            # this is the level for sandbox for dynamic tests
+                            for g,subdirs4,files in os.walk(os.path.join(f,s3)):
+                                for s4 in subdirs4:
+                                    remove_sandbox(g,s4)
+
+            # if ("Rsandbox" in s):
+            #     rsandbox_dir = os.path.join(d, s)
+            #     try:
+            #         if sys.platform == "win32":
+            #             os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
+            #         else: shutil.rmtree(rsandbox_dir)
+            #     except OSError as e:
+            #         print("")
+            #         print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)
+            #         print("       (errno {0}): {1}".format(e.errno, e.strerror))
+            #         print("")
+            #         sys.exit(1)
+
+def remove_sandbox(parent_dir,dir_name):
+    """
+    This function is written to remove sandbox directories if they exist under the
+    parent_dir.
+
+    :param parent_dir: string denoting full parent directory path
+    :param dir_name: string denoting directory path which could be a sandbox
+
+    :return: None
+    """
+    if ("Rsandbox" in dir_name):
+        rsandbox_dir = os.path.join(parent_dir, dir_name)
+        try:
+            if sys.platform == "win32":
+                os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
+            else: shutil.rmtree(rsandbox_dir)
+        except OSError as e:
+            print("")
+            print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)
+            print("       (errno {0}): {1}".format(e.errno, e.strerror))
+            print("")
+            sys.exit(1)
 
 def main(argv):
     """

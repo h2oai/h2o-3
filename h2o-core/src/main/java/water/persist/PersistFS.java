@@ -110,6 +110,10 @@ final class PersistFS extends Persist {
       throw new FSIOException(path, "File already exists");
 
     try {
+      if (!f.getParentFile().exists()) {
+        // Shortcut since we know that this is local FS
+        f.getParentFile().mkdirs();
+      }
       return new FileOutputStream(f, false);
     } catch (IOException e) {
       throw new FSIOException(path, e);
