@@ -97,7 +97,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    *
    * @return size of hyper space to explore
    */
-  int getMaxHyperSpaceSize();
+  long getMaxHyperSpaceSize();
 
   /**
    * Return initial model parameters for search.
@@ -158,7 +158,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * Compute max size of hyper space to walk. May include duplicates if points in space are specified multiple
      * times.
      */
-    final protected int _maxHyperSpaceSize;
+    final protected long _maxHyperSpaceSize;
 
     /**
      * Java hackery so we can have a factory method on a class with type params.
@@ -206,7 +206,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     }
 
     @Override
-    public int getMaxHyperSpaceSize() {
+    public long getMaxHyperSpaceSize() {
       return _maxHyperSpaceSize;
     }
 
@@ -231,8 +231,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return paramsBuilder.build();
     }
 
-    protected int computeMaxSizeOfHyperSpace() {
-      int work = 1;
+    protected long computeMaxSizeOfHyperSpace() {
+      long work = 1;
       for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
         if (p.getValue() != null) {
           work *= p.getValue().length;
