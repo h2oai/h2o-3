@@ -535,11 +535,13 @@ public class VecUtils {
 
     private static String PLACEHOLDER = "nothing";
 
-    private IcedHashMap<String, Integer> _uniques = null;
+    private IcedHashMap<String, IcedInt> _uniques = null;
 
+    private final IcedInt _placeHolder = new IcedInt(1);
     @Override
     protected void setupLocal() {
       _uniques = new IcedHashMap<>();
+      System.out.println("CollectStringVecDomain setupLocal");
     }
 
     @Override
@@ -548,7 +550,7 @@ public class VecUtils {
       for (int i = 0; i < c.len(); i++) {
         if (!c.isNA(i)) {
           c.atStr(bs, i);
-          _uniques.put(bs.bytesToString(), 1);
+          _uniques.put(bs.bytesToString(), _placeHolder);
         }
       }
     }
