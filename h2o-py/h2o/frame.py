@@ -1697,6 +1697,18 @@ class H2OFrame(object):
     fr._ex._cache.ncol = self.ncol
     return fr
 
+  def entropy(self):
+    """For each string, return the Shannon entropy. If the string is empty, the entropy is 0.
+
+    Returns
+    -------
+      An H2OFrame of Shannon entropies. 
+    """
+    fr = H2OFrame._expr(expr=ExprNode("entropy", self))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
   def nchar(self):
     """Count the number of characters in each string of single-column H2OFrame.
 
