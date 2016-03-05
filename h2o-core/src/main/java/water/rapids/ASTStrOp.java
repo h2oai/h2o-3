@@ -205,7 +205,7 @@ class ASTCountMatches extends ASTPrim {
           if( !c.isNA(i) ) {
             int idx = (int) c.at8(i);
             ncs[0].addNum(matchCounts[idx]);
-          } else ncs[i].addNA();
+          } else ncs[0].addNA();
         }
       }
     }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
