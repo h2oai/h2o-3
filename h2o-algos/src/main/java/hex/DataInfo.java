@@ -6,7 +6,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 
 /**
 * Created by tomasnykodym on 1/29/15.
@@ -140,25 +142,26 @@ public class DataInfo extends Keyed<DataInfo> {
 
 
   /**
-   * Build an instance of DataInfo
+   *
+   * The train/valid Frame instances are sorted by categorical (themselves sorted by
+   * cardinality greatest to least) with all numerical columns following. The response
+   * column(s) are placed at the end.
    *
    *
+   * Interactions:
+   *  1. Num-Num (Note: N(0,1) * N(0,1) ~ N(0,1) )
+   *  2. Num-Enum
+   *  3. Enum-Enum TODO: need to domains up front
    *
-   * @param train
-   * @param valid
-   * @param nResponses
-   * @param useAllFactorLevels
-   * @param predictor_transform
-   * @param response_transform
-   * @param skipMissing
-   * @param imputeMissing
-   * @param missingBucket
-   * @param weight
-   * @param offset
-   * @param fold
-   * @param interactions
+   *  Interactions are produced on the fly and are dense (in all 3 cases). Consumers of
+   *  DataInfo should not have to care how these interactions are generated. Any heuristic
+   *  using the fullN value should continue functioning the same.
+   *
+   *  Interactions are specified in two ways:
+   *    A. As a list of pairs of column indices.
+   *    B. As a list of pairs of column indices with limited enums.
    */
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold,int[][] interactions) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, InteractionPair[] interactions) {
     super(Key.<DataInfo>make());
     _valid = valid != null;
     assert predictor_transform != null;
@@ -189,7 +192,14 @@ public class DataInfo extends Keyed<DataInfo> {
 
     // build up the interactions
     if( interactions!=null ) {
-
+      for(InteractionPair ip: interactions) {
+        int lv=ip._v1;
+        int rv=ip._v2;
+        if( tvecs[lv].isNumeric() || tvecs[rv].isNumeric() ) // case 1 & 2
+          nnums++;
+        if( tvecs[lv].isCategorical() && tvecs[rv].isCategorical() ) // case 3
+          ncats++;
+      }
     }
 
     _nums = nnums;
@@ -241,6 +251,116 @@ public class DataInfo extends Keyed<DataInfo> {
     setPredictorTransform(predictor_transform);
     if(_responses > 0)
       setResponseTransform(response_transform);
+  }
+
+  public static class InteractionPair extends Iced {
+    private int _v1,_v2;
+    private String[] _v1Enums;
+    private String[] _v2Enums;
+    private int _hash;
+    private InteractionPair() {}
+    private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
+      _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
+      // hash is column ints; Item 9 p.47 of Effective Java
+      _hash=17;
+      _hash = 31*_hash + _v1;
+      _hash = 31*_hash + _v2;
+      if( _v1Enums==null ) _hash = 31*_hash;
+      else
+        for( String s:_v1Enums ) _hash = 31*_hash + s.hashCode();
+      if( _v2Enums==null ) _hash = 31*_hash;
+      else
+        for( String s:_v2Enums ) _hash = 31*_hash + s.hashCode();
+    }
+
+    /**
+     * Generate all pairwise combinations of ints in the range [from,to).
+     * @param from Start index
+     * @param to End index (exclusive)
+     * @return An array of interaction pairs.
+     */
+    public static InteractionPair[] generatePairwiseInteractions(int from, int to) {
+      if( 1==(to-from) )
+        throw new IllegalArgumentException("Illegal range of values, must be greater than a single value. Got: " + from + "<" + to);
+      InteractionPair[] res = new InteractionPair[ ((to-from-1)*(to-from)) >> 1];  // n*(n+1) / 2
+      int idx=0;
+      for(int i=from;i<to;++i)
+        for(int j=i+1;j<to;++j)
+          res[idx++] = new InteractionPair(i,j,null,null);
+      return res;
+    }
+
+    /**
+     * Generate all pairwise combinations of the arguments.
+     * @param indexes An array of column indices.
+     * @return An array of interaction pairs
+     */
+    public static InteractionPair[] generatePairwiseInteractions(int... indexes) {
+      InteractionPair[] res = new InteractionPair[ (indexes.length-1)*(indexes.length)>>1]; // n*(n+1) / 2
+      int idx=0;
+      for(int i=0;i<indexes.length;++i)
+        for(int j=i+1;j<indexes.length;++j)
+          res[idx++] = new InteractionPair(indexes[i],indexes[j],null,null);
+      return res;
+    }
+
+    // parser stuff
+    private int _p;
+    private String _str;
+    public static InteractionPair[] read(String interaction) {
+      String[] interactions=interaction.split("\n");
+      HashSet<InteractionPair> res=new HashSet<>();
+      for(String i: interactions)
+        res.addAll(new InteractionPair().parse(i));
+      return res.toArray(new InteractionPair[res.size()]);
+    }
+
+    private HashSet<InteractionPair> parse(String i) { // v1[E8,E9]:v2,v3,v8,v90,v128[E1,E22]
+      _p=0;
+      _str=i;
+      HashSet<InteractionPair> res=new HashSet<>();
+      int v1 = parseNum();    // parse the first int
+      String[] v1Enums=parseEnums();  // shared
+      if( i.charAt(_p)!=':' || _p>=i.length() ) throw new IllegalArgumentException("Error");
+      while( _p++<i.length() ) {
+        int v2=parseNum();
+        String[] v2Enums=parseEnums();
+        res.add(new InteractionPair(v1,v2,v1Enums,v2Enums));
+      }
+      return res;
+    }
+
+    private int parseNum() {
+      int start=_p++;
+      while( _p<_str.length() && '0' <= _str.charAt(_p) && _str.charAt(_p) <= '9') _p++;
+      try {
+        return Integer.valueOf(_str.substring(start,_p));
+      } catch(NumberFormatException ex) {
+        throw new IllegalArgumentException("No number could be parsed. Interaction: " + _str);
+      }
+    }
+
+    private String[] parseEnums() {
+      if( _p>=_str.length() || _str.charAt(_p)!='[' ) return null;
+      ArrayList<String> enums = new ArrayList<>();
+      while( _str.charAt(_p++)!=']' ) {
+        int start=_p++;
+        while(_str.charAt(_p)!=',' && _str.charAt(_p)!=']') _p++;
+        enums.add(_str.substring(start,_p));
+      }
+      return enums.toArray(new String[enums.size()]);
+    }
+
+    @Override public int hashCode() { return _hash; }
+    @Override public String toString() { return _v1+(_v1Enums==null?"":Arrays.toString(_v1Enums))+":"+_v2+(_v2Enums==null?"":Arrays.toString(_v2Enums)); }
+    @Override public boolean equals( Object o ) {
+      boolean res = o instanceof InteractionPair;
+      if (res) {
+        InteractionPair ip = (InteractionPair) o;
+        return (_v1 == ip._v1) && (_v2 == ip._v2) && Arrays.equals(_v1Enums, ip._v1Enums) && Arrays.equals(_v2Enums, ip._v2Enums);
+      }
+      return false;
+    }
   }
 
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean intercept) {

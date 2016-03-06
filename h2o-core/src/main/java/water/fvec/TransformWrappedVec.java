@@ -50,12 +50,13 @@ public class TransformWrappedVec extends WrappedVec {
       _masterVecs = new Vec[_masterVecKeys.length];
     for(int i=0; i<cs.length;++i)
       cs[i] = (_masterVecs[i]!=null?_masterVecs[i]:(_masterVecs[i] = _masterVecKeys[i].get())).chunkForChunkIdx(cidx);
-
     return new TransformWrappedChunk(_fun, this, cs);
   }
 
   @Override public Vec doCopy() {
-    return new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
+    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
+    v.setDomain(domain()==null?null:domain().clone());
+    return v;
   }
 
   public static class TransformWrappedChunk extends Chunk {
@@ -96,10 +97,12 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public boolean setNA_impl(int idx)         { return false; }
     @Override public NewChunk inflate_impl(NewChunk nc) {
       nc.set_sparseLen(nc.set_len(0));
-      for( int i=0; i< _len; i++ ) nc.addNum(atd(i));
+      for( int i=0; i< _len; i++ )
+        if( isNA(i) ) nc.addNA();
+        else          nc.addNum(atd(i));
       return nc;
     }
-    @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
-    @Override public TransformWrappedChunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
+    @Override public AutoBuffer write_impl(AutoBuffer bb)           { throw water.H2O.fail(); }
+    @Override public TransformWrappedChunk read_impl(AutoBuffer bb) { throw water.H2O.fail(); }
   }
 }
