@@ -9,7 +9,7 @@ def entropy_check():
   for parse_type in ('string', 'enum'):
     frame = h2o.H2OFrame.from_python(["redrum"], column_types=[parse_type])
     g = frame.entropy()
-    assert (g[0,0] - 2.25162916739) < 1e-6
+    assert abs(g[0,0] - 2.25162916739) < 1e-6
 
   #test NA values
   string = h2o.H2OFrame.from_python([["nothing"],["NA"]], column_types=['string'], na_strings=["NA"])
