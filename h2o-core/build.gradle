@@ -12,6 +12,7 @@ dependencies {
   compile 'org.javassist:javassist:3.18.2-GA'
   compile "org.apache.commons:commons-math3:3.3"
   compile "org.apache.directory.studio:org.apache.commons.lang:2.6"
+  compile "commons-io:commons-io:2.4"
   compile "ai.h2o:google-analytics-java:1.1.2-H2O-CUSTOM"
   compile "org.eclipse.jetty.aggregate:jetty-servlet:8.1.17.v20150415"
   compile "org.eclipse.jetty:jetty-server:8.1.17.v20150415"

@@ -1,5 +1,6 @@
 package water.rapids;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
 import water.MemoryManager;
@@ -7,6 +8,8 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.VecUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class ASTStrOp { /*empty*/}
@@ -1026,4 +1029,101 @@ class ASTEntropy extends ASTPrim {
     }
     return sume;
   }
+}
+
+class ASTProSubstringsWords extends ASTPrim {
+  @Override public String[] args() {return new String[]{"ary", "words"};}
+  @Override int nargs() {return 1 + 2;} // (pro_substrings_words x words)
+  @Override public String str() {return "pro_substrings_words";}
+  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String wordsPath = asts[2].exec(env).getStr();
+
+    //Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("pro_substrings_words() requires a string or categorical column. "
+                + "Received " + fr.anyVec().get_type_str()
+                + ". Please convert column to a string or categorical first.");
+
+    HashSet<String> words = null;
+    try {
+      words = new HashSet<>(FileUtils.readLines(new File(wordsPath)));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    //Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for (Vec v : fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = proSubstringsWordsCategoricalCol(v, words);
+      else
+        nvs[i] = proSubstringsWordsStringCol(v, words);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  private Vec proSubstringsWordsCategoricalCol(Vec vec, final HashSet<String> words) {
+    Vec res = new MRTask() {
+      transient double[] catPros;
+
+      @Override
+      public void setupLocal() {
+        String[] doms = _fr.anyVec().domain();
+        catPros = new double[doms.length];
+        for (int i = 0; i < doms.length; i++) catPros[i] = calcProSubstringsWords(doms[i], words);
+      }
+
+      @Override
+      public void map(Chunk chk, NewChunk newChk) {
+        //pre-allocate since the size is known
+        newChk._ds = MemoryManager.malloc8d(chk._len);
+        for (int i = 0; i < chk._len; i++)
+          if (chk.isNA(i))
+            newChk.addNA();
+          else
+            newChk.addNum(catPros[(int) chk.atd(i)]);
+      }
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    return res;
+  }
+
+  private Vec proSubstringsWordsStringCol(Vec vec, final HashSet<String> words) {
+    return new MRTask() {
+      @Override
+      public void map(Chunk chk, NewChunk newChk) {
+        if (chk instanceof C0DChunk) //all NAs
+          newChk.addNAs(chk.len());
+        else { //UTF requires Java string methods
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              String str = chk.atStr(tmpStr, i).toString();
+              newChk.addNum(calcProSubstringsWords(str, words));
+            }
+          }
+        }
+      }
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+  }
+  
+  //calculate the proportion of all substrings >= 2 chars that are english words 
+  private double calcProSubstringsWords(String str, HashSet<String> words) {
+    int wordCount = 0;
+    int N = str.length();
+    if (N < 2) return 0;
+    double totalSubstrings = N * (N - 1) / 2;
+    for (int i = 0; i < N-1; i++) 
+      for (int j = i+2; j < N+1; j++) {
+        if (words.contains(str.substring(i, j))) 
+          wordCount += 1;
+      }
+    return wordCount / totalSubstrings;  
+  }
+  
 }
