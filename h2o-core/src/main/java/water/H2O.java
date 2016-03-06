@@ -1027,7 +1027,7 @@ final public class H2O {
 
 
     @Override
-    public byte [] asBytes(){return new AutoBuffer().put(this).bufClose();}
+    public byte [] asBytes(){return new AutoBuffer().put(this).buf();}
 
     @Override
     public T reloadFromBytes(byte [] ary){ return read(new AutoBuffer(ary));}
