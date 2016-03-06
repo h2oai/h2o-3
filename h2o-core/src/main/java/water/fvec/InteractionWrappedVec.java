@@ -64,24 +64,9 @@ public class InteractionWrappedVec extends WrappedVec {
   @Override public double sigma() {return 1; } // no scaling
   @Override public int mode() {
     if( !isCategorical() ) throw H2O.unimpl();
-//    if( _bins==null ) _bins = new BinsTask(domain().length).doAll(this)._bins;
     return ArrayUtils.maxIndex(_bins);
   }
   public long[] getBins() { return _bins; }
-
-//  private static class BinsTask extends MRTask<BinsTask> {
-//    private long[] _bins;
-//    private final int _len;
-//    BinsTask(int len) { _len=len; }
-//
-//    @Override public void map(Chunk c) {
-//      _bins = new long[_len];
-//      for(int i=0;i<c._len;++i)
-//        AtomicUtils.LongArray.incr(_bins,(int)c.at8(i));
-//    }
-//    @Override public void reduce(BinsTask t) { ArrayUtils.add(_bins,t._bins); }
-//  }
-
   private void setupDomain() {
     if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
       _v1Domain = _masterVec1.domain();
