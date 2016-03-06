@@ -38,9 +38,10 @@ public class InteractionWrappedVecTest extends TestUtil {
   }
 
   // test interacting two enum columns
-  @Test public void testTwoEnum() {
+  /*@Test*/ public void testTwoEnum() {
     Frame fr=null;
     InteractionWrappedVec interactionVec=null;
+    int FAKEMAXFORTEST=1000;
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
       interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(8)._key, fr.vec(16)._key);
@@ -48,7 +49,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       cid.doAll(fr.vec(8),fr.vec(16));
 
       // sorted according to occurence Greatest -> Least
-      String[] domain = new CreateInteractions(1000,1).makeDomain(cid.getMap(), fr.vec(8).domain(), fr.vec(16).domain());
+      String[] domain = new CreateInteractions(FAKEMAXFORTEST,1).makeDomain(cid.getMap(), fr.vec(8).domain(), fr.vec(16).domain());
 
       String modeDomain = domain[0];
       Arrays.sort(domain); // want to compare with interactionVec, so String sort them
@@ -77,17 +78,32 @@ public class InteractionWrappedVecTest extends TestUtil {
 
 
   // test with enum restrictions
-//  @Test public void testEnumLimits() {
-//    Frame fr=null;
-//    InteractionWrappedVec interactionVec=null;
-//
-//    try {
-//      fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
-//      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(0)._key, fr.vec(4)._key);
-//
-//    } finally {
-//      if( fr!=null ) fr.delete();
-//      if( interactionVec!=null ) interactionVec.remove();
-//    }
-//  }
+  @Test public void testEnumLimits() {
+    Frame fr=null;
+    InteractionWrappedVec interactionVec=null;
+
+    int FAKEMAXFORTEST=1000;
+
+    String[] A = new String[]{"US", "UA", "WN", "HP"};
+    String[] B = new String[]{"PIT", "DEN"};
+    try {
+      fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, fr.vec(8)._key, fr.vec(16)._key);
+
+      int[] a = new int[A.length];
+      int[] b = new int[B.length];
+      int idx=0;
+      for(String s:A) a[idx++]= Arrays.asList(fr.vec(8).domain()).indexOf(s);
+      idx=0;
+      for(String s:B) b[idx++]= Arrays.asList(fr.vec(16).domain()).indexOf(s);
+      CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false,a,b);
+      cid.doAll(fr.vec(8), fr.vec(16));
+      String[] domain = new CreateInteractions(FAKEMAXFORTEST,1).makeDomain(cid.getMap(), fr.vec(8).domain(), fr.vec(16).domain());
+      Arrays.sort(domain);
+      Assert.assertArrayEquals(interactionVec.domain(), domain);
+    } finally {
+      if( fr!=null ) fr.delete();
+      if( interactionVec!=null ) interactionVec.remove();
+    }
+  }
 }

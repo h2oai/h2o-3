@@ -54,8 +54,8 @@ public class InteractionWrappedVec extends WrappedVec {
    * Obtain the length of the expanded (i.e. one-hot expanded) interaction column.
    */
   public int expandedLength() {
-    if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns clapped together ==> 1 column
-    else if( isCategorical() ) return domain().length - (_useAllFactorLevels?0:2); // 2 categorical columns clapped together ==> domains (limited) length
+    if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns -> 1 column
+    else if( isCategorical() ) return domain().length - (_useAllFactorLevels?0:2); // 2 cat -> domains (limited) length
     else if( _v1Domain!=null ) return _v1Enums==null?_v1Domain.length - (_useAllFactorLevels?0:1):_v1Enums.length-(_useAllFactorLevels?0:1);
     else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
   }
@@ -124,8 +124,8 @@ public class InteractionWrappedVec extends WrappedVec {
         if (!(left.isNA(i) || rite.isNA(i))) {
           String l = _left[(int) left.at8(i)];
           String r = _rite[(int) rite.at8(i)];
-          if (A != null && A.contains(l)) continue;
-          if (B != null && B.contains(r)) continue;
+          if (A != null && !A.contains(l)) continue;
+          if (B != null && !B.contains(r)) continue;
           if (_perChkMap.putIfAbsent((k = l + "_" + r), new IcedLong(1)) != null)
             _perChkMap.get(k)._val++;
         }

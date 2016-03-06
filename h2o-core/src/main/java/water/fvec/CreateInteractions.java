@@ -251,7 +251,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         if (!_same) {
           int b = B.isNA(r) ? _missing : (int)B.at8(r);
           if( !_interactOnNA && b==_missing ) continue;
-          if( restrictedB!=null && !restrictedB.contains(a) ) continue; // not part of the limited set
+          if( restrictedB!=null && !restrictedB.contains(b) ) continue; // not part of the limited set
 
           // key: combine both ints into a long
           ab = ((long) a << 32) | (b & 0xFFFFFFFFL);
