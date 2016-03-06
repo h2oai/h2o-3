@@ -16,6 +16,14 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
 
   public CreateInteractions(Interaction ci) { _job = ci._job._key; _ci = ci; }
 
+  // used for testing
+  public CreateInteractions(int maxFactors, int minOccurrence) {
+    _job=null;
+    _ci=new Interaction();
+    _ci._max_factors=maxFactors;
+    _ci._min_occurrence=minOccurrence;
+  }
+
   final private Interaction _ci;
 
   static final private int _missing = Integer.MIN_VALUE; //marker for missing factor level
@@ -44,7 +52,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
 
   // Create a combined domain from the categorical values that map to domain A and domain B
   // Both categorical integers are combined into a long = (int,int), and the unsortedMap keeps the occurrence count for each pair-wise interaction
-  protected String[] makeDomain(Map<IcedLong, IcedLong> unsortedMap, String[] dA, String[] dB) {
+  public String[] makeDomain(Map<IcedLong, IcedLong> unsortedMap, String[] dA, String[] dB) {
     String[] _domain;
 //    Log.info("Collected hash table");
 //    Log.info(java.util.Arrays.deepToString(unsortedMap.entrySet().toArray()));
@@ -207,7 +215,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
   }
 
   // Create interaction domain
-  private static class createInteractionDomain extends MRTask<createInteractionDomain> {
+  public static class createInteractionDomain extends MRTask<createInteractionDomain> {
     // INPUT
     final private boolean _same;  // self interaction
     final private boolean _interactOnNA; // allow NAs to count as lvls
@@ -219,6 +227,8 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     public IcedHashMap<IcedLong, IcedLong> getMap() { return _unsortedMap; }
 
     public createInteractionDomain(boolean same, boolean interactOnNA) { _same = same; _interactOnNA=interactOnNA; _restrictedEnumA = _restrictedEnumB =null; }
+
+    // TODO: continue to extend functionality here and bridge to InteractionWrappedVec so that code can be shared
     public createInteractionDomain(boolean same, boolean interactOnNA, int[] restrictedEnumLeft, int[] restrictedEnumRite) {
       _same = same; _interactOnNA=interactOnNA;
       _restrictedEnumA =restrictedEnumLeft;

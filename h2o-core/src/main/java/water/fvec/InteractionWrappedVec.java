@@ -2,7 +2,6 @@ package water.fvec;
 
 import water.*;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 import water.util.IcedHashMap;
 import water.util.IcedLong;
 
@@ -46,12 +45,13 @@ public class InteractionWrappedVec extends WrappedVec {
     _v2Enums=vec2DomainLimit;
     _masterVec1=_masterVecKey1.get();
     _masterVec2=_masterVecKey2.get();
-    setupDomain(_useAllFactorLevels=useAllFactorLevels);
+    _useAllFactorLevels=useAllFactorLevels;
+    setupDomain();
     DKV.put(this);
   }
 
   /**
-   * @return the length of the expanded "1-hot" style interaction column (if interacting with factors, otherwise the value is 1)
+   * Obtain the length of the expanded (i.e. one-hot expanded) interaction column.
    */
   public int expandedLength() {
     if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns clapped together ==> 1 column
@@ -64,29 +64,32 @@ public class InteractionWrappedVec extends WrappedVec {
   @Override public double sigma() {return 1; } // no scaling
   @Override public int mode() {
     if( !isCategorical() ) throw H2O.unimpl();
-    if( _bins==null ) _bins = new BinsTask(domain().length).doAll(this)._bins;
+//    if( _bins==null ) _bins = new BinsTask(domain().length).doAll(this)._bins;
     return ArrayUtils.maxIndex(_bins);
   }
+  public long[] getBins() { return _bins; }
 
-  private static class BinsTask extends MRTask<BinsTask> {
-    private long[] _bins;
-    private final int _len;
-    BinsTask(int len) { _len=len; }
+//  private static class BinsTask extends MRTask<BinsTask> {
+//    private long[] _bins;
+//    private final int _len;
+//    BinsTask(int len) { _len=len; }
+//
+//    @Override public void map(Chunk c) {
+//      _bins = new long[_len];
+//      for(int i=0;i<c._len;++i)
+//        AtomicUtils.LongArray.incr(_bins,(int)c.at8(i));
+//    }
+//    @Override public void reduce(BinsTask t) { ArrayUtils.add(_bins,t._bins); }
+//  }
 
-    @Override public void map(Chunk c) {
-      _bins = new long[_len];
-      for(int i=0;i<c._len;++i)
-        AtomicUtils.LongArray.incr(_bins,(int)c.at8(i));
-    }
-    @Override public void reduce(BinsTask t) { ArrayUtils.add(_bins,t._bins); }
-  }
-
-  private void setupDomain(boolean useAllFactorLevels) {
+  private void setupDomain() {
     if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
       if( _v1Domain!=null && _v2Domain!=null ) {
-        setDomain(new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, useAllFactorLevels).doAll(_masterVec1, _masterVec2)._dom);
+        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums).doAll(_masterVec1, _masterVec2);
+        setDomain(t._dom);
+        _bins=t._bins;
         _type = Vec.T_CAT; // vec is T_NUM up to this point
       }
     }
@@ -99,22 +102,19 @@ public class InteractionWrappedVec extends WrappedVec {
     private final String _rite[]; // in
     private final String _leftLimit[]; // in
     private final String _riteLimit[]; // in
-    private final boolean _useAll;  // in do(nt) drop 1zt factor
     private IcedHashMap<String, IcedLong> _perChkMap;
 
-    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit, boolean useAllFactorLevels) {
+    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit) {
       _left = left;
       _rite = rite;
       _leftLimit = leftLimit;
       _riteLimit = riteLimit;
-      _useAll=useAllFactorLevels;
     }
 
     @Override public void map(Chunk[] c) {
       _perChkMap = new IcedHashMap<>();
-      assert c[0] instanceof C8Chunk && c[1] instanceof C8Chunk;
-      C8Chunk left = (C8Chunk) c[0];
-      C8Chunk rite = (C8Chunk) c[1];
+      Chunk left = c[0];
+      Chunk rite = c[1];
       String k;
       HashSet<String> A = _leftLimit == null ? null : new HashSet<String>();
       HashSet<String> B = _riteLimit == null ? null : new HashSet<String>();
@@ -144,8 +144,8 @@ public class InteractionWrappedVec extends WrappedVec {
       Arrays.sort(_dom = _perChkMap.keySet().toArray(new String[_perChkMap.size()]));
       int idx = 0;
       _bins = new long[_perChkMap.size()];
-      for (IcedLong il : _perChkMap.values())
-        _bins[idx++] = il._val;
+      for(String s:_dom)
+        _bins[idx++] = _perChkMap.get(s)._val;
     }
   }
 
