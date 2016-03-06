@@ -190,18 +190,6 @@ public class DataInfo extends Keyed<DataInfo> {
       else
         nums[nnums++] = i;
 
-    // build up the interactions
-    if( interactions!=null ) {
-      for(InteractionPair ip: interactions) {
-        int lv=ip._v1;
-        int rv=ip._v2;
-        if( tvecs[lv].isNumeric() || tvecs[rv].isNumeric() ) // case 1 & 2
-          nnums++;
-        if( tvecs[lv].isCategorical() && tvecs[rv].isCategorical() ) // case 3
-          ncats++;
-      }
-    }
-
     _nums = nnums;
     _cats = ncats;
     _catLvls = new int[ncats][];
@@ -253,6 +241,18 @@ public class DataInfo extends Keyed<DataInfo> {
       setResponseTransform(response_transform);
   }
 
+
+  /**
+   * This class represents a pair of interacting columns plus some additional data
+   * about specific enums to be interacted when the vecs are categorical. The question
+   * naturally arises why not just use something like an ArrayList of int[2] (as is done,
+   * for example, in the Interaction/CreateInteraction classes) and the answer essentially
+   * boils down a desire to specify these specific levels.
+   *
+   * Another difference with the CreateInteractions class:
+   *  1. do not interact on NA (someLvl_NA  and NA_somLvl are actual NAs)
+   *     this does not appear here, but in the InteractionWrappedVec class
+   */
   public static class InteractionPair extends Iced {
     private int _v1,_v2;
     private String[] _v1Enums;
@@ -296,6 +296,8 @@ public class DataInfo extends Keyed<DataInfo> {
      * @return An array of interaction pairs
      */
     public static InteractionPair[] generatePairwiseInteractions(int... indexes) {
+      if( indexes.length < 2 )
+        throw new IllegalArgumentException("Must supply 2 or more columns.");
       InteractionPair[] res = new InteractionPair[ (indexes.length-1)*(indexes.length)>>1]; // n*(n+1) / 2
       int idx=0;
       for(int i=0;i<indexes.length;++i)
@@ -325,6 +327,7 @@ public class DataInfo extends Keyed<DataInfo> {
       while( _p++<i.length() ) {
         int v2=parseNum();
         String[] v2Enums=parseEnums();
+        if( v1 == v2 ) continue; // don't interact on self!
         res.add(new InteractionPair(v1,v2,v1Enums,v2Enums));
       }
       return res;

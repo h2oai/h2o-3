@@ -21,6 +21,7 @@ public class Interaction extends Iced {
   public boolean _pairwise = false;
   public int _max_factors = 100;
   public int _min_occurrence = 1;
+  public boolean _interactOnNA = true;
 
   transient public int[] _factors = new int[0];
 

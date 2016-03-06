@@ -157,7 +157,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         final Vec B = source_frame.vecs()[idx2];
 
         // Pass 1: compute unique domains of all interaction features
-        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2).doAll(A, B);
+        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(A, B);
 
         // Create a new Vec based on the domain
         final Vec vec = source_frame.anyVec().makeZero(makeDomain(pass1._unsortedMap, A.domain(), B.domain()));
@@ -209,22 +209,38 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
   // Create interaction domain
   private static class createInteractionDomain extends MRTask<createInteractionDomain> {
     // INPUT
-    final private boolean _same;
+    final private boolean _same;  // self interaction
+    final private boolean _interactOnNA; // allow NAs to count as lvls
+    final private int[] _restrictedEnumLeft;
+    final private int[] _restrictedEnumRite;
 
     // OUTPUT
     private IcedHashMap<IcedLong, IcedLong> _unsortedMap = null;
+    public IcedHashMap<IcedLong, IcedLong> getMap() { return _unsortedMap; }
 
-    public createInteractionDomain(boolean same) { _same = same; }
+    public createInteractionDomain(boolean same, boolean interactOnNA) { _same = same; _interactOnNA=interactOnNA; _restrictedEnumLeft=_restrictedEnumRite=null; }
+    public createInteractionDomain(boolean same, boolean interactOnNA, int[] restrictedEnumLeft, int[] restrictedEnumRite) {
+      _same = same; _interactOnNA=interactOnNA;
+      _restrictedEnumLeft=restrictedEnumLeft;
+      _restrictedEnumRite=restrictedEnumRite;
+    }
 
     @Override
     public void map(Chunk A, Chunk B) {
-      _unsortedMap = new IcedHashMap<IcedLong, IcedLong>();
+      _unsortedMap = new IcedHashMap<>();
       // find unique interaction domain
+      HashSet<Integer> restrictedA = new HashSet<>(), restrictedB = new HashSet<>();
+      for (int i: _restrictedEnumLeft) restrictedA.add(i);
+      for (int i: _restrictedEnumRite) restrictedB.add(i);
       for (int r = 0; r < A._len; r++) {
         int a = A.isNA(r) ? _missing : (int)A.at8(r);
+        if( !_interactOnNA && a==_missing ) continue; // most readable way to express
+        if( !restrictedA.contains(a) ) continue; // not part of the limited set
         long ab;
         if (!_same) {
           int b = B.isNA(r) ? _missing : (int)B.at8(r);
+          if( !_interactOnNA && b==_missing ) continue;
+          if( !restrictedB.contains(b) )      continue; // not part of the limited set
 
           // key: combine both ints into a long
           ab = ((long) a << 32) | (b & 0xFFFFFFFFL);

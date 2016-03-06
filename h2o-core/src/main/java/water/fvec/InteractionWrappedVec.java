@@ -4,8 +4,12 @@ import water.*;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.IcedHashMap;
+import water.util.IcedLong;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
 
 /**
  *
@@ -45,6 +49,16 @@ public class InteractionWrappedVec extends WrappedVec {
     DKV.put(this);
   }
 
+  /**
+   * @return the length of the expanded "1-hot" style interaction column (if interacting with factors, otherwise the value is 1)
+   */
+  public int expandedLength() {
+    if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns clapped together ==> 1 column
+    else if( isCategorical() ) return domain().length; // 2 categorical columns clapped together ==> domains (limited) length
+    else if( _v1Domain!=null ) return _v1Enums==null?_v1Domain.length:_v1Enums.length;
+    else return _v2Enums==null?_v2Domain.length:_v2Enums.length;
+  }
+
   @Override public double mean() { return 0; } // do no manip on interaction vecs (protects from auto normalization etc.)
   @Override public double sigma() {return 1; } // no scaling
   @Override public int mode() {
@@ -71,7 +85,7 @@ public class InteractionWrappedVec extends WrappedVec {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
       if( _v1Domain!=null && _v2Domain!=null ) {
-        setDomain(new CombineDomainTask(_v1Domain, _v2Domain).doAll(_masterVec1, _masterVec2)._dom);
+        setDomain(new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums).doAll(_masterVec1, _masterVec2)._dom);
         _type = Vec.T_CAT; // vec is T_NUM up to this point
       }
     }
@@ -79,29 +93,57 @@ public class InteractionWrappedVec extends WrappedVec {
 
   private static class CombineDomainTask extends MRTask<CombineDomainTask> {
     private String[] _dom;        // out
+    private long[] _bins;         // out
     private final String _left[]; // in
     private final String _rite[]; // in
-    private IcedHashMap.IcedHashMapStringString _nodeLocalDomains;
-    @Override public void setupLocal() { _nodeLocalDomains=new IcedHashMap.IcedHashMapStringString(); }
-    CombineDomainTask(String[] left, String[] rite) { _left=left; _rite=rite; }
+    private final String _leftLimit[]; // in
+    private final String _riteLimit[]; // in
+    private IcedHashMap<String, IcedLong> _perChkMap;
+
+    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit) {
+      _left = left;
+      _rite = rite;
+      _leftLimit = leftLimit;
+      _riteLimit = riteLimit;
+    }
+
     @Override public void map(Chunk[] c) {
+      _perChkMap = new IcedHashMap<>();
       assert c[0] instanceof C8Chunk && c[1] instanceof C8Chunk;
-      C8Chunk left = (C8Chunk)c[0]; C8Chunk rite = (C8Chunk)c[1];
-      for(int i=0;i<left._len;++i)
-        if( !(left.isNA(i) || rite.isNA(i)) )
-          _nodeLocalDomains.putIfAbsent(_left[(int) left.at8(i)] + _rite[(int) rite.at8(i)], "");
+      C8Chunk left = (C8Chunk) c[0];
+      C8Chunk rite = (C8Chunk) c[1];
+      String k;
+      HashSet<String> A = _leftLimit == null ? null : new HashSet<String>();
+      HashSet<String> B = _riteLimit == null ? null : new HashSet<String>();
+      if (A != null) Collections.addAll(A, _leftLimit);
+      if (B != null) Collections.addAll(B, _riteLimit);
+      for (int i = 0; i < left._len; ++i)
+        if (!(left.isNA(i) || rite.isNA(i))) {
+          String l = _left[(int) left.at8(i)];
+          String r = _rite[(int) rite.at8(i)];
+          if (A != null && A.contains(l)) continue;
+          if (B != null && B.contains(r)) continue;
+          if (_perChkMap.putIfAbsent((k = l + "_" + r), new IcedLong(1)) != null)
+            _perChkMap.get(k)._val++;
+        }
     }
+
     @Override public void reduce(CombineDomainTask t) {
-      if( t._nodeLocalDomains != _nodeLocalDomains ) {
-        IcedHashMap.IcedHashMapStringString l = _nodeLocalDomains;
-        IcedHashMap.IcedHashMapStringString r = t._nodeLocalDomains;
-        if( r.size() < l.size() ) { l=r; r=_nodeLocalDomains; } // swap so that largest is on the left
-        for( String rk: r.keySet() )
-          l.putIfAbsent(rk,"");
-        _nodeLocalDomains=l;
+      for (Map.Entry<String, IcedLong> e : t._perChkMap.entrySet()) {
+        IcedLong i = _perChkMap.get(e.getKey());
+        if (i != null) i._val += e.getValue()._val;
+        else _perChkMap.put(e.getKey(), e.getValue());
       }
+      t._perChkMap = null;
     }
-    @Override public void postGlobal() { Arrays.sort(_dom = _nodeLocalDomains.keySet().toArray(new String[_nodeLocalDomains.size()])); }
+
+    @Override public void postGlobal() {
+      Arrays.sort(_dom = _perChkMap.keySet().toArray(new String[_perChkMap.size()]));
+      int idx = 0;
+      _bins = new long[_perChkMap.size()];
+      for (IcedLong il : _perChkMap.values())
+        _bins[idx++] = il._val;
+    }
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
