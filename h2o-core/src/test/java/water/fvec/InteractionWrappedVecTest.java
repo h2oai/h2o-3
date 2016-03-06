@@ -9,9 +9,9 @@ import water.TestUtil;
 import java.util.Arrays;
 
 public class InteractionWrappedVecTest extends TestUtil {
-  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() {  stall_till_cloudsize(3); }
 
-  /*@Test*/ public void testIris() { // basic "can i construct the vec" test
+  @Test public void testIris() { // basic "can i construct the vec" test
     Frame fr=null;
     InteractionWrappedVec interactionVec=null;
     try {
@@ -38,7 +38,7 @@ public class InteractionWrappedVecTest extends TestUtil {
   }
 
   // test interacting two enum columns
-  /*@Test*/ public void testTwoEnum() {
+  @Test public void testTwoEnum() {
     Frame fr=null;
     InteractionWrappedVec interactionVec=null;
     int FAKEMAXFORTEST=1000;
