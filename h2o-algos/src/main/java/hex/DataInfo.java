@@ -252,6 +252,7 @@ public class DataInfo extends Keyed<DataInfo> {
    * Another difference with the CreateInteractions class:
    *  1. do not interact on NA (someLvl_NA  and NA_somLvl are actual NAs)
    *     this does not appear here, but in the InteractionWrappedVec class
+   *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
    */
   public static class InteractionPair extends Iced {
     private int _v1,_v2;

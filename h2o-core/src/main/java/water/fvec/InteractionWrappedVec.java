@@ -32,12 +32,13 @@ public class InteractionWrappedVec extends WrappedVec {
   private final Key<Vec> _masterVecKey2;
   private transient Vec _masterVec1;  private String[] _v1Domain;
   private transient Vec _masterVec2;  private String[] _v2Domain;
+  private final boolean _useAllFactorLevels;
   private long _bins[];
 
   private final String _v1Enums[]; // only interact these enums from vec 1
   private final String _v2Enums[]; // only interact these enums from vec 2
 
-  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
+  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
     super(key, rowLayout, null);
     _masterVecKey1=masterVecKey1;
     _masterVecKey2=masterVecKey2;
@@ -45,7 +46,7 @@ public class InteractionWrappedVec extends WrappedVec {
     _v2Enums=vec2DomainLimit;
     _masterVec1=_masterVecKey1.get();
     _masterVec2=_masterVecKey2.get();
-    setupDomain();
+    setupDomain(_useAllFactorLevels=useAllFactorLevels);
     DKV.put(this);
   }
 
@@ -54,9 +55,9 @@ public class InteractionWrappedVec extends WrappedVec {
    */
   public int expandedLength() {
     if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns clapped together ==> 1 column
-    else if( isCategorical() ) return domain().length; // 2 categorical columns clapped together ==> domains (limited) length
-    else if( _v1Domain!=null ) return _v1Enums==null?_v1Domain.length:_v1Enums.length;
-    else return _v2Enums==null?_v2Domain.length:_v2Enums.length;
+    else if( isCategorical() ) return domain().length - (_useAllFactorLevels?0:2); // 2 categorical columns clapped together ==> domains (limited) length
+    else if( _v1Domain!=null ) return _v1Enums==null?_v1Domain.length - (_useAllFactorLevels?0:1):_v1Enums.length-(_useAllFactorLevels?0:1);
+    else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
   }
 
   @Override public double mean() { return 0; } // do no manip on interaction vecs (protects from auto normalization etc.)
@@ -80,12 +81,12 @@ public class InteractionWrappedVec extends WrappedVec {
     @Override public void reduce(BinsTask t) { ArrayUtils.add(_bins,t._bins); }
   }
 
-  private void setupDomain() {
+  private void setupDomain(boolean useAllFactorLevels) {
     if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
       if( _v1Domain!=null && _v2Domain!=null ) {
-        setDomain(new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums).doAll(_masterVec1, _masterVec2)._dom);
+        setDomain(new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, useAllFactorLevels).doAll(_masterVec1, _masterVec2)._dom);
         _type = Vec.T_CAT; // vec is T_NUM up to this point
       }
     }
@@ -98,13 +99,15 @@ public class InteractionWrappedVec extends WrappedVec {
     private final String _rite[]; // in
     private final String _leftLimit[]; // in
     private final String _riteLimit[]; // in
+    private final boolean _useAll;  // in do(nt) drop 1zt factor
     private IcedHashMap<String, IcedLong> _perChkMap;
 
-    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit) {
+    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit, boolean useAllFactorLevels) {
       _left = left;
       _rite = rite;
       _leftLimit = leftLimit;
       _riteLimit = riteLimit;
+      _useAll=useAllFactorLevels;
     }
 
     @Override public void map(Chunk[] c) {
@@ -154,7 +157,7 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _masterVecKey1, _masterVecKey2);
     if( null!=domain()  ) v.setDomain(domain());
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();
