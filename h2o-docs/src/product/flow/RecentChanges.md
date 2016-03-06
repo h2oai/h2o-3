@@ -2,6 +2,26 @@
 
 ##H2O
 
+###Turan (3.8.1.3) - 3/6/16
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2644'>PUBDEV-2644</a>] -         Collinear columns cause NPE for P-values computation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2721'>PUBDEV-2721</a>] -         Update default values in h2o.glm.wrapper from -1 and NaN to NULL
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2722'>PUBDEV-2722</a>] -         AIOOBE in NewChunk
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2111'>PUBDEV-2111</a>] -         Hive UDF form for Scoring Engine POJO for H2O Models
+</li>
+</ul>
+
 ###Turan (3.8.1.2) - 3/4/16
 
 <h4>        Bug
