@@ -27,6 +27,7 @@ import java.io.*;
  * {@code
  * transient int DEBUG_WEAVER = 1;
  * }
+ * @see Freezable
  * @see water.Weaver
  * @see water.AutoBuffer
  */
