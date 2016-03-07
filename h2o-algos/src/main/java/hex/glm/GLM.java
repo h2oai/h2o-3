@@ -71,11 +71,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override
   protected void checkMemoryFootPrint() {/* see below */ }
 
-  protected void checkMemoryFootPrint(DataInfo dinfo) {
-    if (_parms._solver == Solver.IRLSM && !_parms._lambda_search) {
+  protected void checkMemoryFootPrint(DataInfo activeData) {
+    if (_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT) {
+      int p = activeData.fullN();
       HeartBeat hb = H2O.SELF._heartbeat;
-      double p = dinfo.fullN() - dinfo.largestCat();
-      long mem_usage = (long) (hb._cpus_allowed * (p * p + dinfo.largestCat()) * 8/*doubles*/ * (1 + .5 * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.))); //one gram per core
+      long mem_usage = (long) (hb._cpus_allowed * (p * p + activeData.largestCat()) * 8/*doubles*/ * (1 + .5 * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.))); //one gram per core
       long max_mem = hb.get_free_mem();
       if (mem_usage > max_mem) {
         String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
@@ -303,7 +303,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, false ,_parms._missing_values_handling == MissingValuesHandling.MeanImputation, hasWeightCol(), hasOffsetCol(), hasFoldCol());
-      checkMemoryFootPrint(_dinfo);
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
         if (_parms._solver == Solver.IRLSM) {
@@ -891,6 +890,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
         _state.setLambda(_parms._lambda[i]);
+        checkMemoryFootPrint(_state.activeData());
         do {
           if(_parms._family == Family.multinomial)
             for(int c = 0; c < _nclass; ++c)
