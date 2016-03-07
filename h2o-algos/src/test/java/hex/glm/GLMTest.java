@@ -1536,7 +1536,7 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-  @Test @Ignore("PUBDEV-1953")
+  @Test
   public void testCitibikeReproPUBDEV1953() throws Exception {
     GLMModel model = null;
     Frame tfr = parse_test_file("smalldata/glm_test/citibike_small_train.csv");
