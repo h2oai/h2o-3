@@ -1540,5 +1540,68 @@ public class DeepLearningTest extends TestUtil {
       if (dl != null) dl.delete();
     }
   }
+
+
+  @Test
+  public void testPretrainedAE() {
+    Frame tfr = null;
+    DeepLearningModel dl1 = null;
+    DeepLearningModel dl2 = null;
+    DeepLearningModel ae = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+
+      // train unsupervised AE
+      Key<DeepLearningModel> key = Key.make("ae_model");
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._ignored_columns = new String[]{tfr.lastVecName()};
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._autoencoder = true;
+        parms._seed = 0xdecaf;
+        ae = new DeepLearning(parms, key).trainModel().get();
+      }
+
+      // train supervised DL model
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        parms._pretrained_autoencoder = key;
+        dl1 = new DeepLearning(parms).trainModel().get();
+      }
+
+      // train DL model from scratch
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        dl2 = new DeepLearning(parms).trainModel().get();
+      }
+
+      Log.info("pretrained  : MSE=" + dl1._output._training_metrics.mse());
+      Log.info("from scratch: MSE=" + dl2._output._training_metrics.mse());
+      Assert.assertTrue(dl1._output._training_metrics.mse() < dl2._output._training_metrics.mse());
+
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (ae != null) ae.delete();
+      if (dl1 != null) dl1.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
 }
 

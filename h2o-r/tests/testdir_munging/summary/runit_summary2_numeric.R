@@ -11,14 +11,14 @@ test.summary2.numeric <- function() {
 #check that summary2 gives expected output
   Log.info("Check that summary gives output...")
   summary(wonkysummary.hex)
-  summary_ <- summary(wonkysummary.hex)
+  summary_ <- summary(wonkysummary.hex, exact_quantiles=TRUE)
   Log.info("Check that we get a table back from the summary(hex)")
   expect_that(summary_, is_a("table"))
 
 
 #check produced values against known values
   Log.info("Check that the summary from H2O matches known good values: ")
-  H2Osum<- summary(wonkysummary.hex)
+  H2Osum<- summary(wonkysummary.hex, exact_quantiles=TRUE)
   wonky.df<- read.csv(locate("smalldata/jira/wonkysummary.csv"))
   wonky.Rsum<-as.table(summary(wonky.df))
   

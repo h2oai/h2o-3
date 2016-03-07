@@ -70,12 +70,10 @@ public class CUDChunk extends Chunk {
     nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }
-  @Override public CUDChunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;
     _len = UnsafeUtils.get4(_mem, 0);
     numUniques = UnsafeUtils.get4(_mem, 4);
     set_len(_len);
-    return this;
   }
 }

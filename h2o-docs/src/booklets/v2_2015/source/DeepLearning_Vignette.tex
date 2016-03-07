@@ -851,6 +851,13 @@ It can be difficult to obtain convergence for deep autoencoders, especially sinc
 
 \url{https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R}.
 
+\subsubsection{Unsupervised Pretraining with Supervised Fine-Tuning}
+Sometimes, there's much more unlabeled data than labeled data. It this case, it might make sense to train an autoencoder model on the unlabeled data and then fine-tune the learned model with the available labels. In H2O, you would train an autoencoder model with \texttt{autoencoder} enabled, and then you can transfer its state to a supervised regular Deep Learning model by specifying \texttt{pretrained\_autoencoder}. You can seen an \texttt{R} example here:
+
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_autoencoder_large.R},
+
+and the corresponding \texttt{Python} example here:
+\url{https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/deeplearning/pyunit_autoencoderDeepLearning_large.py}.
 
 \section{Parameters}
 \label{sec:Parameters}
@@ -874,6 +881,8 @@ Logical indicates the parameter requires a value of either \texttt{TRUE} or \tex
 \item \texttt{checkpoint}: (Optional) Specifies the model checkpoint (either an \\ \texttt{H2ODeepLearningModel} or a key) from which to resume training. 
 
 \item \texttt{autoencoder}: Logical. Enables autoencoder. The default is false. Refer to the {\textbf{\nameref{sec:DeepAutoencoders}}} section for more details.
+
+\item \texttt{pretrained\_autoencoder}: (Optional) Pretrained autoencoder model (either an \\ \texttt{H2ODeepLearningModel} or a key) to initialize the model state of a supervised DL model with. 
 
 \item \texttt{use\_all\_factor\_levels}: Logical. Uses all factor levels of categorical variance. Otherwise, omits the first factor level without loss of accuracy. Useful for variable importances and auto-enabled for autoencoder.  The default is true. Refer to the {\textbf{\nameref{sec:DeepAutoencoders}}} section for more details.
 

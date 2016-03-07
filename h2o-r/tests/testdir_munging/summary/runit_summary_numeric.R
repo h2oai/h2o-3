@@ -11,7 +11,7 @@ test.summary.numeric <- function() {
   Log.info("Check that summary works...")
   summary(arrests.hex)
 
-  summary_ <- summary(arrests.hex)
+  summary_ <- summary(arrests.hex, exact_quantiles=TRUE)
 
   Log.info("Check that we get a table back from the summary(hex)")
   expect_that(summary_, is_a("table"))
@@ -27,9 +27,7 @@ test.summary.numeric <- function() {
   print(summary(tail(arrests.hex)))
   # large tolerance because median uses the rollup summary stats, which give
   # quantiles accurate to 1 part in 1000 only.
-  checkSummary(summary(tail(arrests.hex)), summary_2, tolerance = 2e-3)
-
-  
+  checkSummary(summary(tail(arrests.hex), exact_quantiles=TRUE), summary_2, tolerance = 2e-3)
 }
 
 doTest("Summary Tests", test.summary.numeric)

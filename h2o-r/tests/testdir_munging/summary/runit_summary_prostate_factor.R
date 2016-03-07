@@ -10,7 +10,7 @@ test.summary.factor <- function() {
   
   Log.info("Comparing R and H2O summaries...\n")
   sumR <- summary(prostate.dat)
-  sumH2O <- summary(prostate.hex)
+  sumH2O <- summary(prostate.hex, exact_quantiles=TRUE)
   Log.info("R Summary:"); print(sumR)
   Log.info("H2O Summary:"); print(sumH2O)
   checkSummary(sumH2O, sumR)
@@ -23,7 +23,7 @@ test.summary.factor <- function() {
   }
   
   sumR.fac <- summary(prostate.dat)
-  sumH2O.fac <- summary(prostate.hex)
+  sumH2O.fac <- summary(prostate.hex, exact_quantiles=TRUE)
   Log.info("R Summary:"); print(sumR.fac)
   Log.info("H2O Summary:"); print(sumH2O.fac)
   checkSummary(sumH2O.fac, sumR.fac)

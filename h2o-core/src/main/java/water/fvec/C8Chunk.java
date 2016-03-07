@@ -24,18 +24,16 @@ public class C8Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem,(idx<<3),_NA); return true; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
+    nc.set_sparseLen(nc.set_len(0));
     for( int i=0; i< _len; i++ )
       if(isNA(i))nc.addNA();
       else nc.addNum(at8(i),0);
-    nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }
-  @Override public C8Chunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);
     assert _mem.length == _len <<3;
-    return this;
   }
   @Override
   public boolean hasFloat() {return false;}
