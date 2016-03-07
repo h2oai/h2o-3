@@ -1,10 +1,7 @@
 package hex;
 
 import water.*;
-import water.fvec.C8DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +35,18 @@ public class DataInfo extends Keyed<DataInfo> {
     if(!_weights)return;
     _adaptedFrame.remove(weightChunkId());
     _weights = false;
+  }
+
+  public void dropInteractions() { // only called to cleanup the InteractionWrappedVecs!
+    if(_interactions!=null) { // TODO: get int[] for direct access to interaction wrapped vecs
+      ArrayList<Integer> interactionVecs = new ArrayList<>();
+      for (int i = 0; i < _adaptedFrame.numCols(); ++i) interactionVecs.add(i);
+      int[] interactionVecIds = new int[interactionVecs.size()];
+      for(int i=0;i<interactionVecIds.length;++i) interactionVecIds[i]=interactionVecs.get(i);
+      Vec[] vecs = _adaptedFrame.remove(interactionVecIds);
+      for(Vec v:vecs)v.remove();
+      _interactions = null;
+    }
   }
 
   public int[] activeCols() {
@@ -101,6 +110,8 @@ public class DataInfo extends Keyed<DataInfo> {
   public boolean _offset;
   public boolean _weights;
   public boolean _fold;
+  public InteractionPair[] _interactions;
+  public int[] _numOffsets; // offsets used by numerical interactions
   public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
 
@@ -151,7 +162,7 @@ public class DataInfo extends Keyed<DataInfo> {
    * Interactions:
    *  1. Num-Num (Note: N(0,1) * N(0,1) ~ N(0,1) )
    *  2. Num-Enum
-   *  3. Enum-Enum TODO: need to domains up front
+   *  3. Enum-Enum
    *
    *  Interactions are produced on the fly and are dense (in all 3 cases). Consumers of
    *  DataInfo should not have to care how these interactions are generated. Any heuristic
@@ -176,6 +187,28 @@ public class DataInfo extends Keyed<DataInfo> {
     _response_transform = response_transform;
     _responses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
+    _interactions=interactions;
+
+    // create dummy InteractionWrappedVecs and shove them onto the front of the frame
+    if( _interactions!=null ) {
+      Vec anyTrainVec = train.anyVec();
+      Vec anyValidVec = valid == null ? null : valid.anyVec();
+      Vec[] interactionTrainVecs = new Vec[_interactions.length];
+      Vec[] interactionValidVecs = valid==null?null: new Vec[_interactions.length];
+      String[] interactionNames  = new String[_interactions.length];
+      int idx = 0;
+      for (InteractionPair ip : _interactions) {
+        interactionNames[idx] = train.name(ip._v1) + "_" + train.name(ip._v2);
+        interactionTrainVecs[idx] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, _useAllFactorLevels, train.vec(ip._v1)._key, train.vec(ip._v2)._key);
+        if( valid!=null )
+          interactionValidVecs[idx] = new InteractionWrappedVec(anyValidVec.group().addVec(), anyValidVec._rowLayout, ip._v1Enums, ip._v2Enums, _useAllFactorLevels, valid.vec(ip._v1)._key, valid.vec(ip._v2)._key);
+        idx++;
+      }
+      train = new Frame(interactionNames, interactionTrainVecs).add(train);
+      if( valid!=null )
+        valid = new Frame(interactionNames, interactionValidVecs).add(valid);
+    }
+
     _permutation = new int[train.numCols()];
     final Vec[] tvecs = train.vecs();
 
@@ -220,9 +253,13 @@ public class DataInfo extends Keyed<DataInfo> {
       _permutation[i] = cats[i];
     }
     _numMeans = new double[nnums];
+    _numOffsets = MemoryManager.malloc4(nnums+1);
+    _numOffsets[0]=len;
     for(int i = 0; i < nnums; ++i) {
       names[i+ncats] = train._names[nums[i]];
-      tvecs2[i+ncats] = train.vec(nums[i]);
+      Vec v = train.vec(nums[i]);
+      tvecs2[i+ncats] = v;
+      _numOffsets[i+1] = (len+= (v instanceof InteractionWrappedVec ? ((InteractionWrappedVec) v).expandedLength() : 1));
       _numMeans[i] = train.vec(nums[i]).mean();
       _permutation[i+ncats] = nums[i];
     }
@@ -380,7 +417,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo scoringInfo(){
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!_skipMissing,_weights,_offset,_fold);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!_skipMissing,_weights,_offset,_fold,_interactions);
     res._adaptedFrame = null;
     res._weights = false;
     res._offset = false;
@@ -602,9 +639,9 @@ public class DataInfo extends Keyed<DataInfo> {
       setTransform(t,_normRespMul,_normRespSub,_adaptedFrame.numCols()-_responses,_responses);
     }
   }
-  public final int fullN(){return _nums + _catOffsets[_cats];}
+  public final int fullN(){ return _numOffsets[_nums]; }
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
-  public final int numStart(){return _catOffsets[_cats];}
+  public final int numStart(){return _numOffsets[0];}
   public final String[] coefNames(){
     if (_coefNames != null) return _coefNames; 
     int k = 0;

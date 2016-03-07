@@ -26,7 +26,6 @@ import java.util.Map;
  * @author spencer
  */
 public class InteractionWrappedVec extends WrappedVec {
-
   private final Key<Vec> _masterVecKey1;
   private final Key<Vec> _masterVecKey2;
   private transient Vec _masterVec1;  private String[] _v1Domain;
@@ -72,7 +71,7 @@ public class InteractionWrappedVec extends WrappedVec {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
       if( _v1Domain!=null && _v2Domain!=null ) {
-        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums).doAll(_masterVec1, _masterVec2);
+        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels).doAll(_masterVec1, _masterVec2);
         setDomain(t._dom);
         _bins=t._bins;
         _type = Vec.T_CAT; // vec is T_NUM up to this point
@@ -87,13 +86,15 @@ public class InteractionWrappedVec extends WrappedVec {
     private final String _rite[]; // in
     private final String _leftLimit[]; // in
     private final String _riteLimit[]; // in
+    private final boolean _useAllLvls; // in
     private IcedHashMap<String, IcedLong> _perChkMap;
 
-    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit) {
+    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit, boolean useAllLvls) {
       _left = left;
       _rite = rite;
       _leftLimit = leftLimit;
       _riteLimit = riteLimit;
+      _useAllLvls = useAllLvls;
     }
 
     @Override public void map(Chunk[] c) {
@@ -105,10 +106,14 @@ public class InteractionWrappedVec extends WrappedVec {
       HashSet<String> B = _riteLimit == null ? null : new HashSet<String>();
       if (A != null) Collections.addAll(A, _leftLimit);
       if (B != null) Collections.addAll(B, _riteLimit);
+      int lval,rval;
       for (int i = 0; i < left._len; ++i)
         if (!(left.isNA(i) || rite.isNA(i))) {
-          String l = _left[(int) left.at8(i)];
-          String r = _rite[(int) rite.at8(i)];
+          lval = (int)left.at8(i);
+          rval = (int)rite.at8(i);
+          if( !_useAllLvls &&  ( 0==lval || 0==rval )) continue; // skipping first level! => but use all domains!
+          String l = _left[lval];
+          String r = _rite[rval];
           if (A != null && !A.contains(l)) continue;
           if (B != null && !B.contains(r)) continue;
           if (_perChkMap.putIfAbsent((k = l + "_" + r), new IcedLong(1)) != null)
