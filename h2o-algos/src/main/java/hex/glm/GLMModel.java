@@ -144,6 +144,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _stdOverride; // standardization override by beta constraints
 
     public void validate(GLM glm) {
+      if(_alpha != null && (1 < _alpha[0] || _alpha[0] < 0))
+        glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
         glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
       if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
