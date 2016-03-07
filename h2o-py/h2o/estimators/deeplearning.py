@@ -17,8 +17,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
           Model checkpoint (either key or H2ODeepLearningModel) to resume training with.
         use_all_factor_levels : bool
           Use all factor levels of categorical variance. Otherwise the first factor level
-          is omitted (without loss of accuracy). Useful for variable importances and
-          auto-enabled for autoencoder.
+          is omitted (without loss of accuracy). Useful for variable importances and
+          auto-enabled for autoencoder..
         standardize : bool
           If enabled, automatically standardize the data. If disabled, the user must
           provide properly scaled input data.
@@ -63,7 +63,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
           order to improve generalization (dimension sampling).
         hidden_dropout_ratios : float
           Input layer dropout ratio (can improve generalization) specify one value per
-          hidden layer, defaults to 0.5
+          hidden layer, defaults to 0.5
         l1 : float
           L1 regularization (can add stability and improve generalization,
           causes many weights to become 0)
@@ -104,7 +104,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         stopping_rounds : int
           Early stopping based on convergence of stopping_metric.
           Stop if simple moving average of length k of the stopping_metric does not
-          improve (by stopping_tolerance) for k=stopping_rounds scoring events.
+          improve (by stopping_tolerance) for k=stopping_rounds scoring events.
           Can only trigger after at least 2k scoring events. Use 0 to disable.
         stopping_metric : str
           Metric to use for convergence checking, only for _stopping_rounds > 0
@@ -125,7 +125,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         class_sampling_factors : list
           Desired over/under-sampling ratios per class (in lexicographic order).
           If not specified, sampling factors will be automatically computed to obtain
-          class balance during training. Requires balance_classes.
+          class balance during training. Requires balance_classes.
         max_after_balance_size : float
           Maximum relative size of the training data after balancing class counts
           (can be less than 1.0)
@@ -154,7 +154,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
           Sparse data handling (Experimental)
         col_major : bool
           Use a column major weight matrix for input layer. Can speed up forward
-          propagation, but might slow down back propagation (Experimental)
+          propagation, but might slow down back propagation (Experimental)
         average_activation : float
           Average activation for sparse auto-encoder (Experimental)
         sparsity_beta : bool
@@ -169,7 +169,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
           Whether to export Neural Network weights and biases to H2O Frames"
         nfolds : int, optional
           Number of folds for cross-validation. If nfolds >= 2, then validation must
-          remain empty.
+          remain empty.
         fold_assignment : str
           Cross-validation fold assignment scheme, if fold_column is not specified
           Must be "AUTO", "Random" or "Modulo"
