@@ -1657,9 +1657,9 @@ class H2OFrame(object):
     If omitted, the set argument defaults to removing whitespace.
 
     Parameters
-      ----------
-      set : str
-        Set of characters to lstrip from strings in column
+    ----------
+    set : str
+      Set of characters to lstrip from strings in column
 
     Returns
     -------
@@ -1680,9 +1680,9 @@ class H2OFrame(object):
     If omitted, the set argument defaults to removing whitespace.
 
     Parameters
-      ----------
-      set : str
-        Set of characters to rstrip from strings in column
+    ----------
+    set : str
+      Set of characters to rstrip from strings in column
 
     Returns
     -------
@@ -1693,6 +1693,36 @@ class H2OFrame(object):
     if set is None: set = " "
 
     fr = H2OFrame._expr(expr=ExprNode("rstrip", self, set))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
+  def entropy(self):
+    """For each string, return the Shannon entropy. If the string is empty, the entropy is 0.
+
+    Returns
+    -------
+      An H2OFrame of Shannon entropies. 
+    """
+    fr = H2OFrame._expr(expr=ExprNode("entropy", self))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
+  def pro_substrings_words(self, path_to_words):
+    """For each string, find the proportion of all possible substrings >= 2 characters that are contained in 
+    the line-separated text file whose path is given. If the string length is less than two, 0 is returned.
+    
+    Parameters
+    ----------
+      path_to_words : str
+        Path to file that contains a line-separated list of strings to be referenced. 
+        
+    Returns
+    -------
+      An H2OFrame with the proportion of substrings that are contained in the given word list. 
+    """
+    fr = H2OFrame._expr(expr=ExprNode("pro_substrings_words", self, path_to_words))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr
