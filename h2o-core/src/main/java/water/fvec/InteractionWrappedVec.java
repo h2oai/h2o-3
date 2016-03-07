@@ -54,7 +54,7 @@ public class InteractionWrappedVec extends WrappedVec {
    */
   public int expandedLength() {
     if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns -> 1 column
-    else if( isCategorical() ) return domain().length - (_useAllFactorLevels?0:2); // 2 cat -> domains (limited) length
+    else if( isCategorical() ) return domain().length; // 2 cat -> domains (limited) length
     else if( _v1Domain!=null ) return _v1Enums==null?_v1Domain.length - (_useAllFactorLevels?0:1):_v1Enums.length-(_useAllFactorLevels?0:1);
     else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
   }

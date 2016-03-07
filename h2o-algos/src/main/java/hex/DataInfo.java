@@ -235,7 +235,10 @@ public class DataInfo extends Keyed<DataInfo> {
       names[i]  =   train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
-      _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
+      if( v instanceof InteractionWrappedVec )
+        _catOffsets[i+1] = (len += v.domain().length + (missingBucket?1:0));
+      else
+        _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
       _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length:-100;
       _permutation[i] = cats[i];
     }
