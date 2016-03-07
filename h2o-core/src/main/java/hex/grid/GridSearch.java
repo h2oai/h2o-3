@@ -84,7 +84,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   Job<Grid> start() {
-    final int gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
+    final long gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
@@ -145,7 +145,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *
    * @return expected number of models produced by this grid search
    */
-  public int getModelCount() {
+  public long getModelCount() {
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
   }
 

@@ -1,8 +1,6 @@
 # Security
 
-[H2O Enterprise Support](http://h2o.ai/product/enterprise-support/) contains security features intended for deployment inside a secure data center.
-
-Please see the [H2O Enterprise Support web page](http://h2o.ai/product/enterprise-support/) for more information about the enterprise version of H2O.
+H2O contains security features intended for deployment inside a secure data center.
 
 ## Security model
 
@@ -50,7 +48,6 @@ Term | Definition
 ### Data chain-of-custody in a Hadoop data center environment
 
 > Notes:   
-> - This holds true for both the Open Source and Enterprise versions of H2O, except where indicated.   
 > - This holds true for all versions of Hadoop (including YARN) supported by H2O.
 
 Through this sequence, it is shown that a user is only able to access the same data from H2O that they could already access from normal Hadoop jobs.
@@ -62,8 +59,8 @@ Through this sequence, it is shown that a user is only able to access the same d
 5.  A user's Hadoop MapReduce job inherits the permissions (capabilities) of the user, as well as kinit metadata
 6.  H2O is a Hadoop MapReduce job
 7.  H2O can only access the files in HDFS that the user has permission to access
-8.  (Enterprise only) Only the user that started the cluster is authenticated for access to the H2O cluster
-9.  (Enterprise only) The authenticated user can access the same data in H2O that he could access via HDFS
+8.  Only the user that started the cluster is authenticated for access to the H2O cluster
+9.  The authenticated user can access the same data in H2O that he could access via HDFS
 
 ### What is being secured today
 
@@ -84,7 +81,7 @@ Authentication | An HTTP Basic Auth username and password from the user client.
 
 ## File security in H2O
 
-H2O is a normal user program.  Nothing specifically needs to be done by the user to get file security for H2O.  Operating System and HDFS permissions "just work".  File security is provided by both H2O Open Source and Enterprise Editions.
+H2O is a normal user program.  Nothing specifically needs to be done by the user to get file security for H2O.  Operating System and HDFS permissions "just work".
 
 ### Standalone H2O
 
@@ -102,9 +99,9 @@ Similar to H2O on Hadoop, this configuration is H2O on Spark on YARN.  The YARN 
 
 ## Embedded web port (by default port 54321) security
 
-For the client side, connection options have been added.  These are present in both the Open Source and Enterprise versions of H2O (to make it easy to upgrade to the Enterprise version with purely a server-side upgrade).
+For the client side, connection options exist.
 
-For the server side, startup options have been added to the H2O Enterprise Edition to facilitate security.  These are detailed below.
+For the server side, startup options exist to facilitate security.  These are detailed below.
 
 ### HTTPS
 
@@ -136,13 +133,11 @@ Not yet implemented.  Please contact H2O for an update.
 A [Java Keystore](https://en.wikipedia.org/wiki/Keystore) must be provided on the server side to enable HTTPS.
 Keystores can be manipulated on the command line with the [keytool](http://docs.oracle.com/javase/6/docs/technotes/tools/solaris/keytool.html) command.
 
-H2O Enterprise Edition ships with a (compromised) keystore file (*h2o.jks*) for convenience that you can use to get started.  The JKS password for this keystore is "h2oh2o".
-
 The underlying HTTPS implementation is provided by Jetty 8 and the Java runtime.  (Note:  Jetty 8 was chosen to retain Java 6 compatibility.)
 
-##### Standalone H2O EE
+##### Standalone H2O
 
-The following new options are available in H2O Enterprise Edition:
+The following options are available:
 
 ```
 -jks <filename>
@@ -158,9 +153,9 @@ Example:
 java -jar h2o.jar -jks h2o.jks
 ```
 
-##### H2O EE on Hadoop
+##### H2O on Hadoop
 
-The following new options are available in H2O Enterprise Edition:
+The following options are available:
 
 ```
 -jks <filename>
@@ -176,9 +171,9 @@ Example:
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -jks h2o.jks -output hdfsOutputDirectory
 ```
 
-##### Sparkling Water EE
+##### Sparkling Water
 
-The following new Spark conf properties exist in H2O Enterprise Edition for Java Keystore configuration:
+The following Spark conf properties exist for Java Keystore configuration:
 
 Spark conf property | Description
 --- | ---
@@ -277,9 +272,9 @@ ldaploginmodule {
 
 See the [Jetty 8 LdapLoginModule documentation](http://wiki.eclipse.org/Jetty/Feature/JAAS#LdapLoginModule) for more information.
 
-##### Standalone H2O EE
+##### Standalone H2O
 
-The following new options are available in H2O Enterprise Edition:
+The following options are available:
 
 ```
 -ldap_login
@@ -300,9 +295,9 @@ java -jar h2o.jar -ldap_login -login_conf ldap.conf
 java -jar h2o.jar -ldap_login -login_conf ldap.conf -user_name myLDAPusername
 ```
 
-##### H2O EE on Hadoop
+##### H2O on Hadoop
 
-The following new options are available in H2O Enterprise Edition:
+The following options are available:
 
 ```
 -ldap_login
@@ -323,9 +318,9 @@ hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -user_name myLDAPusername -output hdfsOutputDirectory
 ```
 
-##### Sparkling Water EE
+##### Sparkling Water
 
-The following new Spark conf properties exist in H2O Enterprise Edition for Java keystore configuration:
+The following Spark conf properties exist for Java keystore configuration:
 
 Spark conf property | Description
 --- | ---
@@ -384,9 +379,9 @@ java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
 
 See the [Jetty 8 HashLoginService documentation](http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService) and [Jetty 8 Secure Password HOWTO](http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords) for more information.
 
-##### Standalone H2O EE
+##### Standalone H2O
 
-The following new options are available in H2O Enterprise Edition:
+The following options are available:
 
 ```
 -hash_login
@@ -402,9 +397,9 @@ Example:
 java -jar h2o.jar -hash_login -login_conf realm.properties
 ```
 
-##### H2O EE on Hadoop
+##### H2O on Hadoop
 
-The following new options are available in H2O Enterprise Edition:
+The following options are available:
 
 ```
 -hash_login
@@ -420,9 +415,9 @@ Example:
 hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -hash_login -login_conf realm.propertes -output hdfsOutputDirectory
 ```
 
-##### Sparkling Water EE
+##### Sparkling Water
 
-The following new Spark conf properties exist in H2O Enterprise Edition for hash login service configuration:
+The following Spark conf properties exist for hash login service configuration:
 
 Spark conf property | Description
 --- | ---

@@ -56,10 +56,11 @@ import water.util.PrettyPrint;
 * @version 1.0
 */
 final public class H2O {
+  public static final String DEFAULT_JKS_PASS = "h2oh2o";
+
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
-
 
   /**
    * Print help about command line arguments.
@@ -132,6 +133,23 @@ final public class H2O {
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
+            "\n" +
+            "Authentication options:\n" +
+            "\n" +
+            "    -jks <filename>\n" +
+            "          Java keystore file\n" +
+            "\n" +
+            "    -jks_pass <password>\n" +
+            "          (Default is '" + DEFAULT_JKS_PASS + "')\n" +
+            "\n" +
+            "    -hash_login\n" +
+            "          Use Jetty HashLoginService\n" +
+            "\n" +
+            "    -ldap_login\n" +
+            "          Use Jetty LdapLoginService\n" +
+            "\n" +
+            "    -login_conf <filename>\n" +
+            "          LoginService configuration file\n" +
             "\n" +
             "Cloud formation behavior:\n" +
             "\n" +
@@ -247,6 +265,24 @@ final public class H2O {
 
     /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
     public boolean ga_opt_out = false;
+
+    //-----------------------------------------------------------------------------------
+    // Authentication
+    //-----------------------------------------------------------------------------------
+    /** -jks is Java KeyStore file on local filesystem */
+    public String jks = null;
+
+    /** -jks_pass is Java KeyStore password; default is 'h2oh2o' */
+    public String jks_pass = DEFAULT_JKS_PASS;
+
+    /** -hash_login enables HashLoginService */
+    public boolean hash_login = false;
+
+    /** -ldap_login enables LdapLoginService */
+    public boolean ldap_login = false;
+
+    /** -login_conf is login configuration service file on local filesystem */
+    public String login_conf = null;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -450,9 +486,56 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
       }
+      else if (s.matches("jks")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.jks = args[i];
+      }
+      else if (s.matches("jks_pass")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.jks_pass = args[i];
+      }
+      else if (s.matches("hash_login")) {
+        ARGS.hash_login = true;
+      }
+      else if (s.matches("ldap_login")) {
+        ARGS.ldap_login = true;
+      }
+      else if (s.matches("login_conf")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.login_conf = args[i];
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
+    }
+  }
+
+  private static void validateArguments() {
+    if (ARGS.jks != null) {
+      if (! new File(ARGS.jks).exists()) {
+        parseFailed("File does not exist: " + ARGS.jks);
+      }
+    }
+
+    if (ARGS.login_conf != null) {
+      if (! new File(ARGS.login_conf).exists()) {
+        parseFailed("File does not exist: " + ARGS.login_conf);
+      }
+    }
+
+    if (ARGS.hash_login && ARGS.ldap_login) {
+      parseFailed("Can only specify one of -hash_login and -ldap_login");
+    }
+
+    if (ARGS.hash_login || ARGS.ldap_login) {
+      if (H2O.ARGS.login_conf == null) {
+        parseFailed("Must specify -login_conf argument");
+      }
+    }
+
+    // Validate extension arguments
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.validateArguments();
     }
   }
 
@@ -1653,10 +1736,8 @@ final public class H2O {
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
 
-    // Validate extension arguments
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
-      e.validateArguments();
-    }
+    // Validate arguments
+    validateArguments();
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");
