@@ -2,6 +2,7 @@ package water;
 
 import water.util.HttpResponseStatus;
 import water.util.IcedHashMap;
+import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,6 +47,7 @@ public class H2OError extends Iced {
   }
 
   public H2OError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap.IcedHashMapStringObject values, Exception e) {
+    Log.err(e);
     this._timestamp = timestamp;
     this._error_url = error_url;
     this._msg = msg;

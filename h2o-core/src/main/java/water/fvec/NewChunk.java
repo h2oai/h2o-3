@@ -533,9 +533,9 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slow( ) {
-    if( _sparseLen > FileVec.DFLT_CHUNK_SIZE )
-      throw new ArrayIndexOutOfBoundsException(_sparseLen);
-
+// PUBDEV-2639 - don't die for many rows, few columns -> can be long chunks
+//    if( _sparseLen > FileVec.DFLT_CHUNK_SIZE )
+//      throw new ArrayIndexOutOfBoundsException(_sparseLen);
     assert _ds==null;
     if(_ls != null && _ls.length > 0){
       if(_id == null) { // check for sparseness
@@ -1319,8 +1319,8 @@ public class NewChunk extends Chunk {
     while( _ss[_is[i] + len] != 0 ) len++;
     return bStr.set(_ss, _is[i], len);
   }
-  @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
+  @Override protected final void initFromBytes () {throw H2O.fail();}
+  public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
   @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
 

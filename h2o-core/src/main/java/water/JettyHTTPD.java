@@ -1,5 +1,8 @@
 package water;
 
+import org.eclipse.jetty.plus.jaas.JAASLoginService;
+import org.eclipse.jetty.security.*;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -8,6 +11,7 @@ import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 import java.io.EOFException;
@@ -17,10 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +31,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import water.UDPRebooted.ShutdownTsk;
 import water.api.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
@@ -122,7 +125,12 @@ public class JettyHTTPD {
    * @return URI scheme
    */
   public String getScheme() {
-    return "http";
+    if (H2O.ARGS.jks != null) {
+      return "https";
+    }
+    else {
+      return "http";
+    }
   }
 
   /**
@@ -163,7 +171,12 @@ public class JettyHTTPD {
    */
   public void start(String ip, int port) throws Exception {
     setup(ip, port);
-    startHttp();
+    if (H2O.ARGS.jks != null) {
+      startHttps();
+    }
+    else {
+      startHttp();
+    }
   }
 
   public void acceptRequests() {
@@ -172,7 +185,72 @@ public class JettyHTTPD {
 
   protected void createServer(Connector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
-    registerHandlers(_server);
+
+    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login) {
+      // REFER TO http://www.eclipse.org/jetty/documentation/9.1.4.v20140401/embedded-examples.html#embedded-secured-hello-handler
+      if (H2O.ARGS.login_conf == null) {
+        Log.err("Must specify -login_conf argument");
+        H2O.exit(1);
+      }
+
+      LoginService loginService;
+      if (H2O.ARGS.hash_login) {
+        Log.info("Configuring HashLoginService");
+        loginService = new HashLoginService("H2O", H2O.ARGS.login_conf);
+      }
+      else if (H2O.ARGS.ldap_login) {
+        Log.info("Configuring JAASLoginService (with LDAP)");
+        System.setProperty("java.security.auth.login.config", H2O.ARGS.login_conf);
+        loginService = new JAASLoginService("ldaploginmodule");
+      }
+      else {
+        throw H2O.fail();
+      }
+      IdentityService identityService = new DefaultIdentityService();
+      loginService.setIdentityService(identityService);
+      _server.addBean(loginService);
+
+      // Set a security handler as the first handler in the chain.
+      ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+
+      // Set up a constraint to authenticate all calls, and allow certain roles in.
+      Constraint constraint = new Constraint();
+      constraint.setName("auth");
+      constraint.setAuthenticate(true);
+
+      // Configure role stuff (to be disregarded).  We are ignoring roles, and only going off the user name.
+      //
+      //   Jetty 8 and prior.
+      //
+      //     Jetty 8 requires the security.setStrict(false) and ANY_ROLE.
+      security.setStrict(false);
+      constraint.setRoles(new String[]{Constraint.ANY_ROLE});
+
+      //   Jetty 9 and later.
+      //
+      //     Jetty 9 and later uses a different servlet spec, and ANY_AUTH gives the same behavior
+      //     for that API version as ANY_ROLE did previously.  This required some low-level debugging
+      //     to figure out, so I'm documenting it here.
+      //     Jetty 9 did not require security.setStrict(false).
+      //
+      // constraint.setRoles(new String[]{Constraint.ANY_AUTH});
+
+      ConstraintMapping mapping = new ConstraintMapping();
+      mapping.setPathSpec("/*"); // Lock down all API calls
+      mapping.setConstraint(constraint);
+      security.setConstraintMappings(Collections.singletonList(mapping));
+
+      // Authentication / Authorization
+      security.setAuthenticator(new BasicAuthenticator());
+      security.setLoginService(loginService);
+
+      // Pass-through to H2O if authenticated.
+      registerHandlers(security);
+      _server.setHandler(security);
+    } else {
+      registerHandlers(_server);
+    }
+
     _server.start();
   }
 
@@ -194,6 +272,27 @@ public class JettyHTTPD {
   }
 
   /**
+   * This implementation is based on http://blog.denevell.org/jetty-9-ssl-https.html
+   *
+   * @throws Exception
+   */
+  private void startHttps() throws Exception {
+    _server = new Server();
+
+    SslContextFactory sslContextFactory = new SslContextFactory(H2O.ARGS.jks);
+    sslContextFactory.setKeyStorePassword(H2O.ARGS.jks_pass);
+
+    SslSocketConnector httpsConnector = new SslSocketConnector(sslContextFactory);
+
+    if (getIp() != null) {
+      httpsConnector.setHost(getIp());
+    }
+    httpsConnector.setPort(getPort());
+
+    createServer(httpsConnector);
+  }
+
+  /**
    * Stop Jetty server after it has been started.
    * This is unlikely to ever be called by H2O until H2O supports graceful shutdown.
    *
@@ -211,6 +310,7 @@ public class JettyHTTPD {
   public void registerHandlers(HandlerWrapper s) {
     GateHandler gh = new GateHandler();
     AddCommonResponseHeadersHandler rhh = new AddCommonResponseHeadersHandler();
+    AuthenticationHandler authh = new AuthenticationHandler();
     ExtensionHandler1 eh1 = new ExtensionHandler1();
 
     ServletContextHandler context = new ServletContextHandler(
@@ -225,7 +325,7 @@ public class JettyHTTPD {
     context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset.bin");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
-    Handler[] handlers = {gh, rhh, eh1, context};
+    Handler[] handlers = {gh, rhh, authh, eh1, context};
     HandlerCollection hc = new HandlerCollection();
     hc.setHandlers(handlers);
     s.setHandler(hc);
@@ -274,6 +374,24 @@ public class JettyHTTPD {
                        HttpServletRequest request,
                        HttpServletResponse response) throws IOException, ServletException {
       setCommonResponseHttpHeaders(response);
+    }
+  }
+
+  public class AuthenticationHandler extends AbstractHandler {
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException, ServletException {
+      if (! H2O.ARGS.ldap_login) {
+        return;
+      }
+
+      String loginName = request.getUserPrincipal().getName();
+      if (! loginName.equals(H2O.ARGS.user_name)) {
+        Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + H2O.ARGS.user_name + ")");
+        sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
+        baseRequest.setHandled(true);
+      }
     }
   }
 

@@ -436,7 +436,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
         ArrayList<Integer> ignoredCols = new ArrayList<>();
-        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols):gram.cholesky(null));
+        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols, _parms._standardize):gram.cholesky(null));
         if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
           int [] collinear_cols = new int[ignoredCols.size()];
           for(int i = 0; i < collinear_cols.length; ++i)
@@ -956,14 +956,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(beta,gginfo);
       if(!_parms._lambda_search)
         updateProgress();
-      return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
+      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !_state.converged();
     }
 
     public boolean progress(double [] beta, double likelihood) {
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
         updateProgress();
-      return _job.isRunning() && _state._iter++ < _parms._max_iterations && !_state.converged();
+      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !_state.converged();
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;

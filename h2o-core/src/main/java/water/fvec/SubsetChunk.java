@@ -24,6 +24,6 @@ public class SubsetChunk extends Chunk {
   @Override boolean set_impl(int idx, float f)  { return false; }
   @Override boolean setNA_impl(int idx)         { return false; }
   @Override public NewChunk inflate_impl(NewChunk  nc ) { throw water.H2O.fail(); }
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
-  @Override public SubsetChunk read_impl(AutoBuffer bb) { throw water.H2O.fail(); }
+  public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw water.H2O.fail(); }
+  @Override protected final void initFromBytes () { throw water.H2O.fail(); }
 }

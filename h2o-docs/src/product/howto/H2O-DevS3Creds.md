@@ -1,8 +1,4 @@
-# ... On EC2 and S3 
-
-**Note**: If you would like to try out H2O on an EC2 cluster, <a href="http://play.h2o.ai/login" target="_blank">play.h2o.ai</a> is the easiest way to get started. H2O Play provides access to a temporary cluster managed by H2O. 
-
-If you would still like to set up your own EC2 cluster, follow the instructions below. 
+# On EC2 and S3 
 
 ## On EC2
 

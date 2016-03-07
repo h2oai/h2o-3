@@ -23,15 +23,17 @@ check.deeplearning_autoencoder <- function() {
 
      # first part of the data, without labels for unsupervised learning (DL auto-encoder)
      train_unsupervised <- train_hex[sid>=0.5,]
-     summary(train_unsupervised)
+     #summary(train_unsupervised)
 
      # second part of the data, with labels for supervised learning (drf)
      train_supervised <- train_hex[sid<0.5,]
 
      # train autoencoder on train_unsupervised
      ae_model <- h2o.deeplearning(x=predictors,
+                                  model_id="ae_model",
                                   training_frame=train_unsupervised[-resp],
                                   activation="Tanh",
+                                  ignore_const_cols=F,
                                   autoencoder=T,
                                   hidden=c(nfeatures),
                                   epochs=1,
@@ -56,9 +58,32 @@ check.deeplearning_autoencoder <- function() {
      print(cm)
 
      # compare to pyunit_autoencoderDeepLearning_large.py
-     expect_equal(cm$Error[11], 0.0880, tolerance = 0.001, scale = 1) # absolute difference: scale = 1
+     expect_equal(cm$Error[11], 0.088, tolerance = 0.01, scale = 1) # absolute difference: scale = 1
 
+
+     ## Another usecase: Use pretrained unsupervised autoencoder model to initialize a supervised Deep Learning model
+     pretrained_model <- h2o.deeplearning(x=predictors, 
+                                          y=resp, 
+                                          training_frame=train_supervised,
+                                          validation_frame=test_hex,
+                                          ignore_const_cols=F,
+                                          hidden=(nfeatures), 
+                                          epochs=1, 
+                                          reproducible=T,
+                                          seed=1234,
+                                          pretrained_autoencoder="ae_model")
+     print(h2o.logloss(pretrained_model,valid=T))
      
+     model_from_scratch <- h2o.deeplearning(x=predictors, 
+                                          y=resp, 
+                                          training_frame=train_supervised,
+                                          validation_frame=test_hex,
+                                          ignore_const_cols=F,
+                                          hidden=(nfeatures), 
+                                          epochs=1, 
+                                          reproducible=T,
+                                          seed=1234)
+     print(h2o.logloss(model_from_scratch,valid=T))
 }
 
 doTest("Deep Learning AutoEncoder MNIST", check.deeplearning_autoencoder)

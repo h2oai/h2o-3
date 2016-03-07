@@ -43,12 +43,10 @@ public class C2Chunk extends Chunk {
     }
     return nc;
   }
-  @Override public C2Chunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>1);
     assert _mem.length == _len <<1;
-    return this;
   }
   @Override
   public boolean hasFloat() {return false;}

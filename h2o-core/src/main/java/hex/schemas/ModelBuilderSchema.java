@@ -124,9 +124,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   // TODO: Drop this writeJSON_impl and use the default one.
   // TODO: Pull out the help text & metadata into the ParameterSchema for the front-end to display.
-  @Override
-  public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    ab.put1(','); // the schema and version fields get written before we get called
+  public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     ab.putJSON("job", job);
     ab.put1(',');
     ab.putJSONStr("algo", algo);

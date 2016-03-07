@@ -111,13 +111,13 @@ public class WordCountTest extends TestUtil {
         throw H2O.unimpl();
     }
   
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    public final AutoBuffer write_impl(AutoBuffer ab) {
       if( _words != null ) 
         for( VStr key : WORDS.keySet() )
           ab.put2((char)key._len).putA1(key._cs,key._off,key._off+key._len).put4(key._cnt);
       return ab.put2((char)65535); // End of map marker
     }
-    @Override public WordCount read_impl(AutoBuffer ab) {
+    public final WordCount read_impl(AutoBuffer ab) {
       final long start = System.currentTimeMillis();
       int cnt=0;
       _words = WORDS;

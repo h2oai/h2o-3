@@ -23,7 +23,7 @@ test.summary.factor <- function() {
   
   Log.info("Compute and compare R and H2O Summaries...\n")
   sumR <- summary(airlines.dat)
-  sumH2O <- summary(airlines.hex)
+  sumH2O <- summary(airlines.hex, exact_quantiles=TRUE)
 #   Log.info("R Summary:"); print(sumR)
 #   Log.info("H2O Summary:"); print(sumH2O)
 #   checkSummary(sumH2O, sumR)
