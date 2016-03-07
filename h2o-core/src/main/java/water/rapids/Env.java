@@ -132,14 +132,14 @@ public class Env extends Iced {
     return s+"}";
   }
 
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+  public AutoBuffer write_impl(AutoBuffer ab) {
     //ab.put4(_globals.size());   for( Vec vec : _globals ) ab.put(vec._key);
     //ab.put4(sp());              for( Frame fr : _stk ) ab.put(fr);
     //return ab;
     throw water.H2O.unimpl();
   }
 
-  @Override public Env read_impl(AutoBuffer ab) {
+  public Env read_impl(AutoBuffer ab) {
     //_globals = new HashSet<>();
     //int len=ab.get4();
     //for( int i=0; i<len; i++ )

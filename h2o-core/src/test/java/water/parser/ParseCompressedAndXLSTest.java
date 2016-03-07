@@ -10,7 +10,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 
 public class ParseCompressedAndXLSTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
 
   @Test public void testIris(){
     Frame k1 = null,k2 = null,k3 = null, k4 = null;
@@ -65,7 +65,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
         assertTrue("Should have thrown ParseException since file isn't XLS file",false); // fail - should've thrown
         k1.delete();
       } catch (Throwable t) {
-        assertTrue(t.getMessage().contains("H2OParseException"));
+        assertTrue(t instanceof H2OParseException || t.getCause() instanceof H2OParseException);
       }
     } finally {
       if( k1 != null ) k1.delete();

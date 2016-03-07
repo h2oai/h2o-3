@@ -49,11 +49,9 @@ public class C8DChunk extends Chunk {
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }
-  @Override public C8DChunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);
     assert _mem.length == _len <<3;
-    return this;
   }
 }

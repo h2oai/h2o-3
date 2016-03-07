@@ -39,11 +39,9 @@ public class C1Chunk extends Chunk {
     }
     return nc;
   }
-  @Override final public C1Chunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public void initFromBytes(){
     _start = -1;  _cidx = -1;
     set_len(_mem.length);
-    return this;
   }
   @Override
   public boolean hasFloat() {return false;}

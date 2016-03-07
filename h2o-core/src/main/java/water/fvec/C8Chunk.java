@@ -30,12 +30,10 @@ public class C8Chunk extends Chunk {
       else nc.addNum(at8(i),0);
     return nc;
   }
-  @Override public C8Chunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);
     assert _mem.length == _len <<3;
-    return this;
   }
   @Override
   public boolean hasFloat() {return false;}

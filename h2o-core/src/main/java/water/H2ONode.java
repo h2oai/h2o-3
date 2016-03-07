@@ -26,11 +26,11 @@ import water.util.UnsafeUtils;
  */
 
 public final class H2ONode extends Iced<H2ONode> implements Comparable {
-  short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
-  boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
-  public long _last_heard_from; // Time in msec since we last heard from this Node
-  public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
-  public int _tcp_readers;               // Count of started TCP reader threads
+  transient short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
+  transient boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
+  transient public long _last_heard_from; // Time in msec since we last heard from this Node
+  transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
+  transient public int _tcp_readers;               // Count of started TCP reader threads
 
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
@@ -197,8 +197,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // A queue of available TCP sockets
   // re-usable TCP socket opened to this node, or null.
   // This is essentially a BlockingQueue/Stack that allows null.
-  private SocketChannel _socks[] = new SocketChannel[2];
-  private int _socksAvail=_socks.length;
+  private transient SocketChannel _socks[] = new SocketChannel[2];
+  private transient int _socksAvail=_socks.length;
   // Count of concurrent TCP requests both incoming and outgoing
   static final AtomicInteger TCPS = new AtomicInteger(0);
 
@@ -249,7 +249,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // is specifically not any of the above channels.  This channel is limited to
   // messages which are presented in their entirety (not streamed) thus never
   // need another (nested) TCP channel.
-  private UDP_TCP_SendThread _sendThread = null; // set notnull if properly interned, and done before first sendMessage
+  private transient UDP_TCP_SendThread _sendThread = null; // set notnull if properly interned, and done before first sendMessage
   public void sendMessage( ByteBuffer bb, byte msg_priority ) { _sendThread.sendMessage(bb,msg_priority); }
 
   // Private thread serving (actually ships the bytes over) small msg Q.
@@ -539,8 +539,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   // Custom Serialization Class: H2OKey need to be built.
-  @Override public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
-  @Override public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
-  @Override public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
-  @Override public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
+  public final AutoBuffer write_impl(AutoBuffer ab) { return _key.write(ab); }
+  public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
+  public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
+  public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
 }

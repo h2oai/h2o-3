@@ -26,7 +26,8 @@ public class MRThrow extends TestUtil {
         try {
           bh.doAll(vec); // invoke should throw DistributedException wrapped up in RunTimeException
         } catch( RuntimeException e ) {
-          assertTrue((ex=e).getMessage().contains("test"));
+          ex = e;
+          assertTrue(e.getMessage().contains("test") || e.getCause().getMessage().contains("test"));
         } catch( Throwable e2 ) {
           (ex=e2).printStackTrace();
           fail("Expected RuntimeException, got " + ex.toString());
@@ -46,22 +47,20 @@ public class MRThrow extends TestUtil {
         final ByteHistoThrow bh = new ByteHistoThrow(H2O.CLOUD._memary[i]);
         final boolean [] ok = new boolean[]{false};
         try {
-          bh.setCompleter(new CountedCompleter() {
-              @Override public void compute() { tryComplete(); }
-              @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
-                ok[0] = ex.getMessage().contains("test");
-                return super.onExceptionalCompletion(ex,cc);
-              }
-          });
+          CountedCompleter cc = new CountedCompleter() {
+            @Override public void compute() { tryComplete(); }
+            @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter cc){
+              ok[0] = ex.getMessage().contains("test");
+              return super.onExceptionalCompletion(ex,cc);
+            }
+          };
+          bh.setCompleter(cc);
           bh.dfork(vec);
           // If the chosen file is too small for the cluster, some nodes will have *no* work
           // and so no exception is thrown.
-          int MAX_CNT=50;
-          while( !ok[0] && MAX_CNT-- > 0 ) {
-            Thread.sleep(100);
-          }
-        } catch( DException.DistributedException e ) {
-          assertTrue(e.getMessage().contains("test"));
+          cc.join();
+        } catch( RuntimeException re ) {
+          assertTrue(re.getMessage().contains("test") || re.getCause().getMessage().contains("test"));
 //        } catch( ExecutionException e ) { // caught on self
 //          assertTrue(e.getMessage().contains("test"));
         } catch( java.lang.AssertionError ae ) {

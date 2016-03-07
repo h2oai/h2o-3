@@ -154,8 +154,7 @@ public class CXIChunk extends Chunk {
     return y;
   }
 
-  @Override public CXIChunk read_impl(AutoBuffer bb) {
-    _mem   = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(UnsafeUtils.get4(_mem,0));
     _ridsz = _mem[4];
@@ -169,7 +168,6 @@ public class CXIChunk extends Chunk {
     _valsz_log = log;
     _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: meme.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
-    return this;
   }
 
   public abstract  class Value {

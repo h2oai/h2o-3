@@ -190,9 +190,7 @@ public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> e
     return new TwoDimTable(tableHeader, tableDescription, rowHeaders, colHeaders, colTypes, colFormats, colHeaderForRowHeaders, strCellValues, dblCellValues);
   }
 
-  @Override
-  public AutoBuffer writeJSON_impl(AutoBuffer ab) {
-    ab.put1(',');
+  public final AutoBuffer writeJSON_impl(AutoBuffer ab) {
     ab.putJSONStr("name",name);
     ab.put1(',');
     ab.putJSONStr("description",description);

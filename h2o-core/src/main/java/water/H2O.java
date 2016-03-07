@@ -1107,6 +1107,14 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
+
+
+    @Override
+    public byte [] asBytes(){return new AutoBuffer().put(this).buf();}
+
+    @Override
+    public T reloadFromBytes(byte [] ary){ return read(new AutoBuffer(ary));}
+
     private /*final*/ byte _priority;
     // Without a completer, we expect this task will be blocked on - so the
     // blocking thread is not available in the current thread pool, so the
@@ -1178,17 +1186,6 @@ final public class H2O {
     /** Override to specify actual work to do */
     public abstract void compute2();
 
-    /** Exceptional completion path; mostly does printing if the exception was
-     *  not handled earlier in the stack.  */
-    @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if(!Job.isCancelledException(ex)) {
-        if (this.getCompleter() == null) { // nobody else to handle this exception, so print it out
-          System.err.println("onExCompletion for " + this);
-          ex.printStackTrace();
-        }
-      }
-      return true;
-    }
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
@@ -1208,11 +1205,16 @@ final public class H2O {
     }
 
     // The serialization flavor / delegate.  Lazily set on first use.
-    private transient short _ice_id;
+    private short _ice_id;
 
     /** Find the serialization delegate for a subclass of this class */
     protected Icer<T> icer() {
       int id = _ice_id;
+      if(id != 0) {
+        int tyid;
+        if (id != 0)
+          assert id == (tyid = TypeMap.onIce(this)) : "incorrectly cashed id " + id + ", typemap has " + tyid + ", type = " + getClass().getName();
+      }
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
     }
     @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(T)this); }
@@ -1220,12 +1222,6 @@ final public class H2O {
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-              final        AutoBuffer write_impl3( AutoBuffer ab) { return ab.put1(_priority); }
-    @Override       public AutoBuffer write_impl ( AutoBuffer ab ) { return write_impl3(ab); }
-              final public T read_impl3( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
-    @Override       public T read_impl ( AutoBuffer ab ) { return read_impl3(ab); }
-    @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
-    @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }
 
 
