@@ -219,7 +219,18 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       DeepLearningModel cp = null;
       if (_parms._checkpoint == null) {
         cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
-        cp.model_info().initializeMembers();
+        if (_parms._pretrained_autoencoder != null) {
+          final DeepLearningModel pretrained = DKV.getGet(_parms._pretrained_autoencoder);
+          if (pretrained == null)
+            throw new H2OIllegalArgumentException("The pretrained model '" + _parms._pretrained_autoencoder + "' cannot be found.");
+          if (_parms._autoencoder || !pretrained._parms._autoencoder)
+            throw new H2OIllegalArgumentException("The pretrained model must be unsupervised (an autoencoder), and the model to be trained must be supervised.");
+          Log.info("Loading model parameters of input and hidden layers from the pretrained autoencoder model.");
+          cp.model_info().initializeFromPretrainedModel(pretrained.model_info());
+        } else {
+          Log.info("Creating random initial model state.");
+          cp.model_info().initializeMembers();
+        }
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
         if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");

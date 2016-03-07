@@ -1,0 +1,355 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>h2o.estimators.kmeans &mdash; H2O  documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,300,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="H2O  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../../../index.html" class="fa fa-home"> H2O</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">The H2O Python Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#what-is-h2o">What is H2O?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#h2o-cluster-inspection">H2O Cluster Inspection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#objects-in-this-module">Objects In This Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#example-of-h2o-on-hadoop">Example of H2O on Hadoop</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../h2o.html">H2O Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../h2o.html#module-h2o.h2o"><code class="docutils literal"><span class="pre">h2o</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data.html">Data In H2O</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../data.html#loading-data-from-a-csv-file">Loading Data From A CSV File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data.html#loading-data-from-a-python-object">Loading Data From A Python Object</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../frame.html">Data Manipulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../frame.html#h2oframe"><code class="docutils literal"><span class="pre">H2OFrame</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../frame.html#groupby"><code class="docutils literal"><span class="pre">GroupBy</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modeling.html">Modeling In H2O</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2oestimator"><code class="docutils literal"><span class="pre">H2OEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2odeeplearningestimator"><code class="docutils literal"><span class="pre">H2ODeepLearningEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2oautoencoderestimator"><code class="docutils literal"><span class="pre">H2OAutoEncoderEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2orandomforestestimator"><code class="docutils literal"><span class="pre">H2ORandomForestEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogradientboostingestimator"><code class="docutils literal"><span class="pre">H2OGradientBoostingEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogeneralizedlinearestimator"><code class="docutils literal"><span class="pre">H2OGeneralizedLinearEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogeneralizedlowrankestimator"><code class="docutils literal"><span class="pre">H2OGeneralizedLowRankEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2okmeansestimator"><code class="docutils literal"><span class="pre">H2OKMeansEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2onaivebayesestimator"><code class="docutils literal"><span class="pre">H2ONaiveBayesEstimator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_categories.html">Model Categories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.model_base"><code class="docutils literal"><span class="pre">ModelBase</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.binomial"><code class="docutils literal"><span class="pre">Binomial</span> <span class="pre">Classification</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.multinomial"><code class="docutils literal"><span class="pre">Multinomial</span> <span class="pre">Classification</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.regression"><code class="docutils literal"><span class="pre">Regression</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.clustering"><code class="docutils literal"><span class="pre">Clustering</span> <span class="pre">Methods</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.autoencoder"><code class="docutils literal"><span class="pre">AutoEncoders</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metrics.html">Metrics in H2O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../assembly.html">H2OAssembly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../other.html">REST Interface</a></li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">H2O</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>h2o.estimators.kmeans</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <h1>Source code for h2o.estimators.kmeans</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">.estimator_base</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="H2OKMeansEstimator"><a class="viewcode-back" href="../../../modeling.html#h2o.estimators.kmeans.H2OKMeansEstimator">[docs]</a><span class="k">class</span> <span class="nc">H2OKMeansEstimator</span><span class="p">(</span><span class="n">H2OEstimator</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs k-means clustering on an H2O dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">      model_id : str, optional</span>
+<span class="sd">        The unique id assigned to the resulting model. If none is given, an id will</span>
+<span class="sd">        automatically be generated.</span>
+<span class="sd">      k : int</span>
+<span class="sd">        The number of clusters. Must be between 1 and 1e7 inclusive. k may be omitted</span>
+<span class="sd">        if the user specifies the initial centers in the init parameter. If k is not</span>
+<span class="sd">        omitted, in this case, then it should be equal to the number of user-specified</span>
+<span class="sd">        centers.</span>
+<span class="sd">      max_iterations : int</span>
+<span class="sd">        The maximum number of iterations allowed. Must be between 0 and 1e6 inclusive.</span>
+<span class="sd">      standardize : bool</span>
+<span class="sd">        Indicates whether the data should be standardized before running k-means.</span>
+<span class="sd">      init : str</span>
+<span class="sd">        A character string that selects the initial set of k cluster centers. Possible</span>
+<span class="sd">        values are</span>
+<span class="sd">            &quot;Random&quot;: for random initialization,</span>
+<span class="sd">            &quot;PlusPlus&quot;: for k-means plus initialization, or</span>
+<span class="sd">            &quot;Furthest&quot;: for initialization at the furthest point from each successive</span>
+<span class="sd">                        center.</span>
+
+<span class="sd">        Additionally, the user may specify a the initial centers as a matrix,</span>
+<span class="sd">        data.frame, H2OFrame, or list of vectors. For matrices, data.frames,</span>
+<span class="sd">        and H2OFrames, each row of the respective structure is an initial center. For</span>
+<span class="sd">        lists of vectors, each vector is an initial center.</span>
+<span class="sd">      seed : int, optional</span>
+<span class="sd">        Random seed used to initialize the cluster centroids.</span>
+<span class="sd">      nfolds : int, optional</span>
+<span class="sd">        Number of folds for cross-validation. If nfolds &gt;= 2, then validation must</span>
+<span class="sd">        remain empty.</span>
+<span class="sd">      fold_assignment : str</span>
+<span class="sd">        Cross-validation fold assignment scheme, if fold_column is not specified</span>
+<span class="sd">        Must be &quot;AUTO&quot;, &quot;Random&quot; or &quot;Modulo&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">      An instance of H2OClusteringModel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">standardize</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">init</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">nfolds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">fold_assignment</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">user_points</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">ignored_columns</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">score_each_iteration</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">keep_cross_validation_predictions</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">ignore_const_cols</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">checkpoint</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">H2OKMeansEstimator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">!=</span><span class="s">&quot;self&quot;</span><span class="p">}</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">k</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;k&quot;</span><span class="p">]</span>
+
+  <span class="nd">@k.setter</span>
+  <span class="k">def</span> <span class="nf">k</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;k&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">max_iterations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_iterations&quot;</span><span class="p">]</span>
+
+  <span class="nd">@max_iterations.setter</span>
+  <span class="k">def</span> <span class="nf">max_iterations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">standardize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;standardize&quot;</span><span class="p">]</span>
+
+  <span class="nd">@standardize.setter</span>
+  <span class="k">def</span> <span class="nf">standardize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;standardize&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;init&quot;</span><span class="p">]</span>
+
+  <span class="nd">@init.setter</span>
+  <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;init&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;seed&quot;</span><span class="p">]</span>
+
+  <span class="nd">@seed.setter</span>
+  <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">nfolds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nfolds&quot;</span><span class="p">]</span>
+
+  <span class="nd">@nfolds.setter</span>
+  <span class="k">def</span> <span class="nf">nfolds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nfolds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">fold_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;fold_assignment&quot;</span><span class="p">]</span>
+
+  <span class="nd">@fold_assignment.setter</span>
+  <span class="k">def</span> <span class="nf">fold_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;fold_assignment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">user_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;user_points&quot;</span><span class="p">]</span>
+
+  <span class="nd">@user_points.setter</span>
+  <span class="k">def</span> <span class="nf">user_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;user_points&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">ignored_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ignored_columns&quot;</span><span class="p">]</span>
+
+  <span class="nd">@ignored_columns.setter</span>
+  <span class="k">def</span> <span class="nf">ignored_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ignored_columns&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">score_each_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;score_each_iteration&quot;</span><span class="p">]</span>
+
+  <span class="nd">@score_each_iteration.setter</span>
+  <span class="k">def</span> <span class="nf">score_each_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;score_each_iteration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">keep_cross_validation_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;keep_cross_validation_predictions&quot;</span><span class="p">]</span>
+
+  <span class="nd">@keep_cross_validation_predictions.setter</span>
+  <span class="k">def</span> <span class="nf">keep_cross_validation_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;keep_cross_validation_predictions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">ignore_const_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ignore_const_cols&quot;</span><span class="p">]</span>
+
+  <span class="nd">@ignore_const_cols.setter</span>
+  <span class="k">def</span> <span class="nf">ignore_const_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ignore_const_cols&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;checkpoint&quot;</span><span class="p">]</span>
+
+  <span class="nd">@checkpoint.setter</span>
+  <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;checkpoint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, H2O.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

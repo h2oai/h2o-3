@@ -1,0 +1,469 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>h2o.estimators.glrm &mdash; H2O  documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,300,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="H2O  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../../../index.html" class="fa fa-home"> H2O</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">The H2O Python Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#what-is-h2o">What is H2O?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#h2o-cluster-inspection">H2O Cluster Inspection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#objects-in-this-module">Objects In This Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#example-of-h2o-on-hadoop">Example of H2O on Hadoop</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../h2o.html">H2O Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../h2o.html#module-h2o.h2o"><code class="docutils literal"><span class="pre">h2o</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data.html">Data In H2O</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../data.html#loading-data-from-a-csv-file">Loading Data From A CSV File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data.html#loading-data-from-a-python-object">Loading Data From A Python Object</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../frame.html">Data Manipulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../frame.html#h2oframe"><code class="docutils literal"><span class="pre">H2OFrame</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../frame.html#groupby"><code class="docutils literal"><span class="pre">GroupBy</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modeling.html">Modeling In H2O</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2oestimator"><code class="docutils literal"><span class="pre">H2OEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2odeeplearningestimator"><code class="docutils literal"><span class="pre">H2ODeepLearningEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2oautoencoderestimator"><code class="docutils literal"><span class="pre">H2OAutoEncoderEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2orandomforestestimator"><code class="docutils literal"><span class="pre">H2ORandomForestEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogradientboostingestimator"><code class="docutils literal"><span class="pre">H2OGradientBoostingEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogeneralizedlinearestimator"><code class="docutils literal"><span class="pre">H2OGeneralizedLinearEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogeneralizedlowrankestimator"><code class="docutils literal"><span class="pre">H2OGeneralizedLowRankEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2okmeansestimator"><code class="docutils literal"><span class="pre">H2OKMeansEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2onaivebayesestimator"><code class="docutils literal"><span class="pre">H2ONaiveBayesEstimator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_categories.html">Model Categories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.model_base"><code class="docutils literal"><span class="pre">ModelBase</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.binomial"><code class="docutils literal"><span class="pre">Binomial</span> <span class="pre">Classification</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.multinomial"><code class="docutils literal"><span class="pre">Multinomial</span> <span class="pre">Classification</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.regression"><code class="docutils literal"><span class="pre">Regression</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.clustering"><code class="docutils literal"><span class="pre">Clustering</span> <span class="pre">Methods</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.autoencoder"><code class="docutils literal"><span class="pre">AutoEncoders</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metrics.html">Metrics in H2O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../assembly.html">H2OAssembly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../other.html">REST Interface</a></li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">H2O</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>h2o.estimators.glrm</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <h1>Source code for h2o.estimators.glrm</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">.estimator_base</span> <span class="kn">import</span> <span class="n">H2OEstimator</span>
+
+
+<div class="viewcode-block" id="H2OGeneralizedLowRankEstimator"><a class="viewcode-back" href="../../../modeling.html#h2o.estimators.glrm.H2OGeneralizedLowRankEstimator">[docs]</a><span class="k">class</span> <span class="nc">H2OGeneralizedLowRankEstimator</span><span class="p">(</span><span class="n">H2OEstimator</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Builds a generalized low rank model of a H2O dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">      k : int</span>
+<span class="sd">        The rank of the resulting decomposition. This must be between 1 and the number of</span>
+<span class="sd">        columns in the training frame inclusive.</span>
+<span class="sd">      max_iterations : int</span>
+<span class="sd">        The maximum number of iterations to run the optimization loop. Each iteration</span>
+<span class="sd">        consists of an update of the X matrix, followed by an update of the Y matrix.</span>
+<span class="sd">      transform : str</span>
+<span class="sd">        A character string that indicates how the training data should be transformed</span>
+<span class="sd">        before running GLRM. Possible values are</span>
+<span class="sd">            &quot;NONE&quot;: for no transformation,</span>
+<span class="sd">            &quot;DEMEAN&quot;: for subtracting the mean of each column,</span>
+<span class="sd">            &quot;DESCALE&quot;: for dividing by the standard deviation of each column,</span>
+<span class="sd">            &quot;STANDARDIZE&quot;: for demeaning and descaling, and</span>
+<span class="sd">            &quot;NORMALIZE&quot;: for demeaning and dividing each column by its range (max - min).</span>
+<span class="sd">      seed : int, optional</span>
+<span class="sd">        Random seed used to initialize the X and Y matrices.</span>
+<span class="sd">      ignore_const_cols : bool, optional</span>
+<span class="sd">        A logical value indicating whether to ignore constant columns in the training frame.</span>
+<span class="sd">        A column is constant if all of its non-missing values are the same value.</span>
+<span class="sd">      loss : str</span>
+<span class="sd">        A character string indicating the default loss function for numeric columns.</span>
+<span class="sd">        Possible values are</span>
+<span class="sd">            &quot;Quadratic&quot; (default),</span>
+<span class="sd">            &quot;Absolute&quot;,</span>
+<span class="sd">            &quot;Huber&quot;,</span>
+<span class="sd">            &quot;Poisson&quot;,</span>
+<span class="sd">            &quot;Hinge&quot;, and</span>
+<span class="sd">            &quot;Logistic&quot;.</span>
+<span class="sd">      multi_loss : str</span>
+<span class="sd">        A character string indicating the default loss function for enum columns. Possible</span>
+<span class="sd">        values are &quot;Categorical&quot; and &quot;Ordinal&quot;.</span>
+<span class="sd">      loss_by_col : str, optional</span>
+<span class="sd">        A list of strings indicating the loss function for specific columns by</span>
+<span class="sd">        corresponding index in loss_by_col_idx. Will override loss for numeric columns</span>
+<span class="sd">        and multi_loss for enum columns.</span>
+<span class="sd">      loss_by_col_idx : str, optional</span>
+<span class="sd">        A list of column indices to which the corresponding loss functions in loss_by_col</span>
+<span class="sd">        are assigned. Must be zero indexed.</span>
+<span class="sd">      regularization_x : str</span>
+<span class="sd">        A character string indicating the regularization function for the X matrix.</span>
+<span class="sd">        Possible values are</span>
+<span class="sd">            &quot;None&quot; (default),</span>
+<span class="sd">            &quot;Quadratic&quot;,</span>
+<span class="sd">            &quot;L2&quot;,</span>
+<span class="sd">            &quot;L1&quot;,</span>
+<span class="sd">            &quot;NonNegative&quot;,</span>
+<span class="sd">            &quot;OneSparse&quot;,</span>
+<span class="sd">            &quot;UnitOneSparse&quot;, and</span>
+<span class="sd">            &quot;Simplex&quot;.</span>
+<span class="sd">      regularization_y : str</span>
+<span class="sd">        A character string indicating the regularization function for the Y matrix.</span>
+<span class="sd">        Possible values are</span>
+<span class="sd">            &quot;None&quot; (default),</span>
+<span class="sd">            &quot;Quadratic&quot;,</span>
+<span class="sd">            &quot;L2&quot;,</span>
+<span class="sd">            &quot;L1&quot;,</span>
+<span class="sd">            &quot;NonNegative&quot;,</span>
+<span class="sd">            &quot;OneSparse&quot;,</span>
+<span class="sd">            &quot;UnitOneSparse&quot;, and</span>
+<span class="sd">            &quot;Simplex&quot;.</span>
+<span class="sd">      gamma_x : float</span>
+<span class="sd">        The weight on the X matrix regularization term.</span>
+<span class="sd">      gamma_y : float</span>
+<span class="sd">        The weight on the Y matrix regularization term.</span>
+<span class="sd">      init_step_size : float</span>
+<span class="sd">        Initial step size. Divided by number of columns in the training frame when</span>
+<span class="sd">        calculating the proximal gradient update. The algorithm begins at init_step_size</span>
+<span class="sd">        and decreases the step size at each iteration until a termination condition is</span>
+<span class="sd">        reached.</span>
+<span class="sd">      min_step_size : float</span>
+<span class="sd">        Minimum step size upon which the algorithm is terminated.</span>
+<span class="sd">      init : str</span>
+<span class="sd">        A character string indicating how to select the initial X and Y matrices.</span>
+<span class="sd">        Possible values are</span>
+<span class="sd">            &quot;Random&quot;: for initialization to a random array from the standard normal</span>
+<span class="sd">                      distribution,</span>
+<span class="sd">            &quot;PlusPlus&quot;: for initialization using the clusters from k-means++</span>
+<span class="sd">                        initialization,</span>
+<span class="sd">            &quot;SVD&quot;: for initialization using the first k (approximate) right singular</span>
+<span class="sd">                   vectors, and</span>
+<span class="sd">            &quot;User&quot;: user-specified initial X and Y frames</span>
+<span class="sd">                    (must set user_y and user_x arguments).</span>
+<span class="sd">      svd_method : str</span>
+<span class="sd">        A character string that indicates how SVD should be calculated during</span>
+<span class="sd">        initialization. Possible values are</span>
+<span class="sd">            &quot;GramSVD&quot;: distributed computation of the Gram matrix followed by a local</span>
+<span class="sd">                      SVD using the JAMA package,</span>
+<span class="sd">            &quot;Power&quot;: computation of the SVD using the power iteration method,</span>
+<span class="sd">            &quot;Randomized&quot;: approximate SVD by projecting onto a random subspace.</span>
+<span class="sd">      user_x : H2OFrame, optional</span>
+<span class="sd">        An H2OFrame object specifying the initial X matrix. Only used when init = &quot;User&quot;.</span>
+<span class="sd">      user_y : H2OFrame, optional</span>
+<span class="sd">        An H2OFrame object specifying the initial Y matrix. Only used when init = &quot;User&quot;.</span>
+<span class="sd">      recover_svd : bool</span>
+<span class="sd">        A logical value indicating whether the singular values and eigenvectors should be</span>
+<span class="sd">        recovered during post-processing of the generalized low rank decomposition.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">      A new H2OGeneralizedLowRankEstimator instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">ignore_const_cols</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">loss</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">multi_loss</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">loss_by_col</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">loss_by_col_idx</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">regularization_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">regularization_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">gamma_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">gamma_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">init_step_size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">min_step_size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">init</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">svd_method</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">user_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">user_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">recover_svd</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">H2OGeneralizedLowRankEstimator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">!=</span><span class="s">&quot;self&quot;</span><span class="p">}</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&#39;_rest_version&#39;</span><span class="p">]</span><span class="o">=</span><span class="mi">3</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">max_iterations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_iterations&quot;</span><span class="p">]</span>
+
+  <span class="nd">@max_iterations.setter</span>
+  <span class="k">def</span> <span class="nf">max_iterations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_iterations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;transform&quot;</span><span class="p">]</span>
+
+  <span class="nd">@transform.setter</span>
+  <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;transform&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;seed&quot;</span><span class="p">]</span>
+
+  <span class="nd">@seed.setter</span>
+  <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">ignore_const_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ignore_const_cols&quot;</span><span class="p">]</span>
+
+  <span class="nd">@ignore_const_cols.setter</span>
+  <span class="k">def</span> <span class="nf">ignore_const_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ignore_const_cols&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">loss</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;loss&quot;</span><span class="p">]</span>
+
+  <span class="nd">@loss.setter</span>
+  <span class="k">def</span> <span class="nf">loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">multi_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;multi_loss&quot;</span><span class="p">]</span>
+
+  <span class="nd">@multi_loss.setter</span>
+  <span class="k">def</span> <span class="nf">multi_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;multi_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">loss_by_col</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;loss_by_col&quot;</span><span class="p">]</span>
+
+  <span class="nd">@loss_by_col.setter</span>
+  <span class="k">def</span> <span class="nf">loss_by_col</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;loss_by_col&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">loss_by_col_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;loss_by_col_idx&quot;</span><span class="p">]</span>
+
+  <span class="nd">@loss_by_col_idx.setter</span>
+  <span class="k">def</span> <span class="nf">loss_by_col_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;loss_by_col_idx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">regularization_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;regularization_x&quot;</span><span class="p">]</span>
+
+  <span class="nd">@regularization_x.setter</span>
+  <span class="k">def</span> <span class="nf">regularization_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;regularization_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">regularization_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;regularization_y&quot;</span><span class="p">]</span>
+
+  <span class="nd">@regularization_y.setter</span>
+  <span class="k">def</span> <span class="nf">regularization_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;regularization_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">gamma_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;gamma_x&quot;</span><span class="p">]</span>
+
+  <span class="nd">@gamma_x.setter</span>
+  <span class="k">def</span> <span class="nf">gamma_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;gamma_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">gamma_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;gamma_y&quot;</span><span class="p">]</span>
+
+  <span class="nd">@gamma_y.setter</span>
+  <span class="k">def</span> <span class="nf">gamma_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;gamma_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">init_step_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;init_step_size&quot;</span><span class="p">]</span>
+
+  <span class="nd">@init_step_size.setter</span>
+  <span class="k">def</span> <span class="nf">init_step_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;init_step_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">min_step_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;min_step_size&quot;</span><span class="p">]</span>
+
+  <span class="nd">@min_step_size.setter</span>
+  <span class="k">def</span> <span class="nf">min_step_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;min_step_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;init&quot;</span><span class="p">]</span>
+
+  <span class="nd">@init.setter</span>
+  <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;init&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">svd_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;svd_method&quot;</span><span class="p">]</span>
+
+  <span class="nd">@svd_method.setter</span>
+  <span class="k">def</span> <span class="nf">svd_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;svd_method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">user_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;user_x&quot;</span><span class="p">]</span>
+
+  <span class="nd">@user_x.setter</span>
+  <span class="k">def</span> <span class="nf">user_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;user_x&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">user_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;user_y&quot;</span><span class="p">]</span>
+
+  <span class="nd">@user_y.setter</span>
+  <span class="k">def</span> <span class="nf">user_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;user_y&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">recover_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;recover_svd&quot;</span><span class="p">]</span>
+
+  <span class="nd">@recover_svd.setter</span>
+  <span class="k">def</span> <span class="nf">recover_svd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;recover_svd&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, H2O.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

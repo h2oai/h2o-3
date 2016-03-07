@@ -112,3 +112,4 @@ master_os_failures = dbSendQuery(mr_unit, "SELECT date as Date, os as OS,
 
 #Send query to a dataframe
 master_os_failures = fetch(master_os_failures, n = -1)
+master_os_failures$Date = as.Date(master_os_failures$Date)

@@ -1,0 +1,459 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>h2o.estimators.random_forest &mdash; H2O  documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,300,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="H2O  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        <a href="../../../index.html" class="fa fa-home"> H2O</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro.html">The H2O Python Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#what-is-h2o">What is H2O?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#h2o-cluster-inspection">H2O Cluster Inspection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#objects-in-this-module">Objects In This Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../intro.html#example-of-h2o-on-hadoop">Example of H2O on Hadoop</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../h2o.html">H2O Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../h2o.html#module-h2o.h2o"><code class="docutils literal"><span class="pre">h2o</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data.html">Data In H2O</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../data.html#loading-data-from-a-csv-file">Loading Data From A CSV File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data.html#loading-data-from-a-python-object">Loading Data From A Python Object</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../frame.html">Data Manipulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../frame.html#h2oframe"><code class="docutils literal"><span class="pre">H2OFrame</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../frame.html#groupby"><code class="docutils literal"><span class="pre">GroupBy</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modeling.html">Modeling In H2O</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2oestimator"><code class="docutils literal"><span class="pre">H2OEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2odeeplearningestimator"><code class="docutils literal"><span class="pre">H2ODeepLearningEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2oautoencoderestimator"><code class="docutils literal"><span class="pre">H2OAutoEncoderEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2orandomforestestimator"><code class="docutils literal"><span class="pre">H2ORandomForestEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogradientboostingestimator"><code class="docutils literal"><span class="pre">H2OGradientBoostingEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogeneralizedlinearestimator"><code class="docutils literal"><span class="pre">H2OGeneralizedLinearEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2ogeneralizedlowrankestimator"><code class="docutils literal"><span class="pre">H2OGeneralizedLowRankEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2okmeansestimator"><code class="docutils literal"><span class="pre">H2OKMeansEstimator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../modeling.html#h2onaivebayesestimator"><code class="docutils literal"><span class="pre">H2ONaiveBayesEstimator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_categories.html">Model Categories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.model_base"><code class="docutils literal"><span class="pre">ModelBase</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.binomial"><code class="docutils literal"><span class="pre">Binomial</span> <span class="pre">Classification</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.multinomial"><code class="docutils literal"><span class="pre">Multinomial</span> <span class="pre">Classification</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.regression"><code class="docutils literal"><span class="pre">Regression</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.clustering"><code class="docutils literal"><span class="pre">Clustering</span> <span class="pre">Methods</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../model_categories.html#module-h2o.model.autoencoder"><code class="docutils literal"><span class="pre">AutoEncoders</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../metrics.html">Metrics in H2O</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../assembly.html">H2OAssembly</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../other.html">REST Interface</a></li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">H2O</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>h2o.estimators.random_forest</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            
+  <h1>Source code for h2o.estimators.random_forest</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">.estimator_base</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<div class="viewcode-block" id="H2ORandomForestEstimator"><a class="viewcode-back" href="../../../modeling.html#h2o.estimators.random_forest.H2ORandomForestEstimator">[docs]</a><span class="k">class</span> <span class="nc">H2ORandomForestEstimator</span><span class="p">(</span><span class="n">H2OEstimator</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Builds a Random Forest Model on an H2OFrame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_id : str, optional</span>
+<span class="sd">      The unique id assigned to the resulting model. If none is given, an id will</span>
+<span class="sd">      automatically be generated.</span>
+<span class="sd">    mtries : int</span>
+<span class="sd">      Number of variables randomly sampled as candidates at each split. If set to -1,</span>
+<span class="sd">      defaults to sqrt{p} for classification, and p/3 for regression, where p is the</span>
+<span class="sd">      number of predictors.</span>
+<span class="sd">    sample_rate : float</span>
+<span class="sd">      Row sample rate (from 0.0 to 1.0)</span>
+<span class="sd">    col_sample_rate_per_tree : float</span>
+<span class="sd">      Column sample rate per tree (from 0.0 to 1.0)</span>
+<span class="sd">    build_tree_one_node : bool</span>
+<span class="sd">      Run on one node only; no network overhead but fewer CPUs used.</span>
+<span class="sd">      Suitable for small datasets.</span>
+<span class="sd">    ntrees : int</span>
+<span class="sd">      A non-negative integer that determines the number of trees to grow.</span>
+<span class="sd">    max_depth : int</span>
+<span class="sd">      Maximum depth to grow the tree.</span>
+<span class="sd">    min_rows : int</span>
+<span class="sd">      Minimum number of rows to assign to terminal nodes.</span>
+<span class="sd">    nbins : int</span>
+<span class="sd">      For numerical columns (real/int), build a histogram of (at least) this many bins,</span>
+<span class="sd">      then split at the best point.</span>
+<span class="sd">    nbins_top_level : int</span>
+<span class="sd">      For numerical columns (real/int), build a histogram of (at most) this many bins at</span>
+<span class="sd">      the root level, then decrease by factor of two per level.</span>
+<span class="sd">    nbins_cats : int</span>
+<span class="sd">      For categorical columns (factors), build a histogram of this many bins, then split</span>
+<span class="sd">      at the best point. Higher values can lead to more overfitting.</span>
+<span class="sd">    binomial_double_trees : bool</span>
+<span class="sd">      or binary classification: Build 2x as many trees (one per class) - can lead to</span>
+<span class="sd">      higher accuracy.</span>
+<span class="sd">    balance_classes : bool</span>
+<span class="sd">      logical, indicates whether or not to balance training data class counts via</span>
+<span class="sd">      over/under-sampling (for imbalanced data)</span>
+<span class="sd">    max_after_balance_size : float</span>
+<span class="sd">      Maximum relative size of the training data after balancing class counts</span>
+<span class="sd">      (can be less than 1.0). Ignored if balance_classes is False,</span>
+<span class="sd">      which is the default behavior.</span>
+<span class="sd">    seed : int</span>
+<span class="sd">      Seed for random numbers (affects sampling) - Note: only reproducible when</span>
+<span class="sd">      running single threaded</span>
+<span class="sd">    nfolds : int, optional</span>
+<span class="sd">      Number of folds for cross-validation. If nfolds &gt;= 2, then validation must</span>
+<span class="sd">      remain empty.</span>
+<span class="sd">    fold_assignment : str</span>
+<span class="sd">      Cross-validation fold assignment scheme, if fold_column is not specified</span>
+<span class="sd">      Must be &quot;AUTO&quot;, &quot;Random&quot; or &quot;Modulo&quot;</span>
+<span class="sd">    keep_cross_validation_predictions : bool</span>
+<span class="sd">      Whether to keep the predictions of the cross-validation models</span>
+<span class="sd">    score_each_iteration : bool</span>
+<span class="sd">      Attempts to score each tree.</span>
+<span class="sd">    score_tree_interval : int</span>
+<span class="sd">      Score the model after every so many trees. Disabled if set to 0.</span>
+<span class="sd">    stopping_rounds : int</span>
+<span class="sd">      Early stopping based on convergence of stopping_metric.</span>
+<span class="sd">      Stop if simple moving average of length k of the stopping_metric does not improve</span>
+<span class="sd">      (by stopping_tolerance) for k=stopping_rounds scoring events.</span>
+<span class="sd">      Can only trigger after at least 2k scoring events. Use 0 to disable.</span>
+<span class="sd">    stopping_metric : str</span>
+<span class="sd">      Metric to use for convergence checking, only for _stopping_rounds &gt; 0</span>
+<span class="sd">      Can be one of &quot;AUTO&quot;, &quot;deviance&quot;, &quot;logloss&quot;, &quot;MSE&quot;, &quot;AUC&quot;, &quot;r2&quot;, &quot;misclassification&quot;.</span>
+<span class="sd">    stopping_tolerance : float</span>
+<span class="sd">      Relative tolerance for metric-based stopping criterion (stop if relative improvement</span>
+<span class="sd">      is not at least this much)</span>
+<span class="sd">      Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mtries</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">col_sample_rate_per_tree</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">build_tree_one_node</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ntrees</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">min_rows</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">nbins_cats</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">binomial_double_trees</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">balance_classes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">max_after_balance_size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">nfolds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fold_assignment</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">stopping_rounds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stopping_metric</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stopping_tolerance</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">score_each_iteration</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">score_tree_interval</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">keep_cross_validation_predictions</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">H2ORandomForestEstimator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">!=</span><span class="s">&quot;self&quot;</span><span class="p">}</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">mtries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;mtries&quot;</span><span class="p">]</span>
+
+  <span class="nd">@mtries.setter</span>
+  <span class="k">def</span> <span class="nf">mtries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;mtries&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">sample_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;sample_rate&quot;</span><span class="p">]</span>
+
+  <span class="nd">@sample_rate.setter</span>
+  <span class="k">def</span> <span class="nf">sample_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;sample_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">col_sample_rate_per_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;col_sample_rate_per_tree&quot;</span><span class="p">]</span>
+
+  <span class="nd">@col_sample_rate_per_tree.setter</span>
+  <span class="k">def</span> <span class="nf">col_sample_rate_per_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;col_sample_rate_per_tree&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">build_tree_one_node</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;build_tree_one_node&quot;</span><span class="p">]</span>
+
+  <span class="nd">@build_tree_one_node.setter</span>
+  <span class="k">def</span> <span class="nf">build_tree_one_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;build_tree_one_node&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">ntrees</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ntrees&quot;</span><span class="p">]</span>
+
+  <span class="nd">@ntrees.setter</span>
+  <span class="k">def</span> <span class="nf">ntrees</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;ntrees&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">max_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_depth&quot;</span><span class="p">]</span>
+
+  <span class="nd">@max_depth.setter</span>
+  <span class="k">def</span> <span class="nf">max_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">min_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;min_rows&quot;</span><span class="p">]</span>
+
+  <span class="nd">@min_rows.setter</span>
+  <span class="k">def</span> <span class="nf">min_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;min_rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">nbins</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nbins&quot;</span><span class="p">]</span>
+
+  <span class="nd">@nbins.setter</span>
+  <span class="k">def</span> <span class="nf">nbins</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nbins&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">nbins_cats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nbins_cats&quot;</span><span class="p">]</span>
+
+  <span class="nd">@nbins_cats.setter</span>
+  <span class="k">def</span> <span class="nf">nbins_cats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nbins_cats&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">binomial_double_trees</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;binomial_double_trees&quot;</span><span class="p">]</span>
+
+  <span class="nd">@binomial_double_trees.setter</span>
+  <span class="k">def</span> <span class="nf">binomial_double_trees</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;binomial_double_trees&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">balance_classes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;balance_classes&quot;</span><span class="p">]</span>
+
+  <span class="nd">@balance_classes.setter</span>
+  <span class="k">def</span> <span class="nf">balance_classes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;balance_classes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">max_after_balance_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_after_balance_size&quot;</span><span class="p">]</span>
+
+  <span class="nd">@max_after_balance_size.setter</span>
+  <span class="k">def</span> <span class="nf">max_after_balance_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;max_after_balance_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;seed&quot;</span><span class="p">]</span>
+
+  <span class="nd">@seed.setter</span>
+  <span class="k">def</span> <span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">nfolds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nfolds&quot;</span><span class="p">]</span>
+
+  <span class="nd">@nfolds.setter</span>
+  <span class="k">def</span> <span class="nf">nfolds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;nfolds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">fold_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;fold_assignment&quot;</span><span class="p">]</span>
+
+  <span class="nd">@fold_assignment.setter</span>
+  <span class="k">def</span> <span class="nf">fold_assignment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;fold_assignment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">keep_cross_validation_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;keep_cross_validation_predictions&quot;</span><span class="p">]</span>
+
+  <span class="nd">@keep_cross_validation_predictions.setter</span>
+  <span class="k">def</span> <span class="nf">keep_cross_validation_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;keep_cross_validation_predictions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">score_each_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;score_each_iteration&quot;</span><span class="p">]</span>
+
+  <span class="nd">@score_each_iteration.setter</span>
+  <span class="k">def</span> <span class="nf">score_each_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;score_each_iteration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">score_tree_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;score_tree_interval&quot;</span><span class="p">]</span>
+
+  <span class="nd">@score_tree_interval.setter</span>
+  <span class="k">def</span> <span class="nf">score_tree_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;score_tree_interval&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">stopping_rounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;stopping_rounds&quot;</span><span class="p">]</span>
+
+  <span class="nd">@stopping_rounds.setter</span>
+  <span class="k">def</span> <span class="nf">stopping_rounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;stopping_rounds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">stopping_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;stopping_metric&quot;</span><span class="p">]</span>
+
+  <span class="nd">@stopping_metric.setter</span>
+  <span class="k">def</span> <span class="nf">stopping_metric</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;stopping_metric&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">stopping_tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;stopping_tolerance&quot;</span><span class="p">]</span>
+
+  <span class="nd">@stopping_tolerance.setter</span>
+  <span class="k">def</span> <span class="nf">stopping_tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;stopping_tolerance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;checkpoint&quot;</span><span class="p">]</span>
+
+  <span class="nd">@checkpoint.setter</span>
+  <span class="k">def</span> <span class="nf">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_parms</span><span class="p">[</span><span class="s">&quot;checkpoint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, H2O.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

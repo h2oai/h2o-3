@@ -367,9 +367,11 @@ predict.H2OModel <- function(object, newdata, ...) {
 
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-  res <- .h2o.__remoteSend(url, method = "POST")
-  res <- res$predictions_frame
-  h2o.getFrame(res$name)
+  res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 
 #' @rdname predict.H2OModel

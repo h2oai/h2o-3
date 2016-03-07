@@ -227,6 +227,50 @@ class ModelMetricsHandler extends Handler {
    * Score a frame with the given model and return the metrics AND the prediction frame.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
+  public JobV3 predict2(int version, final ModelMetricsListSchemaV3 s) {
+    // parameters checking:
+    if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
+    if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
+
+    if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
+    if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+
+    final ModelMetricsList parms = s.createAndFillImpl();
+    
+    //predict2 does not return modelmetrics, so cannot handle deeplearning: reconstruction_error (anomaly) or GLRM: reconstruct and archetypes
+    //predict2 can handle deeplearning: deepfeatures and predict 
+    
+    if (s.deep_features_hidden_layer > 0) {
+      if (null == parms._predictions_name)
+        parms._predictions_name = "deep_features" + Key.make().toString().substring(0, 5) + "_" +
+                parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+    } else if (null == parms._predictions_name)
+      parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+
+    final Job<Frame> j = new Job(Key.make(parms._predictions_name), Frame.class.getName(), "prediction");
+
+
+    H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
+      @Override
+      public void compute2() {
+        if (s.deep_features_hidden_layer < 0) {
+          parms._model.score(parms._frame, parms._predictions_name, j);
+        } else {
+          Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
+          predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
+          DKV.put(predictions._key, predictions);
+        }
+        tryComplete(); 
+      }
+    };
+    j.start(work, parms._frame.anyVec().nChunks());
+    return new JobV3().fillFromImpl(j);
+  }
+
+  /**
+   * Score a frame with the given model and return the metrics AND the prediction frame.
+   */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // parameters checking:
     if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
