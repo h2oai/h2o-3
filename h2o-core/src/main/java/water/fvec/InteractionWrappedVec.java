@@ -189,8 +189,6 @@ public class InteractionWrappedVec extends WrappedVec {
           else          nc.addNum(atd(i));
       return nc;
     }
-    @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
-    @Override public InteractionWrappedChunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
+    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }
-

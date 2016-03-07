@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.DKV;
 import water.H2O;
 import water.Key;
@@ -102,7 +101,6 @@ public class TransformWrappedVec extends WrappedVec {
         else          nc.addNum(atd(i));
       return nc;
     }
-    @Override public AutoBuffer write_impl(AutoBuffer bb)           { throw water.H2O.fail(); }
-    @Override public TransformWrappedChunk read_impl(AutoBuffer bb) { throw water.H2O.fail(); }
+    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

@@ -1,20 +1,37 @@
 package hex;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.InteractionWrappedVec;
+import water.fvec.Vec;
 
 public class DataInfoTest extends TestUtil {
 
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
 
-  @Test public void testAirlines() {
+  @Test public void testAirlines1() { // just test that it works at all
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
-      DataInfo dinfo = new DataInfo(fr.clone(), null, 1, true,  DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false ,false, false, false, false, DataInfo.InteractionPair.generatePairwiseInteractions(8, 16, 2));
+      DataInfo dinfo = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              true,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              DataInfo.InteractionPair.generatePairwiseInteractions(8, 16, 2)  // interactions
+      );
       dinfo.dropInteractions();
       dinfo.remove();
     } finally {
@@ -22,4 +39,59 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
+
+  @Test public void testAirlines2() {
+    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    try {
+      Frame interactions = DataInfo.makeInteractions(fr,DataInfo.InteractionPair.generatePairwiseInteractions(8,16,2),true);
+      int len=0;
+      for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
+      interactions.delete();
+      Assert.assertTrue(len==290+132+10);
+
+      DataInfo dinfo__noInteractions = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              true,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              null
+      );
+
+      System.out.println(dinfo__noInteractions.fullN());
+
+
+      DataInfo dinfo__withInteractions = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              true,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,         // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              DataInfo.InteractionPair.generatePairwiseInteractions(8, 16, 2)  // interactions
+      );
+
+      System.out.println(dinfo__withInteractions.fullN());
+
+      Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
+      dinfo__withInteractions.dropInteractions();
+      dinfo__noInteractions.remove();
+      dinfo__withInteractions.remove();
+    } finally {
+      fr.delete();
+    }
+  }
 }

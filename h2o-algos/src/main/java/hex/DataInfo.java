@@ -189,24 +189,11 @@ public class DataInfo extends Keyed<DataInfo> {
     _useAllFactorLevels = useAllFactorLevels;
     _interactions=interactions;
 
-    // create dummy InteractionWrappedVecs and shove them onto the front of the frame
+    // create dummy InteractionWrappedVecs and shove them onto the front
     if( _interactions!=null ) {
-      Vec anyTrainVec = train.anyVec();
-      Vec anyValidVec = valid == null ? null : valid.anyVec();
-      Vec[] interactionTrainVecs = new Vec[_interactions.length];
-      Vec[] interactionValidVecs = valid==null?null: new Vec[_interactions.length];
-      String[] interactionNames  = new String[_interactions.length];
-      int idx = 0;
-      for (InteractionPair ip : _interactions) {
-        interactionNames[idx] = train.name(ip._v1) + "_" + train.name(ip._v2);
-        interactionTrainVecs[idx] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, _useAllFactorLevels, train.vec(ip._v1)._key, train.vec(ip._v2)._key);
-        if( valid!=null )
-          interactionValidVecs[idx] = new InteractionWrappedVec(anyValidVec.group().addVec(), anyValidVec._rowLayout, ip._v1Enums, ip._v2Enums, _useAllFactorLevels, valid.vec(ip._v1)._key, valid.vec(ip._v2)._key);
-        idx++;
-      }
-      train = new Frame(interactionNames, interactionTrainVecs).add(train);
+      train = makeInteractions(train,_interactions,_useAllFactorLevels).add(train);
       if( valid!=null )
-        valid = new Frame(interactionNames, interactionValidVecs).add(valid);
+        valid = makeInteractions(valid,_interactions,_useAllFactorLevels).add(valid);
     }
 
     _permutation = new int[train.numCols()];
@@ -276,6 +263,18 @@ public class DataInfo extends Keyed<DataInfo> {
     setPredictorTransform(predictor_transform);
     if(_responses > 0)
       setResponseTransform(response_transform);
+  }
+
+  public static Frame makeInteractions(Frame fr, InteractionPair[] interactions, boolean useAllFactorLevels) {
+    Vec anyTrainVec = fr.anyVec();
+    Vec[] interactionVecs = new Vec[interactions.length];
+    String[] interactionNames  = new String[interactions.length];
+    int idx = 0;
+    for (InteractionPair ip : interactions) {
+      interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
+      interactionVecs[idx++] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+    }
+    return new Frame(interactionNames, interactionVecs);
   }
 
 
