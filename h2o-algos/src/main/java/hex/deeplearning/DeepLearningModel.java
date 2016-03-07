@@ -1940,7 +1940,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_elastic_averaging",
               "_elastic_averaging_moving_rate",
               "_elastic_averaging_regularization",
-              "_mini_batch_size"
+              "_mini_batch_size",
+              "_pretrained_autoencoder"
       };
   
       // the following parameters must not be modified when restarting from a checkpoint

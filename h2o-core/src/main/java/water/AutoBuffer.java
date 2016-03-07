@@ -503,6 +503,8 @@ public final class AutoBuffer {
   //int zeros() { return _zeros; }
 
   public int position () { return _bb.position(); }
+
+  public AutoBuffer position(int p) {_bb.position(p); return this;}
   /** Skip over some bytes in the byte buffer.  Caller is responsible for not
    *  reading off end of the bytebuffer; generally this is easy for
    *  array-backed autobuffers and difficult for i/o-backed bytebuffers. */
@@ -513,6 +515,7 @@ public final class AutoBuffer {
     assert _h2o==null && _chan==null && !_read && !_bb.isDirect();
     return MemoryManager.arrayCopyOfRange(_bb.array(), _bb.arrayOffset(), _bb.position());
   }
+
 
   public final byte[] bufClose() {
     byte[] res = _bb.array();
@@ -630,6 +633,7 @@ public final class AutoBuffer {
     }
     return _bb;
   }
+
   // Do something with partial results, because the ByteBuffer is full.
   // If we are doing I/O, ship the bytes we have now and flip the ByteBuffer.
   private ByteBuffer sendPartial() {
@@ -722,8 +726,6 @@ public final class AutoBuffer {
   public AutoBuffer put(Freezable f) {
     if( f == null ) return putInt(TypeMap.NULL);
     assert f.frozenType() > 0 : "No TypeMap for "+f.getClass().getName();
-    if( f.frozenType() == 8 )
-      System.out.println("DTASK");
     putInt(f.frozenType());
     return f.write(this);
   }
@@ -738,7 +740,7 @@ public final class AutoBuffer {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
     if( _is!=null ) id = _typeMap[id];
-    assert tc.isInstance(TypeMap.theFreezable(id));
+    assert tc.isInstance(TypeMap.theFreezable(id)):tc.getName() + " != " + TypeMap.theFreezable(id).getClass().getName() + ", id = " + id;
     return (T)TypeMap.newFreezable(id).read(this);
   }
 
@@ -764,7 +766,7 @@ public final class AutoBuffer {
   // Int will take 1+4 bytes, and bigger values 1+8 bytes.  This compression is
   // optimized for small integers (including -1 which is often used as a "array
   // is null" flag when passing the array length).
-  AutoBuffer putInt( int x ) {
+  public AutoBuffer putInt(int x) {
     if( 0 <= (x+1)&& (x+1) <= 253 ) return put1(x+1);
     if( Short.MIN_VALUE <= x && x <= Short.MAX_VALUE ) return put1(255).put2((short)x);
     return put1(254).put4(x);
@@ -1427,20 +1429,35 @@ public final class AutoBuffer {
     return put1(x==null ? -1 : x.ordinal());
   }
 
+  public static byte[] javaSerializeWritePojo(Object o) {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    ObjectOutputStream out = null;
+    try {
+      out = new ObjectOutputStream(bos);
+      out.writeObject(o);
+      out.close();
+      return bos.toByteArray();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
+  public static Object javaSerializeReadPojo(byte [] bytes) {
+    try {
+      return new ObjectInputStream(new ByteArrayInputStream(bytes)).readObject();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    } catch (ClassNotFoundException e) {
+      throw Log.throwErr(e);
+    }
+  }
   // ==========================================================================
   // Java Serializable objects
   // Note: These are heck-a-lot more expensive than their Freezable equivalents.
 
   @SuppressWarnings("unused") public AutoBuffer putSer( Object obj ) {
     if (obj == null) return putA1(null);
-    try {
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      ObjectOutputStream oos = new ObjectOutputStream(bos);
-      oos.writeObject(obj);
-      byte[] ba = bos.toByteArray();
-      oos.close(); bos.close();
-      return putA1(ba);
-    } catch( IOException e ) { throw Log.throwErr(e); }
+    return putA1(javaSerializeWritePojo(obj));
   }
 
   @SuppressWarnings("unused") public AutoBuffer putASer(Object[] fs) {
@@ -1474,12 +1491,8 @@ public final class AutoBuffer {
   }
 
   @SuppressWarnings("unused") public Object getSer() {
-    try {
-      byte[] ba = getA1();
-      return ba == null ? null : new ObjectInputStream(new ByteArrayInputStream(ba)).readObject();
-    } catch(ClassNotFoundException|IOException e) {
-      throw Log.throwErr(e);
-    }
+    byte[] ba = getA1();
+    return ba == null ? null : javaSerializeReadPojo(ba);
   }
 
   @SuppressWarnings("unused") public <T> T getSer(Class<T> tc) {

@@ -262,7 +262,6 @@ public final class ParseSetup extends Iced {
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
       ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
       byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
-
       if(bits.length > 0) {
         _empty = false;
 

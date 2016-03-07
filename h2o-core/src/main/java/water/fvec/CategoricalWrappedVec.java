@@ -179,8 +179,8 @@ public class CategoricalWrappedVec extends WrappedVec {
         else nc.addNum(at8(i),0);
       return nc;
     }
-    @Override public AutoBuffer write_impl(AutoBuffer bb) { throw water.H2O.fail(); }
-    @Override public CategoricalWrappedChunk read_impl(AutoBuffer bb)       { throw water.H2O.fail(); }
+    public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
+    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
     @Override public boolean hasNA() { return false; }
   }
 }

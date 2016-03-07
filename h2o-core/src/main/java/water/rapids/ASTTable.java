@@ -275,7 +275,7 @@ class ASTTable extends ASTPrim {
       throw water.H2O.unimpl();
     }
 
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    public final AutoBuffer write_impl(AutoBuffer ab) {
       if( _col0s == null ) return ab.put8(0);
       ab.put8(_col0s.size());
       for( long col0 : _col0s.keySetLong() ) {
@@ -289,7 +289,7 @@ class ASTTable extends ASTPrim {
       }
       return ab;
     }
-    @Override public SlowCnt read_impl(AutoBuffer ab) {
+    public final SlowCnt read_impl(AutoBuffer ab) {
       long len0 = ab.get8();
       if( len0 == 0 ) return this;
       _col0s = new NonBlockingHashMapLong<>();

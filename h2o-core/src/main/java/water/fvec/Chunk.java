@@ -108,7 +108,10 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced implements Cloneable {
+public abstract class Chunk extends Iced<Chunk> {
+  public Chunk() {}
+  private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
+
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;
   /** Global starting row for this local Chunk */
@@ -606,15 +609,30 @@ public abstract class Chunk extends Iced implements Cloneable {
 
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
-  @Override public AutoBuffer write_impl(AutoBuffer bb) {
-    return bb.putA1(_mem, _mem.length);
+  public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
+
+  @Override
+  public final byte [] asBytes(){return _mem;}
+
+  @Override
+  public final Chunk reloadFromBytes(byte [] ary){
+    _mem = ary;
+    initFromBytes();
+    return this;
   }
 
-  /** Custom deserializers, implemented by Chunk subclasses: the _mem field
-   *  contains ALL the fields already.  Init _start to -1, so we know we have
-   *  not filled in other fields.  Leave _vec and _chk2 null, leave _len
-   *  unknown. */
-  abstract public Chunk read_impl( AutoBuffer ab );
+  protected abstract void initFromBytes();
+  public final Chunk read_impl(AutoBuffer ab){
+    _mem = ab.getA1();
+    initFromBytes();
+    return this;
+  }
+
+//  /** Custom deserializers, implemented by Chunk subclasses: the _mem field
+//   *  contains ALL the fields already.  Init _start to -1, so we know we have
+//   *  not filled in other fields.  Leave _vec and _chk2 null, leave _len
+//   *  unknown. */
+//  abstract public Chunk read_impl( AutoBuffer ab );
 
   // -----------------
   // Support for fixed-width format printing

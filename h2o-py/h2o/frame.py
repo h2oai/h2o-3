@@ -375,7 +375,7 @@ class H2OFrame(object):
     If called from IPython, displays an html'ized result
     Else prints a tabulate'd result
     """
-    if self._ex is None: 
+    if self._ex is None:
       print("This H2OFrame has been removed.")
       return
     if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
@@ -497,8 +497,8 @@ class H2OFrame(object):
   # unops
   def __abs__ (self):    return H2OFrame._expr(expr=ExprNode("abs",self), cache=self._ex._cache)
   def __invert__(self):  return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
-  def __nonzero__(self): 
-    if self.nrow > 1 or self.ncol > 1: 
+  def __nonzero__(self):
+    if self.nrow > 1 or self.ncol > 1:
       raise ValueError('This operation is not supported on an H2OFrame. Try using parantheses. Did you mean & (logical and), | (logical or), or ~ (logical not)?')
     else:
       return self.__len__()
@@ -587,13 +587,13 @@ class H2OFrame(object):
 
     Returns
     -------
-      A list of lists, one list per column, of levels. 
+      A list of lists, one list per column, of levels.
     """
     lol = H2OFrame._expr(expr=ExprNode("levels", self)).as_data_frame(False)
     lol.pop(0)  # Remove column headers
     lol = list(zip(*lol))
     lol = [[ll for ll in l] for l in lol]
-    
+
     return lol
 
   def nlevels(self):
@@ -601,7 +601,7 @@ class H2OFrame(object):
 
     Returns
     -------
-      A list of the number of levels per column. 
+      A list of the number of levels per column.
     """
     levels = self.levels()
     return [len(l) for l in levels] if levels else 0
@@ -783,21 +783,21 @@ class H2OFrame(object):
       True if the column is a character column, otherwise False (same as isstring)
     """
     return self.isstring()
-  
+
   def isin(self, item):
     """Test whether elements of an H2OFrame are contained in the item.
-    
+
     Parameters
     ----------
       items : any element or a list of elements
         An item or a list of items to compare the H2OFrame against.
-        
+
     Returns
     -------
       An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
     """
     return reduce(H2OFrame.__or__, (self == i for i in item)) if _is_list(item) else self == item
-  
+
   def kfold_column(self, n_folds=3, seed=-1):
     """Build a fold assignments column for cross-validation. This call will produce a
     column having the same data layout as the calling object.
@@ -891,10 +891,10 @@ class H2OFrame(object):
 
   def get_frame_data(self):
     """Get frame data as str in csv format
-    
+
     Returns
     -------
-      A local python string, each line is a row and each element separated by commas, containing this H2OFrame 
+      A local python string, each line is a row and each element separated by commas, containing this H2OFrame
       instance's data.
     """
     url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
@@ -1191,7 +1191,7 @@ class H2OFrame(object):
       A list of probabilities of any length.
     combine_method : str, default="interpolate"
       For even samples, how to combine quantiles.
-      Should be one of ["interpolate", "average", "low", "hi"]
+      Should be one of ["interpolate", "average", "low", "high"]
     weights_column : str, default=None
       Name of column with optional observation weights in this H2OFrame or a 1-column H2OFrame of observation weights.
 
@@ -1203,8 +1203,8 @@ class H2OFrame(object):
     if prob is None: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
     if weights_column is None: weights_column="_"
     else:
-      if not (isinstance(weights_column, basestring) or (isinstance(weights_column, H2OFrame) 
-                                                        and weights_column.ncol == 1 
+      if not (isinstance(weights_column, basestring) or (isinstance(weights_column, H2OFrame)
+                                                        and weights_column.ncol == 1
                                                         and weights_column.nrow == self.nrow)):
         raise ValueError("`weights_column` must be a column name in x or an H2OFrame object with 1 column and same row count as x")
       if isinstance(weights_column, H2OFrame):
@@ -1502,13 +1502,13 @@ class H2OFrame(object):
     Parameters
     ----------
     y : H2OFrame, default=None
-      If y is None and self is a single column, then the variance is computed for self. If self has 
-      multiple columns, then its covariance matrix is returned. Single rows are treated as single columns. 
-      If y is not None, then a covariance matrix between the columns of self and the columns of y is computed. 
+      If y is None and self is a single column, then the variance is computed for self. If self has
+      multiple columns, then its covariance matrix is returned. Single rows are treated as single columns.
+      If y is not None, then a covariance matrix between the columns of self and the columns of y is computed.
     na_rm : bool, default=False
       Remove NAs from the computation.
     use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
-      A string indicating how to handle missing values. This must be one of the following: 
+      A string indicating how to handle missing values. This must be one of the following:
         "everything"            - outputs NaNs whenever one of its contributing observations is missing
         "all.obs"               - presence of missing observations will throw an error
         "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
@@ -1516,11 +1516,11 @@ class H2OFrame(object):
 
     Returns
     -------
-      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y 
+      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
       (if y is given). If self and y are single rows or single columns, the variance or covariance is given as a scalar.
     """
     symmetric = False
-    if y is None: 
+    if y is None:
       y = self
       if self.ncol > 1 and self.nrow > 1: symmetric = True
     if use is None: use = "complete.obs" if na_rm else "everything"
@@ -1628,25 +1628,25 @@ class H2OFrame(object):
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr
-  
+
   def substring(self, start_index, end_index=None):
-    """For each string, return a new string that is a substring of the original string. If end_index is not 
+    """For each string, return a new string that is a substring of the original string. If end_index is not
     specified, then the substring extends to the end of the original string. If the start_index is longer than
     the length of the string, or is greater than or equal to the end_index, an empty string is returned. Negative
-    start_index is coerced to 0. 
+    start_index is coerced to 0.
 
     Parameters
     ----------
     start_index : int
       The index of the original string at which to start the substring, inclusive.
     end_index: int, optional
-      The index of the original string at which to end the substring, exclusive. 
+      The index of the original string at which to end the substring, exclusive.
 
     Returns
     -------
       An H2OFrame containing the specified substrings.
     """
-    fr = H2OFrame._expr(expr=ExprNode("substring", self, start_index, end_index)) 
+    fr = H2OFrame._expr(expr=ExprNode("substring", self, start_index, end_index))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr
@@ -1657,9 +1657,9 @@ class H2OFrame(object):
     If omitted, the set argument defaults to removing whitespace.
 
     Parameters
-      ----------
-      set : str
-        Set of characters to lstrip from strings in column
+    ----------
+    set : str
+      Set of characters to lstrip from strings in column
 
     Returns
     -------
@@ -1680,9 +1680,9 @@ class H2OFrame(object):
     If omitted, the set argument defaults to removing whitespace.
 
     Parameters
-      ----------
-      set : str
-        Set of characters to rstrip from strings in column
+    ----------
+    set : str
+      Set of characters to rstrip from strings in column
 
     Returns
     -------
@@ -1693,6 +1693,36 @@ class H2OFrame(object):
     if set is None: set = " "
 
     fr = H2OFrame._expr(expr=ExprNode("rstrip", self, set))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
+  def entropy(self):
+    """For each string, return the Shannon entropy. If the string is empty, the entropy is 0.
+
+    Returns
+    -------
+      An H2OFrame of Shannon entropies. 
+    """
+    fr = H2OFrame._expr(expr=ExprNode("entropy", self))
+    fr._ex._cache.nrows = self.nrow
+    fr._ex._cache.ncol = self.ncol
+    return fr
+
+  def pro_substrings_words(self, path_to_words):
+    """For each string, find the proportion of all possible substrings >= 2 characters that are contained in 
+    the line-separated text file whose path is given. If the string length is less than two, 0 is returned.
+    
+    Parameters
+    ----------
+      path_to_words : str
+        Path to file that contains a line-separated list of strings to be referenced. 
+        
+    Returns
+    -------
+      An H2OFrame with the proportion of substrings that are contained in the given word list. 
+    """
+    fr = H2OFrame._expr(expr=ExprNode("pro_substrings_words", self, path_to_words))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr
@@ -1715,8 +1745,8 @@ class H2OFrame(object):
       data2 : H2OFrame
         Default is None, can be an optional single column to aggregate counts by.
       dense : bool
-        Default is True, for dense representation, which lists only non-zero counts, 1 combination per row. Set to False 
-        to expand counts across all combinations.  
+        Default is True, for dense representation, which lists only non-zero counts, 1 combination per row. Set to False
+        to expand counts across all combinations.
 
     Returns
     -------
@@ -1917,10 +1947,10 @@ class H2OFrame(object):
     Parameters
     ----------
     digits : int, default=0
-      Number of decimal places to round doubles/floats. Rounding to a negative number of decimal places is not 
-      supported. For rounding off a 5, the IEC 60559 standard is used, ‘go to the even digit’. Therefore rounding 2.5 
+      Number of decimal places to round doubles/floats. Rounding to a negative number of decimal places is not
+      supported. For rounding off a 5, the IEC 60559 standard is used, ‘go to the even digit’. Therefore rounding 2.5
       gives 2 and rounding 3.5 gives 4.
-      
+
     Returns
     -------
       H2OFrame
@@ -1961,7 +1991,7 @@ class H2OFrame(object):
     fr = H2OFrame._expr(expr=ExprNode("na.omit", self), cache=self._ex._cache)
     fr._ex._cache.nrows=-1
     return fr
- 
+
   def isna(self):
     """For each element in an H2OFrame, determine if it is NA or not.
 

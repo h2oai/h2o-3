@@ -38,12 +38,10 @@ public class C4Chunk extends Chunk {
     }
     return nc;
   }
-  @Override public C4Chunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>2);
     assert _mem.length == _len <<2;
-    return this;
   }
   @Override public boolean hasFloat() {return false;}
 }

@@ -178,6 +178,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public Key<? extends Model> _checkpoint;
 
+    /**
+     * A pretrained Autoencoder DL model with matching inputs and hidden layers
+     * can be used to initialize the weights and biases (excluding the output layer).
+     */
+    public Key<? extends Model> _pretrained_autoencoder;
+
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
 
