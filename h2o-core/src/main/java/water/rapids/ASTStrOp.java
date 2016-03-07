@@ -954,7 +954,7 @@ class ASTEntropy extends ASTPrim {
   @Override public String[] args() {return new String[] {"ary"}; }
   @Override int nargs() {return 1+1; } // (entropy x)
   @Override public String str() { return "entropy"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override public ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     //Type check
     for (Vec v : fr.vecs())
@@ -1046,7 +1046,7 @@ class ASTProSubstringsWords extends ASTPrim {
   @Override public String[] args() {return new String[]{"ary", "words"};}
   @Override int nargs() {return 1 + 2;} // (pro_substrings_words x words)
   @Override public String str() {return "pro_substrings_words";}
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String wordsPath = asts[2].exec(env).getStr();
 
