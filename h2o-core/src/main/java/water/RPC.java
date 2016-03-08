@@ -5,6 +5,7 @@ import jsr166y.ForkJoinPool;
 import water.H2O.FJWThr;
 import water.H2O.H2OCountedCompleter;
 import water.UDP.udp;
+import water.util.DistributedException;
 import water.util.Log;
 
 import java.io.IOException;
@@ -235,8 +236,9 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   }
 
   private V result() {
-    DException.DistributedException t = _dt.getDException();
-    if( t != null ) throw t;
+    Throwable t = _dt.getDException();
+    if( t != null )
+      throw (t instanceof DistributedException)?new DistributedException(t.getMessage(),t.getCause()):new DistributedException(t);
     return _dt;
   }
   // Similar to FutureTask.get() but does not throw any checked exceptions.
@@ -609,7 +611,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   }
 
   private void doAllCompletions() {
-    final Exception e = _dt.getDException();
+    final Throwable e = _dt.getDException();
     // Also notify any and all pending completion-style tasks
     if( _fjtasks != null )
       for( final H2OCountedCompleter task : _fjtasks ) {

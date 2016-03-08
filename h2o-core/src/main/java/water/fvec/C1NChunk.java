@@ -27,8 +27,11 @@ public class C1NChunk extends Chunk {
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
-  @Override final public C1NChunk read_impl(AutoBuffer ab) {
-    _mem = ab.bufClose(); _start = -1; _cidx = -1; set_len(_mem.length); return this; }
+  @Override protected final void initFromBytes () {
+    _start = -1;
+    _cidx = -1;
+    set_len(_mem.length);
+  }
   @Override public boolean hasFloat() {return false;}
   @Override public boolean hasNA() { return false; }
 }

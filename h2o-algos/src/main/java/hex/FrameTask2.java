@@ -22,7 +22,6 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   final Key<Job> _jobKey;
   protected final DataInfo _dinfo;
 
-  public static class JobCancelledException extends RuntimeException {}
 
   public FrameTask2(H2OCountedCompleter cmp, DataInfo dinfo, Key<Job> jobKey){
     super(cmp);
@@ -53,7 +52,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   protected abstract void processRow(Row r);
 
   @Override public void map(Chunk[] chks) {
-    if(_job != null && !_job.isRunning()) throw new JobCancelledException();
+    if(_job != null && _job.stop_requested()) throw new Job.JobCancelledException();
     chunkInit();
     // compute
     if(_sparse) {

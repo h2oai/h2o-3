@@ -1,7 +1,7 @@
 #######################################################################################
-#A way to get relevant information from Master Jenkins.
-#All is query based and mainly show average duration of a job/test from the previous day.
-#@author navdeepgill
+#' A way to get relevant information from Master Jenkins.
+#' All is query based and mainly show average duration of a job/test from the previous day.
+#' @author navdeepgill
 #######################################################################################
 
 #Get data from MySQL DB that stores information about Master Jenkins:
@@ -78,3 +78,38 @@ master_jobname_testname = dbSendQuery(mr_unit, "SELECT date as Date, job_name as
 #Send query to a dataframe
 master_jobname_testname = fetch(master_jobname_testname, n = -1)
 
+#######################################################################################
+
+#Query to get failure statistics about TestName.
+#This will show the number of test failures for the last day.
+master_testname_failures = dbSendQuery(mr_unit, "SELECT date as Date, job_name as JobName, 
+                                      git_branch as GitBranch,
+                                      test_name as TestName,
+                                      COUNT(*) as SampleSize,
+                                      SUM(Pass) as PassCount,
+                                      SUM(Pass)/COUNT(*) as PassRatio
+                                      FROM perf 
+                                      WHERE git_branch = 'master' and date = CURDATE() - INTERVAL 1 DAY
+                                      GROUP BY TestName
+                                      ORDER BY PassRatio ASC;")
+
+#Send query to a dataframe
+master_testname_failures = fetch(master_testname_failures, n = -1)
+master_testname_failures_subset = subset(master_testname_failures,PassRatio < 1 & JobName != "template_win7_pyunit_small")
+
+#######################################################################################
+
+#Query to get failure statistics broken up by the OS.
+#This will show the number of failures per OS in the past n days.
+master_os_failures = dbSendQuery(mr_unit, "SELECT date as Date, os as OS,
+                                       COUNT(*) as SampleSize,
+                                       SUM(Pass) as PassCount,
+                                       SUM(Pass)/COUNT(*) as PassRatio
+                                       FROM perf 
+                                       WHERE git_branch = 'master'
+                                       GROUP BY Date,OS
+                                       ORDER BY Date,PassRatio ASC;")
+
+#Send query to a dataframe
+master_os_failures = fetch(master_os_failures, n = -1)
+master_os_failures$Date = as.Date(master_os_failures$Date)

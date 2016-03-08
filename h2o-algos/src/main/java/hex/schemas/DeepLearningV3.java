@@ -4,6 +4,7 @@ import hex.Distribution;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.api.API;
+import water.api.KeyV3;
 import water.api.ModelParametersSchema;
 
 public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
@@ -31,6 +32,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_confusion_matrix_size",
         "max_hit_ratio_k",
         "checkpoint",
+        "pretrained_autoencoder",
         "overwrite_with_best_model",
         "use_all_factor_levels",
         "standardize",
@@ -561,5 +563,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     @API(help = "Elastic averaging regularization strength (only if elastic averaging is enabled).", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double elastic_averaging_regularization;
+
+    @API(help = "Pretrained autoencoder model to initialize this model with.", level = API.Level.expert, direction=API.Direction.INOUT)
+    public KeyV3.ModelKeyV3 pretrained_autoencoder;
   }
 }

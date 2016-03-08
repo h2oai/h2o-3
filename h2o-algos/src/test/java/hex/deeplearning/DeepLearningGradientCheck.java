@@ -69,7 +69,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                     false
             }) {
               for (int miniBatchSize : new int[]{
-                      1,
+                      1
               }) {
                 boolean classification = response.equals("Class");
                 if (classification && dist != Distribution.Family.multinomial) continue;
@@ -94,7 +94,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._quantile_alpha = 0.2;
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
-                parms._mini_batch_size = 13;
+                parms._mini_batch_size = miniBatchSize;
                 DeepLearningModelInfo.gradientCheck = null;
 
                 // Build a first model; all remaining models should be equal
@@ -133,7 +133,7 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                     // loss at weight
                     long cs = dl.model_info().checksum_impl();
-                    double loss = dl.loss(rowsMiniBatch);
+                    double loss = dl.meanLoss(rowsMiniBatch);
                     assert(cs == before);
                     assert(before == dl.model_info().checksum_impl());
                     meanLoss += loss;
@@ -196,11 +196,11 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                           // loss at weight + eps
                           dl.model_info().get_weights(layer).set(row, col, (float)(weight + eps));
-                          double up = dl.loss(rowsMiniBatch);
+                          double up = dl.meanLoss(rowsMiniBatch);
 
                           // loss at weight - eps
                           dl.model_info().get_weights(layer).set(row, col, (float)(weight - eps));
-                          double down = dl.loss(rowsMiniBatch);
+                          double down = dl.meanLoss(rowsMiniBatch);
 
                           if (Math.abs(up-down)/Math.abs(up+down) < 1e-8) {
                             continue; //relative change in loss function is too small -> skip

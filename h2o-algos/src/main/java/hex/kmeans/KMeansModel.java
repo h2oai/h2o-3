@@ -4,6 +4,7 @@ import hex.ClusteringModel;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.codegen.CodeGenerator;
@@ -71,9 +72,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_parms._k);
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
     if (!_parms._pred_indicator) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
     } else {
       final int len = _parms._k;
       String prefix = "cluster_";
@@ -82,6 +83,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
         adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.anyVec().makeZero());
       new MRTask() {
         @Override public void map( Chunk chks[] ) {
+          if (isCancelled() || j != null && j.stop_requested()) return;
           double tmp [] = new double[_output._names.length];
           double preds[] = new double[len];
           for(int row = 0; row < chks[0]._len; row++) {
@@ -89,6 +91,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
             for(int c = 0; c < preds.length; c++)
               chks[_output._names.length + c].set(row, p[c]);
           }
+          if (j != null) j.update(1);
         }
       }.doAll(adaptFrm);
 

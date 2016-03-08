@@ -8,9 +8,9 @@ import water.util.UnsafeUtils;
  */
 public class C2SChunk extends Chunk {
   static protected final int _OFF=8+8;
-  private double _scale;
+  private transient double _scale;
   public double scale() { return _scale; }
-  private long _bias;
+  private transient long _bias;
   public boolean hasFloat(){ return _scale != (long)_scale; }
   C2SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length-_OFF)>>1);
     _bias = bias; _scale = scale;
@@ -58,23 +58,12 @@ public class C2SChunk extends Chunk {
     }
     return nc;
   }
-//  public int pformat_len0() {
-//    throw H2O.unimpl();
-//    //if( _scale==0.01 ) return 5;
-//    //return hasFloat() ? pformat_len0(_scale,5) : super.pformat_len0();
-//  }
-//  public String  pformat0() {
-//    throw H2O.unimpl();
-//    //if( _scale==0.01 ) return "%7.2f";
-//    //return hasFloat() ? "% 10.4e" : super.pformat0();
-//  }
+
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
-  @Override public C2SChunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+  @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len((_mem.length-_OFF)>>1);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);
-    return this;
   }
 }

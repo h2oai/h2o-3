@@ -38,9 +38,9 @@ class H2OGridSearch(object):
       Specify the 'RandomDiscrete' strategy to get random search of all the combinations 
       of your hyperparameters.  RandomDiscrete should usually be combined with at least one early 
       stopping criterion, max_models and/or max_runtime_secs, e.g. 
-      {strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800} or
-      {strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 10} or
-      {strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5}.
+      search_criteria = {strategy: 'RandomDiscrete', max_models: 42, max_runtime_secs: 28800} or
+      search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'AUTO', stopping_tolerance: 0.001, stopping_rounds: 10} or
+      search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'misclassification', stopping_tolerance: 0.00001, stopping_rounds: 5}.
      
     Returns
     -------
@@ -197,6 +197,7 @@ class H2OGridSearch(object):
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self.model._compute_algo()  #unique to grid search
     kwargs["_rest_version"] = 99  #unique to grid search
+    if self.grid_id is not None: kwargs["grid_id"] = self.grid_id 
 
     grid = H2OJob(H2OConnection.post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
 

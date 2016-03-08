@@ -1,24 +1,44 @@
-#Grid Search API
+#Grid Search (Hyperparameter Search) API
+## REST
 
 The current implementation of the grid search REST API exposes the following endpoints: 
 
-- `/<version>/Grids`: List available grids
-- `/<version>/Grids/<grid_id>`: Display specified grid
-- `/<version>/Grids/<algo_name>`: Start a new grid search
-	- `<algo_name>`: Supported algorithm values are `{gbm, drf, kmeans, deeplearning}`
+- `GET /<version>/Grids`: List available grids, with optional parameters to sort the list by model metric such as MSE
+- `GET /<version>/Grids/<grid_id>`: Return specified grid
+- `POST /<version>/Grids/<algo_name>`: Start a new grid search
+	- `<algo_name>`: Supported algorithm values are `{glm, gbm, drf, kmeans, deeplearning}`
 
-Endpoints accept model-specific parameters (e.g., `GBMParametersV3`) and an additional parameter called `hyper_parameters`, which contains a JSON listing of the hyper parameters (e.g., `{"ntrees":[1,5],"learn_rate":[0.1,0.01]}`).
+Endpoints accept model-specific parameters (e.g., [GBMParametersV3](https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java) and an additional parameter called `hyper_parameters` which contains a dictionary of the hyper parameters which will be searched. In this dictionary an array of values is specified for each searched hyperparameter.
 
-Each parameter exposed by the schema can specify if it is supported by grid search by specifying the attribute `gridable=true` in the schema @API annotation. In any case, the Java API does not restrict the parameters supported by grid search. 
+```json
+{ 
+  "ntrees":[1,5], 
+  "learn_rate":[0.1,0.01] 
+}
+```
+
+An optional `search_criteria` dictionary specifies options for controlling more advanced search strategies.  Currently, full `Cartesian` is the default.  `RandomDiscrete` allows a random search over the hyperparameter space, with three ways of specifying when to stop the search: max number of models, max time, and metric-based early stopping (e.g., stop if MSE hasn't improved by 0.0001 over the 5 best models). An example is: 
+
+```json
+{ 
+  "strategy": "RandomDiscrete", 
+  "max_runtime_secs": 600, 
+  "max_models": 100, 
+  "stopping_metric": "AUTO", 
+  "stopping_tolerance": 0.00001, 
+  "stopping_rounds": 5, 
+  "seed": 123456 
+}
+```
 
 With grid search, each model is built sequentially, allowing users to view each model as it is built. 
 
 ##Example
 
-Invoke a new GBM model grid search by passing the following request to H2O: 
+Invoke a new GBM model grid search by POSTing the following request to `/99/Grid/gbm`: 
 
 ```json
-Method: POST  , URI: /99/Grid/gbm, route: /99/Grid/gbm, parms:{hyper_parameters={"ntrees":[1,5],"learn_rate":[0.1,0.01]}, training_frame=filefd41fe7ac0b_csv_1.hex_2, grid_id=gbm_grid_search, response_column=Species, ignored_columns=[""]}
+parms:{hyper_parameters={"ntrees":[1,5],"learn_rate":[0.1,0.01]}, training_frame="filefd41fe7ac0b_csv_1.hex_2", grid_id="gbm_grid_search", response_column="Species"", ignored_columns=[""]}
 ```
 
 ##Grid Search in R
@@ -31,6 +51,7 @@ Grid search in R provides the following capabilities:
 	- model builder name (e.g., `gbm`)
 	- model parameters (e.g., `ntrees=100`)
 	- `hyper_parameters` attribute for passing a list of hyper parameters (e.g., `list(ntrees=c(1,100), learn_rate=c(0.1,0.001))`)
+	- `search_criteria` optional attribute for specifying more a advanced search strategy
 
 ###Example
 
@@ -44,7 +65,7 @@ grid_models <- lapply(grid@model_ids, function(mid) {
   })
 ```
 
-### Random Hyper-Parmameter Grid Search Example
+### Random Hyper-Parameter Grid Search Example
 
 ```r
 # The following two commands remove any previously installed H2O packages for R.
@@ -68,7 +89,7 @@ dim(train)
 response <- 1
 predictors <- c(2:ncol(train))
 
-splits<-h2o.splitFrame(train,0.9,destination_frames = c("trainSplit","validSplit"),seed=123456)
+splits<-h2o.splitFrame(train, 0.9, destination_frames = c("trainSplit","validSplit"), seed = 123456)
 trainSplit <- splits[[1]]
 validSplit <- splits[[2]]
 
@@ -97,7 +118,7 @@ hyper_params = list( ntrees = ntrees_opts,
 
 
 ## Search a random subset of these hyper-parmameters (max runtime and max models are enforced, and the search will stop after we don't improve much over the best 5 random models)
-search_criteria = list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO", stopping_tolerance = 0.00001, stopping_rounds = 5, seed=123456)
+search_criteria = list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO", stopping_tolerance = 0.00001, stopping_rounds = 5, seed = 123456)
 
 gbm.grid <- h2o.grid("gbm", 
                      grid_id = "mygrid",
@@ -141,7 +162,7 @@ ntrees <- best_model@model$model_summary$number_of_trees
 print(ntrees)
 ```
 
-For more information, refer to the [R grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R). 
+For more information, refer to the [R grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R) and [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R). 
 
 
 ##Grid Search in Python
@@ -151,37 +172,45 @@ For more information, refer to the [R grid search code](https://github.com/h2oai
 - `grid_search = H2OGridSearch(<model_type), hyper_params=hyper_parameters)`: Start a new grid search parameterized by:
 	- `model_type` is the type of H2O estimator model with its unchanged parameters 
 	- `hyper_params` in Python is a dictionary of string parameters (keys) and a list of values to be explored by grid search (values) (e.g., `{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}`
+	- `search_criteria` optional dictionary for specifying more a advanced search strategy
+
+
 
 ###Example
 
 
 ```python
- hyper_parameters = {'ntrees':[10,50], 'max_depth':[20,10]}
+  hyper_parameters = {'ntrees':[10,50], 'max_depth':[20,10]}
   grid_search = H2OGridSearch(H2ORandomForestEstimator, hyper_params=hyper_parameters)
   grid_search.train(x=["x1", "x2"], y="y", training_frame=train)
   grid_search.show()
 
 ```
 
-For more information, refer to the [Python grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py). 
+For more information, refer to the [Python grid search code](https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py). 
 
 
 ##Grid Search Java API
 
+Each parameter exposed by the schema can specify if it is supported by grid search by specifying the attribute `gridable=true` in the schema @API annotation. In any case, the Java API does not restrict the parameters supported by grid search. 
+
 There are two core entities: `Grid` and `GridSearch`. `GridSeach` is a job-building `Grid` object and is defined by the user's model factory and the [hyperspace walk strategy](https://en.wikipedia.org/wiki/Hyperparameter_optimization).  The model factory must be defined for each supported model type (DRF, GBM, DL, and K-means). The hyperspace walk strategy specifies how the user-defined space of hyper parameters is traversed. The space definition is not limited. For each point in hyperspace, model parameters of the specified type are produced. 
 
-Currently, the implementation supports a simple cartesian grid search, but additional space traversal strategies are currently in development. This triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, it is ignored; however, it can still be tracked in the job list. Model builder jobs are run serially in sequential order. More advanced job scheduling schemes are under development.
+The implementation supports a simple Cartesian grid search as well as random search with several different stopping criteria. Grid build triggers a new model builder job for each hyperspace point returned by the walk strategy. If the model builder job fails, the resulting model is ignored; however, it can still be tracked in the job list, and errors are returned in the grid build result. 
 
-The grid object contains the results of the grid search: a list of model keys produced by the grid search. The grid object publishes a simple API to get the models. 
+Model builder jobs are run serially in sequential order. More advanced job scheduling schemes are under development.  Note that in cases of true big data sequential scheduling will yield the highest performance.  It is only with a large cluster and small data that concurrent scheduling will improve performance.
+
+The grid object contains the results of the grid search: a list of model keys produced by the grid search as well as any errors, and a table of metrics for each succesful model. The grid object publishes a simple API to get the models. 
 
 Launch the grid search by specifying: 
 
-- the model parameters (provides a common setting used to create new models)
-- the hyper parameters (a map `<parameterName, listOfValues>` that defines the parameter spaces to traverse)
+- the common model hyperparameters (parameter values which will be common across all models in the search)
+- the search hyperparameters (a map `<parameterName, listOfValues>` that defines the parameter spaces to traverse)
+- optionally, search criteria (an instance of `HyperSpaceSearchCriteria`)
 
 The Java API can grid search any parameters defined in the model parameter's class (e.g., `GBMParameters`). Paramters that are appropriate for gridding are marked by the @API parameter, but this is not enforced by the framework. 
 
-Additional parameters are available in the model builder to support creation of model parameters and configuration. This eliminates the requirement of the previous implementation where each gridable value was represented as a `double`. This also allows users to specify different building strategies for model parameters. For example, a REST layer uses a builder that validates parameters against the model parameter's schema, where the Java API uses a simple reflective builder. Additional reflections support is provided by PojoUtils (methods `setField`, `getFieldValue`). 
+Additional mathods are available in the model builder to support creation of model parameters and configuration. This eliminates the requirement of the previous implementation where each gridable value was represented as a `double`. This also allows users to specify different building strategies for model parameters. For example, the REST layer uses a builder that validates parameters against the model parameter's schema, where the Java API uses a simple reflective builder. Additional reflections support is provided by PojoUtils (methods `setField`, `getFieldValue`). 
 
 ###Example
 
@@ -197,11 +226,12 @@ GBMModel.GBMParameters params = new GBMModel.GBMParameters();
 params._train = fr._key;
 params._response_column = "cylinders";
 // Trigger new grid search job, block for results and get the resulting grid object
-GridSearch gs = GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY);
+GridSearch gs = 
+ GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY, new HyperSpaceSearchCriteria.CartesianSearchCriteria());
 Grid grid = (Grid) gs.get();
 ```
 
-### Exposing grid search end-point for new algorithm
+### Exposing grid search end-point for a new algorithm
 
 In the following example, the PCA algorithm has been implemented and we would like to expose the algorithm via REST API. The following aspects are assumed: 
 
@@ -283,15 +313,10 @@ To add support for PCA grid search:
 	       }
 	  }
 	  ```
-
-
-### Implementing a new grid search walk strategy
-
-	>In progress...
-
+	  
 ##Grid Testing
 
-This feature is tested with the intention of fixing semantics of the grid API. The current test infrastructure includes: 
+The current test infrastructure includes: 
 
 **R Tests**
 
@@ -304,14 +329,14 @@ This feature is tested with the intention of fixing semantics of the grid API. T
 - Basic tests verifying consistency of the results for DRF, GBM, and KMeans
 - JUnit test assertions for grid results
 
+There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airlines.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R) and [pyunit_benign_glm_grid.py](https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py).
 
 ##Caveats/In Progress
 
 - Currently, the schema system requires specific classes instead of parameterized classes. For example, the schema definition `Grid<GBMParameters>` is not supported unless your define the class `GBMGrid extends Grid<GBMParameters>`. 
-- Grid Job scheduler is sequential only; schedulers for concurrent builds are under development. 
+- Grid Job scheduler is sequential only; schedulers for concurrent builds are under development.  Note that in cases of true big data sequential scheduling will yield the highest performance.  It is only with a large cluster and small data that concurrent scheduling will improve performance.
 - The model builder job and grid jobs are not associated. 
 - There is no way to list the hyper space parameters that caused a model builder job failure. 
-- There is no model query interface (i.e., display the best model for the specified criterion). 
 
 
 ##Documentation

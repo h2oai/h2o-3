@@ -531,9 +531,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param adaptedFr Test dataset, adapted to the model
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -574,7 +574,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param myRows Mini-Batch Array of denseRow's containing numerical/categorical predictor and response data (standardized)
    * @return loss
    */
-  public double loss(DataInfo.Row[] myRows) {
+  public double meanLoss(DataInfo.Row[] myRows) {
     double loss = 0;
     Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
@@ -583,9 +583,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     double[] responses = new double[myRows.length];
     double[] offsets   = new double[myRows.length];
+    int n=0;
     for (int mb=0; mb<myRows.length; ++mb) {
       DataInfo.Row myRow = myRows[mb];
       if (myRow == null) continue;
+      n++;
       ((Neurons.Input) neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, mb);
       responses[mb] = myRow.response(0);
       offsets[mb] = myRow.offset;
@@ -602,6 +604,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     for (int mb=0; mb<myRows.length; ++mb) {
       DataInfo.Row myRow = myRows[mb];
+      if (myRow==null) continue;
 
       // check that all non-last layer errors/gradients are still empty
       for (int i = 0; i<neurons.length-1;++i) {
@@ -649,7 +652,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }
     }
-    return loss;
+    return n>0?loss/n:loss;
   }
 
   /**
@@ -746,7 +749,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param layer index of the hidden layer for which to extract the features
    * @return Frame containing the deep features (#cols = hidden[layer])
    */
-  public Frame scoreDeepFeatures(Frame frame, final int layer) {
+   
+   public Frame scoreDeepFeatures(Frame frame, final int layer) {
+     return  scoreDeepFeatures(frame, layer, null);
+   }
+  
+  public Frame scoreDeepFeatures(Frame frame, final int layer, final Job job) {
     if (layer < 0 || layer >= model_info().get_params()._hidden.length)
       throw new H2OIllegalArgumentException("hidden layer (index) to extract must be between " + 0 + " and " + (model_info().get_params()._hidden.length-1),"");
     final int len = _output.nfeatures();
@@ -775,6 +783,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final int n=1;
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
+        if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
@@ -786,6 +795,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
         }
+        if (job != null) job.update(1);
       }
     }.doAll(adaptFrm);
 
@@ -1867,8 +1877,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
         }
-        if (_replicate_training_data && null != train() && train().byteSize() > 1e10 && H2O.CLOUD.size() > 1) {
-          dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
+        if (_replicate_training_data && null != train() && train().byteSize() > 0.9*H2O.CLOUD.free_mem()/H2O.CLOUD.size() && H2O.CLOUD.size() > 1) {
+          dl.error("_replicate_training_data", "Compressed training dataset takes more than 90% of avg. free available memory per node (" + 0.9*H2O.CLOUD.free_mem()/H2O.CLOUD.size() + "), cannot run with replicate_training_data.");
         }
       }
       if (!_elastic_averaging) {
@@ -1930,7 +1940,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_elastic_averaging",
               "_elastic_averaging_moving_rate",
               "_elastic_averaging_regularization",
-              "_mini_batch_size"
+              "_mini_batch_size",
+              "_pretrained_autoencoder"
       };
   
       // the following parameters must not be modified when restarting from a checkpoint

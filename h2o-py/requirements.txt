@@ -12,4 +12,5 @@ six
 seaborn
 future
 matplotlib
-MySQL-python
+sphinx
+numpydoc

@@ -92,8 +92,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
    * to be reduced by another node. This serializes the
    * current node's hashmap for merging.
    */
-  @Override
-  public AutoBuffer write_impl(AutoBuffer ab) {
+  final public AutoBuffer write_impl(AutoBuffer ab) {
     if (_vocabHM == null) return ab.put1(1); // killed
 
     int strLen = 0;
@@ -117,7 +116,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
    * This keeps the incoming results in a single string
    * buffer.
    */
-  @Override
+
   public WordCountTask read_impl(AutoBuffer ab) {
     _vocabHM = VOCABHM;
     int len, off = 0;

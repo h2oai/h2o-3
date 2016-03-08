@@ -27,17 +27,31 @@ import java.io.*;
  * {@code
  * transient int DEBUG_WEAVER = 1;
  * }
+ * @see Freezable
  * @see water.Weaver
  * @see water.AutoBuffer
  */
 abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizable {
 
   // The serialization flavor / delegate.  Lazily set on first use.
-  private short _ice_id;
+  transient private volatile short _ice_id = 0;
+
+
+  @Override
+  public byte [] asBytes(){
+    return write(new AutoBuffer()).buf();
+  }
+
+  @Override
+  public D reloadFromBytes(byte [] ary){
+    return read(new AutoBuffer(ary));
+  }
 
   // Return the icer for this instance+class.  Will set on 1st use.
   private Icer<D> icer() {
     int id = _ice_id;
+    int tyid;
+    if(id != 0) assert id == (tyid =TypeMap.onIce(this)):"incorrectly cashed id " + id + ", typemap has " + tyid + ", type = " + getClass().getName();
     return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
   }
 
@@ -84,22 +98,22 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
+//  @Override public AutoBuffer write_impl( AutoBuffer ab ) { return ab; }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public D read_impl( AutoBuffer ab ) { return (D)this; }
+//  @Override public D read_impl( AutoBuffer ab ) { return (D)this; }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
+//  public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
   /** Implementation of the {@link Iced} serialization protocol, only called by
    *  auto-genned code.  Not intended to be called by user code.  Override only
    *  for custom Iced serializers. */
   //noninspection UnusedDeclaration
-  @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
+//  @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
 
   // Java serializers use H2Os Icing
   @Override public void readExternal( ObjectInput ois )  throws IOException, ClassNotFoundException {
@@ -114,4 +128,5 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     oos.writeInt(buf.length);
     oos.write(buf);
   }
+
 }

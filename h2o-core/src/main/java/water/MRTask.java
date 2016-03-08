@@ -3,6 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
+import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
 
@@ -460,11 +461,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
     assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
-    try { ForkJoinPool.managedBlock(this); }
-    catch( InterruptedException ignore ) { }
-    catch( Throwable re ) { setException(re);  }
-    DException.DistributedException de = getDException();
-    if( de != null ) throw de;
+    while(!isReleasable()) {
+      try {
+        ForkJoinPool.managedBlock(this);
+        Throwable ex = getDException();
+        if (ex != null) throw ex;
+      } catch (InterruptedException ignore) {
+        // do nothing
+      } catch (Throwable re) {
+        throw (re instanceof DistributedException)?new DistributedException(re.getMessage(),re.getCause()):new DistributedException(re);
+      }
+    }
     assert _topGlobal:"lost top global flag";
     return self();
   }
@@ -739,7 +746,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  exceptions (which is the F/J default).  Called internal by F/J.  Not
    *  expected to be user-called.  */
   @Override public final boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
-    if( !hasException() ) setException(ex);
     self_cancel1();
     // Block for completion - we don't want the work, but we want all the
     // workers stopped before we complete this task.  Otherwise this task quits
@@ -751,7 +757,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // catch & ignore, keeping only the first one we already got.
     if( _nleft != null ) try { _nleft.get(); } catch( Throwable ignore ) { } _nleft = null;
     if( _nrite != null ) try { _nrite.get(); } catch( Throwable ignore ) { } _nrite = null;
-
     return super.onExceptionalCompletion(ex, caller);
   }
 

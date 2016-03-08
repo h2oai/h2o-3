@@ -349,8 +349,8 @@ public class GBMTest extends TestUtil {
         fr.delete();            // Attempted delete while model-build is active
         Assert.fail("Should toss IAE instead of reaching here");
       } catch( IllegalArgumentException ignore ) {
-      } catch( DException.DistributedException de ) {
-        assertTrue( de.getMessage().contains("java.lang.IllegalArgumentException") );
+      } catch( RuntimeException re ) {
+        assertTrue( re.getCause() instanceof IllegalArgumentException);
       }
 
       Log.info("Getting model");
