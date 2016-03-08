@@ -185,7 +185,10 @@ class H2OFrame(object):
     """
     fr = H2OFrame()
     fr._ex._cache._id = frame_id
-    fr._ex._cache.fill()
+    try:
+      fr._ex._cache.fill()
+    except EnvironmentError:
+      return None
     return fr
 
   def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
