@@ -60,3 +60,7 @@ docs/docs/search*
 docs/docs/py-modindex.html
 docs/docs/*html
 docs/docs/*js
+docs/docs/.buildinfo
+docs/docs/.doctrees/*
+docs/docs/_modules/*
+docs/docs/objects.inv

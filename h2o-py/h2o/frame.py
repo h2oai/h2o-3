@@ -315,8 +315,8 @@ class H2OFrame(object):
 
     Parameters
     ----------
-    frac : float
-      Fraction of NAs in the column.
+      frac : float
+        Fraction of NAs in the column.
 
     Returns
     -------
@@ -376,7 +376,8 @@ class H2OFrame(object):
         print(self)
 
   def summary(self):
-    """Summary: show(), plus includes min/mean/max/sigma and other rollup data"""
+    """Summary includes min/mean/max/sigma and other rollup data.
+    """
     if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
     if H2ODisplay._in_ipy():
       import IPython.display
