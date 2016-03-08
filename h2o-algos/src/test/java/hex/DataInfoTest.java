@@ -68,6 +68,7 @@ public class DataInfoTest extends TestUtil {
       );
 
       System.out.println(dinfo__noInteractions.fullN());
+      System.out.println(dinfo__noInteractions.numNums());
 
 
       DataInfo dinfo__withInteractions = new DataInfo(

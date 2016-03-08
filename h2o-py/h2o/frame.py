@@ -696,7 +696,6 @@ class H2OFrame(object):
 
   def cummin(self):
     """
-
     Returns
     -------
       The cumulative min over the column.
