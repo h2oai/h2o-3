@@ -21,7 +21,7 @@ def javapredict_dynamic_data():
             dataset_params['integer_fraction'] = dataset_params['integer_fraction'] - 0.1
         else:
             dataset_params['categorical_fraction'] = dataset_params['categorical_fraction'] - 0.1
-    dataset_params['missing_fraction'] = random.uniform(0,0.5)
+    dataset_params['missing_fraction'] = random.uniform(0,0.01)
     dataset_params['has_response'] = True
     dataset_params['randomize'] = True
     dataset_params['factors'] = random.randint(2,50)
