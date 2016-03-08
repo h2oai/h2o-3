@@ -25,7 +25,7 @@ def javapredict_dynamic_data():
     dataset_params['missing_fraction'] = random.uniform(0,0.5)
     dataset_params['has_response'] = True
     dataset_params['randomize'] = True
-    dataset_params['factors'] = random.randint(2,2000)
+    dataset_params['factors'] = random.randint(2,10)
     print("Dataset parameters: {0}".format(dataset_params))
 
     append_response = False
@@ -40,12 +40,12 @@ def javapredict_dynamic_data():
 
     train = h2o.create_frame(**dataset_params)
     if append_response:
+        response.set_name(0,"response")
         train = response.cbind(train)
-        train.set_name(0,"response")
     if family == 'binomial': train['response'] = train['response'].asfactor()
     results_dir = pyunit_utils.locate("results")
     h2o.download_csv(train["response"],os.path.join(results_dir,"glm_dynamic_preimputed_response.log"))
-    train = train.impute("response", method="mode")
+    train.impute("response", method="mode")
     print("Training dataset:")
     print(train)
 
