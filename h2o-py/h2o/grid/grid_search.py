@@ -197,6 +197,7 @@ class H2OGridSearch(object):
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self.model._compute_algo()  #unique to grid search
     kwargs["_rest_version"] = 99  #unique to grid search
+    if self.grid_id is not None: kwargs["grid_id"] = self.grid_id 
 
     grid = H2OJob(H2OConnection.post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
 
