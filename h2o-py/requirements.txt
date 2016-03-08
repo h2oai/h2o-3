@@ -13,3 +13,4 @@ seaborn
 future
 matplotlib
 sphinx
+numpydoc

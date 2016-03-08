@@ -1877,8 +1877,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (_class_sampling_factors != null && !_balance_classes) {
           dl.error("_class_sampling_factors", "class_sampling_factors requires balance_classes to be enabled.");
         }
-        if (_replicate_training_data && null != train() && train().byteSize() > 1e10 && H2O.CLOUD.size() > 1) {
-          dl.error("_replicate_training_data", "Compressed training dataset takes more than 10 GB, cannot run with replicate_training_data.");
+        if (_replicate_training_data && null != train() && train().byteSize() > 0.9*H2O.CLOUD.free_mem()/H2O.CLOUD.size() && H2O.CLOUD.size() > 1) {
+          dl.error("_replicate_training_data", "Compressed training dataset takes more than 90% of avg. free available memory per node (" + 0.9*H2O.CLOUD.free_mem()/H2O.CLOUD.size() + "), cannot run with replicate_training_data.");
         }
       }
       if (!_elastic_averaging) {
