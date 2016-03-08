@@ -9,117 +9,142 @@ source("../../scripts/h2o-r-test-setup.R")
 #           java must be at least 1.6.
 #----------------------------------------------------------------------
 
-options(echo=FALSE)
-TEST_ROOT_DIR <- ".."
+test.dl.javapredict.iris.large <-
+function() {
 
+    training_file <- locate("smalldata/iris/iris_train.csv")
+    test_file <- locate("smalldata/iris/iris_test.csv")
 
+#    # AUTOENCODER
+#    params                 <- list()
+#    params$autoencoder     <- TRUE
+#    params$activation      <- "Rectifier"
+#    params$hidden          <- c(5,3,2)
+#    params$epochs          <- 3
+#    params$training_frame  <- training_frame
+#
+#    params$x               <- c("species","sepal_len","sepal_wid","petal_len","petal_wid")
+#    doJavapredictTest("deeplearning",test_file,test_frame,params)
+#
+#    # only numericals
+#    params$x               <- c("sepal_len","sepal_wid","petal_len","petal_wid");
+#    doJavapredictTest("deeplearning",test_file,test_frame,params)
+#
+#    # mixed numericals and categoricals
+#    params$x               <- c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+#    doJavapredictTest("deeplearning",test_file,test_frame,params)
+#
+#    activation = "Tanh"
+#    params$x               <- c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+#    doJavapredictTest("deeplearning",test_file,test_frame,params)
+#
+#    hidden = c(3)
+#    activation = "Tanh"
+#    params$x               <- c("species","sepal_len","sepal_wid","petal_len","petal_wid");
+#    doJavapredictTest("deeplearning",test_file,test_frame,params)
+#
+#
+    # CLASSIFICATION
+    params                 <- list()
+    params$autoencoder     <- FALSE
+    params$x               <- c("sepal_len","sepal_wid","petal_len","petal_wid")
+    params$y               <- "species"
 
+    # large network
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$hidden          <- c(500,500,500)
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
+    # with imbalance correction
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$hidden          <- c(13,17,50,3)
+    params$balance_classes <- TRUE
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-train <- locate("smalldata/iris/iris_train.csv")
-test <- locate("smalldata/iris/iris_test.csv")
-x = c("sepal_len","sepal_wid","petal_len","petal_wid");
-y = "species"
-activation = "Tanh"
-epochs = 2
+    # without imbalance correction
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$balance_classes <- FALSE
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-#----------------------------------------------------------------------
-# Run the tests
-#----------------------------------------------------------------------
+    # other activation functions
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "TanhWithDropout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-# AUTOENCODER
-autoencoder = T
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "Rectifier"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-activation = "Rectifier"
-hidden = c(5,3,2)
-epochs = 3
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "RectifierWithDropout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "Maxout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-# only numericals
-x = c("sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "MaxoutWithDropout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-# mixed numericals and categoricals
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
+    # REGRESSION
+    params                 <- list()
+    params$autoencoder     <- FALSE
+    params$x               <- c("sepal_len","sepal_wid","petal_len")
+    params$y               <- "petal_wid"
 
-activation = "Tanh"
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "Tanh"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-hidden = c(3)
-activation = "Tanh"
-x = c("species","sepal_len","sepal_wid","petal_len","petal_wid");
-y = c("petal_wid") #ignored
-source('../Utils/shared_javapredict_DL.R')
+    # other activation functions
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "TanhWithDropout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "Rectifier"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-# CLASSIFICATION
-autoencoder = F
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "RectifierWithDropout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-# large network
-hidden = c(500,500,500)
-source('../Utils/shared_javapredict_DL.R')
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "Maxout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
 
-# with imbalance correction
-hidden = c(13,17,50,3)
-balance_classes = T
-source('../Utils/shared_javapredict_DL.R')
+    training_frame <- h2o.importFile(training_file)
+    test_frame <- h2o.importFile(test_file)
+    params$training_frame  <- training_frame
+    params$activation      <- "MaxoutWithDropout"
+    doJavapredictTest("deeplearning",test_file,test_frame,params)
+}
 
-# without imbalance correction
-balance_classes = F
-source('../Utils/shared_javapredict_DL.R')
-
-# other activation functions
-activation = "TanhWithDropout"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "Rectifier"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "RectifierWithDropout"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "Maxout"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "MaxoutWithDropout"
-source('../Utils/shared_javapredict_DL.R')
-
-
-
-# REGRESSION
-
-activation = "Tanh"
-x = c("species","sepal_len","sepal_wid","petal_len")
-y = c("petal_wid")
-source('../Utils/shared_javapredict_DL.R')
-
-# ignore a column
-x = c("species","sepal_wid","petal_len")
-source('../Utils/shared_javapredict_DL.R')
-
-# other activation functions
-activation = "TanhWithDropout"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "Rectifier"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "RectifierWithDropout"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "Maxout"
-source('../Utils/shared_javapredict_DL.R')
-
-activation = "MaxoutWithDropout"
-source('../Utils/shared_javapredict_DL.R')
+doTest("DL pojo test", test.dl.javapredict.iris.large)
