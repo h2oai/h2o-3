@@ -12,3 +12,5 @@ six
 seaborn
 future
 matplotlib
+sphinx
+numpydoc
