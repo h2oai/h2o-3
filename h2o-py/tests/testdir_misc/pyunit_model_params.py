@@ -8,7 +8,7 @@ from h2o.estimators.kmeans import H2OKMeansEstimator
 def pyunit_model_params():
     pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     m = H2OKMeansEstimator(k=4)
-    m.train(x=range(fr.ncol),training_frame=pros)
+    m.train(x=range(pros.ncol),training_frame=pros)
     print(m.params)
     print(m.full_parameters)
 
