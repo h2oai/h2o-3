@@ -1,1 +1,13 @@
 apply plugin: 'java'
+
+dependencies {
+    compile group: 'org.jacoco', name: 'org.jacoco.core', version:'0.7.6.+'
+}
+
+repositories {
+    mavenCentral()
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.9'
+}
