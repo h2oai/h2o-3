@@ -67,13 +67,6 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public S fillFromImpl( O impl ) {
     super.fillFromImpl(impl);
     this.model_category = impl.getModelCategory();
-
-    try {
-      this.start_time = impl._job.start_time();
-      this.end_time = impl._job.end_time();
-      this.run_time = this.end_time - this.start_time;
-    } catch (Exception ignore) {}
-
     fillHelp();
     return (S)this;
   }
