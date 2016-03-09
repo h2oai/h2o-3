@@ -66,6 +66,7 @@ def metric_json_check():
 
     # Binomial metric json
     bin_mod = H2OGradientBoostingEstimator(distribution="bernoulli")
+    df["CAPSULE"] = df["CAPSULE"].asfactor()
     bin_mod.train(x=range(3,df.ncol), y="CAPSULE", training_frame=df)
     bin_met = bin_mod.model_performance()
     bin_metric_json_keys_have = list(bin_met._metric_json.keys())
@@ -162,7 +163,7 @@ def metric_json_check():
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
     from h2o.estimators.kmeans import H2OKMeansEstimator
     clus_mod = H2OKMeansEstimator(k=3, standardize=False)
-    clus_mod.train(x=range(4), taining_frame=df)
+    clus_mod.train(x=range(4), training_frame=df)
     clus_met = clus_mod.model_performance()
     clus_metric_json_keys_have = list(clus_met._metric_json.keys())
     clus_metric_json_keys_desired = [u'tot_withinss',
