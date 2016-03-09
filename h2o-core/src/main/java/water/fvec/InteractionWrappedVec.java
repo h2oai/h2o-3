@@ -47,9 +47,21 @@ public class InteractionWrappedVec extends WrappedVec {
     _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
     _skipMissing=skipMissing;
-    setupDomain();
+    setupDomain();  // performs MRTask if both vecs are categorical!!
     DKV.put(this);
   }
+
+  public String[] v1Domain() { return _v1Enums==null?_v1Domain:_v1Enums; }
+  public String[] v2Domain() { return _v2Enums==null?_v2Domain:_v2Enums; }
+  public String[] domains() { // always returns the "correct" domains, so accidental mixup of domain vs domains is ok
+    String[] res;
+    if( null!=(res=domain())) return res;
+    if( null==(res=v1Domain()) ) return v2Domain();
+    return res;
+  }
+
+  public Vec v1() { return _masterVec1==null?(_masterVec1=_masterVecKey1.get()):_masterVec1; }
+  public Vec v2() { return _masterVec2==null?(_masterVec2=_masterVecKey2.get()):_masterVec2; }
 
   /**
    * Obtain the length of the expanded (i.e. one-hot expanded) interaction column.
@@ -82,8 +94,8 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   private static class CombineDomainTask extends MRTask<CombineDomainTask> {
-    private String[] _dom;        // out
-    private long[] _bins;         // out
+    private String[] _dom;        // out, sorted (uses Arrays.sort)
+    private long[] _bins;         // out, sorted according to _dom
     private final String _left[]; // in
     private final String _rite[]; // in
     private final String _leftLimit[]; // in

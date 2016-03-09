@@ -667,7 +667,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
   }
 
-  public boolean isInteractionVec(int colid) { return Arrays.binarySearch(_interactionVecs, colid) > 0; }
+  public boolean isInteractionVec(int colid) { return _adaptedFrame.vec(colid) instanceof InteractionWrappedVec; }
 
   /**
    *
@@ -701,17 +701,17 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
-    final int nums = n-k;
-
     // now loop over the numerical columns, collecting up any expanded InteractionVec names
     for(int i=_cats;i<_nums;++i) {
-      if( vecs[i] instanceof InteractionWrappedVec ) { // in this case, get the categoricalOffset
-
+      InteractionWrappedVec v;
+      if( vecs[i] instanceof InteractionWrappedVec && ( (v=(InteractionWrappedVec)vecs[i]).domains()!=null )) { // in this case, get the categoricalOffset
+        for(int j=0; k<v.domains().length;++j) {
+          if( getCategoricalIdFromInteraction(i,j) < 0 ) continue;
+          res[k++] = _adaptedFrame._names[i] + "." + v.domains()[j];
+        }
       } else
         res[k++] = _adaptedFrame._names[i];
     }
-
-    System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
     _coefNames = res;
     return res;
   }
@@ -749,15 +749,15 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final class Row extends Iced {
-    public boolean bad;
-    public double [] numVals;
+    public boolean bad;       // should the row be skipped (GLM skip NA for example)
+    public double [] numVals; // the backing data of the row
     public double [] response;
-    public int    [] numIds;
-    public int    [] binIds;
-    public long      rid;
-    public int      cid;
-    public int       nBins;
-    public int       nNums;
+    public int    [] numIds;  // location of next sparse value
+    public int    [] binIds;  // location of categorical
+    public long      rid;     // row number (sometimes within chunk, or absolute)
+    public int      cid;      // categorical id
+    public int       nBins;   // number of enum    columns (not expanded)
+    public int       nNums;   // number of numeric columns (not expanded)
     public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
@@ -873,22 +873,29 @@ public class DataInfo extends Keyed<DataInfo> {
    * @return offset into the fullN set of columns
    */
   public final int getCategoricalId(int cid, int val) {
-    if( isInteractionVec(cid) ) {
-
-    }
-
-
-    if( !_useAllFactorLevels )  // categorical interaction vecs know up front if first level is dropped
+    boolean isIWV = isInteractionVec(cid);
+    if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
       val -= 1;
     if(val >= fullCatOffsets()[cid+1]) {  // previously unseen level
       assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
-      val = _catModes[cid] - (_useAllFactorLevels?0:1);
+      val = _catModes[cid] - (_useAllFactorLevels||isInteractionVec(cid)?0:1);
     }
     if (_catLvls[cid] != null) {  // some levels are ignored?
       assert _useAllFactorLevels;
       val = Arrays.binarySearch(_catLvls[cid], val);
     }
     return val < 0?-1:val + _catOffsets[cid];
+  }
+
+  public final int getCategoricalIdFromInteraction(int cid, int val) {
+    InteractionWrappedVec v;
+    if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
+    assert v.domains()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
+    if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
+      assert _valid:"interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
+      val = v.mode();
+    }
+    return val < 0?-1:val+_numOffsets[cid];
   }
 
   public final Row extractDenseRow(double [] vals, Row row) {
@@ -957,12 +964,22 @@ public class DataInfo extends Keyed<DataInfo> {
     row.nBins = nbins;
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
-      double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
-      if (Double.isNaN(d))
-        d = _numMeans[i];
-      if (_normMul != null && _normSub != null)
-        d = (d - _normSub[i]) * _normMul[i];
-      row.numVals[i] = d;
+      if( isInteractionVec(i) ) {
+        int offset;
+        int v1 = _adaptedFrame.find(((InteractionWrappedVec) chunks[_cats + i].vec()).v1());
+        int v2 = _adaptedFrame.find( ((InteractionWrappedVec)chunks[_cats+i].vec()).v2());
+        if( chunks[v1].vec().isCategorical() )      offset = (int)chunks[v1].at8(rid);
+        else if( chunks[v2].vec().isCategorical() ) offset = (int)chunks[v2].at8(rid);
+        else offset=0;
+        row.numVals[i+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
+      } else {
+        double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
+        if (Double.isNaN(d))
+          d = _numMeans[i];
+        if (_normMul != null && _normSub != null)
+          d = (d - _normSub[i]) * _normMul[i];
+        row.numVals[i] = d;
+      }
     }
     for (int i = 0; i < _responses; ++i) {
       try {
@@ -983,7 +1000,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
-  public Row newDenseRow(){return new Row(false,_nums,_cats,_responses,0,0);}
+  public Row newDenseRow(){return new Row(false,numNums(),_cats,_responses,0,0);}  // TODO: _nums => numNums since currently extracting out interactions into dense
   public Row newDenseRow(double[] numVals, long start) {
     return new Row(false, numVals, null, null, 0, start);
   }
@@ -1029,6 +1046,7 @@ public class DataInfo extends Keyed<DataInfo> {
    * @return array of sparse rows
    */
   public final Row[] extractSparseRows(Chunk [] chunks) {
+    if( _interactions!=null ) throw H2O.unimpl("sparse interactions");
     Row[] rows = new Row[chunks[0]._len];
     long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
