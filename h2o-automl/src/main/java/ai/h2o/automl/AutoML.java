@@ -32,8 +32,8 @@ public final class AutoML {
   enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
-  public AutoML(String datasetName, Frame fr, int response, String loss, long maxTime, double minAccuracy,
-                boolean ensemble, String[] modelExclude, boolean allowMutations) {
+  public AutoML(String datasetName, Frame fr, int response, String loss, long maxTime,
+                double minAccuracy, boolean ensemble, String[] modelExclude, boolean tryMutations) {
     _datasetName=datasetName;
     _fr=fr;
     _response=response;
@@ -45,7 +45,7 @@ public final class AutoML {
     if( modelExclude!=null )
       for( int i=0; i<modelExclude.length; ++i )
         _modelEx[i] = models.valueOf(modelExclude[i]);
-    _allowMutations=allowMutations;
+    _allowMutations=tryMutations;
   }
 
   // manager thread:
@@ -74,6 +74,7 @@ public final class AutoML {
     // gather more data? build more models? start applying transforms? what next ...?
   }
 
+  public Key<Model> getLeaderKey() { return LEADER; }
   public void delete() {
     for(Model m: models()) m.delete();
     DKV.remove(MODELLIST);
