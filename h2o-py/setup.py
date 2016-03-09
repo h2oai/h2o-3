@@ -63,7 +63,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate', 'future'],
+    install_requires=['requests', 'tabulate', 'future', 'six'],
 
 
     data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../h2o-r/h2o-package/inst/extdata/iris.csv',
