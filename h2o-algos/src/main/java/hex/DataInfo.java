@@ -688,7 +688,7 @@ public class DataInfo extends Keyed<DataInfo> {
    *
    * @return expanded number of columns in the underlying frame
    */
-  public final int fullN(){ return _catOffsets[_cats] + numNums(); }
+  public final int fullN(){ return _catOffsets[_cats] + _nums; }
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
   public final int numStart(){return _catOffsets[_cats];}
   public final int numNums() { return _nums; } //_numOffsets.length==0?0:_numOffsets[_numOffsets.length-1] - numStart(); }
@@ -710,15 +710,20 @@ public class DataInfo extends Keyed<DataInfo> {
       if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
     }
     // now loop over the numerical columns, collecting up any expanded InteractionVec names
-    for(int i=_cats;i<_nums;++i) {
-      InteractionWrappedVec v;
-      if( vecs[i] instanceof InteractionWrappedVec && ( (v=(InteractionWrappedVec)vecs[i]).domains()!=null )) { // in this case, get the categoricalOffset
-        for(int j=0; k<v.domains().length;++j) {
-          if( getCategoricalIdFromInteraction(i,j) < 0 ) continue;
-          res[k++] = _adaptedFrame._names[i] + "." + v.domains()[j];
-        }
-      } else
-        res[k++] = _adaptedFrame._names[i];
+    if( _interactions==null ) {
+      final int nums = n-k;
+      System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
+    } else {
+      for (int i = _cats; i < _nums; ++i) {
+        InteractionWrappedVec v;
+        if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domains() != null)) { // in this case, get the categoricalOffset
+          for (int j = 0; k < v.domains().length; ++j) {
+            if (getCategoricalIdFromInteraction(i, j) < 0) continue;
+            res[k++] = _adaptedFrame._names[i] + "." + v.domains()[j];
+          }
+        } else
+          res[k++] = _adaptedFrame._names[i];
+      }
     }
     _coefNames = res;
     return res;
