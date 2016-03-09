@@ -10,7 +10,7 @@ import water.TestUtil;
 import java.util.Arrays;
 
 public class InteractionWrappedVecTest extends TestUtil {
-  @BeforeClass static public void setup() {  stall_till_cloudsize(3); }
+  @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   @Test public void testIris() { // basic "can i construct the vec" test
     Frame fr=null;
@@ -63,7 +63,7 @@ public class InteractionWrappedVecTest extends TestUtil {
 
       // don't include all cat levels
       interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, fr.vec(8)._key, fr.vec(16)._key);
-      Assert.assertTrue(interactionVec.expandedLength()==domain.length-2);
+      Assert.assertTrue(interactionVec.expandedLength()==286);
 
       System.out.println(interactionVec.mode());
       System.out.println(interactionVec.domain()[interactionVec.mode()]);
@@ -172,7 +172,7 @@ public class InteractionWrappedVecTest extends TestUtil {
 
       // don't include all cat levels
       interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, fr.vec(2)._key, fr.vec(4)._key);
-      Assert.assertTrue(interactionVec.expandedLength()==domain.length-2);
+      Assert.assertTrue(interactionVec.expandedLength()==16);
 
       System.out.println(interactionVec.mode());
       System.out.println(interactionVec.domain()[interactionVec.mode()]);
