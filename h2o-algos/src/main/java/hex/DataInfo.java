@@ -482,7 +482,6 @@ public class DataInfo extends Keyed<DataInfo> {
     _weights = dinfo._weights;
     _fold = dinfo._fold;
     _valid = false;
-    _numOffsets = dinfo._numOffsets;
     _interactions = dinfo._interactions;
     _interactionVecs=dinfo._interactionVecs;
     assert dinfo._predictor_transform != null;
@@ -505,6 +504,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _responses = dinfo._responses;
     _cats = catLevels.length;
     _nums = fr.numCols()-_cats - dinfo._responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
+    _numOffsets = _nums==0?new int[0]:dinfo._numOffsets;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _numMeans = new double[_nums];
     _normMul = normMul;
@@ -520,8 +520,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
 
-  public DataInfo filterExpandedColumns(int [] cols){
-    assert _predictor_transform != null;
+  public DataInfo filterExpandedColumns(int [] cols){    assert _predictor_transform != null;
     assert  _response_transform != null;
     if(cols == null)return deep_clone();
     int hasIcpt = (cols.length > 0 && cols[cols.length-1] == fullN())?1:0;
@@ -689,10 +688,10 @@ public class DataInfo extends Keyed<DataInfo> {
    *
    * @return expanded number of columns in the underlying frame
    */
-  public final int fullN(){ return _numOffsets[_nums]; }
+  public final int fullN(){ return _catOffsets[_cats] + numNums(); }
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
-  public final int numStart(){return _numOffsets[0];}
-  public final int numNums() { return fullN() - numStart(); }
+  public final int numStart(){return _catOffsets[_cats];}
+  public final int numNums() { return _numOffsets.length==0?0:_numOffsets[_numOffsets.length-1] - numStart(); }
   public final String[] coefNames(){
     if (_coefNames != null) return _coefNames; 
     int k = 0;
