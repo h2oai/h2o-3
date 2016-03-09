@@ -51,8 +51,9 @@ def pub_444_spaces_in_filenames():
     train_data.show()
     train_data.describe()
     train_data["response"] = train_data["response"].asfactor()
+
     gbm = H2OGradientBoostingEstimator(ntrees=1, distribution="bernoulli", min_rows=1)
-    gbm.train(x=range(1,train_data.ncol), y="response", training_frame=train_data)
+    gbm.train(x=1, y="response", training_frame=train_data)
 
     gbm.show()
 
@@ -61,7 +62,7 @@ def pub_444_spaces_in_filenames():
     train_data.describe()
     train_data[0]=train_data[0].asfactor()
     gbm = H2OGradientBoostingEstimator(ntrees=1, distribution="bernoulli", min_rows=1)
-    gbm.train(x=range(1,train_data.ncol), y=0, training_frame=train_data)
+    gbm.train(x=1, y=0, training_frame=train_data)
     gbm.show()
 
     os.remove(pyunit_utils.locate(tempdir) + "foo .csv")
