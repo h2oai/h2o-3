@@ -50,13 +50,18 @@ def pub_444_spaces_in_filenames():
     train_data = h2o.upload_file(path=pyunit_utils.locate(tempdir + "b a r .csv"))
     train_data.show()
     train_data.describe()
-    gbm = h2o.gbm(x=train_data[1:], y=train_data["response"].asfactor(), ntrees=1, distribution="bernoulli", min_rows=1)
+    train_data["response"] = train_data["response"].asfactor()
+    gbm = H2OGradientBoostingEstimator(ntrees=1, distribution="bernoulli", min_rows=1)
+    gbm.train(x=range(1,train_data.ncol), y="response", training_frame=train_data)
+
     gbm.show()
 
     train_data = h2o.upload_file(path=pyunit_utils.locate(tempdir + " ba z.csv"))
     train_data.show()
     train_data.describe()
-    gbm = h2o.gbm(x=train_data[1:], y=train_data[0].asfactor(), ntrees=1, distribution="bernoulli", min_rows=1)
+    train_data[0]=train_data[0].asfactor()
+    gbm = H2OGradientBoostingEstimator(ntrees=1, distribution="bernoulli", min_rows=1)
+    gbm.train(x=range(1,train_data.ncol), y=0, training_frame=train_data)
     gbm.show()
 
     os.remove(pyunit_utils.locate(tempdir) + "foo .csv")
