@@ -918,6 +918,16 @@ public class DataInfo extends Keyed<DataInfo> {
     row.nBins = nbins;
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
+      if( isInteractionVec(i) ) {
+        int offset;
+        InteractionWrappedVec iwv = ((InteractionWrappedVec)_adaptedFrame.vec(_cats+i));
+        int v1 = _adaptedFrame.find(iwv.v1());
+        int v2 = _adaptedFrame.find(iwv.v2());
+        if ( v1 < _cats ) offset = getCategoricalId(v1,Double.isNaN(vals[v1])?_catModes[v1]:(int)vals[v1]);
+        else if (v2 < _cats) offset = getCategoricalId(v2,Double.isNaN(vals[v2])?_catModes[v1]:(int)vals[v2]);
+        else offset = 0;
+        row.numVals[i + offset] = vals[_cats + i]; // essentially: vals[v1] * vals[v2])
+      }
       double d = vals[_cats + i]; // can be NA if skipMissing() == false
       if (Double.isNaN(d)) d = _numMeans[i];
       if (_normMul != null && _normSub != null)
@@ -966,10 +976,11 @@ public class DataInfo extends Keyed<DataInfo> {
     for (int i = 0; i < n; ++i) {
       if( isInteractionVec(i) ) {
         int offset;
-        int v1 = _adaptedFrame.find(((InteractionWrappedVec) chunks[_cats + i].vec()).v1());
-        int v2 = _adaptedFrame.find( ((InteractionWrappedVec)chunks[_cats+i].vec()).v2());
-        if( chunks[v1].vec().isCategorical() )      offset = (int)chunks[v1].at8(rid);
-        else if( chunks[v2].vec().isCategorical() ) offset = (int)chunks[v2].at8(rid);
+        InteractionWrappedVec iwv = ((InteractionWrappedVec)_adaptedFrame.vec(_cats+i));
+        int v1 = _adaptedFrame.find(iwv.v1());
+        int v2 = _adaptedFrame.find(iwv.v2());
+        if( v1 < _cats )       offset = (int)chunks[v1].at8(rid);
+        else if( v2 < _cats )  offset = (int)chunks[v2].at8(rid);
         else offset=0;
         row.numVals[i+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
       } else {
