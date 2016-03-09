@@ -22,7 +22,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/h2oai/h2o.git',
+    url='https://github.com/h2oai/h2o-3.git',
 
     # Author details
     author='H2O.ai',
