@@ -114,8 +114,9 @@ def gbm_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_gbm = h2o.gbm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], y=train["CAPSULE"],
-                           distribution="bernoulli", ntrees=10, max_depth=8, min_rows=10, learn_rate=0.2)
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    prostate_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=10, max_depth=8, min_rows=10, learn_rate=0.2)
+    prostate_gbm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=train)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate_gbm.show()
@@ -187,8 +188,9 @@ def deeplearning_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names)-set(["ID","CAPSULE"]))], y=train["CAPSULE"],
-                                   activation="Tanh", hidden=[10, 10, 10], epochs=10000)
+    from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+    prostate_dl = H2ODeepLearningEstimator(activation="Tanh", hidden=[10, 10, 10], epochs=10000)
+    prostate_dl.train(x=list(set(prostate.col_names)-set(["ID","CAPSULE"])),y="CAPSULE", training_frame=train)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate_dl.show()
@@ -260,8 +262,9 @@ def glm_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_glm = h2o.glm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], y=train["CAPSULE"],
-                           family="binomial", alpha=[0.5])
+    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    prostate_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0.5])
+    prostate_glm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=train)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate_glm.show()
