@@ -16,7 +16,7 @@ def get_model_test():
 
     # Regression
     regression_gbm1 = H2OGradientBoostingEstimator(distribution="gaussian")
-    regression_gbm1.train(x=range(2,9), y=1, training_frame=train)
+    regression_gbm1.train(x=[2,3,4,5,6,7,8], y=1, training_frame=train)
     predictions1 = regression_gbm1.predict(test)
 
     regression_gbm2 = h2o.get_model(regression_gbm1._id)
@@ -30,8 +30,9 @@ def get_model_test():
 
     # Binomial
     train[1] = train[1].asfactor()
-    bernoulli_gbm1 = H2OGradientBoostingEstimator(distribution="gaussian")
-    bernoulli_gbm1.train(x=range(2,train.ncol),y=1,training_frame=train)
+    bernoulli_gbm1 = H2OGradientBoostingEstimator(distribution="bernoulli")
+
+    bernoulli_gbm1.train(x=[2,3,4,5,6,7,8],y=1,training_frame=train)
     predictions1 = bernoulli_gbm1.predict(test)
 
     bernoulli_gbm2 = h2o.get_model(bernoulli_gbm1._id)
@@ -46,14 +47,14 @@ def get_model_test():
     # Clustering
     benign_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/benign.csv"))
     km_h2o = H2OKMeansEstimator(k=3)
-    km_h2o.train(x=range(benign_h2o.ncol), training_frame=benign_h2o)
+    km_h2o.train(x=list(range(benign_h2o.ncol)), training_frame=benign_h2o)
     benign_km = h2o.get_model(km_h2o._id)
     assert benign_km._model_json['output']['model_category'] == "Clustering"
 
     # Multinomial
     train[4] = train[4].asfactor()
     multinomial_dl1 = H2ODeepLearningEstimator(loss="CrossEntropy")
-    multinomial_dl1.train(x=range(2), y=4, training_frame=train)
+    multinomial_dl1.train(x=[0,1], y=4, training_frame=train)
     predictions1 = multinomial_dl1.predict(test)
 
     multinomial_dl2 = h2o.get_model(multinomial_dl1._id)
