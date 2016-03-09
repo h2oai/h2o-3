@@ -440,6 +440,8 @@ public class DataInfo extends Keyed<DataInfo> {
     res._fold = false;
     res._responses = 0;
     res._valid = true;
+    res._interactions=_interactions;
+    res._interactionVecs=_interactionVecs;
     return res;
   }
 
@@ -482,6 +484,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _valid = false;
     _numOffsets = dinfo._numOffsets;
     _interactions = dinfo._interactions;
+    _interactionVecs=dinfo._interactionVecs;
     assert dinfo._predictor_transform != null;
     assert  dinfo._response_transform != null;
     _predictor_transform = dinfo._predictor_transform;
@@ -667,7 +670,13 @@ public class DataInfo extends Keyed<DataInfo> {
     }
   }
 
-  public boolean isInteractionVec(int colid) { return _adaptedFrame.vec(colid) instanceof InteractionWrappedVec; }
+  public boolean isInteractionVec(int colid) {
+    if( null==_interactions || null==_interactionVecs ) return false;
+    if( _adaptedFrame!=null )
+      return _adaptedFrame.vec(colid) instanceof InteractionWrappedVec;
+    else
+      return Arrays.binarySearch(_interactionVecs,colid) > 0;
+  }
 
   /**
    *
