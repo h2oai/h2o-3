@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 
@@ -17,13 +17,11 @@ def metric_accessors():
     response_col = "economy"
     distribution = "gaussian"
     predictors = ["displacement","power","weight","acceleration","year"]
-    gbm = h2o.gbm(y=train[response_col],
-                  x=train[predictors],
-                  validation_y=valid[response_col],
-                  validation_x=valid[predictors],
-                  nfolds=3,
-                  distribution=distribution,
-                  fold_assignment="Random")
+
+    gbm = H2OGradientBoostingEstimator(nfolds=3,
+                                       distribution=distribution,
+                                       fold_assignment="Random")
+    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
 
     #   mse
     mse1 = gbm.mse(train=True,  valid=False, xval=False)
@@ -143,7 +141,8 @@ def metric_accessors():
     response_col = "economy_20mpg"
     distribution = "bernoulli"
     predictors = ["displacement","power","weight","acceleration","year"]
-    gbm = h2o.gbm(y=train[response_col], x=train[predictors], validation_y=valid[response_col], validation_x=valid[predictors], nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_fram=train)
 
     #   auc
     auc1 = gbm.auc(train=True,  valid=False, xval=False)
@@ -447,13 +446,8 @@ def metric_accessors():
     response_col = "cylinders"
     distribution = "multinomial"
     predictors = ["displacement","power","weight","acceleration","year"]
-    gbm = h2o.gbm(y=train[response_col],
-                  x=train[predictors],
-                  validation_y=valid[response_col],
-                  validation_x=valid[predictors],
-                  nfolds=3,
-                  distribution=distribution,
-                  fold_assignment="Random")
+
+    gbm.train(x=predictors,y=response_col, training_frame=train, validation_frame=valid)
 
     #   mse
     mse1 = gbm.mse(train=True,  valid=False, xval=False)
@@ -540,9 +534,9 @@ def metric_accessors():
 
     # clustering
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
-    km = h2o.kmeans(x=iris[0:4],
-                    nfolds=3,
-                    k=3)
+    from h2o.estimators.kmeans import H2OKMeansEstimator
+    km = H2OKMeansEstimator(k=3, nfolds=3)
+    km.train(x=range(4), training_frame=iris)
 
     #   betweenss
     betweenss1 = km.betweenss(train=True,  valid=False, xval=False)
