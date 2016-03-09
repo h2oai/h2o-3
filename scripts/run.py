@@ -2072,14 +2072,8 @@ def parse_args(argv):
                 usage()
             g_base_port = int(argv[i])
         elif s == "--py3":
-            i += 1
-            if i > len(argv):
-                usage()
             g_py3 = True
         elif s == "--coverage":
-            i += 1
-            if i > len(argv):
-              usage()
             g_pycoverage = True
         elif (s == "--numclouds"):
             i += 1

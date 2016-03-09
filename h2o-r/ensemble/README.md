@@ -27,6 +27,7 @@ To install **h2oEnsemble** for a previous stable release of H2O, you can replace
 
 |H2O Stable Release| h2oEnsemble version|
 |:---------|:----------|
+|H2O [3.8.1.3](http://h2o-release.s3.amazonaws.com/h2o/rel-turan/3/index.html) (Turan)|[h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O [3.8.0.2](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/2/index.html) (Tukey)|[h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)|
 |H2O [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)|
