@@ -142,7 +142,7 @@ def metric_accessors():
     distribution = "bernoulli"
     predictors = ["displacement","power","weight","acceleration","year"]
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_fram=train)
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     #   auc
     auc1 = gbm.auc(train=True,  valid=False, xval=False)
@@ -446,7 +446,7 @@ def metric_accessors():
     response_col = "cylinders"
     distribution = "multinomial"
     predictors = ["displacement","power","weight","acceleration","year"]
-
+    gbm.distribution="multinomial"
     gbm.train(x=predictors,y=response_col, training_frame=train, validation_frame=valid)
 
     #   mse
