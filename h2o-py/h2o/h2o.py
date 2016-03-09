@@ -315,6 +315,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
   fr._parse_raw(setup)
   return fr
 
+
 def assign(data,xid):
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
   data._ex = ExprNode("assign",xid,data)._eval_driver(False)
@@ -322,24 +323,6 @@ def assign(data,xid):
   data._ex._children = None
   return data
 
-
-def get_future_model(future_model):
-  """Waits for the future model to finish building, and then returns the model.
-
-  Parameters
-  ----------
-    future_model : H2OModelFuture
-      an H2OModelFuture object
-
-  Returns
-  -------
-    H2OEstimator
-  """
-  future_model.poll()
-  m = H2OEstimator()
-  model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
-  m._resolve_model(future_model.job.dest_key,model_json)
-  return m
 
 def get_model(model_id):
   """Return the specified model
