@@ -31,7 +31,6 @@ from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
-from .h2o_model_builder import supervised, unsupervised, _resolve_model
 
 
 def lazy_import(path):
@@ -336,8 +335,11 @@ def get_future_model(future_model):
   -------
     H2OEstimator
   """
-  return _resolve_model(future_model)
-
+  future_model.poll()
+  m = H2OEstimator()
+  model_json = H2OConnection.get_json("Models/"+future_model.job.dest_key)["models"][0]
+  m._resolve_model(future_model.job.dest_key,model_json)
+  return m
 
 def get_model(model_id):
   """Return the specified model
