@@ -691,7 +691,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int fullN(){ return _catOffsets[_cats] + numNums(); }
   public final int largestCat(){return _cats > 0?_catOffsets[1]:0;}
   public final int numStart(){return _catOffsets[_cats];}
-  public final int numNums() { return _numOffsets.length==0?0:_numOffsets[_numOffsets.length-1] - numStart(); }
+  public final int numNums() { return _nums; } //_numOffsets.length==0?0:_numOffsets[_numOffsets.length-1] - numStart(); }
   public final String[] coefNames(){
     if (_coefNames != null) return _coefNames; 
     int k = 0;
