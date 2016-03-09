@@ -31,12 +31,13 @@ public class InteractionWrappedVec extends WrappedVec {
   private transient Vec _masterVec1;  private String[] _v1Domain;
   private transient Vec _masterVec2;  private String[] _v2Domain;
   private final boolean _useAllFactorLevels;
+  private boolean _skipMissing;
   private long _bins[];
 
   private final String _v1Enums[]; // only interact these enums from vec 1
   private final String _v2Enums[]; // only interact these enums from vec 2
 
-  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
+  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
     super(key, rowLayout, null);
     _masterVecKey1=masterVecKey1;
     _masterVecKey2=masterVecKey2;
@@ -45,6 +46,7 @@ public class InteractionWrappedVec extends WrappedVec {
     _masterVec1=_masterVecKey1.get();
     _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
+    _skipMissing=skipMissing;
     setupDomain();
     DKV.put(this);
   }
@@ -71,7 +73,7 @@ public class InteractionWrappedVec extends WrappedVec {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
       if( _v1Domain!=null && _v2Domain!=null ) {
-        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels).doAll(_masterVec1, _masterVec2);
+        CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels,_skipMissing).doAll(_masterVec1, _masterVec2);
         setDomain(t._dom);
         _bins=t._bins;
         _type = Vec.T_CAT; // vec is T_NUM up to this point
@@ -87,14 +89,16 @@ public class InteractionWrappedVec extends WrappedVec {
     private final String _leftLimit[]; // in
     private final String _riteLimit[]; // in
     private final boolean _useAllLvls; // in
+    private final boolean _skipMissing; // in
     private IcedHashMap<String, IcedLong> _perChkMap;
 
-    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit, boolean useAllLvls) {
+    CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit, boolean useAllLvls, boolean skipMissing) {
       _left = left;
       _rite = rite;
       _leftLimit = leftLimit;
       _riteLimit = riteLimit;
       _useAllLvls = useAllLvls;
+      _skipMissing = skipMissing;
     }
 
     @Override public void map(Chunk[] c) {
@@ -107,17 +111,33 @@ public class InteractionWrappedVec extends WrappedVec {
       if (A != null) Collections.addAll(A, _leftLimit);
       if (B != null) Collections.addAll(B, _riteLimit);
       int lval,rval;
+      String l,r;
+      boolean leftIsNA, riteIsNA;
       for (int i = 0; i < left._len; ++i)
-        if (!(left.isNA(i) || rite.isNA(i))) {
+        if( (!((leftIsNA=left.isNA(i)) | (riteIsNA=rite.isNA(i)))) ) {
           lval = (int)left.at8(i);
           rval = (int)rite.at8(i);
           if( !_useAllLvls &&  ( 0==lval || 0==rval )) continue; // skipping first level! => but use all domains!
-          String l = _left[lval];
-          String r = _rite[rval];
+          l = _left[lval];
+          r = _rite[rval];
           if (A != null && !A.contains(l)) continue;
           if (B != null && !B.contains(r)) continue;
-          if (_perChkMap.putIfAbsent((k = l + "_" + r), new IcedLong(1)) != null)
+          if( null!=_perChkMap.putIfAbsent((k = l + "_" + r), new IcedLong(1)) )
             _perChkMap.get(k)._val++;
+        } else if( !_skipMissing ) {
+          if( !(leftIsNA && riteIsNA) ) {  // not both missing
+            if( leftIsNA ) {
+              r = _rite[(int)rite.at8(i)];
+              if( B!=null && !B.contains(r) ) continue;
+              if( null!=_perChkMap.putIfAbsent((k="NA_"+r), new IcedLong(1)) )
+                _perChkMap.get(k)._val++;
+            } else {
+              l = _left[(int)left.at8(i)];
+              if( null!=A && !A.contains(l) ) continue;
+              if( null!=_perChkMap.putIfAbsent((k=l+"_NA"), new IcedLong(1)) )
+                _perChkMap.get(k)._val++;
+            }
+          }
         }
     }
 
@@ -147,7 +167,7 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _masterVecKey1, _masterVecKey2);
     if( null!=domain()  ) v.setDomain(domain());
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();

@@ -19,18 +19,18 @@ public class InteractionWrappedVecTest extends TestUtil {
 
       // interact species and sepal len -- all levels (expanded length is 3)
       fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(0)._key, fr.vec(4)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, fr.vec(0)._key, fr.vec(4)._key);
       Assert.assertTrue(interactionVec.expandedLength()==3);
       interactionVec.remove();
 
 
       // interact species and sepal len -- not all factor levels
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, fr.vec(0)._key, fr.vec(4)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false,true, fr.vec(0)._key, fr.vec(4)._key);
       Assert.assertTrue(interactionVec.expandedLength()==2); // dropped first level
       interactionVec.remove();
 
       // interact 2 numeric cols: sepal_len sepal_wid
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(0)._key, fr.vec(1)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, fr.vec(0)._key, fr.vec(1)._key);
       Assert.assertTrue(interactionVec.expandedLength()==1);
     } finally {
       if( fr!=null ) fr.delete();
@@ -45,7 +45,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     int FAKEMAXFORTEST=1000;
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(8)._key, fr.vec(16)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, fr.vec(8)._key, fr.vec(16)._key);
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false);
       cid.doAll(fr.vec(8),fr.vec(16));
 
@@ -62,7 +62,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       interactionVec.remove();
 
       // don't include all cat levels
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, fr.vec(8)._key, fr.vec(16)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, fr.vec(8)._key, fr.vec(16)._key);
       Assert.assertTrue(interactionVec.expandedLength()==domain.length-2);
 
       System.out.println(interactionVec.mode());
@@ -88,7 +88,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     String[] B = new String[]{"PIT", "DEN"};
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, fr.vec(8)._key, fr.vec(16)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, fr.vec(8)._key, fr.vec(16)._key);
 
       int[] a = new int[A.length];
       int[] b = new int[B.length];
@@ -131,16 +131,16 @@ public class InteractionWrappedVecTest extends TestUtil {
     try {
 
       fr = makeFrame(1<<20);
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(0)._key, fr.vec(2)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, fr.vec(0)._key, fr.vec(2)._key);
       Assert.assertTrue(interactionVec.expandedLength()==5);
       interactionVec.remove();
 
 
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, fr.vec(1)._key, fr.vec(4)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, fr.vec(1)._key, fr.vec(4)._key);
       Assert.assertTrue(interactionVec.expandedLength()==4); // dropped first level
       interactionVec.remove();
 
-      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(0)._key, fr.vec(1)._key);
+      interactionVec =  new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, fr.vec(0)._key, fr.vec(1)._key);
       Assert.assertTrue(interactionVec.expandedLength()==1);
     } finally {
       if( fr!=null ) fr.delete();
@@ -154,7 +154,7 @@ public class InteractionWrappedVecTest extends TestUtil {
     int FAKEMAXFORTEST=1000;
     try {
       fr = makeFrame(1 << 20);
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, fr.vec(2)._key, fr.vec(4)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, true, true, fr.vec(2)._key, fr.vec(4)._key);
       CreateInteractions.createInteractionDomain cid = new CreateInteractions.createInteractionDomain(false,false);
       cid.doAll(fr.vec(2),fr.vec(4));
 
@@ -171,7 +171,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       interactionVec.remove();
 
       // don't include all cat levels
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, fr.vec(2)._key, fr.vec(4)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, null, null, false, true, fr.vec(2)._key, fr.vec(4)._key);
       Assert.assertTrue(interactionVec.expandedLength()==domain.length-2);
 
       System.out.println(interactionVec.mode());
@@ -201,7 +201,7 @@ public class InteractionWrappedVecTest extends TestUtil {
       A = new String[]{fullA[0],fullA[3],fullA[4] };
       B = new String[]{fullB[1],fullB[0]};
 
-      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, fr.vec(3)._key, fr.vec(8)._key);
+      interactionVec = new InteractionWrappedVec(fr.anyVec().group().addVec(), fr.anyVec()._rowLayout, A, B, true, true, fr.vec(3)._key, fr.vec(8)._key);
 
       int[] a = new int[A.length];
       int[] b = new int[B.length];

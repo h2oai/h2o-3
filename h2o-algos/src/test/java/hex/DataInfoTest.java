@@ -10,6 +10,11 @@ import water.fvec.InteractionWrappedVec;
 import water.fvec.Vec;
 
 
+// test cases:
+// skipMissing = TRUE/FALSE
+// useAllLevels = TRUE/FALSE
+// limit enums
+
 // data info tests with interactions
 public class DataInfoTest extends TestUtil {
 
@@ -45,7 +50,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testAirlines2() {
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
-      Frame interactions = DataInfo.makeInteractions(fr,DataInfo.InteractionPair.generatePairwiseInteractions(8,16,2),true);
+      Frame interactions = DataInfo.makeInteractions(fr,false,DataInfo.InteractionPair.generatePairwiseInteractions(8,16,2),true,true);
       int len=0;
       for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
       interactions.delete();
@@ -99,7 +104,7 @@ public class DataInfoTest extends TestUtil {
   @Test public void testAirlines3() {
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
     try {
-      Frame interactions = DataInfo.makeInteractions(fr,DataInfo.InteractionPair.generatePairwiseInteractions(8,16,2),false);
+      Frame interactions = DataInfo.makeInteractions(fr,false,DataInfo.InteractionPair.generatePairwiseInteractions(8,16,2),false,true);
       int len=0;
       for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
       interactions.delete();
@@ -122,7 +127,6 @@ public class DataInfoTest extends TestUtil {
       );
 
       System.out.println(dinfo__noInteractions.fullN());
-
 
       DataInfo dinfo__withInteractions = new DataInfo(
               fr.clone(),  // train
