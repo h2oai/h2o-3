@@ -48,13 +48,9 @@ test.describe()
 
 
 # Run GBM
-gbm = h2o.gbm(           y=train["CAPSULE"],
-              validation_y=test ["CAPSULE"],
-                         x=train[1:],
-              validation_x=test [1:],
-              ntrees=50,
-              max_depth=5,
-              learn_rate=0.1,
-			  distribution="bernoulli")
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
+gbm =H2OGradientBoostingEstimator(ntree=5, max_depth=3, distribution="bernoulli")
+gbm.train(x=range(1,train.ncol), y="CAPSULE", training_Frame=train, validation_frame=valid)
+
 mm = gbm.model_performance(test)
 mm.show()
