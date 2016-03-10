@@ -29,16 +29,14 @@ df.describe()
 df.pop('ID')  # WARNING: this is NOT python negative indexing!!!
 
 # For VOL & GLEASON, a zero really means "missing"
-vol = df['VOL']
-vol[vol == 0] = float("nan")
-gle = df['GLEASON']
-gle[gle == 0] = float("nan")
+df[df['VOL'],'VOL'] = None
+df[df'GLEASON'],'GLEASON'] = None
 
 # Convert CAPSULE to a logical factor
 df['CAPSULE'] = df['CAPSULE'].asfactor()
 
 # Test/train split
-r = vol.runif()
+r = df.runif()
 train = df[r < 0.8]
 test  = df[r >= 0.8]
 
@@ -50,7 +48,7 @@ test.describe()
 # Run GBM
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 gbm =H2OGradientBoostingEstimator(ntrees=5, max_depth=3, distribution="bernoulli")
-gbm.train(x=range(1,train.ncol), y="CAPSULE", training_Frame=train, validation_frame=valid)
+gbm.train(x=list(range(2,train.ncol)), y="CAPSULE", training_frame=train, validation_frame=test)
 
 mm = gbm.model_performance(test)
 mm.show()
