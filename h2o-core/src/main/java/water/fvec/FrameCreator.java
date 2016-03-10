@@ -33,7 +33,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
     int[] idx = _createFrame.has_response ? ArrayUtils.seq(1, _createFrame.cols + 1) : ArrayUtils.seq(0, _createFrame.cols);
     int[] shuffled_idx = new int[idx.length];
-    ArrayUtils.shuffleArray(idx, idx.length, shuffled_idx, _createFrame.seed, 0);
+    ArrayUtils.shuffleArray(idx, idx.length, shuffled_idx, _createFrame.seed_for_column_types, 0);
 
     int catcols = (int)(_createFrame.categorical_fraction * _createFrame.cols);
     int intcols = (int)(_createFrame.integer_fraction * _createFrame.cols);
@@ -218,10 +218,13 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
         }
       }
       job.update(1);
+      byte[] by = new byte[8];
       for (int c : _string_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
-          cs[c].set(r, UUID.randomUUID().toString().substring(0,8));
+          for (int i=0;i<by.length;++i)
+            by[i] = (byte)(65+rng.nextInt(25));
+          cs[c].set(r, new String(by));
         }
       }
       job.update(1);

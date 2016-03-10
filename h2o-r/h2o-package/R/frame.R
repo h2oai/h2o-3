@@ -312,6 +312,7 @@ h2o.assign <- function(data, key) {
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
+#' @param seed_for_column_types A seed used to generate random column types when \code{randomize = TRUE}.
 #' @return Returns an H2OFrame object.
 #' @examples
 #' \donttest{
@@ -333,10 +334,11 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
                             binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
                             missing_fraction = 0.01, response_factors = 2,
-                            has_response = FALSE, seed) {
+                            has_response = FALSE, seed, seed_for_column_types) {
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
+  if(!missing(seed_for_column_types) && !is.numeric(seed_for_column_types)) stop("`seed_for_column_types` must be a numeric value")
   if(!is.logical(randomize)) stop("`randomize` must be TRUE or FALSE")
   if(!is.numeric(value)) stop("`value` must be a numeric value")
   if(!is.numeric(real_range)) stop("`real_range` must be a numeric value")

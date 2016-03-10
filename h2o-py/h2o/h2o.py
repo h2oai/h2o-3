@@ -764,101 +764,106 @@ def shutdown(conn=None, prompt=True):
   H2OConnection._shutdown(conn=conn, prompt=prompt)
 
 
-def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_range=100,
-                 categorical_fraction=0.2, factors=100, integer_fraction=0.2, integer_range=100,
-                 binary_fraction=0.1, binary_ones_fraction=0.02, time_fraction=0, string_fraction=0,
-                 missing_fraction=0.01, response_factors=2, has_response=False, seed=None):
-  """Data Frame Creation in H2O.
-  Creates a data frame in H2O with real-valued, categorical, integer,
-  and binary columns specified by the user.
+def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,
+                 categorical_fraction = 0.2, factors = 100, integer_fraction = 0.2, integer_range = 100,
+                 binary_fraction = 0.1, binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
+                 missing_fraction = 0.01, response_factors = 2, has_response = False, seed=None, seed_for_column_types=None):
+    """Data Frame Creation in H2O.
+    Creates a data frame in H2O with real-valued, categorical, integer,
+    and binary columns specified by the user.
 
-  Parameters
-  ----------
-    id : str
-      A string indicating the destination key. If empty, this will be auto-generated
-      by H2O.
+    Parameters
+    ----------
+      id : str
+        A string indicating the destination key. If empty, this will be auto-generated
+        by H2O.
 
-    rows : int
-      The number of rows of data to generate.
+      rows : int
+        The number of rows of data to generate.
 
-    cols : int
-      The number of columns of data to generate. Excludes the response column if
-      has_response == True.
+      cols : int
+        The number of columns of data to generate. Excludes the response column if
+        has_response == True.
 
-    randomize : bool
-      A logical value indicating whether data values should be randomly generated.
-      This must be TRUE if either categorical_fraction or integer_fraction is non-zero.
+      randomize : bool
+        A logical value indicating whether data values should be randomly generated.
+        This must be TRUE if either categorical_fraction or integer_fraction is non-zero.
 
-    value : int
-      If randomize == FALSE, then all real-valued entries will be set to this value.
+      value : int
+        If randomize == FALSE, then all real-valued entries will be set to this value.
 
-    real_range : float
-      The range of randomly generated real values.
+      real_range : float
+        The range of randomly generated real values.
 
-    categorical_fraction : float
-      The fraction of total columns that are categorical.
+      categorical_fraction : float
+        The fraction of total columns that are categorical.
 
-    factors : int
-      The number of (unique) factor levels in each categorical column.
+      factors : int
+        The number of (unique) factor levels in each categorical column.
 
-    integer_fraction : float
-      The fraction of total columns that are integer-valued.
+      integer_fraction : float
+        The fraction of total columns that are integer-valued.
 
-    integer_range : list
-      The range of randomly generated integer values.
+      integer_range : list
+        The range of randomly generated integer values.
 
-    binary_fraction : float
-      The fraction of total columns that are binary-valued.
+      binary_fraction : float
+        The fraction of total columns that are binary-valued.
 
-    binary_ones_fraction : float
-      The fraction of values in a binary column that are set to 1.
+      binary_ones_fraction : float
+        The fraction of values in a binary column that are set to 1.
 
-    time_fraction : float
-      The fraction of randomly created date/time columns
+      time_fraction : float
+        The fraction of randomly created date/time columns
 
-    string_fraction : float
-      The fraction of randomly created string columns
+      string_fraction : float
+        The fraction of randomly created string columns
 
-    missing_fraction : float
-      The fraction of total entries in the data frame that are set to NA.
+      missing_fraction : float
+        The fraction of total entries in the data frame that are set to NA.
 
-    response_factors : int
-      If has_response == TRUE, then this is the number of factor levels in the response
-      column.
+      response_factors : int
+        If has_response == TRUE, then this is the number of factor levels in the response
+        column.
 
-    has_response : bool
-      A logical value indicating whether an additional response column should be
-      pre-pended to the final H2O data frame. If set to TRUE, the total number
-      of columns will be cols+1.
+      has_response : bool
+        A logical value indicating whether an additional response column should be
+        pre-pended to the final H2O data frame. If set to TRUE, the total number
+        of columns will be cols+1.
 
-    seed : int
-      A seed used to generate random values when randomize = TRUE.
+      seed : int
+        A seed used to generate random values when randomize = TRUE.
 
-  Returns
-  -------
-    H2OFrame
-  """
-  parms = {"dest": _py_tmp_key() if id is None else id,
-           "rows": rows,
-           "cols": cols,
-           "randomize": randomize,
-           "value": value,
-           "real_range": real_range,
-           "categorical_fraction": categorical_fraction,
-           "factors": factors,
-           "integer_fraction": integer_fraction,
-           "integer_range": integer_range,
-           "binary_fraction": binary_fraction,
-           "binary_ones_fraction": binary_ones_fraction,
-           "time_fraction": time_fraction,
-           "string_fraction": string_fraction,
-           "missing_fraction": missing_fraction,
-           "response_factors": response_factors,
-           "has_response": has_response,
-           "seed": -1 if seed is None else seed,
-           }
-  H2OJob(H2OConnection.post_json("CreateFrame", **parms), "Create Frame").poll()
-  return get_frame(parms["dest"])
+      seed_for_column_types : int
+        A seed used to generate random column types when randomize = TRUE.
+
+    Returns
+    -------
+      H2OFrame
+    """
+    parms = {"dest": _py_tmp_key() if id is None else id,
+         "rows": rows,
+         "cols": cols,
+         "randomize": randomize,
+         "value": value,
+         "real_range": real_range,
+         "categorical_fraction": categorical_fraction,
+         "factors": factors,
+         "integer_fraction": integer_fraction,
+         "integer_range": integer_range,
+         "binary_fraction": binary_fraction,
+         "binary_ones_fraction": binary_ones_fraction,
+         "time_fraction": time_fraction,
+         "string_fraction": string_fraction,
+         "missing_fraction": missing_fraction,
+         "response_factors": response_factors,
+         "has_response": has_response,
+         "seed": -1 if seed is None else seed,
+         "seed_for_column_types": -1 if seed_for_column_types is None else seed_for_column_types,
+         }
+    H2OJob(H2OConnection.post_json("CreateFrame", **parms), "Create Frame").poll()
+    return get_frame(parms["dest"])
+
 
 
 def interaction(data, factors, pairwise, max_factors, min_occurrence, destination_frame=None):

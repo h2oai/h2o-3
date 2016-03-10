@@ -17,8 +17,11 @@ class CreateFrameV3 extends RequestSchema<CreateFrame, CreateFrameV3> {
   @API(help = "Number of data columns (in addition to the first response column)", json=true)
   public int cols;
 
-  @API(help = "Random number seed", json=true)
+  @API(help = "Random number seed that determines the random values", json=true)
   public long seed;
+
+  @API(help = "Random number seed for setting the column types", json=true)
+  public long seed_for_column_types;
 
   @API(help = "Whether frame should be randomized", json=true)
   public boolean randomize;
