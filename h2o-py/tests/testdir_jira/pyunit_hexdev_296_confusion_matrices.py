@@ -1,22 +1,19 @@
-from builtins import zip
 import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def confusion_matrices_check():
-
-
     local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[0, 'b'],
                   [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
     h2o_data = h2o.H2OFrame(local_data)
     h2o_data.set_names(['response', 'predictor'])
     h2o_data.show()
-
-    gbm = h2o.gbm(x=h2o_data[1:], y=h2o_data["response"].asfactor(), ntrees=1, distribution="bernoulli")
+    h2o_data["response"] = h2o_data["response"].asfactor()
+    gbm = H2OGradientBoostingEstimator(ntrees=1, distribution="bernoulli")
+    gbm.train(x=list(range(1,h2o_data.ncol)),y="response", training_frame=h2o_data)
     gbm.show()
     perf = gbm.model_performance()
     tps = perf.metric("tps", [perf.find_threshold_by_max_metric("f1")])[0][1]

@@ -15,7 +15,8 @@ class ASTVariance extends ASTPrim {
   private enum Mode { Everything, AllObs, CompleteObs, PairwiseCompleteObs }
   @Override int nargs() { return 1+4; /* (var X Y use symmetric) */}
   @Override public String str() { return "var"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame frx = stk.track(asts[1].exec(env)).getFrame();
     Frame fry = stk.track(asts[2].exec(env)).getFrame();
     if( frx.numRows() != fry.numRows() )

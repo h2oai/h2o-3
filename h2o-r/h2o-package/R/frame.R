@@ -2539,18 +2539,18 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'
 #' Basic Imputation of H2O Vectors
 #'
-#'  Perform simple imputation on a single vector by filling missing values with aggregates
+#'  Perform inplace imputation by filling missing values with aggregates
 #'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
 #'  based on groupings of columns from within data; these columns can be passed by index or
-#'  name to the by parameter. If a factor column is supplied, then the method must be one
-#'  "mode". Anything else results in a full stop.
+#'  name to the by parameter. If a factor column is supplied, then the method must be
+#'  "mode".
 #'
 #'  The default method is selected based on the type of the column to impute. If the column
-#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Otherwise
+#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
 #'  column types (e.g. String, Time, UUID) are not supported.
 #'
 #'  @param data The dataset containing the column to impute.
-#'  @param column The column to impute.
+#'  @param column A specific column to impute, default of 0 means impute the whole frame.
 #'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
 #'                "mode" replaces with the most common factor (for factor columns only);
 #'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
