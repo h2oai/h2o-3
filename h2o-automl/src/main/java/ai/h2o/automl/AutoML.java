@@ -15,7 +15,7 @@ import java.util.Arrays;
  * of execution in an effort to discover an optimal supervised model for some given
  * (dataset, response, loss) combo.
  */
-public final class AutoML {
+public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
 
   private final String _datasetName;     // dataset name
   private final Frame _fr;               // all learning on this frame
@@ -32,8 +32,9 @@ public final class AutoML {
   enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
-  public AutoML(String datasetName, Frame fr, int response, String loss, long maxTime,
+  public AutoML(Key<AutoML> key, String datasetName, Frame fr, int response, String loss, long maxTime,
                 double minAccuracy, boolean ensemble, String[] modelExclude, boolean tryMutations) {
+    super(key);
     _datasetName=datasetName;
     _fr=fr;
     _response=response;
@@ -47,6 +48,9 @@ public final class AutoML {
         _modelEx[i] = models.valueOf(modelExclude[i]);
     _allowMutations=tryMutations;
   }
+
+  // used to launch the AutoML asynchronously
+  @Override public void run() { learn(); }
 
   // manager thread:
   //  1. Do extremely cursory pass over data and gather only the most basic information.
@@ -150,7 +154,7 @@ public final class AutoML {
   // expected to only ever have a single AutoML instance going at a time
   Model build(ModelBuilder mb) {
     Model m = (Model)mb.trainModel().get();
-    final Key modelKey  = m._key;
+    final Key<Model> modelKey  = m._key;
     new TAtomic<ModelList>() {
       @Override public ModelList atomic(ModelList old) {
         if( old == null ) old = new ModelList();
