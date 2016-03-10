@@ -1145,10 +1145,13 @@ NULL
 #' @param e1 object
 #' @param e2 object
 #' @export
-Ops.H2OFrame <- function(e1,e2)
+Ops.H2OFrame <- function(e1,e2) {
+
+  if( missing(e2) && .Generic=="-" ) return(1-e1)
   .newExpr(.Generic,
            if( base::is.character(e1) ) .quote(e1) else e1,
            if( base::is.character(e2) ) .quote(e2) else e2)
+}
 
 #' @rdname H2OFrame
 #' @param x object
