@@ -49,7 +49,7 @@ test.describe()
 
 # Run GBM
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
-gbm =H2OGradientBoostingEstimator(ntree=5, max_depth=3, distribution="bernoulli")
+gbm =H2OGradientBoostingEstimator(ntrees=5, max_depth=3, distribution="bernoulli")
 gbm.train(x=range(1,train.ncol), y="CAPSULE", training_Frame=train, validation_frame=valid)
 
 mm = gbm.model_performance(test)
