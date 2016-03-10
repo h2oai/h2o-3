@@ -1681,8 +1681,8 @@ def naive_bayes(x,y,validation_x=None,validation_y=None,training_frame=None,vali
 
 def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0, real_range = 100,
                  categorical_fraction = 0.2, factors = 100, integer_fraction = 0.2, integer_range = 100,
-                 binary_fraction = 0.1, binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
-                 has_response = False, seed=None):
+                 binary_fraction = 0.1, binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
+                 missing_fraction = 0.01, response_factors = 2, has_response = False, seed=None):
   """
   Data Frame Creation in H2O.
   Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
@@ -1713,6 +1713,10 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
     The fraction of total columns that are binary-valued.
   binary_ones_fraction : float
     The fraction of values in a binary column that are set to 1.
+  time_fraction : float
+    The fraction of randomly created date/time columns
+  string_fraction : float
+    The fraction of randomly created string columns
   missing_fraction : float
     The fraction of total entries in the data frame that are set to NA.
   response_factors : int
@@ -1737,6 +1741,8 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
            "integer_range": integer_range,
            "binary_fraction": binary_fraction,
            "binary_ones_fraction": binary_ones_fraction,
+           "time_fraction": time_fraction,
+           "string_fraction": string_fraction,
            "missing_fraction": missing_fraction,
            "response_factors": response_factors,
            "has_response": has_response,

@@ -306,6 +306,8 @@ h2o.assign <- function(data, key) {
 #' @param integer_range The range of randomly generated integer values.
 #' @param binary_fraction The fraction of total columns that are binary-valued.
 #' @param binary_ones_fraction The fraction of values in a binary column that are set to 1.
+#' @param time_fraction The fraction of randomly created date/time columns.
+#' @param string_fraction The fraction of randomly created string columns.
 #' @param missing_fraction The fraction of total entries in the data frame that are set to NA.
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
@@ -329,7 +331,8 @@ h2o.assign <- function(data, key) {
 h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
-                            binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
+                            binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
+                            missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
@@ -343,6 +346,8 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
   if(!is.numeric(integer_range)) stop("`integer_range` must be a numeric value")
   if(!is.numeric(binary_fraction)) stop("`binary_fraction` must be a numeric value")
   if(!is.numeric(binary_ones_fraction)) stop("`binary_ones_fraction` must be a numeric value")
+  if(!is.numeric(time_fraction)) stop("`time_fraction` must be a numeric value")
+  if(!is.numeric(string_fraction)) stop("`string_fraction` must be a numeric value")
   if(!is.numeric(missing_fraction)) stop("`missing_fraction` must be a numeric value")
   if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
