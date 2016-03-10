@@ -56,10 +56,11 @@ import water.util.PrettyPrint;
 * @version 1.0
 */
 final public class H2O {
+  public static final String DEFAULT_JKS_PASS = "h2oh2o";
+
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
-
 
   /**
    * Print help about command line arguments.
@@ -132,6 +133,23 @@ final public class H2O {
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
+            "\n" +
+            "Authentication options:\n" +
+            "\n" +
+            "    -jks <filename>\n" +
+            "          Java keystore file\n" +
+            "\n" +
+            "    -jks_pass <password>\n" +
+            "          (Default is '" + DEFAULT_JKS_PASS + "')\n" +
+            "\n" +
+            "    -hash_login\n" +
+            "          Use Jetty HashLoginService\n" +
+            "\n" +
+            "    -ldap_login\n" +
+            "          Use Jetty LdapLoginService\n" +
+            "\n" +
+            "    -login_conf <filename>\n" +
+            "          LoginService configuration file\n" +
             "\n" +
             "Cloud formation behavior:\n" +
             "\n" +
@@ -247,6 +265,24 @@ final public class H2O {
 
     /** --ga_opt_out; Turns off usage reporting to Google Analytics  */
     public boolean ga_opt_out = false;
+
+    //-----------------------------------------------------------------------------------
+    // Authentication
+    //-----------------------------------------------------------------------------------
+    /** -jks is Java KeyStore file on local filesystem */
+    public String jks = null;
+
+    /** -jks_pass is Java KeyStore password; default is 'h2oh2o' */
+    public String jks_pass = DEFAULT_JKS_PASS;
+
+    /** -hash_login enables HashLoginService */
+    public boolean hash_login = false;
+
+    /** -ldap_login enables LdapLoginService */
+    public boolean ldap_login = false;
+
+    /** -login_conf is login configuration service file on local filesystem */
+    public String login_conf = null;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -450,9 +486,56 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.cleaner = true;
       }
+      else if (s.matches("jks")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.jks = args[i];
+      }
+      else if (s.matches("jks_pass")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.jks_pass = args[i];
+      }
+      else if (s.matches("hash_login")) {
+        ARGS.hash_login = true;
+      }
+      else if (s.matches("ldap_login")) {
+        ARGS.ldap_login = true;
+      }
+      else if (s.matches("login_conf")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.login_conf = args[i];
+      }
       else {
         parseFailed("Unknown argument (" + s + ")");
       }
+    }
+  }
+
+  private static void validateArguments() {
+    if (ARGS.jks != null) {
+      if (! new File(ARGS.jks).exists()) {
+        parseFailed("File does not exist: " + ARGS.jks);
+      }
+    }
+
+    if (ARGS.login_conf != null) {
+      if (! new File(ARGS.login_conf).exists()) {
+        parseFailed("File does not exist: " + ARGS.login_conf);
+      }
+    }
+
+    if (ARGS.hash_login && ARGS.ldap_login) {
+      parseFailed("Can only specify one of -hash_login and -ldap_login");
+    }
+
+    if (ARGS.hash_login || ARGS.ldap_login) {
+      if (H2O.ARGS.login_conf == null) {
+        parseFailed("Must specify -login_conf argument");
+      }
+    }
+
+    // Validate extension arguments
+    for (AbstractH2OExtension e : H2O.getExtensions()) {
+      e.validateArguments();
     }
   }
 
@@ -1024,6 +1107,14 @@ final public class H2O {
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
+
+
+    @Override
+    public byte [] asBytes(){return new AutoBuffer().put(this).buf();}
+
+    @Override
+    public T reloadFromBytes(byte [] ary){ return read(new AutoBuffer(ary));}
+
     private /*final*/ byte _priority;
     // Without a completer, we expect this task will be blocked on - so the
     // blocking thread is not available in the current thread pool, so the
@@ -1095,15 +1186,6 @@ final public class H2O {
     /** Override to specify actual work to do */
     public abstract void compute2();
 
-    /** Exceptional completion path; mostly does printing if the exception was
-     *  not handled earlier in the stack.  */
-    @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if( this.getCompleter() == null ) { // nobody else to handle this exception, so print it out
-        System.err.println("onExCompletion for "+this);
-        ex.printStackTrace();
-      }
-      return true;
-    }
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority
     // than themselves.  This field tracks the required priority.
@@ -1123,11 +1205,16 @@ final public class H2O {
     }
 
     // The serialization flavor / delegate.  Lazily set on first use.
-    private transient short _ice_id;
+    private short _ice_id;
 
     /** Find the serialization delegate for a subclass of this class */
     protected Icer<T> icer() {
       int id = _ice_id;
+      if(id != 0) {
+        int tyid;
+        if (id != 0)
+          assert id == (tyid = TypeMap.onIce(this)) : "incorrectly cashed id " + id + ", typemap has " + tyid + ", type = " + getClass().getName();
+      }
       return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
     }
     @Override final public AutoBuffer write    (AutoBuffer ab) { return icer().write    (ab,(T)this); }
@@ -1135,12 +1222,6 @@ final public class H2O {
     @Override final public T read    (AutoBuffer ab) { return icer().read    (ab,(T)this); }
     @Override final public T readJSON(AutoBuffer ab) { return icer().readJSON(ab,(T)this); }
     @Override final public int frozenType() { return icer().frozenType();   }
-              final        AutoBuffer write_impl3( AutoBuffer ab) { return ab.put1(_priority); }
-    @Override       public AutoBuffer write_impl ( AutoBuffer ab ) { return write_impl3(ab); }
-              final public T read_impl3( AutoBuffer ab ) { this._priority = ab.get1(); return (T)this; }
-    @Override       public T read_impl ( AutoBuffer ab ) { return read_impl3(ab); }
-    @Override       public AutoBuffer writeJSON_impl( AutoBuffer ab ) { return ab; }
-    @Override       public T readJSON_impl( AutoBuffer ab ) { return (T)this; }
   }
 
 
@@ -1651,10 +1732,8 @@ final public class H2O {
     // Print help & exit
     if( ARGS.help ) { printHelp(); exit(0); }
 
-    // Validate extension arguments
-    for (AbstractH2OExtension e : H2O.getExtensions()) {
-      e.validateArguments();
-    }
+    // Validate arguments
+    validateArguments();
 
     Log.info("X-h2o-cluster-id: " + H2O.CLUSTER_ID);
     Log.info("User name: '" + H2O.ARGS.user_name + "'");

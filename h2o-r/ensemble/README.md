@@ -17,19 +17,20 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 
 
 ### Install H2O Ensemble (Stable)
-The latest stable version, compatible with the H2O "Tukey" release, be installed as follows:
+The latest stable version, compatible with the H2O "Turan" release, be installed as follows:
 
 ```r
-install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz", repos = NULL)
+install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz", repos = NULL)
 ``` 
 
 To install **h2oEnsemble** for a previous stable release of H2O, you can replace the URL above with the URL in the table below that matches your H2O version.
 
-|H2O Stable Release| h2oEnsemble version|
-|:---------|:----------|
-|H2O [3.8.0.2](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/2/index.html) (Tukey)|[h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
-|H2O [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)|
-|H2O [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)|
+|H2O Stable Release| Recommended version| Other versions |
+|:---------|:----------|:----------|
+|H2O [3.8.1.3](http://h2o-release.s3.amazonaws.com/h2o/rel-turan/3/index.html) (Turan)|[h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz)| [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
+|H2O [3.8.0.2](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/2/index.html) (Tukey)|[h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz)| [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
+|H2O [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)||
+|H2O [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)||
 
 ### Install Development Version
 The following are two ways that you can install the development version of the **h2oEnsemble** package. 

@@ -12,6 +12,7 @@
 #' @param validation_frame An H2OFrame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param checkpoint Model checkpoint (either key or H2ODeepLearningModel) to resume training with.
 #' @param autoencoder Enable auto-encoder for model building.
+#' @param pretrained_autoencoder Pretrained autoencoder (either key or H2ODeepLearningModel) to initialize the model state of a supervised DL model with.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
 #'        Otherwise the first factor level is omitted (without loss of accuracy). Useful for
 #'        variable importances and auto-enabled for autoencoder.
@@ -136,8 +137,9 @@ h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
                              validation_frame = NULL,
-                             checkpoint,
+                             checkpoint = NULL,
                              autoencoder = FALSE,
+                             pretrained_autoencoder = NULL,
                              use_all_factor_levels = TRUE,
                              standardize = TRUE,
                              activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
@@ -242,6 +244,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$checkpoint <- checkpoint
   if(!missing(autoencoder))
     parms$autoencoder <- autoencoder
+  if(!missing(pretrained_autoencoder))
+    parms$pretrained_autoencoder <- pretrained_autoencoder
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
   if(!missing(standardize))
@@ -436,9 +440,10 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
   url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
-  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
-  key <- res$predictions$name
-
-  h2o.getFrame(key)
+  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 

@@ -3,6 +3,7 @@ package water.parser;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.util.IcedHashMap;
 import water.util.Log;
 import water.nbhm.NonBlockingHashMap;
 import water.util.PrettyPrint;
@@ -26,17 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class Categorical extends Iced {
 
   public static final int MAX_CATEGORICAL_COUNT = 10000000;
-  AtomicInteger _id = new AtomicInteger();
+  transient AtomicInteger _id = new AtomicInteger();
   int _maxId = -1;
-  volatile NonBlockingHashMap<BufferedString, Integer> _map;
+  volatile IcedHashMap<BufferedString, Integer> _map;
   boolean maxDomainExceeded = false;
 
-  Categorical() { _map = new NonBlockingHashMap<>(); }
+  Categorical() { _map = new IcedHashMap<>(); }
 
   /** Add key to this map (treated as hash set in this case). */
   int addKey(BufferedString str) {
     // _map is shared and be cast to null (if categorical is killed) -> grab local copy
-    NonBlockingHashMap<BufferedString, Integer> m = _map;
+    IcedHashMap<BufferedString, Integer> m = _map;
     if( m == null ) return Integer.MAX_VALUE;     // Nuked already
     Integer res = m.get(str);
     if( res != null ) return res; // Recorded already
@@ -93,28 +94,24 @@ public final class Categorical extends Iced {
   // Keys that existed at the time the table write began.  If elements are
   // being deleted, they may be written anyways.  If the Values are changing, a
   // random Value is written.
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) {
-    if( _map == null ) return ab.put1(1); // Killed map marker
-    ab.put1(0);                           // Not killed
-    ab.put4(maxId());
-    for( BufferedString key : _map.keySet() )
-      ab.put2((char)key.length()).putA1(key.getBuffer(),key.length()).put4(_map.get(key));
-    return ab.put2((char)65535); // End of map marker
-  }
-  
-  @Override public Categorical read_impl( AutoBuffer ab ) {
-    assert _map == null || _map.size()==0;
-    _map = null;
-    if( ab.get1() == 1 ) return this; // Killed?
-    _maxId = ab.get4();
-    _map = new NonBlockingHashMap<>();
-    int len;
-    while( (len = ab.get2()) != 65535 ) // Read until end-of-map marker
-      _map.put(new BufferedString(ab.getA1(len)),ab.get4());
-    return this;
-  }
-  @Override public AutoBuffer writeJSON_impl( AutoBuffer ab ) {
-    throw H2O.unimpl();
-  }
-  @Override public Categorical readJSON_impl( AutoBuffer ab ) { throw H2O.unimpl(); }
+//  public AutoBuffer write_impl( AutoBuffer ab ) {
+//    if( _map == null ) return ab.put1(1); // Killed map marker
+//    ab.put1(0);                           // Not killed
+//    ab.put4(maxId());
+//    for( BufferedString key : _map.keySet() )
+//      ab.put2((char)key.length()).putA1(key.getBuffer(),key.length()).put4(_map.get(key));
+//    return ab.put2((char)65535); // End of map marker
+//  }
+//
+//  public Categorical read_impl( AutoBuffer ab ) {
+//    assert _map == null || _map.size()==0;
+//    _map = null;
+//    if( ab.get1() == 1 ) return this; // Killed?
+//    _maxId = ab.get4();
+//    _map = new NonBlockingHashMap<>();
+//    int len;
+//    while( (len = ab.get2()) != 65535 ) // Read until end-of-map marker
+//      _map.put(new BufferedString(ab.getA1(len)),ab.get4());
+//    return this;
+//  }
 }

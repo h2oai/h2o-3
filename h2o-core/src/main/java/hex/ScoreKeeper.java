@@ -94,7 +94,7 @@ public class ScoreKeeper extends Iced {
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
-  public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement) {
+  public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement, String what) {
     if (k == 0) return false;
     int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)
     if (len < 2*k) return false; //need at least k for SMA and another k to tell whether the model got better or not
@@ -168,12 +168,12 @@ public class ScoreKeeper extends Iced {
     if (Math.signum(bestInLastK) != Math.signum(lastBeforeK)) return false;
     assert(lastBeforeK != Double.MAX_VALUE);
     assert(bestInLastK != Double.MAX_VALUE);
-    Log.info("Moving averages (length " + k + ") of last " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
+    Log.info("Windowed averages (window size " + k + ") of " + what + " " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
 
     double ratio = bestInLastK / lastBeforeK;
     if (Double.isNaN(ratio)) return false;
     boolean improved = moreIsBetter ? ratio > 1+rel_improvement : ratio < 1-rel_improvement;
-    Log.info("Checking model convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
+    Log.info("Checking convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
     return !improved;
   } // stopEarly
 

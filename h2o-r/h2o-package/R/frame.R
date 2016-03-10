@@ -306,6 +306,8 @@ h2o.assign <- function(data, key) {
 #' @param integer_range The range of randomly generated integer values.
 #' @param binary_fraction The fraction of total columns that are binary-valued.
 #' @param binary_ones_fraction The fraction of values in a binary column that are set to 1.
+#' @param time_fraction The fraction of randomly created date/time columns.
+#' @param string_fraction The fraction of randomly created string columns.
 #' @param missing_fraction The fraction of total entries in the data frame that are set to NA.
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
@@ -329,7 +331,8 @@ h2o.assign <- function(data, key) {
 h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
-                            binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
+                            binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
+                            missing_fraction = 0.01, response_factors = 2,
                             has_response = FALSE, seed) {
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
@@ -343,6 +346,8 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
   if(!is.numeric(integer_range)) stop("`integer_range` must be a numeric value")
   if(!is.numeric(binary_fraction)) stop("`binary_fraction` must be a numeric value")
   if(!is.numeric(binary_ones_fraction)) stop("`binary_ones_fraction` must be a numeric value")
+  if(!is.numeric(time_fraction)) stop("`time_fraction` must be a numeric value")
+  if(!is.numeric(string_fraction)) stop("`string_fraction` must be a numeric value")
   if(!is.numeric(missing_fraction)) stop("`missing_fraction` must be a numeric value")
   if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
@@ -1683,11 +1688,15 @@ quantile.H2OFrame <- h2o.quantile
 #' Summarizes the columns of an H2OFrame.
 #'
 #' A method for the \code{\link{summary}} generic. Summarizes the columns of an H2O data frame or subset of
-#' columns and rows using vector notation (e.g. dataset[row, col])
+#' columns and rows using vector notation (e.g. dataset[row, col]).
+#'
+#' By default it uses approximated version of quantiles computation, however, user can modify
+#' this behavior by setting up exact_quantiles argument to true.
 #'
 #' @name h2o.summary
 #' @param object An H2OFrame object.
 #' @param factors The number of factors to return in the summary. Default is the top 6.
+#' @param exact_quantiles Compute exact quantiles or use approximation. Default is to use approximation.
 #' @param ... Further arguments passed to or from other methods.
 #' @return A table displaying the minimum, 1st quartile, median, mean, 3rd quartile and maximum for each
 #' numeric column, and the levels and category counts of the levels in each categorical column.
@@ -1700,9 +1709,10 @@ quantile.H2OFrame <- h2o.quantile
 #' summary(prostate.hex)
 #' summary(prostate.hex$GLEASON)
 #' summary(prostate.hex[,4:6])
+#' summary(prostate.hex, exact_quantiles=TRUE)
 #' }
 #' @export
-h2o.summary <- function(object, factors=6L, ...) {
+h2o.summary <- function(object, factors=6L, exact_quantiles=FALSE, ...) {
   SIG.DIGITS    <- 12L
   FORMAT.DIGITS <- 4L
   cnames <- colnames(object)
@@ -1713,6 +1723,7 @@ h2o.summary <- function(object, factors=6L, ...) {
   # allow for optional parameter in ... factors=N, for N domain levels. Or could be the string "all". N=6 by default.
   fr.sum <- .h2o.__remoteSend(paste0("Frames/", attr(object, "id"), "/summary"), method = "GET")$frames[[1]]
   col.sums <- fr.sum$columns
+  default_percentiles <- fr.sum$default_percentiles
   cols <- sapply(col.sums, function(col) {
     col.sum <- col
     col.type <- col.sum$type  # enum, string, int, real, time, uuid
@@ -1724,11 +1735,19 @@ h2o.summary <- function(object, factors=6L, ...) {
       if( !(is.null(col.sum$maxs) || length(col.sum$maxs) == 0L) ) cmax <- max(col.sum$maxs,na.rm=TRUE)  # set the max
       if( !(is.null(col.sum$mean))                               ) cmean<- col.sum$mean                  # set the mean
 
-      quantiles <- h2o.quantile(object[col.sum$label],c(.25,.5,.75)) # set the 1st quartile, median, and 3rd quartile
-      if( !is.null(quantiles) ){
-        c1Q     <- quantiles[1]
-        cmedian <- quantiles[2]
-        c3Q     <- quantiles[3]
+      if (exact_quantiles) {
+        quantiles <- h2o.quantile(object[col.sum$label],c(.25,.5,.75)) # set the 1st quartile, median, and 3rd quartile
+        if( !is.null(quantiles) ) {
+          c1Q     <- quantiles[1]
+          cmedian <- quantiles[2]
+          c3Q     <- quantiles[3]
+        }
+      } else {
+        indexes <- which(default_percentiles == 0.25 | default_percentiles == 0.5 | default_percentiles == 0.75)
+        values <- col.sum$percentiles[indexes] 
+        c1Q     <- values[1]
+        cmedian <- values[2]
+        c3Q     <- values[3]
       }
 
       missing.count <- NULL
@@ -1814,6 +1833,10 @@ h2o.summary <- function(object, factors=6L, ...) {
   if( is.null(result) || dim(result) == 0 ) return(NULL)
   colnames(result) <- cnames
   rownames(result) <- rep("", nrow(result))
+  # Print warning if approx quantiles are computed
+  if (!exact_quantiles) {
+    warning("Approximated quantiles computed! If you are interested in exact quantiles, please pass the `exact_quantiles=TRUE` parameter.")
+  }
   result
 }
 
@@ -1855,7 +1878,7 @@ h2o.describe <- function(frame) {
 }
 
 #' @rdname h2o.summary
-#' @usage \method{summary}{H2OFrame}(object, factors, ...)
+#' @usage \method{summary}{H2OFrame}(object, factors, exact_quantiles, ...)
 #' @method summary H2OFrame
 #' @export
 summary.H2OFrame <- h2o.summary
@@ -2909,3 +2932,24 @@ h2o.lstrip <- function(x, set = " ") .newExpr("lstrip", x, .quote(set))
 #' @param set string of characters to be removed
 #' @export
 h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
+
+
+#'
+#' Shannon entropy
+#'
+#' Return the Shannon entropy of a string column. If the string is empty, the entropy is 0.
+#'
+#' @param x   The column on which to calculate the entropy.
+#' @export
+h2o.entropy <- function(x) .newExpr("entropy", x)
+
+#'
+#' Proportion of substrings >= 2 chars that are contained in file
+#'
+#' Find the proportion of all possible substrings >= 2 chars that are contained in the specified line-separated text file. 
+#  If the number of characters in the string is less than two, 0 is returned.
+#'
+#' @param x     The column on which to calculate the proportion of valid substrings.
+#' @param path  Path to text file containing line-separated strings to be referenced. 
+#' @export
+h2o.pro_substrings_words <- function(x, path) .newExpr("pro_substrings_words", x, .quote(path))

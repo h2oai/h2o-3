@@ -19,7 +19,6 @@ public class TypeMap {
     water.FetchClazz.class.getName(),   // used to fetch IDs from leader
     water.FetchId.class.getName(),      // used to fetch IDs from leader
     water.DTask.class.getName(),        // Needed for those first Tasks
-    water.DException.class.getName(),   // Needed for those first Tasks: can pass exceptions
 
     water.fvec.Chunk.class.getName(),   // parent of Chunk
     water.fvec.C1NChunk.class.getName(),// used as constant in parser
@@ -84,8 +83,6 @@ public class TypeMap {
     FRAME        = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
-    // Fill in some pre-cooked delegates so serialization has a base-case
-    GOLD[ICED ] = Icer.ICER;
   }
 
   // The major complexity of this code is that the are FOUR major data forms
@@ -170,6 +167,7 @@ public class TypeMap {
   // including during deserialization when a Node will be presented with a
   // fresh new ID with no idea what it stands for.  Does NOT resize the GOLD
   // array, since the id->className mapping has already happened.
+  static Icer getIcer( Freezable ice ) { return getIcer(onIce(ice),ice.getClass()); }
   static Icer getIcer( int id, Iced ice )      { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Freezable ice ) { return getIcer(id,ice.getClass()); }
   static Icer getIcer( int id, Class ice_clz ) {
@@ -206,7 +204,7 @@ public class TypeMap {
   public static Freezable newFreezable(int id) {
     Freezable iced = theFreezable(id);
     assert iced != null : "No instance of id "+id+", class="+CLAZZES[id];
-    return (Freezable) iced.clone();
+    return iced.clone();
   }
   /** Create a new freezable object based on its className.
    *

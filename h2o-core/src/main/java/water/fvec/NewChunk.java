@@ -1246,6 +1246,7 @@ public class NewChunk extends Chunk {
     if( isNA2(i) ) return true;
     if( _ls != null ) { _ls[i] = Long.MAX_VALUE; _xs[i] = Integer.MIN_VALUE; }
     if( _ds != null ) { _ds[i] = Double.NaN; }
+    if (_is != null) { _is[i] = -1; }
     _naCnt = -1;
     return true;
   }
@@ -1319,8 +1320,8 @@ public class NewChunk extends Chunk {
     while( _ss[_is[i] + len] != 0 ) len++;
     return bStr.set(_ss, _is[i], len);
   }
-  @Override public NewChunk read_impl(AutoBuffer bb) { throw H2O.fail(); }
-  @Override public AutoBuffer write_impl(AutoBuffer bb) { throw H2O.fail(); }
+  @Override protected final void initFromBytes () {throw H2O.fail();}
+  public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
   @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
 

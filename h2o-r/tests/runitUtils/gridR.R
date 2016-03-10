@@ -35,7 +35,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
     if ( sample(0:1,1) ) { grid_space$activation <- sample(c("Rectifier", "Tanh", "TanhWithDropout",
                                                             "RectifierWithDropout", "MaxoutWithDropout"),
                                                           sample(2:3,1)) }
-    if ( sample(0:1,1) ) { grid_space$l2 <- round(1e-3*runif(sample(2:3,1)),6) }
+    if ( sample(0:1,1) ) { grid_space$l2 <- unique(round(1e-3*runif(sample(2:3,1)),6)) }
     if ( sample(0:1,1) ) { grid_space$hidden <- list(rep(sample(10:30,1),sample(2:3,1)), rep(sample(31:50,1),sample(2:3,1)))}
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }

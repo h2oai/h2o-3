@@ -367,13 +367,61 @@ predict.H2OModel <- function(object, newdata, ...) {
 
   # Send keys to create predictions
   url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-  res <- .h2o.__remoteSend(url, method = "POST")
-  res <- res$predictions_frame
-  h2o.getFrame(res$name)
+  res <- .h2o.__remoteSend(url, method = "POST", h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
+
 #' @rdname predict.H2OModel
 #' @export
 h2o.predict <- predict.H2OModel
+
+#' Predict the Leaf Node Assignment on an H2O Model
+#'
+#' Obtains leaf node assignment from fitted H2O model objects.
+#'
+#' For every row in the test set, return a set of factors that identify the leaf placements
+#' of the row in all the trees in the model.
+#' The order of the rows in the results is the same as the order in which the
+#' data was loaded
+#'
+#' @param object a fitted \linkS4class{H2OModel} object for which prediction is
+#'        desired
+#' @param newdata An H2OFrame object in which to look for
+#'        variables with which to predict.
+#' @param ... additional arguments to pass on.
+#' @return Returns an H2OFrame object with categorical leaf assignment identifiers for
+#'         each tree in the model.
+#' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
+#'          generation in h2o.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
+#' h2o.predict(prostate.gbm, prostate.hex)
+#' h2o.predict_leaf_node_assignment(prostate.gbm, prostate.hex)
+#' }
+#' @export
+predict_leaf_node_assignment.H2OModel <- function(object, newdata, ...) {
+  if (missing(newdata)) {
+    stop("predictions with a missing `newdata` argument is not implemented yet")
+  }
+
+  url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
+  res <- .h2o.__remoteSend(url, method = "POST", leaf_node_assignment=TRUE)
+  res <- res$predictions_frame
+  h2o.getFrame(res$name)
+}
+
+#' @rdname predict_leaf_node_assignment.H2OModel
+#' @export
+h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random")) {
   output <- data.frame()

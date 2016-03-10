@@ -269,7 +269,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             return;             // Stop when approaching round-off error
           }
           if (!Double.isNaN(training_r2)  //HACK to detect whether we scored at all
-                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance)) {
+                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last")) {
             doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
             _job.update(_ntrees-_model._output._ntrees); //finish
             return;
@@ -280,7 +280,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         if (timeout()) break; // If timed out, do the final scoring
-        if( stop_requested() ) return; // If canceled during building, do not bulkscore
+        if (stop_requested()) throw new Job.JobCancelledException();
       }
       // Final scoring (skip if job was cancelled)
       doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);

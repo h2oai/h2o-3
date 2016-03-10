@@ -4,9 +4,7 @@ import hex.DataInfo;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import water.DKV;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -96,13 +94,14 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key) {
+  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._k; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
 
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
+        if (isCancelled() || j != null && j.stop_requested()) return;
         double tmp [] = new double[_output._names.length];
         double preds[] = new double[_parms._k];
         for( int row = 0; row < chks[0]._len; row++) {
@@ -110,6 +109,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
           for( int c=0; c<preds.length; c++ )
             chks[_output._names.length+c].set(row, p[c]);
         }
+        if (j != null) j.update(1);
       }
     }.doAll(adaptFrm);
 

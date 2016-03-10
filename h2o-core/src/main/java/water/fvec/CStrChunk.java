@@ -4,6 +4,8 @@ import water.*;
 import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
+import java.util.HashMap;
+
 public class CStrChunk extends Chunk {
   static final int NA = -1;
   static protected final int _OFF=4+1;
@@ -30,7 +32,7 @@ public class CStrChunk extends Chunk {
       _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
   }
 
-  @Override public boolean setNA_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public boolean setNA_impl(int idx) { return false; }
   @Override public boolean set_impl(int idx, float f) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, double d) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
@@ -50,15 +52,13 @@ public class CStrChunk extends Chunk {
     while( _mem[_valstart+off+len] != 0 ) len++;
     return bStr.set(_mem,_valstart+off,len);
   }
-  
-  @Override public CStrChunk read_impl(AutoBuffer bb) {
-    _mem = bb.bufClose();
+
+  @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;
     _valstart = UnsafeUtils.get4(_mem,0);
     byte b = UnsafeUtils.get1(_mem,4);
     _isAllASCII = b != 0;
     set_len((_valstart-_OFF)>>2);
-    return this;
   }
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.set_sparseLen(nc.set_len(_len));
@@ -195,6 +195,33 @@ public class CStrChunk extends Chunk {
       if (off != NA) {
         while (_mem[_valstart + off + len] != 0) len++;
         nc.addNum(len, 0);
+      } else nc.addNA();
+    }
+    return nc;
+  }
+  
+  public NewChunk asciiEntropy(NewChunk nc) {
+    nc._ds = MemoryManager.malloc8d(_len);
+    
+    for (int i = 0; i < _len; i++) {
+      int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
+      if (off != NA) {
+        HashMap<Byte, Integer> freq = new HashMap<>();
+        int j = 0;
+        while (_mem[_valstart + off + j] != 0)  {
+          Integer count = freq.get(_mem[_valstart + off + j]);
+          if (count == null) freq.put(_mem[_valstart + off + j], 1);
+          else freq.put(_mem[_valstart + off + j], count+1);
+          j++;
+        }
+        double sume = 0;
+        int N = j;
+        double n;
+        for (Byte b : freq.keySet()) {
+          n = freq.get(b);
+          sume += -n/N * Math.log(n/N) / Math.log(2);
+        }
+        nc.addNum(sume);
       } else nc.addNA();
     }
     return nc;

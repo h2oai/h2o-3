@@ -129,10 +129,7 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
    * @param ab
    * @return
    */
-  @Override
-  public AutoBuffer writeJSON_impl(AutoBuffer ab) {
-    ab.put1(','); // the schema and version fields get written before we get called
-
+  public final AutoBuffer writeJSON_impl(AutoBuffer ab) {
     ab.putJSONStr("name", name);                                    ab.put1(',');
     ab.putJSONStr("label", label);                                  ab.put1(',');
     ab.putJSONStr("help", help);                                    ab.put1(',');

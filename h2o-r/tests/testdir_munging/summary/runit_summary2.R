@@ -10,6 +10,8 @@ test.summary2 <- function() {
 
   Log.info("Check that summary works...")
   print(summary(iris.hex)) 
+  Log.info("Check that exact summary works...")
+  print(summary(iris.hex, exact_quantiles=TRUE)) 
 
   Log.info("Summary from R's iris data: ")
   summary(iris)
