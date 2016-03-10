@@ -47,6 +47,12 @@ class CreateFrameV3 extends RequestSchema<CreateFrame, CreateFrameV3> {
   @API(help = "Fraction of 1's in binary columns", json=true)
   public double binary_ones_fraction;
 
+  @API(help = "Fraction of date/time columns (for randomize=true)", json=true)
+  public double time_fraction;
+
+  @API(help = "Fraction of string columns (for randomize=true)", json=true)
+  public double string_fraction;
+
   @API(help = "Fraction of missing values", json=true)
   public double missing_fraction;
 

@@ -1246,6 +1246,7 @@ public class NewChunk extends Chunk {
     if( isNA2(i) ) return true;
     if( _ls != null ) { _ls[i] = Long.MAX_VALUE; _xs[i] = Integer.MIN_VALUE; }
     if( _ds != null ) { _ds[i] = Double.NaN; }
+    if (_is != null) { _is[i] = -1; }
     _naCnt = -1;
     return true;
   }

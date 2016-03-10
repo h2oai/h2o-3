@@ -17,7 +17,7 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 
 
 ### Install H2O Ensemble (Stable)
-The latest stable version, compatible with the H2O "Tukey" release, be installed as follows:
+The latest stable version, compatible with the H2O "Turan" release, be installed as follows:
 
 ```r
 install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz", repos = NULL)

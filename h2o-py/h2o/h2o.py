@@ -729,41 +729,36 @@ def export_file(frame,path,force=False):
 
   Parameters
   ----------
+    frame : H2OFrame
+      The Frame to save to disk.
 
-  frame : H2OFrame
-    The Frame to save to disk.
-  path : str
-    The path to the save point on disk.
-  force : bool
-    Overwrite any preexisting file with the same path
+    path : str
+      The path to the save point on disk.
 
+    force : bool
+      Overwrite any preexisting file with the same path
   """
   H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
 
 
 def cluster_info():
-  """
-  Display the current H2O cluster information.
-
-  :return: None
+  """Display the current H2O cluster information.
   """
   H2OConnection._cluster_info()
 
 
 def shutdown(conn=None, prompt=True):
-  """
-  Shut down the specified instance. All data will be lost.
-  This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O instance.
+  """Shut down the specified instance. All data will be lost.
+  This method checks if H2O is running at the specified IP address and port,
+  and if it is, shuts down that H2O instance.
 
   Parameters
   ----------
+    conn : H2OConnection
+      An H2OConnection object containing the IP address and port of the server running H2O.
 
-  conn : H2OConnection
-    An H2OConnection object containing the IP address and port of the server running H2O.
-  prompt : bool
-    A logical value indicating whether to prompt the user before shutting down the H2O server.
-
-  :return: None
+    prompt : bool
+      A logical value indicating whether to prompt the user before shutting down the H2O server.
   """
   if conn is None: conn = H2OConnection.current_connection()
   H2OConnection._shutdown(conn=conn, prompt=prompt)
@@ -901,11 +896,6 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
   return get_frame(parms["dest"])
 
 
-def network_test():
-  res = H2OConnection.get_json(url_suffix="NetworkTest")
-  res["table"].show()
-
-
 def as_list(data, use_pandas=True):
   """Convert an H2O data object into a python-specific object.
 
@@ -929,6 +919,10 @@ def as_list(data, use_pandas=True):
   """
   return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
 
+
+def network_test():
+  res = H2OConnection.get_json(url_suffix="NetworkTest")
+  res["table"].show()
 
 def set_timezone(tz):
   """Set the Time Zone on the H2O Cloud
