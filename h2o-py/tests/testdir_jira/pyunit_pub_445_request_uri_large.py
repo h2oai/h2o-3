@@ -12,7 +12,7 @@ def pub_445_long_request_uri():
     mnistTrain.set_name(col=784, name="label")
     mnistTest.set_name(col=784, name="label")
 
-    mnistModel = H2OGradientBoostingEstimator(ntrees=100, max_depth=10)
+    mnistModel = H2OGradientBoostingEstimator(ntrees=2, max_depth=2)
     mnistModel.train(x=list(range(784)),y="label",training_frame=mnistTrain,validation_frame=mnistTest)
 
 
