@@ -2,8 +2,7 @@
 # This example requires h2oEnsemble v>=0.1.7
 
 library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+localH2O <- h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
 # Import a sample binary outcome train/test set into R
