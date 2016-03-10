@@ -30,7 +30,7 @@ df.pop('ID')  # WARNING: this is NOT python negative indexing!!!
 
 # For VOL & GLEASON, a zero really means "missing"
 df[df['VOL'],'VOL'] = None
-df[df'GLEASON'],'GLEASON'] = None
+df[df['GLEASON'],'GLEASON'] = None
 
 # Convert CAPSULE to a logical factor
 df['CAPSULE'] = df['CAPSULE'].asfactor()
