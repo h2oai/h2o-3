@@ -11,7 +11,7 @@ def download_pojo():
   print("iris:")
   iris.show()
   m = H2OGradientBoostingEstimator()
-  m.train(x=range(4), y=4, training_frame=iris)
+  m.train(x=list(range(4)), y=4, training_frame=iris)
   h2o.download_pojo(m)
 
 

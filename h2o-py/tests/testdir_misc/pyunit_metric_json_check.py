@@ -14,7 +14,7 @@ def metric_json_check():
 
     # Regression metric json
     reg_mod = H2OGradientBoostingEstimator(distribution="gaussian")
-    reg_mod.train(x=range(3,df.ncol), y="CAPSULE", training_frame=df)
+    reg_mod.train(x=list(range(3,df.ncol)), y="CAPSULE", training_frame=df)
     reg_met = reg_mod.model_performance()
     reg_metric_json_keys_have = list(reg_met._metric_json.keys())
     reg_metric_json_keys_desired = [u'model_category',
@@ -37,7 +37,7 @@ def metric_json_check():
                                                                             reg_metric_diff)
     # Regression metric json (GLM)
     reg_mod = H2OGeneralizedLinearEstimator(family="gaussian")
-    reg_mod.train(x=range(3,df.ncol), y="CAPSULE", training_frame=df)
+    reg_mod.train(x=list(range(3,df.ncol)), y="CAPSULE", training_frame=df)
     reg_met = reg_mod.model_performance()
     reg_metric_json_keys_have = list(reg_met._metric_json.keys())
     reg_metric_json_keys_desired = [u'model_category',
@@ -67,7 +67,7 @@ def metric_json_check():
     # Binomial metric json
     bin_mod = H2OGradientBoostingEstimator(distribution="bernoulli")
     df["CAPSULE"] = df["CAPSULE"].asfactor()
-    bin_mod.train(x=range(3,df.ncol), y="CAPSULE", training_frame=df)
+    bin_mod.train(x=list(range(3,df.ncol)), y="CAPSULE", training_frame=df)
     bin_met = bin_mod.model_performance()
     bin_metric_json_keys_have = list(bin_met._metric_json.keys())
     bin_metric_json_keys_desired = [u'AUC',
@@ -97,7 +97,7 @@ def metric_json_check():
 
     # Binomial metric json (GLM)
     bin_mod = H2OGeneralizedLinearEstimator(family="binomial")
-    bin_mod.train(x=range(3,df.ncol), y="CAPSULE", training_frame=df)
+    bin_mod.train(x=list(range(3,df.ncol)), y="CAPSULE", training_frame=df)
     bin_metric_json_keys_have = list(bin_met._metric_json.keys())
     bin_metric_json_keys_desired = [u'frame',
                                     u'residual_deviance',
@@ -163,7 +163,7 @@ def metric_json_check():
     df = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
     from h2o.estimators.kmeans import H2OKMeansEstimator
     clus_mod = H2OKMeansEstimator(k=3, standardize=False)
-    clus_mod.train(x=range(4), training_frame=df)
+    clus_mod.train(x=list(range(4)), training_frame=df)
     clus_met = clus_mod.model_performance()
     clus_metric_json_keys_have = list(clus_met._metric_json.keys())
     clus_metric_json_keys_desired = [u'tot_withinss',

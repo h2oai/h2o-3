@@ -9,7 +9,7 @@ def pubdev_2223():
     covtype = h2o.import_file(pyunit_utils.locate("smalldata/covtype/covtype.20k.data"))
     covtype[54] = covtype[54].asfactor()
     dlmodel = H2ODeepLearningEstimator(hidden=[17,191], epochs=1, balance_classes=False, reproducible=True, seed=1234, export_weights_and_biases=True)
-    dlmodel.train(x=range(54),y=54,training_frame=covtype)
+    dlmodel.train(x=list(range(54)),y=54,training_frame=covtype)
 
     print("Normalization/Standardization multipliers for numeric predictors: {0}\n".format(dlmodel.normmul()))
     print("Normalization/Standardization offsets for numeric predictors: {0}\n".format(dlmodel.normsub()))

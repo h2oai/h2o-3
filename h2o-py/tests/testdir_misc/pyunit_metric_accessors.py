@@ -536,7 +536,7 @@ def metric_accessors():
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
     from h2o.estimators.kmeans import H2OKMeansEstimator
     km = H2OKMeansEstimator(k=3, nfolds=3)
-    km.train(x=range(4), training_frame=iris)
+    km.train(x=list(range(4)), training_frame=iris)
 
     #   betweenss
     betweenss1 = km.betweenss(train=True,  valid=False, xval=False)

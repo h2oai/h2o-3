@@ -10,7 +10,7 @@ def screeplot_test():
     kwargs['server'] = True
     australia = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/AustraliaCoast.csv"))
     australia_pca = H2OPCA(k=4,transform="STANDARDIZE")
-    australia_pca.train(x=range(8), training_frame=australia)
+    australia_pca.train(x=list(range(8)), training_frame=australia)
     australia_pca.screeplot(type="barplot", **kwargs)
     australia_pca.screeplot(type="lines", **kwargs)
 
