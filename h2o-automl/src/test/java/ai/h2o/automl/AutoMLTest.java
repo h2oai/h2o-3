@@ -16,7 +16,7 @@ public class AutoMLTest extends TestUtil {
     AutoML aml = null;
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
-      aml = new AutoML("iris_wheader", fr, 4, "", -1, -1, false, null, true);
+      aml = new AutoML(Key.<AutoML>make(),"iris_wheader", fr, 4, "", -1, -1, false, null, true);
       aml.learn();
     } finally {
       if(fr!=null)  fr.delete();
@@ -29,7 +29,7 @@ public class AutoMLTest extends TestUtil {
     AutoML aml=null;
     try {
       fr = parse_test_file(Key.make("a.hex"), "smalldata/iris.csv");
-      aml = new AutoML("iris_wheader",fr, 4, "", -1, -1, false, null, true);
+      aml = new AutoML(Key.<AutoML>make(),"iris_wheader",fr, 4, "", -1, -1, false, null, true);
       aml.learn();
 
       // sepal_len column

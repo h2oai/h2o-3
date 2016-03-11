@@ -5,6 +5,7 @@ import ai.h2o.automl.H2OJob;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
+import water.api.JobV3;
 import water.fvec.Frame;
 
 
@@ -24,7 +25,7 @@ public class AutoMLBuilderHandler extends Handler {
             args.ensemble,
             args.exclude,
             args.tryMutations);
-    args.job = new H2OJob(aml, aml._key).start();
+    args.job = new JobV3().fillFromImpl(new H2OJob(aml,aml._key).start());
     return args;
   }
 }
