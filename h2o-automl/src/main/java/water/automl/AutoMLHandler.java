@@ -1,10 +1,10 @@
 package water.automl;
 
 import ai.h2o.automl.AutoML;
+import ai.h2o.automl.H2OJob;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
-import water.api.KeyV3;
 import water.fvec.Frame;
 
 public class AutoMLHandler extends Handler {
@@ -23,8 +23,7 @@ public class AutoMLHandler extends Handler {
             args.ensemble,
             args.exclude,
             args.tryMutations);
-    aml.learn();
-    args.result = new KeyV3.ModelKeyV3(aml.getLeaderKey());
+    args.job = new H2OJob(aml, aml._key).start();
     return args;
   }
 }
