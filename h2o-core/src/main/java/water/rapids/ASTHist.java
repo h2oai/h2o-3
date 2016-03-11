@@ -16,7 +16,8 @@ class ASTHist extends ASTPrim {
   @Override int nargs() { return 1+2; } // (hist x breaks)
   @Override
   public String str() { return "hist"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     // stack is [ ..., ary, breaks]
     // handle the breaks
     Frame fr2;
@@ -213,7 +214,8 @@ class ASTMode extends ASTPrim {
   @Override
   public String str() { return "mode"; }
   @Override int nargs() { return 1+1; } // (mode ary)
-  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 || !fr.anyVec().isCategorical() )
       throw new IllegalArgumentException("mean only works on a single categorical column");

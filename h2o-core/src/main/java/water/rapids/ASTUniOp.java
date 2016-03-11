@@ -16,10 +16,11 @@ import static water.util.RandomUtils.getRNG;
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument
  */
-abstract class ASTUniOp extends ASTPrim {
+public abstract class ASTUniOp extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
@@ -70,9 +71,6 @@ class ASTTanPi extends ASTUniOp { public String str(){ return "tanpi"; } double 
 class ASTAbs  extends ASTUniOp { public String str(){ return "abs";  } double op(double d) { return Math.abs(d);}}
 class ASTSgn  extends ASTUniOp { public String str(){ return "sign" ; } double op(double d) { return Math.signum(d);}}
 class ASTSqrt extends ASTUniOp { public String str(){ return "sqrt"; } double op(double d) { return Math.sqrt(d);}}
-class ASTTrun extends ASTUniOp { public String str(){ return "trunc"; } double op(double d) { return d>=0?Math.floor(d):Math.ceil(d);}}
-class ASTCeil extends ASTUniOp { public String str(){ return "ceiling"; } double op(double d) { return Math.ceil(d);}}
-class ASTFlr  extends ASTUniOp { public String str(){ return "floor";} double op(double d) { return Math.floor(d);}}
 class ASTLog  extends ASTUniOp { public String str(){ return "log";  } double op(double d) { return Math.log(d);}}
 class ASTLog10  extends ASTUniOp { public String str(){ return "log10";  } double op(double d) { return Math.log10(d);}}
 class ASTLog2  extends ASTUniOp { public String str(){ return "log2";  } double op(double d) { return Math.log(d)/Math.log(2);}}
@@ -92,7 +90,8 @@ class ASTIsNA  extends ASTPrim {
   @Override
   public String str() { return "is.na"; }
   @Override int nargs() { return 1+1; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
     switch( val.type() ) {
     case Val.NUM: return new ValNum(op(val.getNum()));
@@ -121,7 +120,8 @@ class ASTRunif extends ASTPrim {
   @Override int nargs() { return 1+2; } // (h2o.runif frame seed)
   @Override
   public String str() { return "h2o.runif"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr  = stk.track(asts[1].exec(env)).getFrame();
     long seed = (long)asts[2].exec(env).getNum();
     if( seed == -1 ) seed = new Random().nextLong();
@@ -135,7 +135,8 @@ class ASTStratifiedSplit extends ASTPrim {
   @Override int nargs() { return 1+3; } // (h2o.random_stratified_split y test_frac seed)
   @Override
   public String str() { return "h2o.random_stratified_split"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 ) throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");
     Vec y = fr.anyVec();
@@ -173,7 +174,8 @@ class ASTNcol extends ASTPrim {
   @Override int nargs() { return 1+1; }
   @Override
   public String str() { return "ncol"; }
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     return new ValNum(fr.numCols());
   }
@@ -185,7 +187,8 @@ class ASTNrow extends ASTPrim {
   @Override int nargs() { return 1+1; }
   @Override
   public String str() { return "nrow"; }
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     return new ValNum(fr.numRows());
   }
@@ -197,7 +200,8 @@ class ASTNLevels extends ASTPrim {
   @Override int nargs() { return 1+1; } // (nlevels x)
   @Override
   public String str() { return "nlevels"; }
-  @Override ValNum apply(Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     int nlevels;
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {
@@ -214,7 +218,8 @@ class ASTLevels extends ASTPrim {
   @Override int nargs() { return 1+1; } // (levels x)
   @Override
   public String str() { return "levels"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     Futures fs = new Futures();
     Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());
@@ -251,7 +256,8 @@ class ASTSetLevel extends ASTPrim {
   @Override int nargs() { return 1+2; } // (setLevel x level)
   @Override
   public String str() { return "setLevel"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
     String[] doms = fr.anyVec().domain().clone();
@@ -282,7 +288,8 @@ class ASTSetDomain extends ASTPrim {
   @Override int nargs() { return 1+2;} // (setDomain x [list of strings])
   @Override
   public String str() { return "setDomain"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     String[] _domains = ((ASTStrList)asts[2])._strs;
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
@@ -319,7 +326,8 @@ class ASTTranspose extends ASTPrim {
   @Override int nargs() { return 1+1; } // (t X)
   @Override
   public String str() { return "t"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     return new ValFrame(DMatrix.transpose(f));
   }
@@ -332,7 +340,8 @@ class ASTMMult extends ASTPrim {
   @Override
   public String str() { return "x"; }
 
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame X1 = stk.track(asts[1].exec(env)).getFrame();
     Frame X2 = stk.track(asts[2].exec(env)).getFrame();
     return new ValFrame(DMatrix.mmul(X1,X2));
@@ -344,7 +353,8 @@ class ASTMatch extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "table", "nomatch", "incomparables"}; }
   @Override int nargs() { return 1+4; } // (match fr table nomatch incomps)
   @Override public String str() { return "match"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols() != 1 || !fr.anyVec().isCategorical()) 
       throw new IllegalArgumentException("can only match on a single categorical column.");
@@ -403,7 +413,8 @@ class ASTWhich extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (which col)
   @Override public String str() { return "which"; }
-  @Override ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
 
     // The 1-row version

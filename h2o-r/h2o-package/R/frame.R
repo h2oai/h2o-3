@@ -306,10 +306,13 @@ h2o.assign <- function(data, key) {
 #' @param integer_range The range of randomly generated integer values.
 #' @param binary_fraction The fraction of total columns that are binary-valued.
 #' @param binary_ones_fraction The fraction of values in a binary column that are set to 1.
+#' @param time_fraction The fraction of randomly created date/time columns.
+#' @param string_fraction The fraction of randomly created string columns.
 #' @param missing_fraction The fraction of total entries in the data frame that are set to NA.
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
+#' @param seed_for_column_types A seed used to generate random column types when \code{randomize = TRUE}.
 #' @return Returns an H2OFrame object.
 #' @examples
 #' \donttest{
@@ -329,11 +332,13 @@ h2o.assign <- function(data, key) {
 h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
-                            binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
-                            has_response = FALSE, seed) {
+                            binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
+                            missing_fraction = 0.01, response_factors = 2,
+                            has_response = FALSE, seed, seed_for_column_types) {
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
+  if(!missing(seed_for_column_types) && !is.numeric(seed_for_column_types)) stop("`seed_for_column_types` must be a numeric value")
   if(!is.logical(randomize)) stop("`randomize` must be TRUE or FALSE")
   if(!is.numeric(value)) stop("`value` must be a numeric value")
   if(!is.numeric(real_range)) stop("`real_range` must be a numeric value")
@@ -343,6 +348,8 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
   if(!is.numeric(integer_range)) stop("`integer_range` must be a numeric value")
   if(!is.numeric(binary_fraction)) stop("`binary_fraction` must be a numeric value")
   if(!is.numeric(binary_ones_fraction)) stop("`binary_ones_fraction` must be a numeric value")
+  if(!is.numeric(time_fraction)) stop("`time_fraction` must be a numeric value")
+  if(!is.numeric(string_fraction)) stop("`string_fraction` must be a numeric value")
   if(!is.numeric(missing_fraction)) stop("`missing_fraction` must be a numeric value")
   if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
@@ -1140,10 +1147,13 @@ NULL
 #' @param e1 object
 #' @param e2 object
 #' @export
-Ops.H2OFrame <- function(e1,e2)
+Ops.H2OFrame <- function(e1,e2) {
+
+  if( missing(e2) && .Generic=="-" ) return(1-e1)
   .newExpr(.Generic,
            if( base::is.character(e1) ) .quote(e1) else e1,
            if( base::is.character(e2) ) .quote(e2) else e2)
+}
 
 #' @rdname H2OFrame
 #' @param x object
@@ -2534,18 +2544,18 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'
 #' Basic Imputation of H2O Vectors
 #'
-#'  Perform simple imputation on a single vector by filling missing values with aggregates
+#'  Perform inplace imputation by filling missing values with aggregates
 #'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
 #'  based on groupings of columns from within data; these columns can be passed by index or
-#'  name to the by parameter. If a factor column is supplied, then the method must be one
-#'  "mode". Anything else results in a full stop.
+#'  name to the by parameter. If a factor column is supplied, then the method must be
+#'  "mode".
 #'
 #'  The default method is selected based on the type of the column to impute. If the column
-#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Otherwise
+#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
 #'  column types (e.g. String, Time, UUID) are not supported.
 #'
 #'  @param data The dataset containing the column to impute.
-#'  @param column The column to impute.
+#'  @param column A specific column to impute, default of 0 means impute the whole frame.
 #'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
 #'                "mode" replaces with the most common factor (for factor columns only);
 #'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
@@ -2883,7 +2893,7 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #'
 #' @param x The column whose string lengths will be returned.
 #' @export
-h2o.nchar <- function(x) .newExpr("length", x)
+h2o.nchar <- function(x) .newExpr("strlen", x)
 
 #'
 #' Substring

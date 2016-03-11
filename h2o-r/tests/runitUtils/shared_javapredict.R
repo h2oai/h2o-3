@@ -13,6 +13,9 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   } else if (model == "randomForest") {
     model <- do.call("h2o.randomForest",params)
     print(model)
+  } else if (model == "deeplearning") {
+    model <- do.call("h2o.deeplearning",params)
+    print(model)
   } else {
     stop(paste("Unknown model type", model))
   }

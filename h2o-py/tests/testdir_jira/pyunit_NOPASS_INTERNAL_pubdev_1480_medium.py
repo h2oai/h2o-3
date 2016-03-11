@@ -4,6 +4,7 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 import os
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def pubdev_1480():
@@ -12,7 +13,8 @@ def pubdev_1480():
     train = h2o.import_file("hdfs://mr-0xd6/datasets/kaggle/sf.crime.train.gz")
     test = h2o.import_file("hdfs://mr-0xd6/datasets/kaggle/sf.crime.test.gz")
 
-    model = h2o.gbm(x=train[list(range(2,9))], y=train[1])
+    model=H2OGradientBoostingEstimator()
+    model.train(x=list(range(2,9)),y=1,training_frame=train)
 
     predictions = model.predict(test)
 

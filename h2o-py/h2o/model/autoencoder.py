@@ -2,7 +2,6 @@ import h2o
 from .model_base import ModelBase
 
 class H2OAutoEncoderModel(ModelBase):
-  """Class for AutoEncoder models."""
 
   def anomaly(self,test_data,per_feature=False):
     """Obtain the reconstruction error for the input test_data.
@@ -11,6 +10,7 @@ class H2OAutoEncoderModel(ModelBase):
     ----------
       test_data : H2OFrame
         The dataset upon which the reconstruction error is computed.
+
       per_feature : bool
         Whether to return the square reconstruction error per feature. Otherwise, return
         the mean square error.

@@ -2,8 +2,7 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
 def hexdev_394():
@@ -16,43 +15,26 @@ def hexdev_394():
 
   cols = train.col_names  # This returned space for first column name
   x_cols = [colname for colname in cols if colname != "C55"]
-  x_cols
-
 
   splits = train.split_frame()
   newtrain = splits[0]
   newvalid = splits[1]
-  newtrain_x = newtrain[x_cols]
-  newtrain_y = newtrain[54].asfactor()
-  newvalid_x = newvalid[x_cols]
-  newvalid_y = newvalid[54].asfactor()
+  newtrain[54] = newtrain[54].asfactor()
+  newvalid[54] = newvalid[54].asfactor()
 
 
-  my_gbm = h2o.gbm(y=newtrain_y,
-                   validation_y=newvalid_y,
-                   x=newtrain_x,
-                   validation_x=newvalid_x,
-                   distribution =  "multinomial",
-                   ntrees=100,
-                   learn_rate=0.1,
-                   max_depth=6)
+  my_gbm = H2OGradientBoostingEstimator(distribution="multinomial", ntrees=100, learn_rate=0.1, max_depth=6)
+  my_gbm.train(x=x_cols,y=54,training_frame=newtrain, validation_frame=newvalid)
 
   split1, split2 = train.split_frame()
+  split1[54] = split1[54].asfactor()
+  split2[54] = split2[54].asfactor()
 
-  newtrain_x = split1[x_cols]
-  newtrain_y = split1[54].asfactor()
-  newvalid_x = split2[x_cols]
-  newvalid_y = split2[54].asfactor()
-
-  my_gbm = h2o.gbm(y=newtrain_y,
-                   validation_y=newvalid_y,
-                   x=newtrain_x,
-                   validation_x=newvalid_x,
-                   distribution="multinomial",
-                   ntrees=100,
-                   learn_rate=0.1,
-                   max_depth=6)
-
+  my_gbm = H2OGradientBoostingEstimator(distribution="multinomial",
+                                        ntrees=100,
+                                        learn_rate=0.1,
+                                        max_depth=6)
+  my_gbm.train(x=x_cols,y=54,training_frame=split1,validation_frame=split2)
 
 
 if __name__ == "__main__":

@@ -15,10 +15,13 @@ class H2OBinomialModel(ModelBase):
     ----------
       thresholds : list, optional
         If None, then the thresholds in this set of metrics will be used.
+
       train : bool, optional
         If True, return the F1 value for the training data.
+
       valid : bool, optional
         If True, return the F1 value for the validation data.
+
       xval : bool, optional
         If True, return the F1 value for each of the cross-validated splits.
 
@@ -50,11 +53,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the F2 value for the training data.
-    :param valid: If valid is True, then return the F2 value for the validation data.
-    :param xval:  If xval is True, then return the F2 value for the cross validation data.
-    :return: The F2 for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the F2 value for the training data.
+
+      valid : bool, optional
+        If True, return the F2 value for the validation data.
+
+      xval : bool, optional
+        If True, return the F2 value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The F2 values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -67,11 +82,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the F0point5 value for the training data.
-    :param valid: If valid is True, then return the F0point5 value for the validation data.
-    :param xval:  If xval is True, then return the F0point5 value for the cross validation data.
-    :return: The F0point5 for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the F0point5 value for the training data.
+
+      valid : bool, optional
+        If True, return the F0point5 value for the validation data.
+
+      xval : bool, optional
+        If True, return the F0point5 value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The F0point5 values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -85,11 +112,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the accuracy value for the training data.
-    :param valid: If valid is True, then return the accuracy value for the validation data.
-    :param xval:  If xval is True, then return the accuracy value for the cross validation data.
-    :return: The accuracy for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the accuracy value for the training data.
+
+      valid : bool, optional
+        If True, return the accuracy value for the validation data.
+
+      xval : bool, optional
+        If True, return the accuracy value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The accuracy values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -103,11 +142,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the error value for the training data.
-    :param valid: If valid is True, then return the error value for the validation data.
-    :param xval:  If xval is True, then return the error value for the cross validation data.
-    :return: The error for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the error value for the training data.
+
+      valid : bool, optional
+        If True, return the error value for the validation data.
+
+      xval : bool, optional
+        If True, return the error value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The error values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -121,11 +172,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the precision value for the training data.
-    :param valid: If valid is True, then return the precision value for the validation data.
-    :param xval:  If xval is True, then return the precision value for the cross validation data.
-    :return: The precision for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the precision value for the training data.
+
+      valid : bool, optional
+        If True, return the precision value for the validation data.
+
+      xval : bool, optional
+        If True, return the precision value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The precision values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -139,11 +202,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the tpr value for the training data.
-    :param valid: If valid is True, then return the tpr value for the validation data.
-    :param xval:  If xval is True, then return the tpr value for the cross validation data.
-    :return: The tpr for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the tpr value for the training data.
+
+      valid : bool, optional
+        If True, return the tpr value for the validation data.
+
+      xval : bool, optional
+        If True, return the tpr value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The tpr values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -157,11 +232,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the tnr value for the training data.
-    :param valid: If valid is True, then return the tnr value for the validation data.
-    :param xval:  If xval is True, then return the tnr value for the cross validation data.
-    :return: The F1 for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the tnr value for the training data.
+
+      valid : bool, optional
+        If True, return the tnr value for the validation data.
+
+      xval : bool, optional
+        If True, return the tnr value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The tnr values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -175,11 +262,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the fnr value for the training data.
-    :param valid: If valid is True, then return the fnr value for the validation data.
-    :param xval:  If xval is True, then return the fnr value for the cross validation data.
-    :return: The fnr for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the fnr value for the training data.
+
+      valid : bool, optional
+        If True, return the fnr value for the validation data.
+
+      xval : bool, optional
+        If True, return the fnr value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The fnr values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -193,11 +292,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the fpr value for the training data.
-    :param valid: If valid is True, then return the fpr value for the validation data.
-    :param xval:  If xval is True, then return the fpr value for the cross validation data.
-    :return: The fpr for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the fpr value for the training data.
+
+      valid : bool, optional
+        If True, return the fpr value for the validation data.
+
+      xval : bool, optional
+        If True, return the fpr value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The fpr values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -211,11 +322,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the recall value for the training data.
-    :param valid: If valid is True, then return the recall value for the validation data.
-    :param xval:  If xval is True, then return the recall value for the cross validation data.
-    :return: The recall for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the recall value for the training data.
+
+      valid : bool, optional
+        If True, return the recall value for the validation data.
+
+      xval : bool, optional
+        If True, return the recall value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The recall values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -229,12 +352,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the sensitivity value for the training data.
-    :param valid: If valid is True, then return the sensitivity value for the validation data.
-    :param xval:  If xval is True, then return the sensitivity value for the cross validation data.
-    :return: The sensitivity for this binomial model.
+      train : bool, optional
+        If True, return the sensitivity value for the training data.
+
+      valid : bool, optional
+        If True, return the sensitivity value for the validation data.
+
+      xval : bool, optional
+        If True, return the sensitivity value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The sensitivity values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -248,11 +382,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the fallout value for the training data.
-    :param valid: If valid is True, then return the fallout value for the validation data.
-    :param xval:  If xval is True, then return the fallout value for the cross validation data.
-    :return: The fallout for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the fallout value for the training data.
+
+      valid : bool, optional
+        If True, return the fallout value for the validation data.
+
+      xval : bool, optional
+        If True, return the fallout value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The fallout values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -266,11 +412,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the missrate value for the training data.
-    :param valid: If valid is True, then return the missrate value for the validation data.
-    :param xval:  If xval is True, then return the missrate value for the cross validation data.
-    :return: The missrate for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the missrate value for the training data.
+
+      valid : bool, optional
+        If True, return the missrate value for the validation data.
+
+      xval : bool, optional
+        If True, return the missrate value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The missrate values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -284,11 +442,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the specificity value for the training data.
-    :param valid: If valid is True, then return the specificity value for the validation data.
-    :param xval:  If xval is True, then return the specificity value for the cross validation data.
-    :return: The specificity for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the specificity value for the training data.
+
+      valid : bool, optional
+        If True, return the specificity value for the validation data.
+
+      xval : bool, optional
+        If True, return the specificity value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The specificity values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -302,11 +472,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the mcc value for the training data.
-    :param valid: If valid is True, then return the mcc value for the validation data.
-    :param xval:  If xval is True, then return the mcc value for the cross validation data.
-    :return: The mcc for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the mcc value for the training data.
+
+      valid : bool, optional
+        If True, return the mcc value for the validation data.
+
+      xval : bool, optional
+        If True, return the mcc value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The mcc values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -320,11 +502,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the max_per_class_error value for the training data.
-    :param valid: If valid is True, then return the max_per_class_error value for the validation data.
-    :param xval:  If xval is True, then return the max_per_class_error value for the cross validation data.
-    :return: The max_per_class_error for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the max_per_class_error value for the training data.
+
+      valid : bool, optional
+        If True, return the max_per_class_error value for the validation data.
+
+      xval : bool, optional
+        If True, return the max_per_class_error value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The max_per_class_error values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -338,10 +532,23 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param train: If train is True, then return the metrics for the training data.
-    :param valid: If valid is True, then return the metrics for the validation data.
-    :param xval:  If xval is True, then return the metrics for the cross validation data.
-    :return: The metrics for this binomial model.
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the metric value for the training data.
+
+      valid : bool, optional
+        If True, return the metric value for the validation data.
+
+      xval : bool, optional
+        If True, return the metric value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The metric values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -349,13 +556,17 @@ class H2OBinomialModel(ModelBase):
     return list(m.values())[0] if len(m) == 1 else m
 
   def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
-    """
-    Plots training set (and validation set if available) scoring history for an H2OBinomialModel. The timestep and metric
-    arguments are restricted to what is available in its scoring history.
+    """Plots training set (and validation set if available) scoring history for an
+    H2OBinomialModel. The timestep and metric arguments are restricted to what is
+    available in its scoring history.
 
-    :param timestep: A unit of measurement for the x-axis.
-    :param metric: A unit of measurement for the y-axis.
-    :return: A scoring history plot.
+    Parameters
+    ----------
+      timestep : str
+         A unit of measurement for the x-axis.
+
+      metric : str
+        A unit of measurement for the y-axis.
     """
 
     if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
@@ -366,17 +577,25 @@ class H2OBinomialModel(ModelBase):
     self._plot(timestep=timestep, metric=metric, **kwargs)
 
   def roc(self, train=False, valid=False, xval=False):
-    """
-    Return the coordinates of the ROC curve for a given set of data,
-    as a two-tuple containing the false positive rates as a list and true positive
-    rates as a list.
-    If all are False (default), then return is the training data.
-    If more than one ROC curve is requested, the data is returned as a dictionary
-    of two-tuples.
-    :param train: If train is true, then return the ROC coordinates for the training data.
-    :param valid: If valid is true, then return the ROC coordinates for the validation data.
-    :param xval: If xval is true, then return the ROC coordinates for the cross validation data.
-    :return rocs_cooridinates: the true cooridinates of the roc curve.
+    """Return the coordinates of the ROC curve for a given set of data, as a two-tuple
+    containing the false positive rates as a list and true positive rates as a list.
+    If all are False (default), then return is the training data. If more than one ROC
+    curve is requested, the data is returned as a dictionary of two-tuples.
+
+    Parameters
+    ----------
+      train : bool, optional
+        If True, return the roc value for the training data.
+
+      valid : bool, optional
+        If True, return the roc value for the validation data.
+
+      xval : bool, optional
+        If True, return the roc value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The roc values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -389,13 +608,23 @@ class H2OBinomialModel(ModelBase):
     """
     Get the Gains/Lift table for the specified metrics
     If all are False (default), then return the training metric Gains/Lift table.
-    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-    and "xval"
+    If more than one options is set to True, then return a dictionary of metrics where t
+    he keys are "train", "valid", and "xval"
 
-    :param train: If train is True, then return the Gains/Lift table for the training data.
-    :param valid: If valid is True, then return the Gains/Lift table for the validation data.
-    :param xval:  If xval is True, then return the Gains/Lift table for the cross validation data.
-    :return: The Gains/Lift table for this binomial model.
+    Parameters
+    ----------
+      train : bool, optional
+        If True, return the gains_lift value for the training data.
+
+      valid : bool, optional
+        If True, return the gains_lift value for the validation data.
+
+      xval : bool, optional
+        If True, return the gains_lift value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The gains_lift values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -407,15 +636,30 @@ class H2OBinomialModel(ModelBase):
     """
     Get the confusion matrix for the specified metrics/thresholds
     If all are False (default), then return the training metric value.
-    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-    and "xval"
+    If more than one options is set to True, then return a dictionary of metrics where the
+    keys are "train", "valid", and "xval"
 
-    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
-    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
-    :param train: If train is True, then return the confusion matrix value for the training data.
-    :param valid: If valid is True, then return the confusion matrix value for the validation data.
-    :param xval:  If xval is True, then return the confusion matrix value for the cross validation data.
-    :return: The confusion matrix for this binomial model.
+    Parameters
+    ----------
+      metrics : str, list
+        One or more of "min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr",
+        "tpr", "precision", "accuracy", "f0point5", "f2", "f1".
+
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the confusion_matrix for the training data.
+
+      valid : bool, optional
+        If True, return the confusion_matrix for the validation data.
+
+      xval : bool, optional
+        If True, return the confusion_matrix for each of the cross-validated splits.
+
+    Returns
+    -------
+      The metric values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -423,15 +667,24 @@ class H2OBinomialModel(ModelBase):
     return list(m.values())[0] if len(m) == 1 else m
 
   def find_threshold_by_max_metric(self,metric,train=False, valid=False, xval=False):
-    """
-    If all are False (default), then return the training metric value.
+    """If all are False (default), then return the training metric value.
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param train: If train is True, then return the threshold_by_max_metric value for the training data.
-    :param valid: If valid is True, then return the threshold_by_max_metric value for the validation data.
-    :param xval:  If xval is True, then return the threshold_by_max_metric value for the cross validation data.
-    :return: The threshold_by_max_metric for this binomial model.
+    Parameters
+    ----------
+      train : bool, optional
+        If True, return the find_threshold_by_max_metric value for the training data.
+
+      valid : bool, optional
+        If True, return the find_threshold_by_max_metric value for the validation data.
+
+      xval : bool, optional
+        If True, return the find_threshold_by_max_metric value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The find_threshold_by_max_metric values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
@@ -445,10 +698,20 @@ class H2OBinomialModel(ModelBase):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param train: If train is True, then return the idx_by_threshold for the training data.
-    :param valid: If valid is True, then return the idx_by_threshold for the validation data.
-    :param xval:  If xval is True, then return the idx_by_threshold for the cross validation data.
-    :return: The idx_by_threshold for this binomial model.
+    Parameters
+    ----------
+      train : bool, optional
+        If True, return the find_idx_by_threshold value for the training data.
+
+      valid : bool, optional
+        If True, return the find_idx_by_threshold value for the validation data.
+
+      xval : bool, optional
+        If True, return the find_idx_by_threshold value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The find_idx_by_threshold values for the specified key(s).
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}

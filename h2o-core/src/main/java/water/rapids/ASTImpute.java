@@ -61,7 +61,8 @@ public class ASTImpute extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "groupByFrame", "values"}; }
   @Override public String str(){ return "h2o.impute";}
   @Override int nargs() { return 1+7; } // (h2o.impute data col method combine_method groupby groupByFrame values)
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     // Argument parsing and sanity checking
     // Whole frame being imputed
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
