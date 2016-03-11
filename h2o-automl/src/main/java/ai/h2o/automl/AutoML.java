@@ -129,9 +129,9 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     final Value val = DKV.get(LEADER);
     if( val==null ) return null;
     ModelLeader ml = val.get();
-    final Value model = DKV.get(ml._leader);
-    assert model!=null; // if the LEADER is in the DKV, then there better be a model!
-    return model.get();
+    final Value leaderModelKey = DKV.get(ml._leader);
+    assert leaderModelKey!=null; // if the LEADER is in the DKV, then there better be a model!
+    return leaderModelKey.get();
   }
 
   private void updateLeader(Model m) {
@@ -164,7 +164,7 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     new TAtomic<ModelList>() {
       @Override public ModelList atomic(ModelList old) {
         if( old == null ) old = new ModelList();
-        Key[] models = old._models;
+        Key<Model>[] models = old._models;
         old._models = Arrays.copyOf(models, models.length + 1);
         old._models[models.length] = modelKey;
         return old;
