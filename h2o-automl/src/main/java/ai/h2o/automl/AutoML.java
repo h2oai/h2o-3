@@ -172,11 +172,6 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
 
 
   // satisfy typing for job return type...
-  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, Job> {
-    public AutoMLKeyV3() {}
-    public AutoMLKeyV3(Key<Job> key) {
-      super(key);
-    }
-  }
+  public static class AutoMLKeyV3 extends KeyV3<Iced,AutoMLKeyV3,Job>{}
   @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
 }
