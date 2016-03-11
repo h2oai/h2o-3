@@ -1,7 +1,9 @@
 apply plugin: 'java'
 
 dependencies {
-    compile group: 'org.jacoco', name: 'org.jacoco.core', version:'0.7.6.+'
+    compile group: 'org.jacoco', name: 'org.jacoco.core', version: '0.7.6.+'
+    compile group: 'org.jacoco', name: 'org.jacoco.report', version: '0.7.6.+'
+    compile group: 'org.ow2.asm', name: 'asm', version: '5.0.4'
 }
 
 repositories {

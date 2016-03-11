@@ -52,6 +52,10 @@ public class DiffHunk {
         }
     }
 
+    public boolean hasLineB(int num) {
+        return num < _insert_start + _insert_length && num >= _insert_start;
+    }
+
     public int getRemoveStart() {
         return _remove_start;
     }

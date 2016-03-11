@@ -58,6 +58,23 @@ public class DiffFile {
         return _b_path;
     }
 
+    public String getNameA() {
+        return _a_path.getFileName().toString();
+    }
+
+    public String getNameB() {
+        return _b_path.getFileName().toString();
+    }
+
+    public boolean hasLineB(int num) {
+        for (DiffHunk dh : _diffs) {
+            if (dh.hasLineB(num - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Type getType() {
         if (!_a_path.getFileName().toString().equals("null")) {
             if (!_b_path.getFileName().toString().equals("null")) {
