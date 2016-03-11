@@ -79,7 +79,12 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     // gather more data? build more models? start applying transforms? what next ...?
   }
 
-  public Key<Model> getLeaderKey() { return LEADER; }
+  public Key<Model> getLeaderKey() {
+    final Value val = DKV.get(LEADER);
+    if( val==null ) return null;
+    ModelLeader ml = val.get();
+    return ml._leader;
+  }
   public void delete() {
     for(Model m: models()) m.delete();
     DKV.remove(MODELLIST);
@@ -115,7 +120,7 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
 
   public static final Key<Model> LEADER = Key.make(" AutoMLModelLeader ", (byte) 0, (byte) 2, false);
   static class ModelLeader extends Keyed {
-    Key _leader;
+    Key<Model> _leader;
     ModelLeader() { super(LEADER); _leader = null; }
     @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelLeader"); }
   }
@@ -172,6 +177,9 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
 
 
   // satisfy typing for job return type...
-  public static class AutoMLKeyV3 extends KeyV3<Iced,AutoMLKeyV3,Job>{}
+  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML>{
+    public AutoMLKeyV3(){}
+    public AutoMLKeyV3(Key<AutoML> key) { super(key); }
+  }
   @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
 }

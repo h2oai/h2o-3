@@ -25,6 +25,7 @@ public class AutoMLBuilderHandler extends Handler {
             args.ensemble,
             args.exclude,
             args.tryMutations);
+    DKV.put(aml);
     args.job = new JobV3().fillFromImpl(new H2OJob(aml,aml._key).start());
     return args;
   }
