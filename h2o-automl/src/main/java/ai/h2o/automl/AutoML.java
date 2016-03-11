@@ -4,6 +4,7 @@ import ai.h2o.automl.strategies.initial.InitModel;
 import hex.Model;
 import hex.ModelBuilder;
 import water.*;
+import water.api.KeyV3;
 import water.fvec.Frame;
 
 import java.util.Arrays;
@@ -168,4 +169,14 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     updateLeader(m);
     return m;
   }
+
+
+  // satisfy typing for job return type...
+  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, Job> {
+    public AutoMLKeyV3() {}
+    public AutoMLKeyV3(Key<Job> key) {
+      super(key);
+    }
+  }
+  @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
 }
