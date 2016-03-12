@@ -54,6 +54,8 @@ The following types are permissible for `python_obj`:
 * :class:`list`  []
 * :class:`dict`  {}
 * :mod:`collections.OrderedDict`
+* :mod:`numpy.ndarray`
+* :mod:`pandas.DataFrame`
 
 The type of `python_obj` is inspected by performing an `isinstance` call. A ValueError
 will be raised if the type of `python_obj` is not one of the above types. For example,
@@ -195,3 +197,14 @@ may be written out of order from which they were initially put into the dict.
 
 collections.OrderedDict preserves the order of the key-value pairs in which they were
 entered.
+
+Loading A numpy.ndarray Or A pandas.DataFrame
++++++++++++++++++++++++++++++++++++++++++++++
+One or two dimensional :mod:`numpy.ndarray` objects can be converted to H2OFrames.
+The implementation simply calls the `tolist()` method on the ndarray object. The same
+principles that apply to lists are then applied to the result of the `tolist()` operation.
+
+:mod:`pandas.DataFrame` objects can also be converted to H2OFrames. The implementation
+simply calls the `as_matrix()` method on the DataFrame object. The `as_matrix()` method
+returns an ndarray object, and the above-described ndarray transformation is then invoked,
+so the rules for Python lists also apply here.
