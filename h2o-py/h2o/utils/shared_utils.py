@@ -116,7 +116,7 @@ def _handle_python_dicts(python_obj):
     if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
       if _is_list_of_lists(v):
         raise ValueError("Values in the dictionary must be flattened!")
-    elif isinstance(v, (int, float, str, basestring, unicode)):
+    elif isinstance(v, (int, float, str)):
       python_obj[k] = [v]
     else: raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
 
