@@ -116,13 +116,16 @@ def _handle_python_dicts(python_obj):
     if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
       if _is_list_of_lists(v):
         raise ValueError("Values in the dictionary must be flattened!")
-    elif isinstance(v, (int, float, str)):
-      python_obj[k] = [v]
+    elif isinstance(v, (int, float)) or _is_str(v): python_obj[k] = [v]
     else: raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
 
   rows = list(map(list, itertools.zip_longest(*list(python_obj.values()))))
   data_to_write = [dict(list(zip(header, row))) for row in rows]
   return header, data_to_write
+
+def _is_str(s):
+  try: return isinstance(s, (str, basestring, unicode)) # python 2.x
+  except NameError: return isinstance(s, str) # python 3.x
 
 def _is_fr(o):
   return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports
