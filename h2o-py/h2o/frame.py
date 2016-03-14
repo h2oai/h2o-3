@@ -1757,20 +1757,20 @@ class H2OFrame(object):
     fr._ex._cache.ncol = self.ncol
     return fr
 
-  def pro_substrings_words(self, path_to_words):
-    """For each string, find the proportion of all possible substrings >= 2 characters that are contained in 
-    the line-separated text file whose path is given. If the string length is less than two, 0 is returned.
+  def num_valid_substrings(self, path_to_words):
+    """For each string, find the count of all possible substrings >= 2 characters that are contained in 
+    the line-separated text file whose path is given.
     
     Parameters
     ----------
       path_to_words : str
-        Path to file that contains a line-separated list of strings to be referenced. 
+        Path to file that contains a line-separated list of strings considered valid. 
         
     Returns
     -------
-      An H2OFrame with the proportion of substrings that are contained in the given word list. 
+      An H2OFrame with the number of substrings that are contained in the given word list. 
     """
-    fr = H2OFrame._expr(expr=ExprNode("pro_substrings_words", self, path_to_words))
+    fr = H2OFrame._expr(expr=ExprNode("num_valid_substrings", self, path_to_words))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr

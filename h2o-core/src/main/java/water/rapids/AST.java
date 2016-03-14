@@ -218,7 +218,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTLStrip());
     init(new ASTRStrip());
     init(new ASTEntropy());
-    init(new ASTProSubstringsWords());
+    init(new ASTCountSubstringsWords());
 
     // Functional data mungers
     init(new ASTApply());
