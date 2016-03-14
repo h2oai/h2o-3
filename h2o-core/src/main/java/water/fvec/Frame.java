@@ -1094,7 +1094,7 @@ public class Frame extends Lockable<Frame> {
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
         coltypes[i] = vec.isInt() ? "long" : "double"; 

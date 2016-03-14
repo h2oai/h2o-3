@@ -8,35 +8,41 @@ from .metrics_base import *
 class H2ODimReductionModel(ModelBase):
 
     def num_iterations(self):
-      """
-      Get the number of iterations that it took to converge or reach max iterations.
+      """Get the number of iterations that it took to converge or reach max iterations.
 
-      :return: number of iterations (integer)
+      Returns
+      -------
+        Number of iterations (integer)
       """
       o = self._model_json["output"]
       return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('number_of_iterations')]
     
     def objective(self):
-      """
-      Get the final value of the objective function from the GLRM model.
+      """Get the final value of the objective function from the GLRM model.
 
-      :return: final objective value (double)
+      Returns
+      -------
+        Final objective value
       """
       o = self._model_json["output"]
       return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('final_objective_value')]
    
     def final_step(self):
-      """
-      Get the final step size from the GLRM model.
+      """Get the final step size from the GLRM model.
 
-      :return: final step size (double)
+      Returns
+      -------
+        Final step size
       """
       o = self._model_json["output"]
       return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('final_step_size')]
     
     def archetypes(self):
       """
-      :return: the archetypes (Y) of the GLRM model.
+
+      Returns
+      -------
+        The archetypes (Y) of the GLRM model.
       """
       o = self._model_json["output"]
       yvals = o["archetypes"].cell_values
@@ -46,14 +52,17 @@ class H2ODimReductionModel(ModelBase):
       return archetypes
     
     def reconstruct(self,test_data,reverse_transform=False):
-        """Reconstruct the training data from the GLRM model and impute all missing values.
+        """Reconstruct the training data from the GLRM model and impute all missing
+        values.
 
         Parameters
         ----------
           test_data : H2OFrame
             The dataset upon which the H2O GLRM model was trained.
+
           reverse_transform : logical
-            Whether the transformation of the training data during model-building should be reversed on the reconstructed frame.
+            Whether the transformation of the training data during model-building should
+            be reversed on the reconstructed frame.
 
         Returns
         -------
@@ -70,23 +79,30 @@ class H2ODimReductionModel(ModelBase):
         ----------
           test_data : H2OFrame
             The dataset upon which the H2O GLRM model was trained.
+
           reverse_transform : logical
-            Whether the transformation of the training data during model-building should be reversed on the projected archetypes.
+            Whether the transformation of the training data during model-building should
+            be reversed on the projected archetypes.
 
         Returns
         -------
-          Return the GLRM archetypes projected back into the original training data's feature space.
+          Return the GLRM archetypes projected back into the original training data's
+          feature space.
         """
         if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
         j = H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, project_archetypes=True, reverse_transform=reverse_transform)
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
     
     def screeplot(self, type="barplot", **kwargs):
-        """
-        Produce the scree plot
-        :param type: type of plot. "barplot" and "lines" currently supported
-        :param show: if False, the plot is not shown. matplotlib show method is blocking.
-        :return: None
+        """Produce the scree plot
+
+        Parameters
+        ----------
+          type : str
+           "barplot" and "lines" currently supported
+
+          show: str
+            if False, the plot is not shown. matplotlib show method is blocking.
         """
         # check for matplotlib. exit if absent.
         try:

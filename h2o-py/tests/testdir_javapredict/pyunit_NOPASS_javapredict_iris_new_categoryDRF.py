@@ -7,7 +7,7 @@ from tests import pyunit_utils
 
 
 
-
+# PUBDEV-2055
 def javapredict_smallcat():
 
     # optional parameters

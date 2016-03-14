@@ -17,7 +17,8 @@ class ASTQtile extends ASTPrim {
   @Override int nargs() { return 1+4; }
   @Override
   public String str() { return "quantile"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr_wkey = new Frame(fr); // Force a bogus Key for Quantiles ModelBuilder

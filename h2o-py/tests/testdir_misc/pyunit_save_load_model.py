@@ -4,17 +4,15 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 import os
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 
 def save_load_model():
-
     prostate = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-    prostate_glm = h2o.glm(y=prostate["CAPSULE"],
-                           x=prostate[["AGE","RACE","PSA","DCAPS"]],
-                           family="binomial",
-                           alpha=[0.5])
 
+    prostate_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0.5])
+    prostate_glm.train(x=["AGE","RACE","PSA","DCAPS"], y="CAPSULE", training_frame=prostate)
     path = pyunit_utils.locate("results")
 
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)

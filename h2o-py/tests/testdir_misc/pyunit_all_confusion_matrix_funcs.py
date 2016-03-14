@@ -4,10 +4,8 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-
-
-
 import random
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def all_confusion_matrix_funcs():
     
@@ -19,30 +17,29 @@ def all_confusion_matrix_funcs():
 
     print("PARSING TRAINING DATA")
     air_train = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
+    air_train["IsDepDelayed"] = air_train["IsDepDelayed"].asfactor()
+
 
     print("PARSING TESTING DATA")
     air_test = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
-
+    air_test["IsDepDelayed"] = air_test["IsDepDelayed"].asfactor()
     print()
     print("RUNNING FIRST GBM: ")
     print()
-    gbm_bin = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth","fDayOfWeek"]],
-                      y=air_train["IsDepDelayed"].asfactor(),
-                      validation_x=air_test[["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth",
-                                         "fDayOfWeek"]],
-                      validation_y=air_test["IsDepDelayed"].asfactor(),
-                      distribution="bernoulli")
+    gbm_bin = H2OGradientBoostingEstimator(distribution="bernoulli")
+    gbm_bin.train(x=["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth","fDayOfWeek"],
+                  y="IsDepDelayed", training_frame=air_train, validation_frame=air_test)
 
     print()
     print("RUNNING SECOND GBM: ")
     print()
-    gbm_mult = h2o.gbm(x=air_train[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth",
-                                    "fMonth"]],
-                      y=air_train["fDayOfWeek"].asfactor(),
-                      validation_x=air_test[["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth",
-                                             "fMonth"]],
-                      validation_y=air_test["fDayOfWeek"].asfactor(),
-                      distribution="multinomial")
+    air_train["fDayOfWeek"] = air_train["fDayOfWeek"].asfactor()
+
+    air_test["fDayOfWeek"] = air_test["fDayOfWeek"].asfactor()
+
+    gbm_mult = H2OGradientBoostingEstimator( distribution="multinomial")
+    gbm_mult.train(x=["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth", "fMonth"],
+                   y="fDayOfWeek", training_frame=air_train, validation_frame=air_test)
 
     def dim_check(cm, m, t, v):
         assert len(cm) == 2 and len(cm[0]) == 2 and len(cm[1]) == 2, "incorrect confusion matrix dimensions " \

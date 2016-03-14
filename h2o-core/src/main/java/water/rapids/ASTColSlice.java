@@ -15,7 +15,8 @@ class ASTColSlice extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols src [col_list])
   @Override public String str() { return "cols" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val v = stk.track(asts[1].exec(env));
     if( v instanceof ValRow ) {
       ValRow vv = (ValRow)v;
@@ -61,7 +62,8 @@ class ASTColPySlice extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "cols"}; }
   @Override int nargs() { return 1+2; } // (cols_py src [col_list])
   @Override public String str() { return "cols_py" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val v = stk.track(asts[1].exec(env));
     if( v instanceof ValRow ) {
       ValRow vv = (ValRow)v;
@@ -91,7 +93,8 @@ class ASTRowSlice extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "rows"}; }
   @Override int nargs() { return 1+2; } // (rows src [row_list])
   @Override public String str() { return "rows" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
     long nrows = fr.numRows();
@@ -169,7 +172,8 @@ class ASTFlatten extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (flatten fr)
   @Override public String str() { return "flatten"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()!=1 || fr.numRows()!=1 ) return new ValFrame(fr); // did not flatten
     Vec vec = fr.anyVec();
@@ -184,7 +188,8 @@ class ASTFilterNACols extends ASTPrim {
   @Override int nargs() { return 1+2; } // (filterNACols frame frac)
   @Override
   public String str() { return "filterNACols"; }
-  @Override ValNums apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double frac = asts[2].exec(env).getNum();
     double nrow = fr.numRows()*frac;
@@ -208,7 +213,8 @@ class ASTCBind extends ASTPrim {
   @Override int nargs() { return -1; } // variable number of args
   @Override
   public String str() { return "cbind" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
 
     // Compute the variable args.  Find the common row count
     Val vals[] = new Val[asts.length];
@@ -256,7 +262,8 @@ class ASTRBind extends ASTPrim {
   @Override int nargs() { return -1; } // variable number of args
   @Override
   public String str() { return "rbind" ; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
 
     // Execute all args.  Find a canonical frame; all Frames must look like this one.
     // Each argument turns into either a Frame (whose rows are entirely

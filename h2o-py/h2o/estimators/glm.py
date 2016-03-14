@@ -2,101 +2,111 @@ from .estimator_base import H2OEstimator
 
 
 class H2OGeneralizedLinearEstimator(H2OEstimator):
-  def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
-               standardize=None, family=None, link=None, tweedie_variance_power=None,
-               tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
-               nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
-               fold_assignment=None, keep_cross_validation_predictions=None,
-               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
-               objective_epsilon=None, gradient_epsilon=None, non_negative=False,
-               compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
-    """Build a Generalized Linear Model
+  """Build a Generalized Linear Model
     Fit a generalized linear model, specified by a response variable, a set of predictors,
     and a description of the error distribution.
 
     Parameters
     ----------
-    model_id : str, optional
-      The unique id assigned to the resulting model. If none is given, an id will
-      automatically be generated.
-    max_iterations : int
-      A non-negative integer specifying the maximum number of iterations.
-    beta_epsilon : int
-      A non-negative number specifying the magnitude of the maximum difference between
-      the coefficient estimates from successive iterations. Defines the convergence
-      criterion.
-    solver : str
-      A character string specifying the solver used: IRLSM (supports more features),
-      L_BFGS (scales better for datasets with many columns)
-    standardize : bool
-      Indicates whether the numeric predictors should be standardized to have a mean of
-      0 and a variance of 1 prior to training the models.
-    family : str
-      A character string specifying the distribution of the model:
-     gaussian, binomial, multinomial, poisson, gamma, tweedie.
-    link : str
-      A character string specifying the link function.
-      The default is the canonical link for the family.
-      The supported links for each of the family specifications are:
-          "gaussian": "identity", "log", "inverse"
-          "binomial": "logit", "log"
-          "multinomial": "multinomial"
-          "poisson": "log", "identity"
-          "gamma": "inverse", "log", "identity"
-          "tweedie": "tweedie"
+      model_id : str, optional
+        The unique id assigned to the resulting model. If none is given, an id will
+        automatically be generated.
 
-    tweedie_variance_power : int
-      numeric specifying the power for the variance function when family = "tweedie".
-    tweedie_link_power : int
-      A numeric specifying the power for the link function when family = "tweedie".
-    alpha : float
-      A numeric in [0, 1] specifying the elastic-net mixing parameter.
+      max_iterations : int
+        A non-negative integer specifying the maximum number of iterations.
 
-      The elastic-net penalty is defined to be:
-      eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 +
-      \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
-      making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
+      beta_epsilon : int
+        A non-negative number specifying the magnitude of the maximum difference between
+        the coefficient estimates from successive iterations. Defines the convergence
+        criterion.
 
-    Lambda : float
-      A non-negative shrinkage parameter for the elastic-net, which multiplies
-      \eqn{P(\alpha,\beta) in the objective function.
-      When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear
-      models are fit.
-    prior : float, optional
-      A numeric specifying the prior probability of class 1 in the response when
-      family = "binomial". The default prior is the observational frequency of class 1. Must be from (0,1) exclusive range or None (no prior).
-    lambda_search : bool
-      A logical value indicating whether to conduct a search over the space of lambda
-      values starting from the lambda max, given lambda is interpreted as lambda minself.
-    nlambdas : int
-      The number of lambda values to use when lambda_search = TRUE.
-    lambda_min_ratio : float
-      Smallest value for lambda as a fraction of lambda.max. By default if the number of
-      observations is greater than the the number of variables then
-      lambda_min_ratio = 0.0001; if the number of observations is less than the number
-      of variables then lambda_min_ratio = 0.01.
-    beta_constraints : H2OFrame
-      A data.frame or H2OParsedData object with the columns
-      ["names", "lower_bounds", "upper_bounds", "beta_given"],
-      where each row corresponds to a predictor in the GLM.
-      "names" contains the predictor names, "lower"/"upper_bounds",
-      are the lower and upper bounds of beta, and "beta_given" is some supplied starting
-      values.
-    nfolds : int, optional
-      Number of folds for cross-validation. If nfolds >= 2, then validation must
-      remain empty.
-    fold_assignment : str
-      Cross-validation fold assignment scheme, if fold_column is not specified Must be
-      "AUTO", "Random" or "Modulo"
-    keep_cross_validation_predictions : bool
-      Whether to keep the predictions of the cross-validation models
-    intercept : bool
-      Logical, include constant term (intercept) in the model
-    max_active_predictors : int, optional
-      Convergence criteria for number of predictors when using L1 penalty.
-   missing_values_handling:  str
-      A character string specifying how to handle missing value:
-      "MeanImputation","Skip".
+      solver : str
+        A character string specifying the solver used: IRLSM (supports more features),
+        L_BFGS (scales better for datasets with many columns)
+
+      standardize : bool
+        Indicates whether the numeric predictors should be standardized to have a mean of
+        0 and a variance of 1 prior to training the models.
+
+      family : str
+        A character string specifying the distribution of the model:
+        gaussian, binomial, multinomial, poisson, gamma, tweedie.
+
+      link : str
+        A character string specifying the link function. The default is the canonical
+        link for the family. The supported links for each of the family specifications are
+        "gaussian" - "identity", "log", "inverse"
+        "binomial" - "logit", "log"
+        "multinomial" - "multinomial"
+        "poisson" - "log", "identity"
+        "gamma" - "inverse", "log", "identity"
+        "tweedie" - "tweedie"
+
+      tweedie_variance_power : int
+        numeric specifying the power for the variance function when family = "tweedie".
+
+      tweedie_link_power : int
+        A numeric specifying the power for the link function when family = "tweedie".
+
+      alpha : float
+        A numeric in [0, 1] specifying the elastic-net mixing parameter.
+        The elastic-net penalty is defined to be
+        eqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 +
+        \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|],
+        making alpha = 1 the lasso penalty and alpha = 0 the ridge penalty.
+
+      Lambda : float
+        A non-negative shrinkage parameter for the elastic-net, which multiplies
+        \eqn{P(\alpha,\beta) in the objective function.
+        When Lambda = 0, no elastic-net penalty is applied and ordinary generalized linear
+        models are fit.
+
+      prior : float, optional
+        A numeric specifying the prior probability of class 1 in the response when
+        family = "binomial". The default prior is the observational frequency of class 1.
+        Must be from (0,1) exclusive range or None (no prior).
+
+      lambda_search : bool
+        A logical value indicating whether to conduct a search over the space of lambda
+        values starting from the lambda max, given lambda is interpreted as lambda minself.
+
+      nlambdas : int
+        The number of lambda values to use when lambda_search = TRUE.
+
+      lambda_min_ratio : float
+        Smallest value for lambda as a fraction of lambda.max. By default if the number of
+        observations is greater than the the number of variables then
+        lambda_min_ratio = 0.0001; if the number of observations is less than the number
+        of variables then lambda_min_ratio = 0.01.
+
+      beta_constraints : H2OFrame
+        A data.frame or H2OParsedData object with the columns
+        ["names", "lower_bounds", "upper_bounds", "beta_given"],
+        where each row corresponds to a predictor in the GLM.
+        "names" contains the predictor names, "lower"/"upper_bounds",
+        are the lower and upper bounds of beta, and "beta_given" is some supplied starting
+        values.
+
+      nfolds : int, optional
+        Number of folds for cross-validation. If nfolds >= 2, then validation must
+        remain empty.
+
+      fold_assignment : str
+        Cross-validation fold assignment scheme, if fold_column is not specified Must be
+        "AUTO", "Random" or "Modulo"
+
+      keep_cross_validation_predictions : bool
+        Whether to keep the predictions of the cross-validation models
+
+      intercept : bool
+        Logical, include constant term (intercept) in the model
+
+      max_active_predictors : int, optional
+        Convergence criteria for number of predictors when using L1 penalty.
+
+      missing_values_handling:  str
+        A character string specifying how to handle missing value:
+        "MeanImputation","Skip".
 
     Returns
     -------
@@ -109,6 +119,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       model metrics including MSE, AUC (for logistic regression), degrees of freedom, and
       confusion matrices.
     """
+  def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
+               standardize=None, family=None, link=None, tweedie_variance_power=None,
+               tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
+               nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
+               fold_assignment=None, keep_cross_validation_predictions=None,
+               intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
+               objective_epsilon=None, gradient_epsilon=None, non_negative=False,
+               compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.items() if k != "self"}

@@ -36,7 +36,8 @@ public class ASTMerge extends ASTPrim {
   // merge-join.
   static final int MAX_HASH_SIZE = 120000000;
 
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
     boolean allLeft = asts[3].exec(env).getNum() == 1;

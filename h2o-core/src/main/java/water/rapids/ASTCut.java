@@ -15,7 +15,8 @@ public class ASTCut extends ASTPrim {
   @Override
   public String str() { return "cut"; }
   @Override int nargs() { return 1+6; } // (cut x breaks labels include_lowest right digits)
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double[] cuts  = check(asts[2]);
     Arrays.sort(cuts);

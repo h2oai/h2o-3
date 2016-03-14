@@ -13,6 +13,7 @@ Contents:
 
    intro
    h2o
+   data
    frame
    modeling
    model_categories
