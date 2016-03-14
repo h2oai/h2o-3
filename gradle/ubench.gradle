@@ -1,0 +1,10 @@
+//
+// Micro benchmark support
+//
+
+apply plugin: 'me.champeau.gradle.jmh'
+
+// Setup JMH
+jmh {
+    jmhVersion = '1.12'
+}
