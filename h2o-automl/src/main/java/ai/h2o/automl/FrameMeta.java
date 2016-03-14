@@ -7,10 +7,7 @@ import ai.h2o.automl.tasks.DummyClassifier;
 import ai.h2o.automl.tasks.DummyRegressor;
 import ai.h2o.automl.tasks.VIF;
 import hex.tree.DHistogram;
-import water.H2O;
-import water.Iced;
-import water.MRTask;
-import water.MemoryManager;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -168,7 +165,7 @@ public class FrameMeta extends Iced {
   public FrameMeta computeFrameMetaPass1() {
     MetaPass1[] tasks = new MetaPass1[_fr.numCols()];
     for(int i=0; i<tasks.length; ++i)
-      tasks[i] = new MetaPass1(i==_response, _fr.vec(i), _fr.name(i), i);
+      tasks[i] = new MetaPass1(i,this);
     _isClassification = tasks[_response]._isClassification;
     MetaCollector.ParallelTasks metaCollector = new MetaCollector.ParallelTasks<>(tasks);
     H2O.submitTask(metaCollector).join();
@@ -197,18 +194,30 @@ public class FrameMeta extends Iced {
   private static class MetaPass1 extends H2O.H2OCountedCompleter<MetaPass1> {
     private final boolean _response;   // compute class distribution & more granular histo
     private boolean _isClassification; // is this a classification problem?
-    private final double _mean;        // mean of the column, passed
+    private double _mean;              // mean of the column, passed
     private final ColMeta _colMeta;    // result; also holds onto the DHistogram
     private long _elapsed;             // time to mrtask
 
     static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
-    public MetaPass1(boolean response, Vec v, String colname, int idx) {
+    public MetaPass1(int idx, FrameMeta fm) {
+      Vec v = fm._fr.vec(idx);
+      _response=fm._response==idx;
+      String colname = fm._fr.name(idx);
+      if( _response ) {
+        if( _isClassification = ProblemTypeGuesser.guess(v)) {
+          Vec deleteMe=null;
+          if( !v.isCategorical() )
+            deleteMe=fm._fr.replace(idx,(v=v.toCategoricalVec()));
+          if( deleteMe!=null ) {
+            DKV.put(fm._fr);
+            deleteMe.remove();
+          }
+        }
+      }
+      _colMeta = new ColMeta(v, colname, idx, _response);
       _mean = v.mean();
-      _colMeta = new ColMeta(v, colname, idx, _response=response);
-      int nbins = (int)Math.ceil(1 + log2(v.length()));  // Sturges nbins
+      int nbins = (int) Math.ceil(1 + log2(v.length()));  // Sturges nbins
       _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
-      if( _response )
-        _isClassification = ProblemTypeGuesser.guess(v);
     }
 
     public ColMeta meta() { return _colMeta; }

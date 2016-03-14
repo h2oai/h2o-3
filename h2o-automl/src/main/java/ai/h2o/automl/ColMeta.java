@@ -78,6 +78,17 @@ public class ColMeta extends Iced {
   //   - possibly next to other date columns?
   public boolean _isDate;
 
+  /**
+   * Build metrics against the response column for this vec.
+   *
+   * Four scenarios:
+   *      this vec       response vec
+   *  1. Categorical, Categorical        - build int[this_vec.domain()][counts_per_response_cat]
+   *  2. Categorical, Numerical          - build double[this_vec.domain()][mean,sd]
+   *  3. Numerical,   Categorical        - build double[response_vec.domain()][mean,sd]
+   *  4. Numerical,   Numerical          - not defined, could do a stupid thing with quantile
+   */
+
   public ColMeta(Vec v, String colname, int idx, boolean response) {
     _v = v;
     _name = colname;
