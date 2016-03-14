@@ -2949,12 +2949,11 @@ h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
 h2o.entropy <- function(x) .newExpr("entropy", x)
 
 #'
-#' Proportion of substrings >= 2 chars that are contained in file
+#' Count of substrings >= 2 chars that are contained in file
 #'
-#' Find the proportion of all possible substrings >= 2 chars that are contained in the specified line-separated text file. 
-#  If the number of characters in the string is less than two, 0 is returned.
+#' Find the count of all possible substrings >= 2 chars that are contained in the specified line-separated text file. 
 #'
-#' @param x     The column on which to calculate the proportion of valid substrings.
+#' @param x     The column on which to calculate the number of valid substrings.
 #' @param path  Path to text file containing line-separated strings to be referenced. 
 #' @export
-h2o.pro_substrings_words <- function(x, path) .newExpr("pro_substrings_words", x, .quote(path))
+h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x, .quote(path))

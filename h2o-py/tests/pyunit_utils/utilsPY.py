@@ -79,7 +79,7 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
                                                   "TOTSS of {1}. Expected the first to be >= than the second." \
                                                   "".format(totss1, totss2)
 
-def check_dims_values(python_obj, h2o_frame, rows, cols):
+def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
     """
     Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
     conforms to the rules specified in the h2o frame documentation.
@@ -88,25 +88,27 @@ def check_dims_values(python_obj, h2o_frame, rows, cols):
     :param h2o_frame: an H2OFrame
     :param rows: number of rows
     :param cols: number of columns
+    :param dim_only: check the dimensions only
     :return: None
     """
     h2o_rows, h2o_cols = h2o_frame.dim
     assert h2o_rows == rows and h2o_cols == cols, "failed dim check! h2o_rows:{0} rows:{1} h2o_cols:{2} cols:{3}" \
                                                   "".format(h2o_rows, rows, h2o_cols, cols)
-    if isinstance(python_obj, (list, tuple)):
-        for c in range(cols):
+    if not dim_only:
+        if isinstance(python_obj, (list, tuple)):
+            for c in range(cols):
+                for r in range(rows):
+                    pval = python_obj[r][c] if rows > 1 else python_obj[c]
+                    hval = h2o_frame[r,c]
+                    assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} " \
+                                         "and column {1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
+        elif isinstance(python_obj, dict):
             for r in range(rows):
-                pval = python_obj[r][c] if rows > 1 else python_obj[c]
-                hval = h2o_frame[r,c]
-                assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
-                                     "{1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
-    elif isinstance(python_obj, dict):
-        for r in range(rows):
-            for k in list(python_obj.keys()):
-                pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
-                hval = h2o_frame[r,k]
-                assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} and column " \
-                                     "{1}, but h2o got {2} and python got {3}.".format(r, k, hval, pval)
+                for k in list(python_obj.keys()):
+                    pval = python_obj[k][r] if hasattr(python_obj[k],'__iter__') else python_obj[k]
+                    hval = h2o_frame[r,k]
+                    assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} " \
+                                         "and column {1}, but h2o got {2} and python got {3}.".format(r, k, hval, pval)
 
 def np_comparison_check(h2o_data, np_data, num_elements):
     """

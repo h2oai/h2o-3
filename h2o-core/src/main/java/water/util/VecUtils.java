@@ -541,7 +541,6 @@ public class VecUtils {
     @Override
     protected void setupLocal() {
       _uniques = new IcedHashMap<>();
-      System.out.println("CollectStringVecDomain setupLocal");
     }
 
     @Override

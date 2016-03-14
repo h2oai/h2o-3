@@ -37,7 +37,7 @@ final class RollupStats extends Iced {
   volatile long _naCnt; //count(!isNA(X))
   double _mean, _sigma; //sum(X) and sum(X^2) for non-NA values
   long    _rows,        //count(X) for non-NA values
-          _nzCnt,       //count(X!=0)
+          _nzCnt,       //count(X!=0) for non-NA values
           _size,        //byte size
           _pinfs,       //count(+inf)
           _ninfs;       //count(-inf)
@@ -99,7 +99,8 @@ final class RollupStats extends Iced {
       if( d == Double.POSITIVE_INFINITY) _pinfs++;
       else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
       else {
-        if( d != 0 || Double.isNaN(d)) _nzCnt=c._len;
+        if( Double.isNaN(d)) _naCnt=c._len;
+        else if( d != 0 ) _nzCnt=c._len;
         _mean = d;
         _rows=c._len;
       }
@@ -113,7 +114,7 @@ final class RollupStats extends Iced {
       _sigma=0; //count of non-NAs * variance of non-NAs
       _mean = 0; //sum of non-NAs (will get turned into mean)
       _naCnt=c._len;
-      _nzCnt=c._len;
+      _nzCnt=0;
       return this;
     }
 

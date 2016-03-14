@@ -15,6 +15,7 @@ HADOOP.NAMENODE             <<- NULL
 IS.RDEMO                    <<- FALSE
 IS.RUNIT                    <<- FALSE
 IS.RBOOKLET                 <<- FALSE
+IS.RIPYNB                   <<- FALSE
 RESULTS.DIR                 <<- NULL
 TEST.NAME                   <<- "RTest"
 SEED                        <<- NULL
@@ -48,6 +49,8 @@ function(args) {
         IS.RUNIT <<- TRUE
       } else if (s == "--rBooklet") {
         IS.RBOOKLET <<- TRUE
+      } else if (s == "--rIPythonNotebook") {
+        IS.RIPYNB <<- TRUE
       } else if (s == "--resultsDir") {
         i <- i + 1
         if (i > length(args)) usage()
@@ -61,8 +64,8 @@ function(args) {
       }
       i <- i + 1
   }
-  if (sum(c(IS.RDEMO, IS.RUNIT, IS.RBOOKLET)) > 1) {
-    print("Only one of the --rDemo, --rUnit, or --rBooklet options can be specified at a time.")
+  if (sum(c(IS.RDEMO, IS.RUNIT, IS.RBOOKLET, IS.RIPYNB)) > 1) {
+    print("Only one of the --rDemo, --rUnit, --rIPythonNotebook,  or --rBooklet options can be specified at a time.")
     usage()
   }
 }
@@ -86,6 +89,8 @@ function() {
   print("    --rUnit           test is R unit test")
   print("")
   print("    --rBooklet        test is R booklet")
+  print("")
+  print("    --rIPythonNotebook test is R IPython Notebook")
   print("")
   print("    --resultsDir      the results directory.")
   print("")
@@ -127,17 +132,18 @@ function() {
 
     if (all(!IS.RUNIT, !IS.RDEMO, !IS.RBOOKLET)) IS.RUNIT <<- TRUE  # default is runit test
 
-    if (IS.RDEMO || IS.RBOOKLET) {
+    if (IS.RDEMO || IS.RBOOKLET || IS.RIPYNB) {
         if (!"h2o" %in% rownames(installed.packages())) {
             stop("The H2O package has not been installed on this system. Cannot execute the H2O R demo without it!") }
         require(h2o)
-        if (IS.RDEMO) {
+        if (IS.RDEMO || IS.RIPYNB) {
             # source h2o-r/demos/rdemoUtils
             invisible(source(paste(h2oRDir,"demos","rdemoUtils","utilsR.R",sep=.Platform$file.sep)))
-            TEST.NAME <<- removeH2OInit(TEST.NAME)
+            if (IS.RDEMO) TEST.NAME <<- removeH2OInit(TEST.NAME)
         } else {
             # source h2o-r/demos/rbookletUtils
-            invisible(source(paste(h2oDocsDir,"src","booklets","v2_2015","source","rbookletUtils","utilsR.R",sep=.Platform$file.sep)))
+            invisible(source(paste(h2oDocsDir,"src","booklets","v2_2015","source","rbookletUtils","utilsR.R",
+            sep=.Platform$file.sep)))
         }
         strict_version_check <- TRUE
     } else if (IS.RUNIT) {
@@ -189,7 +195,11 @@ function() {
     h2o.removeAll()
 
     # if rdemo or rbooklet, initiate the respective test here. if runit, run.py initiates test.
-    if (IS.RDEMO || IS.RBOOKLET) source(TEST.NAME)
+    if (IS.RDEMO || IS.RBOOKLET) {
+      source(TEST.NAME)
+    } else if (IS.RIPYNB) {
+      ipyNotebookExec(TEST.NAME)
+    }
 }
 
 h2oTestSetup()

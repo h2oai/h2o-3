@@ -1026,7 +1026,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     classCtx.add(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
-        JCodeGen.toClassWithArray(out, "static", "BETA", beta_internal()); // "The Coefficients"
+        JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
         JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo._catModes,"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");

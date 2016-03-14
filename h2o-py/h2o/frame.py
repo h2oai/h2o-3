@@ -13,7 +13,7 @@ import os
 import tempfile
 import sys
 import traceback
-from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, quote
+from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote
 from .display import H2ODisplay
 from .connection import H2OConnection
 from .job import H2OJob
@@ -209,11 +209,28 @@ class H2OFrame(object):
     # {} and collections.OrderedDict cases
     elif isinstance(python_obj, (dict, collections.OrderedDict)): col_header, data_to_write = _handle_python_dicts(python_obj)
 
-    # handle a numpy.ndarray
-    # elif isinstance(python_obj, numpy.ndarray):
-    #
-    #     header, data_to_write = H2OFrame._handle_numpy_array(python_obj)
-    else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict. Got: " + str(type(python_obj)))
+    # handle a numpy.ndarray, pandas.DataFrame
+    else:
+      if can_use_numpy() and can_use_pandas():
+        import numpy
+        import pandas
+        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj)
+        elif isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj)
+        else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                               "pandas.DataFrame. Got: " + str(type(python_obj)))
+      elif can_use_numpy():
+        import numpy
+        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj)
+        else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                               "pandas.DataFrame. Got: " + str(type(python_obj)))
+      elif can_use_pandas():
+        import pandas
+        if isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj)
+        else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                               "pandas.DataFrame. Got: " + str(type(python_obj)))
+      else:
+        raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                         "pandas.DataFrame. Got: " + str(type(python_obj)))
 
     if col_header is None or data_to_write is None: raise ValueError("No data to write")
 
@@ -1740,20 +1757,20 @@ class H2OFrame(object):
     fr._ex._cache.ncol = self.ncol
     return fr
 
-  def pro_substrings_words(self, path_to_words):
-    """For each string, find the proportion of all possible substrings >= 2 characters that are contained in 
-    the line-separated text file whose path is given. If the string length is less than two, 0 is returned.
+  def num_valid_substrings(self, path_to_words):
+    """For each string, find the count of all possible substrings >= 2 characters that are contained in 
+    the line-separated text file whose path is given.
     
     Parameters
     ----------
       path_to_words : str
-        Path to file that contains a line-separated list of strings to be referenced. 
+        Path to file that contains a line-separated list of strings considered valid. 
         
     Returns
     -------
-      An H2OFrame with the proportion of substrings that are contained in the given word list. 
+      An H2OFrame with the number of substrings that are contained in the given word list. 
     """
-    fr = H2OFrame._expr(expr=ExprNode("pro_substrings_words", self, path_to_words))
+    fr = H2OFrame._expr(expr=ExprNode("num_valid_substrings", self, path_to_words))
     fr._ex._cache.nrows = self.nrow
     fr._ex._cache.ncol = self.ncol
     return fr
