@@ -18,7 +18,7 @@ public class AutoMLBuilderHandler extends Handler {
             Key.<AutoML>make(),
             args.dataset,
             frame,
-            args.response,
+            args.targetName,
             args.loss,
             args.maxTime,
             -1,     // min accuracy or stopping crit ... "loss threshold"

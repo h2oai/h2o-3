@@ -7,7 +7,7 @@ import water.*;
 import water.api.KeyV3;
 import water.fvec.Frame;
 
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Initial draft of AutoML
@@ -25,16 +25,16 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
   private final long _maxTime;           // maximum amount of time allotted to automl
   private final double _minAcc;          // minimum accuracy to achieve
   private final boolean _ensemble;       // allow ensembles?
-  private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL
+  private final Set<models> _modelEx;    // model types to exclude; e.g. don't allow DL
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
   FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
 
-  enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
+  public enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
   public AutoML(Key<AutoML> key, String datasetName, Frame fr, int response, String loss, long maxTime,
-                double minAccuracy, boolean ensemble, String[] modelExclude, boolean tryMutations) {
+                double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations) {
     super(key);
     _datasetName=datasetName;
     _fr=fr;
@@ -43,11 +43,15 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     _maxTime=maxTime;
     _minAcc=minAccuracy;
     _ensemble=ensemble;
-    _modelEx=modelExclude==null?null:new models[modelExclude.length];
-    if( modelExclude!=null )
-      for( int i=0; i<modelExclude.length; ++i )
-        _modelEx[i] = models.valueOf(modelExclude[i]);
+    _modelEx=modelExclude==null?null:new HashSet<models>();
+    if( null!= _modelEx )
+      Collections.addAll(_modelEx, modelExclude);
     _allowMutations=tryMutations;
+  }
+
+  public AutoML(Key<AutoML> key, String datasetName, Frame fr, String responseName, String loss, long maxTime,
+                double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
+    this(key,datasetName,fr,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
   }
 
   // used to launch the AutoML asynchronously
