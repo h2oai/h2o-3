@@ -694,9 +694,9 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int numCats()   { return _catOffsets[_cats];         }
   public final int numNums()   { return _interactions!=null?(_numOffsets[_numOffsets.length-1]-numStart()):_nums; }
   public final String[] coefNames() {
-    if (_coefNames != null) return _coefNames; 
+    if (_coefNames != null) return _coefNames; // already computed
     int k = 0;
-    final int n = fullN();
+    final int n = fullN(); // total number of columns to compute
     String [] res = new String[n];
     final Vec [] vecs = _adaptedFrame.vecs();
 
@@ -988,14 +988,8 @@ public class DataInfo extends Keyed<DataInfo> {
     row.nBins = nbins;
     final int n = _nums;
     for (int i = 0; i < n; ++i) {
-      if( isInteractionVec(i) ) {
-        int offset;
-        InteractionWrappedVec iwv = ((InteractionWrappedVec)_adaptedFrame.vec(_cats+i));
-        int v1 = _adaptedFrame.find(iwv.v1());
-        int v2 = _adaptedFrame.find(iwv.v2());
-        if( v1 < _cats )       offset = (int)chunks[v1].at8(rid);
-        else if( v2 < _cats )  offset = (int)chunks[v2].at8(rid);
-        else offset=0;
+      if( isInteractionVec(i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
+        int offset = getInteractionOffset(chunks,_cats+i,rid);
         row.numVals[i+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
@@ -1022,6 +1016,14 @@ public class DataInfo extends Keyed<DataInfo> {
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
     return row;
+  }
+  public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
+    InteractionWrappedVec iwv = ((InteractionWrappedVec)_adaptedFrame.vec(cid));
+    int v1 = _adaptedFrame.find(iwv.v1());
+    int v2 = _adaptedFrame.find(iwv.v2());
+    if( v1 < _cats )       return (int)chunks[v1].at8(rid);  // v1 is some categorical column
+    else if( v2 < _cats )  return (int)chunks[v2].at8(rid);  // or v2 is some categorical column
+    return 0;                                                // or neither is categorical
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
@@ -1071,11 +1073,10 @@ public class DataInfo extends Keyed<DataInfo> {
    * @return array of sparse rows
    */
   public final Row[] extractSparseRows(Chunk [] chunks) {
-    if( _interactions!=null ) throw H2O.unimpl("sparse interactions");
     Row[] rows = new Row[chunks[0]._len];
     long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);
+      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);  // if sparse, _nums is the correct number of nonzero values! i.e., do not use numNums()
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
@@ -1097,23 +1098,33 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     int numStart = numStart();
-    // generic numbers
+    // generic numbers + interactions
     for (int cid = 0; cid < _nums; ++cid) {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
-      for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-        if(c.atd(r) == 0)continue;
-        assert r > oldRow;
-        oldRow = r;
-        Row row = rows[r];
-        if (row.bad) continue;
-        if (c.isNA(r)) row.bad = _skipMissing;
-        double d = c.atd(r);
-        if(Double.isNaN(d))
-          d = _numMeans[cid];
-        if(_normMul != null)
-          d *= _normMul[cid];
-        row.addNum(cid + numStart, d);
+      if (c instanceof InteractionWrappedVec.InteractionWrappedChunk) {  // for each row, only 1 value in an interaction is 'hot' all other values are off (i.e., are 0)
+        for(int r=0;r<c._len;++r) {
+          Row row = rows[r];
+          if( row.bad ) continue;
+          if( c.isNA(r) ) row.bad = _skipMissing;
+          int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
+          row.addNum(cidVirtualOffset,c.atd(r));
+        }
+      } else {
+        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+          if (c.atd(r) == 0) continue;
+          assert r > oldRow;
+          oldRow = r;
+          Row row = rows[r];
+          if (row.bad) continue;
+          if (c.isNA(r)) row.bad = _skipMissing;
+          double d = c.atd(r);
+          if (Double.isNaN(d))
+            d = _numMeans[cid];
+          if (_normMul != null)
+            d *= _normMul[cid];
+          row.addNum(cid + numStart, d);
+        }
       }
     }
     // response(s)
