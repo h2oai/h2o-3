@@ -98,6 +98,12 @@ public class Env extends Iced {
     Val val = _scope==null ? null : _scope.lookup(id);
     if( val != null ) return val;
 
+    // disallow TRUE/FALSE/NA to be overwritten by keys in the DKV... just way way saner this way
+    if( id.equals("TRUE") || id.equals("FALSE") || id.equals("NA") || id.equals("NaN") ) {
+      AST ast = AST.PRIMS.get(id);
+      return ast.exec(this);
+    }
+
     // Now the DKV
     Value value = DKV.get(Key.make(id));
     if( value != null ) {
