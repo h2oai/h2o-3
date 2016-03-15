@@ -512,6 +512,9 @@ public abstract class GLMTask  {
     private transient double [] _exps;
     private transient double [] _etaOffsets;
 
+    public boolean handlesSparseData(){return true;}
+
+
     @Override public void chunkInit(){
       _gradient = new double[_beta.length*_beta[0].length];
       _etas = new double[_beta.length];
