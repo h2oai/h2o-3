@@ -282,7 +282,7 @@ public class NewChunk extends Chunk {
   }
 
   private void append_ss(String str) {
-    byte[] bytes = str.getBytes(Charsets.UTF_8);
+    byte[] bytes = str == null ? new byte[0] : str.getBytes(Charsets.UTF_8);
 
     // Allocate memory if necessary
     if (_ss == null)
@@ -1211,8 +1211,15 @@ public class NewChunk extends Chunk {
 
   @Override public boolean set_impl(int i, double d) {
     if(_ds == null){
-      assert _sparseLen == 0 || _ls != null;
-      switch_to_doubles();
+      if (_is == null) { //not a string
+        assert _sparseLen == 0 || _ls != null;
+        switch_to_doubles();
+      } else {
+        if (_is[i] == -1) return true; //nothing to do: already NA
+        assert(Double.isNaN(d)) : "can only set strings to <NA>, nothing else";
+        set_impl(i, null); //null encodes a missing string: <NA>
+        return true;
+      }
     }
     if(_sparseLen != _len){ // sparse?
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
@@ -1246,6 +1253,7 @@ public class NewChunk extends Chunk {
     if( isNA2(i) ) return true;
     if( _ls != null ) { _ls[i] = Long.MAX_VALUE; _xs[i] = Integer.MIN_VALUE; }
     if( _ds != null ) { _ds[i] = Double.NaN; }
+    if (_is != null) { _is[i] = -1; }
     _naCnt = -1;
     return true;
   }

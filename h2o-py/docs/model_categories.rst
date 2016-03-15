@@ -14,7 +14,7 @@ Model Categories
     :undoc-members:
     :show-inheritance:
 
-:mod:`Binomial Classification c`
+:mod:`Binomial Classification`
 ------------------------------
 
 .. automodule:: h2o.model.binomial

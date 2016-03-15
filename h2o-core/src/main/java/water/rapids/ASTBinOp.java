@@ -19,7 +19,8 @@ abstract class ASTBinOp extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"leftArg", "rightArg"}; }
   @Override int nargs() { return 1+2; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
@@ -426,7 +427,8 @@ class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op(
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.
 class ASTLAnd extends ASTBinOp {
   public String str() { return "&&"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is zero, just return the left
     if( left.isNum() ) {
@@ -446,7 +448,8 @@ class ASTLAnd extends ASTBinOp {
 // Logical-OR.  If the first arg is true, do not execute the 2nd arg.
 class ASTLOr extends ASTBinOp {
   public String str() { return "||"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is 1, just return the left
     if( left.isNum() ) {
@@ -483,7 +486,8 @@ class ASTIfElse extends ASTPrim {
   public String[] args() { return new String[]{"test","true","false"}; }
   @Override int nargs() { return 1+3; } // (ifelse test true false)
   public String str() { return "ifelse"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
 
     if( val.isNum() ) {         // Scalar test, scalar result
@@ -667,7 +671,8 @@ class ASTScale extends ASTPrim {
   @Override int nargs() { return 1+3; } // (scale x center scale)
   @Override
   public String str() { return "scale"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 

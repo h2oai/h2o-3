@@ -156,6 +156,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
+      if(_alpha != null && _alpha[0] < 0)
+        glm.error("_alpha", "Alpha value must be positive");
       if(_lambda_search)
         if (glm.nFoldCV())
           glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
@@ -1026,7 +1028,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     classCtx.add(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
-        JCodeGen.toClassWithArray(out, "static", "BETA", beta_internal()); // "The Coefficients"
+        JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
         JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo._catModes,"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");

@@ -12,7 +12,8 @@ class ASTAssign extends ASTPrim {
   @Override public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (assign id frame)
   @Override public String str() { return "assign" ; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Key id = Key.make( asts[1].str() );
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     return new ValFrame(env._ses.assign(id,src)); // New global Frame over shared Vecs
@@ -27,7 +28,8 @@ class ASTRectangleAssign extends ASTPrim {
   @Override public String[] args() { return new String[]{"dst", "src", "col_expr", "row_expr"}; }
   @Override int nargs() { return 5; } // (:= dst src col_expr row_expr)
   @Override public String str() { return ":=" ; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
     // Column selection
@@ -226,7 +228,8 @@ class ASTAppend extends ASTPrim {
   @Override public String[] args() { return new String[]{"dst", "src", "colName"}; }
   @Override int nargs() { return 1+3; } // (append dst src "colName")
   @Override public String str() { return "append"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
     String newColName =   asts[3].exec(env).getStr();
@@ -254,7 +257,8 @@ class ASTTmpAssign extends ASTPrim {
   @Override public String[] args() { return new String[]{"id", "frame"}; }
   @Override int nargs() { return 1+2; } // (tmp= id frame)
   @Override public String str() { return "tmp=" ; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Key id = Key.make( asts[1].str() );
     if( DKV.get(id) != null ) throw new IllegalArgumentException("Temp ID "+id+" already exists");
     Frame src = stk.track(asts[2].exec(env)).getFrame();
@@ -269,7 +273,8 @@ class ASTRm extends ASTPrim {
   @Override public String[] args() { return new String[]{"id"}; }
   @Override int nargs() { return 1+1; } // (rm id)
   @Override public String str() { return "rm" ; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Key id = Key.make( asts[1].str() );
     Value val = DKV.get(id);
     if( val == null ) return new ValNum(0);
@@ -283,7 +288,8 @@ class ASTRename extends ASTPrim {
   @Override public String[] args() { return new String[]{"oldId", "newId"}; }
   @Override int nargs() { return 1+2; } // (rename oldId newId)
   @Override public String str() { return "rename" ; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Key oldKey = Key.make(asts[1].exec(env).getStr());
     Key newKey = Key.make(asts[2].exec(env).getStr());
     Iced o = DKV.remove(oldKey).get();

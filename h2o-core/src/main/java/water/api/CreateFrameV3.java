@@ -17,8 +17,11 @@ class CreateFrameV3 extends RequestSchema<CreateFrame, CreateFrameV3> {
   @API(help = "Number of data columns (in addition to the first response column)", json=true)
   public int cols;
 
-  @API(help = "Random number seed", json=true)
+  @API(help = "Random number seed that determines the random values", json=true)
   public long seed;
+
+  @API(help = "Random number seed for setting the column types", json=true)
+  public long seed_for_column_types;
 
   @API(help = "Whether frame should be randomized", json=true)
   public boolean randomize;
@@ -46,6 +49,12 @@ class CreateFrameV3 extends RequestSchema<CreateFrame, CreateFrameV3> {
 
   @API(help = "Fraction of 1's in binary columns", json=true)
   public double binary_ones_fraction;
+
+  @API(help = "Fraction of date/time columns (for randomize=true)", json=true)
+  public double time_fraction;
+
+  @API(help = "Fraction of string columns (for randomize=true)", json=true)
+  public double string_fraction;
 
   @API(help = "Fraction of missing values", json=true)
   public double missing_fraction;

@@ -22,7 +22,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/h2oai/h2o.git',
+    url='https://github.com/h2oai/h2o-3.git',
 
     # Author details
     author='H2O.ai',
@@ -63,7 +63,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate', 'future'],
+    install_requires=['requests', 'tabulate', 'future', 'six'],
 
 
     data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../h2o-r/h2o-package/inst/extdata/iris.csv',

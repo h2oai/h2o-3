@@ -26,7 +26,7 @@ def is_rdemo(file_name):
     packaged_demos = ["h2o.anomaly.R", "h2o.deeplearning.R", "h2o.gbm.R", "h2o.glm.R", "h2o.glrm.R", "h2o.kmeans.R",
                       "h2o.naiveBayes.R", "h2o.prcomp.R", "h2o.randomForest.R"]
     if (file_name in packaged_demos): return True
-    if (re.match("^rdemo.*\.[rR]$", file_name)): return True
+    if (re.match("^rdemo.*\.[rR]$", file_name)) or (re.match("^rdemo.*\.ipynb$", file_name)): return True
     return False
 
 def is_runit(file_name):
@@ -835,15 +835,19 @@ class Test:
             if on_hadoop:         cmd = cmd + ["--onHadoop"]
             if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
             cmd = cmd + ["--rUnit"]
-        elif is_rdemo(test_name): cmd = cmd + ["--rDemo"]
-        else:                     cmd = cmd + ["--rBooklet"]
+        elif is_rdemo(test_name) and is_ipython_notebook(test_name): cmd = cmd + ["--rIPythonNotebook"]
+        elif is_rdemo(test_name):                                    cmd = cmd + ["--rDemo"]
+        elif is_rbooklet(test_name):                                 cmd = cmd + ["--rBooklet"]
+        else: raise ValueError("Unsupported R test type: {1}".format(test_name))
         return cmd
 
     def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
       if g_pycoverage:
-        pyver = "coverage" if g_py3 else "coverage-3.5"
+        pyver = "coverage-3.5" if g_py3 else "coverage"
         cmd = [pyver,"run", "-a", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+        print("Running Python test with coverage:")
+        print(cmd)
       else:
         pyver = "python3.5" if g_py3 else "python"
         cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
@@ -2070,14 +2074,8 @@ def parse_args(argv):
                 usage()
             g_base_port = int(argv[i])
         elif s == "--py3":
-            i += 1
-            if i > len(argv):
-                usage()
             g_py3 = True
         elif s == "--coverage":
-            i += 1
-            if i > len(argv):
-              usage()
             g_pycoverage = True
         elif (s == "--numclouds"):
             i += 1

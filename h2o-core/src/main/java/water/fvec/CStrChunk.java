@@ -32,9 +32,9 @@ public class CStrChunk extends Chunk {
       _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
   }
 
-  @Override public boolean setNA_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public boolean set_impl(int idx, float f) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public boolean set_impl(int idx, double d) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public boolean setNA_impl(int idx) { return false; }
+  @Override public boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, String str) { return false; }
 

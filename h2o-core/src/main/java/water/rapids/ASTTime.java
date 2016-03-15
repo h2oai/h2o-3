@@ -21,7 +21,8 @@ class ASTGetTimeZone extends ASTPrim {
   @Override int nargs() { return 1; } // (getTimeZone)
   @Override
   public String str() { return "getTimeZone"; }
-  @Override ValStr apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValStr apply(Env env, Env.StackHelp stk, AST asts[]) {
     return new ValStr(ParseTime.getTimezone().toString());
   }
 }
@@ -31,7 +32,8 @@ class ASTListTimeZones extends ASTPrim {
   public String[] args() { return null; }
   @Override int nargs() { return 1; } // (listTimeZones)
   @Override public String str() { return "listTimeZones"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     String[] domain = ParseTime.listTimezones().split("\n");
     double ds[] = new double[domain.length];
     for( int i=0; i<domain.length; i++ ) ds[i] = i;
@@ -46,7 +48,8 @@ class ASTSetTimeZone extends ASTPrim {
   public String[] args() { return new String[]{"tz"}; }
   @Override int nargs() { return 1+1; } // (setTimeZone "TZ")
   @Override public String str() { return "setTimeZone"; }
-  @Override ValNum apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     final String tz = asts[1].exec(env).getStr();
     Set<String> idSet = DateTimeZone.getAvailableIDs();
     if(!idSet.contains(tz))
@@ -58,7 +61,7 @@ class ASTSetTimeZone extends ASTPrim {
 
 /** Basic time accessors; extract hours/days/years/etc from H2O's internal
  *  msec-since-Unix-epoch time */
-abstract class ASTTime extends ASTPrim {
+public abstract class ASTTime extends ASTPrim {
   @Override public String[] args() { return new String[]{"time"}; }
   @Override int nargs() { return 1+1; } // (op time)
   // Override for e.g. month and day-of-week
@@ -68,7 +71,8 @@ abstract class ASTTime extends ASTPrim {
     dt.setMillis((long)d);
     return op(dt);
   }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = asts[1].exec(env);
     switch( val.type() ) {
     case Val.NUM: 
@@ -112,7 +116,8 @@ class ASTasDate extends ASTPrim {
   @Override int nargs() { return 1+2; } // (as.Date time format)
   @Override
   public String str() { return "as.Date"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec vec = fr.vecs()[0];
     if( fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))
@@ -154,7 +159,8 @@ class ASTMktime extends ASTPrim {
   @Override int nargs() { return 1+7; } // (mktime yr mo dy hr mi se ms)
   @Override
   public String str() { return "mktime"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     // Seven args, all required.  See if any are arrays.
     Frame fs[] = new Frame[nargs()-1];
     int   is[] = new int  [nargs()-1];
