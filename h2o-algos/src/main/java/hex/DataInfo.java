@@ -1108,7 +1108,7 @@ public class DataInfo extends Keyed<DataInfo> {
           if( row.bad ) continue;
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
-          row.addNum(cidVirtualOffset,c.atd(r));
+          row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));
         }
       } else {
         for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
