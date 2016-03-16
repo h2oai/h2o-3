@@ -77,6 +77,16 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     return new String(this.writeJSON(new AutoBuffer()).buf());
   }
 
+  /** Pretty print every Iced object, better than printing the  */
+  @Override public String toString() {
+    String str = toJsonString();
+    if (str.length() < 10000) {
+      return super.toString() + ": " + str;
+    } else {
+      return super.toString() + ": [too large to print as JSON]";
+    }
+  }
+
   /** Returns a small dense integer, which is cluster-wide unique per-class.
    *  Useful as an array index.
    *  @return Small integer, unique per-type */
