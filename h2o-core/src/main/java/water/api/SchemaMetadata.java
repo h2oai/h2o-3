@@ -251,7 +251,11 @@ public final class SchemaMetadata extends Iced {
 
       if (Map.class.isAssignableFrom(clz)) {
         if (IcedHashMapBase.class.isAssignableFrom(clz)) {
-          return "Map<" + ReflectionUtils.findActualClassParameter(clz, 0).getSimpleName() + "," + ReflectionUtils.findActualClassParameter(clz, 1).getSimpleName() + ">";
+          String type0 = ReflectionUtils.findActualClassParameter(clz, 0).getSimpleName();
+          String type1 = ReflectionUtils.findActualClassParameter(clz, 1).getSimpleName();
+          if ("String".equals(type0)) type0 = "string";
+          if ("String".equals(type1)) type1 = "string";
+          return "Map<" + type0 + "," + type1 + ">";
         } else {
           Log.warn("Schema Map field isn't a subclass of IcedHashMap, so its metadata won't have type parameters: " + schema.getClass().getSimpleName() + "." + field_name);
           return "Map";
