@@ -342,7 +342,7 @@ public class DataInfo extends Keyed<DataInfo> {
      * @param indexes An array of column indices.
      * @return An array of interaction pairs
      */
-    public static InteractionPair[] generatePairwiseInteractions(int... indexes) {
+    public static InteractionPair[] generatePairwiseInteractionsFromList(int... indexes) {
       if( indexes.length < 2 )
         throw new IllegalArgumentException("Must supply 2 or more columns.");
       InteractionPair[] res = new InteractionPair[ (indexes.length-1)*(indexes.length)>>1]; // n*(n+1) / 2
@@ -763,15 +763,15 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final class Row extends Iced {
-    public boolean bad;       // should the row be skipped (GLM skip NA for example)
-    public double [] numVals; // the backing data of the row
+    public boolean bad;        // should the row be skipped (GLM skip NA for example)
+    public double [] numVals;  // the backing data of the row
     public double [] response;
-    public int    [] numIds;  // location of next sparse value
-    public int    [] binIds;  // location of categorical
-    public long      rid;     // row number (sometimes within chunk, or absolute)
-    public int      cid;      // categorical id
-    public int       nBins;   // number of enum    columns (not expanded)
-    public int       nNums;   // number of numeric columns (not expanded)
+    public int    [] numIds;   // location of next sparse value
+    public int    [] binIds;   // location of categorical
+    public long      rid;      // row number (sometimes within chunk, or absolute)
+    public int       cid;      // categorical id
+    public int       nBins;    // number of enum    columns (not expanded)
+    public int       nNums;    // number of numeric columns (not expanded)
     public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
@@ -931,6 +931,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     row.nBins = nbins;
     final int n = _nums;
+    int numValsIdx=0;
     for (int i = 0; i < n; ++i) {
       if( isInteractionVec(i) ) {
         int offset;
@@ -940,13 +941,14 @@ public class DataInfo extends Keyed<DataInfo> {
         if ( v1 < _cats ) offset = getCategoricalId(v1,Double.isNaN(vals[v1])?_catModes[v1]:(int)vals[v1]);
         else if (v2 < _cats) offset = getCategoricalId(v2,Double.isNaN(vals[v2])?_catModes[v1]:(int)vals[v2]);
         else offset = 0;
-        row.numVals[i + offset] = vals[_cats + i]; // essentially: vals[v1] * vals[v2])
+        row.numVals[numValsIdx + offset] = vals[_cats + i];  // essentially: vals[v1] * vals[v2])
+        numValsIdx+=_numOffsets[i];
       }
       double d = vals[_cats + i]; // can be NA if skipMissing() == false
       if (Double.isNaN(d)) d = _numMeans[i];
       if (_normMul != null && _normSub != null)
         d = (d - _normSub[i]) * _normMul[i];
-      row.numVals[i] = d;
+      row.numVals[numValsIdx++] = d;
     }
     int off = responseChunkId(0);
     for (int i = off; i < Math.min(vals.length,off + _responses); ++i) {
@@ -987,17 +989,19 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     row.nBins = nbins;
     final int n = _nums;
-    for (int i = 0; i < n; ++i) {
-      if( isInteractionVec(i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
+    int numValsIdx=0; // since we're dense, need a second index to track interaction nums
+    for( int i=0;i<n;i++) {
+      if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
         int offset = getInteractionOffset(chunks,_cats+i,rid);
-        row.numVals[i+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
+        row.numVals[numValsIdx+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
+        numValsIdx+=_numOffsets[i];
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
           d = _numMeans[i];
         if (_normMul != null && _normSub != null)
           d = (d - _normSub[i]) * _normMul[i];
-        row.numVals[i] = d;
+        row.numVals[numValsIdx++] = d;
       }
     }
     for (int i = 0; i < _responses; ++i) {
@@ -1099,17 +1103,19 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     int numStart = numStart();
     // generic numbers + interactions
+    int interactionOffset=0;
     for (int cid = 0; cid < _nums; ++cid) {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       if (c instanceof InteractionWrappedVec.InteractionWrappedChunk) {  // for each row, only 1 value in an interaction is 'hot' all other values are off (i.e., are 0)
-        for(int r=0;r<c._len;++r) {
+        for(int r=0;r<c._len;++r) {  // the vec is "vertically" dense and "horizontally" sparse (i.e., every row has one, and only one, value)
           Row row = rows[r];
           if( row.bad ) continue;
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
           row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));
         }
+        interactionOffset+=_numOffsets[cid];
       } else {
         for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
           if (c.atd(r) == 0) continue;
@@ -1123,7 +1129,7 @@ public class DataInfo extends Keyed<DataInfo> {
             d = _numMeans[cid];
           if (_normMul != null)
             d *= _normMul[cid];
-          row.addNum(cid + numStart, d);
+          row.addNum(_numOffsets[cid], d);
         }
       }
     }
