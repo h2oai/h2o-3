@@ -622,9 +622,8 @@ class H2OFrame(object):
     lol = H2OFrame._expr(expr=ExprNode("levels", self)).as_data_frame(False)
     lol.pop(0)  # Remove column headers
     lol = list(zip(*lol))
-    lol = [[ll for ll in l] for l in lol]
+    return [[ll for ll in l if ll!=''] for l in lol]
 
-    return lol
 
   def nlevels(self):
     """Get the number of factor levels for this frame.
