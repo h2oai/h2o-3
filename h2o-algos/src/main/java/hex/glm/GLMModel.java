@@ -154,8 +154,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
-      if(_alpha != null && _alpha[0] < 0)
-        glm.error("_alpha", "Alpha value must be positive");
+      if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
+        glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda_search)
         if (glm.nFoldCV())
           glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");

@@ -194,6 +194,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                       C search_criteria) {
       _params = params;
       _hyperParams = hyperParams;
+
+      for (String key : hyperParams.keySet())
+        if (0 == hyperParams.get(key).length)
+          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
+
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
