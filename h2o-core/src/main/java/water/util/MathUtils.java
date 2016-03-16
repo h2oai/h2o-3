@@ -45,16 +45,19 @@ public class MathUtils {
       _m2 = MemoryManager.malloc8d(n);
       _wsum = MemoryManager.malloc8d(n);
     }
+    public void add(double w){++_nobs;}
+    public void add(double x, double w, int i){
+      double wsum = _wsum[i] + w;
+      double delta = x - _mean[i];
+      double R = delta * w / wsum;
+      _mean[i] += R;
+      _m2[i] += _wsum[i] * delta * R;
+      _wsum[i] = wsum;
+    }
     public void add(double [] x, double w) {
       for(int i = 0; i < x.length; ++i) {
-        if(!Double.isNaN(x[i])) {
-          double wsum = _wsum[i] + w;
-          double delta = x[i] - _mean[i];
-          double R = delta * w / wsum;
-          _mean[i] += R;
-          _m2[i] += _wsum[i] * delta * R;
-          _wsum[i] = wsum;
-        }
+        if(!Double.isNaN(x[i]))
+          add(x[i],w,i);
       }
       _nobs++;
     }

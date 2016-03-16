@@ -949,6 +949,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
+
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call

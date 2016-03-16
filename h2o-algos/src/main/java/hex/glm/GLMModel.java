@@ -13,10 +13,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.MemoryManager;
+import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -968,7 +965,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return super.checksum_impl();
   }
 
-  private double [] scoreRow(Row r, double o, double [] preds) {
+  public double [] scoreRow(Row r, double o, double [] preds) {
     if(_parms._family == Family.multinomial) {
       if(_eta == null) _eta = new ThreadLocal<>();
       double[] eta = _eta.get();
@@ -1002,7 +999,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   private transient ThreadLocal<Row> _row;
   private transient ThreadLocal<double[]> _eta;
 
-  private final Row getRow(){
+  public final Row getRow(){
     if(_row == null) _row = new ThreadLocal<>();
     Row r = _row.get();
     if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
@@ -1118,4 +1115,48 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
     return sb;
   }
+
+  /** Score an already adapted frame.  Returns a new Frame with new result
+   *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
+   *  already adapted to the Model's domain, so the output is also.  Also
+   *  computes the metrics for this frame.
+   *
+   * @param adaptFrm Already adapted frame
+   * @return A Frame containing the prediction column, and class distribution
+   */
+
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+    // Build up the names & domains.
+    final int nc = _output.nclasses();
+    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
+    String[] names = new String[ncols];
+    String[][] domains = new String[ncols][];
+    names[0] = "predict";
+    for(int i = 1; i < names.length; ++i) {
+      names[i] = _output.classNames()[i - 1];
+      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+      try {
+        Integer.valueOf(names[i]);
+        names[i] = "p" + names[i];
+      } catch (Throwable t) {
+        // do nothing, non-integer names are fine already
+      }
+    }
+    final boolean computeMetrics = adaptFrm.find(_output.responseName()) >= 0;
+
+
+    domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    boolean hasWeigths = _parms._weights_column != null && adaptFrm.find(_parms._weights_column) >= 0;
+    boolean hasOffset = _parms._offset_column != null && adaptFrm.find(_parms._offset_column) >= 0;
+    boolean hasFold = _parms._fold_column != null && adaptFrm.find(_parms._fold_column) >= 0;
+    DataInfo dinfo = new DataInfo(adaptFrm.clone(), null, computeMetrics?1:0, _parms._use_all_factor_levels || _parms._lambda_search, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, false ,_parms._missing_values_handling == MissingValuesHandling.MeanImputation, hasWeigths, hasOffset, hasFold);
+    // Score the dataset, building the class distribution & predictions
+    // public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean sparse) {
+    GLMScore gs = new GLMScore(j, this, dinfo,domains[0],computeMetrics).doAll(ncols, Vec.T_NUM, dinfo._adaptedFrame);
+    if (computeMetrics)
+      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
+  }
+
+
 }

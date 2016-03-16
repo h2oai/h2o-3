@@ -177,17 +177,23 @@ public abstract class GLMTask  {
      }
      double w;
      if (response == null) return;
+     if(_computeWeightedSigma) {
+       for(int i = 0; i < _nums; ++i) {
+         Chunk c = chunks[i + _numOff];
+         for(int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+           if(skip[r] || (w = weight.atd(r)) == 0)
+             continue;
+           double d = chunks[i + _numOff].atd(r);
+           if (Double.isNaN(nums[i]))
+             d = _means[i];
+           _basicStats.add(d,w,i);
+         }
+       }
+     }
      for(int r = 0; r < response._len; ++r) {
        if(skip[r] || (w = weight.atd(r)) == 0)
          continue;
-       if(_computeWeightedSigma) {
-         for(int i = 0; i < _nums; ++i) {
-           nums[i] = chunks[i + _numOff].atd(r);
-           if(Double.isNaN(nums[i]))
-             nums[i] = _means[i];
-         }
-         _basicStats.add(nums,w);
-       }
+       _basicStats.add(w);
        if(_computeWeightedMeanSigmaResponse) {
          //FIXME: Add support for subtracting offset from response
          for(int i = 0; i < _nClasses; ++i)
