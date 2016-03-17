@@ -255,9 +255,9 @@ class TestGLMMultinomial:
         self.class_number = random.randint(3, self.max_class_number)    # randomly set number of classes K
 
         # DEBUGGING setup, remember to comment them out once done.
-        # self.train_col_count = 3
-        # self.train_row_count = 500
-        # self.class_number = 3
+        self.train_col_count = 3
+        self.train_row_count = 500
+        self.class_number = 3
         # end DEBUGGING
 
         # set indices for response and predictor columns in data set for H2O GLM model to use
@@ -414,6 +414,7 @@ class TestGLMMultinomial:
 
         print("*******************************************************************************************")
         print("Test1: build H2O GLM with Multinomial with no regularization.")
+        h2o.cluster_info()
 
         # training result from python sklearn
         (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
@@ -496,7 +497,7 @@ class TestGLMMultinomial:
                                                                                  "Accuracies from test data set are "
                                                                                  "close enough!"],
                                                                              can_be_better_than_template=[
-                                                                                 False, True, True, False, False,
+                                                                                 True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[True, True, True, True,
                                                                                          True, True, False],
@@ -524,6 +525,7 @@ class TestGLMMultinomial:
         """
         print("*******************************************************************************************")
         print("Test2: tests the lambda search.")
+        h2o.cluster_info()
 
         # generate H2O model with lambda search enabled
         model_h2o_0p5 = H2OGeneralizedLinearEstimator(family=self.family, lambda_search=True, alpha=0.5,
@@ -613,7 +615,7 @@ class TestGLMMultinomial:
                                                                                  "Accuracies from test data set are "
                                                                                  "close enough!"],
                                                                              can_be_better_than_template=[
-                                                                                 False, False, True, False, False,
+                                                                                 True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
                                                                                  True, False, False, True, True,
@@ -643,6 +645,7 @@ class TestGLMMultinomial:
         print("*******************************************************************************************")
         print("Test3: explores various parameter settings in training the GLM using GridSearch using solver "
               + solver_name)
+        h2o.cluster_info()
 
         hyper_parameters = {'alpha': [0, 0.5, 0.99]}  # set hyper_parameters for grid search
 
@@ -750,7 +753,7 @@ class TestGLMMultinomial:
                                                                                  "Accuracies from test data set are "
                                                                                  "close enough!"],
                                                                              can_be_better_than_template=[
-                                                                                 False, True, True, False, False,
+                                                                                 True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
                                                                                  True, True, False, True, True,
@@ -775,6 +778,7 @@ class TestGLMMultinomial:
         """
         print("*******************************************************************************************")
         print("Test5: test the GLM with imputation of missing values with column averages.")
+        h2o.cluster_info()
 
         # training result from python sklearn
         (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
@@ -869,7 +873,7 @@ class TestGLMMultinomial:
                                                                                  "Accuracies from test data set are"
                                                                                  " close enough!"],
                                                                              can_be_better_than_template=[
-                                                                                 False, True, True, False, False,
+                                                                                 True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
                                                                                  True, True, True, True, True,
@@ -902,6 +906,7 @@ class TestGLMMultinomial:
         # no regularization in this case, use reference level plus one-hot-encoding
         print("*******************************************************************************************")
         print("Test6: test the GLM with enum/real values.")
+        h2o.cluster_info()
 
         # training result from python sklearn
         (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
@@ -1022,7 +1027,7 @@ class TestGLMMultinomial:
                                                                                  "Accuracies from test data set are "
                                                                                  "close enough!"],
                                                                              can_be_better_than_template=[
-                                                                                 False, True, True, False, False,
+                                                                                 True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
                                                                                  True, True, True, True, True,
@@ -1035,6 +1040,7 @@ class TestGLMMultinomial:
                                                                              ignored_eps=self.ignored_eps,
                                                                              allowed_diff=self.allowed_diff)
 
+        h2o.cluster_info()
         # print out test results and update test_failed_array status to reflect if this test has failed
         self.test_failed_array[self.test_num] += pyunit_utils.show_test_results("test6_enum_missing_values",
                                                                                 num_test_failed, self.test_failed)
@@ -1056,6 +1062,7 @@ class TestGLMMultinomial:
         # perform lambda_search, regularization and one hot encoding.
         print("*******************************************************************************************")
         print("Test7: test the GLM with imputation of missing enum/real values under lambda search.")
+        h2o.cluster_info()
 
         # training result from python sklearn
         (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
@@ -1185,8 +1192,8 @@ class TestGLMMultinomial:
                                                                                  "Accuracies from test data set "
                                                                                  "are close enough!"],
                                                                              can_be_better_than_template=[
-                                                                                 False, True, True, False,
-                                                                                 False, True, True],
+                                                                                 True, True, True, True,
+                                                                                 True, True, True],
                                                                              just_print=[
                                                                                  True, True, True, True,
                                                                                  True, True, False],
