@@ -25,7 +25,7 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
   private final long _maxTime;           // maximum amount of time allotted to automl
   private final double _minAcc;          // minimum accuracy to achieve
   private final boolean _ensemble;       // allow ensembles?
-  private final Set<models> _modelEx;    // model types to exclude; e.g. don't allow DL
+  private final models[] _modelEx;    // model types to exclude; e.g. don't allow DL
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
   FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
@@ -43,9 +43,11 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     _maxTime=maxTime;
     _minAcc=minAccuracy;
     _ensemble=ensemble;
-    _modelEx=modelExclude==null?null:new HashSet<models>();
-    if( null!= _modelEx )
-      Collections.addAll(_modelEx, modelExclude);
+    if( modelExclude!=null ) {
+      HashSet<models> m = new HashSet<>();
+      Collections.addAll(m,modelExclude);
+      _modelEx = m.toArray(new models[m.size()]);
+    } else _modelEx=null;
     _allowMutations=tryMutations;
   }
 
