@@ -161,18 +161,16 @@ public abstract class GLMTask  {
      boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
      for(int i = 0; i < chunks.length; ++i) {
        for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
-         if(skip[r])continue;
+         if(skip[r]) continue;
          if((skip[r] = _skipNAs && chunks[i].isNA(r)) && _weightId != -1)
           weight.set(r,0);
        }
      }
      Chunk response = _responseId < 0 ? null : chunks[_responseId];
-     double [] nums = null;
+
      double [] numsResponse = null;
-     if(_computeWeightedSigma) {
+     if(_computeWeightedSigma)
        _basicStats = new BasicStats(_nums);
-       nums = MemoryManager.malloc8d(_nums);
-     }
      if(_computeWeightedMeanSigmaResponse) {
        _basicStatsResponse = new BasicStats(_nClasses);
        numsResponse = MemoryManager.malloc8d(_nClasses);
@@ -186,7 +184,7 @@ public abstract class GLMTask  {
            if(skip[r] || (w = weight.atd(r)) == 0)
              continue;
            double d = chunks[i + _numOff].atd(r);
-           if (Double.isNaN(nums[i]))
+           if (Double.isNaN(d))
              d = _means[i];
            _basicStats.add(d,w,i);
          }
@@ -195,7 +193,6 @@ public abstract class GLMTask  {
      for(int r = 0; r < response._len; ++r) {
        if(skip[r] || (w = weight.atd(r)) == 0)
          continue;
-       _basicStats.add(w);
        if(_computeWeightedMeanSigmaResponse) {
          //FIXME: Add support for subtracting offset from response
          for(int i = 0; i < _nClasses; ++i)
@@ -204,7 +201,6 @@ public abstract class GLMTask  {
        }
        double d = response.atd(r);
        if(!Double.isNaN(d)) {
-         assert !Double.isNaN(d);
          if (_nClasses > 2)
            _yMu[(int) d] += w;
          else
@@ -219,6 +215,7 @@ public abstract class GLMTask  {
      }
    }
    @Override public void postGlobal() {
+     _basicStats.fillInZeros(_nobs,_wsum);
      ArrayUtils.mult(_yMu,1.0/_wsum);
    }
 
