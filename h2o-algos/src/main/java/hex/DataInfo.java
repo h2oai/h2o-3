@@ -619,30 +619,45 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   private void setTransform(TransformType t, double [] normMul, double [] normSub, int vecStart, int n) {
+    int idx=0; // idx!=i when interactions are in play, otherwise, it's just 'i'
     for (int i = 0; i < n; ++i) {
       Vec v = _adaptedFrame.vec(vecStart + i);
+      boolean isIWV = isInteractionVec(vecStart+i);
       switch (t) {
         case STANDARDIZE:
-          normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          normSub[i] = v.mean();
+          normMul[idx] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+          if( isIWV )
+            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
+              normMul[j]=1;
+          normSub[idx] = v.mean();
           break;
         case NORMALIZE:
-          normMul[i] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          normSub[i] = v.mean();
+          normMul[idx] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
+          if( isIWV )
+            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
+              normMul[j]=1;
+          normSub[idx] = v.mean();
           break;
         case DEMEAN:
-          normMul[i] = 1;
-          normSub[i] = v.mean();
+          normMul[idx] = 1;
+          if( isIWV )
+            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
+              normMul[j]=1;
+          normSub[idx] = v.mean();
           break;
         case DESCALE:
-          normMul[i] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          normSub[i] = 0;
+          normMul[idx] = (v.sigma() != 0)?1.0/v.sigma():1.0;
+          if( isIWV )
+            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
+              normMul[j]=1;
+          normSub[idx] = 0;
           break;
         default:
           throw H2O.unimpl();
       }
-      assert !Double.isNaN(normMul[i]);
-      assert !Double.isNaN(normSub[i]);
+      assert !Double.isNaN(normMul[idx]);
+      assert !Double.isNaN(normSub[idx]);
+      idx = isIWV?(idx+nextNumericIdx(i)):(idx+1);
     }
   }
   public void setPredictorTransform(TransformType t){
@@ -651,8 +666,8 @@ public class DataInfo extends Keyed<DataInfo> {
       _normMul = null;
       _normSub = null;
     } else {
-      _normMul = MemoryManager.malloc8d(_nums);
-      _normSub = MemoryManager.malloc8d(_nums);
+      _normMul = MemoryManager.malloc8d(numNums());
+      _normSub = MemoryManager.malloc8d(numNums());
       setTransform(t,_normMul,_normSub,_cats,_nums);
     }
   }
@@ -693,6 +708,14 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int numStart()  { return _catOffsets[_cats];         }
   public final int numCats()   { return _catOffsets[_cats];         }
   public final int numNums()   { return _interactions!=null?(_numOffsets[_numOffsets.length-1]-numStart()):_nums; }
+
+  /**
+   * Get the next expanded number-column index.
+   */
+  public final int nextNumericIdx(int currentColIdx) {
+    if( currentColIdx+1 >= _numOffsets.length ) return fullN() - _numOffsets[currentColIdx];
+    return _numOffsets[currentColIdx+1] - _numOffsets[currentColIdx];
+  }
   public final String[] coefNames() {
     if (_coefNames != null) return _coefNames; // already computed
     int k = 0;
@@ -942,13 +965,13 @@ public class DataInfo extends Keyed<DataInfo> {
         else if (v2 < _cats) offset = getCategoricalId(v2,Double.isNaN(vals[v2])?_catModes[v1]:(int)vals[v2]);
         else offset = 0;
         row.numVals[numValsIdx + offset] = vals[_cats + i];  // essentially: vals[v1] * vals[v2])
-        numValsIdx+=_numOffsets[i];
+        numValsIdx+=nextNumericIdx(i);
+      } else {
+        double d = vals[_cats + i]; // can be NA if skipMissing() == false
+        if( Double.isNaN(d) )                      d = _numMeans[numValsIdx];
+        if( _normMul != null && _normSub != null ) d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
+        row.numVals[numValsIdx++] = d;
       }
-      double d = vals[_cats + i]; // can be NA if skipMissing() == false
-      if (Double.isNaN(d)) d = _numMeans[i];
-      if (_normMul != null && _normSub != null)
-        d = (d - _normSub[i]) * _normMul[i];
-      row.numVals[numValsIdx++] = d;
     }
     int off = responseChunkId(0);
     for (int i = off; i < Math.min(vals.length,off + _responses); ++i) {
@@ -994,13 +1017,13 @@ public class DataInfo extends Keyed<DataInfo> {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
         int offset = getInteractionOffset(chunks,_cats+i,rid);
         row.numVals[numValsIdx+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
-        numValsIdx+=_numOffsets[i];
+        numValsIdx+=nextNumericIdx(i);
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
           d = _numMeans[i];
         if (_normMul != null && _normSub != null)
-          d = (d - _normSub[i]) * _normMul[i];
+          d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
         row.numVals[numValsIdx++] = d;
       }
     }
@@ -1101,7 +1124,6 @@ public class DataInfo extends Keyed<DataInfo> {
           row.binIds[row.nBins++] = cid;
       }
     }
-    int numStart = numStart();
     // generic numbers + interactions
     int interactionOffset=0;
     for (int cid = 0; cid < _nums; ++cid) {
@@ -1115,7 +1137,7 @@ public class DataInfo extends Keyed<DataInfo> {
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
           row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));
         }
-        interactionOffset+=_numOffsets[cid];
+        interactionOffset+=nextNumericIdx(cid);
       } else {
         for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
           if (c.atd(r) == 0) continue;
@@ -1126,11 +1148,12 @@ public class DataInfo extends Keyed<DataInfo> {
           if (c.isNA(r)) row.bad = _skipMissing;
           double d = c.atd(r);
           if (Double.isNaN(d))
-            d = _numMeans[cid];
+            d = _numMeans[interactionOffset];
           if (_normMul != null)
-            d *= _normMul[cid];
+            d *= _normMul[interactionOffset];
           row.addNum(_numOffsets[cid], d);
         }
+        interactionOffset++;
       }
     }
     // response(s)
