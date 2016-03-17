@@ -708,7 +708,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         return fs[1] + fs[2];
       }
       // Multinomial loss function; sum(exp(data)).  Load tree data
-      for( int k=0; k<_nclass; k++ )
+      fs[0+1] = f;
+      for( int k=1; k<_nclass; k++ )
         fs[k+1]=chk_tree(chks,k).atd(row);
       // Rescale to avoid Infinities; return sum(exp(data))
       return hex.genmodel.GenModel.log_rescale(fs);

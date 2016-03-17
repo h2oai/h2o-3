@@ -131,6 +131,7 @@ public class IcedBitSet extends Iced {
   }
 
   public SB toJava( SB sb, String varname, int col, String colname ) {
-    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", (int) data[").p(col).p(" /* ").p(colname).p(" */").p("])");
+    // pass a double to bitSetContains, such that it can do the NaN check inside
+    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p(" /* ").p(colname).p(" */").p("])");
   }
 }

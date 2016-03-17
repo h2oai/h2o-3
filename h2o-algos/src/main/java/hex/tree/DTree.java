@@ -497,15 +497,17 @@ public class DTree extends Iced {
 
     public int ns( Chunk chks[], int row ) {
       double d = chks[_split._col].atd(row);
-      int bin;
-      // Note that during *scoring* (as opposed to training), we can be exposed
-      // to data which is outside the bin limits.
-      if(_split._equal == 0)
-        bin = d >= _splat ? 1 : 0; //NaN goes to 0 // >= goes right
-      else if(_split._equal == 1)
-        bin = d == _splat ? 1 : 0; //NaN goes to 0
-      else
-        bin = _split._bs.contains((int)d) ? 1 : 0; // contains goes right
+      int bin=1; //NA goes right
+      if (!Double.isNaN(d)) {
+        // Note that during *scoring* (as opposed to training), we can be exposed
+        // to data which is outside the bin limits.
+        if (_split._equal == 0)
+          bin = d >= _splat ? 1 : 0;
+        else if (_split._equal == 1)
+          bin = d == _splat ? 1 : 0;
+        else
+          bin = _split._bs.contains((int) d) ? 1 : 0; // contains goes right
+      }
       return _nids[bin];
     }
 

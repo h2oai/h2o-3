@@ -1285,11 +1285,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           rowData.put(
                   genmodel._names[col],
                   genmodel._domains[col] == null ? (Double) val
-                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel");
+                          : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
+                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
         }
 
         AbstractPrediction p;
-        try { p=epmw.predict(rowData); } 
+        try { p=epmw.predict(rowData); }
         catch (PredictException e) { continue; }
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row); // Load internal scoring predictions
@@ -1305,12 +1306,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
-            System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+            if (miss < 20) {
+              System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict POJO prediction=" + d2);
+              System.err.println("Row: " + rowData.toString());
+            }
           }
           totalMiss = miss;
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss);
+      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
       return totalMiss==0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.
