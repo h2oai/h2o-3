@@ -4,6 +4,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.parser.BufferedString;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -1218,19 +1219,67 @@ public class Frame extends Lockable<Frame> {
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   private static class DeepSelect extends MRTask<DeepSelect> {
+    private final void doSparse(Chunk [] chks, NewChunk [] nchks) {
+      int[][] ids = new int[chks[0]._len][32];
+      int[] cnts = MemoryManager.malloc4(chks[0]._len);
+      for (int cid = 0; cid < chks.length - 1; ++cid) {
+        Chunk c = chks[cid];
+        for (int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i)) {
+          if (ids[i].length == cnts[i])
+            ids[i] = Arrays.copyOf(ids[i], ids[i].length * 2);
+          ids[i][cnts[i]++] = cid;
+        }
+      }
+      Chunk pred = chks[chks.length-1];
+      BufferedString tmpStr = new BufferedString();
+      int nobs = 0;
+      for (int i = 0; i < pred._len; i++) {
+        if (pred.atd(i) != 0 && !pred.isNA(i)) {
+          for(int j = 0; j < cnts[i]; ++j){
+            int cid = ids[i][j];
+            int zeros = nobs - nchks[cid].len();
+            if(zeros > 0) {
+              if (chks[cid].isSparseNA())
+                nchks[cid].addNAs(zeros);
+              else
+                nchks[cid].addZeros(zeros);
+            }
+            addToChunk(chks[cid],nchks[cid],i,tmpStr);
+            nobs++;
+          }
+        }
+      }
+      for(int cid = 0; cid < nchks.length; ++cid) {
+        int zeros =  nobs - nchks[cid].len();
+        if(zeros > 0)
+          if (chks[cid].isSparseNA())
+            nchks[cid].addNAs(zeros);
+          else
+            nchks[cid].addZeros(zeros);
+      }
+    }
+
+    private void addToChunk(Chunk src, NewChunk dst, int row, BufferedString tmpStr){
+      // todo - destroys float compression!
+      if( src.isNA(row) )                 dst.addNA();
+      else if( src instanceof C16Chunk )  dst.addUUID(src, row);
+      else if( src instanceof CStrChunk)  dst.addStr(src.atStr(tmpStr, row));
+      else if( src.hasFloat() )           dst.addNum(src.atd(row));
+      else                                dst.addNum(src.at8(row),0);
+    }
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+      if(FrameUtils.sparseRatio(chks) < .5) {
+        doSparse(chks, nchks);
+        return;
+      }
       Chunk pred = chks[chks.length-1];
       BufferedString tmpStr = new BufferedString();
       for( int j = 0; j < chks.length - 1; j++ ) {
         Chunk chk = chks[j];
         NewChunk nchk = nchks[j];
-        for(int i = 0; i < pred._len; ++i) {
+        for(int i = 0; i < pred._len; i++) {
           if( pred.atd(i) != 0 && !pred.isNA(i) ) {
-            if( chk.isNA(i) )                   nchk.addNA();
-            else if( chk instanceof C16Chunk )  nchk.addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchk.addStr(chk.atStr(tmpStr, i));
-            else if( chk.hasFloat() )           nchk.addNum(chk.atd(i));
-            else                                nchk.addNum(chk.at8(i),0);
+            addToChunk(chk,nchk,i,tmpStr);
           }
         }
       }
