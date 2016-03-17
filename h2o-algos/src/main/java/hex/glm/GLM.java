@@ -316,7 +316,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
-      _state = new ComputationState(_job._key, _parms, _dinfo, null, nclasses());
+      _state = new ComputationState(_job, _parms, _dinfo, null, nclasses());
       // skipping extra rows? (outside of weights == 0)GLMT
       boolean skippingRows = (_parms._missing_values_handling == MissingValuesHandling.Skip && _train.hasNAs());
       if (true || hasWeightCol() || _train.hasNAs()) { // need to re-compute means and sd
@@ -350,7 +350,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error("_compute_p_values","P-values can not be computed for constrained problems");
       _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
-        GLMGradientSolver gslvr = new GLMGradientSolver(_job._key,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
+        GLMGradientSolver gslvr = new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
         x[0] = _parms.linkInv(x[0]);
         _state._ymu = x;
@@ -368,7 +368,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_min_ratio == -1)
         _parms._lambda_min_ratio = (_nobs >> 4) >  _dinfo.fullN() ? 1e-4 : 1e-2;
       double [] beta = getNullBeta();
-      GLMGradientInfo ginfo = new GLMGradientSolver(_job._key,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+      GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
       _state.updateState(beta,ginfo);
       if (_parms._lambda == null) {  // no lambda given, we will base lambda as a fraction of lambda max
         _lmax = lmax(ginfo._gradient);
@@ -1373,10 +1373,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     final BetaConstraint _bc;
     final double _l2pen; // l2 penalty
     double[][] _betaMultinomial;
-    final Key _jobKey;
+    final Job _job;
 
-    public GLMGradientSolver(Key jobKey, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc) {
-      _jobKey = jobKey;
+    public GLMGradientSolver(Job job, GLMParameters glmp, DataInfo dinfo, double l2pen, BetaConstraint bc) {
+      _job = job;
       _bc = bc;
       _parms = glmp;
       _dinfo = dinfo;
@@ -1398,7 +1398,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           System.arraycopy(beta, off, _betaMultinomial[i], 0, _betaMultinomial[i].length);
           off += _betaMultinomial[i].length;
         }
-        GLMMultinomialGradientTask gt = new GLMMultinomialGradientTask(_jobKey,_dinfo, _l2pen, _betaMultinomial, _parms._obj_reg, false, null).doAll(_dinfo._adaptedFrame);
+        GLMMultinomialGradientTask gt = new GLMMultinomialGradientTask(_job,_dinfo, _l2pen, _betaMultinomial, _parms._obj_reg).doAll(_dinfo._adaptedFrame);
         double l2pen = 0;
         for (double[] b : _betaMultinomial)
           l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
@@ -1408,11 +1408,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert _parms._intercept || (beta[beta.length-1] == 0);
         GLMGradientTask gt;
         if(_parms._family == Family.binomial && _parms._link == Link.logit)
-          gt = new GLMBinomialGradientTask(_jobKey,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMBinomialGradientTask(_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
-          gt = new GLMGaussianGradientTask(_jobKey,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMGaussianGradientTask(_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else
-          gt = new GLMGenericGradientTask(_jobKey, _dinfo, _parms, _l2pen, beta).doAll(_dinfo._adaptedFrame);
+          gt = new GLMGenericGradientTask(_job._key, _dinfo, _parms, _l2pen, beta).doAll(_dinfo._adaptedFrame);
         double [] gradient = gt._gradient;
         double  likelihood = gt._likelihood;
         if (!_parms._intercept) // no intercept, null the ginfo
@@ -1426,7 +1426,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     public GradientInfo getObjective(double[] beta) {
-      double l = new GLMResDevTask(_jobKey,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
+      double l = new GLMResDevTask(_job._key,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
       return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true),null);
     }
   }

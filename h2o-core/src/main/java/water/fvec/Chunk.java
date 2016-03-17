@@ -109,8 +109,27 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
  */
 
 public abstract class Chunk extends Iced<Chunk> {
+  public static class DVec {
+    public final double [] vals;
+    public final int [] ids;
+    public boolean isSparse(){return nVals < vals.length;}
+    public int nVals;
+    public DVec(int len){
+      vals = new double[len];
+      ids = new int[len];
+    }
+  }
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
+
+  public DVec asDoubles(DVec dv) {
+    if(dv.vals.length != _len) throw new IllegalArgumentException();
+    for(int i = 0; i < _len; ++i) {
+      dv.vals[i] = atd_impl(i);
+      dv.ids[i] = i;
+    }
+    return dv;
+  }
 
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;

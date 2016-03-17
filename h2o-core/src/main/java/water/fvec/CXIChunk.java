@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.H2O;
 import water.util.UnsafeUtils;
 
@@ -35,6 +34,70 @@ public class CXIChunk extends Chunk {
     _mem = buf;
     _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
+  }
+
+  @Override public DVec asDoubles(DVec dv) {
+    if(dv.vals.length != _len) throw new IllegalArgumentException();
+    int off = _OFF;
+    final int inc = _valsz + _ridsz;
+    if(_ridsz == 2){
+      switch(_valsz){
+        case 1:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get2(_mem,off);
+            dv.vals[i] = _mem[off+2]&0xFF;
+          }
+          break;
+        case 2:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get2(_mem,off);
+            dv.vals[i] = UnsafeUtils.get2(_mem,off+2);
+          }
+          break;
+        case 4:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get2(_mem,off);
+            dv.vals[i] = UnsafeUtils.get4(_mem,off+2);
+          }
+          break;
+        case 8:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get2(_mem,off);
+            dv.vals[i] = UnsafeUtils.get8(_mem,off+2);
+          }
+          break;
+      }
+    } else if(_ridsz == 4){
+      switch(_valsz){
+        case 1:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get4(_mem,off);
+            dv.vals[i] = _mem[off+4]&0xFF;
+          }
+          break;
+        case 2:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get4(_mem,off);
+            dv.vals[i] = UnsafeUtils.get2(_mem,off+4);
+          }
+          break;
+        case 4:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            long l = UnsafeUtils.get8(_mem,off);
+            dv.ids[i] = (int)(l >> 32);
+            dv.vals[i] = l & 0xFFFFFFFF;
+          }
+          break;
+        case 8:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            dv.ids[i] = UnsafeUtils.get4(_mem,off);
+            dv.vals[i] = UnsafeUtils.get8(_mem,off+4);
+          }
+          break;
+      }
+    } else throw H2O.unimpl();
+    dv.nVals = _sparseLen;
+    return dv;
   }
 
   @Override public boolean isSparseZero() {return true;}
@@ -108,6 +171,7 @@ public class CXIChunk extends Chunk {
   // get offset of nth (chunk-relative) stored element
   private int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
   // extract integer value from an (byte)offset
+  protected double getFValue(int off){return getIValue(off);}
   protected final long getIValue(int off){
     switch(_valsz){
       case 1: return _mem[off+ _ridsz]&0xFF;

@@ -51,7 +51,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
 //      params._standardize= false;
-      model = new GLM(params,modelKey).trainModel().get();
+      model = new GLM(params, modelKey).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       assertEquals(0.0, coefs.get("Intercept"), 1e-4);
       assertEquals(0.1, coefs.get("x"), 1e-4);
@@ -66,7 +66,6 @@ public class GLMTest  extends TestUtil {
       if (model != null) model.remove();
     }
   }
-
 
   /**
    * Test Poisson regression on simple and small synthetic dataset.
@@ -396,7 +395,7 @@ public class GLMTest  extends TestUtil {
       for(int i = 0; i < bins.length; ++i)
         means[i] = bins[i]*sumInv;
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows(),true,null).doAll(dinfo._adaptedFrame);
+      GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
       assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
       for(int i = 0; i < gmt._gradient.length; ++i)
         assertEquals("Mismatch at coefficient " + i,exp_grad[i], gmt._gradient[i], 1e-8);
