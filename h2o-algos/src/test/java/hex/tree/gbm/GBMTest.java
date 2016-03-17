@@ -1669,6 +1669,10 @@ public class GBMTest extends TestUtil {
       parms._train = train._key;
       parms._response_column = "DSDist"; // Train on the outcome
       parms._distribution = Distribution.Family.laplace;
+      parms._sample_rate = 0.6f;
+      parms._col_sample_rate = 0.8f;
+      parms._col_sample_rate_per_tree = 0.8f;
+      parms._seed = 1234;
 
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
@@ -1678,6 +1682,45 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 27.01989) < 1e-4);
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+      Scope.exit();
+    }
+  }
+
+  @Test public void testQuantileRegression() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    Scope.enter();
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      train.remove("Method").remove();   // Remove categorical
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "DSDist"; // Train on the outcome
+      parms._distribution = Distribution.Family.quantile;
+      parms._quantile_alpha = 0.4;
+      parms._sample_rate = 0.6f;
+      parms._col_sample_rate = 0.8f;
+      parms._col_sample_rate_per_tree = 0.8f;
+      parms._seed = 1234;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      res = gbm.score(pred);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.81202) < 1e-4);
 
     } finally {
       parms._train.remove();
