@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.tree.gbm.GBMModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -279,6 +280,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
+        if (_model._output._treeStats._max_depth==0) {
+          Log.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
+        }
         if (timeout()) break; // If timed out, do the final scoring
         if (stop_requested()) throw new Job.JobCancelledException();
       }

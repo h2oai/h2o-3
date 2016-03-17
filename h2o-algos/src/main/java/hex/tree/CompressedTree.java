@@ -69,17 +69,19 @@ public class CompressedTree extends Keyed {
       }
 
       // WARNING: Generated code has to be consistent with this code:
-      //   - Double.NaN <  3.7f => return false => BUT left branch has to be selected (i.e., ab.position())
-      //   - Double.NaN != 3.7f => return true  => left branch has to be select selected (i.e., ab.position())
       double d = row[colId];
-        if( ( equal==0 && d >= splitVal) ||
-            ( equal==1 && d == splitVal) ||
-            ( (equal==2 || equal==3) && ibs.contains((int)d) )) { //if Double.isNaN(d), then (int)d == 0, which means that NA is treated like categorical level 0
-          ab.skip(skip);        // Skip to the right subtree
-          if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
-          lmask = rmask;        // And set the leaf bits into common place
+      if (Double.isNaN(d) ||                                            // NA goes right
+              ( ( (equal==0            ) && d >= splitVal         ) ||  // greater or equals goes right
+                ( (equal==1            ) && d == splitVal         ) ||  // equals goes right
+                ( (equal==2 || equal==3) && ibs.contains((int)d) ) )    // if contained in bitset, go right
+      ) {
+        // RIGHT
+        ab.skip(skip);        // Skip to the right subtree
+        if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+        lmask = rmask;        // And set the leaf bits into common place
       } else {
-          /* go left */
+        // LEFT
+        assert(!Double.isNaN(d));
       }
       level++;
       if( (lmask&16)==16 ) {
@@ -120,8 +122,8 @@ public class CompressedTree extends Keyed {
     final String[] names = tm._names;
     final SB sb = new SB();
     new TreeVisitor<RuntimeException>(this) {
-      int _d;
       @Override protected void pre( int col, float fcmp, IcedBitSet gcmp, int equal ) {
+        if (equal==1) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
         sb.i().p(names[col]).p(' ');
         if( equal==0 ) sb.p("< ").p(fcmp);
         else if( equal==1 ) sb.p("!=").p(fcmp);

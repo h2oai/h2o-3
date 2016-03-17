@@ -329,13 +329,12 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
                                              final boolean verboseCode) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();
-    body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
     final String mname = JCodeGen.toJavaId(_key.toString());
 
     // One forest-per-GBM-tree, with a real-tree-per-class
     for (int t=0; t < _output._treeKeys.length; t++) {
       // Generate score method for given tree
-      toJavaForestName(body.i(),mname,t).p(".score0(fdata,preds);").nl();
+      toJavaForestName(body.i(),mname,t).p(".score0(data,preds);").nl();
 
       final int treeIdx = t;
 

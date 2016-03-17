@@ -140,28 +140,29 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
     @Override public void compute2() {
-      int nstrata = _strata == null ? 1 : (int) (_strata.max() - _strata.min() + 1);
+      final int strataMin = _strata == null ? 0 : (int) (Math.max(0,_strata.min()));
+      final int strataMax = _strata == null ? 0 : (int) (Math.max(0,_strata.max()));
+      final int nstrata = strataMax - strataMin + 1;
       Log.info("Computing quantiles for " + nstrata + " different strata.");
       _quantiles = new double[nstrata];
       Vec weights = _weights != null ? _weights : _response.makeCon(1);
-      for (int i=0;i<nstrata;++i) { //loop over nodes
+      for (int i=strataMin;i<=strataMax;++i) { //loop over nodes
         Vec newWeights = weights.makeCopy();
         //only keep weights for this stratum (node), set rest to 0
-        if (_strata!=null) new ZeroOutWeights((int) (_strata.min() + i)).doAll(_strata, newWeights);
+        if (_strata!=null) new KeepOnlyOneStrata(i).doAll(_strata, newWeights);
         double sumRows = new SumWeights().doAll(_response, newWeights).sum;
         Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
         h.doAll(_response, newWeights);
-        while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method))) {
+        while (Double.isNaN(_quantiles[i-strataMin] = h.findQuantile(_prob, _combine_method)))
           h = h.refinePass(_prob).doAll(_response, newWeights);
-        }
         newWeights.remove();
       }
       if (_weights != weights) weights.remove();
       tryComplete();
     }
 
-    private static class ZeroOutWeights extends MRTask<ZeroOutWeights> {
-      ZeroOutWeights(int stratumToKeep) { this.stratumToKeep = stratumToKeep; }
+    private static class KeepOnlyOneStrata extends MRTask<KeepOnlyOneStrata> {
+      KeepOnlyOneStrata(int stratumToKeep) { this.stratumToKeep = stratumToKeep; }
       int stratumToKeep;
       @Override public void map(Chunk strata, Chunk newW) {
         for (int i=0; i<strata._len; ++i) {
