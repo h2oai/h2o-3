@@ -391,6 +391,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public ModelMetrics _cross_validation_metrics;
 
     /**
+     * Summary of cross-validation metrics of all k-fold models
+     */
+    public TwoDimTable _cross_validation_metrics_summary;
+
+    /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
      */
     public TwoDimTable _model_summary;
