@@ -504,7 +504,10 @@ public class DataInfo extends Keyed<DataInfo> {
     _responses = dinfo._responses;
     _cats = catLevels.length;
     _nums = fr.numCols()-_cats - dinfo._responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
-    _numOffsets = _nums==0?new int[0]:dinfo._numOffsets;
+    _numOffsets = _nums==0?new int[0]:dinfo._numOffsets.clone();
+    int diff = _numOffsets.length>0?_numOffsets[0]-s:0;
+    for(int i=0;i<_numOffsets.length; i++)  // need to shift everyone down by the offset!
+      _numOffsets[i] -= diff;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _numMeans = new double[_nums];
     _normMul = normMul;
@@ -1173,5 +1176,4 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return rows;
   }
-
 }
