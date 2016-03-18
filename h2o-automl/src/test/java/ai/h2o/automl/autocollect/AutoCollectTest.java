@@ -2,7 +2,6 @@ package ai.h2o.automl.autocollect;
 
 import ai.h2o.automl.TestUtil;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -57,11 +56,11 @@ public class AutoCollectTest extends TestUtil { // requires mysql-connector-java
 //    System.out.println(ac.hasMeta("iriz"));
 //  }
 
-
-
-  @Test public void testSmalldataMetaCollect() {
-    AutoCollect ac = new AutoCollect(30, find_test_file_static("smalldata/meta").getAbsolutePath());
-    ac.start();
-  }
+//
+//
+//  @Test public void testSmalldataMetaCollect() {
+//    AutoCollect ac = new AutoCollect(30, find_test_file_static("smalldata/meta").getAbsolutePath());
+//    ac.start();
+//  }
 
 }
