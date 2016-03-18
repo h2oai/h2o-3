@@ -1673,7 +1673,7 @@ def extract_comparison_attributes_and_print_multinomial(model_h2o, h2o_model_tes
                                              template_att_str[compare_index], att_str_fail[compare_index],
                                              att_str_success[compare_index], True, just_print[compare_index])
     compare_index += 1
-    # this is logloss from training dataset,
+    # this is logloss from training data set,
     if not(just_print[compare_index]) and not(can_be_better_than_template[compare_index]):
         if h2o_logloss_train < template_logloss_train:    # H2O performed better than template which is not allowed
             failed_test_number += 1     # increment failed_test_number and just print the results
@@ -1930,10 +1930,8 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
         if (para_name in model_params) and (para_name not in exclude_parameters):
             true_gridable_parameters.append(para_name)
             true_gridable_types.append(gridable_types[count_index])
-            if para_name in hyper_params.keys():    # add default value to user defined parameter list
-                hyper_params[para_name].append(gridable_defaults[count_index])
-                hyper_params[para_name] = list(set(hyper_params[para_name]))
-            else:   # gridable parameter not seen before.  Randomly generate values for it
+            if para_name not in hyper_params.keys():    # add default value to user defined parameter list
+                 # gridable parameter not seen before.  Randomly generate values for it
                 if 'int' in gridable_types[count_index]:
                     # make sure integer values are not duplicated, using set action to remove duplicates
                     hyper_params[para_name] = list(set(np.random.random_integers(min_int_val, max_int_val,
@@ -1999,7 +1997,6 @@ def insert_error_grid_search(hyper_params, gridable_parameters, gridable_types, 
 
     error_hyper_params = hyper_params.copy()
 
-
     param_index = random.randint(0, len(gridable_parameters)-1)
     param_name = gridable_parameters[param_index]
     param_type = gridable_types[param_index]
@@ -2052,10 +2049,10 @@ def generate_random_words(word_length):
     :return: string representing the random word
     """
 
-    if (type(word_length) == 'int') and (word_length > 0):
+    if word_length > 0:
         all_chars = string.letters + string.digits + string.punctuation
 
-        return ''.join((random.choice(all_chars)) for index in range(word_length))
+        return ''.join((random.choice(all_chars)) for index in range(int(word_length)))
     else:
         print("word_length must be an integer greater than 0.")
         sys.exit(1)
