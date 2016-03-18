@@ -1063,6 +1063,7 @@ public class GBMTest extends TestUtil {
       parms._nfolds = 2;
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
+      parms._keep_cross_validation_predictions = true;
 
       // Build a first model; all remaining models should be equal
       gbm = new GBM(parms).trainModel().get();
@@ -1079,6 +1080,8 @@ public class GBMTest extends TestUtil {
       if (gbm != null) {
         gbm.deleteCrossValidationModels();
         gbm.delete();
+        for (Key k : gbm._output._cross_validation_predictions) k.remove();
+        gbm._output._cross_validation_holdout_predictions_frame_id.remove();
       }
       Scope.exit();
     }
