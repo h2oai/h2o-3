@@ -255,9 +255,9 @@ class TestGLMMultinomial:
         self.class_number = random.randint(3, self.max_class_number)    # randomly set number of classes K
 
         # DEBUGGING setup, remember to comment them out once done.
-        self.train_col_count = 3
-        self.train_row_count = 500
-        self.class_number = 3
+        # self.train_col_count = 3
+        # self.train_row_count = 500
+        # self.class_number = 3
         # end DEBUGGING
 
         # set indices for response and predictor columns in data set for H2O GLM model to use
@@ -1067,7 +1067,8 @@ class TestGLMMultinomial:
         # training result from python sklearn
         (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
             self.sklearn_multinomial_result(self.training_data_file_enum_nans_true_one_hot,
-                                            self.test_data_file_enum_nans_true_one_hot, True, True)
+                                            self.test_data_file_enum_nans_true_one_hot, True, True,
+                                            validation_data_file=self.validation_data_file_enum_nans_true_one_hot)
 
         # import training set and test set with missing values and true one hot encoding
         training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file_enum_nans_true_one_hot))
@@ -1212,7 +1213,8 @@ class TestGLMMultinomial:
                                            num_test_failed, self.test_failed)
         self.test_num += 1
 
-    def sklearn_multinomial_result(self, training_data_file, test_data_file, has_categorical, true_one_hot):
+    def sklearn_multinomial_result(self, training_data_file, test_data_file, has_categorical, true_one_hot,
+                                   validation_data_file=""):
         """
         This function will generate a Sklearn multinomial model using the same set of data sets we have used to build
         our H2O models.  The purpose here is to be able to compare the performance of H2O
@@ -1227,6 +1229,9 @@ class TestGLMMultinomial:
         :param has_categorical: bool indicating if the data set contains mixed predictors (both enum and real)
         :param true_one_hot: bool True: true one hot encoding is used.  False: reference level plus one hot encoding
          is used
+        :param validation_data_file: optional string, denoting validation file so that we can concatenate
+         training and validation data sets into a big training set since H2O model is using a training
+         and a validation data set.
 
         :return: a tuple containing the weights, logloss, confusion matrix, prediction accuracy calculated on training
         data set and test data set respectively.
@@ -1235,6 +1240,10 @@ class TestGLMMultinomial:
         # read in the training data
         training_data_xy = np.asmatrix(np.genfromtxt(training_data_file, delimiter=',', dtype=None))
         test_data_xy = np.asmatrix(np.genfromtxt(test_data_file, delimiter=',', dtype=None))
+
+        if len(validation_data_file) > 0:    # validation data set exist and add it to training_data
+            temp_data_xy = np.asmatrix(np.genfromtxt(validation_data_file, delimiter=',', dtype=None))
+            training_data_xy = np.concatenate((training_data_xy, temp_data_xy), axis=0)
 
         # if predictor contains categorical data, perform encoding of enums to binary bits
         # for missing categorical enums, a new level is created for the nans

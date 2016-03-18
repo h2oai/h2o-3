@@ -758,7 +758,8 @@ class TestGLMGaussian:
         # get theoretical weights, p-values and mse
         (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) =\
             self.theoretical_glm(self.training_data_file_enum_nans_true_one_hot,
-                                 self.test_data_file_enum_nans_true_one_hot, True, True)
+                                 self.test_data_file_enum_nans_true_one_hot, True, True,
+                                 validation_data_file=self.validation_data_file_enum_nans_true_one_hot)
 
         # import training set and test set with missing values and true one hot encoding
         training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file_enum_nans_true_one_hot))
@@ -812,7 +813,8 @@ class TestGLMGaussian:
             pyunit_utils.show_test_results("test7_missing_enum_values_lambda_search", num_test_failed, self.test_failed)
         self.test_num += 1
 
-    def theoretical_glm(self, training_data_file, test_data_file, has_categorical, true_one_hot):
+    def theoretical_glm(self, training_data_file, test_data_file, has_categorical, true_one_hot,
+                        validation_data_file=""):
         """
         This function is written to load in a training/test data sets with predictors followed by the response
         as the last column.  We then calculate the weights/bias and the p-values using derived formulae
@@ -823,6 +825,9 @@ class TestGLMGaussian:
         :param has_categorical: bool indicating if the data set contains mixed predictors (both enum and real)
         :param true_one_hot:  bool True: true one hot encoding is used.  False: reference level plus one hot
         encoding is used
+        :param validation_data_file: optional string, denoting validation file so that we can concatenate
+         training and validation data sets into a big training set since H2O model is using a training
+         and a validation data set.
 
         :return: a tuple containing weights, p-values, training data set MSE and test data set MSE
 
@@ -830,6 +835,10 @@ class TestGLMGaussian:
         # read in the training data
         training_data_xy = np.asmatrix(np.genfromtxt(training_data_file, delimiter=',', dtype=None))
         test_data_xy = np.asmatrix(np.genfromtxt(test_data_file, delimiter=',', dtype=None))
+
+        if len(validation_data_file) > 0:    # validation data set exist and add it to training_data
+            temp_data_xy = np.asmatrix(np.genfromtxt(validation_data_file, delimiter=',', dtype=None))
+            training_data_xy = np.concatenate((training_data_xy, temp_data_xy), axis=0)
 
         # if predictor contains categorical data, perform imputation during encoding of enums to binary bits
         if has_categorical:

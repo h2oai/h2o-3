@@ -418,18 +418,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (i > 0) mbs[0].reduce(mbs[i]);
       Key<M> cvModelKey = cvModelBuilders[i]._result;
       mainModel._output._cross_validation_models[i] = cvModelKey;
-      predKeys[i] = Key.make("prediction_" + cvModelKey.toString());
+      predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
-    Frame preds = null;
-    //stitch together holdout predictions into one Vec, to compute the Gains/Lift table
-    if (nclasses() == 2) {
-      Vec[] p1s = new Vec[N];
-      for (int i=0;i<N;++i) {
-        p1s[i] = ((Frame)DKV.getGet(predKeys[i])).lastVec();
-      }
-      Frame p1combined = new HoldoutPredictionCombiner().doAll(1,Vec.T_NUM,new Frame(p1s)).outputFrame(new String[]{"p1"},null);
-      Vec p1 = p1combined.anyVec();
-      preds = new Frame(new Vec[]{p1, p1, p1}); //pretend to have labels,p0,p1, but will only need p1 anyway
+    Frame holdoutPreds = null;
+    if (_parms._keep_cross_validation_predictions || nclasses()==2 /*GainsLift needs this*/) {
+      mainModel._output._cross_validation_holdout_predictions_frame_id = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
+      holdoutPreds = combineHoldoutPredictions(predKeys, mainModel._output._cross_validation_holdout_predictions_frame_id);
     }
     // Keep or toss predictions
     for (Key<Frame> k : predKeys) {
@@ -439,25 +433,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         else fr.remove();
       }
     }
-    mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, preds);
-    if (preds!=null) preds.remove();
+    mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
+    if (holdoutPreds != null) {
+      if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keys());
+      else holdoutPreds.remove();
+    }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
 
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
-  }
-
-  // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
-  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
-    @Override
-    public void map(Chunk[] cs, NewChunk[] nc) {
-      double [] vals = new double[cs[0].len()];
-      for (int i=0;i<cs.length;++i)
-        for (int row = 0; row < cs[0].len(); ++row)
-          vals[row] += cs[i].atd(row);
-      nc[0].setDoubles(vals);
-    }
   }
 
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
@@ -974,5 +959,33 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
   }
+
+  //stitch together holdout predictions into one large Frame
+  private static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key key) {
+    int N = predKeys.length;
+    Frame template = predKeys[0].get();
+    Vec[] vecs = new Vec[N*template.numCols()];
+    int idx=0;
+    for (int i=0;i<N;++i)
+      for (int j=0;j<predKeys[i].get().numCols();++j)
+        vecs[idx++]=predKeys[i].get().vec(j);
+    return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.types(),new Frame(vecs)).outputFrame(key, template.names(),template.domains());
+  }
+
+  // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
+  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
+    int _folds, _cols;
+    public HoldoutPredictionCombiner(int folds, int cols) { _folds=folds; _cols=cols; }
+    @Override public void map(Chunk[] cs, NewChunk[] nc) {
+      for (int c=0;c<_cols;++c) {
+        double [] vals = new double[cs[0].len()];
+        for (int f=0;f<_folds;++f)
+          for (int row = 0; row < cs[0].len(); ++row)
+            vals[row] += cs[f * _cols + c].atd(row);
+        nc[c].setDoubles(vals);
+      }
+    }
+  }
+
 
 }
