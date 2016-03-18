@@ -44,12 +44,12 @@ class TestGLMMultinomial:
     test2_glm_lambda_search(): test lambda search with alpha set to 0.5 per Tomas's
         suggestion.  Make sure loglss and prediction accuracy generated here is comparable in
         value to H2O GLM model with no regularization.
-    test_glm_grid_search_over_params("IRLSM"): test grid search with solver set to IRLSM over
+    test3_glm_grid_search_over_params("IRLSM"): test grid search with solver set to IRLSM over
         various alpha values while lambda is set to be the best value obtained
         from test 2.  Cross validation with k=5 and random assignment is enabled
         as well.  The best model performance hopefully will generate logloss and
         prediction accuracies close to H2O model with no regularization in test 1.
-    test_glm_grid_search_over_params("L_BFGS"): test grid search with solver set to L_BFGS over
+    test3_glm_grid_search_over_params("L_BFGS"): test grid search with solver set to L_BFGS over
         various alpha values while lambda is set to be the best value obtained
         from test 2.  Cross validation with k=5 and random assignment is enabled
         as well.  The best model performance hopefully will generate logloss and
@@ -97,7 +97,6 @@ class TestGLMMultinomial:
 
     # parameters denoting filenames of interested that store training/validation/test data sets
     training_filename = "training_set.csv"
-    training_filename_duplicate = "training_set_duplicate.csv"
     training_filename_nans = "training_set_NA.csv"
     training_filename_enum = "training_set_enum.csv"
     training_filename_enum_true_one_hot = "training_set_enum_trueOneHot.csv"
@@ -111,7 +110,6 @@ class TestGLMMultinomial:
     validation_filename_enum_nans_true_one_hot = "validation_set_enum_NAs_trueOneHot.csv"
 
     test_filename = "test_set.csv"
-    test_filename_duplicate = "test_set_duplicate.csv"
     test_filename_nans = "test_set_NA.csv"
     test_filename_enum = "test_set_enum.csv"
     test_filename_enum_true_one_hot = "test_set_enum_trueOneHot.csv"
@@ -121,14 +119,12 @@ class TestGLMMultinomial:
     weight_filename = "weight.csv"
     weight_filename_enum = "weight_enum.csv"
 
-    total_test_number = 8   # total number of tests being run for GLM Multinomial family
+    total_test_number = 8   # number of tests run for GLM Multinomial family, only 7.  Use 8 to use tear_down
+                            # of other distribution families
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed, only for Gaussian
     allowed_diff = 2e-2   # tolerance of comparison for logloss/prediction accuracy
 
-    duplicate_col_counts = 5    # maximum number of times to duplicate a column
-    duplicate_threshold = 0.5   # for each column, a coin is tossed to see if we duplicate that column or not
-    duplicate_max_scale = 2     # maximum scale factor for duplicated columns
     nan_fraction = 0.2          # denote maximum fraction of NA's to be inserted into a column
 
     # System parameters, do not change.  Dire consequences may follow if you do
@@ -148,7 +144,6 @@ class TestGLMMultinomial:
 
     # parameters denoting filenames with absolute paths
     training_data_file = os.path.join(current_dir, training_filename)
-    training_data_file_duplicate = os.path.join(current_dir, training_filename_duplicate)
     training_data_file_nans = os.path.join(current_dir, training_filename_nans)
     training_data_file_enum = os.path.join(current_dir, training_filename_enum)
     training_data_file_enum_true_one_hot = os.path.join(current_dir, training_filename_enum_true_one_hot)
@@ -162,7 +157,6 @@ class TestGLMMultinomial:
     validation_data_file_enum_nans_true_one_hot = os.path.join(current_dir, validation_filename_enum_nans_true_one_hot)
 
     test_data_file = os.path.join(current_dir, test_filename)
-    test_data_file_duplicate = os.path.join(current_dir, test_filename_duplicate)
     test_data_file_nans = os.path.join(current_dir, test_filename_nans)
     test_data_file_enum = os.path.join(current_dir, test_filename_enum)
     test_data_file_enum_true_one_hot = os.path.join(current_dir, test_filename_enum_true_one_hot)
@@ -258,7 +252,7 @@ class TestGLMMultinomial:
         # self.train_col_count = 3
         # self.train_row_count = 500
         # self.class_number = 3
-        # end DEBUGGING
+        # # end DEBUGGING
 
         # set indices for response and predictor columns in data set for H2O GLM model to use
         self.y_index = self.train_col_count
@@ -283,22 +277,6 @@ class TestGLMMultinomial:
                                                               self.test_class_method],
                                                           class_margin=[
                                                               self.margin, self.margin, self.test_class_margin])
-
-        # randomly generate the duplicated and scaled columns
-        (self.duplicate_col_indices, self.duplicate_col_scales) =\
-            pyunit_utils.random_col_duplication(self.train_col_count, self.duplicate_threshold,
-                                                self.duplicate_col_counts, True, self.duplicate_max_scale)
-
-        # apply the duplication and scaling to training and test set
-        # need to add the response column to the end of duplicated column indices and scale
-        dup_col_indices = self.duplicate_col_indices
-        dup_col_indices.append(self.train_col_count)
-        dup_col_scale = self.duplicate_col_scales
-        dup_col_scale.append(1.0)
-        pyunit_utils.duplicate_scale_cols(dup_col_indices, dup_col_scale,
-                                          self.training_data_file, self.training_data_file_duplicate)
-        pyunit_utils.duplicate_scale_cols(dup_col_indices, dup_col_scale,
-                                          self.test_data_file, self.test_data_file_duplicate)
 
         # insert NAs into training/test data sets
         pyunit_utils.insert_nan_in_data(self.training_data_file, self.training_data_file_nans, self.nan_fraction)
@@ -374,13 +352,6 @@ class TestGLMMultinomial:
 
             if sum(self.test_failed_array[0:6]):
                 pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
-
-            if self.test_failed_array[4]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_duplicate, self.test_filename_duplicate)
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_duplicate,
-                                        self.training_filename_duplicate)
 
             if self.test_failed_array[5]:
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
@@ -1332,6 +1303,8 @@ def test_glm_multinomial():
     test_glm_multinomial.test6_enum_missing_values()
     test_glm_multinomial.test7_missing_enum_values_lambda_search()
     test_glm_multinomial.tear_down()
+
+    sys.stdout.flush()
 
     if test_glm_multinomial.test_failed:  # exit with error if any tests have failed
         sys.exit(1)

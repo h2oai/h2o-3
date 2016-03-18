@@ -292,6 +292,12 @@ class TestGLMBinomial:
         dup_col_indices.append(self.train_col_count)
         dup_col_scale = self.duplicate_col_scales
         dup_col_scale.append(1.0)
+
+        # print out duplication information for easy debugging
+        print("duplication column and duplication scales are: ")
+        print(dup_col_indices)
+        print(dup_col_scale)
+
         pyunit_utils.duplicate_scale_cols(dup_col_indices, dup_col_scale, self.training_data_file,
                                           self.training_data_file_duplicate)
         pyunit_utils.duplicate_scale_cols(dup_col_indices, dup_col_scale, self.test_data_file,
@@ -1432,6 +1438,8 @@ def test_glm_binomial():
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()
     test_glm_binomial.teardown()
+
+    sys.stdout.flush()
 
     if test_glm_binomial.test_failed:  # exit with error if any tests have failed
         sys.exit(1)
