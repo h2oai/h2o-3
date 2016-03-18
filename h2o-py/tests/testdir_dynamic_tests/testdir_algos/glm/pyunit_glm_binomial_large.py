@@ -374,11 +374,15 @@ class TestGLMBinomial:
                 pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
 
             if self.test_failed_array[4]:
+                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
                 pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_duplicate, self.test_filename_duplicate)
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_duplicate,
                                         self.training_filename_duplicate)
 
             if self.test_failed_array[5]:
+                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
                 pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
 
@@ -573,19 +577,19 @@ class TestGLMBinomial:
                                                                                  "H2O lambda search accuracy from test"
                                                                                  " dataset: "],
                                                                              template_att_str=[
-                                                                                 "H2O no regularization intercept and"
+                                                                                 "H2O test1 template intercept and"
                                                                                  " weights: \n",
-                                                                                 "H2O no regularization logloss from "
+                                                                                 "H2O test1 template logloss from "
                                                                                  "training dataset: ",
-                                                                                 "H2O no regularization logloss from "
+                                                                                 "H2O test1 template logloss from "
                                                                                  "test dataset: ",
-                                                                                 "H2O no regularization confusion"
+                                                                                 "H2O test1 template confusion"
                                                                                  " matrix from training dataset: \n",
-                                                                                 "H2O no regularization confusion"
+                                                                                 "H2O test1 template confusion"
                                                                                  " matrix from test dataset: \n",
-                                                                                 "H2O no regularization accuracy from "
+                                                                                 "H2O test1 template accuracy from "
                                                                                  "training dataset: ",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " test dataset: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not equal!",
@@ -695,7 +699,7 @@ class TestGLMBinomial:
                                                                                  "\nComparing accuracy from test "
                                                                                  " sdataset ...."],
                                                                              h2o_att_str=[
-                                                                                 "H2O lambda search intercept and "
+                                                                                 "H2O grid search intercept and "
                                                                                  "weights: \n",
                                                                                  "H2O grid search logloss from training"
                                                                                  " dataset: ",
@@ -710,19 +714,19 @@ class TestGLMBinomial:
                                                                                  "H2O grid search accuracy from test "
                                                                                  "dataset: "],
                                                                              template_att_str=[
-                                                                                 "H2O no regularization intercept and"
+                                                                                 "H2O test1 template intercept and"
                                                                                  " weights: \n",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " training dataset: ",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " test dataset: ",
-                                                                                 "H2O no regularization confusion"
+                                                                                 "H2O test1 template confusion"
                                                                                  " matrix from training dataset: \n",
-                                                                                 "H2O no regularization confusion"
+                                                                                 "H2O test1 template confusion"
                                                                                  " matrix from test dataset: \n",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " training dataset: ",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " test dataset: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not equal!",
@@ -815,34 +819,38 @@ class TestGLMBinomial:
                                                                                  "\nComparing accuracy from test"
                                                                                  " dataset ...."],
                                                                              h2o_att_str=[
-                                                                                 "H2O lambda search intercept and"
-                                                                                 " weights: \n",
-                                                                                 "H2O grid search logloss from training"
-                                                                                 " dataset: ",
-                                                                                 "H2O grid search logloss from test"
-                                                                                 " dataset",
-                                                                                 "H2O grid search confusion matrix from"
-                                                                                 " training dataset: \n",
-                                                                                 "H2O grid search confusion matrix from"
+                                                                                 "H2O remove_collinear_columns "
+                                                                                 "intercept and weights: \n",
+                                                                                 "H2O remove_collinear_columns"
+                                                                                 " logloss from training dataset: ",
+                                                                                 "H2O remove_collinear_columns"
+                                                                                 " logloss from test dataset",
+                                                                                 "H2O remove_collinear_columns"
+                                                                                 " confusion matrix from "
+                                                                                 "training dataset: \n",
+                                                                                 "H2O remove_collinear_columns"
+                                                                                 " confusion matrix from"
                                                                                  " test dataset: \n",
-                                                                                 "H2O grid search accuracy from"
+                                                                                 "H2O remove_collinear_columns"
+                                                                                 " accuracy from"
                                                                                  " training dataset: ",
-                                                                                 "H2O grid search accuracy from test"
+                                                                                 "H2O remove_collinear_columns"
+                                                                                 " accuracy from test"
                                                                                  " dataset: "],
                                                                              template_att_str=[
-                                                                                 "H2O no regularization intercept and"
+                                                                                 "H2O test1 template intercept and"
                                                                                  " weights: \n",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " training dataset: ",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " test dataset: ",
-                                                                                 "H2O no regularization confusion"
+                                                                                 "H2O test1 template confusion"
                                                                                  " matrix from training dataset: \n",
-                                                                                 "H2O no regularization confusion"
+                                                                                 "H2O test1 template confusion"
                                                                                  " matrix from test dataset: \n",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " training dataset: ",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " test dataset: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not equal!",
