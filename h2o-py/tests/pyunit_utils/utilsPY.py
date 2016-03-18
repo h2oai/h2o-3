@@ -11,6 +11,7 @@ import random
 import re
 import subprocess
 from subprocess import STDOUT,PIPE
+from h2o.utils.shared_utils import temp_ctr
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
