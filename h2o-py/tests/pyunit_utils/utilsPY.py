@@ -1396,8 +1396,9 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
 
             coeffs = np.zeros((num_class,num_feature), dtype=np.float)
 
+            end_index = int(num_class+1)
             for col_index in range(len(coeff_pvalues)):
-                coeffs[:, col_index] = coeff_pvalues[col_index][1:num_class+1]
+                coeffs[:, col_index] = coeff_pvalues[col_index][1:end_index]
 
             return coeffs
     elif what_param == 'best_lambda':
