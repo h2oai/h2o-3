@@ -5,11 +5,10 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.rapids.ASTKFold;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MRUtils;
-import water.util.VecUtils;
+import water.util.*;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -440,6 +439,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
+
+    mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(mainModel._output._cross_validation_models);
 
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
@@ -987,5 +988,98 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
+  private TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels) {
+    if (cvmodels == null || cvmodels.length == 0) return null;
+    int N=cvmodels.length;
+    int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
+    String[] colTypes = new String[N+extra_length];
+    Arrays.fill(colTypes, "string");
+    String[] colFormats = new String[N+extra_length];
+    Arrays.fill(colFormats, "%s");
+    String[] colNames = new String[N+extra_length];
+    colNames[0] = "mean";
+    colNames[1] = "sd";
+    for (int i=0;i<N;++i)
+    colNames[i+extra_length] = "cv_" + (i+1) + "_valid";
+    Set<String> excluded = new HashSet<>();
+    excluded.add("total_rows");
+    excluded.add("makeSchema");
+    List<Method> methods = new ArrayList<>();
+    {
+      Model m = DKV.getGet(cvmodels[0]);
+      ModelMetrics mm = m._output._validation_metrics;
+      ConfusionMatrix cm = mm.cm();
+      if (mm!=null) {
+        for (Method meth : mm.getClass().getMethods()) {
+          if (excluded.contains(meth.getName())) continue;
+          try {
+            double c = (double) meth.invoke(mm);
+            methods.add(meth);
+          } catch (Exception e) {}
+        }
+      }
+      if (cm!=null) {
+        for (Method meth : cm.getClass().getMethods()) {
+          if (excluded.contains(meth.getName())) continue;
+          try {
+            double c = (double) meth.invoke(cm);
+            methods.add(meth);
+          } catch (Exception e) {}
+        }
+      }
+    }
+
+    // make unique, and sort alphabetically
+    Set<String> rowNames=new TreeSet<>();
+    for (Method m : methods) rowNames.add(m.getName());
+    List<Method> meths = new ArrayList<>();
+    OUTER:
+    for (String n : rowNames)
+      for (Method m : methods)
+        if (m.getName().equals(n)) { //find the first method that has that name
+          meths.add(m);
+          continue OUTER;
+        }
+
+    int numMetrics = rowNames.size();
+
+    TwoDimTable table = new TwoDimTable("Cross-Validation Metrics Summary",
+            null,
+            rowNames.toArray(new String[0]), colNames, colTypes, colFormats, "");
+
+
+    MathUtils.BasicStats stats = new MathUtils.BasicStats(numMetrics);
+    double[][] vals = new double[N][numMetrics];
+    int i = 0;
+    for (Key<Model> km : cvmodels) {
+      Model m = DKV.getGet(km);
+      if (m==null) continue;
+      ModelMetrics mm = m._output._validation_metrics;
+      int j=0;
+      for (Method meth : meths) {
+        try {
+          double val = (double) meth.invoke(mm);
+          vals[i][j] = val;
+          table.set(j++, i+extra_length, (float)val);
+        } catch (Throwable e) { }
+        try {
+          double val = (double) meth.invoke(mm.cm());
+          vals[i][j] = val;
+          table.set(j++, i+extra_length, (float)val);
+        } catch (Throwable e) { }
+      }
+      i++;
+    }
+
+    for (i=0;i<N;++i)
+      stats.add(vals[i],1);
+    for (i=0;i<numMetrics;++i) {
+      table.set(i, 0, (float)stats.mean()[i]);
+      table.set(i, 1, (float)stats.sigma()[i]);
+    }
+
+    Log.info(table);
+    return table;
+  }
 
 }

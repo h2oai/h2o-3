@@ -350,11 +350,15 @@ class TestGLMGaussian:
                 pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
 
             if self.test_failed_array[4]:
+                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
                 pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_duplicate, self.test_filename_duplicate)
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_duplicate,
                                         self.training_filename_duplicate)
 
             if self.test_failed_array[5]:
+                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
                 pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
 
@@ -468,16 +472,18 @@ class TestGLMGaussian:
                                                                  self.test1_mse_test,
                                                                  "Comparing intercept and weights ....",
                                                                  "H2O lambda search intercept and weights: ",
-                                                                 "h2o test1 intercept and weights: ",
+                                                                 "H2O test1 template intercept and weights: ",
                                                                  "Intercept and weights are not equal!",
                                                                  "Intercept and weights are close enough!", "", "", "",
                                                                  "", "", "Comparing training MSEs ....",
                                                                  "H2O lambda search training MSE: ",
-                                                                 "Test1 training MSE: ", "Training MSEs are not equal!",
+                                                                 "H2O Test1 template training MSE: ",
+                                                                 "Training MSEs are not equal!",
                                                                  "Training MSEs are close enough!",
                                                                  "Comparing test MSEs ....",
                                                                  "H2O lambda search test MSE: ",
-                                                                 "Test1 test MSE: ", "Test MSEs are not equal!",
+                                                                 "H2O Test1 template test MSE: ",
+                                                                 "Test MSEs are not equal!",
                                                                  "Test MSEs are close enough!", self.test_failed,
                                                                  self.ignored_eps, self.allowed_diff, self.noise_var,
                                                                  True)
@@ -543,16 +549,19 @@ class TestGLMGaussian:
                                                                  self.test1_mse_train, self.test1_mse_test,
                                                                  "Comparing intercept and weights ....",
                                                                  "H2O best model from gridsearch intercept "
-                                                                 "and weights: ", "h2o test1 intercept and weights: ",
+                                                                 "and weights: ",
+                                                                 "H2O test1 template intercept and weights: ",
                                                                  "Intercept and weights are not equal!",
                                                                  "Intercept and weights are close enough!", "", "", "",
                                                                  "", "", "Comparing training MSEs ....",
                                                                  "H2O best model from gridsearch training MSE: ",
-                                                                 "Test1 training MSE: ", "Training MSEs are not equal!",
+                                                                 "H2O Test1 template training MSE: ",
+                                                                 "Training MSEs are not equal!",
                                                                  "Training MSEs are close enough!",
                                                                  "Comparing test MSEs ....",
                                                                  "H2O best model from gridsearch test MSE: ",
-                                                                 "Test1 test MSE: ", "Test MSEs are not equal!",
+                                                                 "H2O Test1 template test MSE: ",
+                                                                 "Test MSEs are not equal!",
                                                                  "Test MSEs are close enough!", self.test_failed,
                                                                  self.ignored_eps, self.allowed_diff,
                                                                  self.noise_var, False)
@@ -593,17 +602,20 @@ class TestGLMGaussian:
                                                                  False, False, self.test1_weight, None,
                                                                  self.test1_mse_train, self.test1_mse_test,
                                                                  "Comparing intercept and weights ....",
-                                                                 "H2O best model from gridsearch intercept and "
-                                                                 "weights: ", "h2o test1 intercept and weights: ",
+                                                                 "H2O remove_collinear_columns intercept and "
+                                                                 "weights: ",
+                                                                 "H2O test1 template intercept and weights: ",
                                                                  "Intercept and weights are not equal!",
                                                                  "Intercept and weights are close enough!", "", "", "",
                                                                  "", "", "Comparing training MSEs ....",
-                                                                 "H2O best model from gridsearch training MSE: ",
-                                                                 "Test1 training MSE: ", "Training MSEs are not equal!",
+                                                                 "H2O remove_collinear_columns training MSE: ",
+                                                                 "H2O Test1 template training MSE: ",
+                                                                 "Training MSEs are not equal!",
                                                                  "Training MSEs are close enough!",
                                                                  "Comparing test MSEs ....",
-                                                                 "H2O best model from gridsearch test MSE: ",
-                                                                 "Test1 test MSE: ", "Test MSEs are not equal!",
+                                                                 "H2O remove_collinear_columns test MSE: ",
+                                                                 "H2O Test1 template test MSE: ",
+                                                                 "Test MSEs are not equal!",
                                                                  "Test MSEs are close enough!", self.test_failed,
                                                                  self.ignored_eps, self.allowed_diff, self.noise_var,
                                                                  False)
@@ -647,18 +659,21 @@ class TestGLMGaussian:
                                                                  True, True, True, weight_theory, p_values_theory,
                                                                  mse_train_theory, mse_test_theory,
                                                                  "Comparing intercept and weights ....",
-                                                                 "H2O intercept and weights: ",
+                                                                 "H2O missing values intercept and weights: ",
                                                                  "Theoretical intercept and weights: ",
                                                                  "Intercept and weights are not equal!",
                                                                  "Intercept and weights are close enough!",
-                                                                 "Comparing p-values ....", "H2O p-values: ",
+                                                                 "Comparing p-values ....",
+                                                                 "H2O missing values p-values: ",
                                                                  "Theoretical p-values: ", "P-values are not equal!",
                                                                  "P-values are close enough!",
-                                                                 "Comparing training MSEs ....", "H2O training MSE: ",
+                                                                 "Comparing training MSEs ....",
+                                                                 "H2O missing values training MSE: ",
                                                                  "Theoretical training MSE: ",
                                                                  "Training MSEs are not equal!",
                                                                  "Training MSEs are close enough!",
-                                                                 "Comparing test MSEs ....", "H2O test MSE: ",
+                                                                 "Comparing test MSEs ....",
+                                                                 "H2O missing values test MSE: ",
                                                                  "Theoretical test MSE: ", "Test MSEs are not equal!",
                                                                  "Test MSEs are close enough!", self.test_failed,
                                                                  self.ignored_eps, self.allowed_diff, self.noise_var,
@@ -715,18 +730,24 @@ class TestGLMGaussian:
                                                                  True, False, False, weight_theory, p_values_theory,
                                                                  mse_train_theory, mse_test_theory,
                                                                  "Comparing intercept and weights with enum and "
-                                                                 "missing values....", "H2O intercept and weights: ",
+                                                                 "missing values....",
+                                                                 "H2O enum missing values no regularization "
+                                                                 "intercept and weights: ",
                                                                  "Theoretical intercept and weights: ",
                                                                  "Intercept and weights are not equal!",
                                                                  "Intercept and weights are close enough!",
-                                                                 "Comparing p-values ....", "H2O p-values: ",
+                                                                 "Comparing p-values ....",
+                                                                 "H2O enum missing values no regularization p-values: ",
                                                                  "Theoretical p-values: ", "P-values are not equal!",
                                                                  "P-values are close enough!",
-                                                                 "Comparing training MSEs ....", "H2O training MSE: ",
+                                                                 "Comparing training MSEs ....",
+                                                                 "H2O enum missing values no regularization "
+                                                                 "training MSE: ",
                                                                  "Theoretical training MSE: ",
                                                                  "Training MSEs are not equal!",
                                                                  "Training MSEs are close enough!",
-                                                                 "Comparing test MSEs ....", "H2O test MSE: ",
+                                                                 "Comparing test MSEs ....",
+                                                                 "H2O enum missing values no regularization test MSE: ",
                                                                  "Theoretical test MSE: ", "Test MSEs are not equal!",
                                                                  "Test MSEs are close enough!", self.test_failed,
                                                                  self.ignored_eps, self.allowed_diff, self.noise_var,
@@ -791,18 +812,24 @@ class TestGLMGaussian:
                                                                  None, mse_train_theory, mse_test_theory,
                                                                  "Comparing intercept and weights with categorical "
                                                                  "columns, missing values and lambda search....",
-                                                                 "H2O intercept and weights: ",
+                                                                 "H2O enum missing values and lambda search "
+                                                                 "intercept and weights: ",
                                                                  "Theoretical intercept and weights: ",
                                                                  "Intercept and weights are not equal!",
                                                                  "Intercept and weights are close enough!",
-                                                                 "Comparing p-values ....", "H2O p-values: ",
+                                                                 "Comparing p-values ....",
+                                                                 "H2O enum missing valuesand lambda search "
+                                                                 "p-values: ",
                                                                  "Theoretical p-values: ", "P-values are not equal!",
                                                                  "P-values are close enough!",
-                                                                 "Comparing training MSEs ....", "H2O training MSE: ",
+                                                                 "Comparing training MSEs ....",
+                                                                 "H2O enum missing values and lambda search "
+                                                                 "training MSE: ",
                                                                  "Theoretical training MSE: ",
                                                                  "Training MSEs are not equal!",
                                                                  "Training MSEs are close enough!",
-                                                                 "Comparing test MSEs ....", "H2O test MSE: ",
+                                                                 "Comparing test MSEs ....",
+                                                                 "H2O enum missing values and lambda search test MSE: ",
                                                                  "Theoretical test MSE: ", "Test MSEs are not equal!",
                                                                  "Test MSEs are close enough!", self.test_failed,
                                                                  self.ignored_eps, self.allowed_diff, self.noise_var,

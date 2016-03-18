@@ -376,11 +376,15 @@ class TestGLMMultinomial:
                 pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
 
             if self.test_failed_array[4]:
+                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
                 pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_duplicate, self.test_filename_duplicate)
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_duplicate,
                                         self.training_filename_duplicate)
 
             if self.test_failed_array[5]:
+                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
                 pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
                 pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
 
@@ -579,19 +583,19 @@ class TestGLMMultinomial:
                                                                                  "H2O lambda search accuracy from"
                                                                                  " test data set: "],
                                                                              template_att_str=[
-                                                                                 "H2O no regularization intercept "
+                                                                                 "H2O test1 template intercept "
                                                                                  "and weights: \n",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " training data set: ",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " test data set: ",
-                                                                                 "H2O no regularization confusion "
+                                                                                 "H2O test1 template confusion "
                                                                                  "matrix from training data set: \n",
                                                                                  "H2O no regularization confusion "
                                                                                  "matrix from test data set: \n",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " training data set: ",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " test data set: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not equal!",
@@ -702,7 +706,7 @@ class TestGLMMultinomial:
                                                                                  "\nComparing accuracy from test"
                                                                                  " data set ...."],
                                                                              h2o_att_str=[
-                                                                                 "H2O lambda search intercept and"
+                                                                                 "H2O grid search intercept and"
                                                                                  " weights: \n",
                                                                                  "H2O grid search logloss from "
                                                                                  "training data set: ",
@@ -717,19 +721,19 @@ class TestGLMMultinomial:
                                                                                  "H2O grid search accuracy from "
                                                                                  "test data set: "],
                                                                              template_att_str=[
-                                                                                 "H2O no regularization intercept "
+                                                                                 "H2O test1 template intercept "
                                                                                  "and weights: \n",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " training data set: ",
-                                                                                 "H2O no regularization logloss from"
+                                                                                 "H2O test1 template logloss from"
                                                                                  " test data set: ",
-                                                                                 "H2O no regularization confusion "
+                                                                                 "H2O test1 template confusion "
                                                                                  "matrix from training data set: \n",
-                                                                                 "H2O no regularization confusion "
+                                                                                 "H2O test1 template confusion "
                                                                                  "matrix from test data set: \n",
-                                                                                 "H2O no regularization accuracy "
+                                                                                 "H2O test1 template accuracy "
                                                                                  "from training data set: ",
-                                                                                 "H2O no regularization accuracy from"
+                                                                                 "H2O test1 template accuracy from"
                                                                                  " test data set: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not equal!",
@@ -983,27 +987,28 @@ class TestGLMMultinomial:
                                                                                  "regularization and missing values "
                                                                                  "accuracy from test data set: "],
                                                                              template_att_str=[
-                                                                                 "Sklearn missing values intercept "
-                                                                                 "and weights: \n",
-                                                                                 "Sklearn with enum/real values, no "
-                                                                                 "regularization and missing values "
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values"
+                                                                                 " intercept and weights: \n",
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values "
                                                                                  "logloss from training data set: ",
-                                                                                 "Sklearn with enum/real values, no "
-                                                                                 "regularization and missing values "
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values "
                                                                                  "logloss from test data set: ",
-                                                                                 "Sklearn with enum/real values, no "
-                                                                                 "regularization and missing values "
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values "
                                                                                  "confusion matrix from training data"
                                                                                  "set: \n",
-                                                                                 "Sklearn with enum/real values, no "
-                                                                                 "regularization and missing values "
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values "
                                                                                  "confusion matrix from test data"
                                                                                  "set: \n",
-                                                                                 "Sklearn with enum/real values, no "
-                                                                                 "regularization and missing values "
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values "
                                                                                  "accuracy from training data set: ",
-                                                                                 "Sklearn with enum/real values, no "
-                                                                                 "regularization and missing values "
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "and missing values "
                                                                                  "accuracy from test data set: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not equal!",
@@ -1146,29 +1151,29 @@ class TestGLMMultinomial:
                                                                                  " accuracy from test data set: "],
                                                                              template_att_str=[
                                                                                  "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 " missing values"
                                                                                  " intercept and weights: \n",
                                                                                  "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 " missing values"
                                                                                  " logloss from training "
                                                                                  "data set: ",
-                                                                                 "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values"
                                                                                  " logloss from test data set: ",
-                                                                                 "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values"
                                                                                  " confusion matrix from "
                                                                                  "training data set: \n",
-                                                                                 "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values"
                                                                                  " confusion matrix from test"
                                                                                  " data set: \n",
-                                                                                 "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values"
                                                                                  " accuracy from training"
                                                                                  " data set: ",
-                                                                                 "Sklearn with enum/real values,"
-                                                                                 " lamba search and missing values"
+                                                                                 "Sklearn with enum/real values, "
+                                                                                 "missing values"
                                                                                  " accuracy from test data set: "],
                                                                              att_str_fail=[
                                                                                  "Intercept and weights are not"

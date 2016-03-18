@@ -48,6 +48,9 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Cross-validation model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   ModelMetricsBase cross_validation_metrics;
 
+  @API(help="Cross-validation model metrics summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
+  TwoDimTableBase cross_validation_metrics_summary;
+
   @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public String status;
 
