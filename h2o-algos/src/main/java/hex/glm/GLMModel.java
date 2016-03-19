@@ -36,13 +36,12 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHa
  */
 public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
-    super(selfKey, parms, null);
+    super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
     _ymu = ymu;
     _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
-    _output = job == null?new GLMOutput():new GLMOutput(job);
     _nullDOF = nobs - (parms._intercept?1:0);
   }
 
