@@ -3,9 +3,16 @@
 //
 description = "H2O Core"
 
+// Represents external dependencies which will be put into web root and accessible
+// via REST API
+configurations {
+    publishedJars
+}
+
 dependencies {
   // Dependency on shared model support
   compile project (':h2o-genmodel')
+  publishedJars project(':h2o-genmodel')
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"
   compile "gov.nist.math:jama:1.0.3"
@@ -107,6 +114,19 @@ task cleanBuildVersionJava(type: Delete) {
     delete buildVersionFile
 }
 
-clean.dependsOn cleanBuildVersionJava
+task copyGenModelJarToWebRoot(type: Copy) {
+  from {
+      configurations.publishedJars.filter { it.name.startsWith("h2o-genmodel") }
+  }
+  into "build/resources/main/www/${h2oRESTApiVersion}/"
+  rename { filename -> "h2o-genmodel.jar"}
+}
+
+task deleteGenModelJarFromWebRoot(type: Delete) {
+    delete "src/main/resources/www/${h2oRESTApiVersion}/h2o-genmodel.jar"
+}
+
+processResources.dependsOn copyGenModelJarToWebRoot
+clean.dependsOn cleanBuildVersionJava, deleteGenModelJarFromWebRoot
 
 apply from: '../gradle/javaIgnoreSymbolFile.gradle'
