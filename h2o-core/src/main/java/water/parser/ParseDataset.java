@@ -17,10 +17,7 @@ import water.util.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -273,9 +270,12 @@ public final class ParseDataset {
     if ( job.stop_requested() ) return;
 
     // Log any errors
-    if( mfpt._errors != null )
-      for( String err : mfpt._errors )
-        Log.warn(err);
+    if( mfpt._errors != null ) {
+      for (ParseWriter.ParseErr err : mfpt._errors) {
+        // todo: calculate global line num
+        Log.warn(err.toString());
+      }
+    }
     job.update(0,"Calculating data summary.");
     logParseResults(fr);
     // Release the frame for overwriting
@@ -595,15 +595,15 @@ public final class ParseDataset {
 
     // OUTPUT fields:
     FVecParseWriter[] _dout;
-    String[] _errors;
 
     int _reservedKeys;
+    private ParseWriter.ParseErr[] _errors = new ParseWriter.ParseErr[0];
+
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; _parseSetup = setup;
       _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type == ParserType.SVMLight ? 100000000 : setup._number_columns);
       _deleteOnDone = deleteOnDone;
       _jobKey = jobKey;
-
       // A mapping of Key+ByteVec to rolling total Chunk counts.
       _fileChunkOffsets = new int[fkeys.length];
       int len = 0;
@@ -733,6 +733,7 @@ public final class ParseDataset {
           } else {
             InputStream bvs = vec.openStream(_jobKey);
             _dout[_lo] = streamParse(bvs, localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
           }
           break;
@@ -744,6 +745,7 @@ public final class ParseDataset {
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup,makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            _errors = _dout[_lo].removeErrors();
             // check for more files in archive
             ZipEntry ze2 = zis.getNextEntry();
             if (ze2 != null && !ze.isDirectory()) {
@@ -757,6 +759,7 @@ public final class ParseDataset {
           InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
           _dout[_lo] = streamParse(new GZIPInputStream(bvs),localSetup,makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
+          _errors = _dout[_lo].removeErrors();
           // set this node as the one which processed all the chunks
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
@@ -787,7 +790,13 @@ public final class ParseDataset {
           else assert mfpt._chunk2ParseNodeMap[i] == -1 : Arrays.toString(_chunk2ParseNodeMap) + " :: " + Arrays.toString(mfpt._chunk2ParseNodeMap);
         }
       }
-      _errors = ArrayUtils.append(_errors,mfpt._errors);
+      if(_errors == null)
+        _errors = mfpt._errors;
+      else if(_errors.length < 20) {
+        _errors = ArrayUtils.append(_errors, mfpt._errors);
+        if(_errors.length > 20)
+          _errors = Arrays.copyOf(_errors,20);
+      }
       Log.trace("Finished a reduce stage of a file parse.");
     }
 
@@ -867,8 +876,10 @@ public final class ParseDataset {
         }
         p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);
+        if(_dout.hasErrors())
+          for(ParseWriter.ParseErr err:_dout._errs)
+            err._file = _srckey.toString();
         Job.update(in._len, _jobKey); // Record bytes parsed
-
         // remove parsed data right away
         freeMem(in);
       }
@@ -893,11 +904,24 @@ public final class ParseDataset {
           }
         }
       }
-      @Override public void reduce(DistributedParse dp) { _dout.reduce(dp._dout); }
+      @Override public void reduce(DistributedParse dp) {
+        _dout.reduce(dp._dout);
+
+      }
 
       @Override public void postGlobal() {
         super.postGlobal();
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
+        if(_dout.hasErrors()) {
+          ParseWriter.ParseErr [] errs = _dout.removeErrors();
+          Arrays.sort(errs, new Comparator<ParseWriter.ParseErr>() {
+            @Override
+            public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
+              return (int)(o1._byteOffset - o2._byteOffset);
+            }
+          });
+          _outerMFPT._errors = errs;
+        }
         _dout = null;           // Reclaim GC eagerly
         // For Big Data, must delete data as eagerly as possible.
         Value val = DKV.get(_srckey);
@@ -1011,16 +1035,24 @@ public final class ParseDataset {
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());
   }
-}
+  public static class H2OParseException extends RuntimeException {
+    ParseWriter.ParseErr _err = new ParseWriter.ParseErr();
+    public H2OParseException(String msg){super(msg);}
+    public H2OParseException(String msg, Throwable cause){super(msg,cause);}
+    public H2OParseException(Throwable cause){this(cause,new ParseWriter.ParseErr());}
+    public H2OParseException(Throwable cause, ParseWriter.ParseErr err){
+      super(cause);
+      _err = err;
+    }
+    public String toString(){ return "ParseException at " + _err.toString() + (getCause() == null?"":", " + getCause().toString());}
 
-class H2OParseException extends RuntimeException {
-  H2OParseException( String msg ) { super(msg); }
-  H2OParseException( String msg, Throwable cause ) { super(msg,cause); }
-
-  // Same identical exception, same stack trace, just a new 'msg'
-  H2OParseException resetMsg(String msg) {
-    H2OParseException pe1 = new H2OParseException(msg,getCause());
-    pe1.setStackTrace(getStackTrace());
-    return pe1;
+    public H2OParseException resetMsg(String msg) {
+      H2OParseException pe1 = new H2OParseException(msg,getCause());
+      pe1.setStackTrace(getStackTrace());
+      return pe1;
+    }
   }
 }
+
+
+

@@ -2,9 +2,8 @@ package water.parser;
 
 import water.Iced;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.IcedHashMap;
-
-import java.util.ArrayList;
 
 /** Class implementing ParseWriter, on behalf ParseSetup
  * to examine the contents of a file for guess the column types.
@@ -24,7 +23,8 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   int [] _nUUID;
   int [] _nzeros;
   int [] _nempty;
-  transient ArrayList<String> _errors;
+
+  protected ParseErr [] _errs;
 
   protected PreviewParseWriter() {}
   protected PreviewParseWriter(int ncols) { setColumnCount(ncols); }
@@ -120,15 +120,9 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   }
 
   @Override public void rollbackLine() {--_nlines;}
-  @Override public void invalidLine(String err) {
-    ++_invalidLines;
-    if( _errors == null ) _errors = new ArrayList<>();
-    if( _errors.size() < 10 )
-      _errors.add("Error at line: " + _nlines + ", reason: " + err);
-  }
+
   @Override public void setIsAllASCII(int colIdx, boolean b) {}
 
-  String[] errors() { return _errors == null ? null : _errors.toArray(new String[_errors.size()]); }
 
   public byte[] guessTypes() {
     byte[] types = new byte[_ncols];
@@ -243,7 +237,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
     else {
       //sanity checks
       if (prevA._ncols != prevB._ncols)
-        throw new H2OParseException("Files conflict in number of columns. "
+        throw new ParseDataset.H2OParseException("Files conflict in number of columns. "
                 + prevA._ncols + " vs. " + prevB._ncols + ".");
       prevA._nlines += prevB._nlines;
       prevA._invalidLines += prevB._invalidLines;
@@ -264,4 +258,25 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
     }
     return prevA;
   }
+  @Override
+  public void invalidLine(ParseErr err) {
+    addError(err);
+    ++_invalidLines;
+  }
+
+  @Override
+  public void addError(ParseErr err) {
+    if(_errs == null) _errs = new ParseErr[]{err};
+    else if(_errs.length < 20)
+      _errs = ArrayUtils.append(_errs,err);
+  }
+
+  @Override
+  public boolean hasErrors() {return _errs != null && _errs.length > 0;}
+
+  @Override
+  public ParseErr[] removeErrors() {return _errs;}
+
+  @Override
+  public long lineNum() {return _nlines;}
 }

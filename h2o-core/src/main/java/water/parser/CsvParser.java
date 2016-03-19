@@ -1,6 +1,7 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.http.ParseException;
 import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
@@ -62,7 +63,7 @@ class CsvParser extends Parser {
 //          System.out.print(String.format("%c",bits[offset]));
           ++offset;
         }
-        if    ((offset+1 < bits.length) && (bits[offset] == CHAR_CR) && (bits[offset+1] == CHAR_LF)) ++offset;
+        if ((offset + 1 < bits.length) && (bits[offset] == CHAR_CR) && (bits[offset + 1] == CHAR_LF)) ++offset;
         ++offset;
 //        System.out.println();
         if (offset >= bits.length)
@@ -151,7 +152,8 @@ MAIN_LOOP:
         case EOL:
           if(quotes != 0){
             //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
-            dout.invalidLine("Unmatched quote char " + ((char)quotes));
+            String err = "Unmatched quote char " + ((char) quotes);
+            dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getChunkDataStart(cidx)));
             colIdx = 0;
             quotes = 0;
           }else if (colIdx != 0) {
@@ -624,7 +626,7 @@ MAIN_LOOP:
 
     String[] lines = getFirstLines(bits);
     if(lines.length==0 )
-      throw new H2OParseException("No data!");
+      throw new ParseDataset.H2OParseException("No data!");
 
     // Guess the separator, columns, & header
     String[] labels;
@@ -651,7 +653,7 @@ MAIN_LOOP:
             }
           }
           //FIXME should set warning message and let fall through
-          return new ParseSetup(ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, new ParseWriter.ParseErr[0],FileVec.DFLT_CHUNK_SIZE);
         }
       }
       data[0] = determineTokens(lines[0], sep, singleQuotes);
@@ -698,11 +700,11 @@ MAIN_LOOP:
       // See if compatible headers
       if( columnNames != null && labels != null ) {
         if( labels.length != columnNames.length )
-          throw new H2OParseException("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
+          throw new ParseDataset.H2OParseException("Already have "+columnNames.length+" column labels, but found "+labels.length+" in this file");
         else {
           for( int i = 0; i < labels.length; ++i )
             if( !labels[i].equalsIgnoreCase(columnNames[i]) ) {
-              throw new H2OParseException("Column "+(i+1)+" label '"+labels[i]+"' does not match '"+columnNames[i]+"'");
+              throw new ParseDataset.H2OParseException("Column "+(i+1)+" label '"+labels[i]+"' does not match '"+columnNames[i]+"'");
             }
           labels = columnNames; // Keep prior case & count in any case
         }
@@ -720,6 +722,7 @@ MAIN_LOOP:
       try {
         p.streamParse(is, dout);
         resSetup._column_previews = dout;
+        resSetup._errs = dout._errs;
       } catch (Throwable e) {
         throw new RuntimeException(e);
       }

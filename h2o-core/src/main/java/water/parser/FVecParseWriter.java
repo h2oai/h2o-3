@@ -5,6 +5,9 @@ import water.Iced;
 import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 /** Parsed data output specialized for fluid vecs.
  * @author tomasnykodym
@@ -19,7 +22,9 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   int _col = -1;
   final int _cidx;
   final int _chunkSize;
+  ParseErr [] _errs = new ParseErr[0];
   private final Vec.VectorGroup _vg;
+  private long _errCnt;
 
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
     _ctypes = ctypes;           // Required not-null
@@ -43,6 +48,12 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
       }
       for(int i = 0; i < dout._vecs.length; ++i)
         _vecs[i].reduce(dout._vecs[i]);
+    }
+    _errCnt += ((FVecParseWriter) sdout)._errCnt;
+    if(_errs.length < 20 && ((FVecParseWriter) sdout)._errs.length > 0) {
+      _errs = ArrayUtils.append(_errs, ((FVecParseWriter) sdout)._errs);
+      if(_errs.length > 20)
+        _errs = Arrays.copyOf(_errs,20);
     }
     return this;
   }
@@ -139,6 +150,40 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   }
   @Override public void setColumnNames(String [] names){}
   @Override public final void rollbackLine() {}
-  @Override public void invalidLine(String err) { newLine(); }
+
+  @Override public void invalidLine(ParseErr err) {
+    addErr(err);
+    newLine();
+  }
+
+  @Override
+  public void addError(ParseErr err) {
+    if(_errs == null)
+      _errs = new ParseErr[]{err};
+    else  if(_errs.length < 20)
+      _errs = ArrayUtils.append(_errs,err);
+    _errCnt++;
+  }
+
   @Override public void setIsAllASCII(int colIdx, boolean b) {_nvs[colIdx]._isAllASCII = b;}
+
+  @Override
+  public boolean hasErrors() {
+    return _errs != null && _errs.length > 0;
+  }
+  @Override
+  public ParseErr[] removeErrors() {
+    ParseErr [] res = _errs;
+    _errs = null;
+    return res;
+  }
+
+  @Override
+  public long lineNum() {return _nLines;}
+
+  public void addErr(ParseErr err){
+    if(_errs.length < 20)
+      _errs = ArrayUtils.append(_errs,err);
+    ++_errCnt;
+  }
 }
