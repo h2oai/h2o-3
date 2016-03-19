@@ -527,7 +527,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     _parms  = parms ;  assert parms  != null;
     _output = output;  // Output won't be set if we're assert output != null;
-    _output.startClock();
+    if (_output!=null)
+      _output.startClock();
   }
 
   /**
