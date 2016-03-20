@@ -1946,7 +1946,7 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
     return hyper_params, true_gridable_parameters, true_gridable_types
 
 
-def extract_used_params(model_param_names, grid_model_params, family):
+def extract_used_params(model_param_names, grid_model_params, params_dict):
     """
     This function is used to build a dict out of parameters used by our gridsearch to build a H2O model given
     the dict structure that describes the parameters and their values used by gridsearch to build that
@@ -1955,7 +1955,8 @@ def extract_used_params(model_param_names, grid_model_params, family):
     :param model_param_names: list contains parameter names that we are interested in extracting
     :param grid_model_params: dict contains key as names of parameter and values as list of two values: default and
     actual.
-    :param family: distribution family, e.g. 'gaussian', 'binomial', ...
+    :param params_dict: dict containing extrac parameters to add to params_used like family, e.g. 'gaussian',
+    'binomial', ...
 
     :return: params_used: a dict structure containing only parameters that take on non-default values as
     name/value pairs
@@ -1968,8 +1969,9 @@ def extract_used_params(model_param_names, grid_model_params, family):
         if parameter_name in model_param_names:
             if not (grid_model_params[each_parameter]['default'] == grid_model_params[each_parameter]['actual']):
                 params_used[parameter_name] = grid_model_params[each_parameter]['actual']
-
-    params_used['family'] = family      # add distribution family to parameters used list
+    if params_dict:
+        for key, value in params_dict.items():
+            params_used[key] = value    # add distribution family to parameters used list
 
     # for GLM, change lambda to Lambda
     if 'lambda' in params_used.keys():

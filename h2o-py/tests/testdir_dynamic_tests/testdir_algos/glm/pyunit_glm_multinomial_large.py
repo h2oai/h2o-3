@@ -254,10 +254,6 @@ class TestGLMMultinomial:
         # self.class_number = 3
         # # end DEBUGGING
 
-        # set indices for response and predictor columns in data set for H2O GLM model to use
-        self.y_index = self.train_col_count
-        self.x_indices = list(range(self.train_col_count))
-
         # randomly set number of enum and real columns in the data set
         self.enum_col = random.randint(1, self.train_col_count-1)
 
@@ -314,15 +310,25 @@ class TestGLMMultinomial:
 
         # only preload data sets that will be used for multiple tests and change the response to enums
         self.training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file))
-        self.training_data[self.y_index] = self.training_data[self.y_index].asfactor()
+
+        # set indices for response and predictor columns in data set for H2O GLM model to use
+        self.y_index = self.training_data.ncol-1
+        self.x_indices = list(range(self.y_index))
+
+        self.training_data[self.y_index] = self.training_data[self.y_index].round().asfactor()
+
+        # check to make sure all response classes are represented, otherwise, quit
+        if self.training_data[self.y_index].nlevels()[0] < self.class_number:
+            print("Response classes are not represented in training dataset.")
+            sys.exit(0)
+
         self.valid_data = h2o.import_file(pyunit_utils.locate(self.validation_data_file))
-        self.valid_data[self.y_index] = self.valid_data[self.y_index].asfactor()
+        self.valid_data[self.y_index] = self.valid_data[self.y_index].round().asfactor()
         self.test_data = h2o.import_file(pyunit_utils.locate(self.test_data_file))
-        self.test_data[self.y_index] = self.test_data[self.y_index].asfactor()
+        self.test_data[self.y_index] = self.test_data[self.y_index].round().asfactor()
 
         # make a bigger training set for grid search by combining data from validation data set
         self.training_data_grid = self.training_data.rbind(self.valid_data)
-        self.training_data_grid[self.y_index] = self.training_data_grid[self.y_index].asfactor()
 
         # setup sklearn class weight of all ones.
         # Used only to make sure sklearn will know the correct number of classes
@@ -764,8 +770,8 @@ class TestGLMMultinomial:
         test_data = h2o.import_file(pyunit_utils.locate(self.test_data_file_nans))
 
         # change the response columns to be categorical
-        training_data[self.y_index] = training_data[self.y_index].asfactor()
-        test_data[self.y_index] = test_data[self.y_index].asfactor()
+        training_data[self.y_index] = training_data[self.y_index].round().asfactor()
+        test_data[self.y_index] = test_data[self.y_index].round().asfactor()
 
         # train H2O models with missing_values_handling="MeanImputation"
         model_h2o = H2OGeneralizedLinearEstimator(family=self.family, Lambda=0,
@@ -894,16 +900,22 @@ class TestGLMMultinomial:
 
         # change the categorical data using .asfactor()
         for ind in range(self.enum_col):
-            training_data[ind] = training_data[ind].asfactor()
-            test_data[ind] = test_data[ind].asfactor()
+            training_data[ind] = training_data[ind].round().asfactor()
+            test_data[ind] = test_data[ind].round().asfactor()
 
         num_col = training_data.ncol
         y_index = num_col-1
         x_indices = list(range(y_index))
 
         # change response variables to be categorical
-        training_data[y_index] = training_data[y_index].asfactor()
-        test_data[y_index] = test_data[y_index].asfactor()
+        training_data[y_index] = training_data[y_index].round().asfactor()
+
+        # check to make sure all response classes are represented, otherwise, quit
+        if training_data[y_index].nlevels()[0] < self.class_number:
+            print("Response classes are not represented in training dataset.")
+            sys.exit(0)
+
+        test_data[y_index] = test_data[y_index].round().asfactor()
 
         # generate H2O model
         model_h2o = H2OGeneralizedLinearEstimator(family=self.family, Lambda=0,
@@ -1053,18 +1065,24 @@ class TestGLMMultinomial:
 
         # change the categorical data using .asfactor()
         for ind in range(self.enum_col):
-            training_data[ind] = training_data[ind].asfactor()
-            validation_data[ind] = validation_data[ind].asfactor()
-            test_data[ind] = test_data[ind].asfactor()
+            training_data[ind] = training_data[ind].round().asfactor()
+            validation_data[ind] = validation_data[ind].round().asfactor()
+            test_data[ind] = test_data[ind].round().asfactor()
 
         num_col = training_data.ncol
         y_index = num_col-1
         x_indices = list(range(y_index))
 
         # change response column to be categorical
-        training_data[y_index] = training_data[y_index].asfactor()
-        validation_data[y_index] = validation_data[y_index].asfactor()
-        test_data[y_index] = test_data[y_index].asfactor()
+        training_data[y_index] = training_data[y_index].round().asfactor()
+
+        # check to make sure all response classes are represented, otherwise, quit
+        if training_data[y_index].nlevels()[0] < self.class_number:
+            print("Response classes are not represented in training dataset.")
+            sys.exit(0)
+
+        validation_data[y_index] = validation_data[y_index].round().asfactor()
+        test_data[y_index] = test_data[y_index].round().asfactor()
 
         # train H2O model
         model_h2o_0p5 = H2OGeneralizedLinearEstimator(family=self.family, lambda_search=True, alpha=0.5,

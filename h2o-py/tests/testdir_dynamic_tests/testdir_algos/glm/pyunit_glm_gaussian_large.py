@@ -254,10 +254,6 @@ class TestGLMGaussian:
         # self.train_row_count = 200
         # end DEBUGGING
 
-        # set indices for response and predictor columns in data set for H2O GLM model to use
-        self.y_index = self.train_col_count
-        self.x_indices = list(range(self.train_col_count))
-
         # randomly set number of enum and real columns in the data set, we will have at least one real column
         self.enum_col = random.randint(1, self.train_col_count-1)
 
@@ -325,6 +321,11 @@ class TestGLMGaussian:
 
         # only preload data sets that will be used for multiple tests
         self.training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file))
+
+        # set indices for response and predictor columns in data set for H2O GLM model to use
+        self.y_index = self.training_data.ncol-1
+        self.x_indices = list(range(self.y_index))
+
         self.valid_data = h2o.import_file(pyunit_utils.locate(self.validation_data_file))
         self.test_data = h2o.import_file(pyunit_utils.locate(self.test_data_file))
 
@@ -716,8 +717,8 @@ class TestGLMGaussian:
 
         # change the categorical data using .asfactor()
         for ind in range(self.enum_col):
-            training_data[ind] = training_data[ind].asfactor()
-            test_data[ind] = test_data[ind].asfactor()
+            training_data[ind] = training_data[ind].round().asfactor()
+            test_data[ind] = test_data[ind].round().asfactor()
 
         num_col = training_data.ncol
         y_index = num_col-1
@@ -795,9 +796,9 @@ class TestGLMGaussian:
 
         # change the categorical data using .asfactor()
         for ind in range(self.enum_col):
-            training_data[ind] = training_data[ind].asfactor()
-            validation_data[ind] = validation_data[ind].asfactor()
-            test_data[ind] = test_data[ind].asfactor()
+            training_data[ind] = training_data[ind].round().asfactor()
+            validation_data[ind] = validation_data[ind].round().asfactor()
+            test_data[ind] = test_data[ind].round().asfactor()
 
         num_col = training_data.ncol
         y_index = num_col-1
