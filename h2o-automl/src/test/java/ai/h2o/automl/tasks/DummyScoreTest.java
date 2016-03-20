@@ -27,7 +27,7 @@ public class DummyScoreTest extends TestUtil {
     Vec delVec=null;
     try {
       //Currently not in repo?
-      fr = parse_test_file(Key.make("c.hex"), "/0xdata/h2o-3/bigdata/laptop/covtype/covtype.data");
+      fr = parse_test_file(Key.make("c.hex"), "smalldata/covtype.data");
       double[][] dummies = DummyClassifier.getDummies(delVec = fr.vec(54).toCategoricalVec(), null, new String[]{"logloss", "mse"});
       System.out.println();
     } finally {
