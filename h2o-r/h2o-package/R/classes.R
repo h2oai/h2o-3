@@ -139,6 +139,8 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(model.parts$vm) ) print(model.parts$vm)
   cat("\n")
   if( !is.null(model.parts$xm) ) print(model.parts$xm)
+  cat("\n")
+  if( !is.null(model.parts$xms) ) print(model.parts$xms)
 })
 
 #'
@@ -164,6 +166,10 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(model.parts$tm) ) print(model.parts$tm)
   cat("\n")
   if( !is.null(model.parts$vm) ) print(model.parts$vm)
+  cat("\n")
+  if( !is.null(model.parts$xm) ) print(model.parts$xm)
+  cat("\n")
+  if( !is.null(model.parts$xms) ) print(model.parts$xms)
 
   # History
   cat("\n")
