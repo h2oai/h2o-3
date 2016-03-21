@@ -427,14 +427,16 @@ public final class ParseSetup extends Iced {
               + (char) sepA + "\" and the other uses \"" + (char) sepB + "\".");
     }
 
-    private static int unifyColumnCount(int cntA, int cntB) {
+    private int unifyColumnCount(int cntA, int cntB, ParseSetup mergedSetup, String fileA, String fileB) {
       if (cntA == cntB) return cntA;
       else if (cntA == 0) return cntB;
       else if (cntB == 0) return cntA;
       else { // files contain different numbers of columns
-        // TODO: Point out which file is problem
-        throw new ParseDataset.H2OParseException("Files conflict in number of columns. " + cntA
-                + " vs. " + cntB + ".");
+        ParseWriter.ParseErr err = new ParseWriter.ParseErr();
+        err._err = "Incompatible number of columns, " + cntA + " != " + cntB;
+        err._file = fileA + ", " + fileB;
+        mergedSetup._errs = ArrayUtils.append(mergedSetup._errs,err);
+        return Math.max(cntA,cntB);
       }
     }
 
