@@ -48,17 +48,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
   // expose simple metrics criteria for sorting
   public double auc() { return auc_obj()._auc; }
-//  public double err() { return cm().err(); }
-//  public double err_count() { return cm().err_count(); }
-//  public double accuracy() {  return cm().accuracy(); }
-//  public double specificity() { return cm().specificity(); }
-//  public double recall() { return cm().recall(); }
-//  public double precision() { return cm().precision(); }
-//  public double mcc() { return cm().mcc(); }
-//  public double max_per_class_error() { return cm().max_per_class_error(); }
-//  public double F1() { return cm().F1(); }
-//  public double F2() { return cm().F2(); }
-//  public double F0point5() { return cm().F0point5(); }
   public double lift_top_group() { return gainsLift().response_rates[0] / gainsLift().avg_response_rate; }
 
 
