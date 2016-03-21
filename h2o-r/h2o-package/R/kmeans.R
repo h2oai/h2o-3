@@ -30,7 +30,7 @@
 #'        is an initial center. For lists of vectors, each vector is an
 #'        initial center.
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo"

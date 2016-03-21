@@ -227,12 +227,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     throw new RuntimeException("Should Not Reach Here");
   }
 
-  // Utility to do bitset lookup
-  public static boolean bitSetContains(byte[] bits, int bitoff, int num ) {
-    if (Integer.MIN_VALUE == num) { //Missing value got cast'ed to Integer.MIN_VALUE via (int)-Float.MAX_VALUE in GenModel.*_fclean
-      num = 0; // all missing values are treated the same as the first enum level //FIXME
-    }
-    assert num >= 0;
+  // Utility to do bitset lookup from a POJO
+  public static boolean bitSetContains(byte[] bits, int bitoff, double dnum ) {
+    if (Double.isNaN(dnum)) return true; // we want NAs to go right (fail every test), so !bitSetContains must return false
+    int num = (int)dnum;
+    assert num >= 0 : "bitSet can only contain integer factor levels >= 0, but got " + num;
     num -= bitoff;
     return (num >= 0) && (num < (bits.length<<3)) &&
       (bits[num >> 3] & ((byte)1 << (num & 7))) != 0;
@@ -363,14 +362,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   // --------------------------------------------------------------------------
   // SharedTree utilities
-
-  // Tree scoring; NaNs always "go left": count as -Float.MAX_VALUE
-  public static double[] SharedTree_clean( double[] data ) {
-    double[] fs = new double[data.length];
-    for( int i=0; i<data.length; i++ )
-      fs[i] = Double.isNaN(data[i]) ? -Double.MAX_VALUE : data[i];
-    return fs;
-  }
 
   // Build a class distribution from a log scale.
   // Because we call Math.exp, we have to be numerically stable or else we get

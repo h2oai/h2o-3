@@ -178,7 +178,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         init(true);   // Initialize parameters
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
-        dinfo = new DataInfo(_train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+        dinfo = new DataInfo(_train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, _weights!=null, false, _fold!=null);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
@@ -252,9 +252,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       _dinfo = dinfo;
       _nrescat = nres;
       _domains = dinfo._adaptedFrame.domains();
-      _npreds = dinfo._adaptedFrame.numCols()-1;
-      assert _npreds == dinfo._nums + dinfo._cats;
-      assert _nrescat == _domains[_npreds].length;       // Response in last vec of adapted frame
+      _npreds = dinfo._cats + dinfo._nums;
     }
 
     @Override public void map(Chunk[] chks) {
@@ -276,9 +274,11 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         }
       }
 
-      Chunk res = chks[_npreds];    // Response at the end
+      Chunk res = chks[_dinfo.responseChunkId(0)]; //response
       OUTER:
       for(int row = 0; row < chks[0]._len; row++) {
+        if (_dinfo._weights && chks[_dinfo.weightChunkId()].atd(row)==0) continue OUTER;
+        if (_dinfo._weights && chks[_dinfo.weightChunkId()].atd(row)!=1) throw new IllegalArgumentException("Weights must be either 0 or 1 for Naive Bayes.");
         // Skip row if any entries in it are NA
         for( Chunk chk : chks ) {
           if(Double.isNaN(chk.atd(row))) continue OUTER;

@@ -99,6 +99,7 @@ public class XValPredictionsCheck extends TestUtil {
     m.delete();
     m.deleteCrossValidationModels();
     Key[] xvalKeys = m._output._cross_validation_predictions;
+    Key xvalKey = m._output._cross_validation_holdout_predictions_frame_id;
     final int[] id = new int[1];
     for(Key k: xvalKeys) {
       Frame preds = DKV.getGet(k);
@@ -120,5 +121,6 @@ public class XValPredictionsCheck extends TestUtil {
       id[0]++;
       preds.delete();
     }
+    xvalKey.remove();
   }
 }

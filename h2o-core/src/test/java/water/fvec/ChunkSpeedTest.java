@@ -25,7 +25,7 @@ public class ChunkSpeedTest extends TestUtil {
       }
     }
     for (int j = 0; j < cols; ++j) {
-      chunks[j] = (Chunk) new NewChunk(raw[j]).compress();
+      chunks[j] = new NewChunk(raw[j]).compress();
       Log.info("Column " + j + " compressed into: " + chunks[j].getClass().toString());
     }
     Log.info("COLS: " + cols);
@@ -33,23 +33,23 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("REPS: " + rep);
 
     int ll = 5;
-//    for (int i = 0; i < ll; ++i)
-//      raw();
-//    for (int i = 0; i < ll; ++i)
-//      chunks();
-//    for (int i = 0; i < ll; ++i)
-//      chunksInline();
+    for (int i = 0; i < ll; ++i)
+      raw();
+    for (int i = 0; i < ll; ++i)
+      chunks();
+    for (int i = 0; i < ll; ++i)
+      chunksInline();
 //    for (int i = 0; i < ll; ++i)
 //      mrtask(false);
-    for (int i = 0; i < ll; ++i)
-      rollups(false);
+//    for (int i = 0; i < ll; ++i)
+//      rollups(false);
 //    for (int i = 0; i < ll; ++i)
 //      bulk();
 //    Log.info("Now doing funny stuff.\n\n");
 //    for (int i = 0; i < ll; ++i)
 //      mrtask(true);
-    for (int i = 0; i < ll; ++i)
-      rollups(true);
+//    for (int i = 0; i < ll; ++i)
+//      rollups(true);
 //    for (int i = 0; i < ll; ++i)
 //      chunksInverted();
 //    for (int i = 0; i < ll; ++i)
@@ -58,10 +58,11 @@ public class ChunkSpeedTest extends TestUtil {
   }
 
   double get(int j, int i) {
-//        switch (j%1+1) { //just do 1 byte chunks
+//        switch (j%1+0) { //just do 1 byte chunks
+//        switch (j%1+1) { //just do 2 byte chunks
 //        switch (j % 2) { //just do 1/2 byte chunks
-    switch (j%3) { // do 3 chunk types
-//        switch (j%4) { // do 4 chunk types
+//    switch (j%3) { // do 3 chunk types
+        switch (j%4) { // do 4 chunk types
       case 0:
         return i % 200; //C1NChunk - 1 byte integer
       case 1:
@@ -277,7 +278,7 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for " + (parallel ? "PARALLEL":"SERIAL") + " MRTask: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
-    fr.remove();
+    fr.delete();
   }
 
   void rollups(boolean parallel)
