@@ -294,6 +294,11 @@ class TestGLMBinomial:
         print(dup_col_indices)
         print(dup_col_scale)
 
+        # print out duplication information for easy debugging
+        print("duplication column and duplication scales are: ")
+        print(dup_col_indices)
+        print(dup_col_scale)
+
         pyunit_utils.duplicate_scale_cols(dup_col_indices, dup_col_scale, self.training_data_file,
                                           self.training_data_file_duplicate)
         pyunit_utils.duplicate_scale_cols(dup_col_indices, dup_col_scale, self.test_data_file,
@@ -766,7 +771,7 @@ class TestGLMBinomial:
                                                                                  True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
-                                                                                 True, True, False, True, True,
+                                                                                 True, True, True, True, True,
                                                                                  True, False],
                                                                              failed_test_number=self.test_failed,
                                                                              ignored_eps=self.ignored_eps,
@@ -889,7 +894,7 @@ class TestGLMBinomial:
                                                                              can_be_better_than_template=[
                                                                                  True, True, True, True, True,
                                                                                  True, True],
-                                                                             just_print=[True, True, False, True, True,
+                                                                             just_print=[True, True, True, True, True,
                                                                                          True, False],
                                                                              failed_test_number=self.test_failed,
                                                                              ignored_eps=self.ignored_eps,
