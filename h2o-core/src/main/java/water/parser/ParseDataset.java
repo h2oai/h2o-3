@@ -644,9 +644,13 @@ public final class ParseDataset {
       // wide SVMLight) we need to get more here.
       if( nCols > _reservedKeys ) throw H2O.unimpl();
       AppendableVec[] res = new AppendableVec[nCols];
+      if(_parseSetup._parse_type == ParserType.SVMLight) {
+        _parseSetup._number_columns = res.length;
+        _parseSetup._column_types = new byte[res.length];
+        Arrays.fill(_parseSetup._column_types,Vec.T_NUM);
+      }
       for(int i = 0; i < res.length; ++i)
         res[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), espc, _parseSetup._column_types[i], 0);
-
       // Load the global ESPC from the file-local ESPCs
       for( FVecParseWriter fvpw : _dout ) {
         AppendableVec[] avs = fvpw._vecs;
