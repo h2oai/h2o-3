@@ -852,6 +852,14 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
 
+
+    // TODO: improvement to shrink _normMul and _normSub for interactions
+//    public double getMul(int expandedIdx, int colIdx) {
+//    }
+//
+//    public double getSub(int i) {
+//    }
+
     public void addNum(int id, double val) {
       if(numIds.length == nNums) {
         int newSz = Math.max(4,numIds.length + (numIds.length >> 1));
@@ -1144,7 +1152,7 @@ public class DataInfo extends Keyed<DataInfo> {
           if( row.bad ) continue;
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
-          row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));  // FIXME: if this produces a "true" NA then
+          row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));  // FIXME: if this produces a "true" NA then should sub with mean? with?
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
