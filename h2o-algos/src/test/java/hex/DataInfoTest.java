@@ -178,8 +178,7 @@ public class DataInfoTest extends TestUtil {
               false,       // fold
               ips          // interactions
       );
-
-      checker(di);
+      checker(di,false);
     } finally {
       fr.delete();
       if( di!=null ) {
@@ -210,8 +209,7 @@ public class DataInfoTest extends TestUtil {
               false,       // fold
               ips          // interactions
       );
-
-      checker(di);
+      checker(di,true);
     } finally {
       fr.delete();
       if( di!=null ) {
@@ -242,7 +240,7 @@ public class DataInfoTest extends TestUtil {
               false,       // fold
               ips          // interactions
       );
-    checker(di);
+      checker(di,true);
     } finally {
       fr.delete();
     }
@@ -268,7 +266,7 @@ public class DataInfoTest extends TestUtil {
               false,       // fold
               ips          // interactions
       );
-      checker(di);
+      checker(di,true);
     } finally {
       fr.delete();
       if( di!=null ) {
@@ -292,7 +290,7 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
-  private static void checker(final DataInfo di) {
+  private static void checker(final DataInfo di, final boolean standardize) {
     new MRTask() {
       @Override public void map(Chunk[] cs) {
         DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
@@ -302,7 +300,7 @@ public class DataInfoTest extends TestUtil {
           for (int j = 0; j < di.fullN(); ++j) {
             double sparseDoubleScaled = sparseRows[i].get(j);  // extracting sparse rows does not do the full scaling!!
             if( j>=di.numStart() ) { // finish scaling the sparse value
-              sparseDoubleScaled -= di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()];
+              sparseDoubleScaled -= (standardize?(di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]):0);
             }
             if( r.bad || sparseRows[i].bad ) {
               if( sparseRows[i].bad && r.bad ) continue;  // both bad OK
@@ -316,7 +314,5 @@ public class DataInfoTest extends TestUtil {
         }
       }
     }.doAll(di._adaptedFrame);
-    di.dropInteractions();
-    di.remove();
   }
 }
