@@ -271,10 +271,27 @@ public final class ParseDataset {
 
     // Log any errors
     if( mfpt._errors != null ) {
-      for (ParseWriter.ParseErr err : mfpt._errors) {
-        // todo: calculate global line num
-        Log.warn(err.toString());
+      String [] warns = new String[mfpt._errors.length];
+      // compute global line numbers for warnings/errs
+      HashMap<String, Integer> fileChunkOffsets = new HashMap<>();
+      for(int i = 0; i < mfpt._fileChunkOffsets.length; ++i)
+        fileChunkOffsets.put(fkeys[i].toString(),mfpt._fileChunkOffsets[i]);
+      long [] espc = fr.anyVec().espc();
+      for (int i = 0; i < mfpt._errors.length; ++i) {
+        int espcOff = fileChunkOffsets.get(mfpt._errors[i]._file);
+        mfpt._errors[i]._gLineNum =  espc[espcOff + mfpt._errors[i]._cidx] + mfpt._errors[i]._lineNum;
       }
+      Arrays.sort(mfpt._errors, new Comparator<ParseWriter.ParseErr>() {
+        @Override
+        public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
+          long res = o1._gLineNum - o2._gLineNum;
+          if(res == 0) return 0;
+          return  (int)res < 0?-1:1;
+        }
+      });
+      for (int i = 0; i < mfpt._errors.length; ++i)
+        Log.warn(warns[i] = mfpt._errors[i].toString());
+      job.setWarnings(warns);
     }
     job.update(0,"Calculating data summary.");
     logParseResults(fr);
