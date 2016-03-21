@@ -3,7 +3,7 @@ package hex.tree;
 import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.JCodeSB;
+import water.codegen.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;

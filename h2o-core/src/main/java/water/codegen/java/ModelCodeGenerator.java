@@ -7,6 +7,7 @@ import hex.ModelMetrics;
 import hex.genmodel.GenModel;
 import water.Key;
 
+import static water.codegen.java.JCodeGenUtil.ctor;
 import static water.codegen.java.JCodeGenUtil.field;
 import static water.codegen.java.JCodeGenUtil.larray;
 import static water.codegen.java.JCodeGenUtil.method;
@@ -33,7 +34,7 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
     this.model = model;
   }
 
-  protected S self() {
+  final protected S self() {
     return (S) this;
   }
 
@@ -58,10 +59,16 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
   /** Create initial class generator for model. */
   protected ClassCodeGenerator createModelClass(CompilationUnitGenerator cucg) {
     // Build a model class generator by composing small pieces
-    return new ClassCodeGenerator(getModelName())
+    final String modelName = getModelName();
+    return new ClassCodeGenerator(modelName)
         .withModifiers(PUBLIC)
         .withExtend(GenModel.class)
         .withAnnotation(s("@ModelPojo(name=\"").p(getModelName()).p("\", algorithm=\"").p(getAlgoName()).p("\")"))
+        .withCtor(
+            ctor(modelName) // FIXME: this is repeated and can be derived from context
+              .withModifiers(PUBLIC) // FIXME: Adopt Scala strategy - everything is public if not denied
+              .withBody(s("super(NAMES, DOMAINS);"))
+        )
         .withMethod(
             method("getModelCategory")
               .withModifiers(PUBLIC)
@@ -73,6 +80,11 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
               .withModifiers(PUBLIC)
               .withReturnType(String.class)
               .withBody(s("return Long.toString(").pj(model.checksum()).p(");"))
+        )
+        .withMethod( // FIXME: need to be defined by actual model generator
+            method("score0")
+              .withOverride(true)
+              .withBody(s("return pred"))
         )
         .withField( // FIXME: be more domain-specific, derive field type for value passed.
             field("int", "NCLASSES")
@@ -107,7 +119,8 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
             field("double[]", "MODEL_CLASS_DISTRIB")
                 .withComment("Class distribution used for model building")
                 .withModifiers(PUBLIC | STATIC | FINAL)
-                .withValue(s().pj(model._output._modelClassDist)));
+                .withValue(s().pj(model._output._modelClassDist))
+        );
   }
 
   public final S build() {
