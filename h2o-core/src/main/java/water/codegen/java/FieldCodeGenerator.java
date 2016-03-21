@@ -11,7 +11,7 @@ import water.codegen.SimpleCodeGenerator;
 import static water.codegen.java.JCodeGenUtil.s;
 
 /**
- * Created by michal on 12/11/15.
+ * Generator for a field defined by type name and initialized value.
  */
 public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> {
 

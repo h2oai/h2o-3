@@ -14,9 +14,11 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import hex.Model;
+import water.H2O;
 import water.Key;
 import water.codegen.SBPrintStream;
 import water.util.FileUtils;
+import water.util.Log;
 
 import static java.lang.reflect.Modifier.PUBLIC;
 import static java.lang.reflect.Modifier.STATIC;
@@ -114,7 +116,8 @@ public class CodeGeneratorTest {
       ZipOutputDriver.codegen(
           model,
           fos,
-          new ZipInputStream(this.getClass().getResourceAsStream("/model-pojo/model-pojo.zip")));
+          new ZipInputStream(this.getClass().getResourceAsStream("/model-pojo/model-pojo.zip")),
+          true);
     } finally {
       fos.close();
     }
@@ -144,6 +147,7 @@ class DirectOutputDriver {
 //  - opening/closing OoutputStream for each CU
 class ZipOutputDriver {
 
+  // FIXME: allow for renaming top-level project directory "model-pojo"
   public static void append(ZipInputStream zis, ZipOutputStream zos) throws IOException {
     ZipEntry ze = null;
     while ((ze = zis.getNextEntry()) != null) {
@@ -157,7 +161,7 @@ class ZipOutputDriver {
     }
   }
 
-  public static void codegen(ModelCodeGenerator<?, ?> mcg, OutputStream os, ZipInputStream zis) throws IOException {
+  public static void codegen(ModelCodeGenerator<?, ?> mcg, OutputStream os, ZipInputStream zis, boolean appendGenModelLib) throws IOException {
     // Append content of existing zip file
     ZipOutputStream zos = new ZipOutputStream(os);
     if (zis != null) {
@@ -167,7 +171,11 @@ class ZipOutputDriver {
         FileUtils.close(zis);
       }
     }
-    //
+
+    // Append meta information about H2O
+    // FIXME: should be already prepared in ZIS input variable
+    appendMetaInfo(zos, appendGenModelLib);
+    // Generate model code
     try {
       for (int i = 0; i < mcg.size(); i++) {
         CompilationUnitGenerator cug = mcg.get(i);
@@ -185,6 +193,37 @@ class ZipOutputDriver {
       }
     } finally {
       FileUtils.close(zos);
+    }
+  }
+
+  private static void appendMetaInfo(ZipOutputStream zos, boolean appendGenModelLib) throws IOException {
+    zos.putNextEntry(new ZipEntry("model-pojo/gradle.properties"));
+    SBPrintStream sbos = new SBPrintStream(zos);
+    try {
+      sbos.p("h2oMajorName=").p(H2O.ABV.branchName()).nl();
+      sbos.p("h2oMajorVersion=").p(H2O.ABV.projectVersion()).nl();
+      sbos.p("h2oBuild=").p(H2O.ABV.buildNumber()).nl();
+      if (appendGenModelLib) {
+        sbos.p("hasGenModelLib=true").nl();
+      }
+    } finally {
+      zos.closeEntry();
+    }
+
+    // Append gen-model.jar
+    if (appendGenModelLib) {
+      InputStream is = ZipOutputDriver.class.getResourceAsStream("/www/3/h2o-genmodel.jar");
+      if (is != null) {
+        try {
+          zos.putNextEntry(new ZipEntry("model-pojo/lib/h2o-genmodel.jar"));
+          FileUtils.copyStream(is, zos);
+        } finally {
+          zos.closeEntry();
+          FileUtils.close(is);
+        }
+      } else {
+        Log.warn("Cannot load h2o-genmodel.jar from class resources!");
+      }
     }
   }
 }

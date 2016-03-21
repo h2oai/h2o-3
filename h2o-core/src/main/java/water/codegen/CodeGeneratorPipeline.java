@@ -39,7 +39,7 @@ public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S>> extends A
     return id;
   }
 
-  protected S self() {
+  final protected S self() {
     return (S) this;
   }
 }

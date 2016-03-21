@@ -25,8 +25,12 @@ public class JCodeGenUtil {
     return new ClassCodeGenerator(name);
   }
 
-  public static MethodCodeGenerator method(String className) {
-    return new MethodCodeGenerator(className);
+  public static MethodCodeGenerator ctor(String klazzName) {
+    return method(klazzName);
+  }
+
+  public static MethodCodeGenerator method(String methodName) {
+    return new MethodCodeGenerator(methodName);
   }
 
   public static FieldCodeGenerator field(String fieldType, String fieldName) {

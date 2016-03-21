@@ -23,6 +23,7 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
   private Class[] paramTypes;
   private String[] paramNames;
   private Class returnType = void.class;
+  private boolean override = false;
 
   protected MethodCodeGenerator(String name) {
     this.name = name;
@@ -32,17 +33,17 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
     for (int m : modifiers) {
       this.modifiers |= m;
     }
-    return this;
+    return self();
   }
 
   public MethodCodeGenerator withReturnType(Class returnType) {
     this.returnType = returnType;
-    return this;
+    return self();
   }
 
   public MethodCodeGenerator withBody(CodeGenerator codegen) {
     add(codegen);
-    return this;
+    return self();
   }
 
   public MethodCodeGenerator withBody(final JCodeSB body) {
@@ -52,18 +53,28 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
         out.p(body);
       }
     });
-    return this;
+    return self();
+  }
+
+  public MethodCodeGenerator withOverride(boolean flag) {
+    this.override = flag;
+    return self();
   }
 
   public MethodCodeGenerator withParams(Class type, String name) {
     this.paramTypes = append(this.paramTypes, type);
     this.paramNames = append(this.paramNames, name);
-    return this;
+    return self();
+  }
+
+  public Class getReturnType() {
+    return returnType;
   }
 
   @Override
   public void generate(JCodeSB out) {
     // Output method preamble
+    if (override) out.p("@Override ");
     pMethodParams(out.p(Modifier.toString(modifiers)).p(' ').pj(returnType).p(' ').p(name).p('('), paramTypes, paramNames).p(") {").ii(2).nl();
     // Generate method body
     super.generate(out);

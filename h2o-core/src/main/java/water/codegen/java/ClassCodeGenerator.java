@@ -63,6 +63,15 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
     return this;
   }
 
+  public ClassCodeGenerator withCtor(MethodCodeGenerator... mcgs) {
+    for (MethodCodeGenerator m : mcgs) {
+      assert m.getReturnType() == void.class : "Declared method does not represent constructor! Method: " + m.name;
+      assert m.name.equals(this.name) : "Name of constructor does not match name of class: " + m.name;
+      add(m);
+    }
+    return this;
+  }
+
   public ClassCodeGenerator withMethod(MethodCodeGenerator... mcgs) {
     for (MethodCodeGenerator m : mcgs) {
       add(m);
