@@ -10,6 +10,11 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
   public static final class NaiveBayesParametersV3 extends ModelParametersSchema<NaiveBayesParameters, NaiveBayesParametersV3> {
     static public String[] fields = new String[]{
 				"model_id",
+        "nfolds",
+        "seed",
+        "fold_assignment",
+        "fold_column",
+        "keep_cross_validation_predictions",
 				"training_frame",
 				"validation_frame",
 				"response_column",
@@ -84,5 +89,8 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
 
     @API(help = "Compute metrics on training data", gridable = true)
     public boolean compute_metrics;
+
+    @API(help = "Seed for pseudo random number generator (only used for cross-validation and fold_assignment=\"Random\" or \"AUTO\")", level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    public long seed;
   }
 }

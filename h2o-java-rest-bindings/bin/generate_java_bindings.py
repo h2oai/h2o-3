@@ -1,6 +1,6 @@
-# TODO: ugh:
-import sys, pprint, argparse, errno, re
+import sys, pprint, argparse, errno, re, string
 
+# TODO: ugh:
 sys.path.insert(1, '../../py')
 import h2o
 import os
@@ -95,6 +95,8 @@ def generate_pojo(schema, pojo_name):
 
         if type.startswith('Map'):
             java_type = type
+            java_type = java_type.replace('<string,', '<String,')
+            java_type = java_type.replace(',string>', ',String>')
         else:
             java_type = cons_java_type(pojo_name, name, type, schema_name)
 
@@ -130,7 +132,7 @@ def generate_enum(name, values):
     pojo.append("}")
     return pojo
 
-
+# NOTE: not complete yet
 def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
     '''
     Walk across all the endpoint metadata returning a map of classnames to interface definitions.

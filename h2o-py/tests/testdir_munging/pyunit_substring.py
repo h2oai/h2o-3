@@ -15,7 +15,8 @@ def substring_check():
       assert g[0,0] == py_data[0][0][s_i:e_i]
       if parse_type == 'enum':
         data_levels = set(map(lambda x: x[s_i:e_i], list(zip(*py_data))[0]))
-        assert set(g.levels()[0]) == data_levels
+        if data_levels == {''}: data_levels = set([])
+        assert set(g.levels()[0]) == data_levels, set(g.levels()[0])
         assert g.nlevels()[0] == len(data_levels)
 
 
