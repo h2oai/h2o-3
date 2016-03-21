@@ -37,6 +37,7 @@ public final class ParseSetup extends Iced {
   String[][] _domains;        // Domains for each column (null if numeric)
   String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
+
   public ParseWriter.ParseErr[] _errs;
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
@@ -241,6 +242,7 @@ public final class ParseSetup extends Iced {
     public ParseSetup _gblSetup;
     public long _totalParseSize;
     public long _maxLineLength;
+    String _file;
 
     /**
      *
@@ -268,6 +270,7 @@ public final class ParseSetup extends Iced {
      *
      */
     @Override public void map(Key key) {
+      _file = key.toString();
       Iced ice = DKV.getGet(key);
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
       ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
@@ -296,6 +299,8 @@ public final class ParseSetup extends Iced {
                 || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bits, _userSetup);
+          for(ParseWriter.ParseErr e:_gblSetup._errs)
+            e._file = _file;
         } catch (ParseDataset.H2OParseException pse) {
           throw pse.resetMsg(pse.getMessage()+" for "+key);
         }
@@ -355,8 +360,7 @@ public final class ParseSetup extends Iced {
         assert (_gblSetup != null);
         return;
       }
-
-      _gblSetup = mergeSetups(_gblSetup, other._gblSetup);
+      _gblSetup = mergeSetups(_gblSetup, other._gblSetup, _file, other._file);
       _totalParseSize += other._totalParseSize;
       _maxLineLength = Math.max(_maxLineLength, other._maxLineLength);
     }
@@ -369,17 +373,19 @@ public final class ParseSetup extends Iced {
         else
           _gblSetup._na_strings = _userSetup._na_strings;
       }
-      for(ParseWriter.ParseErr err:_gblSetup._errs)
-        Log.warn("ParseSetup: " + err.toString());
+//      if(_gblSetup._errs != null)
+        for(ParseWriter.ParseErr err:_gblSetup._errs)
+          Log.warn("ParseSetup: " + err.toString());
     }
 
-    private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB) {
+    private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB, String fileA, String fileB) {
       if (setupA == null) return setupB;
       ParseSetup mergedSetup = setupA;
 
       mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
+
       mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
-      mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
+      mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns,mergedSetup, fileA, fileB);
       mergedSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
       if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
         ;// do nothing parse_type and col_types are already set correctly
