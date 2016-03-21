@@ -908,13 +908,11 @@ def encode_enum_dataset(dataset, enum_level_vec, enum_col, true_one_hot, include
             enum_col_num -= 1
 
         if include_nans and np.any(enum_arrays[:, indc]):
-            all_vals = list(reversed(range(enum_col_num+1)))
-        else:
-            all_vals = list(reversed(range(enum_col_num)))
+            enum_col_num += 1
 
-        new_temp_enum = np.zeros((num_row, len(all_vals)), dtype=np.int)
-        one_hot_matrix = pd.get_dummies(all_vals)
-        last_col_index = len(all_vals)-1
+        new_temp_enum = np.zeros((num_row, enum_col_num), dtype=np.int)
+        one_hot_matrix = one_hot_encoding(enum_col_num)
+        last_col_index = enum_col_num-1
 
         # encode each enum using 1-hot encoding or plus reference value
         for indr in range(num_row):
@@ -945,9 +943,36 @@ def replace_with_encoded_bits(one_hot_matrix, enum_val, add_value, last_col_inde
     :return: vector representing the encoded values for a enum value
     """
     if np.isnan(enum_val):  # if data value is np.nan
-        return np.array(one_hot_matrix[last_col_index])
+        return one_hot_matrix[last_col_index]
     else:
-        return np.array(one_hot_matrix[int(enum_val-add_value)])
+        return one_hot_matrix[int(enum_val-add_value)]
+
+
+def one_hot_encoding(enum_level):
+    """
+    Generate the one_hot_encoding matrix given the number of enum_level.
+
+    :param enum_level: generate the actual one-hot encoding matrix
+
+    :return: numpy array for the enum_level specified.  Note, enum_level <= 6
+    """
+
+    if enum_level >= 2:
+        base_array = np.array([[0, 1], [1, 0]])     # for 2 enum levels
+
+        for enum_index in range(3, enum_level+1):   # loop to build encoding for enum levels > 2
+            (num_row, num_col) = base_array.shape
+            col_zeros =  np.asmatrix(np.zeros(num_row)).transpose()     # column of zero matrix
+            base_array = np.concatenate((col_zeros, base_array), axis=1)   # add column of zero
+            row_zeros = np.asmatrix(np.zeros(num_row+1))    # add row of zeros
+            row_zeros[0, 0] = 1                                # set first element to 1
+            base_array = np.concatenate((base_array, row_zeros), axis=0)
+
+
+        return base_array
+    else:
+        print ("enum_level must be >= 2.")
+        sys.exit(1)
 
 
 def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='probability',
@@ -1170,15 +1195,23 @@ def duplicate_scale_cols(col_indices, col_scale, old_filename, new_filename):
 
     :return: None
     """
-    pd_frame = pd.read_csv(old_filename, header=None)   # read in original data set
-    pd_frame_new = pd.DataFrame()                       # new empty data frame
+    # pd_frame = pd.read_csv(old_filename, header=None)   # read in original data set
+    #
+    # pd_frame_new = pd.DataFrame()                       # new empty data frame
+    #
+    # for ind in range(len(col_indices)):     # for each column
+    #     tempc = pd_frame.ix[:, col_indices[ind]]*col_scale[ind]  # extract a column from old data frame and scale it
+    #     pd_frame_new = pd.concat([pd_frame_new, tempc], axis=1)   # add it to the new data frame
 
-    for ind in range(len(col_indices)):     # for each column
-        tempc = pd_frame.ix[:, col_indices[ind]]*col_scale[ind]  # extract a column from old data frame and scale it
-        pd_frame_new = pd.concat([pd_frame_new, tempc], axis=1)   # add it to the new data frame
+    np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
+    (num_row, num_col) = np_frame.shape
+    np_frame_new = np.asmatrix(np.zeros((num_row, len(col_indices)), dtype=np.float))
+
+    for ind in range(len(col_indices)):
+        np_frame_new[:, ind] = np_frame[:, col_indices[ind]]*col_scale[ind]
 
     # done changing the data frame.  Save it in a new file
-    pd_frame_new.to_csv(new_filename, sep=',', header=False, index=False)
+    np.savetxt(new_filename, np_frame_new, delimiter=",")
 
 
 def insert_nan_in_data(old_filename, new_filename, missing_fraction):
@@ -1195,18 +1228,19 @@ def insert_nan_in_data(old_filename, new_filename, missing_fraction):
 
     :return: None
     """
-    pd_frame = pd.read_csv(old_filename, header=None)    # read in a dataset
-
-    (row_count, col_count) = pd_frame.shape
+#    pd_frame = pd.read_csv(old_filename, header=None)    # read in a dataset
+    np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
+    (row_count, col_count) = np_frame.shape
     random_matrix = np.random.uniform(0, 1, [row_count, col_count-1])
 
     for indr in range(row_count):    # for each predictor value, determine if to replace value with nan
         for indc in range(col_count-1):
             if random_matrix[indr, indc] < missing_fraction:
-                pd_frame.loc[indr, indc] = np.nan
+                np_frame[indr, indc] = np.nan
 
     # save new data set with missing values to new file
-    pd_frame.to_csv(new_filename, sep=',', header=False, index=False, na_rep='nan')
+    np.savetxt(new_filename, np_frame, delimiter=",")
+#    pd_frame.to_csv(new_filename, sep=',', header=False, index=False, na_rep='nan')
 
 
 def print_message_values(start_string, nump_array):
