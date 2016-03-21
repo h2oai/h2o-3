@@ -1,5 +1,6 @@
 package hex;
 
+import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -152,6 +153,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
+    @Override public void onCompletion(CountedCompleter caller) {
+      try { dest().get()._output.stopClock(); } catch(Throwable t) {}
+    }
   }
   
   /** Method to launch training of a Model, based on its parameters. */

@@ -264,7 +264,20 @@ class ModelBase(object):
     """
     warnings.warn("`score_history` is deprecated. Use `scoring_history`", category=DeprecationWarning, stacklevel=2)
     return self.scoring_history()
-  
+
+  def cross_validation_metrics_summary(self):
+    """
+    Retrieve Cross-Validation Metrics Summary
+
+    Returns
+    -------
+      The cross-validation metrics summary as an H2OTwoDimTable
+    """
+    model = self._model_json["output"]
+    if 'cross_validation_metrics_summary' in list(model.keys()) and model["cross_validation_metrics_summary"] is not None:
+      return model["cross_validation_metrics_summary"]
+    print("No cross-validation metrics summary for this model")
+
   def summary(self):
     """
     Print a detailed summary of the model.
@@ -304,6 +317,8 @@ class ModelBase(object):
     if vm: vm.show()
     xm = model["cross_validation_metrics"]
     if xm: xm.show()
+    xms = model["cross_validation_metrics_summary"]
+    if xms: xms.show()
 
     if "scoring_history" in list(model.keys()) and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in list(model.keys()) and model["variable_importances"]: model["variable_importances"].show()
