@@ -29,9 +29,11 @@ public class VIF extends DTask<VIF> {
 
   private GLM _glm;
   private double _vif;
+  private Key<Frame> _privateFrameKey;
 
   private VIF() { _glm=null; _vif= AutoCollect.SQLNAN; }
   private VIF(Key<Frame> trainFrame, String response, String[] include, String[] colNames) {
+    _privateFrameKey=trainFrame;
     GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
     params._train = trainFrame;
     params._lambda = new double[]{0};
@@ -44,15 +46,18 @@ public class VIF extends DTask<VIF> {
 
   public static VIF[] make(Key<Frame> trainFrame, String[] predictors, String[] colNames) {
     VIF[] vifs = new VIF[predictors.length];
-
-    if( nPredictors((Frame)DKV.getGet(trainFrame), predictors) > 10000 ) {
+    Frame fr = DKV.getGet(trainFrame);
+    if( nPredictors(fr, predictors) > 10000 ) {
       for(int i=0;i<vifs.length;++i) { vifs[i] = new VIF(); }
     } else {
       for (int i = 0; i < vifs.length; ++i) {
-        vifs[i] = new VIF(trainFrame, predictors[i], predictors, colNames);
-        if( ((Frame) DKV.getGet(trainFrame)).vec(predictors[i]).isCategorical() ) {  // don't bother with cat columns
+        Key<Frame> k = Key.make();
+        DKV.put(k,fr.clone());
+        vifs[i] = new VIF(k, predictors[i], predictors, colNames);
+        if( fr.vec(predictors[i]).isCategorical() ) {  // don't bother with cat columns
           vifs[i]._glm = null;
           vifs[i]._vif = AutoCollect.SQLNAN;
+          DKV.remove(k);
         }
       }
     }
@@ -74,9 +79,10 @@ public class VIF extends DTask<VIF> {
     if( _glm!=null ) {
       Model m;
       double denom = (1. - ((ModelMetricsSupervised) (m=_glm.get())._output._training_metrics).r2());
-      _vif = denom==0?100:1./denom;
+      _vif = denom==0?100:1./denom; // 100 is just some large number
       m.delete();
       _glm=null;
+      DKV.remove(_privateFrameKey);
     }
     return _vif;
   }

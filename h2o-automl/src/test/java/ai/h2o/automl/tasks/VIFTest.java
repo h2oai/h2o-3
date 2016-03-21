@@ -1,7 +1,7 @@
 package ai.h2o.automl.tasks;
 
 import ai.h2o.automl.TestUtil;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
