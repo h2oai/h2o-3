@@ -162,6 +162,7 @@ public class DataInfoTest extends TestUtil {
     fr.swap(1,4);
     DataInfo.InteractionPair[] ips = DataInfo.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
     DataInfo di=null;
+
     try {
       di = new DataInfo(
               fr.clone(),  // train
@@ -223,9 +224,9 @@ public class DataInfoTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(2,4);
     DataInfo.InteractionPair[] ips = DataInfo.InteractionPair.generatePairwiseInteractionsFromList(0, 1, 2, 3);
-
+    DataInfo di=null;
     try {
-      final DataInfo di = new DataInfo(
+      di = new DataInfo(
               fr.clone(),  // train
               null,        // valid
               1,           // num responses
@@ -243,6 +244,10 @@ public class DataInfoTest extends TestUtil {
       checker(di,true);
     } finally {
       fr.delete();
+      if( di!=null ) {
+        di.dropInteractions();
+        di.remove();
+      }
     }
   }
 
