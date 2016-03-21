@@ -153,7 +153,7 @@ MAIN_LOOP:
           if(quotes != 0){
             //System.err.println("Unmatched quote char " + ((char)quotes) + " " + (((str.length()+1) < offset && str.getOffset() > 0)?new String(Arrays.copyOfRange(bits,str.getOffset()-1,offset)):""));
             String err = "Unmatched quote char " + ((char) quotes);
-            dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getChunkDataStart(cidx)));
+            dout.invalidLine(new ParseWriter.ParseErr(err, cidx, dout.lineNum(), offset + din.getGlobalByteOffset()));
             colIdx = 0;
             quotes = 0;
           }else if (colIdx != 0) {

@@ -24,7 +24,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
   int [] _nzeros;
   int [] _nempty;
 
-  protected ParseErr [] _errs;
+  protected ParseErr [] _errs  = new ParseErr[0];
 
   protected PreviewParseWriter() {}
   protected PreviewParseWriter(int ncols) { setColumnCount(ncols); }

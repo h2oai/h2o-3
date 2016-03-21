@@ -150,7 +150,7 @@ class SVMLightParser extends Parser {
               lstate = QID0;
             } else { // failed, skip the line
               String err = "Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'";
-              dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getChunkDataStart(cidx)));
+              dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
               lstate = SKIP_LINE;
               continue MAIN_LOOP;
             }
@@ -197,12 +197,12 @@ class SVMLightParser extends Parser {
                       err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp) + ". Rest of the line is skipped.";
                     else
                       err = "column index out of range, " + number + " does not fit into integer." + " Rest of the line is skipped.";
-                    dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getChunkDataStart(cidx)));
+                    dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
                     lstate = SKIP_LINE;
                   }
                 } else { // we're probably out of sync, skip the rest of the line
                   String err = "Unexpected character after column id: " + c;
-                  dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getChunkDataStart(cidx)));
+                  dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
                   lstate = SKIP_LINE;
                 }
                 break NEXT_CHAR;
@@ -224,7 +224,7 @@ class SVMLightParser extends Parser {
                 number = (number*PrettyPrint.pow10i(zeros+1))+(c-'0');
               } else {
                 String err = "number " + number + " is out of bounds.";
-                dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getChunkDataStart(cidx)));
+                dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
                 lstate = SKIP_LINE;
               }
               zeros = 0;
@@ -277,7 +277,7 @@ class SVMLightParser extends Parser {
             if(gstate == TGT) { // invalid tgt -> skip the whole row
               lstate = SKIP_LINE;
               String err = "invalid number (expecting target)";
-              dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getChunkDataStart(cidx)));
+              dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
               continue MAIN_LOOP;
             }
             if(gstate == VAL){ // add invalid value and skip until whitespace or eol
