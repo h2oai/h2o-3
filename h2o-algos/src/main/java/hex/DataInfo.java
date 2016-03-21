@@ -1116,6 +1116,12 @@ public class DataInfo extends Keyed<DataInfo> {
         rows[i].weight = chunks[weightChunkId()].atd(i);
         if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
       }
+      if (_skipMissing) {
+        int N = _cats + _nums;
+        for (int c = 0; c < N; ++c)
+          if (chunks[c].isNA(i))
+            rows[i].bad = true;
+      }
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
@@ -1138,7 +1144,7 @@ public class DataInfo extends Keyed<DataInfo> {
           if( row.bad ) continue;
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
-          row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));
+          row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));  // FIXME: if this produces a "true" NA then
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
@@ -1151,7 +1157,7 @@ public class DataInfo extends Keyed<DataInfo> {
           if (c.isNA(r)) row.bad = _skipMissing;
           double d = c.atd(r);
           if (Double.isNaN(d))
-            d = _numMeans[interactionOffset];
+            d = _numMeans[cid];
           if (_normMul != null)
             d *= _normMul[interactionOffset];
           row.addNum(_numOffsets[cid], d);
