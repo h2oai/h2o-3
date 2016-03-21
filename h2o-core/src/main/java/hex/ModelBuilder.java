@@ -1008,6 +1008,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Set<String> excluded = new HashSet<>();
     excluded.add("total_rows");
     excluded.add("makeSchema");
+    excluded.add("hr");
+    excluded.add("frame");
+    excluded.add("remove");
+    excluded.add("cm");
+    excluded.add("auc_obj");
     List<Method> methods = new ArrayList<>();
     {
       Model m = DKV.getGet(cvmodels[0]);
