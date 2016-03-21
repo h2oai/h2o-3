@@ -126,7 +126,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_CAT;
           _nvs[colIdx].addCategorical(id);
         } else { // maxed out categorical map
-          throw new H2OParseException("Exceeded categorical limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
+          throw new ParseDataset.H2OParseException("Exceeded categorical limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
         }
       }
     }

@@ -1057,15 +1057,9 @@ public final class ParseDataset {
     Log.info(FrameUtils.chunkSummary(fr).toString());
   }
   public static class H2OParseException extends RuntimeException {
-    ParseWriter.ParseErr _err = new ParseWriter.ParseErr();
     public H2OParseException(String msg){super(msg);}
     public H2OParseException(String msg, Throwable cause){super(msg,cause);}
-    public H2OParseException(Throwable cause){this(cause,new ParseWriter.ParseErr());}
-    public H2OParseException(Throwable cause, ParseWriter.ParseErr err){
-      super(cause);
-      _err = err;
-    }
-    public String toString(){ return "ParseException at " + _err.toString() + (getCause() == null?"":", " + getCause().toString());}
+    public H2OParseException(Throwable cause){super(cause);}
 
     public H2OParseException resetMsg(String msg) {
       H2OParseException pe1 = new H2OParseException(msg,getCause());
