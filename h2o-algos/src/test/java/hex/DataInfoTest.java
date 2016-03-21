@@ -161,9 +161,9 @@ public class DataInfoTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(1,4);
     DataInfo.InteractionPair[] ips = DataInfo.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
-
+    DataInfo di=null;
     try {
-      final DataInfo di = new DataInfo(
+      di = new DataInfo(
               fr.clone(),  // train
               null,        // valid
               1,           // num responses
@@ -179,22 +179,13 @@ public class DataInfoTest extends TestUtil {
               ips          // interactions
       );
 
-      new MRTask() {
-        @Override public void map(Chunk[] cs) {
-          DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
-          for(int i=0;i<cs[0]._len;++i) {
-            DataInfo.Row r=di.newDenseRow();
-            di.extractDenseRow(cs,i,r);
-            for(int j=0;j<di.fullN();++j)
-              if( r.get(j) != sparseRows[i].get(j) )
-                throw new RuntimeException("Row mismatch on row " + i);
-          }
-        }
-      }.doAll(di._adaptedFrame);
-      di.dropInteractions();
-      di.remove();
+      checker(di);
     } finally {
       fr.delete();
+      if( di!=null ) {
+        di.dropInteractions();
+        di.remove();
+      }
     }
   }
 
@@ -202,9 +193,9 @@ public class DataInfoTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
     fr.swap(1,4);
     DataInfo.InteractionPair[] ips = DataInfo.InteractionPair.generatePairwiseInteractionsFromList(0, 1);
-
+    DataInfo di=null;
     try {
-      final DataInfo di = new DataInfo(
+      di = new DataInfo(
               fr.clone(),  // train
               null,        // valid
               1,           // num responses
@@ -220,27 +211,13 @@ public class DataInfoTest extends TestUtil {
               ips          // interactions
       );
 
-      new MRTask() {
-        @Override public void map(Chunk[] cs) {
-          DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
-          for(int i=0;i<cs[0]._len;++i) {
-            DataInfo.Row r = di.newDenseRow();
-            di.extractDenseRow(cs, i, r);
-            for (int j = 0; j < di.fullN(); ++j) {
-              double sparseDoubleScaled = sparseRows[i].get(j);  // extracting sparse rows does not do the full scaling!!
-              if( j>=di.numStart() ) { // finish scaling the sparse value
-                sparseDoubleScaled -= di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()];
-              }
-              if( Math.abs(r.get(j)-sparseDoubleScaled) > 1e-15 )
-                throw new RuntimeException("Row mismatch on row " + i);
-            }
-          }
-        }
-      }.doAll(di._adaptedFrame);
-      di.dropInteractions();
-      di.remove();
+      checker(di);
     } finally {
       fr.delete();
+      if( di!=null ) {
+        di.dropInteractions();
+        di.remove();
+      }
     }
   }
 
