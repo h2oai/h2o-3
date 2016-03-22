@@ -1,5 +1,8 @@
 package water.fvec;
 
+import water.H2O;
+import water.util.UnsafeUtils;
+
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -14,6 +17,24 @@ public final class CX0Chunk extends CXIChunk {
   @Override double min() { return 0; }
   @Override double max() { return 1; }
   @Override public boolean hasNA() { return false; }
+
+  @Override public int asSparseDoubles(double [] vals, int[] ids) {
+    if(vals.length != _len) throw new IllegalArgumentException();
+    int off = _OFF;
+    final int inc = _ridsz;
+    if(_ridsz == 2){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get2(_mem,off);
+        vals[i] = 1;
+      }
+    } else if(_ridsz == 4){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get4(_mem,off);
+        vals[i] = 1;
+      }
+    } else throw H2O.unimpl();
+    return len();
+  }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.set_len(_len);

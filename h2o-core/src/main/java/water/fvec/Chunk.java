@@ -109,26 +109,34 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
  */
 
 public abstract class Chunk extends Iced<Chunk> {
-  public static class DVec {
-    public final double [] vals;
-    public final int [] ids;
-    public boolean isSparse(){return nVals < vals.length;}
-    public int nVals;
-    public DVec(int len){
-      vals = new double[len];
-      ids = new int[len];
-    }
-  }
+
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
-  public DVec asDoubles(DVec dv) {
-    if(dv.vals.length != _len) throw new IllegalArgumentException();
+  /**
+   * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
+   * @param vals holds extracted values, length must be >= this.sparseLen()
+   * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
+   * @return number of extracted (non-zero) elements, equal to sparseLen()
+   */
+  public int asSparseDoubles(double [] vals, int [] ids) {
+    if(vals.length >= sparseLenZero())
+      throw new IllegalArgumentException();
     for(int i = 0; i < _len; ++i) {
-      dv.vals[i] = atd_impl(i);
-      dv.ids[i] = i;
+      vals[i] = atd_impl(i);
+      ids[i] = i;
     }
-    return dv;
+    return len();
+  }
+
+  /**
+   * Dense bulk interface, stream through the compressed values and extract them into dense double array.
+   * @param vals holds extracted values, must be of the same length as this.len().
+   */
+  public void asDoubles(double [] vals) {
+    if(vals.length != _len) throw new IllegalArgumentException();
+    for(int i = 0; i < _len; ++i)
+      vals[i] = atd_impl(i);
   }
 
   /** Global starting row for this local Chunk; a read-only field. */

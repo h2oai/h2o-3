@@ -163,7 +163,7 @@ public abstract class GLMTask  {
        for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
          if(skip[r]) continue;
          if((skip[r] = _skipNAs && chunks[i].isNA(r)) && _weightId != -1)
-          weight.set(r,0);
+            weight.set(r,0);
        }
      }
      Chunk response = _responseId < 0 ? null : chunks[_responseId];
@@ -556,15 +556,16 @@ public abstract class GLMTask  {
               etas[rid][k] += _beta[k][id];
         }
       }
-      Chunk.DVec dvec = new Chunk.DVec(chks[0].len());
+      double [] vals = new double[chks[0].len()];
+      int [] ids = new int[vals.length];
       // numbers
       for(int cid = 0; cid < _dinfo._nums; ++cid){
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
-        c.asDoubles(dvec);
-        for(int i = 0; i < dvec.nVals; ++i) {
-          int rid = dvec.ids[i];
-          double d = dvec.vals[i] * scale;
+        int nVals = c.asSparseDoubles(vals,ids);
+        for(int i = 0; i < nVals; ++i) {
+          int rid = ids[i];
+          double d = vals[i] * scale;
           for (int k = 0; k < _beta.length; ++k)
             etas[rid][k] += d * _beta[k][cid + numOff];
         }
@@ -596,10 +597,10 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < chks.length; ++cid){
         Chunk c = chks[cid];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
-        c.asDoubles(dvec);
-        for(int i = 0; i < dvec.nVals; ++i) {
-          int rid = dvec.ids[i];
-          double d = dvec.vals[i] * scale;
+        int nVals = c.asSparseDoubles(vals,ids);
+        for(int i = 0; i < nVals; ++i) {
+          int rid = ids[i];
+          double d = vals[i] * scale;
           double [] erid = etas[rid];
           for (int k = 0; k < _beta.length; ++k)
             grad[k] += d * erid[k];

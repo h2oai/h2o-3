@@ -10,7 +10,7 @@ public class CXIChunk extends Chunk {
   private transient int _valsz; // byte size of stored value
   protected final int valsz() { return _valsz; }
   private transient int _valsz_log; //
-  private transient int _ridsz; // byte size of stored (chunk-relative) row nums
+  protected transient int _ridsz; // byte size of stored (chunk-relative) row nums
   protected final int ridsz() { return _ridsz; }
   protected transient int _sparseLen;
   protected static final int _OFF = 6;
@@ -36,34 +36,34 @@ public class CXIChunk extends Chunk {
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
   }
 
-  @Override public DVec asDoubles(DVec dv) {
-    if(dv.vals.length != _len) throw new IllegalArgumentException();
+  @Override public int asSparseDoubles(double [] vals, int[] ids) {
+    if(vals.length != _len) throw new IllegalArgumentException();
     int off = _OFF;
     final int inc = _valsz + _ridsz;
     if(_ridsz == 2){
       switch(_valsz){
         case 1:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get2(_mem,off);
-            dv.vals[i] = _mem[off+2]&0xFF;
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = _mem[off+2]&0xFF;
           }
           break;
         case 2:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get2(_mem,off);
-            dv.vals[i] = UnsafeUtils.get2(_mem,off+2);
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = UnsafeUtils.get2(_mem,off+2);
           }
           break;
         case 4:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get2(_mem,off);
-            dv.vals[i] = UnsafeUtils.get4(_mem,off+2);
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = UnsafeUtils.get4(_mem,off+2);
           }
           break;
         case 8:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get2(_mem,off);
-            dv.vals[i] = UnsafeUtils.get8(_mem,off+2);
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = UnsafeUtils.get8(_mem,off+2);
           }
           break;
       }
@@ -71,33 +71,31 @@ public class CXIChunk extends Chunk {
       switch(_valsz){
         case 1:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get4(_mem,off);
-            dv.vals[i] = _mem[off+4]&0xFF;
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = _mem[off+4]&0xFF;
           }
           break;
         case 2:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get4(_mem,off);
-            dv.vals[i] = UnsafeUtils.get2(_mem,off+4);
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = UnsafeUtils.get2(_mem,off+4);
           }
           break;
         case 4:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            long l = UnsafeUtils.get8(_mem,off);
-            dv.ids[i] = (int)(l >> 32);
-            dv.vals[i] = l & 0xFFFFFFFF;
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = UnsafeUtils.get4(_mem,off+4);
           }
           break;
         case 8:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            dv.ids[i] = UnsafeUtils.get4(_mem,off);
-            dv.vals[i] = UnsafeUtils.get8(_mem,off+4);
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = UnsafeUtils.get8(_mem,off+4);
           }
           break;
       }
     } else throw H2O.unimpl();
-    dv.nVals = _sparseLen;
-    return dv;
+    return len();
   }
 
   @Override public boolean isSparseZero() {return true;}
