@@ -1219,6 +1219,8 @@ public class Frame extends Lockable<Frame> {
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   private static class DeepSelect extends MRTask<DeepSelect> {
+    final boolean _doSparse;
+    public DeepSelect(){_doSparse = true;}
     private final void doSparse(Chunk [] chks, NewChunk [] nchks) {
       int[][] ids = new int[chks[0]._len][32];
       int[] cnts = MemoryManager.malloc4(chks[0]._len);
@@ -1268,7 +1270,7 @@ public class Frame extends Lockable<Frame> {
       else                                dst.addNum(src.at8(row),0);
     }
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      if(FrameUtils.sparseRatio(chks) < .5) {
+      if(_doSparse && FrameUtils.sparseRatio(chks) < .125) { // at least 8x nonzeros
         doSparse(chks, nchks);
         return;
       }
