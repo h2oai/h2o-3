@@ -70,18 +70,13 @@ public class DKVGetBenchmarkSingleNode {
 
     @State(Scope.Thread)
     public static class ThreadState {
-        Set<Key> keySet;
         Key tk;
         int invocations;
-
-        @Setup(Level.Trial)
-        public void getKeySet() {
-            keySet = H2O.STORE.keySet();
-        }
 
         @Setup(Level.Invocation)
         public void setKeyForGetOp() {
             // Pick a key from the H2O.STORE at random
+            Set<Key> keySet = H2O.STORE.keySet();
             tk = (Key) keySet.toArray()[new Random().nextInt(keySet.size())];
             invocations += 1;
         }
