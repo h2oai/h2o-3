@@ -2113,10 +2113,11 @@ h2o.sdev <- function(object) {
   tm <- object@model$training_metrics
   vm <- object@model$validation_metrics
   xm <- object@model$cross_validation_metrics
-  if( !is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=  xm) )
-  if(  is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=  xm) )
-  if( !is.null(vm@metrics) &&  is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=NULL) )
-  return( list(o=o,m=m,tm=tm,vm=NULL,xm=NULL) )
+  xms <- object@model$cross_validation_metrics_summary
+  if( !is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=  xm,xms=xms) )
+  if(  is.null(vm@metrics) && !is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=NULL,xm=  xm,xms=xms) )
+  if( !is.null(vm@metrics) &&  is.null(xm@metrics) ) return( list(o=o,m=m,tm=tm,vm=  vm,xm=NULL,xms=NULL) )
+  return( list(o=o,m=m,tm=tm,vm=NULL,xm=NULL,xms=NULL) )
 }
 
 .warn.no.validation <- function() {

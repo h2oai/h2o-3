@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.tree.gbm.GBMModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -148,9 +149,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // Compute the zero-tree error - guessing only the class distribution.
           // MSE is stddev squared when guessing for regression.
           // For classification, guess the largest class.
-          _model = makeModel(dest(), _parms,
-                  initial_MSE(_response, _response),
-                  _valid == null ? Double.NaN : initial_MSE(_response,_vresponse)); // Make a fresh model
+          _model = makeModel(dest(), _parms);
           _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
           _model._output._init_f = _initialPrediction;
         }
@@ -233,7 +232,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     }
 
     // Abstract classes implemented by the tree builders
-    abstract protected M makeModel( Key modelKey, P parms, double mse_train, double mse_valid );
+    abstract protected M makeModel( Key modelKey, P parms);
     abstract protected boolean doOOBScoring();
     abstract protected void buildNextKTrees();
     abstract protected void initializeModelSpecifics();
@@ -279,6 +278,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
+        if (_model._output._treeStats._max_depth==0) {
+          Log.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
+        }
         if (timeout()) break; // If timed out, do the final scoring
         if (stop_requested()) throw new Job.JobCancelledException();
       }
@@ -497,7 +499,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score on training data
       _job.update(0,"Scoring the model.");
-      Score sc = new Score(this,true,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
       training_r2 = ((ModelMetricsSupervised)mm).r2();
@@ -543,25 +545,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         }
         System.out.println(dtree.root().toString2(new StringBuilder(), 0));
       }
-  }
-
-  //FIXME: Use weights
-  double initial_MSE( Vec train, Vec test ) {
-    if( train.isCategorical() ) {
-      // Guess the class of the most populous class; call the fraction of those
-      // Q.  Then Q of them are "mostly correct" - error is (1-Q) per element.
-      // The remaining 1-Q elements are "mostly wrong", error is Q (our guess,
-      // which is wrong).
-      int cls = ArrayUtils.maxIndex(train.bins());
-      double guess = train.bins()[cls]/(train.length()-train.naCnt());
-      double actual= test .bins()[cls]/(test .length()-test .naCnt());
-      return guess*guess+actual-2.0*actual*guess;
-    } else {              // Regression
-      // Guessing the training data mean, but actual is validation set mean
-      double stddev = test.sigma();
-      double bias = train.mean()-test.mean();
-      return stddev*stddev+bias*bias;
-    }
   }
 
   private TwoDimTable createScoringHistoryTable(SharedTreeModel.SharedTreeOutput _output) {

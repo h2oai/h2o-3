@@ -143,13 +143,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
 
-    public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
+    public SharedTreeOutput( SharedTree b) {
       super(b);
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
-      _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
-      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
+      _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
+      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
       _modelClassDist = _priorClassDist;
     }
 
@@ -329,13 +329,12 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
                                              final boolean verboseCode) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();
-    body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
     final String mname = JCodeGen.toJavaId(_key.toString());
 
     // One forest-per-GBM-tree, with a real-tree-per-class
     for (int t=0; t < _output._treeKeys.length; t++) {
       // Generate score method for given tree
-      toJavaForestName(body.i(),mname,t).p(".score0(fdata,preds);").nl();
+      toJavaForestName(body.i(),mname,t).p(".score0(data,preds);").nl();
 
       final int treeIdx = t;
 

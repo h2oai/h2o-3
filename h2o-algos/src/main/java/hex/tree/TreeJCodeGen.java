@@ -91,6 +91,7 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     // Generates decision
     _sb.p(" (");
     if(equal == 0 || equal == 1) {
+      if (equal==1) _sb.p("!Double.isNaN(data[").p(col).p("]) && ");
       _sb.p("data[").p(col);
       // Generate column names only if necessary
       if (_verboseCode) {

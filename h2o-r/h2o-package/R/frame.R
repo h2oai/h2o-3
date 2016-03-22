@@ -244,7 +244,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
       for( i in 1:length(data) ) {  # Set factor levels
         dom <- res$columns[[i]]$domain
-        if( !is.null(dom) ) # H2O has a domain; force R to do so also
+        if( !is.null(dom) && length(dom)>0 ) # H2O has a domain; force R to do so also
           data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
         else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
           data[,i] <- as.character(data[,i]) # Force to string type

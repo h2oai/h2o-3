@@ -21,6 +21,6 @@ public class GBMModelV3 extends SharedTreeModelV3<GBMModel,
   @Override public GBMModel createImpl() {
     GBMV3.GBMParametersV3 p = this.parameters;
     GBMModel.GBMParameters parms = p.createImpl();
-    return new GBMModel( model_id.key(), parms, new GBMModel.GBMOutput(null, Double.NaN, Double.NaN) );
+    return new GBMModel( model_id.key(), parms, new GBMModel.GBMOutput(null) );
   }
 }

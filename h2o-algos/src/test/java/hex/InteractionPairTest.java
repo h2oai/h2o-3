@@ -29,7 +29,7 @@ public class InteractionPairTest {
     for(DataInfo.InteractionPair ip: pairs2)
       System.out.println(ip);
 
-    DataInfo.InteractionPair[] pairs3 = DataInfo.InteractionPair.generatePairwiseInteractions(0,8,2,99,90);
+    DataInfo.InteractionPair[] pairs3 = DataInfo.InteractionPair.generatePairwiseInteractionsFromList(0,8,2,99,90);
     for(DataInfo.InteractionPair ip: pairs3)
       System.out.println(ip);
   }

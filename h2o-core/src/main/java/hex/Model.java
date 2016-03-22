@@ -323,6 +323,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
+    public Key _cross_validation_holdout_predictions_frame_id;
+
+    // Model-specific start/end/run times
+    // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
+    public long _start_time;
+    public long _end_time;
+    public long _run_time;
+    protected void startClock() { _start_time = System.currentTimeMillis(); }
+    protected void stopClock()  { _end_time   = System.currentTimeMillis(); _run_time = _end_time - _start_time; }
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -388,6 +397,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Cross-Validation metrics obtained during model training
      */
     public ModelMetrics _cross_validation_metrics;
+
+    /**
+     * Summary of cross-validation metrics of all k-fold models
+     */
+    public TwoDimTable _cross_validation_metrics_summary;
 
     /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
@@ -513,6 +527,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     _parms  = parms ;  assert parms  != null;
     _output = output;  // Output won't be set if we're assert output != null;
+    if (_output!=null)
+      _output.startClock();
   }
 
   /**
@@ -1286,11 +1302,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           rowData.put(
                   genmodel._names[col],
                   genmodel._domains[col] == null ? (Double) val
-                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel");
+                          : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
+                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
         }
 
         AbstractPrediction p;
-        try { p=epmw.predict(rowData); } 
+        try { p=epmw.predict(rowData); }
         catch (PredictException e) { continue; }
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row); // Load internal scoring predictions
@@ -1306,12 +1323,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
-            System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+            if (miss < 20) {
+              System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict POJO prediction=" + d2);
+              System.err.println("Row: " + rowData.toString());
+            }
           }
           totalMiss = miss;
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss);
+      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
       return totalMiss==0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.

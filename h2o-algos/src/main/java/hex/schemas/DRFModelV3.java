@@ -21,6 +21,6 @@ public class DRFModelV3 extends SharedTreeModelV3<DRFModel,
   @Override public DRFModel createImpl() {
     DRFV3.DRFParametersV3 p = this.parameters;
     DRFModel.DRFParameters parms = p.createImpl();
-    return new DRFModel( model_id.key(), parms, new DRFModel.DRFOutput(null, Double.NaN, Double.NaN) );
+    return new DRFModel( model_id.key(), parms, new DRFModel.DRFOutput(null) );
   }
 }

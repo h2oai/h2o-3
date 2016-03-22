@@ -2,6 +2,51 @@
 
 ##H2O
 
+###Turan (3.8.1.4) - 3/16/16
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-542'>PUBDEV-542</a>] -         KMeans: Size of clusters in Model Output is different from the labels generated on the training set
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1976'>PUBDEV-1976</a>] -         GLM fails on negative alpha
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2718'>PUBDEV-2718</a>] -         countmatches bug
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2727'>PUBDEV-2727</a>] -         bug in processTables in communication.R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2742'>PUBDEV-2742</a>] -          Allow strings to be set to NA
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2719'>PUBDEV-2719</a>] -         Implement Shannon entropy for a string
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2720'>PUBDEV-2720</a>] -         Implement proportion of substrings that are valid English words
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2733'>PUBDEV-2733</a>] -         Add utility function, h2o.ensemble_performance for ensemble and base learner metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2741'>PUBDEV-2741</a>] -         Add date/time and string columns to createFrame.
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-58'>PUBDEV-58</a>] -         Certify sparkling water on CDH5.2
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-277'>PUBDEV-277</a>] -         Make python equivalent of as.h2o() work for numpy array and pandas arrays
+</li>
+</ul>
+
+
 ###Turan (3.8.1.3) - 3/6/16
 
 <h4>        Bug

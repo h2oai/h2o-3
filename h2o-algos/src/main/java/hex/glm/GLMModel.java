@@ -33,13 +33,12 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHa
  */
 public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
-    super(selfKey, parms, null);
+    super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
     _ymu = ymu;
     _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
-    _output = job == null?new GLMOutput():new GLMOutput(job);
     _nullDOF = nobs - (parms._intercept?1:0);
   }
 
@@ -153,8 +152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
-      if(_alpha != null && _alpha[0] < 0)
-        glm.error("_alpha", "Alpha value must be positive");
+      if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
+        glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda_search)
         if (glm.nFoldCV())
           glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");

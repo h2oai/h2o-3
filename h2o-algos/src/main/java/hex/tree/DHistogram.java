@@ -104,7 +104,7 @@ public final class DHistogram extends Iced {
       _step = 1.0f;                           // Fixed stepsize
     } else {
       _step = xbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
-      assert _step > 0 && !Double.isInfinite(_step);
+      assert _step > 0 && !Double.isInfinite(_step) : "Histogram step size for column '"+ name + "' is invalid: " + _step + ".";
     }
     _nbin = (char)xbins;
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
