@@ -380,9 +380,6 @@ public class GBMTest extends TestUtil {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); } };
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Distribution.Family.multinomial)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Distribution.Family.multinomial)._scored_valid;
-    // FIXME: 0-tree scores don't match between WithoutVal and WithVal for multinomial - because we compute initial_MSE(_response,_vresponse)) in SharedTree.java
-    scoredWithoutVal = Arrays.copyOfRange(scoredWithoutVal, 1, scoredWithoutVal.length);
-    scoredWithVal = Arrays.copyOfRange(scoredWithVal, 1, scoredWithVal.length);
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
@@ -1063,6 +1060,7 @@ public class GBMTest extends TestUtil {
       parms._nfolds = 2;
       parms._ntrees = 3;
       parms._learn_rate = 1e-3f;
+      parms._keep_cross_validation_predictions = true;
 
       // Build a first model; all remaining models should be equal
       gbm = new GBM(parms).trainModel().get();
@@ -1079,6 +1077,8 @@ public class GBMTest extends TestUtil {
       if (gbm != null) {
         gbm.deleteCrossValidationModels();
         gbm.delete();
+        for (Key k : gbm._output._cross_validation_predictions) k.remove();
+        gbm._output._cross_validation_holdout_predictions_frame_id.remove();
       }
       Scope.exit();
     }
@@ -1669,6 +1669,10 @@ public class GBMTest extends TestUtil {
       parms._train = train._key;
       parms._response_column = "DSDist"; // Train on the outcome
       parms._distribution = Distribution.Family.laplace;
+      parms._sample_rate = 0.6f;
+      parms._col_sample_rate = 0.8f;
+      parms._col_sample_rate_per_tree = 0.8f;
+      parms._seed = 1234;
 
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();
@@ -1678,6 +1682,45 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 27.01989) < 1e-4);
+
+    } finally {
+      parms._train.remove();
+      if( gbm  != null ) gbm .delete();
+      if( pred != null ) pred.remove();
+      if( res  != null ) res .remove();
+      Scope.exit();
+    }
+  }
+
+  @Test public void testQuantileRegression() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame pred=null, res=null;
+    Scope.enter();
+    try {
+      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
+      train.remove("Site").remove();     // Remove unique ID
+      train.remove("Method").remove();   // Remove categorical
+      DKV.put(train);                    // Update frame after hacking it
+      parms._train = train._key;
+      parms._response_column = "DSDist"; // Train on the outcome
+      parms._distribution = Distribution.Family.quantile;
+      parms._quantile_alpha = 0.4;
+      parms._sample_rate = 0.6f;
+      parms._col_sample_rate = 0.8f;
+      parms._col_sample_rate_per_tree = 0.8f;
+      parms._seed = 1234;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv" );
+      res = gbm.score(pred);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.81202) < 1e-4);
 
     } finally {
       parms._train.remove();

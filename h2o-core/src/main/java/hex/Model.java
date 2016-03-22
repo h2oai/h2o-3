@@ -323,6 +323,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
+    public Key _cross_validation_holdout_predictions_frame_id;
+
+    // Model-specific start/end/run times
+    // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
+    public long _start_time;
+    public long _end_time;
+    public long _run_time;
+    protected void startClock() { _start_time = System.currentTimeMillis(); }
+    protected void stopClock()  { _end_time   = System.currentTimeMillis(); _run_time = _end_time - _start_time; }
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -388,6 +397,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Cross-Validation metrics obtained during model training
      */
     public ModelMetrics _cross_validation_metrics;
+
+    /**
+     * Summary of cross-validation metrics of all k-fold models
+     */
+    public TwoDimTable _cross_validation_metrics_summary;
 
     /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
@@ -513,6 +527,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     _parms  = parms ;  assert parms  != null;
     _output = output;  // Output won't be set if we're assert output != null;
+    if (_output!=null)
+      _output.startClock();
   }
 
   /**

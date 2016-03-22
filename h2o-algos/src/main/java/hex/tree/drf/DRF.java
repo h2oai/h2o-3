@@ -303,8 +303,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
 
 
-    @Override protected DRFModel makeModel( Key modelKey, DRFModel.DRFParameters parms, double mse_train, double mse_valid ) {
-      return new DRFModel(modelKey,parms,new DRFModel.DRFOutput(DRF.this,mse_train,mse_valid));
+    @Override protected DRFModel makeModel( Key modelKey, DRFModel.DRFParameters parms) {
+      return new DRFModel(modelKey,parms,new DRFModel.DRFOutput(DRF.this));
     }
 
   }
