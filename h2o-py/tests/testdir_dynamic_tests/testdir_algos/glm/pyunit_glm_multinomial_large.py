@@ -737,7 +737,7 @@ class TestGLMMultinomial:
                                                                                  True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
-                                                                                 True, True, False, True, True,
+                                                                                 True, True, True, True, True,
                                                                                  True, False],
                                                                              failed_test_number=self.test_failed,
                                                                              ignored_eps=self.ignored_eps,
