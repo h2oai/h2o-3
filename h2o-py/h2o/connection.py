@@ -160,17 +160,24 @@ class H2OConnection(object):
           build_number_h2o = cld['build_number']
 
         if build_number_h2o is None:
-          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. Upgrade H2O and h2o-Python to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html".format(ver_h2o, str(ver_pkg)))
-          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+          raise EnvironmentError("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                                 "Upgrade H2O and h2o-Python to latest stable version - "
+                                 "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
+                                 "".format(ver_h2o, str(ver_pkg)))
         elif build_number_h2o == 'unknown':
-          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. Upgrade H2O and h2o-Python to latest stable version - http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html".format(ver_h2o, str(ver_pkg)))
-          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+          raise EnvironmentError("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                                 "Upgrade H2O and h2o-Python to latest stable version - "
+                                 "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
+                                 "".format(ver_h2o, str(ver_pkg)))
         elif build_number_h2o == '99999':
-          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. This is a developer build, please contact your developer.".format(ver_h2o, str(ver_pkg)))
-          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+          raise EnvironmentError("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                                 "This is a developer build, please contact your developer."
+                                 "".format(ver_h2o, str(ver_pkg)))
         else:
-          print("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}.Install the matching h2o-Python version from - http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html.".format(ver_h2o, str(ver_pkg),branch_name_h2o, build_number_h2o))
-          sys.exit("STOP: FIX VERSION MISMATCH TO AVOID FUTURE ERRORS")
+          raise EnvironmentError("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                                 "Install the matching h2o-Python version from - "
+                                 "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
+                                 "".format(ver_h2o, str(ver_pkg),branch_name_h2o, build_number_h2o))
 
     self._session_id = H2OConnection.get_json(url_suffix="InitID")["session_key"]
     H2OConnection._cluster_info()
