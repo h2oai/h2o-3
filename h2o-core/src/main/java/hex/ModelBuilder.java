@@ -829,7 +829,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true);
+        String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true, null);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
