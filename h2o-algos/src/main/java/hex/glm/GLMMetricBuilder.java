@@ -35,7 +35,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
 
   final boolean _computeMetrics;
   public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept){
-    super(domain == null?1:domain.length, domain);
+    super(domain == null?0:domain.length, domain);
     _rank = rank;
     _glmf = glmf;
     _computeMetrics = computeMetrics;
