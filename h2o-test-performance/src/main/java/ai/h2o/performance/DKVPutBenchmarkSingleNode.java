@@ -62,7 +62,6 @@ public class DKVPutBenchmarkSingleNode {
     @Setup(Level.Iteration)
     public void initNBHM() {
         /* Clear out the H2O.STORE */
-        Log.info("@Setup for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
         Log.info("Empting the H2O.STORE.");
         H2O.STORE.clear();
 
@@ -81,13 +80,12 @@ public class DKVPutBenchmarkSingleNode {
 
     @TearDown(Level.Iteration)
     public void checkNBHM() throws InterruptedException {
-        Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
         Log.info("Checking the H2O.STORE. Number of actual keys: "+H2O.STORE.size()+". ");
         /* Check that the H2O.STORE has not resized. If the H2O.STORE has resized, then throw an
         *  InterruptedException. */
         int endIterStoreSize = (H2O.STORE.kvs().length-2)>>1;
         if (startIterStoreSize < endIterStoreSize) {
-            Log.err("H2O.STORE resized.");
+            Log.info("H2O.STORE resized.");
             throw new InterruptedException("Looks like the H2O.STORE was resized from "+startIterStoreSize+" to "+
                     endIterStoreSize+". For this benchmark, we want to avoid this.");
         }
@@ -111,8 +109,7 @@ public class DKVPutBenchmarkSingleNode {
 
         @TearDown(Level.Iteration)
         public void logInvocations() {
-            Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Thread");
-            Log.info("Number of method invocations for this thread: "+ invocations);
+            Log.info("Number of benchmark method invocations for this thread's iteration: "+ invocations);
         }
     }
 
