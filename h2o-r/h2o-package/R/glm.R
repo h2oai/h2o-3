@@ -51,6 +51,7 @@
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param intercept Logical, include constant term (intercept) in the model.
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
 #' @param interactions A vector of column indices to interact pairwise. All combinations of two indices will be computed.
@@ -125,6 +126,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     fold_column = NULL,
                     fold_assignment = c("AUTO","Random","Modulo"),
                     keep_cross_validation_predictions = FALSE,
+                    keep_cross_validation_fold_assignment = FALSE,
                     beta_constraints = NULL,
                     offset_column = NULL,
                     weights_column = NULL,
@@ -188,6 +190,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
   if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
   if( !missing(objective_epsilon) )         parms$objective_epsilon      <- objective_epsilon
   if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon

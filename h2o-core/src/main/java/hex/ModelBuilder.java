@@ -8,7 +8,6 @@ import water.fvec.*;
 import water.rapids.ASTKFold;
 import water.util.*;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -284,17 +283,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         @Override public void map(Chunk chks[], NewChunk nchks[]) {
           Chunk fold = chks[0], orig = chks[1];
           for( int row=0; row< orig._len; row++ ) {
-            int foldAssignment = (int)fold.at8(row) % N;
+            int foldIdx = (int)fold.at8(row) % N;
             double w = orig.atd(row);
             for( int f = 0; f < N; f++ ) {
-              boolean holdout = foldAssignment == f;
+              boolean holdout = foldIdx == f;
               nchks[2*f+0].addNum(holdout ? 0 : w);
               nchks[2*f+1].addNum(holdout ? w : 0);
             }
           }
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
-    if( _parms._fold_column == null ) foldAssignment.remove();
+    if (_parms._keep_cross_validation_fold_assignment)
+      DKV.put(new Frame(Key.make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+    if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
     for( Vec weight : weights )
@@ -425,8 +426,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || nclasses()==2 /*GainsLift needs this*/) {
-      mainModel._output._cross_validation_holdout_predictions_frame_id = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
-      holdoutPreds = combineHoldoutPredictions(predKeys, mainModel._output._cross_validation_holdout_predictions_frame_id);
+      Key cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
+      if (_parms._keep_cross_validation_predictions) //only show the user if they asked for it
+        mainModel._output._cross_validation_holdout_predictions_frame_id = cvhp;
+      holdoutPreds = combineHoldoutPredictions(predKeys, cvhp);
+    }
+    if (_parms._keep_cross_validation_fold_assignment) {
+      mainModel._output._cross_validation_fold_assignment_frame_id = Key.make("cv_fold_assignment_" + _result.toString());
+      Scope.untrack(((Frame)(mainModel._output._cross_validation_fold_assignment_frame_id.get())).keys());
     }
     // Keep or toss predictions
     for (Key<Frame> k : predKeys) {
@@ -720,6 +727,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // hide cross-validation parameters unless cross-val is enabled
     if (!nFoldCV()) {
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
+      hide("_keep_cross_validation_fold_assignment", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
       if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");

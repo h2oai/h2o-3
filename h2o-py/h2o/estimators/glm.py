@@ -98,6 +98,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       keep_cross_validation_predictions : bool
         Whether to keep the predictions of the cross-validation models
 
+      keep_cross_validation_fold_assignment : bool
+        Whether to keep the cross-validation fold assignment.
+
       intercept : bool
         Logical, include constant term (intercept) in the model
 
@@ -124,6 +127,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
                fold_assignment=None, keep_cross_validation_predictions=None,
+               keep_cross_validation_fold_assignment=None,
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
                compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
@@ -267,6 +271,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
     self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def keep_cross_validation_fold_assignment(self):
+    return self._parms["keep_cross_validation_fold_assignment"]
+
+  @keep_cross_validation_fold_assignment.setter
+  def keep_cross_validation_fold_assignment(self, value):
+    self._parms["keep_cross_validation_fold_assignment"] = value
 
   @property
   def intercept(self):

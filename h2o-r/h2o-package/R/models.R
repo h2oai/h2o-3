@@ -2266,3 +2266,54 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
   return(p)
 }
 
+#'
+#' Retrieve the cross-validation models
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @return Returns a list of H2OModel objects
+#' @export
+h2o.cross_validation_models <- function(object) {
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_models)) return(NULL)
+  lapply(object@model$cross_validation_models, function(x) h2o.getModel(x$name))
+}
+
+#'
+#' Retrieve the cross-validation fold assignment
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @return Returns a H2OFrame
+#' @export
+h2o.cross_validation_fold_assignment <- function(object) {
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_fold_assignment)) return(NULL)
+  h2o.getFrame(object@model$cross_validation_fold_assignment$name)
+}
+
+#'
+#' Retrieve the cross-validation holdout predictions
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @return Returns a H2OFrame
+#' @export
+h2o.cross_validation_holdout_predictions <- function(object) {
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_holdout_predictions)) return(NULL)
+  h2o.getFrame(object@model$cross_validation_holdout_predictions$name)
+}
+
+#'
+#' Retrieve the cross-validation predictions
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @return Returns a list of H2OFrame objects
+#' @export
+h2o.cross_validation_predictions <- function(object) {
+  if(!is(object, "H2OModel"))
+    stop("object must be an H2O model")
+  if (is.null(object@model$cross_validation_predictions)) return(NULL)
+  lapply(object@model$cross_validation_predictions, function(x) h2o.getFrame(x$name))
+}
