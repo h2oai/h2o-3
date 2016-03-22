@@ -241,11 +241,11 @@ public class DataInfo extends Keyed<DataInfo> {
         _interactionVecs[i] = interactionIds.get(i);
     }
     for(int i = 0; i < ncats; ++i) {
-      names[i]  =   train._names[cats[i]];
+      names[i] = train._names[cats[i]];
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
-      if( v instanceof InteractionWrappedVec && _interactions!=null ) {
-        _interactions[interactionIdx].vecIdx=i;
+      if( v instanceof InteractionWrappedVec ) {
+        if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
         _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
         _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
       }
@@ -263,8 +263,8 @@ public class DataInfo extends Keyed<DataInfo> {
       Vec v = train.vec(nums[i]);
       tvecs2[i+ncats] = v;
       isIWV = v instanceof InteractionWrappedVec;
-      if( isIWV && _interactions!=null ) {
-        _interactions[interactionIdx].vecIdx=i+ncats;
+      if( isIWV ) {
+        if( null!=_interactions ) _interactions[interactionIdx].vecIdx=i+ncats;
         _interactionVecs[interactionIdx++]=i+ncats;
       }
       _numOffsets[i+1] = (len+= (isIWV ? ((InteractionWrappedVec) v).expandedLength() : 1));
