@@ -269,28 +269,33 @@ public final class ParseDataset {
     // Check for job cancellation
     if ( job.stop_requested() ) return;
 
-    // Log any errors
-    if( mfpt._errors != null ) {
-      String [] warns = new String[mfpt._errors.length];
+    ParseWriter.ParseErr [] errs = ArrayUtils.append(setup._errs,mfpt._errors);
+    if(errs.length > 0) {
+      String[] warns = new String[errs.length];
       // compute global line numbers for warnings/errs
       HashMap<String, Integer> fileChunkOffsets = new HashMap<>();
-      for(int i = 0; i < mfpt._fileChunkOffsets.length; ++i)
-        fileChunkOffsets.put(fkeys[i].toString(),mfpt._fileChunkOffsets[i]);
-      long [] espc = fr.anyVec().espc();
-      for (int i = 0; i < mfpt._errors.length; ++i) {
-        int espcOff = fileChunkOffsets.get(mfpt._errors[i]._file);
-        mfpt._errors[i]._gLineNum =  espc[espcOff + mfpt._errors[i]._cidx] + mfpt._errors[i]._lineNum;
+      for (int i = 0; i < mfpt._fileChunkOffsets.length; ++i)
+        fileChunkOffsets.put(fkeys[i].toString(), mfpt._fileChunkOffsets[i]);
+      long[] espc = fr.anyVec().espc();
+      for (int i = 0; i < errs.length; ++i) {
+        if(fileChunkOffsets.containsKey(errs[i]._file)) {
+          int espcOff = fileChunkOffsets.get(errs[i]._file);
+          errs[i]._gLineNum = espc[espcOff + errs[i]._cidx] + errs[i]._lineNum;
+          errs[i]._lineNum = errs[i]._gLineNum - espc[espcOff];
+        }
       }
-      Arrays.sort(mfpt._errors, new Comparator<ParseWriter.ParseErr>() {
+      SortedSet s = new TreeSet<ParseWriter.ParseErr>(new Comparator<ParseWriter.ParseErr>() {
         @Override
         public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
           long res = o1._gLineNum - o2._gLineNum;
-          if(res == 0) return 0;
-          return  (int)res < 0?-1:1;
+          if (res == 0) return o1._err.compareTo(o2._err);
+          return (int) res < 0 ? -1 : 1;
         }
       });
-      for (int i = 0; i < mfpt._errors.length; ++i)
-        Log.warn(warns[i] = mfpt._errors[i].toString());
+      for(ParseWriter.ParseErr e:errs)s.add(e);
+      errs = (ParseWriter.ParseErr[]) s.toArray(new ParseWriter.ParseErr[s.size()]);
+      for (int i = 0; i < errs.length; ++i)
+        Log.warn(warns[i] = errs[i].toString());
       job.setWarnings(warns);
     }
     job.update(0,"Calculating data summary.");

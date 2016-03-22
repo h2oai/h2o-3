@@ -248,7 +248,9 @@ public final class ParseSetup extends Iced {
      *
      * @param userSetup ParseSetup to guide examination of files
      */
-    public GuessSetupTsk(ParseSetup userSetup) { _userSetup = userSetup; }
+    public GuessSetupTsk(ParseSetup userSetup) {
+      _userSetup = userSetup;
+    }
 
     /**
      * Runs once on each file to guess that file's ParseSetup
@@ -385,7 +387,6 @@ public final class ParseSetup extends Iced {
       mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
 
       mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
-      mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns,mergedSetup, fileA, fileB);
       mergedSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
       if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
         ;// do nothing parse_type and col_types are already set correctly
@@ -397,7 +398,7 @@ public final class ParseSetup extends Iced {
       } else
         throw new ParseDataset.H2OParseException("File type mismatch. Cannot parse files of type "
                 + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
-
+      mergedSetup._number_columns = mergedSetup._parse_type == ParserType.CSV?Math.max(setupA._number_columns,setupB._number_columns):unifyColumnCount(setupA._number_columns, setupB._number_columns,mergedSetup, fileA, fileB);
       if (mergedSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
         int n = mergedSetup._data.length;
         int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + setupB._data.length - 1);
