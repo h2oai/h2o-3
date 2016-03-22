@@ -53,6 +53,7 @@
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param intercept Logical, include constant term (intercept) in the model.
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
+#' @param interactions A vector of column indices to interact pairwise. All combinations of two indices will be computed.
 #' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
 #' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
 #' @param non_negative Logical, allow only positive coefficients.
