@@ -6,6 +6,7 @@ import java.io.IOException;
 import diff.DiffReport;
 import jacoco.core.analysis.DiffAnalyzer;
 import jacoco.report.html.HighlightHTMLFormatter;
+import jacoco.report.internal.html.wrapper.CoverageWrapper;
 import org.jacoco.core.analysis.Analyzer;
 import org.jacoco.core.analysis.CoverageBuilder;
 import org.jacoco.core.analysis.IBundleCoverage;
@@ -31,6 +32,7 @@ public class DiffAnalyzerTest {
     private final File classesDirectory;
     private final File sourceDirectory;
     private final File reportDirectory;
+    private final File parseDirectory;
     private final DiffReport dr;
 
     private ExecFileLoader execFileLoader;
@@ -46,6 +48,7 @@ public class DiffAnalyzerTest {
         this.classesDirectory = new File(projectDirectory, "build/classes/main");
         this.sourceDirectory = new File(projectDirectory, "src/main/java");
         this.reportDirectory = new File(projectDirectory, "coveragereport");
+        this.parseDirectory = new File(projectDirectory, "resources/params.dsv");
         this.dr = dr;
     }
 
@@ -93,7 +96,8 @@ public class DiffAnalyzerTest {
 
         // Populate the report structure with the bundle coverage information.
         // Call visitGroup if you need groups in your report.
-        visitor.visitBundle(bundleCoverage, new DirectorySourceFileLocator(
+        IBundleCoverage b = CoverageWrapper.parseBundle(CoverageWrapper.wrapBundle(bundleCoverage), parseDirectory);
+        visitor.visitBundle(b, new DirectorySourceFileLocator(
                 sourceDirectory, "utf-8", 4));
 
         // Signal end of structure information to allow report to write all

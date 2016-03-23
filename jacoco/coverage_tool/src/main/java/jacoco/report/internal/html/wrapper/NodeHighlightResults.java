@@ -20,6 +20,24 @@ public class NodeHighlightResults {
         }
     }
 
+    public void mergeBodyResults(NodeHighlightResults nhr) {
+        for (ICoverageNode.CounterEntity ce : entity_body_results.keySet()) {
+            entity_body_results.put(ce, entity_body_results.get(ce) && nhr.entity_body_results.get(ce));
+        }
+    }
+
+    public void mergeTotalResults(NodeHighlightResults nhr) {
+        for (ICoverageNode.CounterEntity ce : entity_total_results.keySet()) {
+            entity_total_results.put(ce, entity_total_results.get(ce) && nhr.entity_total_results.get(ce));
+        }
+    }
+
+    void mergeTotaltoBody() {
+        for (ICoverageNode.CounterEntity ce : entity_body_results.keySet()) {
+            entity_body_results.put(ce, entity_body_results.get(ce) && entity_total_results.get(ce));
+        }
+    }
+
     public boolean getFinalBodyResult() {
         boolean result = true;
         for (boolean b : entity_body_results.values()) {

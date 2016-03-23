@@ -48,6 +48,8 @@ import org.jacoco.report.internal.html.table.PercentageColumn;
  */
 public class HighlightHTMLFormatter extends HTMLFormatter {
 
+    private String path_to_dsv;
+
     private Locale locale = Locale.getDefault();
 
     private Resources resources;
@@ -158,7 +160,7 @@ public class HighlightHTMLFormatter extends HTMLFormatter {
 
             public void visitBundle(final IBundleCoverage bundle,
                                     final ISourceFileLocator locator) throws IOException {
-                final BundlePage page = new BundlePage(CoverageWrapper.wrapBundle(bundle), null, locator,
+                final BundlePage page = new BundlePage(bundle, null, locator,
                         root, HighlightHTMLFormatter.this);
                 createSessionsPage(page);
                 page.render();
