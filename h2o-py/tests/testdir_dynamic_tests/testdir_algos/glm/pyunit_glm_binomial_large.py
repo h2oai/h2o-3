@@ -101,31 +101,33 @@ class TestGLMBinomial:
     margin = 0.0                    # only used when class_method = 'threshold'
     test_class_margin = 0.2         # for test data set
 
+    family = 'binomial'         # this test is for Binomial GLM
+
     # parameters denoting filenames of interested that store training/validation/test data sets
-    training_filename = "training_set.csv"
-    training_filename_duplicate = "training_set_duplicate.csv"
-    training_filename_nans = "training_set_NA.csv"
-    training_filename_enum = "training_set_enum.csv"
-    training_filename_enum_true_one_hot = "training_set_enum_trueOneHot.csv"
-    training_filename_enum_nans = "training_set_enum_NAs.csv"
-    training_filename_enum_nans_true_one_hot = "training_set_enum_NAs_trueOneHot.csv"
+    training_filename = family+"training_set.csv"
+    training_filename_duplicate = family+"training_set_duplicate.csv"
+    training_filename_nans = family+"training_set_NA.csv"
+    training_filename_enum = family+"training_set_enum.csv"
+    training_filename_enum_true_one_hot = family+"training_set_enum_trueOneHot.csv"
+    training_filename_enum_nans = family+"training_set_enum_NAs.csv"
+    training_filename_enum_nans_true_one_hot = family+"training_set_enum_NAs_trueOneHot.csv"
 
-    validation_filename = "validation_set.csv"
-    validation_filename_enum = "validation_set_enum.csv"
-    validation_filename_enum_true_one_hot = "validation_set_enum_trueOneHot.csv"
-    validation_filename_enum_nans = "validation_set_enum_NAs.csv"
-    validation_filename_enum_nans_true_one_hot = "validation_set_enum_NAs_trueOneHot.csv"
+    validation_filename = family+"validation_set.csv"
+    validation_filename_enum = family+"validation_set_enum.csv"
+    validation_filename_enum_true_one_hot = family+"validation_set_enum_trueOneHot.csv"
+    validation_filename_enum_nans = family+"validation_set_enum_NAs.csv"
+    validation_filename_enum_nans_true_one_hot = family+"validation_set_enum_NAs_trueOneHot.csv"
 
-    test_filename = "test_set.csv"
-    test_filename_duplicate = "test_set_duplicate.csv"
-    test_filename_nans = "test_set_NA.csv"
-    test_filename_enum = "test_set_enum.csv"
-    test_filename_enum_true_one_hot = "test_set_enum_trueOneHot.csv"
-    test_filename_enum_nans = "test_set_enum_NAs.csv"
-    test_filename_enum_nans_true_one_hot = "test_set_enum_NAs_trueOneHot.csv"
+    test_filename = family+"test_set.csv"
+    test_filename_duplicate = family+"test_set_duplicate.csv"
+    test_filename_nans = family+"test_set_NA.csv"
+    test_filename_enum = family+"test_set_enum.csv"
+    test_filename_enum_true_one_hot = family+"test_set_enum_trueOneHot.csv"
+    test_filename_enum_nans = family+"test_set_enum_NAs.csv"
+    test_filename_enum_nans_true_one_hot = family+"test_set_enum_NAs_trueOneHot.csv"
 
-    weight_filename = "weight.csv"
-    weight_filename_enum = "weight_enum.csv"
+    weight_filename = family+"weight.csv"
+    weight_filename_enum = family+"weight_enum.csv"
 
     total_test_number = 8   # total number of tests being run for GLM Binomial family
 
@@ -178,7 +180,6 @@ class TestGLMBinomial:
     weight_data_file = os.path.join(current_dir, weight_filename)
     weight_data_file_enum = os.path.join(current_dir, weight_filename_enum)
 
-    family = 'binomial'         # this test is for Binomial GLM
 
     # store template model performance values for later comparison
     test1_model = None          # store template model for later comparison
@@ -252,7 +253,7 @@ class TestGLMBinomial:
         self.train_row_count = round(self.train_col_count*random.uniform(self.min_col_count_ratio,
                                                                          self.max_col_count_ratio))
 
-        # #  DEBUGGING setup, remember to comment them out once done.
+        # #  DEBUGGING setup_data, remember to comment them out once done.
         # self.train_col_count = 3
         # self.train_row_count = 500
         # end DEBUGGING
@@ -363,7 +364,7 @@ class TestGLMBinomial:
         # make a bigger training set for grid search by combining data from validation data set
         self.training_data_grid = self.training_data.rbind(self.valid_data)
 
-        # setup sklearn class weight of all ones.  Used only to make sure sklearn know the correct number of classes
+        # setup_data sklearn class weight of all ones.  Used only to make sure sklearn know the correct number of classes
         for ind in range(self.class_number):
             self.sklearn_class_weight[ind] = 1.0
 
@@ -422,8 +423,8 @@ class TestGLMBinomial:
         else:   # all tests have passed.  Delete sandbox if if was not wiped before
             pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
 
-        # remove any csv files left in test directory
-        pyunit_utils.remove_csv_files(self.current_dir, ".csv")
+        # remove any csv files left in test directory, do not remove them, shared computing resources
+        #pyunit_utils.remove_csv_files(self.current_dir, ".csv")
 
     def test1_glm_no_regularization(self):
         """
