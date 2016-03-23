@@ -82,6 +82,7 @@ public class GLMBasicTestRegression extends TestUtil {
     GLMModel model1 = null;
     GLMParameters parms = new GLMParameters(Family.gaussian);
     _airlinesMM.add("weights",_airlinesMM.anyVec().makeCon(1.0));
+    DKV.put(_airlinesMM._key,_airlinesMM);
     parms._weights_column = "weights";
     parms._train = _airlinesMM._key;
     parms._lambda = new double[]{1e-2};
