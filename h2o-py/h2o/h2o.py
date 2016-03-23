@@ -236,8 +236,9 @@ def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="",
     kwargs["separator"] = ord(separator)
 
   j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
-  for w in j['warnings']:
-     warnings.warn(w)
+  if j['warnings']:
+    for w in j['warnings']:
+      warnings.warn(w)
   if destination_frame: j["destination_frame"] = destination_frame.replace("%",".").replace("&",".") # TODO: really should be url encoding...
   if column_names is not None:
     if not isinstance(column_names, list): raise ValueError("col_names should be a list")
