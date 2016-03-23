@@ -206,10 +206,9 @@ public abstract class GLMTask  {
 
    public double [] responseMeans(){return _basicStatsResponse.mean();}
    public double [] responseSDs(){
-     if(_predictorSDs != null) return _predictorSDs;
-     if(!_basicStatsResponse.sparse())
-       return _basicStatsResponse.sigma();
-     throw H2O.unimpl();
+     if(_basicStatsResponse.sparse())
+       throw H2O.unimpl();
+     return _basicStatsResponse.sigma();
    }
 
    public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse){
