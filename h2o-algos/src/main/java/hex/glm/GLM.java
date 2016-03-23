@@ -336,8 +336,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if(!_parms._stdOverride) {
           MathUtils.BasicStats bs = ymt._basicStats;
           double [] mean = bs.mean();
-          double [] sigma = bs.sigma();
+          double [] sigma;
           if(bs.sparse()){
+            sigma = new double[mean.length];
             Vec [] vecs = Arrays.copyOfRange(_dinfo._adaptedFrame.vecs(),_dinfo._cats,_dinfo._cats+_dinfo._nums);
             int wid = -1;
             if(_dinfo._weights) {
@@ -349,7 +350,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               long zeros = bs.nobs() - bs._nzCnt[i];
               sigma[i] = Math.sqrt((wsdt._varSum[i] + mean[i]*mean[i]*zeros)/bs._wsum * bs.nobs()/(double)(bs.nobs()-1));
             }
-          }
+          } else
+            sigma = bs.sigma();
           _dinfo.updateWeightedSigmaAndMean(sigma, mean);
         }
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
