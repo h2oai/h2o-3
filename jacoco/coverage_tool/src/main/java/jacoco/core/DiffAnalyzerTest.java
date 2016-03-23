@@ -1,9 +1,11 @@
-package jacoco;
+package jacoco.core;
 
 import java.io.File;
 import java.io.IOException;
 
 import diff.DiffReport;
+import jacoco.core.analysis.DiffAnalyzer;
+import jacoco.report.html.HighlightHTMLFormatter;
 import org.jacoco.core.analysis.Analyzer;
 import org.jacoco.core.analysis.CoverageBuilder;
 import org.jacoco.core.analysis.IBundleCoverage;
@@ -79,7 +81,7 @@ public class DiffAnalyzerTest {
 
         // Create a concrete report visitor based on some supplied
         // configuration. In this case we use the defaults
-        final HTMLFormatter htmlFormatter = new HTMLFormatter();
+        final HTMLFormatter htmlFormatter = new HighlightHTMLFormatter();
         final IReportVisitor visitor = htmlFormatter
                 .createVisitor(new FileMultiReportOutput(reportDirectory));
 

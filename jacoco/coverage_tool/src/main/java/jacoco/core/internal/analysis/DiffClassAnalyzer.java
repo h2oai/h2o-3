@@ -1,4 +1,4 @@
-package jacoco;
+package jacoco.core.internal.analysis;
 
 import diff.DiffFile;
 import diff.DiffReport;

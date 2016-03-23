@@ -1,6 +1,7 @@
-package jacoco;
+package jacoco.core.analysis;
 
 import diff.DiffReport;
+import jacoco.core.internal.analysis.DiffClassAnalyzer;
 import org.jacoco.core.analysis.Analyzer;
 import org.jacoco.core.analysis.ICoverageVisitor;
 import org.jacoco.core.data.ExecutionData;

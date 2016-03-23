@@ -1,5 +1,5 @@
 import diff.*;
-import jacoco.DiffAnalyzerTest;
+import jacoco.core.DiffAnalyzerTest;
 import parse.*;
 
 import java.io.File;
