@@ -319,7 +319,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state = new ComputationState(_job, _parms, _dinfo, null, nclasses());
       // skipping extra rows? (outside of weights == 0)GLMT
       boolean skippingRows = (_parms._missing_values_handling == MissingValuesHandling.Skip && _train.hasNAs());
-      if (true || hasWeightCol() || _train.hasNAs()) { // need to re-compute means and sd
+      if (hasWeightCol() || skippingRows) { // need to re-compute means and sd
         boolean setWeights = skippingRows && _parms._lambda_search && _parms._alpha[0] > 0;
         if (setWeights) {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
@@ -329,10 +329,29 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (ymt._wsum == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
         Log.info(LogMsg("using " + ymt._nobs + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
+        // if sparse data, need second pass to compute variance
         _nobs = ymt._nobs;
         if (_parms._obj_reg == -1)
           _parms._obj_reg = 1.0 / ymt._wsum;
-        _dinfo.updateWeightedSigmaAndMean(ymt._basicStats.sigma(), ymt._basicStats.mean());
+        if(!_parms._stdOverride) {
+          MathUtils.BasicStats bs = ymt._basicStats;
+          double [] mean = bs.mean();
+          double [] sigma = bs.sigma();
+          if(bs.sparse()){
+            Vec [] vecs = Arrays.copyOfRange(_dinfo._adaptedFrame.vecs(),_dinfo._cats,_dinfo._cats+_dinfo._nums);
+            int wid = -1;
+            if(_dinfo._weights) {
+              vecs = ArrayUtils.append(vecs,_dinfo.getWeightsVec());
+              wid = vecs.length-1;
+            }
+            WeightedSDTask wsdt = new WeightedSDTask(wid,bs.mean()).doAll(vecs);
+            for(int i = 0; i < wsdt._varSum.length; ++i){
+              long zeros = bs.nobs() - bs._nzCnt[i];
+              sigma[i] = Math.sqrt((wsdt._varSum[i] + mean[i]*mean[i]*zeros)/bs._wsum * bs.nobs()/(double)(bs.nobs()-1));
+            }
+          }
+          _dinfo.updateWeightedSigmaAndMean(sigma, mean);
+        }
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
         _nobs = _train.numRows();

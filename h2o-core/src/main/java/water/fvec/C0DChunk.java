@@ -77,4 +77,12 @@ public class C0DChunk extends Chunk {
     for (int i = 0; i < _len; ++i) arr[i] = i;
     return _len;
   }
+  @Override public int asSparseDoubles(double [] vals, int [] ids){
+    if(_con == 0) return 0;
+    for(int i = 0; i < _len; ++i) {
+      vals[i] = _con;
+      ids[i] = i;
+    }
+    return _len;
+  }
 }

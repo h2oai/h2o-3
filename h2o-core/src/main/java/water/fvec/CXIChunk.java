@@ -95,7 +95,7 @@ public class CXIChunk extends Chunk {
           break;
       }
     } else throw H2O.unimpl();
-    return len();
+    return sparseLenZero();
   }
 
   @Override public boolean isSparseZero() {return true;}

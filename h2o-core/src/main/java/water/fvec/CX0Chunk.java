@@ -33,7 +33,7 @@ public final class CX0Chunk extends CXIChunk {
         vals[i] = 1;
       }
     } else throw H2O.unimpl();
-    return len();
+    return sparseLenZero();
   }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {

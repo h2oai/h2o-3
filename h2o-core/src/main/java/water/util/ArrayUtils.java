@@ -4,10 +4,7 @@ import water.DKV;
 import water.Futures;
 import water.Key;
 import water.MemoryManager;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -1270,5 +1267,11 @@ public class ArrayUtils {
   public static long[] subtract(long n, long[] nums) {
     for (int i=0; i<nums.length; i++) nums[i] = n - nums[i];
     return nums;
+  }
+
+  public static <T> T[] remove( T[] ary, int id) {
+    if(id == ary.length-1) return Arrays.copyOf(ary,id);
+    if(id == 0) return Arrays.copyOfRange(ary,id,ary.length);
+    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id,ary.length));
   }
 }

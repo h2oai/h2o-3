@@ -122,6 +122,47 @@ public abstract class GLMTask  {
     @Override public void reduce(GLMResDevTaskMultinomial gt) {_likelihood += gt._likelihood;}
   }
 
+ static class WeightedSDTask extends MRTask<WeightedSDTask> {
+   final int _weightId;
+   final double [] _mean;
+   public double [] _varSum;
+   boolean _skipNAs; // else replace with mean
+   public WeightedSDTask(int wId, double [] mean){
+     _weightId = wId;
+     _mean = mean;
+   }
+   @Override public void map(Chunk [] chks){
+      Chunk wChunk;
+     double [] weights = null;
+     if(_weightId != - 1){
+       weights = MemoryManager.malloc8d(chks[_weightId]._len);
+       chks[_weightId].asDoubles(weights);
+       chks = ArrayUtils.remove(chks,_weightId);
+     }
+     _varSum = MemoryManager.malloc8d(_mean.length);
+     double [] vals = MemoryManager.malloc8d(chks[0]._len);
+     int [] ids = MemoryManager.malloc4(chks[0]._len);
+     for(int c = 0; c < chks.length; ++c){
+       double mu = _mean[c];
+       int n = chks[c].asSparseDoubles(vals,ids);
+       double s = 0;
+       for(int i = 0; i < n; ++i) {
+         double d = vals[i];
+         if(Double.isNaN(d)) // NAs are either skipped or replaced with mean (i.e. can also be skipped)
+           continue;
+         d = d - mu;
+         if(_weightId != -1)
+           s += weights[ids[i]]*d*d;
+         else
+           s += d*d;
+       }
+       _varSum[c] = s;
+     }
+   }
+   public void reduce(WeightedSDTask t){
+     ArrayUtils.add(_varSum,t._varSum);
+   }
+ }
  static public class YMUTask extends MRTask<YMUTask> {
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
    long _nobs;
@@ -1114,6 +1155,9 @@ public abstract class GLMTask  {
     }
 
     @Override
+    public void chunkDone(){adjustForSparseStandardizedZeros();}
+
+    @Override
     public void reduce(GLMIterationTask git){
       ArrayUtils.add(_xy, git._xy);
       _gram.add(git._gram);
@@ -1125,7 +1169,7 @@ public abstract class GLMTask  {
       super.reduce(git);
     }
 
-    @Override protected void postGlobal(){
+    private void adjustForSparseStandardizedZeros(){
       if(_sparse && _dinfo._normSub != null) { // need to adjust gram for missing centering!
         int ns = _dinfo.numStart();
         int interceptIdx = _xy.length - 1;
@@ -1150,6 +1194,7 @@ public abstract class GLMTask  {
         }
       }
     }
+
     public boolean hasNaNsOrInf() {
       return ArrayUtils.hasNaNsOrInfs(_xy) || _gram.hasNaNsOrInfs();
     }

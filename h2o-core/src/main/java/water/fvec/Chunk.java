@@ -120,7 +120,7 @@ public abstract class Chunk extends Iced<Chunk> {
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
   public int asSparseDoubles(double [] vals, int [] ids) {
-    if(vals.length >= sparseLenZero())
+    if(vals.length < sparseLenZero())
       throw new IllegalArgumentException();
     for(int i = 0; i < _len; ++i) {
       vals[i] = atd_impl(i);

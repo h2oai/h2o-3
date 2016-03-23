@@ -41,8 +41,8 @@ public class MathUtils {
     double[] _wsums;
     double[] _var;
     double[] _sd;
-    double _wsum = Double.NaN;
-    long[] _nzCnt;
+    public double _wsum = Double.NaN;
+    public long[] _nzCnt;
     long _nobs = -1;
 
     public BasicStats(int n) {
@@ -57,13 +57,15 @@ public class MathUtils {
     }
 
     public void add(double x, double w, int i) {
-      double wsum = _wsums[i] + w;
-      double delta = x - _mean[i];
-      double R = delta * w / wsum;
-      _mean[i] += R;
-      _m2[i] += _wsums[i] * delta * R;
-      _wsums[i] = wsum;
-      ++_nzCnt[i];
+      if (w != 0) {
+        double wsum = _wsums[i] + w;
+        double delta = x - _mean[i];
+        double R = delta * w / wsum;
+        _mean[i] += R;
+        _m2[i] += _wsums[i] * delta * R;
+        _wsums[i] = wsum;
+        ++_nzCnt[i];
+      }
     }
 
     public void add(double[] x, double w) {
@@ -82,11 +84,12 @@ public class MathUtils {
       _nobs = len;
       _wsum = wsum;
       _var = MemoryManager.malloc8d(_mean.length);
+      double muReg = 1.0/wsum;
+      double varReg = _nobs / (wsum * (_nobs - 1.0));
       for (int i = 0; i < _mean.length; ++i) {
         long zeros = len - _nzCnt[i];
-        double reg = _nobs / (wsum * (_nobs - 1.0));
-        _mean[i] *= _wsums[i] * reg;
-        _var[i] = (_m2[i] + zeros * _mean[i] * _mean[i]) * reg;
+        double mu = _mean[i] *= _wsums[i]*muReg;
+        _var[i] = (_m2[i] + zeros*mu*mu) * varReg;
       }
     }
 
@@ -94,9 +97,11 @@ public class MathUtils {
       ArrayUtils.add(_nzCnt, bs._nzCnt);
       for (int i = 0; i < _mean.length; ++i) {
         double wsum = _wsums[i] + bs._wsums[i];
-        double delta = bs._mean[i] - _mean[i];
-        _mean[i] = (_wsums[i] * _mean[i] + bs._wsums[i] * bs._mean[i]) / wsum;
-        _m2[i] += bs._m2[i] + delta * delta * _wsums[i] * bs._wsums[i] / wsum;
+        if(wsum != 0) {
+          double delta = bs._mean[i] - _mean[i];
+          _mean[i] = (_wsums[i] * _mean[i] + bs._wsums[i] * bs._mean[i]) / wsum;
+          _m2[i] += bs._m2[i] + delta * delta * _wsums[i] * bs._wsums[i] / wsum;
+        }
         _wsums[i] = wsum;
       }
       _nobs += bs._nobs;
@@ -125,6 +130,13 @@ public class MathUtils {
     public double[] mean() {return _mean;}
     public double mean(int i) {return _mean[i];}
     public long nobs() {return _nobs;}
+
+    public boolean sparse() {
+      for(int i = 0; i < _nzCnt.length; ++i)
+        if(_nzCnt[i] < _nobs)
+          return true;
+      return false;
+    }
   }
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
