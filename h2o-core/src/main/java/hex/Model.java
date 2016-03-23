@@ -92,6 +92,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
     public boolean _keep_cross_validation_predictions = false;
+    public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
@@ -321,6 +322,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
     public Key _cross_validation_holdout_predictions_frame_id;
+    public Key _cross_validation_fold_assignment_frame_id;
 
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
