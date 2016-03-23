@@ -1,8 +1,6 @@
 package water.util;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.util.Random;
 
@@ -234,4 +232,63 @@ public class FrameUtils {
     }
   }
 
+  public static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
+    final InputStream _csv;
+    final String _path;
+    final String _frameName;
+    final boolean _overwrite;
+    final Job _j;
+
+    public ExportTask(InputStream csv, String path, String frameName, boolean overwrite, Job j) {
+      _csv = csv;
+      _path = path;
+      _frameName = frameName;
+      _overwrite = overwrite;
+      _j = j;
+    }
+
+    private long copyStream(OutputStream os, final int buffer_size) {
+      long len = 0;
+      int curIdx = 0;
+      try {
+        byte[] bytes = new byte[buffer_size];
+        for (; ; ) {
+          int count = _csv.read(bytes, 0, buffer_size);
+          if (count <= 0) {
+            break;
+          }
+          len += count;
+          os.write(bytes, 0, count);
+          int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
+          if (curIdx != workDone) {
+            _j.update(workDone - curIdx);
+            curIdx = workDone;
+          }
+        }
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
+      }
+      return len;
+    }
+
+    @Override public void compute2() {
+      OutputStream os = null;
+      long written = -1;
+      try {
+        os = H2O.getPM().create(_path, _overwrite);
+        written = copyStream(os, 4 * 1024 * 1024);
+      } finally {
+        if (os != null) {
+          try {
+            os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
+            os.close();
+            Log.info("Key '" + _frameName + "' of "+written+" bytes was written to " + _path + ".");
+          } catch (Exception e) {
+            Log.err(e);
+          }
+        }
+      }
+      tryComplete();
+    }
+  }
 }

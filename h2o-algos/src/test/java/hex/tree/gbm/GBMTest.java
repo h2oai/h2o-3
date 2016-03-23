@@ -380,9 +380,6 @@ public class GBMTest extends TestUtil {
     final PrepData prostatePrep = new PrepData() { @Override int prep(Frame fr) { fr.remove("ID").remove(); return fr.find("RACE"); } };
     ScoreKeeper[] scoredWithoutVal = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, false, Distribution.Family.multinomial)._scored_train;
     ScoreKeeper[] scoredWithVal    = basicGBM("./smalldata/logreg/prostate.csv", prostatePrep, true , Distribution.Family.multinomial)._scored_valid;
-    // FIXME: 0-tree scores don't match between WithoutVal and WithVal for multinomial - because we compute initial_MSE(_response,_vresponse)) in SharedTree.java
-    scoredWithoutVal = Arrays.copyOfRange(scoredWithoutVal, 1, scoredWithoutVal.length);
-    scoredWithVal = Arrays.copyOfRange(scoredWithVal, 1, scoredWithVal.length);
     Assert.assertArrayEquals("GBM has to report same list of MSEs for run without/with validation dataset (which is equal to training data)", scoredWithoutVal, scoredWithVal);
   }
 
@@ -1291,6 +1288,7 @@ public class GBMTest extends TestUtil {
       tfr.add("cylinders",old.toCategoricalVec());
       DKV.put(tfr);
       parms._ntrees = 10;
+      parms._keep_cross_validation_fold_assignment = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1301,6 +1299,7 @@ public class GBMTest extends TestUtil {
       if (gbm1 != null) {
         gbm1.deleteCrossValidationModels();
         gbm1.delete();
+        gbm1._output._cross_validation_fold_assignment_frame_id.remove();
       }
     }
   }

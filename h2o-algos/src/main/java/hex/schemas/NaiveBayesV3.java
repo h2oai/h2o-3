@@ -15,6 +15,7 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
         "fold_assignment",
         "fold_column",
         "keep_cross_validation_predictions",
+        "keep_cross_validation_fold_assignment",
 				"training_frame",
 				"validation_frame",
 				"response_column",

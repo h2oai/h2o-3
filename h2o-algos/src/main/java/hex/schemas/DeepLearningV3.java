@@ -18,6 +18,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 				"validation_frame",
         "nfolds",
         "keep_cross_validation_predictions",
+        "keep_cross_validation_fold_assignment",
         "fold_assignment",
         "fold_column",
 				"response_column",

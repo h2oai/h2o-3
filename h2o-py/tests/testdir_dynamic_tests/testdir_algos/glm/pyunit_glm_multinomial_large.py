@@ -86,8 +86,6 @@ class TestGLMMultinomial:
     max_w_value = 2             # set maximum weight value
     min_w_value = -2            # set minimum weight value
 
-    enum_levels = 5             # maximum number of levels for categorical variables not counting NAs
-
     max_class_number = 10       # maximum number of classes allowed
 
     class_method = 'probability'    # can be 'probability' or 'threshold', control how discrete response is generated
@@ -142,7 +140,9 @@ class TestGLMMultinomial:
 
     data_type = 2               # determine data type of data set and weight, 1: integers, 2: real
 
-    # parameters denoting filenames with absolute paths
+    enum_levels = 5             # maximum number of levels for categorical variables not counting NAs
+
+# parameters denoting filenames with absolute paths
     training_data_file = os.path.join(current_dir, training_filename)
     training_data_file_nans = os.path.join(current_dir, training_filename_nans)
     training_data_file_enum = os.path.join(current_dir, training_filename_enum)
@@ -737,7 +737,7 @@ class TestGLMMultinomial:
                                                                                  True, True, True, True, True,
                                                                                  True, True],
                                                                              just_print=[
-                                                                                 True, True, False, True, True,
+                                                                                 True, True, True, True, True,
                                                                                  True, False],
                                                                              failed_test_number=self.test_failed,
                                                                              ignored_eps=self.ignored_eps,

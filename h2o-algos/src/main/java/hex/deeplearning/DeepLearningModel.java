@@ -775,7 +775,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
-    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, get_params().missingColumnsType(), true, true);
+    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, get_params().missingColumnsType(), true, true,_output.interactions());
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }

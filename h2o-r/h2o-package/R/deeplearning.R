@@ -119,6 +119,7 @@
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified.
 #'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -207,7 +208,9 @@ h2o.deeplearning <- function(x, y, training_frame,
                              nfolds = 0,
                              fold_column = NULL,
                              fold_assignment = c("AUTO","Random","Modulo"),
-                             keep_cross_validation_predictions = FALSE)
+                             keep_cross_validation_predictions = FALSE,
+                             keep_cross_validation_fold_assignment = FALSE
+                             )
 {
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
@@ -376,6 +379,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
   .h2o.modelJob('deeplearning', parms)
 }
 

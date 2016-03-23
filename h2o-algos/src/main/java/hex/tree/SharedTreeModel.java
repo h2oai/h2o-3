@@ -143,13 +143,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
 
-    public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
+    public SharedTreeOutput( SharedTree b) {
       super(b);
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
-      _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
-      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
+      _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
+      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
       _modelClassDist = _priorClassDist;
     }
 
