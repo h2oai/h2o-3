@@ -176,11 +176,41 @@ public abstract class GLMTask  {
    final boolean _skipNAs;
    final boolean _computeWeightedMeanSigmaResponse;
 
-   public BasicStats _basicStats;
-   public BasicStats _basicStatsResponse;
+   private BasicStats _basicStats;
+   private BasicStats _basicStatsResponse;
    double [] _yMu;
    double [] _means;
    final int _nClasses;
+
+   private double [] _predictorSDs;
+   public double [] predictorMeans(){return _basicStats.mean();}
+   public double [] predictorSDs(){
+     if(_predictorSDs != null) return _predictorSDs;
+     if(!_basicStats.sparse())
+       return (_predictorSDs = _basicStats.sigma());
+     double [] means = _basicStats.mean();
+     double [] sigma = new double[means.length];
+     Frame fr = new Frame(_fr);
+     if(_responseId >= 0)
+       fr.remove(_responseId);
+     int wid = _weightId > _responseId?_weightId-1:_weightId;
+     WeightedSDTask wsdt = new WeightedSDTask(wid,means).doAll(fr);
+     long nobs = _basicStats.nobs();
+     double wsum = _basicStats._wsum;
+     for(int i = 0; i < wsdt._varSum.length; ++i){
+       long zeros = nobs - _basicStats._nzCnt[i];
+       sigma[i] = Math.sqrt((wsdt._varSum[i] + means[i]*means[i]*zeros)/wsum * nobs/(double)(nobs-1));
+     }
+     return (_predictorSDs = sigma);
+   }
+
+   public double [] responseMeans(){return _basicStatsResponse.mean();}
+   public double [] responseSDs(){
+     if(_predictorSDs != null) return _predictorSDs;
+     if(!_basicStatsResponse.sparse())
+       return _basicStatsResponse.sigma();
+     throw H2O.unimpl();
+   }
 
    public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse){
      _nums = dinfo._nums;

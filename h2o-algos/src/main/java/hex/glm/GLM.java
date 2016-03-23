@@ -333,27 +333,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _nobs = ymt._nobs;
         if (_parms._obj_reg == -1)
           _parms._obj_reg = 1.0 / ymt._wsum;
-        if(!_parms._stdOverride) {
-          MathUtils.BasicStats bs = ymt._basicStats;
-          double [] mean = bs.mean();
-          double [] sigma;
-          if(bs.sparse()){
-            sigma = new double[mean.length];
-            Vec [] vecs = Arrays.copyOfRange(_dinfo._adaptedFrame.vecs(),_dinfo._cats,_dinfo._cats+_dinfo._nums);
-            int wid = -1;
-            if(_dinfo._weights) {
-              vecs = ArrayUtils.append(vecs,_dinfo.getWeightsVec());
-              wid = vecs.length-1;
-            }
-            WeightedSDTask wsdt = new WeightedSDTask(wid,bs.mean()).doAll(vecs);
-            for(int i = 0; i < wsdt._varSum.length; ++i){
-              long zeros = bs.nobs() - bs._nzCnt[i];
-              sigma[i] = Math.sqrt((wsdt._varSum[i] + mean[i]*mean[i]*zeros)/bs._wsum * bs.nobs()/(double)(bs.nobs()-1));
-            }
-          } else
-            sigma = bs.sigma();
-          _dinfo.updateWeightedSigmaAndMean(sigma, mean);
-        }
+        if(!_parms._stdOverride)
+          _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
       } else {
         _nobs = _train.numRows();

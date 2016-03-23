@@ -97,9 +97,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
     if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
-      dinfo.updateWeightedSigmaAndMean(ymt._basicStats.sigma(), ymt._basicStats.mean());
+      dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
       if (nClasses == 1)
-        dinfo.updateWeightedSigmaAndMeanForResponse(ymt._basicStatsResponse.sigma(), ymt._basicStatsResponse.mean());
+        dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
     }
     return dinfo;
   }
