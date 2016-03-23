@@ -293,6 +293,10 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public DataInfo validDinfo(Frame valid) {
     DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold);
+    res._interactions=_interactions;
+    if( _interactions!=null ) {
+      valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, false/*no transform*/).add(valid);
+    }
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
     return res;
@@ -348,8 +352,14 @@ public class DataInfo extends Keyed<DataInfo> {
     _weights = dinfo._weights;
     _fold = dinfo._fold;
     _valid = false;
-    _interactions = dinfo._interactions;
-    _interactionVecs=dinfo._interactionVecs;
+    _interactions = null;
+    ArrayList<Integer> interactionVecs = new ArrayList<>();
+    for(int i=0;i<fr.numCols();++i)
+      if( fr.vec(i) instanceof InteractionWrappedVec ) interactionVecs.add(i);
+
+    _interactionVecs=new int[interactionVecs.size()];
+    for(int i=0;i<_interactionVecs.length;++i)
+      _interactionVecs[i] = interactionVecs.get(i);
     assert dinfo._predictor_transform != null;
     assert  dinfo._response_transform != null;
     _predictor_transform = dinfo._predictor_transform;
@@ -372,8 +382,9 @@ public class DataInfo extends Keyed<DataInfo> {
     _nums = fr.numCols()-_cats - dinfo._responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
     _numOffsets = _nums==0?new int[0]:dinfo._numOffsets.clone();
     int diff = _numOffsets.length>0?_numOffsets[0]-s:0;
-    for(int i=0;i<_numOffsets.length; i++)  // need to shift everyone down by the offset!
-      _numOffsets[i] -= diff;
+    if( diff > 0 )
+      for(int i=0;i<_numOffsets.length; i++)  // need to shift everyone down by the offset!
+        _numOffsets[i] -= diff;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _numMeans = new double[_nums];
     _normMul = normMul;
@@ -389,7 +400,8 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
 
-  public DataInfo filterExpandedColumns(int [] cols){    assert _predictor_transform != null;
+  public DataInfo filterExpandedColumns(int [] cols){
+    assert _predictor_transform != null;
     assert  _response_transform != null;
     if(cols == null)return deep_clone();
     int hasIcpt = (cols.length > 0 && cols[cols.length-1] == fullN())?1:0;
@@ -465,12 +477,13 @@ public class DataInfo extends Keyed<DataInfo> {
       if(sigmas.length != _normMul.length)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
       for(int i = 0; i < sigmas.length; ++i)
-        _normMul[i] = sigmas[i] != 0?1.0/sigmas[i]:1;
+        _normMul[i] = isInteractionVec(i)?1:(sigmas[i] != 0?1.0/sigmas[i]:1);
     }
     if(_predictor_transform.isMeanAdjusted()) {
       if(mean.length != _normSub.length)
         throw new IllegalArgumentException("Length of means does not match number of scaled columns.");
-      System.arraycopy(mean,0,_normSub,0,mean.length);
+      for(int i=0;i<sigmas.length;++i)
+        _normSub[i] = isInteractionVec(i)?0:mean[i];
     }
   }
   public void updateWeightedSigmaAndMeanForResponse(double [] sigmas, double [] mean) {

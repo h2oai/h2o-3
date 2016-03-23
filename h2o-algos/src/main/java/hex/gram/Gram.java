@@ -13,7 +13,6 @@ import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.ForkJoinPool;
 
 public final class Gram extends Iced<Gram> {
   boolean _hasIntercept;
@@ -25,7 +24,7 @@ public final class Gram extends Iced<Gram> {
   final static int MIN_TSKSZ=10000;
 
   public Gram() {_diagN = _denseN = _fullN = 0; _hasIntercept = false; }
-  public Gram(DataInfo dinfo) {this(dinfo.fullN(), dinfo.largestCat(), dinfo._nums, dinfo._cats,true);}
+  public Gram(DataInfo dinfo) {this(dinfo.fullN(), dinfo.largestCat(), dinfo.numNums(), dinfo._cats,true);}
   public Gram(int N, int diag, int dense, int sparse, boolean hasIntercept) {
     _hasIntercept = hasIntercept;
     _fullN = N + (_hasIntercept?1:0);
