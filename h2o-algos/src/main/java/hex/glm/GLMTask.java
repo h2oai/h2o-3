@@ -256,7 +256,10 @@ public abstract class GLMTask  {
      }
    }
    @Override public void postGlobal() {
-     _basicStats.fillInZeros(_nobs,_wsum);
+     if(_computeWeightedSigma)
+      _basicStats.fillInZeros(_nobs,_wsum);
+     if(_computeWeightedMeanSigmaResponse)
+       _basicStatsResponse.fillInZeros(_nobs,_wsum);
      ArrayUtils.mult(_yMu,1.0/_wsum);
    }
 

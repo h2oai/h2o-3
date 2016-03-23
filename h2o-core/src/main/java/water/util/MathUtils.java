@@ -83,13 +83,10 @@ public class MathUtils {
     public void fillInZeros(long len, double wsum) {
       _nobs = len;
       _wsum = wsum;
-      _var = MemoryManager.malloc8d(_mean.length);
-      double muReg = 1.0/wsum;
-      double varReg = _nobs / (wsum * (_nobs - 1.0));
-      for (int i = 0; i < _mean.length; ++i) {
-        long zeros = len - _nzCnt[i];
-        double mu = _mean[i] *= _wsums[i]*muReg;
-        _var[i] = (_m2[i] + zeros*mu*mu) * varReg;
+      if(sparse()) {
+        double muReg = 1.0 / wsum;
+        for (int i = 0; i < _mean.length; ++i)
+          _mean[i] *= _wsums[i] * muReg;
       }
     }
 
@@ -116,6 +113,7 @@ public class MathUtils {
 
     public double variance(int i){return variance()[i];}
     public double[] variance() {
+      if(sparse()) throw new UnsupportedOperationException("Can not do single pass sparse variance computation");
       if (_var != null) return _var;
       return _var = variance(MemoryManager.malloc8d(_mean.length));
     }
