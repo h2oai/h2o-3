@@ -21,15 +21,16 @@ public class GLMScore extends MRTask<GLMScore> {
   final boolean _sparse;
   final String[] _domain;
   final boolean _computeMetrics;
-  final boolean _generatePredictions = true;
+  final boolean _generatePredictions;
 
-  public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics) {
+  public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions) {
     _j = j;
     _m = m;
     _dinfo = dinfo;
     _computeMetrics = computeMetrics;
     _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .5;
     _domain = domain;
+    _generatePredictions = generatePredictions;
   }
 
   private void processRow(DataInfo.Row r, float [] res, double [] ps, NewChunk [] preds, int ncols) {

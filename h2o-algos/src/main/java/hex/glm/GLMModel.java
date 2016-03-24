@@ -1104,6 +1104,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sb;
   }
 
+
+
+
+  private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j){
+    // Build up the names & domains.
+    final boolean computeMetrics = adaptFrm.find(_output.responseName()) >= 0;
+    String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    // Score the dataset, building the class distribution & predictions
+    return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);
+  }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
    *  already adapted to the Model's domain, so the output is also.  Also
@@ -1114,11 +1124,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    */
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    // Build up the names & domains.
     final int nc = _output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
-    String[] names = new String[ncols];
-    String[][] domains = new String[ncols][];
+    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(ncols,Vec.T_NUM,adaptFrm);
+    if (gs._computeMetrics)
+      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    String [] names = new String[ncols];
     names[0] = "predict";
     for(int i = 1; i < names.length; ++i) {
       names[i] = _output.classNames()[i - 1];
@@ -1130,25 +1141,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         // do nothing, non-integer names are fine already
       }
     }
-    final boolean computeMetrics = adaptFrm.find(_output.responseName()) >= 0;
-
-
-    domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
-    boolean hasWeigths = _parms._weights_column != null && adaptFrm.find(_parms._weights_column) >= 0;
-    boolean hasOffset = _parms._offset_column != null && adaptFrm.find(_parms._offset_column) >= 0;
-    boolean hasFold = _parms._fold_column != null && adaptFrm.find(_parms._fold_column) >= 0;
-    DataInfo dinfo = _output._dinfo.scoringInfo(adaptFrm);
-
-    if(dinfo.fullN()+1 > beta().length){
-      System.out.println("haha");
-    }
-    // Score the dataset, building the class distribution & predictions
-    // public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean sparse) {
-    GLMScore gs = new GLMScore(j, this, dinfo,domains[0],computeMetrics).doAll(ncols, Vec.T_NUM, adaptFrm);
-    if (computeMetrics)
-      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
-    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
+    String [][] domains = new String[names.length][];
+    domains[0] = gs._domain;
+    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names, domains);
   }
 
+  /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
+   * @param adaptFrm Already adapted frame
+   * @return MetricBuilder
+   */
+  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
+    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
+  }
 
 }

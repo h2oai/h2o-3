@@ -871,6 +871,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
   }
 
+
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
    * @param adaptFrm Already adapted frame
    * @return MetricBuilder
@@ -880,24 +881,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Build up the names & domains.
     final int nc = _output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
-    String[] names = new String[ncols];
     String[][] domains = new String[ncols][];
-    names[0] = "predict";
-    for(int i = 1; i < names.length; ++i) {
-      names[i] = _output.classNames()[i - 1];
-      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
-      try {
-        Integer.valueOf(names[i]);
-        names[i] = "p" + names[i];
-      } catch (Throwable t) {
-        // do nothing, non-integer names are fine already
-      }
-    }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
   }
+
 
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes
