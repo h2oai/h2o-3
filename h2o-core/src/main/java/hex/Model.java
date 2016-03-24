@@ -879,12 +879,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
-    final int nc = _output.nclasses();
-    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
-    String[][] domains = new String[ncols][];
-    domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    BigScore bs = new BigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
   }
 
