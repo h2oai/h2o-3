@@ -802,7 +802,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     // Return just the output columns
     int x=_output._names.length, y=adaptFrm.numCols();
     Frame ret = adaptFrm.extractFrame(x, y);
-    if (resp != null) ret.prepend(_output.responseName(), resp);
+//    if (resp != null) ret.prepend(_output.responseName(), resp);
     Scope.exit();
     return ret;
   }
