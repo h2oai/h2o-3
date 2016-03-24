@@ -7,11 +7,16 @@ import site
 
 
 def system_file(name):
-    """
-    Finds the full file names of data files in the h2o package.
+    """Finds the full file names of data files in the h2o package.
 
-    :param name: File to search for
-    :return: Absolute path
+    Parameters
+    ----------
+      name : str
+        Look for this file.
+
+    Returns
+    -------
+      Absolute path to that file
     """
     h2o_data_paths = [os.path.join(sys.prefix, "h2o_data", name),
                       os.path.join(site.USER_BASE, "h2o_data", name)]
@@ -75,9 +80,9 @@ def gbm_demo(interactive, echo, test):
                      '>>> train["CAPSULE"] = train["CAPSULE"].asfactor()',
                      '>>> test["CAPSULE"] = test["CAPSULE"].asfactor()\n',
                      '\n# Build a (classification) GBM',
-                     '>>> prostate_gbm = h2o.gbm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], '
-                     'y=train["CAPSULE"], distribution="bernoulli", ntrees=10, max_depth=8, min_rows=10, '
-                     'learn_rate=0.2)\n',
+                     '>>> from h2o.estimators.gbm import H2OGradientBoostingEstimator\n',
+                     '>>> prostate_gbm = H2OGradientBoostingEstimator( distribution="bernoulli", ntrees=10, max_depth=8, min_rows=10,learn_rate=0.2)\n',
+                     '>>> prostate_gbm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=train)\n'
                      '\n# Show the model',
                      '>>> prostate_gbm.show()\n',
                      '\n# Predict on the test set and show the first ten predictions',
@@ -109,8 +114,9 @@ def gbm_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_gbm = h2o.gbm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], y=train["CAPSULE"],
-                           distribution="bernoulli", ntrees=10, max_depth=8, min_rows=10, learn_rate=0.2)
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    prostate_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=10, max_depth=8, min_rows=10, learn_rate=0.2)
+    prostate_gbm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=train)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate_gbm.show()
@@ -148,8 +154,9 @@ def deeplearning_demo(interactive, echo, test):
                      '>>> train["CAPSULE"] = train["CAPSULE"].asfactor()',
                      '>>> test["CAPSULE"] = test["CAPSULE"].asfactor()\n',
                      '\n# Build a (classification) Deeplearning model',
-                     '>>> prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names)-set(["ID","CAPSULE"]))]'
-                     ', y=train["CAPSULE"], activation="Tanh", hidden=[10, 10, 10], epochs=10000)\n',
+                     'from h2o.estimators.deeplearning import H2ODeepLearningEstimator\n',
+                     '>>> prostate_dl = H2ODeepLearningEstimator(activation="Tanh", hidden=[10, 10, 10], epochs=10000)\n',
+                     '>>> prostate_dl.train(x=list(set(prostate.col_names)-set(["ID","CAPSULE"])),y="CAPSULE", training_frame=train)\n',
                      '\n# Show the model',
                      '>>> prostate_dl.show()\n',
                      '\n# Predict on the test set and show the first ten predictions',
@@ -181,8 +188,9 @@ def deeplearning_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_dl = h2o.deeplearning(x=train[list(set(prostate.col_names)-set(["ID","CAPSULE"]))], y=train["CAPSULE"],
-                                   activation="Tanh", hidden=[10, 10, 10], epochs=10000)
+    from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+    prostate_dl = H2ODeepLearningEstimator(activation="Tanh", hidden=[10, 10, 10], epochs=10000)
+    prostate_dl.train(x=list(set(prostate.col_names)-set(["ID","CAPSULE"])),y="CAPSULE", training_frame=train)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate_dl.show()
@@ -219,9 +227,10 @@ def glm_demo(interactive, echo, test):
                      '\n# Convert the response columns to factors (for binary classification problems)',
                      '>>> train["CAPSULE"] = train["CAPSULE"].asfactor()',
                      '>>> test["CAPSULE"] = test["CAPSULE"].asfactor()\n',
-                     '\n# Build a (classification) GLM',
-                     '>>> prostate_glm = h2o.glm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], '
-                     'y=train["CAPSULE"], family="binomial", alpha=[0.5])\n',
+                     '\n# Build a (classification) GLM\n',
+                     'from h2o.estimators.glm import H2OGeneralizedLinearEstimator\n',
+                     '>>> prostate_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0.5])\n',
+                     '>>> prostate_glm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=train)\n',
                      '\n# Show the model',
                      '>>> prostate_glm.show()\n',
                      '\n# Predict on the test set and show the first ten predictions',
@@ -253,8 +262,9 @@ def glm_demo(interactive, echo, test):
     test["CAPSULE"] = test["CAPSULE"].asfactor()
 
     echo_and_interact(demo_commands, interactive, echo)
-    prostate_glm = h2o.glm(x=train[["AGE", "RACE", "PSA", "VOL", "GLEASON"]], y=train["CAPSULE"],
-                           family="binomial", alpha=[0.5])
+    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    prostate_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0.5])
+    prostate_glm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"], y="CAPSULE", training_frame=train)
 
     echo_and_interact(demo_commands, interactive, echo)
     prostate_glm.show()

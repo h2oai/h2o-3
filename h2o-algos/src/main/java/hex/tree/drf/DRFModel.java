@@ -27,7 +27,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   }
 
   public static class DRFOutput extends SharedTreeModel.SharedTreeOutput {
-    public DRFOutput( DRF b, double mse_train, double mse_valid ) { super(b,mse_train,mse_valid); }
+    public DRFOutput( DRF b) { super(b); }
   }
 
   public DRFModel(Key selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey,parms,output); }

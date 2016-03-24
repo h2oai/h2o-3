@@ -3,6 +3,8 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
 def pubdev_random_cv():
 
     cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
@@ -10,8 +12,10 @@ def pubdev_random_cv():
     distribution = "gaussian"
     predictors = ["displacement","power","weight","acceleration","year"]
 
-    gbm1 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=3, distribution=distribution,fold_assignment="Random")
-    gbm2 = h2o.gbm(y=cars[response_col], x=cars[predictors], nfolds=3, distribution=distribution,fold_assignment="Random")
+    gbm1 = H2OGradientBoostingEstimator(nfolds=3,distribution=distribution,fold_assignment="Random")
+    gbm2 = H2OGradientBoostingEstimator(nfolds=3,distribution=distribution,fold_assignment="Random")
+    gbm1.train(y=response_col,x=predictors,training_frame=cars)
+    gbm2.train(y=response_col,x=predictors,training_frame=cars)
 
     mse1 = gbm1.mse(xval=True)
     mse2 = gbm2.mse(xval=True)

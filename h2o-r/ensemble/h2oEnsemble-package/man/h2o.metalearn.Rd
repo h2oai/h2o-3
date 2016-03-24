@@ -131,33 +131,73 @@ fit <- h2o.ensemble(x = x, y = y,
                     metalearner = metalearner,
                     cvControl = list(V = 10, shuffle = TRUE))
 
+# Compute test set performance:
+perf <- h2o.ensemble_performance(fit, newdata = test)
+print(perf, metric = "AUC")
 
-# Generate predictions on the test set
-pp <- predict(fit, test)
-predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(test[,y])[,1]
-
-# Ensemble test AUC 
-cvAUC::AUC(predictions = predictions, labels = labels)
-# 0.787226
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786960998427388
+# 
+# Base learner performance:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
 
 
 # Now let's re-train the metalearner fit to see if we get better performance.
 # Previously, we used a GLM metalearner, and now we will try a GBM.
 newfit <- h2o.metalearn(fit, metalearner = "h2o.gbm.1")
 
-# Generate predictions on the test set
-pp <- predict(newfit, test)
-predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(test[,y])[,1]
+# Compute test set performance:
+newperf <- h2o.ensemble_performance(newfit, newdata = test)
+print(newperf, metric = "AUC") 
 
-# Ensemble test AUC 
-cvAUC::AUC(predictions = predictions, labels = labels)
-# 0.7777479  
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.780514980030648
+# 
+# Base learner performance:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+
 
 # We see that on this dataset & base learner combination,
-# that an ensemble with a GLM metalearner performs better, 
+# that an ensemble with a GLM metalearner actually performs better, 
 # in terms of test set AUC, than an ensemble with a GBM metalearner.
+# Typically tree-based methods don't work as well as metalearners.
+
+
+# Now let's re-train the metalearner again a Deep Neural Net.
+newfit <- h2o.metalearn(fit, metalearner = "h2o.deeplearning.wrapper")
+
+# Compute test set performance:
+newperf <- h2o.ensemble_performance(newfit, newdata = test)
+print(newperf, metric = "AUC") 
+
+
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786791590750952
+# 
+# Base learner performance:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+
+# Here we have performance similar to a GLM.  
+# It's a good idea to always try at least a GLM and DNN.
+
 
 }
 }

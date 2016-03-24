@@ -30,6 +30,13 @@ def can_use_pandas():
   except ImportError:
     return False
 
+def can_use_numpy():
+  try:
+    imp.find_module('numpy')
+    return True
+  except ImportError:
+    return False
+
 def quote(stuff_to_quote):
   if PY3:
     from urllib.request import quote
@@ -104,15 +111,21 @@ def _handle_python_dicts(python_obj):
   is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
   if not is_valid:
     raise ValueError("Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
-  for k in python_obj:  # check that each value entry is a flat list/tuple
+  for k in python_obj:  # check that each value entry is a flat list/tuple or single int, float, or string
     v = python_obj[k]
     if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
       if _is_list_of_lists(v):
         raise ValueError("Values in the dictionary must be flattened!")
+    elif isinstance(v, (int, float)) or _is_str(v): python_obj[k] = [v]
+    else: raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
 
   rows = list(map(list, itertools.zip_longest(*list(python_obj.values()))))
   data_to_write = [dict(list(zip(header, row))) for row in rows]
   return header, data_to_write
+
+def _is_str(s):
+  try: return isinstance(s, (str, basestring, unicode)) # python 2.x
+  except NameError: return isinstance(s, str) # python 3.x
 
 def _is_fr(o):
   return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports

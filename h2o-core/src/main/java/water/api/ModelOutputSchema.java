@@ -24,8 +24,14 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Cross-validation models (model ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public KeyV3.ModelKeyV3[] cross_validation_models;
 
-  @API(help="Cross-validation predictions (frame ids)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  @API(help="Cross-validation predictions, one per cv model (deprecated, use cross_validation_holdout_predictions_frame_id instead)", direction=API.Direction.OUTPUT, level=API.Level.expert)
   public KeyV3.FrameKeyV3[] cross_validation_predictions;
+
+  @API(help="Cross-validation holdout predictions (full out-of-sample predictions on training data)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public KeyV3.FrameKeyV3 cross_validation_holdout_predictions_frame_id;
+
+  @API(help="Cross-validation fold assignment (each row is assigned to one holdout fold)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public KeyV3.FrameKeyV3 cross_validation_fold_assignment_frame_id;
 
   @API(help="Category of the model (e.g., Binomial)", values={"Unknown", "Binomial", "Multinomial", "Regression", "Clustering", "AutoEncoder", "DimReduction"}, direction=API.Direction.OUTPUT)
   public ModelCategory model_category;
@@ -44,6 +50,9 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
 
   @API(help="Cross-validation model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
   ModelMetricsBase cross_validation_metrics;
+
+  @API(help="Cross-validation model metrics summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
+  TwoDimTableBase cross_validation_metrics_summary;
 
   @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public String status;

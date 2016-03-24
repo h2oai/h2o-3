@@ -17,10 +17,7 @@ import water.util.*;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
@@ -36,11 +33,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
+    Frame scoreDeepFeatures(Frame frame, final int layer, final Job j);
   }
 
   public interface GLRMArchetypes {
     Frame scoreReconstruction(Frame frame, Key destination_key, boolean reverse_transform);
     Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
+  }
+
+  public interface LeafNodeAssignment {
+    Frame scoreLeafNodeAssignment(Frame frame, Key destination_key);
   }
 
   /**
@@ -90,6 +92,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
     public boolean _keep_cross_validation_predictions = false;
+    public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
@@ -125,18 +128,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /**
      * Early stopping based on convergence of stopping_metric.
-     * Stop if simple moving average of length k of the stopping_metric does not improve (by stopping_tolerance) for k=stopping_rounds scoring events."
+     * Stop if simple moving average of the stopping_metric does not improve by stopping_tolerance for
+     * k scoring events.
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
     public int _stopping_rounds = 0;
 
     /**
-     * Metric to use for convergence checking, only for _stopping_rounds > 0
+     * Metric to use for convergence checking, only for _stopping_rounds > 0.
      */
     public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
 
     /**
-     * Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+     * Relative tolerance for metric-based stopping criterion: stop if relative improvement is not at least this much.
      */
     public double _stopping_tolerance = defaultStoppingTolerance();
 
@@ -171,6 +175,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * continuation of a previously generated model.
      */
     public Key<? extends Model> _checkpoint;
+
+    /**
+     * A pretrained Autoencoder DL model with matching inputs and hidden layers
+     * can be used to initialize the weights and biases (excluding the output layer).
+     */
+    public Key<? extends Model> _pretrained_autoencoder;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }
@@ -311,6 +321,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
+    public Key _cross_validation_holdout_predictions_frame_id;
+    public Key _cross_validation_fold_assignment_frame_id;
+
+    // Model-specific start/end/run times
+    // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
+    public long _start_time;
+    public long _end_time;
+    public long _run_time;
+    protected void startClock() { _start_time = System.currentTimeMillis(); }
+    protected void stopClock()  { _end_time   = System.currentTimeMillis(); _run_time = _end_time - _start_time; }
 
     public Output(){this(false,false,false);}
     public Output(boolean hasWeights, boolean hasOffset, boolean hasFold) {
@@ -378,6 +398,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public ModelMetrics _cross_validation_metrics;
 
     /**
+     * Summary of cross-validation metrics of all k-fold models
+     */
+    public TwoDimTable _cross_validation_metrics_summary;
+
+    /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
      */
     public TwoDimTable _model_summary;
@@ -403,6 +428,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
+    public InteractionPair[] interactions() { return null; }
     // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx     () {
       if(!_hasWeights) return -1;
@@ -427,6 +453,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
+    /** Is this model a binomial classification model? (v. a regression or clustering model) */
+    public boolean isBinomialClassifier() { return isSupervised() && nclasses() == 2; }
+
     public int nclasses() {
       assert isSupervised();
       String cns[] = classNames();
@@ -443,6 +472,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 ModelCategory.Regression);
       return ModelCategory.Unknown;
     }
+    public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
     public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
       DKV.put(mm);
@@ -497,6 +527,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     _parms  = parms ;  assert parms  != null;
     _output = output;  // Output won't be set if we're assert output != null;
+    if (_output!=null)
+      _output.startClock();
   }
 
   /**
@@ -509,6 +541,86 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double deviance(double w, double y, double f) {
     return new Distribution(Distribution.Family.gaussian).deviance(w, y, f);
   }
+
+  protected ScoringInfo[] scoringInfo;
+  public ScoringInfo[] scoring_history() { return scoringInfo; }
+
+  /**
+   * Fill a ScoringInfo with data from the ModelMetrics for this model.
+   * @param scoringInfo
+   */
+  public void fillScoringInfo(ScoringInfo scoringInfo) {
+    scoringInfo.is_classification = this._output.isClassifier();
+    scoringInfo.is_autoencoder = _output.isAutoencoder();
+    scoringInfo.scored_train = new ScoreKeeper(this._output._training_metrics);
+    scoringInfo.scored_valid = new ScoreKeeper(this._output._validation_metrics);
+    scoringInfo.scored_xval = new ScoreKeeper(this._output._cross_validation_metrics);
+    scoringInfo.validation = _output._validation_metrics != null;
+    scoringInfo.cross_validation = _output._cross_validation_metrics != null;
+
+    if (this._output.isBinomialClassifier()) {
+      scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
+      scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
+    }
+  }
+
+  // return the most up-to-date model metrics
+  public ScoringInfo last_scored() { return scoringInfo == null ? null : scoringInfo[scoringInfo.length-1]; }
+
+  // Lower is better
+  public float loss() {
+    switch (_parms._stopping_metric) {
+      case MSE:
+        return (float) mse();
+      case logloss:
+        return (float) logloss();
+      case deviance:
+        return (float) deviance();
+      case misclassification:
+        return (float) classification_error();
+      case AUC:
+        return (float)(1-auc());
+      case AUTO:
+      default:
+        return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());
+
+    }
+  } // loss()
+
+  public int compareTo(M o) {
+    if (o._output.isClassifier() != _output.isClassifier()) throw new UnsupportedOperationException("Cannot compare classifier against regressor.");
+    if (o._output.isClassifier()) {
+      if (o._output.nclasses() != _output.nclasses())
+        throw new UnsupportedOperationException("Cannot compare models with different number of classes.");
+    }
+    return (loss() < o.loss() ? -1 : loss() > o.loss() ? 1 : 0);
+  }
+
+  public double classification_error() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._classError : last_scored().scored_train._classError;
+  }
+
+  public double mse() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double auc() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._AUC : last_scored().scored_train._AUC;
+  }
+
+  public double deviance() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mean_residual_deviance : last_scored().scored_train._mean_residual_deviance;
+  }
+
+  public double logloss() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+  }
+
 
   /** Adapt a Test/Validation Frame to be compatible for a Training Frame.  The
    *  intention here is that ModelBuilders can assume the test set has the same
@@ -552,7 +664,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  if any factor column has no levels in common.
    */
   public String[] adaptTestForTrain( Frame test, boolean expensive, boolean computeMetrics) {
-    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics);
+    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics, _output.interactions());
   }
   /**
    * @param names Training column names
@@ -563,7 +675,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param domains Training column levels
    * @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain(String[] names, String weights, String offset, String fold, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain(String[] names, String weights, String offset, String fold, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics, InteractionPair[] interactions) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -587,6 +699,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isOffset = offset != null && names[i].equals(offset);
       boolean isFold = fold != null && names[i].equals(fold);
 
+      int interactionID=-1;
+      boolean isIWV  = interactions !=null && (interactionID=InteractionPair.isInteraction(i,interactions))>=0;
+
       if(vec == null && isResponse && computeMetrics)
         throw new IllegalArgumentException("Test/Validation dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
@@ -596,9 +711,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
+      if( null==vec && isIWV ) {  // got an interaciton wrapped vec
+        assert interactionID>=0 && interactionID < interactions.length: "Got an interaction vec, but the interactionID is invalid";
+        vec = makeInteraction(test, interactions[interactionID],true,false,false); // DKV put happens in the InteractionWrappedVec constructor
+      }
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
-      if( vec == null) {
+      if( vec == null ) {
         String str = null;
         if( expensive ) {
           if (isFold) {
@@ -617,7 +736,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( domains[i] != null ) { // Model expects an categorical
           if (vec.isString())
             vec = VecUtils.stringToCategorical(vec); //turn a String column into a categorical column (we don't delete the original vec here)
-          if( vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
+          if( expensive && vec.domain() != domains[i] && !Arrays.equals(vec.domain(),domains[i]) ) { // Result needs to be the same categorical
             CategoricalWrappedVec evec;
             try {
               evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
@@ -630,8 +749,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + Arrays.toString(Arrays.copyOfRange(ds, domains[i].length, ds.length)));
-            if (expensive) { vec = evec;  good++; } // Keep it
-            else { evec.remove(); vec = null; } // No leaking if not-expensive
+            vec = evec;  good++;
           } else {
             good++;
           }
@@ -678,10 +796,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IllegalArgumentException
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
+    return score(fr, destination_key, null);
+  }
+  
+  public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     boolean computeMetrics = (!isSupervised() || adaptFr.find(_output.responseName()) != -1);
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key); // Predict & Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j); // Predict & Score
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -729,7 +851,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param adaptFrm Already adapted frame
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key) {
+ 
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -749,7 +872,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/).doAll(ncols, Vec.T_NUM, adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(ncols, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
@@ -779,7 +902,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/).doAll(adaptFrm);
+    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
   }
 
@@ -791,8 +914,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean _computeMetrics;  // Column means of test frame
     final boolean _hasWeights;
     final boolean _makePreds;
-
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds ) {
+    final Job _j;
+    
+    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+      _j = j;  
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
@@ -800,7 +925,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      if (isCancelled()) return;
+      if (isCancelled() || _j != null && _j.stop_requested()) return;
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
       Chunk responseChunk = null;
@@ -841,6 +966,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             cpreds[c].addNum(p[c]);
         }
       }
+      if ( _j != null) _j.update(1);
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
@@ -1182,11 +1308,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           rowData.put(
                   genmodel._names[col],
                   genmodel._domains[col] == null ? (Double) val
-                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel");
+                          : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
+                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
         }
 
         AbstractPrediction p;
-        try { p=epmw.predict(rowData); } 
+        try { p=epmw.predict(rowData); }
         catch (PredictException e) { continue; }
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row); // Load internal scoring predictions
@@ -1202,12 +1329,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
-            System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+            if (miss < 20) {
+              System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict POJO prediction=" + d2);
+              System.err.println("Row: " + rowData.toString());
+            }
           }
           totalMiss = miss;
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss);
+      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
       return totalMiss==0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.
@@ -1243,4 +1373,172 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override public Class<water.api.KeyV3.ModelKeyV3> makeSchema() { return water.api.KeyV3.ModelKeyV3.class; }
+
+  public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+    Vec anyTrainVec = fr.anyVec();
+    Vec[] interactionVecs = new Vec[interactions.length];
+    String[] interactionNames  = new String[interactions.length];
+    int idx = 0;
+    for (InteractionPair ip : interactions) {
+      interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
+      InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+      if(!valid) ip.setDomain(iwv.domain());
+      interactionVecs[idx++] = iwv;
+    }
+    return new Frame(interactionNames, interactionVecs);
+  }
+
+  public static InteractionWrappedVec makeInteraction(Frame fr, InteractionPair ip, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+    Vec anyVec = fr.anyVec();
+    return new InteractionWrappedVec(anyVec.group().addVec(), anyVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+  }
+
+
+  /**
+   * This class represents a pair of interacting columns plus some additional data
+   * about specific enums to be interacted when the vecs are categorical. The question
+   * naturally arises why not just use something like an ArrayList of int[2] (as is done,
+   * for example, in the Interaction/CreateInteraction classes) and the answer essentially
+   * boils down a desire to specify these specific levels.
+   *
+   * Another difference with the CreateInteractions class:
+   *  1. do not interact on NA (someLvl_NA  and NA_somLvl are actual NAs)
+   *     this does not appear here, but in the InteractionWrappedVec class
+   *  TODO: refactor the CreateInteractions to be useful here and in InteractionWrappedVec
+   */
+  public static class InteractionPair extends Iced {
+    public int vecIdx;
+    private int _v1,_v2;
+
+    private String[] _domain; // not null for enum-enum interactions
+    private String[] _v1Enums;
+    private String[] _v2Enums;
+    private int _hash;
+    private InteractionPair() {}
+    private InteractionPair(int v1, int v2, String[] v1Enums, String[] v2Enums) {
+      _v1=v1;_v2=v2;_v1Enums=v1Enums;_v2Enums=v2Enums;
+      // hash is column ints; Item 9 p.47 of Effective Java
+      _hash=17;
+      _hash = 31*_hash + _v1;
+      _hash = 31*_hash + _v2;
+      if( _v1Enums==null ) _hash = 31*_hash;
+      else
+        for( String s:_v1Enums ) _hash = 31*_hash + s.hashCode();
+      if( _v2Enums==null ) _hash = 31*_hash;
+      else
+        for( String s:_v2Enums ) _hash = 31*_hash + s.hashCode();
+    }
+
+    /**
+     * Generate all pairwise combinations of ints in the range [from,to).
+     * @param from Start index
+     * @param to End index (exclusive)
+     * @return An array of interaction pairs.
+     */
+    public static InteractionPair[] generatePairwiseInteractions(int from, int to) {
+      if( 1==(to-from) )
+        throw new IllegalArgumentException("Illegal range of values, must be greater than a single value. Got: " + from + "<" + to);
+      InteractionPair[] res = new InteractionPair[ ((to-from-1)*(to-from)) >> 1];  // n*(n+1) / 2
+      int idx=0;
+      for(int i=from;i<to;++i)
+        for(int j=i+1;j<to;++j)
+          res[idx++] = new InteractionPair(i,j,null,null);
+      return res;
+    }
+
+    /**
+     * Generate all pairwise combinations of the arguments.
+     * @param indexes An array of column indices.
+     * @return An array of interaction pairs
+     */
+    public static InteractionPair[] generatePairwiseInteractionsFromList(int... indexes) {
+      if( null==indexes ) return null;
+      if( indexes.length < 2 )
+        throw new IllegalArgumentException("Must supply 2 or more columns.");
+      InteractionPair[] res = new InteractionPair[ (indexes.length-1)*(indexes.length)>>1]; // n*(n+1) / 2
+      int idx=0;
+      for(int i=0;i<indexes.length;++i)
+        for(int j=i+1;j<indexes.length;++j)
+          res[idx++] = new InteractionPair(indexes[i],indexes[j],null,null);
+      return res;
+    }
+
+    /**
+     * Set the domain; computed in an MRTask over the two categorical vectors that make
+     * up this interaction pair
+     * @param dom The domain retrieved by the CombineDomainTask in InteractionWrappedVec
+     */
+    public void setDomain(String[] dom) { _domain=dom; }
+
+    /**
+     * Check to see if any of the vecIdx values is the desired value.
+     */
+    public static int isInteraction(int i, InteractionPair[] ips) {
+      int idx=0;
+      for(InteractionPair ip: ips) {
+        if( i==ip.vecIdx ) return idx;
+        else               idx++;
+      }
+      return -1;
+    }
+
+    // parser stuff
+    private int _p;
+    private String _str;
+    public static InteractionPair[] read(String interaction) {
+      String[] interactions=interaction.split("\n");
+      HashSet<InteractionPair> res=new HashSet<>();
+      for(String i: interactions)
+        res.addAll(new InteractionPair().parse(i));
+      return res.toArray(new InteractionPair[res.size()]);
+    }
+
+    private HashSet<InteractionPair> parse(String i) { // v1[E8,E9]:v2,v3,v8,v90,v128[E1,E22]
+      _p=0;
+      _str=i;
+      HashSet<InteractionPair> res=new HashSet<>();
+      int v1 = parseNum();    // parse the first int
+      String[] v1Enums=parseEnums();  // shared
+      if( i.charAt(_p)!=':' || _p>=i.length() ) throw new IllegalArgumentException("Error");
+      while( _p++<i.length() ) {
+        int v2=parseNum();
+        String[] v2Enums=parseEnums();
+        if( v1 == v2 ) continue; // don't interact on self!
+        res.add(new InteractionPair(v1,v2,v1Enums,v2Enums));
+      }
+      return res;
+    }
+
+    private int parseNum() {
+      int start=_p++;
+      while( _p<_str.length() && '0' <= _str.charAt(_p) && _str.charAt(_p) <= '9') _p++;
+      try {
+        return Integer.valueOf(_str.substring(start,_p));
+      } catch(NumberFormatException ex) {
+        throw new IllegalArgumentException("No number could be parsed. Interaction: " + _str);
+      }
+    }
+
+    private String[] parseEnums() {
+      if( _p>=_str.length() || _str.charAt(_p)!='[' ) return null;
+      ArrayList<String> enums = new ArrayList<>();
+      while( _str.charAt(_p++)!=']' ) {
+        int start=_p++;
+        while(_str.charAt(_p)!=',' && _str.charAt(_p)!=']') _p++;
+        enums.add(_str.substring(start,_p));
+      }
+      return enums.toArray(new String[enums.size()]);
+    }
+
+    @Override public int hashCode() { return _hash; }
+    @Override public String toString() { return _v1+(_v1Enums==null?"":Arrays.toString(_v1Enums))+":"+_v2+(_v2Enums==null?"":Arrays.toString(_v2Enums)); }
+    @Override public boolean equals( Object o ) {
+      boolean res = o instanceof InteractionPair;
+      if (res) {
+        InteractionPair ip = (InteractionPair) o;
+        return (_v1 == ip._v1) && (_v2 == ip._v2) && Arrays.equals(_v1Enums, ip._v1Enums) && Arrays.equals(_v2Enums, ip._v2Enums);
+      }
+      return false;
+    }
+  }
 }

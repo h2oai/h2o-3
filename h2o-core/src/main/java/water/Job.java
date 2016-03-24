@@ -54,7 +54,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // Simple state accessors; public ones do a DKV update check
   public long start_time()   { update_from_remote(); assert !created(); return _start_time; }
   public long   end_time()   { update_from_remote(); assert  stopped(); return   _end_time; }
-  public boolean isRunning() { update_from_remote(); return  running(); }
+  public boolean isRunning() {
+    update_from_remote();
+    return  running();
+  }
   public boolean isStopped() { update_from_remote(); return  stopped(); }
   // Slightly more involved state accessors
   public boolean isStopping(){ return isRunning() && _stop_requested; }
@@ -91,21 +94,11 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
    *  setting an exception generally triggers stopping a Job, stopping
    *  takes time, so the Job might still be running with an exception
    *  posted. */
-  private Throwable _ex;
-  public Throwable ex() { return _ex; }
-  public boolean hasEx() { update_from_remote(); return _ex != null; }
-  /** Set an exception into this Job, marking it as failing and setting the
-   *  _stop_requested flag.  Only the first exception (of possibly many) is kept. */
-  public void setEx(Throwable ex, Class thrower_clz) {
-    if( _ex == null ) {
-      final DException dex = new DException(ex, thrower_clz);
-      new JAtomic() {
-        @Override boolean abort(Job job) { return job._ex != null; } // One-shot update; keep first exception
-        @Override void update(Job job) { job._ex = dex.toEx(); job._stop_requested = true; }
-      }.apply(this);
-    }
+  private byte [] _ex;
+  public Throwable ex() {
+    if(_ex == null) return null;
+    return (Throwable)AutoBuffer.javaSerializeReadPojo(_ex);
   }
-
 
   /** Total expected work. */
   public long _work;            // Total work to-do
@@ -242,6 +235,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     @Override public void reduce( AssertNoKey ank ) { _found |= ank._found; }
   }
 
+  public static class JobCancelledException extends RuntimeException {}
+
   // A simple barrier.  Threads blocking on the job will block on this
   // "barrier" task, which will block until the fjtask runs the onCompletion or
   // onExceptionCompletion code.
@@ -253,13 +248,24 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       _barrier = null;          // Free for GC
     }
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      final DException dex = new DException(ex,caller.getClass());
-      try {Log.err(ex);} catch(Throwable t) {/* do nothing */}
-      new Barrier1OnExCom(dex).apply(Job.this);
+      if(Job.isCancelledException(ex)) {
+        new Barrier1OnCom().apply(Job.this);
+        _barrier = null;
+      } else {
+        try {
+          Log.err(ex);
+        } catch (Throwable t) {/* do nothing */}
+        new Barrier1OnExCom(ex).apply(Job.this);
+      }
       _barrier = null;          // Free for GC
       return true;
     }
   }
+
+  static public boolean isCancelledException(Throwable ex) {
+    return ex instanceof JobCancelledException || ex.getCause() != null && ex.getCause() instanceof JobCancelledException;
+  }
+
   private static class Barrier1OnCom extends JAtomic {
     @Override boolean abort(Job job) { return false; }
     @Override public void update(Job old) {
@@ -270,11 +276,11 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     }
   }
   private static class Barrier1OnExCom extends JAtomic {
-    final DException _dex;
-    Barrier1OnExCom(DException dex) { _dex = dex; }
+    final byte[] _dex;
+    Barrier1OnExCom(Throwable ex) { _dex = AutoBuffer.javaSerializeWritePojo(ex); }
     @Override boolean abort(Job job) { return job._ex != null && job._end_time!=0; } // Already stopped & exception'd
     @Override void update(Job job) {
-      if( job._ex == null ) job._ex = _dex.toEx(); // Keep first exception ever
+      if( job._ex == null ) job._ex = _dex; // Keep first exception ever
       job._stop_requested = true; // Since exception set, also set stop
       if( job._end_time == 0 )    // Keep first end-time
         job._end_time = System.currentTimeMillis();
@@ -291,7 +297,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
-    if (_ex!=null) throw _ex instanceof RuntimeException ? (RuntimeException)_ex : new RuntimeException(_ex);
+    if (_ex!=null)
+      throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadPojo(_ex));
     // Maybe null return, if the started fjtask does not actually produce a result at this Key
     return _result==null ? null : _result.get(); 
   }

@@ -2,14 +2,7 @@ from .estimator_base import *
 
 
 class H2ORandomForestEstimator(H2OEstimator):
-  def __init__(self, model_id=None, mtries=None, sample_rate=None, col_sample_rate_per_tree=None,
-               build_tree_one_node=None, ntrees=None, max_depth=None, min_rows=None, nbins=None,
-               nbins_cats=None, binomial_double_trees=None, balance_classes=None,
-               max_after_balance_size=None, seed=None, nfolds=None, fold_assignment=None,
-               stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
-               score_each_iteration=None, score_tree_interval=None,
-               keep_cross_validation_predictions=None, checkpoint=None):
-    """Builds a Random Forest Model on an H2OFrame
+  """Builds a Random Forest Model on an H2OFrame
 
     Parameters
     ----------
@@ -63,6 +56,8 @@ class H2ORandomForestEstimator(H2OEstimator):
       Must be "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
+    keep_cross_validation_fold_assignment : bool
+      Whether to keep the cross-validation fold assignment.
     score_each_iteration : bool
       Attempts to score each tree.
     score_tree_interval : int
@@ -80,6 +75,15 @@ class H2ORandomForestEstimator(H2OEstimator):
       is not at least this much)
       Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
     """
+  def __init__(self, model_id=None, mtries=None, sample_rate=None, col_sample_rate_per_tree=None,
+               build_tree_one_node=None, ntrees=None, max_depth=None, min_rows=None, nbins=None,
+               nbins_cats=None, binomial_double_trees=None, balance_classes=None,
+               max_after_balance_size=None, seed=None, nfolds=None, fold_assignment=None,
+               stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
+               score_each_iteration=None, score_tree_interval=None,
+               keep_cross_validation_predictions=None,
+               keep_cross_validation_fold_assignment=None,
+               checkpoint=None):
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -211,6 +215,14 @@ class H2ORandomForestEstimator(H2OEstimator):
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
     self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def keep_cross_validation_fold_assignment(self):
+    return self._parms["keep_cross_validation_fold_assignment"]
+
+  @keep_cross_validation_fold_assignment.setter
+  def keep_cross_validation_fold_assignment(self, value):
+    self._parms["keep_cross_validation_fold_assignment"] = value
 
   @property
   def score_each_iteration(self):

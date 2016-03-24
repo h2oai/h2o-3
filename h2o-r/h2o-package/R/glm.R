@@ -46,13 +46,15 @@
 #'        is then we will take the default rho value of zero.
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param intercept Logical, include constant term (intercept) in the model.
 #' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
+#' @param interactions A vector of column indices to interact pairwise. All combinations of two indices will be computed.
 #' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
 #' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
 #' @param non_negative Logical, allow only positive coefficients.
@@ -124,11 +126,13 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     fold_column = NULL,
                     fold_assignment = c("AUTO","Random","Modulo"),
                     keep_cross_validation_predictions = FALSE,
+                    keep_cross_validation_fold_assignment = FALSE,
                     beta_constraints = NULL,
                     offset_column = NULL,
                     weights_column = NULL,
                     intercept = TRUE,
                     max_active_predictors = -1,
+                    interactions=NULL,
                     objective_epsilon = -1,
                     gradient_epsilon = -1,
                     non_negative = FALSE,
@@ -186,6 +190,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
   if( !missing(max_active_predictors) )     parms$max_active_predictors  <- max_active_predictors
   if( !missing(objective_epsilon) )         parms$objective_epsilon      <- objective_epsilon
   if( !missing(gradient_epsilon) )          parms$gradient_epsilon       <- gradient_epsilon
@@ -193,6 +198,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
   if( !missing(remove_collinear_columns) )  parms$remove_collinear_columns<- remove_collinear_columns
   if( !missing(max_runtime_secs))           parms$max_runtime_secs       <- max_runtime_secs
+  if( !missing(interactions)    )           parms$interactions           <- interactions-1
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.

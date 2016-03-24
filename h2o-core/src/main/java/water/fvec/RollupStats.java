@@ -7,6 +7,7 @@ import jsr166y.ForkJoinTask;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
@@ -36,7 +37,7 @@ final class RollupStats extends Iced {
   volatile long _naCnt; //count(!isNA(X))
   double _mean, _sigma; //sum(X) and sum(X^2) for non-NA values
   long    _rows,        //count(X) for non-NA values
-          _nzCnt,       //count(X!=0)
+          _nzCnt,       //count(X!=0) for non-NA values
           _size,        //byte size
           _pinfs,       //count(+inf)
           _ninfs;       //count(-inf)
@@ -98,7 +99,8 @@ final class RollupStats extends Iced {
       if( d == Double.POSITIVE_INFINITY) _pinfs++;
       else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
       else {
-        if( d != 0 || Double.isNaN(d)) _nzCnt=c._len;
+        if( Double.isNaN(d)) _naCnt=c._len;
+        else if( d != 0 ) _nzCnt=c._len;
         _mean = d;
         _rows=c._len;
       }
@@ -112,13 +114,13 @@ final class RollupStats extends Iced {
       _sigma=0; //count of non-NAs * variance of non-NAs
       _mean = 0; //sum of non-NAs (will get turned into mean)
       _naCnt=c._len;
-      _nzCnt=c._len;
+      _nzCnt=0;
       return this;
     }
 
     // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
     if( min==0 && max==1 ) {
-      int zs = c._len-c.sparseLen(); // Easy zeros
+      int zs = c._len-c.sparseLenZero(); // Easy zeros
       int nans = 0;
       // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) )
@@ -190,8 +192,8 @@ final class RollupStats extends Iced {
       // _mean is the mean of non-zero rows
       // _sigma is the mean of non-zero rows
       // handle the zeros
-      if( c.isSparse() ) {
-        int zeros = c._len - c.sparseLen();
+      if( c.isSparseZero() ) {
+        int zeros = c._len - c.sparseLenZero();
         if (zeros > 0) {
           for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
           double zeromean = 0;
@@ -286,18 +288,25 @@ final class RollupStats extends Iced {
       }).call());
   }
 
+  private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+
   static RollupStats get(Vec vec, boolean computeHisto) {
     if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
-
     if( vec.isString() ) computeHisto = false; // No histogram for string columns
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = DKV.getGet(rskey);
     while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
       if(rs != null && rs.isMutating())
         throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
-      // 1. compute
+      // 1. compute only once
       try {
-        RPC.call(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto)).get();
+        RPC rpcNew = new RPC(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto));
+        RPC rpcOld = _pendingRollups.putIfAbsent(rskey, rpcNew);
+        if(rpcOld == null) {  // no prior pending task, need to send this one
+          rpcNew.call().get();
+          _pendingRollups.remove(rskey);
+        } else // rollups computation is already in progress, wait for it to finish
+          rpcOld.get();
       } catch( Throwable t ) {
         System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
         throw new RuntimeException(t);
@@ -336,8 +345,8 @@ final class RollupStats extends Iced {
         if( !Double.isNaN(d) ) _bins[idx(d)]++;
       }
       // Sparse?  We skipped all the zeros; do them now
-      if( c.isSparse() )
-        _bins[idx(0.0)] += (c._len - c.sparseLen());
+      if( c.isSparseZero() )
+        _bins[idx(0.0)] += (c._len - c.sparseLenZero());
     }
     private int idx( double d ) { int idx = (int)((d-_base)/_stride); return Math.min(idx,_bins.length-1); }
 
@@ -358,7 +367,7 @@ final class RollupStats extends Iced {
     final boolean _computeHisto;
 
     public ComputeRollupsTask(Vec v, boolean computeHisto){
-      super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-2));
+      super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-3));
       _vecKey = v._key;
       _rsKey = v.rollupStatsKey();
       _computeHisto = computeHisto;
@@ -420,17 +429,13 @@ final class RollupStats extends Iced {
           Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
           fs.blockForPending();
           if(oldv == v){ // got the lock, compute the rollups
-            addToPendingCount(1);
-            new Roll(new H2OCallback<Roll>(this) {
-              @Override
-              public void callback(Roll rs) {
+            Roll r = new Roll(null,_rsKey).doAll(vec);
                 // computed the stats, now compute histo if needed and install the response and quit
-                rs._rs._checksum ^= vec.length();
-                if(_computeHisto)
-                  computeHisto(rs._rs, vec, nnn);
-                else installResponse(nnn, rs._rs);
-              }
-            },_rsKey).dfork(vec);
+            r._rs._checksum ^= vec.length();
+            if(_computeHisto)
+              computeHisto(r._rs, vec, nnn);
+            else
+              installResponse(nnn, r._rs);
             break;
           } // else someone else is modifying the rollups => try again
         }

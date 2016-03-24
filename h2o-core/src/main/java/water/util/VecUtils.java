@@ -1,9 +1,6 @@
 package water.util;
 
-import water.AutoBuffer;
-import water.Futures;
-import water.MRTask;
-import water.MemoryManager;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.C0DChunk;
@@ -403,18 +400,18 @@ public class VecUtils {
       if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
     }
 
-    @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+    public final AutoBuffer write_impl( AutoBuffer ab ) {
       return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
     }
 
-    @Override public CollectDomain read_impl( AutoBuffer ab ) {
+    public final CollectDomain read_impl( AutoBuffer ab ) {
       long ls[] = ab.getA8();
       assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
       _uniques = new NonBlockingHashMapLong<>();
       if( ls != null ) for( long l : ls ) _uniques.put(l, "");
       return this;
     }
-    @Override public void copyOver(CollectDomain that) {
+    @Override public final void copyOver(CollectDomain that) {
       _uniques = that._uniques;
     }
 
@@ -538,11 +535,12 @@ public class VecUtils {
 
     private static String PLACEHOLDER = "nothing";
 
-    transient private NonBlockingHashMap<String, Object> _uniques = null;
+    private IcedHashMap<String, IcedInt> _uniques = null;
 
+    private final IcedInt _placeHolder = new IcedInt(1);
     @Override
     protected void setupLocal() {
-      _uniques = new NonBlockingHashMap<>();
+      _uniques = new IcedHashMap<>();
     }
 
     @Override
@@ -551,7 +549,7 @@ public class VecUtils {
       for (int i = 0; i < c.len(); i++) {
         if (!c.isNA(i)) {
           c.atStr(bs, i);
-          _uniques.put(bs.bytesToString(), PLACEHOLDER);
+          _uniques.put(bs.bytesToString(), _placeHolder);
         }
       }
     }
@@ -561,29 +559,6 @@ public class VecUtils {
       if (_uniques != mrt._uniques) { // this is not local reduce
         _uniques.putAll(mrt._uniques);
       }
-    }
-
-    @Override
-    public AutoBuffer write_impl(AutoBuffer ab) {
-      return ab.putAStr(
-          (_uniques == null) ? null : _uniques.keySet().toArray(new String[_uniques.size()]));
-    }
-
-    @Override
-    public CollectStringVecDomain read_impl(AutoBuffer ab) {
-      String[] arys = ab.getAStr();
-      _uniques = new NonBlockingHashMap<String, Object>();
-      if (arys != null) {
-        for (String s : arys) {
-          _uniques.put(s, PLACEHOLDER);
-        }
-      }
-      return this;
-    }
-
-    @Override
-    protected void copyOver(CollectStringVecDomain src) {
-      _uniques = src._uniques;
     }
 
     public String[] domain(Vec vec) {

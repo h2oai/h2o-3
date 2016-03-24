@@ -6,7 +6,7 @@ import java.util.Iterator;
 /** specialized subtype of SPARSE chunk for boolean (bitvector); no NAs.  contains just a list of rows that are non-zero. */
 public final class CX0Chunk extends CXIChunk {
   // Sparse constructor
-  protected CX0Chunk(int len, int nzs, byte [] buf){super(len,nzs,0,buf);}
+  protected CX0Chunk(int len, byte [] buf){super(len,0,buf);}
 
   @Override protected final long at8_impl(int idx) {return getId(findOffset(idx)) == idx?1:0;}
   @Override protected final double atd_impl(int idx) { return at8_impl(idx); }
@@ -16,13 +16,12 @@ public final class CX0Chunk extends CXIChunk {
   @Override public boolean hasNA() { return false; }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    final int slen = sparseLen();
     nc.set_len(_len);
-    nc.set_sparseLen(slen);
-    nc.alloc_mantissa(slen);
+    nc.set_sparseLen(_sparseLen);
+    nc.alloc_mantissa(_sparseLen);
     Arrays.fill(nc.mantissa(),1);
-    nc.alloc_exponent(slen);
-    nc.alloc_indices(slen);
+    nc.alloc_exponent(_sparseLen);
+    nc.alloc_indices(_sparseLen);
     nonzeros(nc.indices());
     return nc;
   }

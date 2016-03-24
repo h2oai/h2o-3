@@ -8,9 +8,12 @@ import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MRUtils;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
@@ -38,6 +41,20 @@ public class Merge {
     }.doAllNodes();
   }*/
 
+  static void waitForSignalFromMatt() {
+    System.out.println("waiting at the spot");
+    File f = new File("/home/mdowle/GOFLAG");
+    while (true) {
+      System.out.println("Waiting for GOFLAG ...");
+      if (f.exists()) {
+        f.delete();
+        System.out.println("GOFLAG seen, deleted and moved on");
+        break;
+      }
+      try { Thread.sleep(1000); } catch (Exception ignore) {}
+    }
+  }
+
   // single-threaded driver logic
   static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft, int[][] id_maps) {
 
@@ -57,11 +74,24 @@ public class Merge {
       }
     }
 
+    /* for (int s=0; s<5; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    } */
+
+    ///waitForSignalFromMatt();
 
     H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, id_maps));
     left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
                  // a little slower (97s) than one by one (89s).  TODO: retest in future
     System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
+
+    /* for (int s=0; s<5; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    } */
+
+    ///waitForSignalFromMatt();
 
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
@@ -69,6 +99,10 @@ public class Merge {
     H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, null));
     right.join();
     System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
+    /*for (int s=0; s<5; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
 
     // TODO: start merging before all indexes had been created. Use callback?
 
@@ -133,7 +167,7 @@ public class Merge {
         //if  ( ((leftMSB-1) << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] !=
         //      ((rightMSB-1) << (Math.max(8, rightIndex._biggestBit[0])-8)) + rightIndex._colMin[0] )
         //  continue;
-        long tt = (leftMSB << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] - rightIndex._colMin[0];
+        long tt = (((long)leftMSB) << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] - rightIndex._colMin[0];
         if (tt<0) continue;  // The left MSB values represent a range less than the right minimum value, so cannot match.
         tt >>= (Math.max(8, rightIndex._biggestBit[0])-8);
         if (tt != rightMSB) continue;  // including possibly tt greater than 256 for left values greater than the right's max
@@ -187,7 +221,8 @@ public class Merge {
     }
     System.out.println("... took: " + (System.nanoTime() - t0) / 1e9);
 
-    int queueSize = Math.max(H2O.CLOUD.size() * 20, 40);  // TODO: remove and let thread pool take care of it once GC issue alleviated
+    int queueSize = Math.max(H2O.CLOUD.size() * 10, 40);  // TODO: remove and let thread pool take care of it once GC issue alleviated
+    // int queueSize = 175;  // 1, 10, 100 and finally 300
     t0 = System.nanoTime();
     if (queueSize > bmList.size()) {
       System.out.println("Small number of MSB joins (" + bmList.size() + ") means we won't get full parallelization benefit");
@@ -242,6 +277,13 @@ public class Merge {
         }
       }
       if (doneInSweep == 0) waitMS = Math.min(1000, waitMS*2);  // if last sweep caught none, then double wait time to avoid cost of sweeping
+      else {
+        // When tracing memory going one-by-one
+        /*for (int s=0; s<3; s++) {
+          try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+          System.gc();
+        }*/
+      }
     }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 

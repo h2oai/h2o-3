@@ -17,7 +17,8 @@ public class ASTGroupedPermute extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "permCol", "groupBy", "permuteBy", "keepCol"}; }  // currently only allow 2 items in permuteBy
   @Override int nargs() { return 1 + 5; } // (trim x col groupBy permuteBy keepCol)
   @Override public String str() { return "grouped_permute"; }
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final int permCol = (int) asts[2].exec(env).getNum();
     ASTNumList groupby = ASTGroup.check(fr.numCols(), asts[3]);

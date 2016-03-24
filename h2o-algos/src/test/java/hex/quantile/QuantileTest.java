@@ -38,6 +38,45 @@ public class QuantileTest extends TestUtil {
       if( kmm != null ) kmm.delete();
     }
   }
+  
+  @Test public void testAllNAS() {
+    QuantileModel kmm = null;
+    Frame fr = null;
+    try {
+      fr = ArrayUtils.frame(new double[][]{{Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN},
+              {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}, {Double.NaN}
+      });
+
+      QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+      parms._train = fr._key;
+
+      Job<QuantileModel> job = new Quantile(parms).trainModel();
+      kmm = job.get();
+      job.remove();
+      for (int i=0; i < 11; i++)
+        Assert.assertTrue(Double.isNaN(kmm._output._quantiles[0][i]));
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( kmm != null ) kmm.delete();
+    }    
+  }
 
   @Test public void testInts() {
     QuantileModel kmm = null;

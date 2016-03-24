@@ -6,7 +6,7 @@ import water.util.UnsafeUtils;
 import java.util.Iterator;
 
 public class CXDChunk extends CXIChunk {
-  protected CXDChunk(int len, int nzs, int valsz, byte [] buf){super(len,nzs,valsz,buf);}
+  protected CXDChunk(int len, int valsz, byte [] buf){super(len,valsz,buf);}
 
   // extract fp value from an (byte)offset
   protected final double getFValue(int off){
@@ -29,18 +29,16 @@ public class CXDChunk extends CXIChunk {
 
   @Override protected boolean isNA_impl( int i ) {
     int off = findOffset(i);
-    if(getId(off) != i)return false;
-    return Double.isNaN(getFValue(off));
+    return getId(off) == i && Double.isNaN(getFValue(off));
   }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    final int slen = sparseLen();
     nc.set_len(_len);
-    nc.set_sparseLen(slen);
-    nc.alloc_doubles(slen);
-    nc.alloc_indices(slen);
+    nc.set_sparseLen(_sparseLen);
+    nc.alloc_doubles(_sparseLen);
+    nc.alloc_indices(_sparseLen);
     int off = _OFF;
-    for( int i = 0; i < slen; ++i, off += ridsz() + valsz()) {
+    for( int i = 0; i < _sparseLen; ++i, off += ridsz() + valsz()) {
       nc.indices()[i] = getId(off);
       nc.doubles()[i] = getFValue(off);
     }

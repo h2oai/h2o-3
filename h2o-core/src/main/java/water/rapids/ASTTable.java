@@ -12,7 +12,6 @@ import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
 // TODO:  Define "table" in terms of "groupby"
@@ -26,7 +25,8 @@ class ASTTable extends ASTPrim {
   public String[] args() { return new String[]{"X", "Y", "dense"}; }
   @Override int nargs() { return -1; } // (table X dense)  or (table X Y dense)
   @Override public String str() { return "table"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr1 = stk.track(asts[1].exec(env)).getFrame();
     final boolean dense = asts[asts.length-1].exec(env).getNum()==1;
     Frame fr2 = asts.length==4 ? stk.track(asts[2].exec(env)).getFrame() : null;
@@ -275,7 +275,7 @@ class ASTTable extends ASTPrim {
       throw water.H2O.unimpl();
     }
 
-    @Override public AutoBuffer write_impl(AutoBuffer ab) {
+    public final AutoBuffer write_impl(AutoBuffer ab) {
       if( _col0s == null ) return ab.put8(0);
       ab.put8(_col0s.size());
       for( long col0 : _col0s.keySetLong() ) {
@@ -289,7 +289,7 @@ class ASTTable extends ASTPrim {
       }
       return ab;
     }
-    @Override public SlowCnt read_impl(AutoBuffer ab) {
+    public final SlowCnt read_impl(AutoBuffer ab) {
       long len0 = ab.get8();
       if( len0 == 0 ) return this;
       _col0s = new NonBlockingHashMapLong<>();
@@ -332,7 +332,8 @@ class ASTUnique extends ASTPrim {
   @Override
   public String str() { return "unique"; }
 
-  @Override Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec v;
     if( fr.numCols()!=1 )

@@ -19,7 +19,8 @@ abstract class ASTBinOp extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"leftArg", "rightArg"}; }
   @Override int nargs() { return 1+2; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
@@ -138,9 +139,7 @@ abstract class ASTBinOp extends ASTPrim {
     final Vec oldvecs[] = oldfr.vecs();
     final Vec newvecs[] = newfr.vecs();
     for( int i=0; i<oldvecs.length; i++ )
-      if( !oldvecs[i].isNumeric() && // Must be numeric OR
-          !oldvecs[i].isTime() &&    // time OR
-          !(oldvecs[i].isCategorical() && categoricalOK) ) // categorical are OK (op is EQ/NE)
+      if( (oldvecs[i].isCategorical() && !categoricalOK) ) // categorical are OK (op is EQ/NE)
         newvecs[i] = newvecs[i].makeCon(Double.NaN);
     return new ValFrame(newfr);
   }
@@ -428,17 +427,18 @@ class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op(
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.
 class ASTLAnd extends ASTBinOp {
   public String str() { return "&&"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
-    // If the left is zero or NA, do not evaluate the right, just return the left
+    // If the left is zero, just return the left
     if( left.isNum() ) {
       double d = ((ValNum)left)._d;
-      if( d==0 || Double.isNaN(d) ) return left;
+      if( d==0 ) return left;
     }
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
   }
-  // Weird R semantics, zero trumps NA
+  // 0 trumps NA, and NA trumps 1
   double op( double l, double r ) { return and_op(l,r); }
   static double and_op( double l, double r ) {
     return (l==0||r==0) ? 0 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 1);
@@ -448,20 +448,22 @@ class ASTLAnd extends ASTBinOp {
 // Logical-OR.  If the first arg is true, do not execute the 2nd arg.
 class ASTLOr extends ASTBinOp {
   public String str() { return "||"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
-    // If the left is non-zero or NA, do not evaluate the right, just return the left
+    // If the left is 1, just return the left
     if( left.isNum() ) {
       double d = ((ValNum)left)._d;
-      if( d!=0 || Double.isNaN(d) ) return left;
+      if( d == 1 ) return left;
     }
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
   }
-  // Weird R semantics, zero trumps NA
+  //  1 trumps NA, and NA trumps 0.
   double op( double l, double r ) { return or_op(l, r); }
   static double or_op( double l, double r ) {
-    return (l!=0||r!=0) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0);
+    double a= (l == 1 || r == 1) ? 1 : (Double.isNaN(l) || Double.isNaN(r) ? Double.NaN : 0);
+    return  a;
   }
 }
 
@@ -484,7 +486,8 @@ class ASTIfElse extends ASTPrim {
   public String[] args() { return new String[]{"test","true","false"}; }
   @Override int nargs() { return 1+3; } // (ifelse test true false)
   public String str() { return "ifelse"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
 
     if( val.isNum() ) {         // Scalar test, scalar result
@@ -598,8 +601,10 @@ class ASTIfElse extends ASTPrim {
           new MRTask() {
             @Override
             public void map(Chunk c) {
-              for (int i = 0; i < c._len; ++i)
-                c.set(i, ArrayUtils.find(dom, c.at8(i)));
+              for (int i = 0; i < c._len; ++i) {
+                if( !c.isNA(i) )
+                  c.set(i, ArrayUtils.find(dom, c.at8(i)));
+              }
             }
           }.doAll(res.vec(i));
           res.vec(i).setDomain(newDomain); // needs a DKVput?
@@ -666,7 +671,8 @@ class ASTScale extends ASTPrim {
   @Override int nargs() { return 1+3; } // (scale x center scale)
   @Override
   public String str() { return "scale"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 

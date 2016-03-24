@@ -6,13 +6,17 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> {
+public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> implements Model.LeafNodeAssignment {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 
@@ -139,13 +143,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public TwoDimTable _variable_importances;
     public VarImp _varimp;
 
-    public SharedTreeOutput( SharedTree b, double mse_train, double mse_valid ) {
+    public SharedTreeOutput( SharedTree b) {
       super(b);
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
-      _scored_train = new ScoreKeeper[]{new ScoreKeeper(mse_train)};
-      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(mse_valid)};
+      _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
+      _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
       _modelClassDist = _priorClassDist;
     }
 
@@ -176,6 +180,67 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
+
+  public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    int classTrees = 0;
+    for (int i=0;i<_output._treeKeys[0].length;++i) {
+      if (_output._treeKeys[0][i] != null) classTrees++;
+    }
+    final int outputcols = _output._treeKeys.length * classTrees;
+    final String[] names = new String[outputcols];
+    int col=0;
+    for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
+      Key[] keys = _output._treeKeys[tidx];
+      for (int c = 0; c < keys.length; c++) {
+        if (keys[c] != null) {
+          names[col++] = "T" + (tidx + 1) + (keys.length == 1 ? "" : (".C" + (c + 1)));
+        }
+      }
+    }
+    Frame res = new MRTask() {
+      @Override public void map(Chunk chks[], NewChunk[] idx ) {
+        double input [] = new double[chks.length];
+        final String output[] = new String[outputcols];
+
+        for( int row=0; row<chks[0]._len; row++ ) {
+          for( int i=0; i<chks.length; i++ )
+            input[i] = chks[i].atd(row);
+
+          int col=0;
+          for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
+            Key[] keys = _output._treeKeys[tidx];
+            for (int c = 0; c < keys.length; c++) {
+              if (keys[c] != null) {
+                String pred = DKV.get(keys[c]).<CompressedTree>get().getDecisionPath(input);
+                output[col++] = pred;
+              }
+            }
+          }
+          assert(col==outputcols);
+          for (int i=0; i<outputcols; ++i)
+            idx[i].addStr(output[i]);
+        }
+      }
+    }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
+
+    Vec vv;
+    Vec[] nvecs = new Vec[res.vecs().length];
+    for(int c=0;c<res.vecs().length;++c) {
+      vv = res.vec(c);
+      try {
+        nvecs[c] = vv.toCategoricalVec();
+      } catch (Exception e) {
+        VecUtils.deleteVecs(nvecs, c);
+        throw e;
+      }
+    }
+    res.delete();
+    res = new Frame(destination_key, names, nvecs);
+    DKV.put(res);
+    return res;
+  }
 
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     return score0(data, preds, 1.0, 0.0);
@@ -264,13 +329,12 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
                                              final boolean verboseCode) {
     final int nclass = _output.nclasses();
     body.ip("java.util.Arrays.fill(preds,0);").nl();
-    body.ip("double[] fdata = hex.genmodel.GenModel.SharedTree_clean(data);").nl();
     final String mname = JCodeGen.toJavaId(_key.toString());
 
     // One forest-per-GBM-tree, with a real-tree-per-class
     for (int t=0; t < _output._treeKeys.length; t++) {
       // Generate score method for given tree
-      toJavaForestName(body.i(),mname,t).p(".score0(fdata,preds);").nl();
+      toJavaForestName(body.i(),mname,t).p(".score0(data,preds);").nl();
 
       final int treeIdx = t;
 

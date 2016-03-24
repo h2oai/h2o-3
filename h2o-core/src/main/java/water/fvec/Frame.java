@@ -3,7 +3,9 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -127,6 +129,12 @@ public class Frame extends Lockable<Frame> {
     assert _names.length == vecs.length;
   }
 
+  public void setNames(String[] columns){
+    if(columns.length!= _vecs.length){
+      throw new IllegalArgumentException("Size of array containing column names does not correspond to the number of vecs!");
+    }
+    _names = columns;
+  }
   /** Deep copy of Vecs and Keys and Names (but not data!) to a new random Key.
    *  The resulting Frame does not share with the original, so the set of Vecs
    *  can be freely hacked without disturbing the original Frame. */
@@ -1088,7 +1096,7 @@ public class Frame extends Lockable<Frame> {
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
         coltypes[i] = vec.isInt() ? "long" : "double"; 
@@ -1255,20 +1263,20 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
+  public Vec[] makeCompatible( Frame f) {return makeCompatible(f,false);}
   /** Return array of Vectors if 'f' is compatible with 'this', else return a new
    *  array of Vectors compatible with 'this' and a copy of 'f's data otherwise.  Note
    *  that this can, in the worst case, copy all of {@code this}s' data.
    *  @return This Frame's data in an array of Vectors that is compatible with {@code f}. */
-  public Vec[] makeCompatible( Frame f) {
+  public Vec[] makeCompatible( Frame f, boolean force) {
     // Small data frames are always "compatible"
     if (anyVec() == null)      // Or it is small
       return f.vecs();                 // Then must be compatible
-    // Same VectorGroup is also compatible
     Vec v1 = anyVec();
     Vec v2 = f.anyVec();
     if(v1.length() != v2.length())
       throw new IllegalArgumentException("Can not make vectors of different length compatible!");
-    if (v2 == null || v1.checkCompatible(v2))
+    if (v2 == null || (!force && v1.checkCompatible(v2)))
       return f.vecs();
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
@@ -1287,6 +1295,20 @@ public class Frame extends Lockable<Frame> {
     // Assert row numbering sanity.
     assert row <= lastRowOfCurrentChunk;
     return row >= lastRowOfCurrentChunk;
+  }
+
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite) {
+    // Validate input
+    boolean fileExists = H2O.getPM().exists(path);
+    if (overwrite && fileExists) {
+      Log.warn("File " + path + " exists, but will be overwritten!");
+    } else if (!overwrite && fileExists) {
+      throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+    }
+    InputStream is = (fr).toCSV(true, false);
+    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
+    FrameUtils.ExportTask t = new FrameUtils.ExportTask(is, path, frameName, overwrite, job);
+    return job.start(t, fr.anyVec().nChunks());
   }
 
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally

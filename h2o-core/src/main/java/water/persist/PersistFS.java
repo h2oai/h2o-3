@@ -19,7 +19,7 @@ final class PersistFS extends Persist {
   PersistFS(File root) {
     _root = root;
     _dir = new File(root, "ice" + H2O.API_PORT);
-    deleteRecursive(_dir);
+    //deleteRecursive(_dir);
     // Make the directory as-needed
     root.mkdirs();
     if( !(root.isDirectory() && root.canRead() && root.canWrite()) )
@@ -110,6 +110,10 @@ final class PersistFS extends Persist {
       throw new FSIOException(path, "File already exists");
 
     try {
+      if (!f.getParentFile().exists()) {
+        // Shortcut since we know that this is local FS
+        f.getParentFile().mkdirs();
+      }
       return new FileOutputStream(f, false);
     } catch (IOException e) {
       throw new FSIOException(path, e);

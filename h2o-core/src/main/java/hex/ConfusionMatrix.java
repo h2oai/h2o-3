@@ -92,6 +92,7 @@ public class ConfusionMatrix extends Iced {
     double err = total_rows();
     for( int d = 0; d < _cm.length; ++d )
       err -= _cm[d][d];
+    assert(err >= 0);
     return err;
   }
   /**

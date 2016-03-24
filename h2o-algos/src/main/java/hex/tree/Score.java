@@ -69,13 +69,11 @@ public class Score extends MRTask<Score> {
       if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
-//      if (_gainsLiftBuilder != null) _gainsLiftBuilder.perRow(cdists[2],(int)val[0],weight);
     }
   }
 
   @Override public void reduce( Score t ) {
     _mb.reduce(t._mb);
-//    if (_gainsLiftBuilder!=null) _gainsLiftBuilder.reduce(t._gainsLiftBuilder);
   }
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics

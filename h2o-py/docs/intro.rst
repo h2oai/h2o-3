@@ -116,6 +116,7 @@ If no jar is found, then an :mod:`EnvironmentError` will be raised:
 .. code-block:: python
 
   EnvironmentError: Max retries exceeded. Could not establish link to the H2O cloud @ localhost:54321
+
 After making a successful connection, you can obtain a high-level summary of the cluster
 status:
 

@@ -10,6 +10,7 @@ from builtins import object
 import h2o
 import imp, traceback, warnings
 from ..utils.shared_utils import can_use_pandas
+from ..h2o import H2OJob
 
 
 class ModelBase(object):
@@ -77,6 +78,23 @@ class ModelBase(object):
       self.show()
     return ""
 
+  def predict_leaf_node_assignment(self, test_data):
+    """
+    Predict on a dataset and return the leaf node assignment (only for tree-based models)
+
+    Parameters
+    ----------
+    test_data: H2OFrame
+      Data on which to make predictions.
+
+    Returns
+    -------
+      A new H2OFrame of predictions.
+    """
+    if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, leaf_node_assignment=True)
+    return h2o.get_frame(j["predictions_frame"]["name"])
+
   def predict(self, test_data):
     """
     Predict on a dataset.
@@ -91,9 +109,9 @@ class ModelBase(object):
       A new H2OFrame of predictions.
     """
     if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id)
-    # prediction_frame_id = j["predictions_frame"] #j["model_metrics"][0]["predictions"]["frame_id"]["name"]
-    return h2o.get_frame(j["predictions_frame"]["name"])
+    j = H2OJob(h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, _rest_version=4), self._model_json['algo'] + " prediction")
+    j.poll()
+    return h2o.get_frame(j.dest_key)
 
   def is_cross_validated(self):
     """
@@ -133,8 +151,9 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
-    j = h2o.H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer)
-    return h2o.get_frame(j["predictions_frame"]["name"])
+    j = H2OJob(h2o.H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer, _rest_version=4), "deepfeatures")
+    j.poll()
+    return h2o.get_frame(j.dest_key)
 
   def weights(self, matrix_id=0):
     """
@@ -245,7 +264,20 @@ class ModelBase(object):
     """
     warnings.warn("`score_history` is deprecated. Use `scoring_history`", category=DeprecationWarning, stacklevel=2)
     return self.scoring_history()
-  
+
+  def cross_validation_metrics_summary(self):
+    """
+    Retrieve Cross-Validation Metrics Summary
+
+    Returns
+    -------
+      The cross-validation metrics summary as an H2OTwoDimTable
+    """
+    model = self._model_json["output"]
+    if 'cross_validation_metrics_summary' in list(model.keys()) and model["cross_validation_metrics_summary"] is not None:
+      return model["cross_validation_metrics_summary"]
+    print("No cross-validation metrics summary for this model")
+
   def summary(self):
     """
     Print a detailed summary of the model.
@@ -285,6 +317,8 @@ class ModelBase(object):
     if vm: vm.show()
     xm = model["cross_validation_metrics"]
     if xm: xm.show()
+    xms = model["cross_validation_metrics_summary"]
+    if xms: xms.show()
 
     if "scoring_history" in list(model.keys()) and model["scoring_history"]: model["scoring_history"].show()
     if "variable_importances" in list(model.keys()) and model["variable_importances"]: model["variable_importances"].show()
@@ -629,3 +663,45 @@ class ModelBase(object):
     """
     if len(y_actual) != len(y_predicted):
       raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))
+
+  def cross_validation_models(self):
+    """
+    Obtain a list of cross-validation models.
+    :return: list of H2OModel objects
+    """
+    cvmodels = self._model_json["output"]["cross_validation_models"]
+    if cvmodels is None: return None
+    m = []
+    for p in cvmodels: m.append(h2o.get_model(p["name"]))
+    return m
+
+  def cross_validation_predictions(self):
+    """
+    Obtain the (out-of-sample) holdout predictions of all cross-validation models on their holdout data.
+    Note that the predictions are expanded to the full number of rows of the training data, with 0 fill-in.
+    :return: list of H2OFrame objects
+    """
+    preds = self._model_json["output"]["cross_validation_predictions"]
+    if preds is None: return None
+    m = []
+    for p in preds: m.append(h2o.get_frame(p["name"]))
+    return m
+
+  def cross_validation_holdout_predictions(self):
+    """
+    Obtain the (out-of-sample) holdout predictions of all cross-validation models on the training data.
+    This is equivalent to summing up all H2OFrames returned by cross_validation_predictions.
+    :return: H2OFrame
+    """
+    preds = self._model_json["output"]["cross_validation_holdout_predictions_frame_id"]
+    if preds is None: return None
+    return h2o.get_frame(preds["name"])
+
+  def cross_validation_fold_assignment(self):
+    """
+    Obtain the cross-validation fold assignment for all rows in the training data.
+    :return: H2OFrame
+    """
+    fid = self._model_json["output"]["cross_validation_fold_assignment_frame_id"]
+    if fid is None: return None
+    return h2o.get_frame(fid["name"])

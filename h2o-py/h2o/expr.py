@@ -124,8 +124,11 @@ class ExprNode(object):
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
   def __del__(self):
-    if self._cache._id is not None and self._children is not None:
-      ExprNode.rapids("(rm {})".format(self._cache._id))
+    try:
+      if self._cache._id is not None and self._children is not None:
+        ExprNode.rapids("(rm {})".format(self._cache._id))
+    except AttributeError:
+      pass
 
   @staticmethod
   def _collapse_sb(sb): return ' '.join("".join(sb).replace("\n", "").split()).replace(" )", ")")

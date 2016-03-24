@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import jsr166y.ForkJoinPool;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -115,9 +114,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     if( mem != null ) return mem;
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null )          // Has the POJO, make raw bytes
-      // Chunks have custom serializer here that skips all steps; just the chunk itself
-      if( pojo instanceof Chunk ) return (_mem = ((Chunk)pojo).getBytes());
-      else return (_mem = pojo.write(new AutoBuffer()).buf());
+      _mem = pojo.asBytes();
     if( _max == 0 ) return (_mem = new byte[0]);
     return (_mem = loadPersist());
   }
@@ -133,8 +130,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Iced pojo = (Iced)_pojo;    // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newInstance(_type);
-    pojo.read(new AutoBuffer(memOrLoad()));
-    return (T)(_pojo = pojo);
+    return (T)(_pojo = pojo.reloadFromBytes(memOrLoad()));
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.  This
@@ -153,7 +149,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newFreezable(_type);
-    pojo.read(new AutoBuffer(memOrLoad()));
+    pojo.reloadFromBytes(memOrLoad());
     return (T)(_pojo = pojo);
   }
 
@@ -318,7 +314,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = (pojo instanceof Chunk)?((Chunk)pojo).getBytes():pojo.write(new AutoBuffer()).buf();
+    _mem = pojo.asBytes();
     _max = _mem.length;
     assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
     // For the ICE backend, assume new values are not-yet-written.
@@ -335,7 +331,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.write(new AutoBuffer()).buf();
+    _mem = pojo.asBytes();
     _max = _mem.length;
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
@@ -346,11 +342,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // Custom serializers: the _mem field is racily cleared by the MemoryManager
   // and the normal serializer then might ship over a null instead of the
   // intended byte[].  Also, the value is NOT on the deserialize'd machines disk
-  @Override public AutoBuffer write_impl( AutoBuffer ab ) {
+  public final AutoBuffer write_impl( AutoBuffer ab ) {
     return ab.put1(_persist).put2(_type).putA1(memOrLoad());
   }
   // Custom serializer: set _max from _mem length; set replicas & timestamp.
-  @Override public Value read_impl(AutoBuffer bb) {
+  public final Value read_impl(AutoBuffer bb) {
     assert _key == null;        // Not set yet
     // Set persistence backend but... strip off saved-to-disk bit
     _persist = (byte)(bb.get1()&BACKEND_MASK); 

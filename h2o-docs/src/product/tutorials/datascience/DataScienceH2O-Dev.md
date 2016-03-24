@@ -287,19 +287,19 @@ By default, the following output displays:
 
 - **How does the algorithm handle missing values during training?**
 
-  GLM skips rows with missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level.   
+  Optionally, glm can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
-
-  GLM will predict Double.NaN for rows containg missing values.
+  Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 - **What happens if the response has missing values?**
 
-  It is handled properly, but verify the results are correct.
+  The rows with missing response are ignored during model training and validation.
 
-- **What happens when you try to predict on a categorical level not seen during training?**
-
-  GLM will predict 'Double.NAN' for each row with a new categorical level, indicating a prediction wasn't made.
+- **What happens during prediction if the new sample has categorical levels not seen in training?**
+  The value will be filled with either special missing level (if trained with missing values and missing_value_handling was set to MeanImputation) or 0.
 
 - **Does it matter if the data is sorted?**
 
@@ -567,6 +567,10 @@ By default, the following output displays:
 - Training metrics for thresholds (thresholds, F1, F2, F0Points, Accuracy, Precision, Recall, Specificity, Absolute MCC, min. per-class accuracy, TNS, FNS, FPS, TPS, IDX)
 - Maximum metrics (metric, threshold, value, IDX)
 - Variable importances in tabular format
+
+
+###Leaf Node Assignment
+Trees cluster observations into leaf nodes, and this information can be useful for feature engineering or model interpretability. Use **h2o.predict\_leaf\_node\_assignment\(model, frame\)** to get an H2OFrame with the leaf node assignments, or click the checkbox when making predictions from Flow. Those leaf nodes represent decision rules that can be fed to other models (i.e., GLM with lambda search and strong rules) to obtain a limited set of the most important rules.
 
 ###FAQ
 
@@ -1183,6 +1187,9 @@ The output for GBM includes the following:
 - Scoring history in tabular format
 - Training metrics (model name, model checksum name, frame name, description, model category, duration in ms, scoring time, predictions, MSE, R2)
 - Variable importances in tabular format
+
+###Leaf Node Assignment
+Trees cluster observations into leaf nodes, and this information can be useful for feature engineering or model interpretability. Use **h2o.predict\_leaf\_node\_assignment\(model, frame\)** to get an H2OFrame with the leaf node assignments, or click the checkbox when making predictions from Flow. Those leaf nodes represent decision rules that can be fed to other models (i.e., GLM with lambda search and strong rules) to obtain a limited set of the most important rules.
 
 ###FAQ
 

@@ -108,7 +108,10 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced implements Cloneable {
+public abstract class Chunk extends Iced<Chunk> {
+  public Chunk() {}
+  private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
+
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;
   /** Global starting row for this local Chunk */
@@ -524,17 +527,19 @@ public abstract class Chunk extends Iced implements Cloneable {
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
-  public int nextNZ(int rid){ return rid + 1;}
-
+  //Zero sparse methods:
+  
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return true if this Chunk is sparse.  */
-  public boolean isSparse() {return false;}
+  public boolean isSparseZero() {return false;}
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #_len} */
-  public int sparseLen() {return _len;}
+  public int sparseLenZero() {return _len;}
+
+  public int nextNZ(int rid){ return rid + 1;}
 
   /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
    *  stored in this chunk.  For dense chunks, this will contain indices of all
@@ -544,7 +549,30 @@ public abstract class Chunk extends Iced implements Cloneable {
     for( int i = 0; i < _len; ++i) res[i] = i;
     return _len;
   }
+  //NA sparse methods:
+  
+  /** Sparse Chunks have a significant number of NAs, and support for
+   *  skipping over large runs of NAs in a row.
+   *  @return true if this Chunk is sparseNA.  */
+  public boolean isSparseNA() {return false;}
 
+  /** Sparse Chunks have a significant number of NAs, and support for
+   *  skipping over large runs of NAs in a row.
+   *  @return At least as large as the count of non-NAs, but may be significantly smaller than the {@link #_len} */
+  public int sparseLenNA() {return _len;}
+
+  // Next non-NA. Analogous to nextNZ()
+  public int nextNNA(int rid){ return rid + 1;}
+  
+  /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
+   *  stored in this chunk.  For dense chunks, this will contain indices of all
+   *  the rows in this chunk.
+   *  @return array of chunk-relative indices of values stored in this chunk. */
+  public int nonnas(int [] res) {
+    for( int i = 0; i < _len; ++i) res[i] = i;
+    return _len;
+  }
+  
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for
    *  constant and boolean chunks. */
@@ -581,15 +609,30 @@ public abstract class Chunk extends Iced implements Cloneable {
 
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
-  @Override public AutoBuffer write_impl(AutoBuffer bb) {
-    return bb.putA1(_mem, _mem.length);
+  public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
+
+  @Override
+  public final byte [] asBytes(){return _mem;}
+
+  @Override
+  public final Chunk reloadFromBytes(byte [] ary){
+    _mem = ary;
+    initFromBytes();
+    return this;
   }
 
-  /** Custom deserializers, implemented by Chunk subclasses: the _mem field
-   *  contains ALL the fields already.  Init _start to -1, so we know we have
-   *  not filled in other fields.  Leave _vec and _chk2 null, leave _len
-   *  unknown. */
-  abstract public Chunk read_impl( AutoBuffer ab );
+  protected abstract void initFromBytes();
+  public final Chunk read_impl(AutoBuffer ab){
+    _mem = ab.getA1();
+    initFromBytes();
+    return this;
+  }
+
+//  /** Custom deserializers, implemented by Chunk subclasses: the _mem field
+//   *  contains ALL the fields already.  Init _start to -1, so we know we have
+//   *  not filled in other fields.  Leave _vec and _chk2 null, leave _len
+//   *  unknown. */
+//  abstract public Chunk read_impl( AutoBuffer ab );
 
   // -----------------
   // Support for fixed-width format printing

@@ -33,7 +33,6 @@ public final class ComputationState {
   private double _previousLambda;
   private GLMGradientInfo _ginfo; // gradient info excluding l1 penalty
   private double _likelihood;
-  private double _objVal; // full objective value including l2 AND l1
   private double _gradientErr;
   private DataInfo _activeData;
   private BetaConstraint _activeBC = null;
@@ -71,9 +70,8 @@ public final class ComputationState {
   public double [] beta(){
     return _beta;
   }
-  public GLMGradientInfo ginfo(){return _ginfo;}
+  public GLMGradientInfo ginfo(){return _ginfo == null?(_ginfo = gslvr().getGradient(beta())):_ginfo;}
   public BetaConstraint activeBC(){return _activeBC;}
-  public double objVal() {return _objVal;}
   public double likelihood() {return _likelihood;}
 
 
@@ -84,17 +82,14 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "iter=" + _iter + " lmb=" + GLM.lambdaFormatter.format(_lambda) + " obj=" + MathUtils.roundToNDigits(objVal(),4) + " imp=" + GLM.lambdaFormatter.format(_relImprovement) + " bdf=" + GLM.lambdaFormatter.format(_betaDiff);
+    return "iter=" + _iter + " lmb=" + GLM.lambdaFormatter.format(_lambda) + " obj=" + MathUtils.roundToNDigits(objective(),4) + " imp=" + GLM.lambdaFormatter.format(_relImprovement) + " bdf=" + GLM.lambdaFormatter.format(_betaDiff);
   }
 
   private void adjustToNewLambda() {
     double ldiff = _lambda - _previousLambda;
     if(ldiff == 0) return;
-    int N = _dinfo.fullN() + (_intercept ? 1 : 0);
     double l2pen = .5*l2pen();
-    double l1pen = l1pen();
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
-    _objVal = _objVal + ldiff * (l1pen + l2pen); //todo add proximal penalty?
   }
 
   public double l1pen() {return _alpha*_lambda;}
@@ -110,40 +105,50 @@ public final class ComputationState {
     if(_parms._family == Family.multinomial)
       return applyStrongRulesMultinomial();
     int P = _dinfo.fullN();
-    int selected = 0;
+    int newlySelected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
     if (!_allIn) {
       final double rhs = Math.abs(_alpha * (2 * _lambda - _previousLambda));
-      int [] cols = MemoryManager.malloc4(P);
+      int [] newCols = MemoryManager.malloc4(P);
       int j = 0;
+
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
       for (int i = 0; i < P; ++i) {
         if (j < oldActiveCols.length && i == oldActiveCols[j]) {
-          cols[selected++] = i;
           ++j;
+          newCols[newlySelected++] = i; // todo
         } else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs) {
-          cols[selected++] = i;
+          newCols[newlySelected++] = i;
         }
       }
-      _allIn = selected == P;
+      // merge already active columns in
+      int active = newlySelected;
+      _allIn = active == P;
       if(!_allIn) {
-        cols[selected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
-        cols = Arrays.copyOf(cols, selected);
+        int [] cols = newCols;
+//        if(newlySelected != active) {
+//          cols = new int[active];
+//
+//        }
+        cols[newlySelected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
+        cols = Arrays.copyOf(cols, newlySelected);
         double [] b = ArrayUtils.select(_beta, cols);
         assert Arrays.equals(_beta,ArrayUtils.expandAndScatter(b,_dinfo.fullN()+1,cols));
         _beta = b;
-        _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, selected));
+        _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, newlySelected));
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,(1-_alpha)*_lambda,_bc);
-        assert _beta.length == selected;
-        return selected;
+        assert _beta.length == newlySelected;
+        return newlySelected;
       }
     }
     _activeData = _dinfo;
     return _dinfo.fullN();
   }
+
+  public boolean _lsNeeded = false;
 
   private DataInfo [] _activeDataMultinomial;
 //  private int [] _classOffsets = new int[]{0};
@@ -206,11 +211,10 @@ public final class ComputationState {
 
   public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
     fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),b,_beta);
-    double objOld = _objVal;
+    double objOld = objective();
     _ginfo = ginfo._fullInfo;
     _likelihood = ginfo._likelihood;
-    _objVal = objective();
-    _relImprovement = (objOld - _objVal)/objOld;
+    _relImprovement = (objOld - objective())/objOld;
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -330,17 +334,18 @@ public final class ComputationState {
       }
     return l1pen()*l1norm + .5*l2pen()*l2norm;
   }
-  private double objective() {
-    return _likelihood * _parms._obj_reg + penalty(_beta) + _activeBC.proxPen(_beta);
+  public double objective() {return _beta == null?Double.MAX_VALUE:objective(_beta,_likelihood);}
+
+  public double objective(double [] beta, double likelihood) {
+    return likelihood * _parms._obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
   protected double  updateState(double [] beta, double likelihood) {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
+    double objOld = objective();
     _beta = beta;
     _ginfo = null;
     _likelihood = likelihood;
-    double objOld = _objVal;
-    _objVal = objective();
-    return (_relImprovement = (objOld - _objVal)/objOld);
+    return (_relImprovement = (objOld - objective())/objOld);
   }
   private double _betaDiff;
   private double _relImprovement;
@@ -349,12 +354,12 @@ public final class ComputationState {
 
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
+    double objOld = objective();
     _beta = beta;
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
-    double objOld = _objVal;
-    _objVal = objective();
-    return (_relImprovement = (objOld - _objVal)/objOld);
+
+    return (_relImprovement = (objOld - objective())/objOld);
   }
 
   public double [] expandBeta(double [] beta) {

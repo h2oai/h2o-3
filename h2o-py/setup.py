@@ -22,7 +22,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/h2oai/h2o.git',
+    url='https://github.com/h2oai/h2o-3.git',
 
     # Author details
     author='H2O.ai',
@@ -55,7 +55,7 @@ setup(
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
-        'Programming Langauge :: Python :: 3.5',
+        'Programming Language :: Python :: 3.5',
         ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
@@ -63,7 +63,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate', 'future'],
+    install_requires=['requests', 'tabulate', 'future', 'six'],
 
 
     data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../h2o-r/h2o-package/inst/extdata/iris.csv',

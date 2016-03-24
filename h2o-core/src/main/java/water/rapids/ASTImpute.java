@@ -1,6 +1,7 @@
 package water.rapids;
 
 import hex.quantile.QuantileModel;
+import water.Freezable;
 import water.H2O;
 import water.Iced;
 import water.MRTask;
@@ -60,7 +61,8 @@ public class ASTImpute extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "groupByFrame", "values"}; }
   @Override public String str(){ return "h2o.impute";}
   @Override int nargs() { return 1+7; } // (h2o.impute data col method combine_method groupby groupByFrame values)
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     // Argument parsing and sanity checking
     // Whole frame being imputed
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -111,7 +113,7 @@ public class ASTImpute extends ASTPrim {
     else values=null;
     boolean doGrpBy = !by2.isEmpty() || groupByFrame!=null;
     // Compute the imputed value per-group.  Empty groups are allowed and OK.
-    IcedHashMap<ASTGroup.G,Iced[]> group_impute_map;
+    IcedHashMap<ASTGroup.G,Freezable[]> group_impute_map;
     if( !doGrpBy ) {        // Skip the grouping work
       if( ffill0 || bfill0 ) {  // do a forward/backward fill on the NA
         // TODO: requires chk.previousNonNA and chk.nextNonNA style methods (which may go across chk boundaries)s
@@ -197,7 +199,7 @@ public class ASTImpute extends ASTPrim {
       group_impute_map = new Gather(by2.expand4(),bycols0,fr.numCols(),col).doAll(imputes)._group_impute_map;
 
       // Now walk over the data, replace NAs with the imputed results
-      final IcedHashMap<ASTGroup.G, Iced[]> final_group_impute_map = group_impute_map;
+      final IcedHashMap<ASTGroup.G, Freezable[]> final_group_impute_map = group_impute_map;
       if( by2.isEmpty() ) {
         int[] byCols = new int[imputes.numCols()-1];
         for(int i=0;i<byCols.length;++i)
@@ -227,7 +229,7 @@ public class ASTImpute extends ASTPrim {
     private final int _ncol;
     private final int[] _byCols0; // actual group-by indexes
     private final int[] _byCols;  // index into the grouped-by frame result
-    private IcedHashMap<ASTGroup.G,Iced[]> _group_impute_map;
+    private IcedHashMap<ASTGroup.G,Freezable[]> _group_impute_map;
     private transient Set<Integer> _localbyColzSet;
     Gather( int[] byCols0, int[] byCols, int ncol, int imputeCol) { _byCols=byCols; _byCols0=byCols0; _ncol=ncol; _imputedCol=imputeCol; }
     @Override public void setupLocal() { _localbyColzSet=new HashSet<>(); for(int by: _byCols0) _localbyColzSet.add(by); }

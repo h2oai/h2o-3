@@ -24,7 +24,7 @@ test <- function(h) {
 	hh = h2o.deeplearning(x = 1:3,y = "Claims",distribution ="gamma",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
                       reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
                       seed = 516736545500,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
-                      offset_column = "offset",training_frame = hdf,validation_frame=hdf) 
+                      offset_column = "offset",training_frame = hdf,validation_frame=hdf,stopping_rounds=0)
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
 	expect_equal(hh@model$training_metrics@metrics$mean_residual_deviance,hh@model$validation_metrics@metrics$mean_residual_deviance)
 	ph = as.data.frame(h2o.predict(hh,newdata = hdf))
@@ -32,10 +32,10 @@ test <- function(h) {
 	print(mean(ph[,1]))
 	print(min(ph[,1]))
 	print(max(ph[,1]))
-	expect_equal(mean_deviance,8.3, tolerance=1e-2)
-	expect_equal(50.7, mean(ph[,1]), tolerance=1e-2 )
-	expect_equal(0.941, min(ph[,1]), tolerance=1e-2 )
-	expect_equal(415, max(ph[,1]), tolerance=1e-2 )
+	expect_equal(8.301466, mean_deviance, tolerance=1e-5)
+	expect_equal(50.87408, mean(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.9473774, min(ph[,1]), tolerance=1e-5 )
+	expect_equal(416.5421, max(ph[,1]), tolerance=1e-5 )
 
 	
 }

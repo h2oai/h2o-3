@@ -23,7 +23,7 @@ public class C1NChunkTest extends TestUtil {
     nc = cc.inflate_impl(new NewChunk(null, 0));
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._len);
-    Assert.assertEquals(vals.length, nc.sparseLen());
+    Assert.assertEquals(vals.length, nc._sparseLen);
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], nc.at8(i));
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], nc.at8_abs(i));
 

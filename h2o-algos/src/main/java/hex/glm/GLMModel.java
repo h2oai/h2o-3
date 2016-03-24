@@ -1,13 +1,11 @@
 package hex.glm;
 
-import java.util.Arrays;
-import java.util.HashMap;
-
 import hex.DataInfo;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -23,26 +21,22 @@ import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import water.util.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Created by tomasnykodym on 8/27/14.
  */
 public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
-    super(selfKey, parms, null);
+    super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
     _ymu = ymu;
     _ySigma = ySigma;
     _lambda_max = lambda_max;
     _nobs = nobs;
-    _output = job == null?new GLMOutput():new GLMOutput(job);
     _nullDOF = nobs - (parms._intercept?1:0);
   }
 
@@ -136,6 +130,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
+    public int[] _interactions=null;
 
 
     public Key<Frame> _beta_constraints = null;
@@ -154,6 +149,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_compute_p_values","P values are currently not supported for family=multinomial");
       if(_weights_column != null && _offset_column != null && _weights_column.equals(_offset_column))
         glm.error("_offset_column", "Offset must be different from weights");
+      if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
+        glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda_search)
         if (glm.nFoldCV())
           glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
@@ -232,12 +229,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public GLMParameters(Family f){this(f,f.defaultLink);}
     public GLMParameters(Family f, Link l){this(f,l, null, null, 0, 1);}
+    public GLMParameters(Family f, Link l, double[] lambda, double[] alpha, double twVar, double twLnk) {
+      this(f,l,lambda,alpha,twVar,twLnk,null);
+    }
 
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk){
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, int[] interactions){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
       this._tweedie_link_power = twLnk;
+      _interactions=interactions;
       _family = f;
       _link = l;
     }
@@ -582,13 +583,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
-      x.mu = linkInv(eta + off);
+      double etaOff = eta + off;
+      x.mu = linkInv(etaOff);
       double var = Math.max(1e-6, variance(x.mu)); // avoid numerical problems with 0 variance
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;
-      x.l = w*likelihood(y,x.mu);
-      x.dev = w*deviance(y,x.mu);
+      if(_family == Family.binomial && _link == Link.logit) {
+        // use the same likelihood computation as GLMBinomialGradientTask to have exactly the same values for same inputs
+        x.l = w * Math.log(1 + Math.exp((etaOff - 2 * y * etaOff)));
+        x.dev = 2*x.l;
+      } else {
+        x.l = w * likelihood(y, x.mu);
+        x.dev = w * deviance(y, x.mu);
+      }
       return x;
     }
   }
@@ -746,6 +754,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     // GLM is always supervised
     public boolean isSupervised() { return true; }
+
+    public Model.InteractionPair[] interactions() { return _dinfo._interactions; }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
@@ -1017,7 +1027,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     classCtx.add(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
-        JCodeGen.toClassWithArray(out, "static", "BETA", beta_internal()); // "The Coefficients"
+        JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
         JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo._catModes,"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");

@@ -1,11 +1,11 @@
 package hex.deeplearning;
 
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.Distribution;
 import hex.ModelMetricsAutoEncoder;
 import hex.ModelMetricsRegression;
 import hex.ScoreKeeper;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -19,13 +19,13 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 
 import static hex.Distribution.Family.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import water.util.RandomUtils;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -362,7 +362,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            1.6201002863836856E-4,
+            4.628994955036487E-6,
             DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -969,6 +969,7 @@ public class DeepLearningTest extends TestUtil {
         DeepLearningParameters.Loss.Quadratic,
         DeepLearningParameters.Loss.Huber,
         DeepLearningParameters.Loss.Absolute,
+        DeepLearningParameters.Loss.Quantile,
     }) {
       Scope.enter();
       try {
@@ -1453,12 +1454,153 @@ public class DeepLearningTest extends TestUtil {
       dl = new DeepLearning(parms).trainModel().get();
 
       Assert.assertEquals(dl._output._training_metrics._MSE,12.892871729257042,1e-6);
-      Assert.assertEquals(dl._output._cross_validation_metrics._MSE,17.42844560821736,1e-6);
+      Assert.assertEquals(dl._output._cross_validation_metrics._MSE,17.2918678,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testMiniBatch1() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._mini_batch_size = 1;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(dl._output._training_metrics._MSE,12.957507332154576,1e-6);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testMiniBatch5() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._mini_batch_size = 5;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(15.664562089179249, dl._output._training_metrics._MSE, 1e-6);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testMiniBatch50() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._mini_batch_size = 50;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(23.14666210443877,dl._output._training_metrics._MSE,1e-6);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+
+  @Test
+  public void testPretrainedAE() {
+    Frame tfr = null;
+    DeepLearningModel dl1 = null;
+    DeepLearningModel dl2 = null;
+    DeepLearningModel ae = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+
+      // train unsupervised AE
+      Key<DeepLearningModel> key = Key.make("ae_model");
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._ignored_columns = new String[]{tfr.lastVecName()};
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._autoencoder = true;
+        parms._seed = 0xdecaf;
+        ae = new DeepLearning(parms, key).trainModel().get();
+      }
+
+      // train supervised DL model
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        parms._pretrained_autoencoder = key;
+        dl1 = new DeepLearning(parms).trainModel().get();
+      }
+
+      // train DL model from scratch
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        dl2 = new DeepLearning(parms).trainModel().get();
+      }
+
+      Log.info("pretrained  : MSE=" + dl1._output._training_metrics.mse());
+      Log.info("from scratch: MSE=" + dl2._output._training_metrics.mse());
+      Assert.assertTrue(dl1._output._training_metrics.mse() < dl2._output._training_metrics.mse());
+
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (ae != null) ae.delete();
+      if (dl1 != null) dl1.delete();
+      if (dl2 != null) dl2.delete();
     }
   }
 }

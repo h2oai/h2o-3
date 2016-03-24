@@ -1,0 +1,6 @@
+ext {
+  hadoopVersion = 'cdh5.5.3'
+  hadoopMavenArtifactVersion = '2.6.0-cdh5.5.2'
+}
+
+apply from: '../driverjar.gradle'

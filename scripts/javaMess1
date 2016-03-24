@@ -1,0 +1,10 @@
+KeyName = general
+Message = Reproducibility enforced - using only 1 thread - can be slow.
+KeyName = general
+Message =  _train: Dropping constant columns: C21, C29
+keyName = pyunit_benign_glm_grid.py
+Message = Grid search: construction of model parameters failed! Exception: java.lang.IllegalArgumentException: Cannot set field 'alpha'
+KeyName = pyunit_col_sample_per_tree_RF.py
+Message = _train: Dropping constant columns: C21, C29
+keyName =  pyunit_pubdev_2223.py
+Message =  _train: Dropping constant columns: C21, C29

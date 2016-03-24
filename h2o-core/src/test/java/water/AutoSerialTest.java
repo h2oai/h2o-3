@@ -1,8 +1,12 @@
 package water;
 
 import org.junit.*;
+import water.util.JSONUtils;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 
 public class AutoSerialTest extends Iced {
   @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
@@ -172,6 +176,158 @@ public class AutoSerialTest extends Iced {
       this. read(abr());
       Assert.assertArrayEquals(exp, _longs);
     }
+  }
+
+  // test that simple freezable works (gets autoserializaed correctly)
+  public static class SimpleFreezableTest implements Freezable<SimpleFreezableTest>, Serializable {
+    final int x;
+    double y;
+    String str;
+
+    public static int DEBUG_WEAVER = 1;
+    public SimpleFreezableTest(){x = -1;}
+    public SimpleFreezableTest(int x, double y, String str) {this.x = x; this.y = y; this.str = str;}
+
+    @Override public SimpleFreezableTest clone(){
+      try {
+        return (SimpleFreezableTest)super.clone();
+      } catch (CloneNotSupportedException e) {throw water.util.Log.throwErr(e);}
+    }
+
+    @Override
+    public AutoBuffer write(AutoBuffer ab) {
+      return TypeMap.getIcer(this).write(ab,this);
+    }
+
+    @Override
+    public SimpleFreezableTest read(AutoBuffer ab) {
+      Icer icer =TypeMap.getIcer(this);
+      return (SimpleFreezableTest) icer.read(ab,this);
+    }
+
+    @Override
+    public AutoBuffer writeJSON(AutoBuffer ab) {
+      return TypeMap.getIcer(this).writeJSON(ab,this);
+    }
+
+    @Override
+    public SimpleFreezableTest readJSON(AutoBuffer ab) {
+      return (SimpleFreezableTest) TypeMap.getIcer(this).read(ab,this);
+    }
+
+    @Override
+    public int frozenType() {
+      return TypeMap.getIcer(this).frozenType();
+    }
+
+    @Override
+    public byte[] asBytes() {
+      return write(new AutoBuffer()).buf();
+    }
+
+    @Override
+    public SimpleFreezableTest reloadFromBytes(byte[] ary) {
+      return read(new AutoBuffer(ary));
+    }
+  }
+
+  // test that inheritance works
+  public static class SimpleFreezableTestChild  extends SimpleFreezableTest{
+    public static int DEBUG_WEAVER = 1;
+
+    int [] intAry;
+    double [] dAry;
+
+    public SimpleFreezableTestChild(){}
+    public SimpleFreezableTestChild(int x, int y, String str, int [] intAry, double [] dAry) {super(x,y,str); this.intAry = intAry; this.dAry = dAry;}
+  }
+
+  // test that custom serialization using final method flavor works
+  public static class SimpleFreezableTestChild2  extends SimpleFreezableTest {
+    public static int DEBUG_WEAVER = 1;
+
+    ArrayList<Number> _nums = new ArrayList<>();
+
+    public SimpleFreezableTestChild2() {
+    }
+
+    public SimpleFreezableTestChild2(int x, int y, String str, int[] intAry, double[] dAry) {
+      super(x, y, str);
+      for (int i : intAry) _nums.add(new Double(i));
+      for (double d : dAry) _nums.add(new Double(d));
+    }
+
+    public final AutoBuffer write_impl(AutoBuffer ab) {
+      ab.put4(_nums.size());
+      for (int i = 0; i < _nums.size(); ++i)
+        ab.put8d(_nums.get(i).doubleValue());
+      return ab;
+    }
+
+    public final SimpleFreezableTestChild2 read_impl(AutoBuffer ab) {
+      int n = ab.get4();
+      _nums = new ArrayList<>();
+      for (int i = 0; i < n; ++i)
+        _nums.add(ab.get8d());
+      return this;
+    }
+  }
+  // test that custom serialization inheritace works
+  public static class SimpleFreezableTestChild3  extends SimpleFreezableTestChild2 {
+    public static int DEBUG_WEAVER = 1;
+
+    ArrayList<Number> _nums2 = new ArrayList<>();
+
+    public SimpleFreezableTestChild3() {}
+
+    public SimpleFreezableTestChild3(int x, int y, String str, int[] intAry, double[] dAry) {
+      super(x, y, str, intAry, dAry);
+      for (int i : intAry) _nums2.add(new Double(i) * 2);
+      for (double d : dAry) _nums2.add(new Double(d) * 2);
+    }
+
+    public static AutoBuffer write_impl(SimpleFreezableTestChild3 self, AutoBuffer ab) {
+      ab.put4(self._nums2.size());
+      for (int i = 0; i < self._nums2.size(); ++i)
+        ab.put8d(self._nums2.get(i).doubleValue());
+      return ab;
+    }
+
+    public static SimpleFreezableTestChild3 read_impl(SimpleFreezableTestChild3 self, AutoBuffer ab) {
+      int n = ab.get4();
+      self._nums2 = new ArrayList<>();
+      for (int i = 0; i < n; ++i)
+        self._nums2.add(ab.get8d());
+      return self;
+    }
+  }
+
+
+
+  @Test public void testFreezable(){
+    SimpleFreezableTest a = new SimpleFreezableTest(12,345,"6789");
+    SimpleFreezableTest b = new SimpleFreezableTest().read(new AutoBuffer(a.write(new AutoBuffer()).bufClose()));
+    byte [] abytes = AutoBuffer.javaSerializeWritePojo(a);
+    b = new AutoBuffer(new AutoBuffer().put(a).bufClose()).get();
+    Assert.assertArrayEquals(abytes,AutoBuffer.javaSerializeWritePojo(b));
+    byte [] jsonBytes = a.writeJSON(new AutoBuffer()).buf();
+    String jsonStr = new String(jsonBytes);
+    Map<String, Object> m = JSONUtils.parse(jsonStr);
+    int x = (int)((Double)m.get("x")).doubleValue();
+    int y = (int)((Double)m.get("y")).doubleValue();
+    String str = (String) m.get("str");
+    Assert.assertEquals(12,x);
+    Assert.assertEquals(345,y);
+    Assert.assertEquals("6789",str);
+//    todo readJSON does not work, it is also not used anywehere, we should either fix it or remove it.
+//    SimpleFreezableTest c = new SimpleFreezableTest().readJSON(new AutoBuffer(jsonBytes));
+//    byte [] cbytes = AutoBuffer.javaSerializeWritePojo(c);
+//    Assert.assertArrayEquals(abytes,cbytes);
+    SimpleFreezableTestChild d = new SimpleFreezableTestChild(12,345,"6789",new int[]{10,20,30,40,50}, new double[]{10.1,10.2,10.3,10.4,10.5});
+    Assert.assertArrayEquals(AutoBuffer.javaSerializeWritePojo(d),AutoBuffer.javaSerializeWritePojo(new SimpleFreezableTestChild().reloadFromBytes(d.asBytes())));
+    SimpleFreezableTestChild3 e = new SimpleFreezableTestChild3(12,345,"6789",new int[]{10,20,30,40,50}, new double[]{10.1,10.2,10.3,10.4,10.5});
+    SimpleFreezableTest e2 = new AutoBuffer(new AutoBuffer().put(e).buf()).get();
+    Assert.assertArrayEquals(AutoBuffer.javaSerializeWritePojo(e),AutoBuffer.javaSerializeWritePojo(e2));
   }
 
   @Test public void testFloatArray() throws Exception {

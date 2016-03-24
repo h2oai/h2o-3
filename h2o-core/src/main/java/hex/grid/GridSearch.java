@@ -1,8 +1,6 @@
 package hex.grid;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelParametersBuilderFactory;
+import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -86,7 +84,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   Job<Grid> start() {
-    final int gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
+    final long gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
@@ -118,7 +116,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       while (it.hasNext(model)) {
         try {
-          gridWork += it.nextModelParameters(model).progressUnits();
+          Model.Parameters parms = it.nextModelParameters(model);
+          gridWork += (parms._nfolds > 1 ? (parms._nfolds+2/*pre+post-fold workd*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
         }
@@ -146,7 +145,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *
    * @return expected number of models produced by this grid search
    */
-  public int getModelCount() {
+  public long getModelCount() {
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
   }
 
@@ -176,7 +175,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         double time_remaining_secs = it.time_remaining_secs();
         double max_runtime_secs = it.max_runtime_secs();
 
-        if  (time_remaining_secs < 0) {
+        if (time_remaining_secs < 0) {
           Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
           return;
         }
@@ -185,6 +184,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
+
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
 
@@ -202,12 +202,24 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           }
 
           try {
+            ScoringInfo scoringInfo = new ScoringInfo();
+            scoringInfo.time_stamp_ms = System.currentTimeMillis();
+
+            //// build the model!
             model = buildModel(params, grid, counter++, protoModelKey);
+
+            if (model!=null) {
+              model.fillScoringInfo(scoringInfo);
+              grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
+              ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+            }
           } catch (RuntimeException e) { // Catch everything
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+            if (!Job.isCancelledException(e)) {
+              StringWriter sw = new StringWriter();
+              PrintWriter pw = new PrintWriter(sw);
+              e.printStackTrace(pw);
+              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+            }
             grid.appendFailedModelParameters(params, e);
           }
         } catch (IllegalArgumentException e) {
@@ -221,8 +233,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           _job.update(1);
           // Always update grid in DKV after model building attempt
           grid.update(_job);
+        } // finally
+
+        if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
+            _hyperSpaceWalker.stopEarly(model, grid.getScoringInfos())) {
+          Log.info("Convergence detected based on simple moving average of the loss function. Grid building completed.");
+          break;
         }
-      }
+      } // while (it.hasNext(model))
       Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
     } finally {
       grid.unlock(_job);
@@ -268,7 +286,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     final Key<Model>[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get()).checksum() == checksum;
+        return Value.isSubclassOf(k._type, Model.class) && ((Model)k._key.get())._parms.checksum() == checksum;
       }
     }).keys();
 

@@ -1,5 +1,6 @@
 package water.rapids;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import water.MRTask;
 import water.MemoryManager;
@@ -7,6 +8,8 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.VecUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class ASTStrOp { /*empty*/}
@@ -17,7 +20,8 @@ class ASTStrSplit extends ASTPrim {
   @Override int nargs() { return 1+2; } // (strsplit x split)
   @Override
   public String str() { return "strsplit"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String splitRegEx = asts[2].exec(env).getStr();
 
@@ -169,7 +173,8 @@ class ASTCountMatches extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "pattern"}; }
   @Override int nargs() { return 1+2; } // (countmatches x pattern)
   @Override public String str() { return "countmatches"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final String[] pattern = asts[2] instanceof ASTStrList 
       ? ((ASTStrList)asts[2])._strs 
@@ -205,7 +210,7 @@ class ASTCountMatches extends ASTPrim {
           if( !c.isNA(i) ) {
             int idx = (int) c.at8(i);
             ncs[0].addNum(matchCounts[idx]);
-          } else ncs[i].addNA();
+          } else ncs[0].addNA();
         }
       }
     }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
@@ -254,7 +259,8 @@ class ASTToLower extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(tolower x)
   @Override public String str() { return "tolower"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())
@@ -318,7 +324,8 @@ class ASTToUpper extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } //(toupper x)
   @Override public String str() { return "toupper"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())
@@ -384,7 +391,8 @@ class ASTReplaceFirst extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replacefirst"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     final String pattern     = asts[2].exec(env).getStr();
     final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -465,7 +473,8 @@ class ASTReplaceAll extends ASTPrim {
   public String[] args() { return new String[]{"ary", "pattern", "replacement", "ignore_case"}; }
   @Override int nargs() { return 1+4; } // (sub x pattern replacement ignore.case)
   @Override public String str() { return "replaceall"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     final String pattern     = asts[2].exec(env).getStr();
     final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -542,7 +551,8 @@ class ASTTrim extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; } // (trim x)
   @Override public String str() { return "trim"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())
@@ -610,8 +620,9 @@ class ASTTrim extends ASTPrim {
 class ASTStrLength extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override int nargs() { return 1+1; }
-  @Override public String str() { return "length"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override public String str() { return "strlen"; }
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 
     // Type check
@@ -682,9 +693,10 @@ class ASTStrLength extends ASTPrim {
 
 class ASTSubstring extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "startIndex", "endIndex"}; }
-  @Override int nargs() {return 4; } // (substring x startIndex [endIndex])
+  @Override int nargs() {return 1+3; } // (substring x startIndex endIndex)
   @Override public String str() { return "substring"; }
-  @Override ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int startIndex = (int) asts[2].exec(env).getNum();
     if (startIndex < 0) startIndex = 0;
@@ -781,7 +793,8 @@ class ASTLStrip extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "set"}; }
   @Override int nargs() { return 1+2; }
   @Override public String str() { return "lstrip"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
@@ -863,7 +876,8 @@ class ASTRStrip extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary", "set"}; }
   @Override int nargs() { return 1+2; }
   @Override public String str() { return "rstrip"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
@@ -934,4 +948,191 @@ class ASTRStrip extends ASTPrim {
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
   }
+}
+
+class ASTEntropy extends ASTPrim {
+  @Override public String[] args() {return new String[] {"ary"}; }
+  @Override int nargs() {return 1+1; } // (entropy x)
+  @Override public String str() { return "entropy"; }
+  @Override public ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    //Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("entropy() requires a string or categorical column. "
+                +"Received "+fr.anyVec().get_type_str()
+                +". Please convert column to a string or categorical first.");
+    
+    //Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for (Vec v: fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = entropyCategoricalCol(v);
+      else
+        nvs[i] = entropyStringCol(v);
+      i++;
+    }
+    
+    return new ValFrame(new Frame(nvs));
+  }
+  
+  private Vec entropyCategoricalCol(Vec vec) {
+    Vec res = new MRTask() {
+      transient double[] catEntropies;
+      @Override public void setupLocal() {
+        String[] doms = _fr.anyVec().domain();
+        catEntropies = new double[doms.length];
+        for (int i = 0; i < doms.length; i++) catEntropies[i] = calcEntropy(doms[i]);
+      }
+      @Override public void map(Chunk chk, NewChunk newChk) {
+        //pre-allocate since the size is known
+        newChk._ds = MemoryManager.malloc8d(chk._len);
+        for (int i = 0; i < chk._len; i++)
+          if (chk.isNA(i))
+            newChk.addNA();
+          else 
+            newChk.addNum(catEntropies[(int) chk.atd(i)]);
+      }
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    return res;
+  }
+  
+  private Vec entropyStringCol(Vec vec) {
+    return new MRTask() {
+      @Override
+      public void map(Chunk chk, NewChunk newChk) {
+        if (chk instanceof C0DChunk) //all NAs
+          newChk.addNAs(chk.len());
+        else if (((CStrChunk) chk)._isAllASCII) //fast-path operations
+          ((CStrChunk) chk).asciiEntropy(newChk);
+        else { //UTF requires Java string methods
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              String str = chk.atStr(tmpStr, i).toString();
+              newChk.addNum(calcEntropy(str));
+            }
+          }
+        }
+      }
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+  }
+  
+  //Shannon's entropy
+  private double calcEntropy(String str) {
+    
+    HashMap<Character, Integer> freq = new HashMap<>();
+    for (int i = 0; i < str.length(); i++) {
+      char c = str.charAt(i);
+      Integer count = freq.get(c);
+      if (count == null) freq.put(c, 1);
+      else freq.put(c, count + 1);
+    }
+    double sume = 0;
+    int N = str.length();
+    double n;
+    for (char c: freq.keySet()) {
+      n = freq.get(c);
+      sume += -n/ N * Math.log(n/N) / Math.log(2);
+    }
+    return sume;
+  }
+}
+
+class ASTCountSubstringsWords extends ASTPrim {
+  @Override public String[] args() {return new String[]{"ary", "words"};}
+  @Override int nargs() {return 1 + 2;} // (num_valid_substrings x words)
+  @Override public String str() {return "num_valid_substrings";}
+  @Override public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    String wordsPath = asts[2].exec(env).getStr();
+
+    //Type check
+    for (Vec v : fr.vecs())
+      if (!(v.isCategorical() || v.isString()))
+        throw new IllegalArgumentException("num_valid_substrings() requires a string or categorical column. "
+                + "Received " + fr.anyVec().get_type_str()
+                + ". Please convert column to a string or categorical first.");
+
+    HashSet<String> words = null;
+    try {
+      words = new HashSet<>(FileUtils.readLines(new File(wordsPath)));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    //Transform each vec
+    Vec nvs[] = new Vec[fr.numCols()];
+    int i = 0;
+    for (Vec v : fr.vecs()) {
+      if (v.isCategorical())
+        nvs[i] = countSubstringsWordsCategoricalCol(v, words);
+      else
+        nvs[i] = countSubstringsWordsStringCol(v, words);
+      i++;
+    }
+
+    return new ValFrame(new Frame(nvs));
+  }
+
+  private Vec countSubstringsWordsCategoricalCol(Vec vec, final HashSet<String> words) {
+    Vec res = new MRTask() {
+      transient double[] catCounts;
+
+      @Override
+      public void setupLocal() {
+        String[] doms = _fr.anyVec().domain();
+        catCounts = new double[doms.length];
+        for (int i = 0; i < doms.length; i++) catCounts[i] = calcCountSubstringsWords(doms[i], words);
+      }
+
+      @Override
+      public void map(Chunk chk, NewChunk newChk) {
+        //pre-allocate since the size is known
+        newChk._ds = MemoryManager.malloc8d(chk._len);
+        for (int i = 0; i < chk._len; i++)
+          if (chk.isNA(i))
+            newChk.addNA();
+          else
+            newChk.addNum(catCounts[(int) chk.atd(i)]);
+      }
+    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    return res;
+  }
+
+  private Vec countSubstringsWordsStringCol(Vec vec, final HashSet<String> words) {
+    return new MRTask() {
+      @Override
+      public void map(Chunk chk, NewChunk newChk) {
+        if (chk instanceof C0DChunk) //all NAs
+          newChk.addNAs(chk.len());
+        else { //UTF requires Java string methods
+          BufferedString tmpStr = new BufferedString();
+          for (int i = 0; i < chk._len; i++) {
+            if (chk.isNA(i))
+              newChk.addNA();
+            else {
+              String str = chk.atStr(tmpStr, i).toString();
+              newChk.addNum(calcCountSubstringsWords(str, words));
+            }
+          }
+        }
+      }
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+  }
+  
+  // count all substrings >= 2 chars that are in words 
+  private int calcCountSubstringsWords(String str, HashSet<String> words) {
+    int wordCount = 0;
+    int N = str.length();
+    for (int i = 0; i < N-1; i++) 
+      for (int j = i+2; j < N+1; j++) {
+        if (words.contains(str.substring(i, j))) 
+          wordCount += 1;
+      }
+    return wordCount;  
+  }
+  
 }

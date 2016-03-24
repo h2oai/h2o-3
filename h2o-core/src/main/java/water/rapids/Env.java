@@ -1,18 +1,10 @@
 package water.rapids;
 
+import water.*;
+import water.fvec.Frame;
+
 import java.io.Closeable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-
-import water.AutoBuffer;
-import water.DKV;
-import water.Futures;
-import water.Iced;
-import water.Key;
-import water.Value;
-import water.fvec.Frame;
-import water.fvec.Vec;
 
 /** Execute a set of instructions in the context of an H2O cloud.
  *
@@ -35,7 +27,7 @@ public class Env extends Iced {
 
   // Session holds the ref-cnts across multiple executions.
   final Session _ses;
-  Env( Session ses ) { _ses = ses; }
+  public Env( Session ses ) { _ses = ses; }
 
   // Frames that are alive in mid-execution; usually because we have evaluated
   // some first expression and need to hang onto it while evaluating the next
@@ -47,7 +39,7 @@ public class Env extends Iced {
   // Deletes dead Frames & forces good stack cleanliness at opcode end.  One
   // per Opcode implementation.  Track frames that are alive mid-execution, but
   // dead at Opcode end.
-  StackHelp stk() { return new StackHelp(); }
+  public StackHelp stk() { return new StackHelp(); }
   class StackHelp implements Closeable {
     final int _sp = sp();
     // Push & track.  Called on every Val that spans a (nested) exec call.
@@ -106,6 +98,12 @@ public class Env extends Iced {
     Val val = _scope==null ? null : _scope.lookup(id);
     if( val != null ) return val;
 
+    // disallow TRUE/FALSE/NA to be overwritten by keys in the DKV... just way way saner this way
+    if( id.equals("TRUE") || id.equals("FALSE") || id.equals("NA") || id.equals("NaN") ) {
+      AST ast = AST.PRIMS.get(id);
+      return ast.exec(this);
+    }
+
     // Now the DKV
     Value value = DKV.get(Key.make(id));
     if( value != null ) {
@@ -140,14 +138,14 @@ public class Env extends Iced {
     return s+"}";
   }
 
-  @Override public AutoBuffer write_impl(AutoBuffer ab) {
+  public AutoBuffer write_impl(AutoBuffer ab) {
     //ab.put4(_globals.size());   for( Vec vec : _globals ) ab.put(vec._key);
     //ab.put4(sp());              for( Frame fr : _stk ) ab.put(fr);
     //return ab;
     throw water.H2O.unimpl();
   }
 
-  @Override public Env read_impl(AutoBuffer ab) {
+  public Env read_impl(AutoBuffer ab) {
     //_globals = new HashSet<>();
     //int len=ab.get4();
     //for( int i=0; i<len; i++ )

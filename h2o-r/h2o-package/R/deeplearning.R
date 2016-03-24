@@ -12,6 +12,7 @@
 #' @param validation_frame An H2OFrame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param checkpoint Model checkpoint (either key or H2ODeepLearningModel) to resume training with.
 #' @param autoencoder Enable auto-encoder for model building.
+#' @param pretrained_autoencoder Pretrained autoencoder (either key or H2ODeepLearningModel) to initialize the model state of a supervised DL model with.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
 #'        Otherwise the first factor level is omitted (without loss of accuracy). Useful for
 #'        variable importances and auto-enabled for autoencoder.
@@ -113,11 +114,12 @@
 #'        Frames"
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
-#' @param nfolds (Optional) Number of folds for cross-validation. If \code{nfolds >= 2}, then \code{validation} must remain empty.
+#' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified.
 #'        Must be "AUTO", "Random" or "Modulo".
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param ... extra parameters to pass onto functions (not implemented)
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -136,8 +138,9 @@ h2o.deeplearning <- function(x, y, training_frame,
                              model_id = "",
                              overwrite_with_best_model,
                              validation_frame = NULL,
-                             checkpoint,
+                             checkpoint = NULL,
                              autoencoder = FALSE,
+                             pretrained_autoencoder = NULL,
                              use_all_factor_levels = TRUE,
                              standardize = TRUE,
                              activation = c("Rectifier", "Tanh", "TanhWithDropout", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
@@ -205,7 +208,9 @@ h2o.deeplearning <- function(x, y, training_frame,
                              nfolds = 0,
                              fold_column = NULL,
                              fold_assignment = c("AUTO","Random","Modulo"),
-                             keep_cross_validation_predictions = FALSE)
+                             keep_cross_validation_predictions = FALSE,
+                             keep_cross_validation_fold_assignment = FALSE
+                             )
 {
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
@@ -242,6 +247,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$checkpoint <- checkpoint
   if(!missing(autoencoder))
     parms$autoencoder <- autoencoder
+  if(!missing(pretrained_autoencoder))
+    parms$pretrained_autoencoder <- pretrained_autoencoder
   if(!missing(use_all_factor_levels))
     parms$use_all_factor_levels <- use_all_factor_levels
   if(!missing(standardize))
@@ -372,6 +379,7 @@ h2o.deeplearning <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
   .h2o.modelJob('deeplearning', parms)
 }
 
@@ -436,9 +444,10 @@ h2o.anomaly <- function(object, data, per_feature=FALSE) {
 h2o.deepfeatures <- function(object, data, layer = 1) {
   index = layer - 1
   url <- paste0('Predictions/models/', object@model_id, '/frames/', h2o.getId(data))
-  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index)
-  key <- res$predictions$name
-
-  h2o.getFrame(key)
+  res <- .h2o.__remoteSend(url, method = "POST", deep_features_hidden_layer=index, h2oRestApiVersion = 4)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
 }
 

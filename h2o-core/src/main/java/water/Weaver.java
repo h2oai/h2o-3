@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /** Class to auto-gen serializer delegate classes.  */
 public class Weaver {
 
-  /** Get all woven fields in this class, including subclasses, up to the
+    /** Get all woven fields in this class, including subclasses, up to the
    *  normal {@link Iced} serialization classes, skipping static and transient
    *  fields, and the required _ice_id field.
    *  @return Array of {@link Field} holding the list of woven fields.
@@ -37,7 +37,7 @@ public class Weaver {
 
 
   private static final ClassPool _pool;
-  private static final CtClass _dtask, _enum, _iced, _h2cc, _freezable, _serialize;
+  private static final CtClass _dtask, _enum, _serialize;//, _iced, _h2cc, _freezable;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
   static {
@@ -46,10 +46,11 @@ public class Weaver {
       _pool.insertClassPath(new ClassClassPath(Weaver.class));
       _dtask= _pool.get("water.DTask");    // these also need copyOver
       _enum = _pool.get("java.lang.Enum"); // Special serialization
-      _iced = _pool.get("water.Iced");     // Base of serialization
-      _h2cc = _pool.get("water.H2O$H2OCountedCompleter"); // Base of serialization
-      _freezable = _pool.get("water.Freezable");      // Base of serialization
       _serialize = _pool.get("java.io.Serializable"); // Base of serialization
+//      _iced = _pool.get("water.Iced");     // Base of serialization
+//      _h2cc = _pool.get("water.H2O$H2OCountedCompleter"); // Base of serialization
+//      _freezable = _pool.get("water.Freezable");      // Base of serialization
+
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
@@ -75,33 +76,33 @@ public class Weaver {
     return name + "$Icer";
   }
 
-  private static boolean hasWovenJSONFields( CtClass cc ) throws NotFoundException {
-    if( !cc.subtypeOf(_freezable) &&
-        !cc.subtypeOf(_serialize) ) return false; // Cannot serialize in any case
-    // Iced & H2O$CountedCompleters are interesting oddballs: they have a short
-    // typeid that is desired field for Freezable-style serialization but not for
-    // JSON-style.  The field is fairly expensively filled in the first time any
-    // given object is serialized and used in all subsequent fast serializations.
-    // However, the value is not valid outside *this* execution of the cluster,
-    // and should not be persisted via e.g. saving the JSON and restoring from
-    // it later.
-    if( cc.equals(_iced) ||
-        cc.equals(_h2cc) ) return false;
-    if( hasWovenJSONFields(cc.getSuperclass()) ) return true;
-    for( CtField ctf : cc.getDeclaredFields() ) {
-      int mods = ctf.getModifiers();
-      if( !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods) ) return true;
-    }
-    return false;
-  }
+//  private static boolean hasWovenJSONFields( CtClass cc ) throws NotFoundException {
+//    if( !cc.subtypeOf(_freezable) &&
+//        !cc.subtypeOf(_serialize) ) return false; // Cannot serialize in any case
+//    // Iced & H2O$CountedCompleters are interesting oddballs: they have a short
+//    // typeid that is desired field for Freezable-style serialization but not for
+//    // JSON-style.  The field is fairly expensively filled in the first time any
+//    // given object is serialized and used in all subsequent fast serializations.
+//    // However, the value is not valid outside *this* execution of the cluster,
+//    // and should not be persisted via e.g. saving the JSON and restoring from
+//    // it later.
+//    if( cc.equals(_iced) ||
+//        cc.equals(_h2cc) ) return false;
+//    if( hasWovenJSONFields(cc.getSuperclass()) ) return true;
+//    for( CtField ctf : cc.getDeclaredFields() ) {
+//      int mods = ctf.getModifiers();
+//      if( !javassist.Modifier.isTransient(mods) && !javassist.Modifier.isStatic(mods) ) return true;
+//    }
+//    return false;
+//  }
 
   // See if javaassist can find this class, already generated
   private static Class javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException, InvocationTargetException {
     // End the super class lookup chain at "water.Iced",
     // returning the known delegate class "water.Icer".
     String iced_name = iced_clazz.getName();
-    if( iced_name.equals("water.Iced") ) return water.Icer.class;
-    if( iced_name.equals("water.H2O$H2OCountedCompleter") ) return water.Icer.class;
+//    if(!Freezable.class.isAssignableFrom(iced_clazz.getSuperclass())) return water.Icer.class;
+
     assert !iced_name.startsWith("scala.runtime.AbstractFunction");
 
     // Now look for a pre-cooked Icer.  No locking, 'cause we're just looking
@@ -117,12 +118,19 @@ public class Weaver {
     // Serialize parent.  No locking; occasionally we'll "onIce" from the
     // remote leader more than once.
     Class super_clazz = iced_clazz.getSuperclass();
-    int super_id = TypeMap.onIce(super_clazz.getName());
-    Class super_icer_clazz = javassistLoadClass(super_id,super_clazz);
+    Class super_icer_clazz;
+    int super_id;
+    if(Freezable.class.isAssignableFrom(super_clazz)) {
+      super_id = TypeMap.onIce(super_clazz.getName());
+      super_icer_clazz = javassistLoadClass(super_id, super_clazz);
+    } else {
+      super_icer_clazz = Icer.class;
+      super_id = -1;
+    }
 
     CtClass super_icer_cc = _pool.get(super_icer_clazz.getName());
     CtClass iced_cc = _pool.get(iced_name); // Lookup the based Iced class
-    boolean super_has_jfields = hasWovenJSONFields(iced_cc.getSuperclass());
+    boolean super_has_jfields = true;//hasWovenJSONFields(iced_cc.getSuperclass());
 
     // Lock on the Iced class (prevent multiple class-gens of the SAME Iced
     // class, but also to allow parallel class-gens of unrelated Iced).
@@ -181,7 +189,7 @@ public class Weaver {
     String debug = 
     make_body(icer_cc, iced_cc, iced_clazz, "write", null, null,
               "  protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
-              "    write"+super_id+"(ab,ice);\n",
+              super_id == -1?"":"    write"+super_id+"(ab,ice);\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "    ab.put%z(ice.%s);\n"  ,  "    ab.put%z((%C)_unsafe.get%u(ice,%dL)); // %s\n",
@@ -189,9 +197,9 @@ public class Weaver {
               "  }");
     if( debug_print ) System.out.println(debug);
     String debugJ= 
-    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", super_has_jfields ? null : "    ab.", "    ab.put1(',').",
+    make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", "(supers?ab.put1(','):ab).", "    ab.put1(',').",
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
-              "    writeJSON"+super_id+"(ab,ice);\n",
+              super_id == -1?"":"    writeJSON"+super_id+"(ab,ice);\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n",
               "putJSON%z(\"%s\",ice.%s);\n"  ,  "putJSON%z(\"%s\",(%C)_unsafe.get%u(ice,%dL)); // %s\n"  ,
@@ -217,7 +225,7 @@ public class Weaver {
     String rbody_impl =
     make_body(icer_cc, iced_cc, iced_clazz, "read", null, null,
               "  protected final "+iced_name+" read"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
-              "    read"+super_id+"(ab,ice);\n",
+              super_id == -1?"":"    read"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
               "    ice.%s = (%C)ab.get%z(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.get%z(%s));\n",
               "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
@@ -227,7 +235,7 @@ public class Weaver {
     String rbodyJ_impl =
     make_body(icer_cc, iced_cc, iced_clazz, "readJSON", null, null,
               "  protected final "+iced_name+" readJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
-              "    readJSON"+super_id+"(ab,ice);\n",
+              super_id == -1?"":"    readJSON"+super_id+"(ab,ice);\n",
               "    ice.%s = ab.get%z();\n",            "    _unsafe.put%u(ice,%dL,ab.get%z());  //%s\n",
               "    ice.%s = (%C)ab.get%z(%s);\n",    "    _unsafe.put%u(ice,%dL,ab.get%z(%s));\n",
               "    ice.%s = (%C)ab.get%z(%c.class);\n","    _unsafe.put%u(ice,%dL,(%C)ab.get%z(%c.class));  //%s\n",
@@ -301,17 +309,52 @@ public class Weaver {
                                   ) throws CannotCompileException, NotFoundException, NoSuchFieldException {
     StringBuilder sb = new StringBuilder();
     sb.append(header);
-    sb.append(supers);
+    if(impl.equals("writeJSON")) {
+      if (supers.isEmpty()) {
+        sb.append("  boolean supers = false;");
+      } else {
+        sb.append("  int position = ab.position();\n");
+        sb.append(supers);
+        sb.append("  boolean supers = ab.position() != position;\n");
+      }
+    } else
+      sb.append(supers);
     // Customer serializer?
     String mimpl = impl+"_impl";
+
+
     for( CtMethod mth : iced_cc.getDeclaredMethods() ) 
       if( mth.getName().equals(mimpl) ) { // Found custom serializer?
+        int mods = mth.getModifiers();
+        String ice_handle;
+        String ice_args;
+        if(javassist.Modifier.isStatic(mods)) {
+          ice_handle = iced_clazz.getName() + ".";
+          ice_args = "(ice,ab)";
+        } else if(javassist.Modifier.isFinal(mods)) {
+          ice_handle = "ice.";
+          ice_args = "(ab)";
+        }else if(javassist.Modifier.isAbstract(mods)){
+          ice_handle = null;
+          ice_args = null;
+        } else
+            throw barf(iced_cc," Custom serialization methods must be declared either static or final. Failed for method " + mimpl);
         // If the custom serializer is actually abstract, then do nothing - it
         // must be (re)implemented in all child classes which will Do The Right Thing.
-        if( javassist.Modifier.isAbstract(mth.getModifiers()) || javassist.Modifier.isVolatile(mth.getModifiers()) )
+        if( javassist.Modifier.isAbstract(mods) || javassist.Modifier.isVolatile(mods) )
           sb.append(impl.startsWith("write") ? "    return ab;\n  }" : "    return ice;\n  }");
-        else 
-          sb.append("    return ice.").append(mimpl).append("(ab);\n  }");
+        else {
+          if (!supers.isEmpty() && impl.equals("writeJSON")) {
+            sb.append("    if(supers) {\n");
+            sb.append("       ab.put1(',');\n");
+            sb.append("       int pos = ab.position();\n");
+            sb.append("    " + ice_handle).append(mimpl).append(ice_args).append(";\n");
+            sb.append("      if(ab.position() == pos) ab.position(pos-1);\n"); // empty json serialization, drop the comma
+            sb.append("      return ab;\n    } \n");
+            sb.append("    return " + ice_handle).append(mimpl).append(ice_args).append(";\n  }");
+          } else
+            sb.append("    return " + ice_handle).append(mimpl).append(ice_args).append(";\n  }");
+        }
         mimpl = null;           // flag it
         break;
       }

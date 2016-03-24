@@ -9,7 +9,8 @@ import random
 import getpass
 import re
 import subprocess
-import ConfigParser
+if sys.version_info[0] < 3: import ConfigParser as configparser
+else: import configparser
 import requests
 from requests import exceptions
 import socket
@@ -25,7 +26,7 @@ def is_rdemo(file_name):
     packaged_demos = ["h2o.anomaly.R", "h2o.deeplearning.R", "h2o.gbm.R", "h2o.glm.R", "h2o.glrm.R", "h2o.kmeans.R",
                       "h2o.naiveBayes.R", "h2o.prcomp.R", "h2o.randomForest.R"]
     if (file_name in packaged_demos): return True
-    if (re.match("^rdemo.*\.[rR]$", file_name)): return True
+    if (re.match("^rdemo.*\.[rR]$", file_name)) or (re.match("^rdemo.*\.ipynb$", file_name)): return True
     return False
 
 def is_runit(file_name):
@@ -621,6 +622,7 @@ class Test:
         @param test_short_dir: Path from h2o/R/tests to the test directory.
         @param test_name: Test filename with the directory removed.
         @param output_dir: The directory where we can create an output file for this process.
+        @param exclude_flows: A a semicolon-separated string of names of flows to be ignored by headless-test.js
         @return: The test object.
         """
         self.test_dir = test_dir
@@ -630,6 +632,7 @@ class Test:
         self.output_file_name = ""
         self.hadoop_namenode = hadoop_namenode
         self.on_hadoop = on_hadoop
+        self.exclude_flows = None
 
         self.cancelled = False
         self.terminated = False
@@ -832,15 +835,19 @@ class Test:
             if on_hadoop:         cmd = cmd + ["--onHadoop"]
             if hadoop_namenode:   cmd = cmd + ["--hadoopNamenode", hadoop_namenode]
             cmd = cmd + ["--rUnit"]
-        elif is_rdemo(test_name): cmd = cmd + ["--rDemo"]
-        else:                     cmd = cmd + ["--rBooklet"]
+        elif is_rdemo(test_name) and is_ipython_notebook(test_name): cmd = cmd + ["--rIPythonNotebook"]
+        elif is_rdemo(test_name):                                    cmd = cmd + ["--rDemo"]
+        elif is_rbooklet(test_name):                                 cmd = cmd + ["--rBooklet"]
+        else: raise ValueError("Unsupported R test type: {1}".format(test_name))
         return cmd
 
     def _pytest_cmd(self, test_name, ip, port, on_hadoop, hadoop_namenode):
       if g_pycoverage:
-        pyver = "coverage" if g_py3 else "coverage-3.5"
+        pyver = "coverage-3.5" if g_py3 else "coverage"
         cmd = [pyver,"run", "-a", g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
                "--testName", test_name]
+        print("Running Python test with coverage:")
+        print(cmd)
       else:
         pyver = "python3.5" if g_py3 else "python"
         cmd = [pyver, g_py_test_setup, "--usecloud", ip + ":" + str(port), "--resultsDir", g_output_dir,
@@ -855,8 +862,11 @@ class Test:
       return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
-        return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to), "--packs",
-               g_phantomjs_packs]
+        if g_perf: return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+                           "--packs", g_phantomjs_packs, "--perf", g_date, str(g_build_id), g_git_hash, g_git_branch,
+                           str(g_ncpu), g_os, g_job_name, g_output_dir, "--excludeFlows", self.exclude_flows]
+        else: return ["phantomjs", test_name, "--host", ip + ":" + str(port), "--timeout", str(g_phantomjs_to),
+                      "--packs", g_phantomjs_packs, "--excludeFlows", self.exclude_flows]
 
     def _scrape_output_for_seed(self):
         """
@@ -1004,7 +1014,7 @@ class TestRunner:
     @staticmethod
     def read_config(config_file):
         clouds = []  # a list of lists. Inner lists have [node_num, ip, port]
-        cfg = ConfigParser.RawConfigParser()
+        cfg = configparser.RawConfigParser()
         cfg.read(config_file)
         for s in cfg.sections():
             items = cfg.items(s)
@@ -1199,7 +1209,8 @@ class TestRunner:
         test_short_dir = self._calc_test_short_dir(test_path)
 
         test = Test(abs_test_dir, test_short_dir, test_file, self.output_dir, self.hadoop_namenode, self.on_hadoop)
-        if (test_path.split('/')[-1] in self.exclude_list):
+        if is_javascript_test_file(test.test_name): test.exclude_flows = ';'.join(self.exclude_list)
+        if (test.test_name in self.exclude_list):
             print("INFO: Skipping {0} because it was placed on the exclude list.".format(test_path))
         else:
             self.tests.append(test)
@@ -1316,7 +1327,7 @@ class TestRunner:
         print("Checking cloud health...")
         for c in self.clouds:
             self._h2o_exists_and_healthy(c.get_ip(), c.get_port())
-            print("Node {} healthy.").format(c)
+            print("Node {} healthy.".format(c))
 
     def stop_clouds(self):
         """
@@ -1605,7 +1616,7 @@ class TestRunner:
         duration = finish_seconds - test.start_seconds
         test_name = test.get_test_name()
         if not test.get_skipped():
-            if self.perf: self._report_perf(test, finish_seconds)
+            if self.perf and not is_javascript_test_file(test.test_name): self._report_perf(test, finish_seconds)
         if (test.get_passed()):
             s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
             self._log(s)
@@ -1657,8 +1668,21 @@ class TestRunner:
                 for each_cloud in self.clouds:
                     java_errors = grab_java_message(each_cloud.nodes,testcase_name)
                     if len(java_errors) > 0:    # found java message and can quit now
+                        if g_use_client:
+                            failure_message += "\n##### Java message from server node #####\n"
                         failure_message += java_errors
-                        break;
+                        break
+
+                # scrape the logs on client nodes as well
+                if g_use_client:
+                    # add the error message from Java side here, java filename is in self.clouds[].output_file_name
+                    for each_cloud in self.clouds:
+                        java_errors = grab_java_message(each_cloud.client_nodes,testcase_name)
+                        if len(java_errors) > 0:    # found java message and can quit now
+                            failure_message += "\n\n##### Java message from client node #####\n"
+                            failure_message += java_errors
+
+                            break
 
 
                 if len(java_errors) < 1:
@@ -2050,14 +2074,8 @@ def parse_args(argv):
                 usage()
             g_base_port = int(argv[i])
         elif s == "--py3":
-            i += 1
-            if i > len(argv):
-                usage()
             g_py3 = True
         elif s == "--coverage":
-            i += 1
-            if i > len(argv):
-              usage()
             g_pycoverage = True
         elif (s == "--numclouds"):
             i += 1
@@ -2239,20 +2257,59 @@ def wipe_test_state(test_root_dir):
                 print("")
                 sys.exit(1)
     for d, subdirs, files in os.walk(test_root_dir):
-        for s in subdirs:
-            if ("Rsandbox" in s):
-                rsandbox_dir = os.path.join(d, s)
-                try:
-                    if sys.platform == "win32":
-                        os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
-                    else: shutil.rmtree(rsandbox_dir)
-                except OSError as e:
-                    print("")
-                    print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)
-                    print("       (errno {0}): {1}".format(e.errno, e.strerror))
-                    print("")
-                    sys.exit(1)
+        for s in subdirs:   # top level directory off tests directory
+            remove_sandbox(d,s) # attempt to remove sandbox directory if they exist
 
+            # need to get down to second level
+            for e,subdirs2,files in os.walk(os.path.join(d,s)):
+                for s2 in subdirs2:
+                    remove_sandbox(e,s2)
+
+                    # need to get down to third level
+                    for f,subdirs3,files in os.walk(os.path.join(e,s2)):
+                        for s3 in subdirs3:
+                            remove_sandbox(f,s3)
+
+                            # this is the level for sandbox for dynamic tests
+                            for g,subdirs4,files in os.walk(os.path.join(f,s3)):
+                                for s4 in subdirs4:
+                                    remove_sandbox(g,s4)
+
+            # if ("Rsandbox" in s):
+            #     rsandbox_dir = os.path.join(d, s)
+            #     try:
+            #         if sys.platform == "win32":
+            #             os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
+            #         else: shutil.rmtree(rsandbox_dir)
+            #     except OSError as e:
+            #         print("")
+            #         print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)
+            #         print("       (errno {0}): {1}".format(e.errno, e.strerror))
+            #         print("")
+            #         sys.exit(1)
+
+def remove_sandbox(parent_dir,dir_name):
+    """
+    This function is written to remove sandbox directories if they exist under the
+    parent_dir.
+
+    :param parent_dir: string denoting full parent directory path
+    :param dir_name: string denoting directory path which could be a sandbox
+
+    :return: None
+    """
+    if ("Rsandbox" in dir_name):
+        rsandbox_dir = os.path.join(parent_dir, dir_name)
+        try:
+            if sys.platform == "win32":
+                os.system(r'C:/cygwin64/bin/rm.exe -r -f "{0}"'.format(rsandbox_dir))
+            else: shutil.rmtree(rsandbox_dir)
+        except OSError as e:
+            print("")
+            print("ERROR: Removing RSandbox directory failed: " + rsandbox_dir)
+            print("       (errno {0}): {1}".format(e.errno, e.strerror))
+            print("")
+            sys.exit(1)
 
 def main(argv):
     """

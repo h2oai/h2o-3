@@ -29,9 +29,12 @@ public class CompressedTree extends Keyed {
   }
 
   /** Highly efficient (critical path) tree scoring */
-  public double score( final double row[] ) {
+  public double score( final double row[]) { return score(row, false); }
+  public double score( final double row[], boolean computeLeafAssignment) {
     AutoBuffer ab = new AutoBuffer(_bits);
     IcedBitSet ibs = null;      // Lazily set on hitting first group test
+    long bitsRight = 0;
+    int level = 0;
     while(true) {
       int nodeType = ab.get1U();
       int colId = ab.get2();
@@ -66,17 +69,42 @@ public class CompressedTree extends Keyed {
       }
 
       // WARNING: Generated code has to be consistent with this code:
-      //   - Double.NaN <  3.7f => return false => BUT left branch has to be selected (i.e., ab.position())
-      //   - Double.NaN != 3.7f => return true  => left branch has to be select selected (i.e., ab.position())
       double d = row[colId];
-        if( ( equal==0 && d >= splitVal) ||
-            ( equal==1 && d == splitVal) ||
-            ( (equal==2 || equal==3) && ibs.contains((int)d) )) { //if Double.isNaN(d), then (int)d == 0, which means that NA is treated like categorical level 0
-          ab.skip(skip);        // Skip to the right subtree
-          lmask = rmask;        // And set the leaf bits into common place
-      } /* else Double.isNaN() is true => use left branch */
-      if( (lmask&16)==16 ) return scoreLeaf(ab);
+      if (Double.isNaN(d) ||                                            // NA goes right
+              ( ( (equal==0            ) && d >= splitVal         ) ||  // greater or equals goes right
+                ( (equal==1            ) && d == splitVal         ) ||  // equals goes right
+                ( (equal==2 || equal==3) && ibs.contains((int)d) ) )    // if contained in bitset, go right
+      ) {
+        // RIGHT
+        ab.skip(skip);        // Skip to the right subtree
+        if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+        lmask = rmask;        // And set the leaf bits into common place
+      } else {
+        // LEFT
+        assert(!Double.isNaN(d));
+      }
+      level++;
+      if( (lmask&16)==16 ) {
+        if (computeLeafAssignment) {
+          bitsRight |= 1 << level; //mark the end of the tree
+          return Double.longBitsToDouble(bitsRight);
+        }
+        return scoreLeaf(ab);
+      }
     }
+  }
+
+  public String getDecisionPath(final double row[] ) {
+    double d = score(row, true);
+    long l = Double.doubleToRawLongBits(d);
+    StringBuilder sb = new StringBuilder();
+    int pos=0;
+    for (int i=0;i<64;++i) {
+      long right = (l>>i)&0x1L;
+      sb.append(right==1? "R" : "L");
+      if (right==1) pos=i;
+    }
+    return sb.substring(0, pos);
   }
 
   private float scoreLeaf( AutoBuffer ab ) { return ab.get4f(); }
@@ -94,8 +122,8 @@ public class CompressedTree extends Keyed {
     final String[] names = tm._names;
     final SB sb = new SB();
     new TreeVisitor<RuntimeException>(this) {
-      int _d;
       @Override protected void pre( int col, float fcmp, IcedBitSet gcmp, int equal ) {
+        if (equal==1) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
         sb.i().p(names[col]).p(' ');
         if( equal==0 ) sb.p("< ").p(fcmp);
         else if( equal==1 ) sb.p("!=").p(fcmp);

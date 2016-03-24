@@ -189,7 +189,7 @@ abstract public class MemoryManager {
       Cleaner.TIME_AT_LAST_GC = System.currentTimeMillis();
       Cleaner.HEAP_USED_AT_LAST_GC = _allMemBean.getHeapMemoryUsage().getUsed();
       Cleaner.KV_USED_AT_LAST_GC = Cleaner.Histo.cached();
-      MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > (MEM_MAX - (MEM_MAX >> 2));
+      MEM_LOW_CRITICAL = Cleaner.HEAP_USED_AT_LAST_GC > 0.75*MEM_MAX;
       Log.debug("GC CALLBACK: "+Cleaner.TIME_AT_LAST_GC+", USED:"+PrettyPrint.bytes(Cleaner.HEAP_USED_AT_LAST_GC)+", CRIT: "+MEM_LOW_CRITICAL);
       set_goals("GC CALLBACK",MEM_LOW_CRITICAL);
       //if( MEM_LOW_CRITICAL ) { // emergency measure - really low on memory, stop allocations right now!
