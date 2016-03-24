@@ -704,10 +704,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
-    DataInfo _scoringDinfo; // dinfo with no standardization and no response
     String[] _coefficient_names;
     public int _best_lambda_idx;
-
     double[] _global_beta;
     private double[] _zvalues;
     private double _dispersion;
@@ -757,7 +755,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo;
-      _scoringDinfo = dinfo.scoringInfo();
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
@@ -787,12 +784,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _dinfo._adaptedFrame = new Frame(_dinfo._adaptedFrame.names().clone(),_dinfo._adaptedFrame.vecs().clone());
         _dinfo.dropWeights();
       }
-      _scoringDinfo = _dinfo.scoringInfo();
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
-//      if(glm._parms._family == Family.binomial && domains[_dinfo.responseChunkId(0)] == null)
-//        domains[_dinfo.responseChunkId(0)] = new String[]{"0","1"};
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         String [] ns = new String[names.length-1];
@@ -998,22 +992,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   private transient ThreadLocal<Row> _row;
   private transient ThreadLocal<double[]> _eta;
 
-  public final Row getRow(){
-    if(_row == null) _row = new ThreadLocal<>();
-    Row r = _row.get();
-    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
-    return r;
-  }
+
 
 
   @Override
   // public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds )
   public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-    return scoreRow(_output._scoringDinfo.extractDenseRow(chks,row_in_chunk,getRow()),offset,preds);
+    throw H2O.unimpl();
   }
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
-    return scoreRow(_output._scoringDinfo.extractDenseRow(data,getRow()),o,preds);
+    throw H2O.unimpl();
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,
@@ -1123,7 +1112,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * @param adaptFrm Already adapted frame
    * @return A Frame containing the prediction column, and class distribution
    */
-
+  @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     // Build up the names & domains.
     final int nc = _output.nclasses();
@@ -1148,10 +1137,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     boolean hasWeigths = _parms._weights_column != null && adaptFrm.find(_parms._weights_column) >= 0;
     boolean hasOffset = _parms._offset_column != null && adaptFrm.find(_parms._offset_column) >= 0;
     boolean hasFold = _parms._fold_column != null && adaptFrm.find(_parms._fold_column) >= 0;
-    DataInfo dinfo = new DataInfo(adaptFrm.clone(), null, computeMetrics?1:0, _parms._use_all_factor_levels || _parms._lambda_search, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, false ,_parms._missing_values_handling == MissingValuesHandling.MeanImputation, hasWeigths, hasOffset, hasFold);
+    DataInfo dinfo = _output._dinfo.scoringInfo(adaptFrm);
+
+    if(dinfo.fullN()+1 > beta().length){
+      System.out.println("haha");
+    }
     // Score the dataset, building the class distribution & predictions
     // public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean sparse) {
-    GLMScore gs = new GLMScore(j, this, dinfo,domains[0],computeMetrics).doAll(ncols, Vec.T_NUM, dinfo._adaptedFrame);
+    GLMScore gs = new GLMScore(j, this, dinfo,domains[0],computeMetrics).doAll(ncols, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
