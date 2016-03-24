@@ -836,6 +836,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     adaptFr.delete();
   }
 
+  protected String [] makeScoringNames(){
+    final int nc = _output.nclasses();
+    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
+    String [] names = new String[ncols];
+    names[0] = "predict";
+    for(int i = 1; i < names.length; ++i) {
+      names[i] = _output.classNames()[i - 1];
+      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
+      try {
+        Integer.valueOf(names[i]);
+        names[i] = "p" + names[i];
+      } catch (Throwable t) {
+        // do nothing, non-integer names are fine already
+      }
+    }
+    return names;
+  }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
    *  already adapted to the Model's domain, so the output is also.  Also
@@ -848,24 +865,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
     // Build up the names & domains.
-    final int nc = _output.nclasses();
-    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
-    String[] names = new String[ncols];
-    String[][] domains = new String[ncols][];
-    names[0] = "predict";
-    for(int i = 1; i < names.length; ++i) {
-      names[i] = _output.classNames()[i - 1];
-      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
-      try {
-        Integer.valueOf(names[i]);
-        names[i] = "p" + names[i];
-      } catch (Throwable t) {
-        // do nothing, non-integer names are fine already
-      }
-    }
-    domains[0] = nc==1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    String[] names = makeScoringNames();
+    String[][] domains = new String[names.length][];
+    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],ncols,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(ncols, Vec.T_NUM, adaptFrm);
+    BigScore bs = new BigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);

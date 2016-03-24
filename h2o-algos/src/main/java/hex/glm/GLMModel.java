@@ -1124,24 +1124,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    */
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final int nc = _output.nclasses();
-    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
-    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(ncols,Vec.T_NUM,adaptFrm);
+    String [] names = makeScoringNames();
+    String [][] domains = new String[names.length][];
+    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
-    String [] names = new String[ncols];
-    names[0] = "predict";
-    for(int i = 1; i < names.length; ++i) {
-      names[i] = _output.classNames()[i - 1];
-      // turn integer class labels such as 0, 1, etc. into p0, p1, etc.
-      try {
-        Integer.valueOf(names[i]);
-        names[i] = "p" + names[i];
-      } catch (Throwable t) {
-        // do nothing, non-integer names are fine already
-      }
-    }
-    String [][] domains = new String[names.length][];
     domains[0] = gs._domain;
     return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names, domains);
   }
@@ -1150,6 +1137,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * @param adaptFrm Already adapted frame
    * @return MetricBuilder
    */
+  @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
     return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
   }
