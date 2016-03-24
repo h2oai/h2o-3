@@ -5,6 +5,7 @@ import os
 import random
 import math
 import numpy as np
+import time
 
 sys.path.insert(1, "../../../../")
 
@@ -93,30 +94,31 @@ class TestGLMMultinomial:
     margin = 0.0                    # only used when class_method = 'threshold'
     test_class_margin = 0.2         # for test data set
     family = 'multinomial'         # this test is for Multinomial GLM
+    curr_time = str(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets
-    training_filename = family+"training_set.csv"
-    training_filename_nans = family+"training_set_NA.csv"
-    training_filename_enum = family+"training_set_enum.csv"
-    training_filename_enum_true_one_hot = family+"training_set_enum_trueOneHot.csv"
-    training_filename_enum_nans = family+"training_set_enum_NAs.csv"
-    training_filename_enum_nans_true_one_hot = family+"training_set_enum_NAs_trueOneHot.csv"
+    training_filename = family+"_"+curr_time+"_training_set.csv"
+    training_filename_nans = family+"_"+curr_time+"_training_set_NA.csv"
+    training_filename_enum = family+"_"+curr_time+"_training_set_enum.csv"
+    training_filename_enum_true_one_hot = family+"_"+curr_time+"_training_set_enum_trueOneHot.csv"
+    training_filename_enum_nans = family+"_"+curr_time+"_training_set_enum_NAs.csv"
+    training_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_training_set_enum_NAs_trueOneHot.csv"
 
-    validation_filename = family+"validation_set.csv"
-    validation_filename_enum = family+"validation_set_enum.csv"
-    validation_filename_enum_true_one_hot = family+"validation_set_enum_trueOneHot.csv"
-    validation_filename_enum_nans = family+"validation_set_enum_NAs.csv"
-    validation_filename_enum_nans_true_one_hot = family+"validation_set_enum_NAs_trueOneHot.csv"
+    validation_filename = family+"_"+curr_time+"_validation_set.csv"
+    validation_filename_enum = family+"_"+curr_time+"_validation_set_enum.csv"
+    validation_filename_enum_true_one_hot = family+"_"+curr_time+"_validation_set_enum_trueOneHot.csv"
+    validation_filename_enum_nans = family+"_"+curr_time+"_validation_set_enum_NAs.csv"
+    validation_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_validation_set_enum_NAs_trueOneHot.csv"
 
-    test_filename = family+"test_set.csv"
-    test_filename_nans = family+"test_set_NA.csv"
-    test_filename_enum = family+"test_set_enum.csv"
-    test_filename_enum_true_one_hot = family+"test_set_enum_trueOneHot.csv"
-    test_filename_enum_nans = family+"test_set_enum_NAs.csv"
-    test_filename_enum_nans_true_one_hot = family+"test_set_enum_NAs_trueOneHot.csv"
+    test_filename = family+"_"+curr_time+"_test_set.csv"
+    test_filename_nans = family+"_"+curr_time+"_test_set_NA.csv"
+    test_filename_enum = family+"_"+curr_time+"_test_set_enum.csv"
+    test_filename_enum_true_one_hot = family+"_"+curr_time+"_test_set_enum_trueOneHot.csv"
+    test_filename_enum_nans = family+"_"+curr_time+"_test_set_enum_NAs.csv"
+    test_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_test_set_enum_NAs_trueOneHot.csv"
 
-    weight_filename = family+"weight.csv"
-    weight_filename_enum = family+"weight_enum.csv"
+    weight_filename = family+"_"+curr_time+"_weight.csv"
+    weight_filename_enum = family+"_"+curr_time+"_weight_enum.csv"
 
     total_test_number = 8   # number of tests run for GLM Multinomial family, only 7.  Use 8 to use tear_down
                             # of other distribution families

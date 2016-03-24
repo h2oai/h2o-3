@@ -10,6 +10,7 @@ import os
 import math
 import numpy as np
 import h2o
+import time
 
 from builtins import range
 from tests import pyunit_utils
@@ -102,32 +103,33 @@ class TestGLMBinomial:
     test_class_margin = 0.2         # for test data set
 
     family = 'binomial'         # this test is for Binomial GLM
+    curr_time = str(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets
-    training_filename = family+"training_set.csv"
-    training_filename_duplicate = family+"training_set_duplicate.csv"
-    training_filename_nans = family+"training_set_NA.csv"
-    training_filename_enum = family+"training_set_enum.csv"
-    training_filename_enum_true_one_hot = family+"training_set_enum_trueOneHot.csv"
-    training_filename_enum_nans = family+"training_set_enum_NAs.csv"
-    training_filename_enum_nans_true_one_hot = family+"training_set_enum_NAs_trueOneHot.csv"
+    training_filename = family+"_"+curr_time+"_training_set.csv"
+    training_filename_duplicate = family+"_"+curr_time+"_training_set_duplicate.csv"
+    training_filename_nans = family+"_"+curr_time+"_training_set_NA.csv"
+    training_filename_enum = family+"_"+curr_time+"_training_set_enum.csv"
+    training_filename_enum_true_one_hot = family+"_"+curr_time+"_training_set_enum_trueOneHot.csv"
+    training_filename_enum_nans = family+"_"+curr_time+"_training_set_enum_NAs.csv"
+    training_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_training_set_enum_NAs_trueOneHot.csv"
 
-    validation_filename = family+"validation_set.csv"
-    validation_filename_enum = family+"validation_set_enum.csv"
-    validation_filename_enum_true_one_hot = family+"validation_set_enum_trueOneHot.csv"
-    validation_filename_enum_nans = family+"validation_set_enum_NAs.csv"
-    validation_filename_enum_nans_true_one_hot = family+"validation_set_enum_NAs_trueOneHot.csv"
+    validation_filename = family+"_"+curr_time+"_validation_set.csv"
+    validation_filename_enum = family+"_"+curr_time+"_validation_set_enum.csv"
+    validation_filename_enum_true_one_hot = family+"_"+curr_time+"_validation_set_enum_trueOneHot.csv"
+    validation_filename_enum_nans = family+"_"+curr_time+"_validation_set_enum_NAs.csv"
+    validation_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_validation_set_enum_NAs_trueOneHot.csv"
 
-    test_filename = family+"test_set.csv"
-    test_filename_duplicate = family+"test_set_duplicate.csv"
-    test_filename_nans = family+"test_set_NA.csv"
-    test_filename_enum = family+"test_set_enum.csv"
-    test_filename_enum_true_one_hot = family+"test_set_enum_trueOneHot.csv"
-    test_filename_enum_nans = family+"test_set_enum_NAs.csv"
-    test_filename_enum_nans_true_one_hot = family+"test_set_enum_NAs_trueOneHot.csv"
+    test_filename = family+"_"+curr_time+"_test_set.csv"
+    test_filename_duplicate = family+"_"+curr_time+"_test_set_duplicate.csv"
+    test_filename_nans = family+"_"+curr_time+"_test_set_NA.csv"
+    test_filename_enum = family+"_"+curr_time+"_test_set_enum.csv"
+    test_filename_enum_true_one_hot = family+"_"+curr_time+"_test_set_enum_trueOneHot.csv"
+    test_filename_enum_nans = family+"_"+curr_time+"_test_set_enum_NAs.csv"
+    test_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_test_set_enum_NAs_trueOneHot.csv"
 
-    weight_filename = family+"weight.csv"
-    weight_filename_enum = family+"weight_enum.csv"
+    weight_filename = family+"_"+curr_time+"_weight.csv"
+    weight_filename_enum = family+"_"+curr_time+"_weight_enum.csv"
 
     total_test_number = 8   # total number of tests being run for GLM Binomial family
 
@@ -1459,7 +1461,8 @@ def test_glm_binomial():
     test_glm_binomial.test2_glm_lambda_search()
     test_glm_binomial.test3_glm_grid_search("IRLSM")
     test_glm_binomial.test3_glm_grid_search("L_BFGS")
-    test_glm_binomial.test4_glm_remove_collinear_columns()
+ #   test_glm_binomial.test4_glm_remove_collinear_columns()
+    test_glm_binomial.test_num += 1
     test_glm_binomial.test5_missing_values()
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()
