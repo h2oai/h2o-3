@@ -156,11 +156,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     } else {
       _output.weights = new Key[get_params()._hidden.length + 1];
       for (int i = 0; i < _output.weights.length; ++i) {
-        _output.weights[i] = Key.makeSystem(destKey + ".weights." + i);
+        _output.weights[i] = Key.make(destKey + ".weights." + i);
       }
       _output.biases = new Key[get_params()._hidden.length + 1];
       for (int i = 0; i < _output.biases.length; ++i) {
-        _output.biases[i] = Key.makeSystem(destKey + ".biases." + i);
+        _output.biases[i] = Key.make(destKey + ".biases." + i);
       }
       _output.normmul = model_info.data_info._normMul;
       _output.normsub = model_info.data_info._normSub;
@@ -1520,7 +1520,17 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * For Normal, the values are drawn from a Normal distribution with a standard deviation of initial_weight_scale.
      */
     public double _initial_weight_scale = 1.0;
-  
+
+    /**
+     * Frame keys for initial weight matrices
+     */
+    public Key[] _initial_weights;
+
+    /**
+     * Frame keys for initial bias vectors
+     */
+    public Key[] _initial_biases;
+
     /**
      * The loss (error) function to be minimized by the model.
      * Cross Entropy loss is used when the model output consists of independent
@@ -1660,7 +1670,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     // stochastic gradient descent: mini-batch size = 1
     // batch gradient descent: mini-batch size = # training rows
     public int _mini_batch_size = 1;
-  
+
     public enum MissingValuesHandling {
       Skip, MeanImputation
     }
@@ -1771,6 +1781,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
       if (_initial_weight_distribution == InitialWeightDistribution.UniformAdaptive) {
         dl.hide("_initial_weight_scale", "initial_weight_scale is not used if initial_weight_distribution == UniformAdaptive.");
+      }
+      if ((_initial_weights != null || _initial_biases != null) && _checkpoint != null) {
+        dl.error("_checkpoint", "Cannot specify initial weights or biases during checkpoint restart. Will use the checkpoint model's weights and biases.");
+      }
+      if (_initial_weights != null && _initial_weights.length!=_hidden.length+1) {
+        dl.error("_initial_weights", "The number of initial weights matrices must be " + (_hidden.length+1) + " (some weight matrices can be NULL/None/null).");
+      }
+      if (_initial_biases != null && _initial_biases.length!=_hidden.length+1) {
+        dl.error("_initial_biases", "The number of initial bias vectors must be " + (_hidden.length+1) + " (some bias vectors can be NULL/None/null).");
       }
       if (_loss == null) {
         if (expensive || dl.nclasses() != 0) {
@@ -1920,6 +1939,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_variable_importances",
               "_initial_weight_distribution", //will be ignored anyway
               "_initial_weight_scale", //will be ignored anyway
+              "_initial_weights",
+              "_initial_biases",
               "_force_load_balance",
               "_replicate_training_data",
               "_shuffle_training_data",

@@ -52,6 +52,8 @@
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. Rectifier).
 #' @param initial_weight_distribution Can be "Uniform", "UniformAdaptive", or "Normal".
 #' @param initial_weight_scale Uniform: -value ... value, Normal: stddev
+#' @param initial_weights Vector of frame ids for initial weight matrices
+#' @param initial_biases Vector of frame ids for initial bias vectors
 #' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute"
 #'        (experimental) or "Huber" (experimental)
 #' @param distribution A \code{character} string. The distribution function of the response.
@@ -166,6 +168,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              max_w2 = Inf,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
                              initial_weight_scale = 1,
+                             initial_weights = NULL,
+                             initial_biases = NULL,
                              loss = c("Automatic", "CrossEntropy", "Quadratic", "Absolute", "Huber"),
                              distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber", "quantile"),
                              quantile_alpha = 0.5,
@@ -301,6 +305,10 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$initial_weight_distribution <- initial_weight_distribution
   if(!missing(initial_weight_scale))
     parms$initial_weight_scale <- initial_weight_scale
+  if(!missing(initial_weights))
+    parms$initial_weights <- initial_weights
+  if(!missing(initial_biases))
+    parms$initial_biases <- initial_biases
   if(!missing(loss)) {
     if(loss == "MeanSquare") {
       warning("Loss name 'MeanSquare' is deprecated; please use 'Quadratic' instead.")
