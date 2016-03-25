@@ -84,7 +84,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-  @Override public void map( Chunk[] chks ) {
+  @Override final public void map( Chunk[] chks ) {
     final Chunk wrks = chks[_ncols+2]; //fitting target (same as response for DRF, residual for GBM)
     final Chunk nids = chks[_ncols+3];
     final Chunk weight = chks.length >= _ncols+5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
@@ -268,29 +268,34 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     weight.getDoubles(ws,which);
     chk.getDoubles(cs,which);
     wrks.getDoubles(ys,which);
+    double minmax[] = new double[]{min,max};
+    fillLocalHistoForNode(bins, sums, ssqs, ws, cs, ys, rh, hi - lo, minmax);
+
+    // Add all the data into the Histogram (atomically add)
+    rh.setMin(minmax[0]);       // Track actual lower/upper bound per-bin
+    rh.setMax(minmax[1]);
+    int len = rhbinslen;
+    for( int b=0; b<len; b++ ) { // Bump counts in bins
+      if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rhbins,b,bins[b]); bins[b]=0; }
+      if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
+    }
+  }
+
+  private static void fillLocalHistoForNode(double[] bins, double[] sums, double[] ssqs, double[] ws, double[] cs, double[] ys, DHistogram rh, int i, double[] minmax) {
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, sums and sum-squares.
-    for( int k=0;k<hi-lo;++k) {
+    for(int k = 0; k< i; ++k) {
       double w = ws[k];
       if (w == 0) continue;
       double col_data = cs[k];
-      if( col_data < min ) min = col_data;
-      if( col_data > max ) max = col_data;
+      if( col_data < minmax[0] ) minmax[0] = col_data;
+      if( col_data > minmax[1] ) minmax[1] = col_data;
       int b = rh.bin(col_data); // Compute bin# via linear interpolation
       double resp = ys[k];
       double wy = w*resp;
       bins[b] += w;                // Bump count in bin
       sums[b] += wy;
       ssqs[b] += wy*resp;
-    }
-
-    // Add all the data into the Histogram (atomically add)
-    rh.setMin(min);       // Track actual lower/upper bound per-bin
-    rh.setMax(max);
-    int len = rhbinslen;
-    for( int b=0; b<len; b++ ) { // Bump counts in bins
-      if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rhbins,b,bins[b]); bins[b]=0; }
-      if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
     }
   }
 

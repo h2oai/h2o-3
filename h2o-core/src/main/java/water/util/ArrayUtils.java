@@ -573,6 +573,12 @@ public class ArrayUtils {
       if (from[i]<result) result = from[i];
     return result;
   }
+  public static double minValue(double[] ary, int from, int to) {
+    double result = ary[from];
+    for (int i = from+1; i<to; ++i)
+      if (ary[i]<result) result = ary[i];
+    return result;
+  }
   public static double minValue(double[] from) {
     double result = from[0];
     for (int i = 1; i<from.length; ++i)
