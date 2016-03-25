@@ -161,8 +161,8 @@ public class NewChunk extends Chunk {
     else {
       int j = Arrays.binarySearch(_id,i);
       if(j >= 0)
-        add2Chunk_impl(c,i);
-      if(isSparseNA())
+        add2Chunk_impl(c,j);
+      else if(isSparseNA())
         c.addNA();
       else
         c.addNum(0,0);
