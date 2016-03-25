@@ -84,7 +84,7 @@ public class C1SChunk extends Chunk {
   public double [] getDoubles(double [] vals, int [] ids){
     int j = 0;
     for(int i:ids) {
-      long res = 0xFF&_mem[i];
+      long res = 0xFF&_mem[_OFF+i];
       vals[j++] = res != C1Chunk._NA?(res - _bias)*_scale:Double.NaN;
     }
     return vals;
