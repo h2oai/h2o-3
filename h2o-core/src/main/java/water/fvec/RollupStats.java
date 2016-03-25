@@ -273,6 +273,12 @@ final class RollupStats extends Iced {
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
+
+    /**
+     * Added to avoid deadlocks when running from idea in debug mode (evaluating toSgtring on mr task causes rollups to be computed)
+     * @return
+     */
+    @Override public String toString(){return "Roll(" + _fr.anyVec()._key +")";}
   }
 
   static void start(final Vec vec, Futures fs, boolean computeHisto) {

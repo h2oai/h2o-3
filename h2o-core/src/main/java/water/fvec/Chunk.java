@@ -568,14 +568,17 @@ public abstract class Chunk extends Iced<Chunk> {
 
   public int nextNZ(int rid){ return rid + 1;}
 
-  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
-   *  stored in this chunk.  For dense chunks, this will contain indices of all
-   *  the rows in this chunk.
+  /**
+   *  Get indeces of non-zero values stored in this chunk
    *  @return array of chunk-relative indices of values stored in this chunk. */
   public int nonzeros(int [] res) {
-    for( int i = 0; i < _len; ++i) res[i] = i;
-    return _len;
+    int k = 0;
+    for( int i = 0; i < _len; ++i)
+      if(atd(i) != 0)
+        res[k++] = i;
+    return k;
   }
+  
   //NA sparse methods:
   
   /** Sparse Chunks have a significant number of NAs, and support for

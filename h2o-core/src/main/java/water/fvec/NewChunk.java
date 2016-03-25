@@ -123,31 +123,49 @@ public class NewChunk extends Chunk {
 
   public void set_vec(Vec vec) { _vec = vec; }
 
+
   public final class Value {
     int _gId; // row number in dense (ie counting zeros)
     int _lId; // local array index of this value, equal to _gId if dense
 
     public Value(int lid, int gid){_lId = lid; _gId = gid;}
     public final int rowId0(){return _gId;}
-    public void add2Chunk(NewChunk c){
-      if (_ds == null && _ss == null) {
-        if (isNA2(_lId)) c.addNA();
-        else c.addNum(_ls[_lId],_xs[_lId]);
-      } else {
-        if (_ls != null) {
-          c.addUUID(_ls[_lId], Double.doubleToRawLongBits(_ds[_lId]));
-        } else if (_ss != null) {
-          int sidx = _is[_lId];
-          int nextNotNAIdx = _lId+1;
-          // Find next not-NA value (_is[idx] != -1)
-          while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
-          int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]-sidx : _sslen - sidx;
-          // null-BufferedString represents NA value
-          BufferedString bStr = sidx == -1 ? null : new BufferedString().set(_ss, sidx, slen);
-          c.addStr(bStr);
-        } else
-          c.addNum(_ds[_lId]);
-      }
+    public void add2Chunk(NewChunk c){add2Chunk_impl(c,_lId);}
+  }
+
+  private transient BufferedString _bfstr = new BufferedString();
+
+  private void add2Chunk_impl(NewChunk c, int i){
+    if (_ds == null && _ss == null) {
+      if (isNA2(i)) c.addNA();
+      else c.addNum(_ls[i],_xs[i]);
+    } else {
+      if (_ls != null) {
+        c.addUUID(_ls[i], Double.doubleToRawLongBits(_ds[i]));
+      } else if (_ss != null) {
+        int sidx = _is[i];
+        int nextNotNAIdx = i+1;
+        // Find next not-NA value (_is[idx] != -1)
+        while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
+        int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]-sidx : _sslen - sidx;
+        // null-BufferedString represents NA value
+        BufferedString bStr = sidx == -1 ? null : _bfstr.set(_ss, sidx, slen);
+        c.addStr(bStr);
+      } else
+        c.addNum(_ds[i]);
+    }
+  }
+  public void add2Chunk(NewChunk c, int i){
+    if(!isSparseNA() && !isSparseZero())
+      add2Chunk_impl(c,i);
+    else {
+      int j = Arrays.binarySearch(_id,i);
+      if(j >= 0)
+        add2Chunk_impl(c,i);
+      if(isSparseNA())
+        c.addNA();
+      else
+        c.addNum(0,0);
     }
   }
 
