@@ -77,11 +77,7 @@ public class DTree extends Iced {
   void init_tree( ) { for( int j=0; j<_len; j++ ) _ns[j]._tree = this; }
 
   // Return Node i
-  public final Node node( int i ) {
-    if( i >= _len )
-      throw new ArrayIndexOutOfBoundsException(i);
-    return _ns[i];
-  }
+  public final Node node( int i ) { return _ns[i]; }
   public final UndecidedNode undecided( int i ) { return (UndecidedNode)node(i); }
   public final   DecidedNode   decided( int i ) { return (  DecidedNode)node(i); }
 
