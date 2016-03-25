@@ -46,6 +46,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
   public boolean keep_cross_validation_predictions;
 
+  @API(help="Keep cross-validation fold assignment", level = API.Level.expert, direction=API.Direction.INOUT)
+  public boolean keep_cross_validation_fold_assignment;
+
   @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
   public boolean parallelize_cross_validation;
 

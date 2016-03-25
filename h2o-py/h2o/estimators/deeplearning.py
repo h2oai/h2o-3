@@ -241,6 +241,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         keep_cross_validation_predictions : bool
           Whether to keep the predictions of the cross-validation models
 
+        keep_cross_validation_fold_assignment : bool
+          Whether to keep the cross-validation fold assignment.
+
       Examples
       --------
         >>> import h2o as ml
@@ -275,6 +278,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  max_categorical_features=None, missing_values_handling=None,
                  reproducible=None, export_weights_and_biases=None, nfolds=None,
                  fold_assignment=None, keep_cross_validation_predictions=None,
+                 keep_cross_validation_fold_assignment=None,
                  stopping_rounds=None, stopping_metric=None, stopping_tolerance=None):
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = locals()
@@ -808,6 +812,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @keep_cross_validation_predictions.setter
     def keep_cross_validation_predictions(self, value):
         self._parms["keep_cross_validation_predictions"] = value
+
+    @property
+    def keep_cross_validation_fold_assignment(self):
+      return self._parms["keep_cross_validation_fold_assignment"]
+
+    @keep_cross_validation_fold_assignment.setter
+    def keep_cross_validation_fold_assignment(self, value):
+      self._parms["keep_cross_validation_fold_assignment"] = value
 
 
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):

@@ -1,13 +1,11 @@
 package hex.glm;
 
-import java.util.Arrays;
-import java.util.HashMap;
-
 import hex.DataInfo;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -23,13 +21,10 @@ import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.JCodeGen;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.SBPrintStream;
-import water.util.TwoDimTable;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import water.util.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -135,6 +130,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
+    public int[] _interactions=null;
 
 
     public Key<Frame> _beta_constraints = null;
@@ -235,12 +231,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public GLMParameters(Family f){this(f,f.defaultLink);}
     public GLMParameters(Family f, Link l){this(f,l, null, null, 0, 1);}
+    public GLMParameters(Family f, Link l, double[] lambda, double[] alpha, double twVar, double twLnk) {
+      this(f,l,lambda,alpha,twVar,twLnk,null);
+    }
 
-    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk){
+    public GLMParameters(Family f, Link l, double [] lambda, double [] alpha, double twVar, double twLnk, int[] interactions){
       this._lambda = lambda;
       this._alpha = alpha;
       this._tweedie_variance_power = twVar;
       this._tweedie_link_power = twLnk;
+      _interactions=interactions;
       _family = f;
       _link = l;
     }
@@ -756,6 +756,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     // GLM is always supervised
     public boolean isSupervised() { return true; }
+
+    public Model.InteractionPair[] interactions() { return _dinfo._interactions; }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);

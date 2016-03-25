@@ -24,10 +24,10 @@ from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 import urllib.request, urllib.error, urllib.parse
-import pandas as pd
 import numpy as np
 import shutil
 import string
+import copy
 
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -1945,7 +1945,7 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
     :param exclude_parameters: list containing parameter names not to be added to hyper_params
     :param gridable_parameters: list of gridable parameter names
     :param gridable_types: list of gridable parameter types
-    :param gridable_defaults: list of gridable parameter default value
+    :param gridable_defaults: list of gridable parameter default values
     :param max_int_number: integer, size of integer gridable parameter list
     :param max_int_val: integer, maximum integer value for integer gridable parameter
     :param min_int_val: integer, minimum integer value for integer gridable parameter
@@ -1954,18 +1954,21 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
     :param min_real_val: float, minimum real value for real gridable parameter
 
     :return: a tuple of hyper_params: dict of hyper parameters for gridsearch, true_gridable_parameters:
-    a list of string containing names of truely griddable parameters, true_gridable_types: a list of string
-    denoting parameter types
+    a list of string containing names of truely gridable parameters, true_gridable_types: a list of string
+    denoting parameter types and true_gridable_defaults: default values of those truly gridable parameters
     """
     count_index = 0
     true_gridable_parameters = []
     true_gridable_types = []
+    true_gridable_defaults = []
 
     for para_name in gridable_parameters:
         # parameter must not in exclusion list
         if (para_name in model_params) and (para_name not in exclude_parameters):
             true_gridable_parameters.append(para_name)
             true_gridable_types.append(gridable_types[count_index])
+            true_gridable_defaults.append(gridable_defaults[count_index])
+
             if para_name not in hyper_params.keys():    # add default value to user defined parameter list
                  # gridable parameter not seen before.  Randomly generate values for it
                 if 'int' in gridable_types[count_index]:
@@ -1973,11 +1976,12 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
                     hyper_params[para_name] = list(set(np.random.random_integers(min_int_val, max_int_val,
                                                                                  max_int_number)))
                 elif 'double' in gridable_types[count_index]:
-                    hyper_params[para_name] = list(set(np.random.uniform(min_real_val, max_real_val, max_real_number)))
+                    hyper_params[para_name] = list(set(np.around(np.random.uniform(min_real_val, max_real_val,
+                                                                                   max_real_number), 4)))
 
         count_index += 1
 
-    return hyper_params, true_gridable_parameters, true_gridable_types
+    return hyper_params, true_gridable_parameters, true_gridable_types, true_gridable_defaults
 
 
 def extract_used_params(model_param_names, grid_model_params, params_dict):
@@ -2032,8 +2036,8 @@ def insert_error_grid_search(hyper_params, gridable_parameters, gridable_types, 
 
     :return: new dict with errors in either parameter names or parameter values
     """
-
-    error_hyper_params = hyper_params.copy()
+    error_hyper_params = copy.deepcopy(hyper_params)
+#    error_hyper_params = {k : v for k, v in hyper_params.items()}
 
     param_index = random.randint(0, len(gridable_parameters)-1)
     param_name = gridable_parameters[param_index]
@@ -2088,7 +2092,7 @@ def generate_random_words(word_length):
     """
 
     if word_length > 0:
-        all_chars = string.letters + string.digits + string.punctuation
+        all_chars = string.ascii_letters + string.digits + string.punctuation
 
         return ''.join((random.choice(all_chars)) for index in range(int(word_length)))
     else:
@@ -2096,24 +2100,63 @@ def generate_random_words(word_length):
         sys.exit(1)
 
 
-def generate_redundant_parameters(hyper_params):
+def generate_redundant_parameters(hyper_params, gridable_parameters, gridable_defaults, error_number):
     """
     This function will randomly choose a set of hyper_params and make a dict out of it so we can
     duplicate the parameter specification in both the model and grid search.
 
     :param hyper_params: dict containing all griddable parameters as hyper_param to grid search
+    :param gridable_parameters: list of gridable parameters (not truly)
+    :param gridable_defaults: list of default values for gridable parameters
+    :param error_number: int, indicate ways to change the model parameter and the hyper-parameter
 
-    :return: dict containing duplicated parameters with specification
+    Here are the actions performed on the model parameter and hyper-parameters.
+    error_number = 0: set model parameter to be  a value out of the hyper-parameter value list, should not
+    generate error;
+    error_number = 1: set model parameter to be default value, should not generate error in this case;
+    error_number = 3: make sure model parameter is not set to default and choose a value not in the
+    hyper-parameter value list.
+
+    :return: 2 dicts containing duplicated parameters with specification, new hyperparameter specification
     """
+    error_hyper_params = copy.deepcopy(hyper_params)
+#    error_hyper_params = {k : v for k, v in hyper_params.items()}
 
     params_dict = {}
-    num_params = random.randint(1,len(hyper_params))
-    params_list = hyper_params.keys()
+    num_params = random.randint(1, len(error_hyper_params))
+    params_list = list(error_hyper_params)
+
+    # remove default values out of hyper_params
+    for key in params_list:
+        default_value = gridable_defaults[gridable_parameters.index(key )]
+
+        if default_value in error_hyper_params[key]:
+            error_hyper_params[key].remove(default_value)
 
     for index in range(num_params):
         param_name = params_list[index]
-        # randomly assigned the parameter to take one value out of the list
-        param_value_index = random.randint(0,len(hyper_params[param_name])-1)
-        params_dict[param_name] = hyper_params[param_name][param_value_index]
 
-    return params_dict
+        hyper_params_len = len(error_hyper_params[param_name])
+
+        if error_number == 0:
+            # randomly assigned the parameter to take one value out of the list
+            param_value_index = random.randint(0, len(error_hyper_params[param_name])-1)
+            params_dict[param_name] = error_hyper_params[param_name][param_value_index]
+        elif error_number == 1:
+            param_value_index = gridable_parameters.index(param_name)
+            params_dict[param_name] = gridable_defaults[param_value_index]
+        else:
+            # randomly assign model parameter to one of the hyper-parameter values, delete that value from
+            # hyper-parameter lists next, should create error condition here
+            if hyper_params_len >= 2:  # only add parameter to model parameter if it is long enough
+                param_value_index = random.randint(0, hyper_params_len-1)
+                params_dict[param_name] = error_hyper_params[param_name][param_value_index]
+
+                error_hyper_params[param_name].remove(params_dict[param_name])
+
+    # final check to make sure lambda is Lambda
+    if 'lambda' in list(params_dict):
+        params_dict["Lambda"] = params_dict['lambda']
+        del params_dict["lambda"]
+
+    return params_dict, error_hyper_params

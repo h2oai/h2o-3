@@ -30,6 +30,8 @@ class H2ONaiveBayesEstimator(H2OEstimator):
       Must be "AUTO", "Random" or "Modulo"
     keep_cross_validation_predictions :  bool
       Whether to keep the predictions of the cross-validation models.
+    keep_cross_validation_fold_assignment : bool
+      Whether to keep the cross-validation fold assignment.
 
     Returns
     -------
@@ -38,7 +40,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
   def __init__(self,model_id=None, laplace=None, threshold=None, eps=None,
                compute_metrics=None, balance_classes=None,
                max_after_balance_size=None, nfolds=None, fold_assignment=None,
-               keep_cross_validation_predictions=None, checkpoint=None):
+               keep_cross_validation_predictions=None,
+               keep_cross_validation_fold_assignment=None,
+               checkpoint=None):
     super(H2ONaiveBayesEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -114,6 +118,14 @@ class H2ONaiveBayesEstimator(H2OEstimator):
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
     self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def keep_cross_validation_fold_assignment(self):
+    return self._parms["keep_cross_validation_fold_assignment"]
+
+  @keep_cross_validation_fold_assignment.setter
+  def keep_cross_validation_fold_assignment(self, value):
+    self._parms["keep_cross_validation_fold_assignment"] = value
 
   @property
   def checkpoint(self):

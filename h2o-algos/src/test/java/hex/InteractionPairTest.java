@@ -10,27 +10,27 @@ public class InteractionPairTest {
   @Test public void testPairs() {
     String i1 = "1:2,4,5\n2:7,47,9";
     String i2 = "1[Dallas,New York]:4[Blue,Chartreuse],901[Charmander,Koffing,Newt Gingrich]\n1[San Francisco,Portland,Austin]:999[Blue Cheese,Zorpo Ecstatic Thrift Protocol]";
-    DataInfo.InteractionPair[] pairs1 = DataInfo.InteractionPair.read(i1);
-    DataInfo.InteractionPair[] pairs2 = DataInfo.InteractionPair.read(i2);
+    Model.InteractionPair[] pairs1 = Model.InteractionPair.read(i1);
+    Model.InteractionPair[] pairs2 = Model.InteractionPair.read(i2);
 
-    for(DataInfo.InteractionPair ip: pairs1)
+    for(Model.InteractionPair ip: pairs1)
       System.out.println(ip);
 
-    for(DataInfo.InteractionPair ip: pairs2)
+    for(Model.InteractionPair ip: pairs2)
       System.out.println(ip);
   }
 
   @Test public void testGeneratePairs() {
-    DataInfo.InteractionPair[] pairs = DataInfo.InteractionPair.generatePairwiseInteractions(0,10);
-    for(DataInfo.InteractionPair ip: pairs)
+    Model.InteractionPair[] pairs = Model.InteractionPair.generatePairwiseInteractions(0,10);
+    for(Model.InteractionPair ip: pairs)
       System.out.println(ip);
 
-    DataInfo.InteractionPair[] pairs2 = DataInfo.InteractionPair.generatePairwiseInteractions(40,99);
-    for(DataInfo.InteractionPair ip: pairs2)
+    Model.InteractionPair[] pairs2 = Model.InteractionPair.generatePairwiseInteractions(40,99);
+    for(Model.InteractionPair ip: pairs2)
       System.out.println(ip);
 
-    DataInfo.InteractionPair[] pairs3 = DataInfo.InteractionPair.generatePairwiseInteractionsFromList(0,8,2,99,90);
-    for(DataInfo.InteractionPair ip: pairs3)
+    Model.InteractionPair[] pairs3 = Model.InteractionPair.generatePairwiseInteractionsFromList(0,8,2,99,90);
+    for(Model.InteractionPair ip: pairs3)
       System.out.println(ip);
   }
 }

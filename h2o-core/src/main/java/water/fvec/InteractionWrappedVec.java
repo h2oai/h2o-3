@@ -32,12 +32,13 @@ public class InteractionWrappedVec extends WrappedVec {
   private transient Vec _masterVec2;  private String[] _v2Domain;
   private final boolean _useAllFactorLevels;
   private boolean _skipMissing;
+  private boolean _standardize;
   private long _bins[];
 
   private final String _v1Enums[]; // only interact these enums from vec 1
   private final String _v2Enums[]; // only interact these enums from vec 2
 
-  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
+  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
     super(key, rowLayout, null);
     _masterVecKey1=masterVecKey1;
     _masterVecKey2=masterVecKey2;
@@ -47,6 +48,7 @@ public class InteractionWrappedVec extends WrappedVec {
     _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
     _skipMissing=skipMissing;
+    _standardize=standardize;
     setupDomain();  // performs MRTask if both vecs are categorical!!
     DKV.put(this);
   }
@@ -175,11 +177,11 @@ public class InteractionWrappedVec extends WrappedVec {
     Chunk[] cs = new Chunk[2];
     cs[0] = (_masterVec1!=null?_masterVec1: (_masterVec1=_masterVecKey1.get())).chunkForChunkIdx(cidx);
     cs[1] = (_masterVec2!=null?_masterVec2: (_masterVec2=_masterVecKey2.get())).chunkForChunkIdx(cidx);
-    return new InteractionWrappedChunk(this, cs);
+    return new InteractionWrappedChunk(this, cs,_standardize);
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecKey1, _masterVecKey2);
     if( null!=domain()  ) v.setDomain(domain());
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();
@@ -191,16 +193,31 @@ public class InteractionWrappedVec extends WrappedVec {
     private final boolean _c1IsCat; // left chunk is categorical
     private final boolean _c2IsCat; // rite chunk is categorical
     private final boolean _isCat;   // this vec is categorical
-    InteractionWrappedChunk(Vec transformWrappedVec, Chunk[] c) {
+    // these values are used for on-the-fly standardization
+    private final double _v1Sub;    // the mean of vec v1
+    private final double _v2Sub;    // the mean of vec v2
+    private double _v1Mul;    // the multiplier for vec v1
+    private double _v2Mul;    // the multiplier for vec v2
+    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c, boolean standardize) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
       _c1IsCat=_c[0]._vec.isCategorical();
       _c2IsCat=_c[1]._vec.isCategorical();
       _isCat = _vec.isCategorical();
+      _v1Sub=standardize?transformWrappedVec.v1().mean():0;
+      _v2Sub=standardize?transformWrappedVec.v2().mean():0;
+      _v1Mul=standardize?transformWrappedVec.v1().sigma():1;
+      _v2Mul=standardize?transformWrappedVec.v2().sigma():1;
+      if( _v1Mul==0 ) _v1Mul=1;
+      if( _v2Mul==0 ) _v2Mul=1;
+      _v1Mul=1./_v1Mul;
+      _v2Mul=1./_v2Mul;
     }
 
-    @Override public double atd_impl(int idx) { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].atd(idx) ) * ( _c2IsCat?1:_c[1].atd(idx) ); }
+    @Override public double atd_impl(int idx) {return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1: _v1Mul*(_c[0].atd(idx)-_v1Sub )) * ( _c2IsCat?1: _v2Mul*(_c[1].atd(idx)-_v2Sub) );}
+
+//    @Override public double atd_impl(int idx) { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].atd(idx) ) * ( _c2IsCat?1:_c[1].atd(idx) ); }
     @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
     private String getKey(int idx) { return _c[0]._vec.domain()[(int)_c[0].at8(idx)] + _c[1]._vec.domain()[(int)_c[1].at8(idx)]; }
     @Override public boolean isNA_impl(int idx) { return _c[0].isNA(idx) || _c[1].isNA(idx); }

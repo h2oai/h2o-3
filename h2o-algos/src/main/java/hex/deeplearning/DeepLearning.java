@@ -228,8 +228,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           Log.info("Loading model parameters of input and hidden layers from the pretrained autoencoder model.");
           cp.model_info().initializeFromPretrainedModel(pretrained.model_info());
         } else {
-          Log.info("Creating random initial model state.");
-          cp.model_info().initializeMembers();
+          cp.model_info().initializeMembers(_parms._initial_weights, _parms._initial_biases);
         }
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);

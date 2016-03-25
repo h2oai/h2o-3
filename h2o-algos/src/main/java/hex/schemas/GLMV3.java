@@ -22,6 +22,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "validation_frame",
             "nfolds",
             "keep_cross_validation_predictions",
+            "keep_cross_validation_fold_assignment",
             "fold_assignment",
             "fold_column",
             "response_column",
@@ -53,6 +54,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "lambda_min_ratio",
             "beta_constraints",
             "max_active_predictors",
+            "interactions",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
@@ -135,7 +137,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help="Maximum number of active predictors during computation. Use as a stopping criterium to prevent expensive model building with many predictors.", direction = Direction.INPUT, level = Level.expert)
     public int max_active_predictors = -1;
-    
+
+    @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction=Direction.INPUT, level=Level.expert)
+    public int[] interactions;
+
     // dead unused args, formely inherited from supervised model schema
     /**
      * For imbalanced data, balance training data class counts via

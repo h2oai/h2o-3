@@ -44,6 +44,12 @@ class H2OKMeansEstimator(H2OEstimator):
       Cross-validation fold assignment scheme, if fold_column is not specified
       Must be "AUTO", "Random" or "Modulo"
 
+    keep_cross_validation_predictions : bool
+      Whether to keep the predictions of the cross-validation models
+
+    keep_cross_validation_fold_assignment : bool
+      Whether to keep the cross-validation fold assignment.
+
     Returns
     -------
       An instance of H2OClusteringModel.
@@ -51,6 +57,7 @@ class H2OKMeansEstimator(H2OEstimator):
   def __init__(self, model_id=None, k=None, max_iterations=None,standardize=None,init=None,seed=None,
                nfolds=None,fold_assignment=None, user_points=None,ignored_columns=None,
                score_each_iteration=None, keep_cross_validation_predictions=None,
+               keep_cross_validation_fold_assignment=None,
                ignore_const_cols=None,checkpoint=None):
     super(H2OKMeansEstimator, self).__init__()
     self._parms = locals()
@@ -143,6 +150,14 @@ class H2OKMeansEstimator(H2OEstimator):
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
     self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def keep_cross_validation_fold_assignment(self):
+    return self._parms["keep_cross_validation_fold_assignment"]
+
+  @keep_cross_validation_fold_assignment.setter
+  def keep_cross_validation_fold_assignment(self, value):
+    self._parms["keep_cross_validation_fold_assignment"] = value
 
   @property
   def ignore_const_cols(self):

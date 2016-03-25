@@ -6,10 +6,10 @@ import water.api.ModelsHandler.Models;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.FrameUtils;
 import water.util.Log;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.*;
 
 /*
@@ -262,83 +262,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(export(fr, s.path, s.frame_id.key().toString(),s.force));
+    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(Frame.export(fr, s.path, s.frame_id.key().toString(),s.force));
     return s;
-  }
-
-
-  private static Job export(Frame fr, String path, String frameName, boolean overwrite) {
-    // Validate input
-    boolean fileExists = H2O.getPM().exists(path);
-    if (overwrite && fileExists) {
-      Log.warn("File " + path + " exists, but will be overwritten!");
-    } else if (!overwrite && fileExists) {
-      throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
-    }
-    InputStream is = (fr).toCSV(true, false);
-    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
-    ExportTask t = new ExportTask(is, path, frameName, overwrite, job);
-    return job.start(t, fr.anyVec().nChunks());
-  }
-
-  private static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
-    final InputStream _csv;
-    final String _path;
-    final String _frameName;
-    final boolean _overwrite;
-    final Job _j;
-
-    ExportTask(InputStream csv, String path, String frameName, boolean overwrite, Job j) {
-      _csv = csv;
-      _path = path;
-      _frameName = frameName;
-      _overwrite = overwrite;
-      _j = j;
-    }
-
-    private long copyStream(OutputStream os, final int buffer_size) {
-      long len = 0;
-      int curIdx = 0;
-      try {
-        byte[] bytes = new byte[buffer_size];
-        for (; ; ) {
-          int count = _csv.read(bytes, 0, buffer_size);
-          if (count <= 0) {
-            break;
-          }
-          len += count;
-          os.write(bytes, 0, count);
-          int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
-          if (curIdx != workDone) {
-            _j.update(workDone - curIdx);
-            curIdx = workDone;
-          }
-        }
-      } catch (Exception ex) {
-        throw new RuntimeException(ex);
-      }
-      return len;
-    }
-
-    @Override public void compute2() {
-      OutputStream os = null;
-      long written = -1;
-      try {
-        os = H2O.getPM().create(_path, _overwrite);
-        written = copyStream(os, 4 * 1024 * 1024);
-      } finally {
-        if (os != null) {
-          try {
-            os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
-            os.close();
-            Log.info("Key '" + _frameName + "' of "+written+" bytes was written to " + _path + ".");
-          } catch (Exception e) {
-            Log.err(e);
-          }
-        }
-      }
-      tryComplete();
-    }
   }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
