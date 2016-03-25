@@ -66,4 +66,34 @@ public class C2SChunk extends Chunk {
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);
   }
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int from, int to){
+    for(int i = from; i < to; ++i) {
+      long res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+      vals[i-from] = res != C2Chunk._NA?(res - _bias)*_scale:Double.NaN;
+    }
+    return vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids) {
+      long res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+      vals[j++] = res != C2Chunk._NA?(res - _bias)*_scale:Double.NaN;
+    }
+    return vals;
+  }
+
 }

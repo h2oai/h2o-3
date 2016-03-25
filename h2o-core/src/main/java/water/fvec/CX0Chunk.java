@@ -19,7 +19,7 @@ public final class CX0Chunk extends CXIChunk {
   @Override public boolean hasNA() { return false; }
 
   @Override public int asSparseDoubles(double [] vals, int[] ids) {
-    if(vals.length != _len) throw new IllegalArgumentException();
+    if(vals.length < _sparseLen) throw new IllegalArgumentException();
     int off = _OFF;
     final int inc = _ridsz;
     if(_ridsz == 2){

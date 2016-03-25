@@ -50,4 +50,34 @@ public class C2Chunk extends Chunk {
   }
   @Override
   public boolean hasFloat() {return false;}
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  @Override
+  public double[] getDoubles(double [] vals, int from, int to){
+    for(int i = from; i < to; ++i) {
+      long res = UnsafeUtils.get2(_mem, i << 1);;
+      vals[i - from] = res != _NA?res:Double.NaN;
+    }
+    return vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids){
+      long res = UnsafeUtils.get2(_mem,i<<1);
+      vals[j++] = res != _NA?res:Double.NaN;
+    }
+    return vals;
+  }
+
 }

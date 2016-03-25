@@ -16,7 +16,7 @@ public class ChunkSpeedTest extends TestUtil {
   final double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
 
-  @Ignore
+
   @Test
   public void run() {
     for (int j = 0; j < cols; ++j) {
@@ -37,6 +37,10 @@ public class ChunkSpeedTest extends TestUtil {
       raw();
     for (int i = 0; i < ll; ++i)
       chunks();
+    for (int i = 0; i < ll; ++i)
+      chunks_bulk();
+    for (int i = 0; i < ll; ++i)
+      chunks_part();
     for (int i = 0; i < ll; ++i)
       chunksInline();
 //    for (int i = 0; i < ll; ++i)
@@ -123,11 +127,50 @@ public class ChunkSpeedTest extends TestUtil {
     }
     return sum;
   }
+  double walkChunkBulk(final Chunk c, double [] vals) {
+    double sum =0;
+    c.getDoubles(vals,0,c._len);
+    for (int i = 0; i < rows; ++i)
+      sum += vals[i];
+    return sum;
+  }
+
+  double walkChunkParts(final Chunk c, double [] vals) {
+    double sum =0;
+    int from = 0;
+    while(from != c._len) {
+      int to = Math.min(c._len,from+vals.length);
+      int n = to - from;
+      c.getDoubles(vals,from,to);
+      for (int i = 0; i < n; ++i)
+        sum += vals[i];
+      from = to;
+    }
+    return sum;
+  }
 
   double loop() {
     double sum =0;
     for (int j=0; j<cols; ++j) {
       sum += walkChunk(chunks[j]);
+    }
+    return sum;
+  }
+
+  double loop_bulk() {
+    double sum =0;
+    double [] vals = new double[chunks[0]._len];
+    for (int j=0; j<cols; ++j) {
+      sum += walkChunkBulk(chunks[j],vals);
+    }
+    return sum;
+  }
+
+  double loop_parts() {
+    double sum =0;
+    double [] vals = new double[16];
+    for (int j=0; j<cols; ++j) {
+      sum += walkChunkParts(chunks[j],vals);
     }
     return sum;
   }
@@ -176,6 +219,44 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("");
   }
 
+  void chunks_bulk()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += loop_bulk();
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for METHODS chunks getDoubles(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+  void chunks_part()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += loop_parts();
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for METHODS chunks PARTS(): " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
   void chunksInverted()
   {
     long start = 0;

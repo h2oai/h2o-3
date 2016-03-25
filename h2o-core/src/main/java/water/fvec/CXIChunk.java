@@ -3,6 +3,7 @@ package water.fvec;
 import water.H2O;
 import water.util.UnsafeUtils;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 // Sparse chunk.
@@ -34,6 +35,26 @@ public class CXIChunk extends Chunk {
     _mem = buf;
     _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
+  }
+
+  @Override public double [] getDoubles(double [] vals,int from, int to){
+    double fill = isSparseNA()?Double.NaN:0;
+    if(from == 0 && to == _len) {
+      Arrays.fill(vals,fill);
+      double [] svals = new double[_sparseLen];
+      int [] sids = new int[_sparseLen];
+      asSparseDoubles(svals,sids);
+      int start = 0;
+      while(start < sids.length && sids[start] < from)++start;
+      for(int i = start; i < sids.length && sids[i] < to; ++i)
+        vals[sids[i]] = svals[i];
+    } else {
+      for(int i = from; i < to; ++i)
+        vals[i-from] = fill;
+      for(int i= nextNZ(from-1); i < to; i = nextNZ(i))
+        vals[i-from] = atd(i);
+    }
+    return vals;
   }
 
   @Override public int asSparseDoubles(double [] vals, int[] ids) {

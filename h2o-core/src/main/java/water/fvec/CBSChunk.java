@@ -108,4 +108,32 @@ public class CBSChunk extends Chunk {
 
   @Override
   public boolean hasFloat() {return false;}
+
+
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  @Override
+  public double[] getDoubles(double [] vals, int from, int to){
+    for(int i = from; i < to; ++i)
+      vals[i-from] = atb(i);
+    return vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  @Override
+  public double[] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids) vals[j++] = atb(i);
+    return vals;
+  }
+
+
 }
