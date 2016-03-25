@@ -222,20 +222,23 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     int cols = _ncols;
     int hcslen = hcs.length;
 
+    double[] ws = new double[1024];
+    double[] cs = new double[1024];
+    double[] ys = new double[1024];
     //Note: for (n) for (c) is faster than for(c) for(n) for Airlines and MNIST data for DRF and GBM and stochastic GBM
     for (int n = 0; n < hcslen; n++) {
       int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
       if (sCols == null) {
         for (int c = 0; c < cols; c++)
-          overAllRows(chks, wrks, weight, nh, rows, hcs, c, n, bins, sums, ssqs, binslen);
+          overAllRows(chks, wrks, weight, nh, rows, hcs, c, n, bins, sums, ssqs, binslen, ws, cs, ys);
       } else {
         for (int c : sCols)
-          overAllRows(chks, wrks, weight, nh, rows, hcs, c, n, bins, sums, ssqs, binslen);
+          overAllRows(chks, wrks, weight, nh, rows, hcs, c, n, bins, sums, ssqs, binslen, ws, cs, ys);
       }
     }
   }
 
-  private static void overAllRows(Chunk chks[], Chunk wrks, Chunk weight, int nh[], int[] rows, DHistogram hcs[][], int c, int n, double[] bins, double[] sums, double[] ssqs, int binslen) {
+  private static void overAllRows(Chunk chks[], Chunk wrks, Chunk weight, int nh[], int[] rows, DHistogram hcs[][], int c, int n, double[] bins, double[] sums, double[] ssqs, int binslen, double[] ws, double[] cs, double[] ys) {
     Chunk chk = chks[c];
     final DHistogram rh = hcs[n][c];
     if( rh==null ) return; // Ignore untracked columns in this split
@@ -255,17 +258,26 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       ssqs = new double[rhbinslen];
     }
 
+    int[] which = new int[hi-lo];
+    System.arraycopy(rows,lo,which,0,hi-lo);
+    if (hi-lo > ws.length) {
+      ws = new double[hi-lo];
+      cs = new double[hi-lo];
+      ys = new double[hi-lo];
+    }
+    weight.getDoubles(ws,which);
+    chk.getDoubles(cs,which);
+    wrks.getDoubles(ys,which);
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, sums and sum-squares.
-    for( int xrow=lo; xrow<hi; xrow++ ) {
-      int row = rows[xrow];
-      double w = weight.atd(row);
+    for( int k=0;k<hi-lo;++k) {
+      double w = ws[k];
       if (w == 0) continue;
-      double col_data = chk.atd(row);
+      double col_data = cs[k];
       if( col_data < min ) min = col_data;
       if( col_data > max ) max = col_data;
       int b = rh.bin(col_data); // Compute bin# via linear interpolation
-      double resp = wrks.atd(row); // fitting target (residual)
+      double resp = ys[k];
       double wy = w*resp;
       bins[b] += w;                // Bump count in bin
       sums[b] += wy;
