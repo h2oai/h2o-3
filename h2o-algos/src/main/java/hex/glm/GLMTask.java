@@ -132,17 +132,16 @@ public abstract class GLMTask  {
      _mean = mean;
    }
    @Override public void map(Chunk [] chks){
-      Chunk wChunk;
      double [] weights = null;
      if(_weightId != - 1){
        weights = MemoryManager.malloc8d(chks[_weightId]._len);
-       chks[_weightId].asDoubles(weights);
+       chks[_weightId].getDoubles(weights,0,weights.length);
        chks = ArrayUtils.remove(chks,_weightId);
      }
      _varSum = MemoryManager.malloc8d(_mean.length);
      double [] vals = MemoryManager.malloc8d(chks[0]._len);
      int [] ids = MemoryManager.malloc4(chks[0]._len);
-     for(int c = 0; c < chks.length; ++c){
+     for(int c = 0; c < _mean.length; ++c){
        double mu = _mean[c];
        int n = chks[c].asSparseDoubles(vals,ids);
        double s = 0;

@@ -1267,6 +1267,8 @@ public class Frame extends Lockable<Frame> {
         } else {
           NewChunk src = new NewChunk(c);
           src = c.inflate_impl(src);
+//          if(src.sparseNA() || src.sparseZero())
+//            src.cancel_sparse();
           for (int j = 0; j < selected; ++j)
             src.add2Chunk(nc, selectedIds[j]);
         }

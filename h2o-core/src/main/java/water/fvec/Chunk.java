@@ -122,23 +122,32 @@ public abstract class Chunk extends Iced<Chunk> {
   public int asSparseDoubles(double [] vals, int [] ids) {
     if(vals.length < sparseLenZero())
       throw new IllegalArgumentException();
-    for(int i = 0; i < _len; ++i) {
-      vals[i] = atd_impl(i);
-      ids[i] = i;
-    }
+    getDoubles(vals,0,_len);
+    for(int i = 0; i < _len; ++i) ids[i] = i;
     return len();
   }
 
   /**
-   * Dense bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted values, must be of the same length as this.len().
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
    */
-  public void asDoubles(double [] vals) {
-    if(vals.length != _len) throw new IllegalArgumentException();
-    for(int i = 0; i < _len; ++i)
-      vals[i] = atd_impl(i);
+  public double [] getDoubles(double [] vals, int from, int to){
+    for(int i = from; i < to; ++i)
+      vals[i-from] = atd(i);
+    return vals;
   }
-
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  public double[] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids) vals[j++] = atd(i);
+    return vals;
+  }
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;
   /** Global starting row for this local Chunk */
