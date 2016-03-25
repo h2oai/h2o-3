@@ -675,8 +675,9 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           // strip quotes off string values inside array
           String stripped = splits[i].trim();
 
-          if ("null".equals(stripped)) {
+          if ("null".equals(stripped.toLowerCase()) || "na".equals(stripped.toLowerCase())) {
             a[i] = null;
+            continue;
           } else if (!stripped.startsWith("\"") || !stripped.endsWith("\"")) {
             String msg = "Illegal argument for field: " + field_name + " of schema: " + schemaClass.getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
             IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();

@@ -63,6 +63,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Must be "AUTO", "Random" or "Modulo"
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
+  keep_cross_validation_fold_assignment : bool
+    Whether to keep the cross-validation fold assignment.
   score_each_iteration : bool
     Attempts to score each tree.
   score_tree_interval : int
@@ -88,6 +90,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                nbins_top_level=None, nbins_cats=None, balance_classes=None,
                max_after_balance_size=None, seed=None, build_tree_one_node=None,
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
+               keep_cross_validation_fold_assignment=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
                score_each_iteration=None, score_tree_interval=None, checkpoint=None):
     super(H2OGradientBoostingEstimator, self).__init__()
@@ -253,6 +256,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @keep_cross_validation_predictions.setter
   def keep_cross_validation_predictions(self, value):
     self._parms["keep_cross_validation_predictions"] = value
+
+  @property
+  def keep_cross_validation_fold_assignment(self):
+    return self._parms["keep_cross_validation_fold_assignment"]
+
+  @keep_cross_validation_fold_assignment.setter
+  def keep_cross_validation_fold_assignment(self, value):
+    self._parms["keep_cross_validation_fold_assignment"] = value
 
   @property
   def score_each_iteration(self):

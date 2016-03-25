@@ -29,6 +29,7 @@
 #'        Must be "AUTO", "Random" or "Modulo".
 #' @param seed Seed for random numbers (affects sampling).
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param compute_metrics A logical value indicating whether model metrics should be computed. Set to
 #'        FALSE to reduce the runtime of the algorithm.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
@@ -60,6 +61,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            fold_assignment = NULL,
                            seed,
                            keep_cross_validation_predictions = FALSE,
+                           keep_cross_validation_fold_assignment = FALSE,
                            compute_metrics = TRUE,
                            max_runtime_secs=0)
 {
@@ -91,6 +93,7 @@ h2o.naiveBayes <- function(x, y, training_frame,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
   if(!missing(model_id)) parms$model_id <- model_id
   if (!missing(validation_frame)) parms$validation_frame <- validation_frame
   if (!missing(nfolds)) parms$nfolds <- nfolds

@@ -1288,6 +1288,7 @@ public class GBMTest extends TestUtil {
       tfr.add("cylinders",old.toCategoricalVec());
       DKV.put(tfr);
       parms._ntrees = 10;
+      parms._keep_cross_validation_fold_assignment = true;
 
       GBM job1 = new GBM(parms);
       gbm1 = job1.trainModel().get();
@@ -1298,6 +1299,7 @@ public class GBMTest extends TestUtil {
       if (gbm1 != null) {
         gbm1.deleteCrossValidationModels();
         gbm1.delete();
+        gbm1._output._cross_validation_fold_assignment_frame_id.remove();
       }
     }
   }

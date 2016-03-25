@@ -3,6 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.util.FrameUtils;
 import water.util.Log;
@@ -1328,6 +1329,20 @@ public class Frame extends Lockable<Frame> {
     // Assert row numbering sanity.
     assert row <= lastRowOfCurrentChunk;
     return row >= lastRowOfCurrentChunk;
+  }
+
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite) {
+    // Validate input
+    boolean fileExists = H2O.getPM().exists(path);
+    if (overwrite && fileExists) {
+      Log.warn("File " + path + " exists, but will be overwritten!");
+    } else if (!overwrite && fileExists) {
+      throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+    }
+    InputStream is = (fr).toCSV(true, false);
+    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
+    FrameUtils.ExportTask t = new FrameUtils.ExportTask(is, path, frameName, overwrite, job);
+    return job.start(t, fr.anyVec().nChunks());
   }
 
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally

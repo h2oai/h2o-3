@@ -401,9 +401,9 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)  # call super
     if( object@on_train ) .showMultiMetrics(object, "Training")
-    if( object@on_valid ) .showMultiMetrics(object, "Validation")
-    if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
-    if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
+    else if( object@on_valid ) .showMultiMetrics(object, "Validation")
+    else if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
+    else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class

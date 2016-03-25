@@ -1,6 +1,7 @@
 package water;
 
 import org.apache.commons.lang.ArrayUtils;
+import water.api.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 
 /**
@@ -29,6 +30,7 @@ public class IcedWrapper extends Iced {
   boolean b;
   String s;
   String e; // TODO: JavaAssist is blowing up on enum fields
+  KeyV3 k;
 
   int[] i_ar; // also holds byte
   long[] l_ar;
@@ -37,6 +39,7 @@ public class IcedWrapper extends Iced {
   // boolean[] b_ar;
   String[] s_ar;
   String[] e_ar; // TODO: JavaAssist is blowing up on enum fields
+  KeyV3[] k_ar;
 
   public IcedWrapper(Object o) {
     if (null == o) {
@@ -92,6 +95,9 @@ public class IcedWrapper extends Iced {
       } else if (clz == Enum.class) {
         t = "E";
         e_ar = (String[])o;
+      } else if (o instanceof KeyV3[]) {
+        t = "K";
+        k_ar = (KeyV3[])o;
       }
     } else {
       // scalar
@@ -119,6 +125,9 @@ public class IcedWrapper extends Iced {
       } else if (o instanceof Enum) {
         e = ((Enum)o).toString();
         t = "E";
+      } else if (o instanceof KeyV3) {
+        k = (KeyV3)o;
+        t = "K";
       }
     }
 
@@ -149,6 +158,8 @@ public class IcedWrapper extends Iced {
         return s_ar;
       } else if (t.equals("E")) {
         return e_ar;
+      } else if (t.equals("K")) {
+        return k_ar;
       }
     } else {
       if (t.equals("B")) {
@@ -167,6 +178,8 @@ public class IcedWrapper extends Iced {
         return s;
       } else if (t.equals("E")) {
         return e;
+      } else if (t.equals("K")) {
+        return k;
       }
     }
     throw new H2OIllegalArgumentException(this.toString());
@@ -194,6 +207,8 @@ public class IcedWrapper extends Iced {
       return s;
     } else if (t.equals("E")) {
       return "" + e;
+    } else if (t.equals("K")) {
+      return "" + k;
     }
 
     return "unhandled type";
@@ -219,6 +234,8 @@ public class IcedWrapper extends Iced {
         return ab.putJSONAStr(s_ar);
       else if (t.equals("E"))
         return ab.putJSONAStr(e_ar);
+      else if (t.equals("K"))
+        return ab.putJSONA(k_ar);
     } else {
       if (t.equals("B"))
         return ab.putJSON1((byte)i);
@@ -236,6 +253,8 @@ public class IcedWrapper extends Iced {
         return ab.putJSONName(s);
       else if (t.equals("E"))
         return ab.putJSONName(e);
+      else if (t.equals("K"))
+        return ab.putJSON(k);
     }
 
     throw H2O.fail("Unhandled type: " + t);

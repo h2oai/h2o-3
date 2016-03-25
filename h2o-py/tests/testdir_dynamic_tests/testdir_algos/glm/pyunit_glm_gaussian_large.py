@@ -8,6 +8,7 @@ import scipy
 import math
 from scipy import stats
 from builtins import range
+import time
 
 sys.path.insert(1, "../../../../")
 
@@ -93,31 +94,34 @@ class TestGLMGaussian:
 
     enum_levels = 5             # maximum number of levels for categorical variables not counting NAs
 
+    family = 'gaussian'         # this test is for Gaussian GLM
+    curr_time = str(round(time.time()))
+
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
-    training_filename = "training_set.csv"
-    training_filename_duplicate = "training_set_duplicate.csv"
-    training_filename_nans = "training_set_NA.csv"
-    training_filename_enum = "training_set_enum.csv"
-    training_filename_enum_true_one_hot = "training_set_enum_trueOneHot.csv"
-    training_filename_enum_nans = "training_set_enum_NAs.csv"
-    training_filename_enum_nans_true_one_hot = "training_set_enum_NAs_trueOneHot.csv"
+    training_filename = family+"_"+curr_time+"_training_set.csv"
+    training_filename_duplicate = family+"_"+curr_time+"_training_set_duplicate.csv"
+    training_filename_nans = family+"_"+curr_time+"_training_set_NA.csv"
+    training_filename_enum = family+"_"+curr_time+"_training_set_enum.csv"
+    training_filename_enum_true_one_hot = family+"_"+curr_time+"_training_set_enum_trueOneHot.csv"
+    training_filename_enum_nans = family+"_"+curr_time+"_training_set_enum_NAs.csv"
+    training_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_training_set_enum_NAs_trueOneHot.csv"
 
-    validation_filename = "validation_set.csv"
-    validation_filename_enum = "validation_set_enum.csv"
-    validation_filename_enum_true_one_hot = "validation_set_enum_trueOneHot.csv"
-    validation_filename_enum_nans = "validation_set_enum_NAs.csv"
-    validation_filename_enum_nans_true_one_hot = "validation_set_enum_NAs_trueOneHot.csv"
+    validation_filename = family+"_"+curr_time+"_validation_set.csv"
+    validation_filename_enum = family+"_"+curr_time+"_validation_set_enum.csv"
+    validation_filename_enum_true_one_hot = family+"_"+curr_time+"_validation_set_enum_trueOneHot.csv"
+    validation_filename_enum_nans = family+"_"+curr_time+"_validation_set_enum_NAs.csv"
+    validation_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_validation_set_enum_NAs_trueOneHot.csv"
 
-    test_filename = "test_set.csv"
-    test_filename_duplicate = "test_set_duplicate.csv"
-    test_filename_nans = "test_set_NA.csv"
-    test_filename_enum = "test_set_enum.csv"
-    test_filename_enum_true_one_hot = "test_set_enum_trueOneHot.csv"
-    test_filename_enum_nans = "test_set_enum_NAs.csv"
-    test_filename_enum_nans_true_one_hot = "test_set_enum_NAs_trueOneHot.csv"
+    test_filename = family+"_"+curr_time+"_test_set.csv"
+    test_filename_duplicate = family+"_"+curr_time+"_test_set_duplicate.csv"
+    test_filename_nans = family+"_"+curr_time+"_test_set_NA.csv"
+    test_filename_enum = family+"_"+curr_time+"_test_set_enum.csv"
+    test_filename_enum_true_one_hot = family+"_"+curr_time+"_test_set_enum_trueOneHot.csv"
+    test_filename_enum_nans = family+"_"+curr_time+"_test_set_enum_NAs.csv"
+    test_filename_enum_nans_true_one_hot = family+"_"+curr_time+"_test_set_enum_NAs_trueOneHot.csv"
 
-    weight_filename = "weight.csv"
-    weight_filename_enum = "weight_enum.csv"
+    weight_filename = family+"_"+curr_time+"_weight.csv"
+    weight_filename_enum = family+"_"+curr_time+"_weight_enum.csv"
 
     total_test_number = 8   # total number of tests being run for GLM Gaussian family
 
@@ -172,8 +176,6 @@ class TestGLMGaussian:
     test_failed = 0             # count total number of tests that have failed
     test_failed_array = [0]*total_test_number   # denote test results for all tests run.  1 error, 0 pass
     test_num = 0                # index representing which test is being run
-
-    family = 'gaussian'         # this test is for Gaussian GLM
 
     duplicate_col_indices = []   # denote column indices when column duplication is applied
     duplicate_col_scales = []    # store scaling factor for all columns when duplication is applied
@@ -249,7 +251,7 @@ class TestGLMGaussian:
         self.train_row_count = round(self.train_col_count * random.uniform(self.min_col_count_ratio,
                                                                            self.max_col_count_ratio))
 
-        #  DEBUGGING setup, remember to comment them out once done.
+        #  DEBUGGING setup_data, remember to comment them out once done.
         # self.train_col_count = 3
         # self.train_row_count = 200
         # end DEBUGGING
@@ -389,7 +391,7 @@ class TestGLMGaussian:
             pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
 
         # remove any csv files left in directory
-        pyunit_utils.remove_csv_files(self.current_dir, ".csv")
+        #pyunit_utils.remove_csv_files(self.current_dir, ".csv")
 
     def test1_glm_and_theory(self):
         """
@@ -944,7 +946,8 @@ def test_glm_gaussian():
     test_glm_gaussian.test2_glm_lambda_search()
     test_glm_gaussian.test3_glm_grid_search("IRLSM")
     test_glm_gaussian.test3_glm_grid_search("L_BFGS")
-    test_glm_gaussian.test4_glm_remove_collinear_columns()
+ #   test_glm_gaussian.test4_glm_remove_collinear_columns()
+    test_glm_gaussian.test_num += 1
     test_glm_gaussian.test5_missing_values()
     test_glm_gaussian.test6_enum_missing_values()
     test_glm_gaussian.test7_missing_enum_values_lambda_search()
