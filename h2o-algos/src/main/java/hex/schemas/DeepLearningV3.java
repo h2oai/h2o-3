@@ -60,6 +60,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "max_w2",
         "initial_weight_distribution",
         "initial_weight_scale",
+        "initial_weights",
+        "initial_biases",
         "loss",
         "distribution",
         "quantile_alpha",
@@ -393,6 +395,12 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      */
     @API(help = "Uniform: -value...value, Normal: stddev)", /* dmin = 0, */ level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
     public double initial_weight_scale;
+
+    @API(help = "A list of H2OFrame ids to initialize the weight matrices of this model with.", level = API.Level.expert, direction=API.Direction.INOUT, gridable=true)
+    public KeyV3.FrameKeyV3[] initial_weights;
+
+    @API(help = "A list of H2OFrame ids to initialize the bias vectors of this model with.", level = API.Level.expert, direction=API.Direction.INOUT, gridable=true)
+    public KeyV3.FrameKeyV3[] initial_biases;
 
     /**
      * The loss (error) function to be minimized by the model.
