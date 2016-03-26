@@ -5,7 +5,10 @@ import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.util.ArrayUtils;
 import water.util.AtomicUtils;
+
+import java.util.Arrays;
 
 /**  Score and Build Histogram
  *
@@ -222,30 +225,26 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     int cols = _ncols;
     int hcslen = hcs.length;
 
-    double[] ws = new double[1024];
-    double[] cs = new double[1024];
-    double[] ys = new double[1024];
+    double[] ws = new double[chks[0]._len];
+    double[] cs = new double[chks[0]._len];
+    double[] ys = new double[chks[0]._len];
     //Note: for (n) for (c) is faster than for(c) for(n) for Airlines and MNIST data for DRF and GBM and stochastic GBM
-    for (int n = 0; n < hcslen; n++) {
-      int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-      if (sCols == null) {
-        for (int c = 0; c < cols; c++)
-          overAllRows(chks, wrks, weight, nh, rows, hcs, c, n, bins, sums, ssqs, binslen, ws, cs, ys);
-      } else {
-        for (int c : sCols)
-          overAllRows(chks, wrks, weight, nh, rows, hcs, c, n, bins, sums, ssqs, binslen, ws, cs, ys);
+    weight.getDoubles(ws,0,ws.length);
+    wrks.getDoubles(ys,0,ys.length);
+    for (int c = 0; c < cols; c++) {
+      chks[c].getDoubles(cs,0,cs.length);
+      for (int n = 0; n < hcslen; n++) {
+        int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
+        if (sCols == null || ArrayUtils.find(sCols,c) >= 0)
+          overAllRows(cs, ys, ws, rows, hcs[n][c], n==0?0:nh[n-1], nh[n], bins, sums, ssqs, binslen);
       }
     }
   }
 
-  private static void overAllRows(Chunk chks[], Chunk wrks, Chunk weight, int nh[], int[] rows, DHistogram hcs[][], int c, int n, double[] bins, double[] sums, double[] ssqs, int binslen, double[] ws, double[] cs, double[] ys) {
-    Chunk chk = chks[c];
-    final DHistogram rh = hcs[n][c];
+  private static void overAllRows(double [] cs, double [] ys, double [] ws, int[] rows, final DHistogram rh, int lo, int hi, double[] bins, double[] sums, double[] ssqs, int binslen) {
     if( rh==null ) return; // Ignore untracked columns in this split
     double[] rhbins = rh._bins;
     int rhbinslen = rhbins.length;
-    final int lo = n==0 ? 0 : nh[n-1];
-    final int hi = nh[n];
     double min = rh._min2;
     double max = rh._maxIn;
     // While most of the time we are limited to nbins, we allow more bins
@@ -257,20 +256,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       sums = new double[rhbinslen];
       ssqs = new double[rhbinslen];
     }
-
-    int[] which = new int[hi-lo];
-    System.arraycopy(rows,lo,which,0,hi-lo);
-    if (hi-lo > ws.length) {
-      ws = new double[hi-lo];
-      cs = new double[hi-lo];
-      ys = new double[hi-lo];
-    }
-    weight.getDoubles(ws,which);
-    chk.getDoubles(cs,which);
-    wrks.getDoubles(ys,which);
     double minmax[] = new double[]{min,max};
-    fillLocalHistoForNode(bins, sums, ssqs, ws, cs, ys, rh, hi - lo, minmax);
-
+    fillLocalHistoForNode(bins, sums, ssqs, ws, cs, ys, rh, rows, hi, lo, minmax);
     // Add all the data into the Histogram (atomically add)
     rh.setMin(minmax[0]);       // Track actual lower/upper bound per-bin
     rh.setMax(minmax[1]);
@@ -280,11 +267,54 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
     }
   }
+//  private static void overAllRows(Chunk chks[], Chunk wrks, Chunk weight, int nh[], int[] rows, DHistogram hcs[][], int c, int n, double[] bins, double[] sums, double[] ssqs, int binslen, double[] ws, double[] cs, double[] ys) {
+//    Chunk chk = chks[c];
+//    final DHistogram rh = hcs[n][c];
+//    if( rh==null ) return; // Ignore untracked columns in this split
+//    double[] rhbins = rh._bins;
+//    int rhbinslen = rhbins.length;
+//    final int lo = n==0 ? 0 : nh[n-1];
+//    final int hi = nh[n];
+//    double min = rh._min2;
+//    double max = rh._maxIn;
+//    // While most of the time we are limited to nbins, we allow more bins
+//    // in a few cases (top-level splits have few total bins across all
+//    // the (few) splits) so it's safe to bin more; also categoricals want
+//    // to split one bin-per-level no matter how many levels).
+//    if( rhbinslen >= binslen) { // Grow bins if needed
+//      bins = new double[rhbinslen];
+//      sums = new double[rhbinslen];
+//      ssqs = new double[rhbinslen];
+//    }
+//
+//    int[] which = new int[hi-lo];
+//    System.arraycopy(rows,lo,which,0,hi-lo);
+//    if (hi-lo > ws.length) {
+//      ws = new double[hi-lo];
+//      cs = new double[hi-lo];
+//      ys = new double[hi-lo];
+//    }
+//    weight.getDoubles(ws,which);
+//    chk.getDoubles(cs,which);
+//    wrks.getDoubles(ys,which);
+//    double minmax[] = new double[]{min,max};
+//    fillLocalHistoForNode(bins, sums, ssqs, ws, cs, ys, rh, hi - lo, minmax);
+//
+//    // Add all the data into the Histogram (atomically add)
+//    rh.setMin(minmax[0]);       // Track actual lower/upper bound per-bin
+//    rh.setMax(minmax[1]);
+//    int len = rhbinslen;
+//    for( int b=0; b<len; b++ ) { // Bump counts in bins
+//      if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rhbins,b,bins[b]); bins[b]=0; }
+//      if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
+//    }
+//  }
 
-  private static void fillLocalHistoForNode(double[] bins, double[] sums, double[] ssqs, double[] ws, double[] cs, double[] ys, DHistogram rh, int i, double[] minmax) {
+  private static void fillLocalHistoForNode(double[] bins, double[] sums, double[] ssqs, double[] ws, double[] cs, double[] ys, DHistogram rh, int [] rows, int hi, int lo, double[] minmax) {
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, sums and sum-squares.
-    for(int k = 0; k< i; ++k) {
+    for(int r = lo; r< hi; ++r) {
+      int k = rows[r];
       double w = ws[k];
       if (w == 0) continue;
       double col_data = cs[k];
