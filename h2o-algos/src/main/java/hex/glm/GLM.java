@@ -68,6 +68,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     };
   }
 
+  private double _lambdaCVEstimate = Double.NaN;
+  @Override
+  public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
+    if(_parms._lambda_search) {
+      double lambdaAvg = 0;
+      double lambdaSE = 0;
+      for (int i = 0; i < cvModelBuilders.length; ++i)
+        lambdaAvg += ((GLM) cvModelBuilders[i])._model._output.bestSubmodel().lambda_value;
+      lambdaAvg /= cvModelBuilders.length;
+      for (int i = 0; i < cvModelBuilders.length; ++i) {
+        double diff = lambdaAvg - ((GLM) cvModelBuilders[i])._model._output.bestSubmodel().lambda_value;
+        lambdaSE += diff * diff;
+      }
+      lambdaSE = lambdaAvg / ((cvModelBuilders.length - 1) * Math.sqrt(cvModelBuilders.length));
+      _lambdaCVEstimate = lambdaAvg + lambdaSE;
+      _parms._early_stopping = false;
+      Log.info("lambdaCV avg = " + lambdaAvg + ", standard error = " + lambdaSE + ", " + "lambdaEstimate = " + _lambdaCVEstimate);
+    }
+  }
+
   @Override
   protected void checkMemoryFootPrint() {/* see below */ }
 
@@ -388,6 +408,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           // todo set the null submodel
         } else
           _parms._lambda = new double[]{10 * _parms._lambda_min_ratio * _lmax};
+      }
+      if(!Double.isNaN(_lambdaCVEstimate)){
+        for(int i = 0; i < _parms._lambda.length; ++i)
+          if(_parms._lambda[i] < _lambdaCVEstimate){
+            _parms._lambda = Arrays.copyOf(_parms._lambda,i+1);
+            break;
+          }
+        _parms._lambda[_parms._lambda.length-1] = _lambdaCVEstimate;
       }
       // clone2 so that I don't change instance which is in the DKV directly
       // (clone2 also shallow clones _output)
@@ -915,7 +943,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
-          if(testDev > testDevOld)
+          if(_parms._early_stopping && testDev > testDevOld)
             break; // started overfitting
           testDevOld = testDev;
           if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)

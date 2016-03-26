@@ -128,6 +128,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
     public int[] _interactions=null;
+    public boolean _early_stopping = true;
 
 
     public Key<Frame> _beta_constraints = null;
@@ -151,12 +152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
         glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda_search)
-        if (glm.nFoldCV())
-          glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
         if(_nlambdas == -1)
           _nlambdas = 100;
-        else
-          _exactLambdas = false;
       if(_obj_reg != -1 && _obj_reg <= 0)
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
