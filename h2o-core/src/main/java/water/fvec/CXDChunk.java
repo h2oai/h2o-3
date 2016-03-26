@@ -15,7 +15,7 @@ public class CXDChunk extends CXIChunk {
   }
 
   @Override public int asSparseDoubles(double [] vals, int[] ids) {
-    if(vals.length != _sparseLen) throw new IllegalArgumentException();
+    if(vals.length < _sparseLen) throw new IllegalArgumentException();
     int off = _OFF;
     final int inc = 8 + _ridsz;
     if(_ridsz == 2){
@@ -29,7 +29,7 @@ public class CXDChunk extends CXIChunk {
         vals[i] = UnsafeUtils.get8d(_mem,off+4);
       }
     } else throw H2O.unimpl();
-    return len();
+    return _sparseLen;
   }
 
   @Override protected long at8_impl(int idx) {
