@@ -312,9 +312,7 @@ public class DTree extends Iced {
         assert len < choices;
       }
 //      Log.info("Picking these (mtry=" + tree._mtrys + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
-      int[] res = Arrays.copyOfRange(cols, len, choices);
-      Arrays.sort(res);
-      return res;
+      return Arrays.copyOfRange(cols, len, choices);
     }
 
     // Make the parent of this Node use a -1 NID to prevent the split that this

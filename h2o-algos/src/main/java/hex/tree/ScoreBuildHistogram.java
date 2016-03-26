@@ -5,6 +5,7 @@ import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
 import java.util.Arrays;
@@ -234,7 +235,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       chks[c].getDoubles(cs,0,cs.length);
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-        if (sCols == null || Arrays.binarySearch(sCols,c) >= 0)
+        if (sCols == null || ArrayUtils.find(sCols,c) >= 0)
           overAllRows(cs, ys, ws, rows, hcs[n][c], n==0?0:nh[n-1], nh[n], bins, sums, ssqs, binslen);
       }
     }
