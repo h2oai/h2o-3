@@ -88,7 +88,7 @@ def weights_and_biases():
   # h2o.download_pojo(dl2) ## fully functional pojo
 
   ## check consistency
-  assert max(abs(p1[:,1:4]-p2[:,1:4])) < 1e-6
+  assert abs(p1[:,1:4]-p2[:,1:4]).max() < 1e-6
   assert abs(ll2 - ll1) < 1e-6
 
   ## make another model with partially set weights/biases
