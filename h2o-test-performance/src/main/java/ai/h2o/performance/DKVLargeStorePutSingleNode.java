@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations=2, timeUnit=TimeUnit.MILLISECONDS, time=5)
 @OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-public class DKVPutBenchmarkSingleNode {
+public class DKVLargeStorePutSingleNode {
 
     /* The size of the store at the beginning of each benchmark iteration. */
     int startIterStoreSize;
@@ -62,15 +62,14 @@ public class DKVPutBenchmarkSingleNode {
     @Setup(Level.Iteration)
     public void initNBHM() {
         /* Clear out the H2O.STORE */
-        Log.info("@Setup for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
+        Log.info("@Setup for DKVLargeStorePutSingleNode Iteration - Scope.Benchmark");
         Log.info("Empting the H2O.STORE.");
         H2O.STORE.clear();
 
-        /* Grow the H2O.STORE large enough to be confident that we won't do any resize operations during the
-        *  measurement phase. */
+        /* Put a million keys in the H2O.STORE */
         Key k;
         startIterStoreSize = ((H2O.STORE.kvs().length-2)>>1);
-        while (startIterStoreSize < 500000) {
+        while (startIterStoreSize < 1000000) {
             k = Key.make();
             H2O.STORE.put(k, new Value(k, new IcedInt(0)));
             startIterStoreSize = ((H2O.STORE.kvs().length-2)>>1);
@@ -81,7 +80,7 @@ public class DKVPutBenchmarkSingleNode {
 
     @TearDown(Level.Iteration)
     public void checkNBHM() throws InterruptedException {
-        Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
+        Log.info("@TearDown for DKVLargeStorePutSingleNode Iteration - Scope.Benchmark");
         Log.info("Checking the H2O.STORE. Number of actual keys: "+H2O.STORE.size()+". ");
         /* Check that the H2O.STORE has not resized. If the H2O.STORE has resized, then throw an
         *  InterruptedException. */
@@ -111,28 +110,28 @@ public class DKVPutBenchmarkSingleNode {
 
         @TearDown(Level.Iteration)
         public void logInvocations() {
-            Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Thread");
+            Log.info("@TearDown for DKVLargeStorePutSingleNode Iteration - Scope.Thread");
             Log.info("Number of method invocations for this thread: "+ invocations);
         }
     }
 
     @Benchmark
     @Threads(value=1)
-    public void putTest1(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void largeStorePutTest1(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
 
     @Benchmark
     @Threads(value=2)
-    public void putTest2(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void largeStorePutTest2(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
 
     @Benchmark
     @Threads(value=4)
-    public void putTest4(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void largeStorePutTest4(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
 
     @Benchmark
     @Threads(value=8)
-    public void putTest8(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void largeStorePutTest8(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
 
     @Benchmark
     @Threads(value=16)
-    public void putTest16(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void largeStorePutTest16(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
 }

@@ -40,69 +40,44 @@ import water.util.IcedInt;
 import water.util.Log;
 
 import java.util.concurrent.TimeUnit;
+import java.util.Random;
+import java.util.Set;
 
 @Fork(5)
 @BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=250)
-@Warmup(iterations=2, timeUnit=TimeUnit.MILLISECONDS, time=5)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
+@Measurement(iterations=10, timeUnit=TimeUnit.SECONDS, time=5)
+@Warmup(iterations=3, timeUnit=TimeUnit.SECONDS, time=3)
+@OutputTimeUnit(value=TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-public class DKVPutBenchmarkSingleNode {
-
-    /* The size of the store at the beginning of each benchmark iteration. */
-    int startIterStoreSize;
+public class DKVLargeStoreGetSingleNode {
 
     @Setup(Level.Trial)
-    public void startH2O() {
+    public void initH2O() {
+        // Start up h2o
         H2O.main(new String[] {"-name", Long.toString(System.currentTimeMillis()) });
         H2O.registerRestApis(System.getProperty("user.dir"));
         H2O.waitForCloudSize(1, 30000);
-    }
 
-    @Setup(Level.Iteration)
-    public void initNBHM() {
-        /* Clear out the H2O.STORE */
-        Log.info("@Setup for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
-        Log.info("Empting the H2O.STORE.");
-        H2O.STORE.clear();
-
-        /* Grow the H2O.STORE large enough to be confident that we won't do any resize operations during the
-        *  measurement phase. */
+        // Load up 1,000,000 keys
         Key k;
-        startIterStoreSize = ((H2O.STORE.kvs().length-2)>>1);
-        while (startIterStoreSize < 500000) {
+        for (int i=0; i<1000000; i++) {
             k = Key.make();
-            H2O.STORE.put(k, new Value(k, new IcedInt(0)));
-            startIterStoreSize = ((H2O.STORE.kvs().length-2)>>1);
+            H2O.STORE.put(Key.make(), new Value(k, new IcedInt(0)));
         }
-        Log.info("Done initializing the H2O.STORE. Number of allowed keys: "+startIterStoreSize+
-                ". Number of actual keys: "+H2O.STORE.size()+".");
-    }
-
-    @TearDown(Level.Iteration)
-    public void checkNBHM() throws InterruptedException {
-        Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
-        Log.info("Checking the H2O.STORE. Number of actual keys: "+H2O.STORE.size()+". ");
-        /* Check that the H2O.STORE has not resized. If the H2O.STORE has resized, then throw an
-        *  InterruptedException. */
-        int endIterStoreSize = (H2O.STORE.kvs().length-2)>>1;
-        if (startIterStoreSize < endIterStoreSize) {
-            Log.err("H2O.STORE resized.");
-            throw new InterruptedException("Looks like the H2O.STORE was resized from "+startIterStoreSize+" to "+
-                    endIterStoreSize+". For this benchmark, we want to avoid this.");
-        }
+        Log.info("@Setup for DKVLargeStoreGetSingleNode Trial - Scope.Benchmark");
+        Log.info("Done initializing the H2O.STORE. Number of actual keys: "+H2O.STORE.size());
     }
 
     @State(Scope.Thread)
     public static class ThreadState {
-        Key k;
-        Value v;
+        Key tk;
         int invocations;
 
         @Setup(Level.Invocation)
-        public void setKeyValue() {
-            k = Key.make();
-            v = new Value(k, new IcedInt(0));
+        public void setKeyForGetOp() {
+            // Pick a key from the H2O.STORE at random
+            Set<Key> keySet = H2O.STORE.keySet();
+            tk = (Key) keySet.toArray()[new Random().nextInt(keySet.size())];
             invocations += 1;
         }
 
@@ -111,28 +86,28 @@ public class DKVPutBenchmarkSingleNode {
 
         @TearDown(Level.Iteration)
         public void logInvocations() {
-            Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Thread");
-            Log.info("Number of method invocations for this thread: "+ invocations);
+            Log.info("@TearDown for DKVLargeStoreGetSingleNode Iteration - Scope.Thread");
+            Log.info("Number of benchmark method invocations for this thread's iteration: "+ invocations);
         }
     }
 
     @Benchmark
     @Threads(value=1)
-    public void putTest1(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public Value largeStoreGetTest1(ThreadState ts) { return H2O.STORE.get(ts.tk); }
 
     @Benchmark
     @Threads(value=2)
-    public void putTest2(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public Value largeStoreGetTest2(ThreadState ts) { return H2O.STORE.get(ts.tk); }
 
     @Benchmark
     @Threads(value=4)
-    public void putTest4(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public Value largeStoreGetTest4(ThreadState ts) { return H2O.STORE.get(ts.tk); }
 
     @Benchmark
     @Threads(value=8)
-    public void putTest8(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public Value largeStoreGetTest8(ThreadState ts) { return H2O.STORE.get(ts.tk); }
 
     @Benchmark
     @Threads(value=16)
-    public void putTest16(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public Value largeStoreGetTest16(ThreadState ts) { return H2O.STORE.get(ts.tk); }
 }
