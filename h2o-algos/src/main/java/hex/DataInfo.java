@@ -310,7 +310,10 @@ public class DataInfo extends Keyed<DataInfo> {
     res._weights = _weights && adaptFrame.find(_adaptedFrame.name(weightChunkId())) != -1;
     res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
     res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
-    res._responses = adaptFrame.find(_adaptedFrame.name(responseChunkId(0))) != -1?1:0;
+    res._responses = 0;
+    int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
+    if(resId != -1 && adaptFrame.vec(resId).naCnt() != adaptFrame.numRows())
+      res._responses = 1;
     res._valid = true;
     res._interactions=_interactions;
     return res;
