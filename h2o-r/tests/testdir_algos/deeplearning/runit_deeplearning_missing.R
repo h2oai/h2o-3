@@ -25,19 +25,16 @@ check.deeplearning_missing <- function() {
     if (missing_ratios[i] > 0) {
       resp = data[,24]
       pred = data[,-24]
-      data_missing = h2o.insertMissingValues(pred,fraction=missing_ratios[i])
+      data_missing = h2o.insertMissingValues(pred,fraction=missing_ratios[i], seed=12345)
       Sys.sleep(1.5)    #sleep until waitOnJob is fixed
       data_fin = h2o.cbind(data_missing, resp)
     } else 
       data_fin = data
 
     # split into train + test datasets
-    ratio <- h2o.runif(data_fin)
-    train <- data_fin[ratio <= .75, ]
-    test  <- data_fin[ratio >  .75, ]
-    # splits=h2o.splitFrame(data,ratios=c(.75),shuffle=T)
-    # train = splits[[1]]
-    # test  = splits[[2]]
+    splits=h2o.splitFrame(data,ratios=c(.75))
+    train = splits[[1]]
+    test  = splits[[2]]
 
     hh=h2o.deeplearning(x=3:22,y=24,training_frame=train,validation=test,epochs=5,reproducible=T,seed=12345,
                         activation='RectifierWithDropout',l1=1e-5,input_dropout_ratio=0.2)
