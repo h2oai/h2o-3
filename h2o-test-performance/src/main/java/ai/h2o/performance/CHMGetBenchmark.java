@@ -33,12 +33,8 @@ package org.sample;
 
 import org.openjdk.jmh.annotations.*;
 
-import water.H2O;
-import water.Key;
-import water.Value;
-import water.util.IcedInt;
-import water.util.Log;
-
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
 import java.util.Set;
@@ -49,41 +45,34 @@ import java.util.Set;
 @Warmup(iterations=3)
 @OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-public class DKVGetBenchmarkSingleNode {
+public class CHMGetBenchmark {
+
+    public static String getRandomKey() {
+        UUID uid = UUID.randomUUID();
+        long l1 = uid.getLeastSignificantBits();
+        long l2 = uid. getMostSignificantBits();
+        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
+    }
+
+    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(10000);
 
     @Setup(Level.Trial)
-    public void initH2O() {
-        // Start up h2o
-        H2O.main(new String[] {"-name", Long.toString(System.currentTimeMillis()) });
-        H2O.registerRestApis(System.getProperty("user.dir"));
-        H2O.waitForCloudSize(1, 30000);
-
+    public void initCHM() {
         // Load up 1000 keys
-        Key k;
-        for (int i=0; i<1000; i++) {
-            k = Key.make();
-            H2O.STORE.put(Key.make(), new Value(k, new IcedInt(0)));
-        }
-        Log.info("@Setup for DKVGetBenchmarkSingleNode Trial - Scope.Benchmark");
-        Log.info("Done initializing the H2O.STORE. Number of actual keys: "+H2O.STORE.size());
+        for (int i=0; i<1000; i++) chm.put(getRandomKey(), 0);
+        System.out.println("@Setup for CHMGetBenchmark Trial - Scope.Benchmark");
+        System.out.println("Done initializing the CHM. Number of actual keys: "+chm.size());
     }
 
     @State(Scope.Thread)
     public static class ThreadState {
-        Set<Key> keySet;
-        Key tk;
+        Set<String> keySet;
+        String tk;
         int invocations;
 
         @Setup(Level.Trial)
-        public void getKeySet() {
-            keySet = H2O.STORE.keySet();
-        }
-
-        @Setup(Level.Invocation)
-        public void setKeyForGetOp() {
-            // Pick a key from the H2O.STORE at random
-            tk = (Key) keySet.toArray()[new Random().nextInt(keySet.size())];
-            invocations += 1;
+        public void getKeySet(CHMGetBenchmark bm) {
+            keySet = bm.chm.keySet();
         }
 
         @Setup(Level.Iteration)
@@ -91,28 +80,34 @@ public class DKVGetBenchmarkSingleNode {
 
         @TearDown(Level.Iteration)
         public void logInvocations() {
-            Log.info("@TearDown for DKVGetBenchmarkSingleNode Iteration - Scope.Thread");
-            Log.info("Number of method invocations for this thread: "+ invocations);
+            System.out.println("@TearDown for CHMGetBenchmark Iteration - Scope.Thread");
+            System.out.println("Number of method invocations for this thread: "+ invocations);
+        }
+
+        @Setup(Level.Invocation)
+        public void setKeyForGetOp() {
+            tk = (String) keySet.toArray()[new Random().nextInt(keySet.size())];
+            invocations += 1;
         }
     }
 
     @Benchmark
     @Threads(value=1)
-    public Value getTest1(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer chmGetTest1(ThreadState ts) { return chm.get(ts.tk); }
 
     @Benchmark
     @Threads(value=2)
-    public Value getTest2(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer chmGetTest2(ThreadState ts) { return chm.get(ts.tk); }
 
     @Benchmark
     @Threads(value=4)
-    public Value getTest4(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer chmGetTest4(ThreadState ts) { return chm.get(ts.tk); }
 
     @Benchmark
     @Threads(value=8)
-    public Value getTest8(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer chmGetTest8(ThreadState ts) { return chm.get(ts.tk); }
 
     @Benchmark
     @Threads(value=16)
-    public Value getTest16(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer chmGetTest16(ThreadState ts) { return chm.get(ts.tk); }
 }
