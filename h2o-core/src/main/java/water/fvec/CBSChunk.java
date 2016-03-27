@@ -1,10 +1,7 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.H2O;
 import water.MemoryManager;
-
-import java.util.Arrays;
 
 /** A simple chunk for boolean values. In fact simple bit vector.
  *  Each boolean is represented by 2bits since we need to represent NA.
@@ -119,8 +116,10 @@ public class CBSChunk extends Chunk {
    */
   @Override
   public double[] getDoubles(double [] vals, int from, int to){
-    for(int i = from; i < to; ++i)
-      vals[i-from] = atb(i);
+    for(int i = from; i < to; ++i) {
+      byte b = atb(i);
+      vals[i - from] = b == _NA ? Double.NaN : b;
+    }
     return vals;
   }
   /**
@@ -131,7 +130,10 @@ public class CBSChunk extends Chunk {
   @Override
   public double[] getDoubles(double [] vals, int [] ids){
     int j = 0;
-    for(int i:ids) vals[j++] = atb(i);
+    for(int i:ids) {
+      byte b = atb(i);
+      vals[j++] = b == _NA ? Double.NaN : b;
+    }
     return vals;
   }
 
