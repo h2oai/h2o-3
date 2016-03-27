@@ -36,6 +36,13 @@ public class CX0ChunkTest extends TestUtil {
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(i));
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(i));
 
+    double[] sparsevals = new double[cc.sparseLenZero()];
+    int[] sparseids = new int[cc.sparseLenZero()];
+    cc.asSparseDoubles(sparsevals, sparseids);
+    for (int i = 0; i < sparsevals.length; ++i) {
+      Assert.assertTrue(cc.at8(sparseids[i])==(int)sparsevals[i]);
+    }
+
     Chunk cc2 = nc.compress();
     Assert.assertEquals(vals.length , cc._len);
     Assert.assertTrue(cc2 instanceof CX0Chunk);

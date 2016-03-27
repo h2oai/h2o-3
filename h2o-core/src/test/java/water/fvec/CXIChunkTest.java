@@ -34,6 +34,14 @@ public class CXIChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
+      double[] sparsevals = new double[cc.sparseLenZero()];
+      int[] sparseids = new int[cc.sparseLenZero()];
+      cc.asSparseDoubles(sparsevals, sparseids);
+      for (int i = 0; i < sparsevals.length; ++i) {
+        if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
+        else Assert.assertTrue(cc.at8(sparseids[i])==(int)sparsevals[i]);
+      }
+
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
       Assert.assertEquals(vals.length+l+1, nc._len);
