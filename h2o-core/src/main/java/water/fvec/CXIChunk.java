@@ -116,6 +116,9 @@ public class CXIChunk extends Chunk {
           break;
       }
     } else throw H2O.unimpl();
+    for (int i = 0; i < _sparseLen; ++i, off += inc) {
+      vals[i] = vals[i] == NAS[_valsz_log] ? Double.NaN : vals[i];
+    }
     return sparseLenZero();
   }
 
