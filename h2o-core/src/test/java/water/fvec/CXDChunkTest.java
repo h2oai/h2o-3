@@ -54,6 +54,20 @@ public class CXDChunkTest extends TestUtil {
       Assert.assertTrue(nc.isNA(vals.length + l));
       Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
+      double[] sparsevals = new double[cc.sparseLenZero()];
+      int[] sparseids = new int[cc.sparseLenZero()];
+      cc.asSparseDoubles(sparsevals, sparseids);
+      for (int i = 0; i < sparsevals.length; ++i) {
+        if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
+        else Assert.assertTrue(cc.atd(sparseids[i])==sparsevals[i]);
+      }
+      double[] densevals = new double[cc.len()];
+      cc.getDoubles(densevals,0,cc.len());
+      for (int i = 0; i < densevals.length; ++i) {
+        if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
+        else Assert.assertTrue(cc.atd(i)==densevals[i]);
+      }
+
       Chunk cc2 = nc.compress();
       Assert.assertEquals(vals.length+1+l, cc2._len);
       Assert.assertTrue(cc2 instanceof CXDChunk);

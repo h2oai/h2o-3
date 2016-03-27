@@ -8,8 +8,6 @@ import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
-import java.util.Arrays;
-
 /**  Score and Build Histogram
  *
  * <p>Fuse 2 conceptual passes into one:
@@ -255,10 +253,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       bins = new double[rhbinslen];
       sums = new double[rhbinslen];
       ssqs = new double[rhbinslen];
-    } else {
-      Arrays.fill(bins,0);
-      Arrays.fill(sums,0);
-      Arrays.fill(ssqs,0);
     }
     double minmax[] = new double[]{min,max};
     fillLocalHistoForNode(bins, sums, ssqs, ws, cs, ys, rh, rows, hi, lo, minmax);
@@ -268,7 +262,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     int len = rhbinslen;
     for( int b=0; b<len; b++ ) { // Bump counts in bins
       if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rhbins,b,bins[b]); bins[b]=0; }
-      if( sums[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
+      if( sums[b] != 0 || ssqs[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
     }
   }
 

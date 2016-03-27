@@ -1,12 +1,15 @@
 package water.fvec;
 
-import static org.junit.Assert.*;
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
+
 import java.util.Arrays;
 import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** Test for CBSChunk implementation.
  *
@@ -118,6 +121,12 @@ public class CBSChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(l + i));
       Assert.assertTrue(nc.isNA(vals.length + l));
       Assert.assertTrue(nc.isNA_abs(vals.length + l));
+      double[] densevals = new double[cc.len()];
+      cc.getDoubles(densevals,0,cc.len());
+      for (int i = 0; i < densevals.length; ++i) {
+        if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
+        else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
+      }
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
