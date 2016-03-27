@@ -44,9 +44,7 @@ public class CXIChunk extends Chunk {
       double [] svals = new double[_sparseLen];
       int [] sids = new int[_sparseLen];
       asSparseDoubles(svals,sids);
-      int start = 0;
-      while(start < sids.length && sids[start] < from)++start;
-      for(int i = start; i < sids.length && sids[i] < to; ++i)
+      for(int i = 0; i < sids.length && sids[i] < to; ++i)
         vals[sids[i]] = svals[i];
     } else {
       for(int i = from; i < to; ++i)
@@ -84,7 +82,8 @@ public class CXIChunk extends Chunk {
         case 8:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off);
-            vals[i] = UnsafeUtils.get8(_mem,off+2);
+            long v = UnsafeUtils.get8(_mem,off+2);
+            vals[i] = v == C8Chunk._NA?Double.NaN:v;
           }
           break;
       }
@@ -111,14 +110,14 @@ public class CXIChunk extends Chunk {
         case 8:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get4(_mem,off);
-            vals[i] = UnsafeUtils.get8(_mem,off+4);
+            long v = UnsafeUtils.get8(_mem,off+4);
+            vals[i] = v == C8Chunk._NA?Double.NaN:v;
           }
           break;
       }
     } else throw H2O.unimpl();
-    for (int i = 0; i < _sparseLen; ++i, off += inc) {
+    for (int i = 0; i < _sparseLen; ++i)
       vals[i] = vals[i] == NAS[_valsz_log] ? Double.NaN : vals[i];
-    }
     return sparseLenZero();
   }
 
