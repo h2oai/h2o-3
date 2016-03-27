@@ -33,8 +33,6 @@ package org.sample;
 
 import org.openjdk.jmh.annotations.*;
 
-import water.Key;
-
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +55,7 @@ public class CHMPutBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void initNBHM() {
+    public void initCHM() {
         /* Clear out the chm */
         System.out.println("@Setup for CHMPutBenchmark Iteration - Scope.Benchmark");
         System.out.println("Empting the CHM.");
@@ -69,7 +67,7 @@ public class CHMPutBenchmark {
     }
 
     @TearDown(Level.Iteration)
-    public void checkNBHM() throws InterruptedException {
+    public void checkCHM() throws InterruptedException {
         System.out.println("@TearDown for CHMPutBenchmark Iteration - Scope.Benchmark");
         System.out.println("Checking the CHM. Number of actual keys: "+chm.size()+". ");
         /* Check that we didn't put enough keys that would trigger a CHM resize. */
@@ -85,7 +83,7 @@ public class CHMPutBenchmark {
         int invocations;
 
         @Setup(Level.Invocation)
-        public void setKeyValue() {
+        public void setKey() {
             k = CHMPutBenchmark.getRandomKey();
             invocations += 1;
         }
