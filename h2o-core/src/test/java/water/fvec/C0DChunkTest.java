@@ -24,6 +24,14 @@ public class C0DChunkTest extends TestUtil {
       for (int i=0;i<K;++i) Assert.assertEquals(d, cc.atd(i), Math.ulp(d));
       for (int i=0;i<K;++i) Assert.assertEquals(d, cc.at_abs(i), Math.ulp(d));
 
+      double[] sparsevals = new double[cc.sparseLenZero()];
+      int[] sparseids = new int[cc.sparseLenZero()];
+      cc.asSparseDoubles(sparsevals, sparseids);
+      for (int i = 0; i < sparsevals.length; ++i) {
+        if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
+        else Assert.assertTrue(cc.atd(sparseids[i])==sparsevals[i]);
+      }
+
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);

@@ -22,6 +22,14 @@ public class C0LChunkTest extends TestUtil {
       Assert.assertTrue(cc instanceof C0LChunk);
       for (int i=0;i<K;++i) Assert.assertEquals(l, cc.at8(i));
 
+      double[] sparsevals = new double[cc.sparseLenZero()];
+      int[] sparseids = new int[cc.sparseLenZero()];
+      cc.asSparseDoubles(sparsevals, sparseids);
+      for (int i = 0; i < sparsevals.length; ++i) {
+        if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
+        else Assert.assertTrue(cc.at8(sparseids[i])==sparsevals[i]);
+      }
+
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
