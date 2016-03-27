@@ -19,6 +19,12 @@ public class C1NChunkTest extends TestUtil {
     Assert.assertTrue(cc instanceof C1NChunk);
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], cc.at8(i));
     for (int i=0;i<vals.length;++i) Assert.assertEquals(vals[i], cc.at8_abs(i));
+    double[] densevals = new double[cc.len()];
+    cc.getDoubles(densevals,0,cc.len());
+    for (int i = 0; i < densevals.length; ++i) {
+      if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
+      else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
+    }
 
     nc = cc.inflate_impl(new NewChunk(null, 0));
     nc.values(0, nc._len);
