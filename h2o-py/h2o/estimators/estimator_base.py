@@ -113,7 +113,7 @@ class H2OEstimator(ModelBase):
     parms = self._parms.copy()
     if '__class__' in parms:  # FIXME: hackt for PY3
       del parms['__class__']
-    parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
+    parms.update({k: v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"]})
     y = algo_params["y"]
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")

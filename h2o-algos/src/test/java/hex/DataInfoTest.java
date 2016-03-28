@@ -26,6 +26,7 @@ public class DataInfoTest extends TestUtil {
 
   @Test public void testAirlines1() { // just test that it works at all
     Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+
     try {
       DataInfo dinfo = new DataInfo(
               fr.clone(),  // train
@@ -40,7 +41,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2)  // interactions
+              new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
       );
       dinfo.dropInteractions();
       dinfo.remove();
@@ -92,7 +93,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2)  // interactions
+              new String[]{fr.name(8),fr.name(16),fr.name(2)}   // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
       Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
@@ -144,7 +145,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2)  // interactions
+              new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
       Assert.assertTrue(dinfo__withInteractions.fullN() == dinfo__noInteractions.fullN() + len);
@@ -177,7 +178,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              ips          // interactions
+              new String[]{fr.name(0),fr.name(1)}          // interactions
       );
       checker(di,false);
     } finally {
@@ -208,7 +209,7 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              ips          // interactions
+              new String[]{fr.name(0),fr.name(1)}          // interactions
       );
       checker(di,true);
     } finally {
@@ -239,9 +240,40 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              ips          // interactions
+              new String[]{fr.name(0),fr.name(1),fr.name(2),fr.name(3)}          // interactions
       );
       checker(di,true);
+    } finally {
+      fr.delete();
+      if( di!=null ) {
+        di.dropInteractions();
+        di.remove();
+      }
+    }
+  }
+
+  @Test public void testIris4() {  // test that getting sparseRows and denseRows produce the same results
+    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/iris/iris_wheader.csv");
+    fr.swap(3,4);
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(0, 3, 2);
+    DataInfo di=null;
+    try {
+      di = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              false,        // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,  // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              new String[]{fr.name(0),fr.name(3),fr.name(2)}         // interactions
+      );
+      checker(di,di._predictor_transform==DataInfo.TransformType.STANDARDIZE);
     } finally {
       fr.delete();
       if( di!=null ) {
@@ -269,7 +301,37 @@ public class DataInfoTest extends TestUtil {
               false,       // weight
               false,       // offset
               false,       // fold
-              ips          // interactions
+              new String[]{fr.name(8),fr.name(16),fr.name(2)}          // interactions
+      );
+      checker(di,true);
+    } finally {
+      fr.delete();
+      if( di!=null ) {
+        di.dropInteractions();
+        di.remove();
+      }
+    }
+  }
+
+  @Test public void testAirlines5() {
+    Frame fr = parse_test_file(Key.make("a.hex"), "smalldata/airlines/allyears2k_headers.zip");
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(8,16,2);
+    DataInfo di=null;
+    try {
+      di = new DataInfo(
+              fr.clone(),  // train
+              null,        // valid
+              1,           // num responses
+              false,       // use all factor levels
+              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+              DataInfo.TransformType.NONE,  // response  transform
+              true,        // skip missing
+              false,       // impute missing
+              false,       // missing bucket
+              false,       // weight
+              false,       // offset
+              false,       // fold
+              new String[]{fr.name(8),fr.name(16),fr.name(2)}           // interactions
       );
       checker(di,true);
     } finally {
@@ -282,7 +344,7 @@ public class DataInfoTest extends TestUtil {
   }
 
   private static void printVals(DataInfo di, DataInfo.Row denseRow, DataInfo.Row sparseRow) {
-    System.out.println("row|dense|sparse|sparseScaled");
+    System.out.println("col|dense|sparse|sparseScaled");
     double sparseScaled;
     String line;
     for(int i=0;i<di.fullN();++i) {

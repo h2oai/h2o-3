@@ -30,7 +30,7 @@ public class InteractionWrappedVec extends WrappedVec {
   private final Key<Vec> _masterVecKey2;
   private transient Vec _masterVec1;  private String[] _v1Domain;
   private transient Vec _masterVec2;  private String[] _v2Domain;
-  private final boolean _useAllFactorLevels;
+  public final boolean _useAllFactorLevels;
   private boolean _skipMissing;
   private boolean _standardize;
   private long _bins[];

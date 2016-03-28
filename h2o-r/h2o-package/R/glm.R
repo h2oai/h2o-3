@@ -198,7 +198,13 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(compute_p_values) )          parms$compute_p_values       <- compute_p_values
   if( !missing(remove_collinear_columns) )  parms$remove_collinear_columns<- remove_collinear_columns
   if( !missing(max_runtime_secs))           parms$max_runtime_secs       <- max_runtime_secs
-  if( !missing(interactions)    )           parms$interactions           <- interactions-1
+
+  if( !missing(interactions) ) {
+    # interactions are column names => as-is
+    if( is.character(interactions) )       parms$interactions <- interactions
+    else if( is.numeric(interactions) )    parms$interactions <- names(training_frame)[interactions]
+    else stop("Don't know what to do with interactions. Supply vector of indices or names")
+  }
   # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
   # For any other value, error out.
   # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.

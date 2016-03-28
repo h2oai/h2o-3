@@ -428,7 +428,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
     public String foldName  () { return _hasFold ?_names[foldIdx()]:null;}
-    public InteractionPair[] interactions() { return null; }
+    public String[] interactions() { return null; }
     // Vec layout is  [c1,c2,...,cn,w?,o?,r], cn are predictor cols, r is response, w and o are weights and offset, both are optional
     public int weightsIdx     () {
       if(!_hasWeights) return -1;
@@ -675,7 +675,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param domains Training column levels
    * @param missing Substitute for missing columns; usually NaN
    * */
-  public static String[] adaptTestForTrain(String[] names, String weights, String offset, String fold, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics, InteractionPair[] interactions) throws IllegalArgumentException {
+  public static String[] adaptTestForTrain(String[] names, String weights, String offset, String fold, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics, String[] interactions) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -684,6 +684,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Fast path cutout: already compatible but needs work to test
     if( Arrays.equals(names,test._names) && Arrays.deepEquals(domains,tdomains) )
       return new String[0];
+
+    // create the interactions now and bolt them on to the front of the test Frame
+    if( null!=interactions ) {
+      int[] interactionIndexes = new int[interactions.length];
+      for(int i=0;i<interactions.length;++i)
+        interactionIndexes[i] = test.find(interactions[i]);
+      test.add(makeInteractions(test, false, InteractionPair.generatePairwiseInteractionsFromList(interactionIndexes), true, false, false));
+    }
+
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
@@ -699,9 +708,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean isOffset = offset != null && names[i].equals(offset);
       boolean isFold = fold != null && names[i].equals(fold);
 
-      int interactionID=-1;
-      boolean isIWV  = interactions !=null && (interactionID=InteractionPair.isInteraction(i,interactions))>=0;
-
       if(vec == null && isResponse && computeMetrics)
         throw new IllegalArgumentException("Test/Validation dataset is missing response vector '" + response + "'");
       if(vec == null && isOffset)
@@ -710,10 +716,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         vec = test.anyVec().makeCon(1);
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
-      }
-      if( null==vec && isIWV ) {  // got an interaciton wrapped vec
-        assert interactionID>=0 && interactionID < interactions.length: "Got an interaction vec, but the interactionID is invalid";
-        vec = makeInteraction(test, interactions[interactionID],true,false,false); // DKV put happens in the InteractionWrappedVec constructor
       }
 
       // If a training set column is missing in the validation set, complain and fill in with NAs.
@@ -1374,7 +1376,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for (InteractionPair ip : interactions) {
       interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
       InteractionWrappedVec iwv =new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
-      if(!valid) ip.setDomain(iwv.domain());
+//      if(!valid) ip.setDomain(iwv.domain());
       interactionVecs[idx++] = iwv;
     }
     return new Frame(interactionNames, interactionVecs);
