@@ -869,7 +869,7 @@ public abstract class GLMTask  {
 
     @Override
     public void chunkInit() {
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats, true);
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats, true);
       _xy = MemoryManager.malloc8d(_dinfo.fullN() + 1);
 
     }
@@ -1002,7 +1002,7 @@ public abstract class GLMTask  {
 
     @Override public void chunkInit(){
       // initialize
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats,true);
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_sparse)
         _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
@@ -1135,7 +1135,7 @@ public abstract class GLMTask  {
     @Override
     public void chunkInit() {
       // initialize
-      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo._nums, _dinfo._cats,true);
+      _gram = new Gram(_dinfo.fullN(), _dinfo.largestCat(), _dinfo.numNums(), _dinfo._cats,true);
       _xy = MemoryManager.malloc8d(_dinfo.fullN()+1); // + 1 is for intercept
       if(_sparse)
          _sparseOffset = GLM.sparseOffset(_beta,_dinfo);

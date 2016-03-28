@@ -646,8 +646,9 @@ public class DataInfo extends Keyed<DataInfo> {
       final int nums = n-k;
       System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
     } else {
-      for (int i = _cats; i <= _nums; ++i) {
+      for (int i = _cats; i <= _nums; i++) {
         InteractionWrappedVec v;
+        if( i >= _adaptedFrame._names.length ) break;
         if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domains() != null)) { // in this case, get the categoricalOffset
           for (int j = _useAllFactorLevels?0:1; j < v.domains().length; ++j) {
             if (getCategoricalIdFromInteraction(i, j) < 0) continue;
@@ -932,7 +933,8 @@ public class DataInfo extends Keyed<DataInfo> {
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
         int offset = getInteractionOffset(chunks,_cats+i,rid);
-        row.numVals[numValsIdx+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
+        if( offset >=0 )
+          row.numVals[numValsIdx+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
         numValsIdx+=nextNumericIdx(i);
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
@@ -1075,7 +1077,8 @@ public class DataInfo extends Keyed<DataInfo> {
           if( row.bad ) continue;
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
-          row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));  // FIXME: if this produces a "true" NA then should sub with mean? with?
+          if( cidVirtualOffset>=0 )
+            row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));  // FIXME: if this produces a "true" NA then should sub with mean? with?
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
