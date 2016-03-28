@@ -4,10 +4,7 @@ import water.DKV;
 import water.Futures;
 import water.Key;
 import water.MemoryManager;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -576,6 +573,12 @@ public class ArrayUtils {
       if (from[i]<result) result = from[i];
     return result;
   }
+  public static double minValue(double[] ary, int from, int to) {
+    double result = ary[from];
+    for (int i = from+1; i<to; ++i)
+      if (ary[i]<result) result = ary[i];
+    return result;
+  }
   public static double minValue(double[] from) {
     double result = from[0];
     for (int i = 1; i<from.length; ++i)
@@ -618,6 +621,11 @@ public class ArrayUtils {
     return -1;
   }
   public static int find(long[] ls, long elem) {
+    for(int i=0; i<ls.length; ++i )
+      if( elem==ls[i] ) return i;
+    return -1;
+  }
+  public static int find(int[] ls, int elem) {
     for(int i=0; i<ls.length; ++i )
       if( elem==ls[i] ) return i;
     return -1;
@@ -1270,5 +1278,11 @@ public class ArrayUtils {
   public static long[] subtract(long n, long[] nums) {
     for (int i=0; i<nums.length; i++) nums[i] = n - nums[i];
     return nums;
+  }
+
+  public static <T> T[] remove( T[] ary, int id) {
+    if(id == ary.length-1) return Arrays.copyOf(ary,id);
+    if(id == 0) return Arrays.copyOfRange(ary,id,ary.length);
+    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id,ary.length));
   }
 }

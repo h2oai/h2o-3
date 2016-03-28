@@ -760,6 +760,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
         if (progressBar) {
           close(pb)
         }
+        for(w in job$warnings){ warning(w)}
       }
     }
   },

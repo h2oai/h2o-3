@@ -4,6 +4,8 @@ import water.*;
 import water.api.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,16 +37,18 @@ public final class ParseSetup extends Iced {
   String[][] _domains;        // Domains for each column (null if numeric)
   String[][] _na_strings;       // Strings for NA in a given column
   String[][] _data;           // First few rows of parsed/tokenized data
+
+  public ParseWriter.ParseErr[] _errs;
   int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
 
   public ParseSetup(ParseSetup ps) {
     this(ps._parse_type,
             ps._separator, ps._single_quotes, ps._check_header, ps._number_columns,
-            ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data, ps._chunk_size);
+            ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data, new ParseWriter.ParseErr[0], ps._chunk_size);
   }
 
-  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, int chunkSize) {
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs, int chunkSize) {
     _parse_type = t;
     _separator = sep;
     _single_quotes = singleQuotes;
@@ -56,6 +60,7 @@ public final class ParseSetup extends Iced {
     _na_strings = naStrings;
     _data = data;
     _chunk_size = chunkSize;
+    _errs = errs;
   }
 
   /**
@@ -69,7 +74,7 @@ public final class ParseSetup extends Iced {
   public ParseSetup(ParseSetupV3 ps) {
     this(ps.parse_type, ps.separator, ps.single_quotes, ps.check_header,
             GUESS_COL_CNT, ps.column_names, strToColumnTypes(ps.column_types),
-            null, ps.na_strings, null, ps.chunk_size);
+            null, ps.na_strings, null, new ParseWriter.ParseErr[0],ps.chunk_size);
     if(ps.parse_type == null) _parse_type = ParserType.GUESS;
     if(ps.separator == 0) _separator = GUESS_SEP;
   }
@@ -82,9 +87,15 @@ public final class ParseSetup extends Iced {
    */
   public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader,
                     int ncols, String[] columnNames, byte[] ctypes,
-                    String[][] domains, String[][] naStrings, String[][] data) {
+                    String[][] domains, String[][] naStrings, String[][] data){
     this(t, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
-            domains, naStrings, data, FileVec.DFLT_CHUNK_SIZE);
+        domains, naStrings, data, new ParseWriter.ParseErr[0], FileVec.DFLT_CHUNK_SIZE);
+  }
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader,
+                    int ncols, String[] columnNames, byte[] ctypes,
+                    String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs) {
+    this(t, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes,
+            domains, naStrings, data, errs, FileVec.DFLT_CHUNK_SIZE);
   }
 
   /**
@@ -92,8 +103,8 @@ public final class ParseSetup extends Iced {
    *
    * Typically used by file type parsers for returning final invalid results
    */
-  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data) {
-    this(t, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, FileVec.DFLT_CHUNK_SIZE);
+  public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[][] data, ParseWriter.ParseErr[] errs) {
+    this(t, sep, singleQuotes, checkHeader, ncols, null, null, null, null, data, errs, FileVec.DFLT_CHUNK_SIZE);
   }
 
   /**
@@ -187,7 +198,7 @@ public final class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup(Key[] fkeys, boolean singleQuote, int checkHeader) {
-    return guessSetup(fkeys, new ParseSetup(ParserType.GUESS, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null));
+    return guessSetup(fkeys, new ParseSetup(ParserType.GUESS, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null, new ParseWriter.ParseErr[0]));
   }
 
   /**
@@ -231,12 +242,15 @@ public final class ParseSetup extends Iced {
     public ParseSetup _gblSetup;
     public long _totalParseSize;
     public long _maxLineLength;
+    String _file;
 
     /**
      *
      * @param userSetup ParseSetup to guide examination of files
      */
-    public GuessSetupTsk(ParseSetup userSetup) { _userSetup = userSetup; }
+    public GuessSetupTsk(ParseSetup userSetup) {
+      _userSetup = userSetup;
+    }
 
     /**
      * Runs once on each file to guess that file's ParseSetup
@@ -258,6 +272,7 @@ public final class ParseSetup extends Iced {
      *
      */
     @Override public void map(Key key) {
+      _file = key.toString();
       Iced ice = DKV.getGet(key);
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
       ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
@@ -286,7 +301,9 @@ public final class ParseSetup extends Iced {
                 || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bits, _userSetup);
-        } catch (H2OParseException pse) {
+          for(ParseWriter.ParseErr e:_gblSetup._errs)
+            e._file = _file;
+        } catch (ParseDataset.H2OParseException pse) {
           throw pse.resetMsg(pse.getMessage()+" for "+key);
         }
 /*        } else { // file is aun uncompressed NFSFileVec or HDFSFileVec & larger than the DFLT_CHUNK_SIZE
@@ -345,8 +362,7 @@ public final class ParseSetup extends Iced {
         assert (_gblSetup != null);
         return;
       }
-
-      _gblSetup = mergeSetups(_gblSetup, other._gblSetup);
+      _gblSetup = mergeSetups(_gblSetup, other._gblSetup, _file, other._file);
       _totalParseSize += other._totalParseSize;
       _maxLineLength = Math.max(_maxLineLength, other._maxLineLength);
     }
@@ -359,16 +375,18 @@ public final class ParseSetup extends Iced {
         else
           _gblSetup._na_strings = _userSetup._na_strings;
       }
+//      if(_gblSetup._errs != null)
+        for(ParseWriter.ParseErr err:_gblSetup._errs)
+          Log.warn("ParseSetup: " + err.toString());
     }
 
-    private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB) {
+    private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB, String fileA, String fileB) {
       if (setupA == null) return setupB;
-
       ParseSetup mergedSetup = setupA;
 
       mergedSetup._check_header = unifyCheckHeader(setupA._check_header, setupB._check_header);
+
       mergedSetup._separator = unifyColumnSeparators(setupA._separator, setupB._separator);
-      mergedSetup._number_columns = unifyColumnCount(setupA._number_columns, setupB._number_columns);
       mergedSetup._column_names = unifyColumnNames(setupA._column_names, setupB._column_names);
       if (setupA._parse_type == ParserType.ARFF && setupB._parse_type == ParserType.CSV)
         ;// do nothing parse_type and col_types are already set correctly
@@ -378,21 +396,24 @@ public final class ParseSetup extends Iced {
       } else if (setupA._parse_type == setupB._parse_type) {
         mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
       } else
-        throw new H2OParseException("File type mismatch. Cannot parse files of type "
+        throw new ParseDataset.H2OParseException("File type mismatch. Cannot parse files of type "
                 + setupA._parse_type + " and " + setupB._parse_type + " as one dataset.");
-
+      mergedSetup._number_columns = mergedSetup._parse_type == ParserType.CSV?Math.max(setupA._number_columns,setupB._number_columns):unifyColumnCount(setupA._number_columns, setupB._number_columns,mergedSetup, fileA, fileB);
       if (mergedSetup._data.length < PreviewParseWriter.MAX_PREVIEW_LINES) {
         int n = mergedSetup._data.length;
         int m = Math.min(PreviewParseWriter.MAX_PREVIEW_LINES, n + setupB._data.length - 1);
         mergedSetup._data = Arrays.copyOf(mergedSetup._data, m);
         System.arraycopy(setupB._data, 1, mergedSetup._data, n, m - n);
       }
+      mergedSetup._errs = ArrayUtils.append(setupA._errs,setupB._errs);
+      if(mergedSetup._errs.length > 20)
+        mergedSetup._errs = Arrays.copyOf(mergedSetup._errs,20);
       return mergedSetup;
     }
 
     private static int unifyCheckHeader(int chkHdrA, int chkHdrB){
       if (chkHdrA == GUESS_HEADER || chkHdrB == GUESS_HEADER)
-        throw new H2OParseException("Unable to determine header on a file. Not expected.");
+        throw new ParseDataset.H2OParseException("Unable to determine header on a file. Not expected.");
       if (chkHdrA == HAS_HEADER || chkHdrB == HAS_HEADER) return HAS_HEADER;
       else return NO_HEADER;
 
@@ -403,18 +424,20 @@ public final class ParseSetup extends Iced {
       else if (sepA == GUESS_SEP) return sepB;
       else if (sepB == GUESS_SEP) return sepA;
       // TODO: Point out which file is problem
-      throw new H2OParseException("Column separator mismatch. One file seems to use \""
+      throw new ParseDataset.H2OParseException("Column separator mismatch. One file seems to use \""
               + (char) sepA + "\" and the other uses \"" + (char) sepB + "\".");
     }
 
-    private static int unifyColumnCount(int cntA, int cntB) {
+    private int unifyColumnCount(int cntA, int cntB, ParseSetup mergedSetup, String fileA, String fileB) {
       if (cntA == cntB) return cntA;
       else if (cntA == 0) return cntB;
       else if (cntB == 0) return cntA;
       else { // files contain different numbers of columns
-        // TODO: Point out which file is problem
-        throw new H2OParseException("Files conflict in number of columns. " + cntA
-                + " vs. " + cntB + ".");
+        ParseWriter.ParseErr err = new ParseWriter.ParseErr();
+        err._err = "Incompatible number of columns, " + cntA + " != " + cntB;
+        err._file = fileA + ", " + fileB;
+        mergedSetup._errs = ArrayUtils.append(mergedSetup._errs,err);
+        return Math.max(cntA,cntB);
       }
     }
 
@@ -425,7 +448,7 @@ public final class ParseSetup extends Iced {
         for (int i = 0; i < namesA.length; i++) {
           if (i > namesB.length || !namesA[i].equals(namesB[i])) {
             // TODO improvement: if files match except for blanks, merge?
-            throw new H2OParseException("Column names do not match between files.");
+            throw new ParseDataset.H2OParseException("Column names do not match between files.");
           }
         }
         return namesA;
@@ -460,7 +483,7 @@ public final class ParseSetup extends Iced {
           } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
         }
     }
-    throw new H2OParseException("Cannot determine file type.");
+    throw new ParseDataset.H2OParseException("Cannot determine file type.");
   }
 
   /**
@@ -523,7 +546,7 @@ public final class ParseSetup extends Iced {
     if (bits.length >= 2) {
       if ((bits[0] == (byte) 0xff && bits[1] == (byte) 0xfe) /* UTF-16, little endian */ ||
               (bits[0] == (byte) 0xfe && bits[1] == (byte) 0xff) /* UTF-16, big endian */) {
-        throw new H2OParseException("UTF16 encoding detected, but is not supported.");
+        throw new ParseDataset.H2OParseException("UTF16 encoding detected, but is not supported.");
       }
     }
   }

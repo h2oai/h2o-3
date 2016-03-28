@@ -33,6 +33,12 @@ public class C4SChunkTest extends TestUtil {
       }
       Assert.assertTrue(cc.isNA(man.length + l));
       Assert.assertTrue(cc.isNA_abs(man.length + l));
+      double[] densevals = new double[cc.len()];
+      cc.getDoubles(densevals,0,cc.len());
+      for (int i = 0; i < densevals.length; ++i) {
+        if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
+        else Assert.assertTrue(cc.atd(i)==densevals[i]);
+      }
 
       nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);

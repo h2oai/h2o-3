@@ -1064,7 +1064,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             null,
             rowNames.toArray(new String[0]), colNames, colTypes, colFormats, "");
 
-
     MathUtils.BasicStats stats = new MathUtils.BasicStats(numMetrics);
     double[][] vals = new double[N][numMetrics];
     int i = 0;
@@ -1074,11 +1073,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       ModelMetrics mm = m._output._validation_metrics;
       int j=0;
       for (Method meth : meths) {
+        if (excluded.contains(meth.getName())) continue;
         try {
           double val = (double) meth.invoke(mm);
           vals[i][j] = val;
           table.set(j++, i+extra_length, (float)val);
         } catch (Throwable e) { }
+        if (mm.cm()==null) continue;
         try {
           double val = (double) meth.invoke(mm.cm());
           vals[i][j] = val;

@@ -201,7 +201,7 @@ public class PojoUtils {
               Iced[] translation = (Iced[]) Array.newInstance(dest_component_class, length);
               for (int i = 0; i < length; i++) {
                 Schema s = orig_array_copy[i];
-                translation[i] = s.createImpl();
+                translation[i] = s == null ? null : s.createImpl();
               }
               dest_field.set(dest, translation);
             } else {

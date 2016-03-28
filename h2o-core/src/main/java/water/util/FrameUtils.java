@@ -203,11 +203,14 @@ public class FrameUtils {
    * @return
    */
   public static double sparseRatio(Chunk [] chks) {
-    int cnt = 0;
+    double cnt = 0;
     double reg = 1.0/chks.length;
     for(Chunk c :chks)
-      if(c.isSparseZero()||c.isSparseNA())
-        ++cnt;
+      if(c.isSparseNA()){
+        cnt += c.sparseLenNA()/(double)c.len();
+      } else if(c.isSparseZero()){
+        cnt += c.sparseLenZero()/(double)c.len();
+      } else cnt += 1;
     return cnt * reg;
   }
 

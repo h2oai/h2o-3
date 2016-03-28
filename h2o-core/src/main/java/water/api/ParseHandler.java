@@ -7,12 +7,13 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.parser.ParseWriter;
 
 class ParseHandler extends Handler {
   // Entry point for parsing.
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ParseV3 parse(int version, ParseV3 parse) {
-    ParseSetup setup = new ParseSetup(parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, delNulls(parse.column_names), ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, parse.chunk_size);
+    ParseSetup setup = new ParseSetup(parse.parse_type, parse.separator, parse.single_quotes, parse.check_header, parse.number_columns, delNulls(parse.column_names), ParseSetup.strToColumnTypes(parse.column_types), parse.domains, parse.na_strings, null, new ParseWriter.ParseErr[0], parse.chunk_size);
 
     if (parse.source_frames == null) throw new H2OIllegalArgumentException("Data for Frame '" + parse.destination_frame.name + "' is not available. Please check that the path is valid (for all H2O nodes).'");
     Key[] srcs = new Key[parse.source_frames.length];

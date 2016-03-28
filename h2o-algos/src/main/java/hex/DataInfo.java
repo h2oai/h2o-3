@@ -302,13 +302,22 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
-  public DataInfo scoringInfo(){
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!_skipMissing,_weights,_offset,_fold);
-    res._adaptedFrame = null;
-    res._weights = false;
-    res._offset = false;
-    res._fold = false;
+  public DataInfo scoringInfo(Frame adaptFrame){
+    DataInfo res = deep_clone();
+    res._normMul = null;
+    res._normRespSub = null;
+    res._normRespMul = null;
+    res._normRespSub = null;
+    res._predictor_transform = TransformType.NONE;
+    res._response_transform = TransformType.NONE;
+    res._adaptedFrame = adaptFrame;
+    res._weights = _weights && adaptFrame.find(_adaptedFrame.name(weightChunkId())) != -1;
+    res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
+    res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
     res._responses = 0;
+    int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
+    if(resId != -1 && adaptFrame.vec(resId).naCnt() != adaptFrame.numRows())
+      res._responses = 1;
     res._valid = true;
     res._interactions=_interactions;
     return res;
