@@ -206,7 +206,10 @@ class H2OGridSearch(object):
       return
 
     grid.poll()
-    if '_rest_version' in list(kwargs.keys()): grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
+    if '_rest_version' in list(kwargs.keys()):
+      grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
+      for error_message in grid_json["failure_details"]:
+        print(error_message)
     else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
