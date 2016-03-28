@@ -3,6 +3,7 @@ package water.codegen.java;
 import org.joda.time.DateTime;
 
 import water.H2O;
+import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.codegen.JCodeSB;
 
@@ -15,13 +16,15 @@ import static water.util.ArrayUtils.*;
 public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationUnitGenerator> {
 
   /** Package where to generate the class. */
-  final String packageName;
+  public final String packageName;
 
   /* Imported packages */
   String[] importedPackages;
 
   /* Name of compilation unit - should be derived from top-level class. */
-  final String name;
+  public final String name;
+
+  private ModelCodeGenerator<?, ?> mcg;
 
   public static CompilationUnitGenerator codegen(String packageName, String name) {
     return new CompilationUnitGenerator(packageName, name);
@@ -40,6 +43,7 @@ public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationU
   public CompilationUnitGenerator withClassGenerator(ClassCodeGenerator... ccgs) {
     for (ClassCodeGenerator ccg : ccgs) {
       add(ccg);
+      ccg.setCug(this);
     }
     return this;
   }
@@ -67,6 +71,19 @@ public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationU
     super.generate(out);
     // Put endline at the end of file
     out.nl();
+  }
+
+  @Override
+  final public ClassGenContainer classContainer(CodeGenerator caller) {
+    return mcg.classContainer(caller);
+  }
+
+  ModelCodeGenerator<?, ?> mcg() {
+    return mcg;
+  }
+
+  void setMcg(ModelCodeGenerator<?, ?> mcg) {
+    this.mcg = mcg;
   }
 
   public static JCodeSB genClassComment(JCodeSB sb) {

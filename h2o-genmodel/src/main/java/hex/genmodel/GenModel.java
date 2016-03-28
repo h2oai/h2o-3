@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.annotations.CG;
 import water.genmodel.IGeneratedModel;
 
 import java.io.Serializable;
@@ -20,36 +21,31 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   public GenModel( String[] names, String[][] domains ) { _names = names; _domains = domains; }
 
-  @Override public boolean isSupervised() {
-    // FIXME: can be derived directly from model category?
-    return false;
-  }
-  @Override public int nfeatures() {
-    return _names.length;
-  }
-  @Override public int nclasses() {
-    return 0;
-  }
   @Override public int getNumCols() {
     return nfeatures();
   }
+
   @Override public int getResponseIdx() {
     if (!isSupervised())
       throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
     return _domains.length - 1;
   }
+
   @Override public String getResponseName() {
     throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
   }
+
   @Override public int getNumResponseClasses() {
     if (isClassifier())
       return nclasses();
     else
       throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
   }
+
   @Override public String[] getNames() {
     return _names;
   }
+
   @Override public int getColIdx(String name) {
     String[] names = getNames();
     for (int i=0; i<names.length; i++) if (names[i].equals(name)) return i;
@@ -124,7 +120,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract public double[] score0( double[] data, double[] preds );
+  abstract public double[] score0(@CG(delegate = "data") double[] data,
+                                  @CG(delegate = "preds") double[] preds );
 
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.

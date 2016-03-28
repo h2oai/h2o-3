@@ -139,6 +139,9 @@ final public class DeepLearningModelInfo extends Iced {
 
   // package local helpers
   int[] units; //number of neurons per layer, extracted from parameters and from datainfo
+  public int[] units() {
+    return units;
+  }
 
   final boolean _classification; // Classification cache (nclasses>1)
   final Frame _train;         // Prepared training frame

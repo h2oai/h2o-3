@@ -25,6 +25,8 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
   private Class returnType = void.class;
   private boolean override = false;
 
+  private ClassCodeGenerator ccg;
+
   protected MethodCodeGenerator(String name) {
     this.name = name;
   }
@@ -47,6 +49,9 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
   }
 
   public MethodCodeGenerator withBody(final JCodeSB body) {
+    // Delete all attached generators
+    resetBody();
+    // Add a new generator generating body of the method directly
     add(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
@@ -71,16 +76,40 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
     return returnType;
   }
 
+  public void resetBody() {
+    this.reset();
+  }
+
+  public boolean isCtor() { return returnType == null; }
+
   @Override
   public void generate(JCodeSB out) {
     // Output method preamble
     if (override) out.p("@Override ");
-    pMethodParams(out.p(Modifier.toString(modifiers)).p(' ').pj(returnType).p(' ').p(name).p('('), paramTypes, paramNames).p(") {").ii(2).nl();
+    out.p(Modifier.toString(modifiers)).p(' ');
+    if (!isCtor()) {
+      out.pj(returnType).p(' ');
+    }
+    // Append method name and types
+    pMethodParams(out.p(name).p('('), paramTypes, paramNames).p(") {").ii(2).nl();
     // Generate method body
     super.generate(out);
     // Close method
     out
         .di(2).nl()
         .p("} // End of method ").p(name).nl(2);
+  }
+
+  ClassCodeGenerator ccg() {
+    return ccg;
+  }
+
+  void setCcg(ClassCodeGenerator ccg) {
+    this.ccg = ccg;
+  }
+
+  @Override
+  final public ClassGenContainer classContainer(CodeGenerator caller) {
+    return ccg.classContainer(caller);
   }
 }

@@ -166,10 +166,21 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   @Override
+  public SBPrintStream pj(Enum e) {
+    append(e.getDeclaringClass().getName()).append('.').append(e.name());
+    return this;
+  }
+
+  @Override
   public SBPrintStream pj(Class c) {
     Package p = c.getPackage();
     append(p != null && p == JAVA_LANG_PACKAGE ? c.getSimpleName() : c.getCanonicalName());
     return this;
+  }
+
+  @Override
+  public SBPrintStream pj(int l) {
+    return append(l);
   }
 
   @Override
@@ -181,6 +192,17 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   @Override
   public SBPrintStream pj(double[] ary) {
     return toJavaStringInit(ary);
+  }
+
+  @Override
+  public SBPrintStream pj(Object o, Class klazz) {
+    if (klazz.isAssignableFrom(Enum.class)) {
+      return pj((Enum) o);
+    } else if (klazz.isAssignableFrom(String.class)) {
+      return pj((String) o);
+    } else {
+      return pobj(o);
+    }
   }
 
   @Override
@@ -348,6 +370,11 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
       p('"').p(ss[i]).p('"');
     }
     return p(']');
+  }
+
+  @Override
+  public SBPrintStream NULL() {
+    return p("null");
   }
 
   @Override

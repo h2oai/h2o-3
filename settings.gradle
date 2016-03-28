@@ -17,6 +17,7 @@ include 'h2o-java-rest-bindings'
 include 'h2o-test-integ'
 include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
+include 'h2o-model-codegen'
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->

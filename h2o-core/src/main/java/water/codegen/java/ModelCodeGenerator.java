@@ -5,15 +5,20 @@ import java.util.ArrayList;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.genmodel.GenModel;
+import hex.genmodel.annotations.CG;
 import water.Key;
+import water.codegen.CodeGenerator;
 
+import static java.lang.reflect.Modifier.FINAL;
+import static java.lang.reflect.Modifier.PRIVATE;
+import static java.lang.reflect.Modifier.PUBLIC;
+import static java.lang.reflect.Modifier.STATIC;
+import static water.codegen.java.JCodeGenUtil.VALUE;
 import static water.codegen.java.JCodeGenUtil.ctor;
 import static water.codegen.java.JCodeGenUtil.field;
-import static water.codegen.java.JCodeGenUtil.larray;
-import static water.codegen.java.JCodeGenUtil.method;
+import static water.codegen.java.JCodeGenUtil.klazz;
 import static water.codegen.java.JCodeGenUtil.s;
 import static water.codegen.java.JCodeGenUtil.toJavaId;
-import static java.lang.reflect.Modifier.*;
 
 /**
  * Model generator:
@@ -24,10 +29,11 @@ import static java.lang.reflect.Modifier.*;
  *
  *  FIXME: all methods field/method/class should be generalized and definable (ModelCodeGenerator
  *  shoudl accept their implementation)
+ *  FIXME: why model container is not CodeGeneratorPipeline
  */
-abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends Model<M, ?, ?>> extends
+abstract public class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends Model<M, ?, ?>> extends
                                                           ArrayList<CompilationUnitGenerator> implements ClassGenContainer {
-  private final M model;
+  protected final M model;
   private String packageName;
 
   protected ModelCodeGenerator(M model) {
@@ -45,6 +51,7 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
 
   public S withCompilationUnit(CompilationUnitGenerator cug) {
     add(cug);
+    cug.setMcg(this);
     return self();
   }
 
@@ -56,71 +63,38 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
                            "hex.genmodel.annotations.ModelPojo");
   }
 
-  /** Create initial class generator for model. */
+  /** Create initial class generator
+   * for model filling all fields by defaults.
+   */
   protected ClassCodeGenerator createModelClass(CompilationUnitGenerator cucg) {
     // Build a model class generator by composing small pieces
     final String modelName = getModelName();
-    return new ClassCodeGenerator(modelName)
+    // Create a klass generator and prepare method generators for all abstract class in GenModel
+    ClassCodeGenerator ccg = klazz(modelName, GenModel.class, model)
+        .withMixin(model, true, ModelMixin.class)
         .withModifiers(PUBLIC)
-        .withExtend(GenModel.class)
         .withAnnotation(s("@ModelPojo(name=\"").p(getModelName()).p("\", algorithm=\"").p(getAlgoName()).p("\")"))
         .withCtor(
             ctor(modelName) // FIXME: this is repeated and can be derived from context
               .withModifiers(PUBLIC) // FIXME: Adopt Scala strategy - everything is public if not denied
               .withBody(s("super(NAMES, DOMAINS);"))
-        )
-        .withMethod(
-            method("getModelCategory")
-              .withModifiers(PUBLIC)
-              .withReturnType(hex.ModelCategory.class)
-              .withBody(s("return hex.ModelCategory.").p( model._output.getModelCategory()).p( ";"))
-        )
-        .withMethod(
-            method("getUUID")
-              .withModifiers(PUBLIC)
-              .withReturnType(String.class)
-              .withBody(s("return Long.toString(").pj(model.checksum()).p(");"))
-        )
-        .withMethod( // FIXME: need to be defined by actual model generator
-            method("score0")
-              .withOverride(true)
-              .withBody(s("return pred"))
-        )
-        .withField( // FIXME: be more domain-specific, derive field type for value passed.
-            field("int", "NCLASSES")
-              .withComment("Number of output classes included in training data response column.")
-              .withModifiers(PUBLIC | FINAL | STATIC)
-              .withValue(s().pj(model._output.nclasses()))
-        )
-        .withField(
-            field("String[]", "NAMES")
-              .withComment("Names of features used by model training")
-              .withModifiers(PUBLIC | STATIC | FINAL)
-              .withValue(
-                  larray(getModelName() + "_ColumnNames", model._output._names, 0, model._output.nfeatures())
-                      .withClassContainer(this)
-                      .withType(String.class))
-        )
-        .withField(
-            field("String[][]", "DOMAINS")
-                .withComment("Column domains. The last array contains domain of response column.")
-                .withModifiers(PUBLIC | STATIC | FINAL)
-                .withValue(
-                    larray(getModelName() + "_ColumnInfo", model._output._domains)
-                        .withClassContainer(this)
-                        .withType(String.class))
-        )
-        .withField(
-            field("double[]", "PRIOR_CLASS_DISTRIB")
-                .withComment("Prior class distribution")
-                .withModifiers(PUBLIC | STATIC | FINAL)
-                .withValue(s().pj(model._output._priorClassDist)))
-        .withField(
-            field("double[]", "MODEL_CLASS_DISTRIB")
-                .withComment("Class distribution used for model building")
-                .withModifiers(PUBLIC | STATIC | FINAL)
-                .withValue(s().pj(model._output._modelClassDist))
         );
+
+    if (model.isSupervised()) {
+      ccg
+          .withField(
+              field(double[].class, "PRIOR_CLASS_DISTRIB")
+                  .withComment("Prior class distribution")
+                  .withModifiers(PUBLIC | STATIC | FINAL)
+                  .withValue(s().pj(model._output._priorClassDist)),
+              field(double[].class, "MODEL_CLASS_DISTRIB")
+                  .withComment("Class distribution used for model building")
+                  .withModifiers(PUBLIC | STATIC | FINAL)
+                  .withValue(s().pj(model._output._modelClassDist))
+          );
+    }
+
+    return ccg;
   }
 
   public final S build() {
@@ -128,12 +102,21 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
     CompilationUnitGenerator cug = createModelCu();
     ClassCodeGenerator cg = createModelClass(cug);
 
+    // FIXME: reverse initialization order with setup link: cug->mcg a pak cg->cug
     this.withCompilationUnit(cug.withClassGenerator(cg));
 
     // Reimplement in model-specifc subclasss
     return buildImpl(cug, cg);
   }
 
+  /**
+   * The method which should be implemented by a corresponding model generator.
+   *
+   * @param cucg compilation unit generator
+   * @param ccg  model class generator, it already predefines full model generation, but
+   *             a corresponding model generator can redefine all slots.
+   * @return  self
+   */
   abstract protected S buildImpl(CompilationUnitGenerator cucg, ClassCodeGenerator ccg);
 
   String getModelName() {
@@ -151,7 +134,57 @@ abstract class ModelCodeGenerator<S extends ModelCodeGenerator<S, M>, M extends 
     cu.withClassGenerator(ccg);
     withCompilationUnit(cu);
   }
+
+  final public ClassGenContainer classContainer(CodeGenerator caller) {
+    // FIXME this should be driven by a strategy
+    // (1) forward here, (2) forward to encapsulating top-level class
+    return this;
+  }
+
+  /* FIXME: how to define O ????
+  public <O extends Model.Output> O modelOutput() {
+    return model._output;
+  }*/
+
+  /** Create a new field generator */
+  public FieldCodeGenerator FIELD(double[] fieldValue, String fieldName) {
+    return JCodeGenUtil.field(double[].class, fieldName)
+        .withModifiers(PUBLIC | STATIC | FINAL)
+        .withValue(VALUE(fieldValue));
+  }
+
+  public FieldCodeGenerator FIELD(int[] fieldValue, String fieldName) {
+    return JCodeGenUtil.field(int[].class, fieldName)
+        .withModifiers(PUBLIC | STATIC | FINAL)
+        .withValue(VALUE(fieldValue));
+
+
+
+  }
 }
+
+/**
+ * The mixin which define common model-POJO fields.
+ */
+class ModelMixin {
+
+  @CG(delegate = "._output#nclasses", comment = "Number of output classes included in training data response column.")
+  public static final int NCLASSES = -1;
+
+  @CG(delegate = "._output._names", comment = "Names of features used by model training")
+  public static final String[] NAMES = null;
+
+  @CG(delegate = "._output._domains", comment = "Column domains. The last array contains domain of response column.")
+  public static final String[][] DOMAINS = null;
+
+  // FIXME remove to supervised ModelMixin !!!
+  @CG(delegate = "._output._priorClassDist", comment = "Prior class distribution", when="#isSupervised")
+  public static final double[] PRIOR_CLASS_DISTRIB = null;
+
+  @CG(delegate = "._output._modelClassDist", comment = "Class distribution used for model building", when="#isSupervised")
+  public static final double[] MODEL_CLASS_DISTRIB = null;
+}
+
 
 class BlahModelCodeGenerator extends ModelCodeGenerator<BlahModelCodeGenerator, BlahModel> {
 
