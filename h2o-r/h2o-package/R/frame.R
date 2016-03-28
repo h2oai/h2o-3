@@ -1952,20 +1952,16 @@ mean.H2OFrame <- h2o.mean
 #' }
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
-  symmetric <- FALSE
-  if( is.null(y) ) {
-    y <- x
-    if( ncol(x) > 1 && nrow(x) > 1) symmetric <- TRUE
-  }
+  if( na.rm ) stop("na.rm versions not impl")
+  if( is.null(y) ) y <- x
   if(!missing(use)) {
-    if (use == "na.or.complete")
-      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", \"complete.obs\", or \"pairwise.complete.obs\"")
-  } else {
-    if (na.rm) use <- "complete.obs" else use <- "everything"
-  }
+    if (use %in% c("pairwise.complete.obs", "na.or.complete"))
+  stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
+  } else
+  use <- "everything"
   # Eager, mostly to match prior semantics but no real reason it need to be
-  expr <- .newExpr("var",x,y,.quote(use),symmetric)
-  if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
+  expr <- .newExpr("var",x,y,.quote(use))
+  if( (nrow(x)==1L || ncol(x)==1L) ) .eval.scalar(expr)
   else .fetch.data(expr,ncol(x))
 }
 

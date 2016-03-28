@@ -230,11 +230,16 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     weight.getDoubles(ws,0,ws.length);
     wrks.getDoubles(ys,0,ys.length);
     for (int c = 0; c < cols; c++) {
-      chks[c].getDoubles(cs,0,cs.length);
+      boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-        if (sCols == null || ArrayUtils.find(sCols,c) >= 0)
-          overAllRows(cs, ys, ws, rows, hcs[n][c], n==0?0:nh[n-1], nh[n], bins, sums, ssqs, binslen);
+        if (sCols == null || ArrayUtils.find(sCols,c) >= 0) {
+          if (!extracted) {
+            chks[c].getDoubles(cs, 0, cs.length);
+            extracted = true;
+          }
+          overAllRows(cs, ys, ws, rows, hcs[n][c], n == 0 ? 0 : nh[n - 1], nh[n], bins, sums, ssqs, binslen);
+        }
       }
     }
   }

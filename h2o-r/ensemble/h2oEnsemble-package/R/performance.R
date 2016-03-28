@@ -37,9 +37,10 @@ h2o.ensemble_performance <- function(object, newdata, score_base_models = TRUE) 
   return(out)
 }
 
-# TO DO: Add a print method for this
-print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"), ...) {
-  
+
+print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "logloss", "MSE", "AUC", "r2"), ...) {
+
+  # We limit metrics to those common among all possible base algos
   metric <- match.arg(metric)
   if (metric == "AUTO") {
     if (class(x$ensemble) == "H2OBinomialMetrics") {
@@ -50,23 +51,34 @@ print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "deviance", "lo
       family <- "gaussian"
     }
   }
+
+  # Base learner test set AUC (for comparison)
+  if (!is.null(x$base)) {
+    learner <- names(x$base)
+    L <- length(learner)
+    base_perf <- sapply(seq(L), function(l) x$base[[l]]@metrics[[metric]])
+    res <- data.frame(learner = learner, base_perf)
+    names(res)[2] <- metric
+    # Sort order for base learner metrics
+    if (metric %in% c("AUC", "r2")) {
+      # Higher AUC/R2, the better
+      decreasing <- FALSE
+    } else {
+      decreasing <- TRUE
+    }
+    cat("\n\nBase learner performance, sorted by metric:\n")
+    res <- res[order(res[, metric], decreasing = decreasing), ]
+    print(res)
+  }
+  cat("\n")
   
   # Ensemble test set AUC
   ensemble_perf <- x$ensemble@metrics[[metric]]
   
-  # Base learner test set AUC (for comparison)
-  learner <- names(x$base)
-  L <- length(learner)
-  base_perf <- sapply(seq(L), function(l) x$base[[l]]@metrics[[metric]])
-  res <- data.frame(learner = learner, base_perf)
-  names(res)[2] <- metric
-
   cat("\nH2O Ensemble Performance on <newdata>:")
   cat("\n----------------")
   cat(paste0("\nFamily: ", family))
   cat("\n")
   cat(paste0("\nEnsemble performance (", metric, "): ", ensemble_perf))
-  cat("\n\nBase learner performance:\n")
-  print(res)
   cat("\n\n")
 }
