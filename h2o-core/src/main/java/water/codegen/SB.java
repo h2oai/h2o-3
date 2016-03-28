@@ -39,7 +39,9 @@ public final class SB implements JCodeSB<SB> {
   public SB p( boolean s) { _sb.append(s); return this; }
   // Not spelled "p" on purpose: too easy to accidentally say "p(1.0)" and
   // suddenly call the the autoboxed version.
-  public SB pobj( Object s ) { _sb.append(s.toString()); return this; }
+  public SB pobj( Object s ) {
+    _sb.append(s.toString()); return this;
+  }
   public SB p( Enum e) { _sb.append(e.toString()); return this; }
   public SB i( int d ) { for( int i=0; i<d+_indent; i++ ) p("  "); return this; }
   public SB i( ) { return i(0); }
@@ -78,14 +80,33 @@ public final class SB implements JCodeSB<SB> {
     return this;
   }
 
+  @Override
   public SB pj( int i ) {
     _sb.append(i);
     return this;
   }
 
+  @Override
   public SB pj( long l ) {
     _sb.append(l).append('L');
     return this;
+  }
+
+  @Override
+  public SB pj(Enum e) {
+    _sb.append(e.getDeclaringClass().getName()).append('.').append(e.name());
+    return this;
+  }
+
+  @Override
+  public SB pj(Object o, Class klazz) {
+    if (Enum.class.isAssignableFrom(klazz)) {
+      return pj((Enum) o);
+    } else if (String.class.isAssignableFrom(klazz)) {
+      return pj((String) o);
+    } else {
+      return pobj(o);
+    }
   }
 
   @Override
@@ -189,6 +210,10 @@ public final class SB implements JCodeSB<SB> {
       p('"').p(ss[i]).p('"');
     }
     return p(']');
+  }
+
+  public SB NULL() {
+    return p("null");
   }
 
   @Override

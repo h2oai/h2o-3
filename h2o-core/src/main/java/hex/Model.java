@@ -1662,4 +1662,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return false;
     }
   }
+
+  /** Return UUID for this model based on checksum.
+   *
+   * Warning! This method is used by GenModel to generated method getUUID.
+   *
+   * @return string representation of checksum.
+   */
+  public String getUUID() {
+    return Long.toString(checksum());
+  }
 }

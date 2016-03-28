@@ -28,6 +28,9 @@ dependencies {
   // For Java6 we need named groups in regexp to have nice user API
   compile "com.github.tony19:named-regexp:0.2.3"
 
+  // Javacode loader
+  compile "com.google.code.javaparser:javaparser:1.0.11"
+
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 
     exclude module: "jms" 

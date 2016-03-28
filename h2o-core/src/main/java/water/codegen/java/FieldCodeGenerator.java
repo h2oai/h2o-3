@@ -1,11 +1,9 @@
 package water.codegen.java;
 
-import javassist.compiler.CodeGen;
-
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import water.codegen.CodeGenerator;
-import water.codegen.HasId;
 import water.codegen.JCodeSB;
 import water.codegen.SimpleCodeGenerator;
 import static water.codegen.java.JCodeGenUtil.s;
@@ -17,9 +15,18 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
 
   String comment;
   int modifiers;
-  String type;
+  // FIXME: can we have here Class<?> ?
+  Class type;
   String name;
   CodeGenerator initCode;
+
+  private ClassCodeGenerator ccg;
+
+  public FieldCodeGenerator(Field f) {
+    withName(f.getName());
+    withModifiers(f.getModifiers());
+    withType(f.getType());
+  }
 
   public FieldCodeGenerator(String name) {
     this.name = name;
@@ -32,7 +39,7 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
     return this;
   }
 
-  public FieldCodeGenerator withType(String type) {
+  public FieldCodeGenerator withType(Class type) {
     this.type = type;
     return this;
   }
@@ -43,7 +50,7 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
   }
 
   public FieldCodeGenerator withValue(final JCodeSB initCode) {
-    return withValue(new CodeGenerator() {
+    return withValue(new ValueCodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
         out.p(initCode);
@@ -51,8 +58,14 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
     });
   }
 
-  public FieldCodeGenerator withValue(CodeGenerator initCode) {
+  public FieldCodeGenerator withValue(ValueCodeGenerator initCode) {
     this.initCode = initCode;
+    initCode.setFcg(this);
+    return this;
+  }
+
+  public FieldCodeGenerator withName(String name) {
+    this.name = name;
     return this;
   }
 
@@ -61,11 +74,24 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
     if (comment != null) {
       out.lineComment(comment).nl();
     }
-    out.p(Modifier.toString(modifiers)).p(' ').p(type).p(' ').p(name);
+    out.p(Modifier.toString(modifiers)).p(' ').pj(type).p(' ').p(name);
     if (initCode != null) {
       out.p(" = ");
       initCode.generate(out);
     }
     out.p(';').nl(2);
+  }
+
+  ClassCodeGenerator ccg() {
+    return ccg;
+  }
+
+  void setCcg(ClassCodeGenerator ccg) {
+    this.ccg = ccg;
+  }
+
+  @Override
+  final public ClassGenContainer classContainer(CodeGenerator caller) {
+    return ccg.classContainer(caller);
   }
 }

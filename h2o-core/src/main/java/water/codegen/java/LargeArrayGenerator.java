@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 
 import water.codegen.CodeGenerator;
 import water.codegen.JCodeSB;
+import water.util.ReflectionUtils;
 
 import static java.lang.reflect.Modifier.FINAL;
 import static java.lang.reflect.Modifier.PUBLIC;
@@ -25,14 +26,10 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
 
   final Object value;
 
-  public LargeArrayGenerator(String prefix, Object value) {
-    this(prefix, value, 0, value != null ? Array.getLength(value) : 0);
-  }
-
-  public LargeArrayGenerator(String prefix, Object value, int off, int len) {
+  public LargeArrayGenerator(Object value, int off, int len) {
     super(off, len);
     this.value = value;
-    withPrefix(prefix);
+    this.type = value != null ? ReflectionUtils.getBasedComponentType(value) : null;
   }
 
   private static int getArrayDim(Object ary) {
@@ -47,10 +44,10 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     return dim;
   }
 
+
   @Override
   public void generate(JCodeSB out) {
-    generateArrayValue(out, value, off, len, prefix);
-
+    generateArrayValue(out, value, off, len, prefix());
   }
 
   protected JCodeSB generateArrayValue(JCodeSB out, final Object ary, final int aryOff, final int aryLen, final String aryClassPrefix) {
@@ -66,7 +63,8 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     final int dim = getArrayDim(ary);
     final Class<?> aryKlazz = ary.getClass();
     assert aryKlazz.isArray() : "only array should be here";
-    Class<?> elemKlazz = ary.getClass().getComponentType();
+    Class<?> elemKlazz  = ary.getClass().getComponentType();
+    System.out.println("---> " +elemKlazz);
     final boolean isNested = elemKlazz.isArray();
 
     // But offload generation of the field into multiple generators
@@ -78,10 +76,10 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
             .withImplements(Serializable.class)
             .withField(field("VALUES")
                            .withModifiers(PUBLIC | STATIC | FINAL)
-                           .withType(s(type).pbraces(dim).toString())
+                           .withType(aryKlazz)
                            .withValue(s("new ").pj(type).p("[").p(aryLen).p("]").pbraces(dim-1)));
     // Add to top-level container handling encapsulation of this class (class level, compilation unit)
-    classContainer.add(topLevelCCG);
+    classContainer().add(topLevelCCG);
 
     // Generate static initializer for VALUES field
     topLevelCCG.add(new CodeGenerator() {
@@ -108,7 +106,7 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
                                                : double.class == type ? fillArrayWithPrimitive(asDA(ary), alen, astart, aryOff) : null)
                   );
           // Append class generator to the top-level container
-          classContainer.add(subCcg);
+          classContainer().add(subCcg);
           out.ip(subClzName).p(".fill(VALUES);").nl();
           start += alen;
           remain -= alen;
@@ -160,11 +158,15 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {
-          int idx = astart + i;
+          int idx = aryOff + astart + i;
           out.p("sa[").p(idx).p("] = ");
           Object aryAtIdx = Array.get(ary, idx);
-          int len = Array.getLength(aryAtIdx);
-          generateArrayValue(out, aryAtIdx, 0, len, clzName + "_" + idx);
+          if (aryAtIdx != null) {
+            int len = Array.getLength(aryAtIdx);
+            generateArrayValue(out, aryAtIdx, 0, len, clzName + "_" + idx);
+          } else {
+            out.NULL();
+          }
           out.p(";").nl();
         }
       }

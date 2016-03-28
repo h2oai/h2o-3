@@ -53,11 +53,26 @@ public interface JCodeSB<T extends JCodeSB> {
   /** Append full name of class. */
   T pj(Class c);
 
+  /** Append Java int */
+  T pj(int l);
+
   /** Append Java Long */
   T pj(long l);
 
   /** Append Java array as new double[] { val1, val2, ...} */
   T pj(double[] ary);
+
+  T pj(Enum e);
+
+  /** Append object as it would be represented in Java code.
+   *
+   * For example o = "Hello"; then representation in Java is "Hello"
+   *
+   * @param o  any
+   * @param klazz expected class
+   * @return self
+   */
+  T pj(Object o, Class klazz);
 
   /** Print number of [] based on passed dimension */
   T pbraces(int dim);
@@ -106,6 +121,8 @@ public interface JCodeSB<T extends JCodeSB> {
   T toJSArray(float[] nums);
 
   T toJSArray(String[] ss);
+
+  T NULL();
 
   int getIndent();
 

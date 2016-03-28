@@ -475,6 +475,10 @@ public abstract class Neurons {
     return (float)m;
   }
 
+  public int units() {
+    return units;
+  }
+
   /**
    * Input layer of the Neural Network
    * This layer is different from other layers as it has no incoming weights,

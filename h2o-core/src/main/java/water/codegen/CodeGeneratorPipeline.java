@@ -2,6 +2,8 @@ package water.codegen;
 
 import java.util.ArrayList;
 
+import water.codegen.java.ClassGenContainer;
+
 /**
  * A simple code generation pipeline.
  *
@@ -22,7 +24,7 @@ public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S>> extends A
 
   @Override
   public boolean add(CodeGenerator codeGenerator) {
-    assert codeGenerator != null : "Ups";
+    assert codeGenerator != null : "Ups - cannot append null code generator";
     return super.add(codeGenerator);
   }
 
@@ -41,5 +43,13 @@ public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S>> extends A
 
   final protected S self() {
     return (S) this;
+  }
+
+  final public void reset() {
+    this.clear();
+  }
+
+  public /* abstract */ ClassGenContainer classContainer(CodeGenerator caller) {
+    throw new RuntimeException("Should be overridden! Cannot be abstract now without breaking old API!");
   }
 }

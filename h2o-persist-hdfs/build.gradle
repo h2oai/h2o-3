@@ -4,6 +4,8 @@ dependencies {
   compile project(":h2o-core")
   compile('net.java.dev.jets3t:jets3t:0.6.1')
   compile("org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0") {
-      transitive = true
+    exclude module: "junit"
+    exclude module: "mockito-all"
+    exclude module: "jersey-test-framework-grizzly2"
   }
 }
