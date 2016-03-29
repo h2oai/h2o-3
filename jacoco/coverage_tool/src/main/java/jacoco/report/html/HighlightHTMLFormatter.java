@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Locale;
 
 import jacoco.report.internal.html.table.HighlightTable;
-import jacoco.report.internal.html.wrapper.CoverageWrapper;
 
 import org.jacoco.core.analysis.IBundleCoverage;
 import org.jacoco.core.analysis.ICoverageNode.CounterEntity;
@@ -47,8 +46,6 @@ import org.jacoco.report.internal.html.table.PercentageColumn;
  * Formatter for coverage reports in multiple HTML pages.
  */
 public class HighlightHTMLFormatter extends HTMLFormatter {
-
-    private String path_to_dsv;
 
     private Locale locale = Locale.getDefault();
 

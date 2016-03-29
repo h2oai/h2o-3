@@ -1,9 +1,10 @@
 package jacoco.report.internal.html.wrapper;
 
+import jacoco.report.internal.html.parse.DSVParser;
+import jacoco.report.internal.html.parse.ParseItem;
 import org.jacoco.core.analysis.*;
 
 import java.io.*;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,6 +13,7 @@ import java.util.regex.Pattern;
  * Created by nkalonia1 on 3/17/16.
  */
 public class CoverageWrapper {
+
     private static final ICoverageNode.CounterEntity[] _default = {ICoverageNode.CounterEntity.INSTRUCTION,
             ICoverageNode.CounterEntity.BRANCH,
             ICoverageNode.CounterEntity.COMPLEXITY,
@@ -40,6 +42,9 @@ public class CoverageWrapper {
 
     public static ClassCoverageHighlight wrapClass(IClassCoverage c) {
         ClassCoverageHighlight cch = new ClassCoverageHighlight(c.getName(), c.getId(), c.isNoMatch());
+        cch.setSignature(c.getSignature());
+        cch.setSuperName(c.getSuperName());
+        cch.setInterfaces(c.getInterfaceNames());
         for (IMethodCoverage m : c.getMethods()) {
             cch.addMethod(wrapMethod(m));
         }
@@ -53,7 +58,121 @@ public class CoverageWrapper {
         return mch;
     }
 
-    public static BundleCoverageHighlight parseBundle(BundleCoverageHighlight b, File path_to_dsv) throws IOException {
+    public static List<ParseItem> parse(File path) {
+        return (new DSVParser(System.out, System.err)).parse(path);
+    }
+
+    public static BundleCoverageHighlight parseBundle(BundleCoverageHighlight b, File path) {
+        for (ParseItem p : parse(path)) {
+            apply(b, p);
+        }
+        updateDisplay(b);
+        return b;
+    }
+
+    private static void apply(IBundleCoverage b, ParseItem pi) {
+        apply(b, pi, false);
+    }
+
+    private static void apply(IPackageCoverage p, ParseItem pi) {
+        apply(p, pi, false);
+    }
+
+    private static void apply(IClassCoverage c, ParseItem pi) {
+        apply(c, pi, false);
+    }
+
+    private static void apply(IMethodCoverage m, ParseItem pi) {
+        apply(m, pi, false);
+    }
+
+    private static void apply(IBundleCoverage b, ParseItem pi, boolean propagate) {
+        if (propagate) {
+            for (IPackageCoverage p : b.getPackages()) {
+                apply(p, pi, true);
+            }
+            applyValues(b, pi);
+        } else if (pi.hasPackageName()) {
+            boolean found = false;
+            for (IPackageCoverage p : b.getPackages()) {
+                if (pi.matches(p)) {
+                    found = true;
+                    apply(p, pi);
+                }
+            }
+            if (!found) {
+                err("Could not find package: " + pi.getPackageName());
+            }
+        } else {
+            applyValues(b, pi);
+            if (pi.propagate()) apply(b, pi, true);
+        }
+    }
+
+    private static void apply(IPackageCoverage p, ParseItem pi, boolean propagate) {
+        if (propagate) {
+            for (IClassCoverage c : p.getClasses()) {
+                apply(c, pi, true);
+            }
+            applyValues(p, pi);
+        } else if (pi.hasClassName()){
+            boolean found = false;
+            for (IClassCoverage c : p.getClasses()) {
+                if (pi.matches(c)) {
+                    found = true;
+                    apply(c, pi);
+                }
+            }
+            if (!found) {
+                err("Could not find class: " + pi.getClassName());
+            }
+        } else {
+            applyValues(p, pi);
+            if (pi.propagate()) apply(p, pi, true);
+        }
+    }
+
+    private static void apply(IClassCoverage c, ParseItem pi, boolean propagate) {
+        if (propagate) {
+            for (IMethodCoverage m : c.getMethods()) {
+                apply(m, pi, true);
+            }
+            applyValues(c, pi);
+        } else if (pi.hasMethodName()) {
+            boolean found = false;
+            for (IMethodCoverage m : c.getMethods()) {
+                if (pi.matches(m)) {
+                    found = true;
+                    apply(m, pi);
+                }
+            }
+            if (!found) {
+                err("Could not find method: " + pi.getMethodName());
+            }
+        } else {
+            applyValues(c, pi);
+            if (pi.propagate()) apply(c, pi, true);
+        }
+    }
+
+    private static void apply(IMethodCoverage m, ParseItem pi, boolean propagate) {
+        applyValues(m, pi);
+    }
+
+    private static void applyValues(ICoverageNode h, ParseItem pi) {
+        if (h instanceof IHighlightNode) {
+            NodeHighlightResults nhr = ((IHighlightNode) h).getHighlightResults();
+            for (ICoverageNode.CounterEntity ce : pi.getHeaders()) {
+                nhr.entity_total_results.put(ce, !(h.getCounter(ce).getCoveredRatio() < pi.getValue(ce) / 100));
+            }
+        }
+    }
+
+    private static void err(String s) {
+        System.err.println("ERR: " + s);
+    }
+
+    /*public static BundleCoverageHighlight parseBundle(BundleCoverageHighlight b, File path_to_dsv) throws IOException {
         FileReader fileReader = new FileReader(path_to_dsv);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
         String line;
@@ -77,7 +196,7 @@ public class CoverageWrapper {
         }
         updateDisplay(b);
         return b;
-    }
+    }*/
 
     private static void updateDisplay(IBundleCoverage b) {
         for (IPackageCoverage p : b.getPackages()) {
@@ -124,12 +243,12 @@ public class CoverageWrapper {
         return m_nhr;
     }
 
-    private static boolean applyToNode(IBundleCoverage root, String full_name, Map<ICoverageNode.CounterEntity, Double> values, boolean propagate) {
+    /*private static boolean applyToNode(IBundleCoverage root, String full_name, Map<ICoverageNode.CounterEntity, Double> values, boolean propagate) {
         DeconstructedName name = deconstruct(full_name);
         for (IPackageCoverage p : root.getPackages()) {
             System.out.println(name.packageName + " " + name.className + " " + name.methodName);
             System.out.println(p.getName());
-            if (p.getName().equals(name.packageName)) {
+            if (p.getName().matches(name.packageName)) {
                 if (!applyToPackage(p, name, values, propagate)) {
                     apply(p, values, propagate);
                 }
@@ -137,7 +256,7 @@ public class CoverageWrapper {
             }
         }
         return false;
-    }
+    }*/
 
     private static void apply(IPackageCoverage p, Map<ICoverageNode.CounterEntity, Double> values, boolean propagate) {
         if (p instanceof IHighlightNode) {
@@ -195,7 +314,7 @@ public class CoverageWrapper {
         }
     }
 
-    private static DeconstructedName deconstruct(String name) {
+    /*private static DeconstructedName deconstruct(String name) {
         name = name.trim();
         Pattern package_pattern = Pattern.compile("([a-zA-Z_](?:[a-zA-Z0-9._]*(?:/|$))+)");
         Pattern class_pattern = Pattern.compile("([a-zA-Z_](?:[a-zA-Z0-9_]*(?:\\.|$))+)");
@@ -218,7 +337,7 @@ public class CoverageWrapper {
             }
         }
         return d_name;
-    }
+    }*/
 
     private static class DeconstructedName {
         String packageName;
