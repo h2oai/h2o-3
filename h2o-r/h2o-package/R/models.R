@@ -261,14 +261,22 @@ h2o.getFutureModel <- function(object) {
       paramValue <- "-Infinity"
     }
   } else {      # scalar == FALSE
-    k = which(paramValue == Inf | paramValue == -Inf)
-    if (length(k) > 0)
-      for (n in k)
-        if (paramValue[n] == Inf)
-          paramValue[n] <- "Infinity"
-        else
-          paramValue[n] <- "-Infinity"
+    if (inherits(paramValue, 'numeric')) {
+        k = which(paramValue == Inf | paramValue == -Inf)
+        if (length(k) > 0)
+          for (n in k)
+            if (paramValue[n] == Inf)
+              paramValue[n] <- "Infinity"
+            else
+              paramValue[n] <- "-Infinity"
+    }
     if (collapseArrays) {
+      if(any(sapply(paramValue, function(x) !is.null(x) && is.H2OFrame(x))))
+         paramValue <- lapply( paramValue, function(x) { 
+                            if (is.null(x)) NULL
+                            else if (all(is.na(x))) NA
+                            else paste0('"',h2o.getId(x),'"')
+                          })
       if (type == "character")
         paramValue <- .collapse.char(paramValue)
       else

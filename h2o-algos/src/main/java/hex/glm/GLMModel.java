@@ -11,10 +11,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.MemoryManager;
+import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -131,6 +128,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
     public int[] _interactions=null;
+    public boolean _early_stopping = true;
 
 
     public Key<Frame> _beta_constraints = null;
@@ -139,6 +137,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _stdOverride; // standardization override by beta constraints
 
     public void validate(GLM glm) {
+      if(_alpha != null && (1 < _alpha[0] || _alpha[0] < 0))
+        glm.error("_alpha","alpha parameter must from (inclusive) [0,1] range");
       if(_compute_p_values && _solver != Solver.AUTO && _solver != Solver.IRLSM)
         glm.error("_compute_p_values","P values can only be computed with IRLSM solver, go solver = " + _solver);
       if(_compute_p_values && (_lambda == null || _lambda[0] > 0))
@@ -152,12 +152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
         glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda_search)
-        if (glm.nFoldCV())
-          glm.error("_lambda_search", "Lambda search is not currently supported in conjunction with N-fold cross-validation");
         if(_nlambdas == -1)
           _nlambdas = 100;
-        else
-          _exactLambdas = false;
       if(_obj_reg != -1 && _obj_reg <= 0)
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
@@ -705,10 +701,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
-    DataInfo _scoringDinfo; // dinfo with no standardization and no response
     String[] _coefficient_names;
     public int _best_lambda_idx;
-
     double[] _global_beta;
     private double[] _zvalues;
     private double _dispersion;
@@ -760,7 +754,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo;
-      _scoringDinfo = dinfo.scoringInfo();
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
@@ -790,12 +783,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _dinfo._adaptedFrame = new Frame(_dinfo._adaptedFrame.names().clone(),_dinfo._adaptedFrame.vecs().clone());
         _dinfo.dropWeights();
       }
-      _scoringDinfo = _dinfo.scoringInfo();
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
-//      if(glm._parms._family == Family.binomial && domains[_dinfo.responseChunkId(0)] == null)
-//        domains[_dinfo.responseChunkId(0)] = new String[]{"0","1"};
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {
         String [] ns = new String[names.length-1];
@@ -967,7 +957,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return super.checksum_impl();
   }
 
-  private double [] scoreRow(Row r, double o, double [] preds) {
+  public double [] scoreRow(Row r, double o, double [] preds) {
     if(_parms._family == Family.multinomial) {
       if(_eta == null) _eta = new ThreadLocal<>();
       double[] eta = _eta.get();
@@ -1001,22 +991,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   private transient ThreadLocal<Row> _row;
   private transient ThreadLocal<double[]> _eta;
 
-  private final Row getRow(){
-    if(_row == null) _row = new ThreadLocal<>();
-    Row r = _row.get();
-    if(r == null) _row.set(r = _output._scoringDinfo.newDenseRow());
-    return r;
-  }
+
 
 
   @Override
   // public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds )
   public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-    return scoreRow(_output._scoringDinfo.extractDenseRow(chks,row_in_chunk,getRow()),offset,preds);
+    throw H2O.unimpl();
   }
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
-    return scoreRow(_output._scoringDinfo.extractDenseRow(data,getRow()),o,preds);
+    throw H2O.unimpl();
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,
@@ -1117,4 +1102,43 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
     return sb;
   }
+
+
+
+
+  private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j){
+    // Build up the names & domains.
+    final boolean computeMetrics = adaptFrm.find(_output.responseName()) >= 0;
+    String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    // Score the dataset, building the class distribution & predictions
+    return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);
+  }
+  /** Score an already adapted frame.  Returns a new Frame with new result
+   *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
+   *  already adapted to the Model's domain, so the output is also.  Also
+   *  computes the metrics for this frame.
+   *
+   * @param adaptFrm Already adapted frame
+   * @return A Frame containing the prediction column, and class distribution
+   */
+  @Override
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+    String [] names = makeScoringNames();
+    String [][] domains = new String[names.length][];
+    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
+    if (gs._computeMetrics)
+      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    domains[0] = gs._domain;
+    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names, domains);
+  }
+
+  /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
+   * @param adaptFrm Already adapted frame
+   * @return MetricBuilder
+   */
+  @Override
+  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
+    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
+  }
+
 }

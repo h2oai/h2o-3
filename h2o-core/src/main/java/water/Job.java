@@ -25,6 +25,15 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** User description */
   public final String _description;
 
+  private String [] _warns;
+
+  public void setWarnings(final String [] warns){
+    new JAtomic() {
+      @Override boolean abort(Job job) { return job._stop_requested; }
+      @Override void update(Job job) { job._warns = warns; }
+    }.apply(this);
+  }
+
   /** Create a Job
    *  @param key  Key of the final result
    *  @param clz_of_T String class of the Keyed result
@@ -127,6 +136,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // --------------
   /** A system key for global list of Job keys. */
   public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+
+  public String[] warns() {return _warns;}
+
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }

@@ -8,4 +8,5 @@ interface ParseReader {
   abstract byte[] getChunkData( int cidx );
   abstract int  getChunkDataStart( int cidx );
   abstract void setChunkDataStart( int cidx, int offset );
+  long getGlobalByteOffset();
 }

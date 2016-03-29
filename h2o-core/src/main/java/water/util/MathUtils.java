@@ -36,58 +36,106 @@ public class MathUtils {
    * Wrapper around weighted paralell basic stats computation (mean, variance)
    */
   public static final class BasicStats extends Iced {
-    private final double [] _mean;
-    private final double [] _m2;
-    double [] _wsum;
-    long _nobs;
+    private final double[] _mean;
+    private final double[] _m2;
+    double[] _wsums;
+    double[] _var;
+    double[] _sd;
+    public double _wsum = Double.NaN;
+    public long[] _nzCnt;
+    long _nobs = -1;
+
     public BasicStats(int n) {
       _mean = MemoryManager.malloc8d(n);
       _m2 = MemoryManager.malloc8d(n);
-      _wsum = MemoryManager.malloc8d(n);
+      _wsums = MemoryManager.malloc8d(n);
+      _nzCnt = MemoryManager.malloc8(n);
     }
-    public void add(double [] x, double w) {
-      for(int i = 0; i < x.length; ++i) {
-        if(!Double.isNaN(x[i])) {
-          double wsum = _wsum[i] + w;
-          double delta = x[i] - _mean[i];
-          double R = delta * w / wsum;
-          _mean[i] += R;
-          _m2[i] += _wsum[i] * delta * R;
-          _wsum[i] = wsum;
-        }
+
+    public void add(double w) {
+      ++_nobs;
+    }
+
+    public void add(double x, double w, int i) {
+      if (w != 0) {
+        double wsum = _wsums[i] + w;
+        double delta = x - _mean[i];
+        double R = delta * w / wsum;
+        _mean[i] += R;
+        _m2[i] += _wsums[i] * delta * R;
+        _wsums[i] = wsum;
+        ++_nzCnt[i];
       }
-      _nobs++;
     }
+
+    public void add(double[] x, double w) {
+      for (int i = 0; i < x.length; ++i)
+        if (!Double.isNaN(x[i]))
+          add(x[i], w, i);
+    }
+
+    /**
+     * To be called at the end to adjust for the skipped zeros (if using sparse).
+     *
+     * @param len  - number of (non-skipped) lines in the dataset
+     * @param wsum - sum of all weights
+     */
+    public void fillInZeros(long len, double wsum) {
+      _nobs = len;
+      _wsum = wsum;
+      if(sparse()) {
+        double muReg = 1.0 / wsum;
+        for (int i = 0; i < _mean.length; ++i)
+          _mean[i] *= _wsums[i] * muReg;
+      }
+    }
+
     public void reduce(BasicStats bs) {
-      for(int i =0 ; i < _mean.length; ++i) {
-        double wsum = _wsum[i] + bs._wsum[i];
-        double delta = bs._mean[i] - _mean[i];
-        _mean[i] = (_wsum[i] * _mean[i] + bs._wsum[i] * bs._mean[i]) / wsum;
-        _m2[i] += bs._m2[i] + delta * delta * _wsum[i] * bs._wsum[i] /wsum;
-        _wsum[i] = wsum;
+      ArrayUtils.add(_nzCnt, bs._nzCnt);
+      for (int i = 0; i < _mean.length; ++i) {
+        double wsum = _wsums[i] + bs._wsums[i];
+        if(wsum != 0) {
+          double delta = bs._mean[i] - _mean[i];
+          _mean[i] = (_wsums[i] * _mean[i] + bs._wsums[i] * bs._mean[i]) / wsum;
+          _m2[i] += bs._m2[i] + delta * delta * _wsums[i] * bs._wsums[i] / wsum;
+        }
+        _wsums[i] = wsum;
       }
       _nobs += bs._nobs;
     }
-    public double [] variance(double [] res) {
-      double reg = _nobs/(_nobs-1.0);
-      for(int i = 0; i < res.length; ++i)
-        res[i] = reg*_m2[i]/_wsum[i];
+
+    private double[] variance(double[] res) {
+      double reg = _nobs / (_nobs - 1.0);
+      for (int i = 0; i < res.length; ++i)
+        res[i] = reg * _m2[i] / _wsums[i];
       return res;
     }
-    public double [] variance() {return variance(MemoryManager.malloc8d(_mean.length));}
 
-    public double [] sigma(double [] res) {
-      variance(res);
-      for(int i = 0; i < res.length; ++i)
+    public double variance(int i){return variance()[i];}
+    public double[] variance() {
+      if(sparse()) throw new UnsupportedOperationException("Can not do single pass sparse variance computation");
+      if (_var != null) return _var;
+      return _var = variance(MemoryManager.malloc8d(_mean.length));
+    }
+    public double sigma(int i){return sigma()[i];}
+    public double[] sigma() {
+      if(_sd != null) return _sd;
+      double[] res = variance().clone();
+      for (int i = 0; i < res.length; ++i)
         res[i] = Math.sqrt(res[i]);
-      return res;
+      return _sd = res;
     }
-    public double [] sigma() {return sigma(MemoryManager.malloc8d(_mean.length));}
-    public double [] mean() {return _mean;}
-    public long nobs(){return _nobs;}
-    public double [] wsum(){return _wsum;}
-  }
+    public double[] mean() {return _mean;}
+    public double mean(int i) {return _mean[i];}
+    public long nobs() {return _nobs;}
 
+    public boolean sparse() {
+      for(int i = 0; i < _nzCnt.length; ++i)
+        if(_nzCnt[i] < _nobs)
+          return true;
+      return false;
+    }
+  }
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
   public static double approxSqrt(double x) {

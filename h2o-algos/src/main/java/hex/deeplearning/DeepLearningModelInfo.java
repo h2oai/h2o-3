@@ -412,7 +412,7 @@ final public class DeepLearningModelInfo extends Iced {
   /**
    * Initialize weights/biases
    */
-  void initializeMembers() {
+  void initializeMembers(Key<Frame>[] initial_weights, Key<Frame>[] initial_biases) {
     randomizeWeights();
     //TODO: determine good/optimal/best initialization scheme for biases
     // hidden layers
@@ -429,6 +429,45 @@ final public class DeepLearningModelInfo extends Iced {
       }
     }
     Arrays.fill(biases[biases.length - 1].raw(), 0f); //output layer
+    if (initial_weights!=null || initial_biases!=null) {
+      Log.info("Initializing initial model state from user-given weights/biases.");
+      for (int i = 0; i < get_params()._hidden.length+1; ++i) {
+        if (initial_weights[i] == null) {
+          Log.info("No user-given weight matrix given for weights #" + (i+1) + ". Initializing those weights randomly.");
+          continue;
+        }
+        if (initial_biases[i] == null) {
+          Log.info("No user-given bias vector given for biases #" + (i+1) + ". Initializing those biases randomly.");
+          continue;
+        }
+        Frame w = initial_weights[i].get();
+        if (w==null) {
+          throw new IllegalArgumentException("User-given weight matrix for weights #" + (i+1) + " '" + initial_weights[i].toString() + "' not found. Initializing those weights randomly.");
+        }
+        if (w.numRows() != get_weights(i).rows() || w.numCols() != get_weights(i).cols()) {
+          throw new IllegalArgumentException("Dimensionality mismatch: initial_weights matrix #" + i +
+                  " should have " +  get_weights(i).rows() + " rows and " + get_weights(i).cols()
+                  + " columns, but has " + w.numRows() + " rows and " + w.numCols() + " columns.");
+        }
+        Frame b = initial_biases[i].get();
+        if (b==null) {
+          throw new IllegalArgumentException("User-given bias vector for biases #" + (i+1) + " '" + initial_biases[i].toString() + "' not found. Initializing those biases randomly.");
+        }
+        if (b.numRows() != get_biases(i).size() || b.numCols() != 1) {
+          throw new IllegalArgumentException("Dimensionality mismatch: initial_biases vector #" + i +
+                  " should have " +  get_biases(i).size() + " rows and 1"
+                  + " column, but has " + b.numRows() + " rows and " + b.numCols() + " column(s).");
+        }
+        for (int c=0; c<w.numCols(); ++c)
+          for (int r=0; r<w.numRows(); ++r)
+            get_weights(i).set(r,c,(float)w.vec(c).at(r));
+        for (int r=0; r<w.numRows(); ++r)
+          get_biases(i).set(r,(float)b.vec(0).at(r));
+      }
+    }
+    else {
+      Log.info("Created random initial model state.");
+    }
   }
 
   /**

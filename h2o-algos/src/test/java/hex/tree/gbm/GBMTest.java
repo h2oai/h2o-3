@@ -1684,7 +1684,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 27.01989) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 23.59120) < 1e-4);
 
     } finally {
       parms._train.remove();

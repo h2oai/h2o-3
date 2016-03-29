@@ -1,9 +1,9 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.H2O;
 import water.util.UnsafeUtils;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 // Sparse chunk.
@@ -11,7 +11,7 @@ public class CXIChunk extends Chunk {
   private transient int _valsz; // byte size of stored value
   protected final int valsz() { return _valsz; }
   private transient int _valsz_log; //
-  private transient int _ridsz; // byte size of stored (chunk-relative) row nums
+  protected transient int _ridsz; // byte size of stored (chunk-relative) row nums
   protected final int ridsz() { return _ridsz; }
   protected transient int _sparseLen;
   protected static final int _OFF = 6;
@@ -35,6 +35,90 @@ public class CXIChunk extends Chunk {
     _mem = buf;
     _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
+  }
+
+  @Override public double [] getDoubles(double [] vals,int from, int to){
+    double fill = isSparseNA()?Double.NaN:0;
+    if(from == 0 && to == _len) {
+      Arrays.fill(vals,fill);
+      double [] svals = new double[_sparseLen];
+      int [] sids = new int[_sparseLen];
+      asSparseDoubles(svals,sids);
+      for(int i = 0; i < sids.length && sids[i] < to; ++i)
+        vals[sids[i]] = svals[i];
+    } else {
+      for(int i = from; i < to; ++i)
+        vals[i-from] = fill;
+      for(int i= nextNZ(from-1); i < to; i = nextNZ(i))
+        vals[i-from] = atd(i);
+    }
+    return vals;
+  }
+
+  @Override public int asSparseDoubles(double [] vals, int[] ids) {
+    if(vals.length < _sparseLen)throw new IllegalArgumentException();
+    int off = _OFF;
+    final int inc = _valsz + _ridsz;
+    if(_ridsz == 2){
+      switch(_valsz){
+        case 1:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = _mem[off+2]&0xFF;
+          }
+          break;
+        case 2:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = UnsafeUtils.get2(_mem,off+2);
+          }
+          break;
+        case 4:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            vals[i] = UnsafeUtils.get4(_mem,off+2);
+          }
+          break;
+        case 8:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get2(_mem,off);
+            long v = UnsafeUtils.get8(_mem,off+2);
+            vals[i] = v == C8Chunk._NA?Double.NaN:v;
+          }
+          break;
+      }
+    } else if(_ridsz == 4){
+      switch(_valsz){
+        case 1:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = _mem[off+4]&0xFF;
+          }
+          break;
+        case 2:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = UnsafeUtils.get2(_mem,off+4);
+          }
+          break;
+        case 4:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            vals[i] = UnsafeUtils.get4(_mem,off+4);
+          }
+          break;
+        case 8:
+          for (int i = 0; i < _sparseLen; ++i, off += inc) {
+            ids[i] = UnsafeUtils.get4(_mem,off);
+            long v = UnsafeUtils.get8(_mem,off+4);
+            vals[i] = v == C8Chunk._NA?Double.NaN:v;
+          }
+          break;
+      }
+    } else throw H2O.unimpl();
+    for (int i = 0; i < _sparseLen; ++i)
+      vals[i] = vals[i] == NAS[_valsz_log] ? Double.NaN : vals[i];
+    return sparseLenZero();
   }
 
   @Override public boolean isSparseZero() {return true;}
@@ -108,6 +192,7 @@ public class CXIChunk extends Chunk {
   // get offset of nth (chunk-relative) stored element
   private int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
   // extract integer value from an (byte)offset
+  protected double getFValue(int off){return getIValue(off);}
   protected final long getIValue(int off){
     switch(_valsz){
       case 1: return _mem[off+ _ridsz]&0xFF;

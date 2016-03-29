@@ -1540,38 +1540,35 @@ class H2OFrame(object):
     """
     return ExprNode("median", self, na_rm)._eager_scalar()
 
+
   def var(self,y=None,na_rm=False, use=None):
     """Compute the variance or covariance matrix of one or two H2OFrames.
-
     Parameters
     ----------
-      y : H2OFrame, default=None
-        If y is None and self is a single column, then the variance is computed for self. If self has
-        multiple columns, then its covariance matrix is returned. Single rows are treated as single columns.
-        If y is not None, then a covariance matrix between the columns of self and the columns of y is computed.
-
-      na_rm : bool, default=False
-        Remove NAs from the computation.
-
-      use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
-        A string indicating how to handle missing values. This must be one of the following
-          "everything"            - outputs NaNs whenever one of its contributing observations is missing
-          "all.obs"               - presence of missing observations will throw an error
-          "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
-          "pairwise.complete.obs" - uses all complete pairs of observations
-
+    y : H2OFrame, default=None
+      If y is None and self is a single column, then the variance is computed for self. If self has 
+      multiple columns, then its covariance matrix is returned. Single rows are treated as single columns. 
+      If y is not None, then a covariance matrix between the columns of self and the columns of y is computed. 
+    na_rm : bool, default=False
+      Remove NAs from the computation.
+    use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
+      A string indicating how to handle missing values. This must be one of the following: 
+        "everything"            - outputs NaNs whenever one of its contributing observations is missing
+        "all.obs"               - presence of missing observations will throw an error
+        "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
     Returns
     -------
-      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
+      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y 
       (if y is given). If self and y are single rows or single columns, the variance or covariance is given as a scalar.
     """
     symmetric = False
     if y is None:
       y = self
-      if self.ncol > 1 and self.nrow > 1: symmetric = True
+      symmetric = True
     if use is None: use = "complete.obs" if na_rm else "everything"
     if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("var",self,y,use,symmetric)._eager_scalar()
     return H2OFrame._expr(expr=ExprNode("var",self,y,use,symmetric))._frame()
+
 
   def sd(self, na_rm=False):
     """Compute the standard deviation.

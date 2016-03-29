@@ -4,6 +4,8 @@ import water.DKV;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.ParseSetup;
+import water.parser.ParseWriter;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.ArrayList;
@@ -33,6 +35,11 @@ public class ParseSetupHandler extends Handler {
 
     ParseSetup ps = ParseSetup.guessSetup(fkeys, new ParseSetup(p));
 
+    if(ps._errs != null && ps._errs.length > 0) {
+      p.warnings = new String[ps._errs.length];
+      for (int i = 0; i < ps._errs.length; ++i)
+        p.warnings[i] = ps._errs[i].toString();
+    }
     // TODO: ParseSetup throws away the srcs list. . .
     if ((null == p.column_name_filter || "".equals(p.column_name_filter)) && (0 == p.column_offset) && (0 == p.column_count)) {
       // return the entire data preview
@@ -67,7 +74,6 @@ public class ParseSetupHandler extends Handler {
 
       int width_to_return = Math.max(0, keep_indexes.size() - p.column_offset);
       if (p.column_count > 0) width_to_return = Math.min(width_to_return, p.column_count);
-
       String[][] filtered_data = new String[data.length][width_to_return];
       for (int row = 0; row < data.length; row++) {
         int output_column = 0;
@@ -79,14 +85,10 @@ public class ParseSetupHandler extends Handler {
       p.data = filtered_data;
       p.total_filtered_column_count = keep_indexes.size();
     }
-
     p.destination_frame = ParseSetup.createHexName(p.source_frames[0].toString());
-    
     if( p.check_header==ParseSetup.HAS_HEADER && Arrays.equals(p.column_names, p.data[0])) p.data = Arrays.copyOfRange(p.data,1,p.data.length);
-
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
-
     return p;
   }
 }

@@ -20,17 +20,17 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 The latest stable version, compatible with the H2O "Turan" release, be installed as follows:
 
 ```r
-install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz", repos = NULL)
+install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz", repos = NULL)
 ``` 
 
 To install **h2oEnsemble** for a previous stable release of H2O, you can replace the URL above with the URL in the table below that matches your H2O version.
 
 |H2O Stable Release| Recommended version| Other versions |
 |:---------|:----------|:----------|
-|H2O [3.8.1.3](http://h2o-release.s3.amazonaws.com/h2o/rel-turan/3/index.html) (Turan)|[h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz)| [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
-|H2O [3.8.0.2](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/2/index.html) (Tukey)|[h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz)| [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
-|H2O [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)||
-|H2O [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)||
+|H2O 3.8.1.1 - [3.8.1.4](http://h2o-release.s3.amazonaws.com/h2o/rel-turan/4/index.html) (Turan)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
+|H2O 3.8.8.1 - [3.8.0.6](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/6/index.html) (Tukey)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
+|H2O 3.6.0.1 - [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)||
+|H2O 3.2.0.1 - [3.2.0.9](http://h2o-release.s3.amazonaws.com/h2o/rel-slater/9/index.html) (Slater)|[h2oEnsemble 0.1.4](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.4.tar.gz)||
 
 ### Install Development Version
 The following are two ways that you can install the development version of the **h2oEnsemble** package. 
@@ -54,21 +54,29 @@ R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 - An example of how to train and test an ensemble is in the `h2o.ensemble` function documentation in the `h2oEnsemble` package and also in the [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html).
 - The ensemble is defined by its set of base learning algorithms and the metalearning algorithm.  Algorithm wrapper functions are used to specify these algorithms.
 - The ensemble fit is an object of class, "h2o.ensemble", however this is just an R list.
+- Also available since v. 0.1.8 is the `h2o.stack` function, which can take existing H2O models as a list and fit the metalearning function.  This function also returns an object of class, "h2o.ensemble".
 
 
 ## Wrapper Functions
 - The ensemble works by using wrapper functions (located in the `wrappers.R` file in the package).  These wrapper functions are used to specify the base learner and metalearner algorithms for the ensemble.  Examples of how to create custom algorithm wrappers are available in the [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html).
 - This methodology of using wrapper functions is modeled after the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) and [subsemble](http://cran.r-project.org/web/packages/subsemble/index.html) ensemble learning packages.  The use of wrapper functions makes the ensemble code cleaner by providing a unified interface.
-- Often it is a good idea to include variants of one algorithm/function by specifying different tuning parameters for different base learners.  There is an examples of how to create new variants of the wrapper functions in the [create_h2o_wrappers.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/ensemble/create_h2o_wrappers.R) script.
+- Often it is a good idea to include variants of one algorithm/function by specifying different tuning parameters for different base learners.  There is an examples of how to create new variants of the wrapper functions in the [create\_h2o\_wrappers.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/ensemble/create_h2o_wrappers.R) script, as well as in the `h2o.ensemble` R function documentation.
 - The wrapper functions must have unique names.
 - The more diverse the base learner library, the better!
 
 
 ## Metalearning
-- Historically, methods such as GLM or [non-negative least squares (NNLS)](https://en.wikipedia.org/wiki/Non-negative_least_squares) have been used to find the optimal weighted combination of the base learners, however any supervised learning algorithm can be used as a metalearner.  
+- Historically, methods such as GLM or [non-negative least squares (NNLS)](https://en.wikipedia.org/wiki/Non-negative_least_squares) have been used to find the optimal weighted combination of the base learners, however any supervised learning algorithm can be used as a metalearner.  To use a GLM with non-negative weights, you simply pass `non_negative = TRUE` to the generic, `h2o.glm.wrapper` function as follows:
+
+```r
+h2o.glm_nn <- function(..., non_negative = TRUE) {
+  h2o.glm.wrapper(..., non_negative = non_negative)
+}
+metalearner <- "h2o.glm_nn"
+```
 - We allow the user to specify any H2O-supported algorithm as a metalearner, however, since the features in the metalearning step are highly correlated, we recommend using a metalearner such as a regularized GLM or Deep Neural Net.  (e.g. `h2o.glm.wrapper`, which is the default, or `h2o.deeplearning.wrapper`).
 - Since the metalearning step is relatively quick compared to the base learning tasks, we recommend using the `h2o.metalearn` function to re-train the ensemble fit using different metalearning algorithms.
-- At this time, we still support using SuperLearner-based functions for metalearners, although, for performance reasons, it is not recommended.  For example, you can use the `SL.nnls` function (in the `SuperLearner_wrappers.R` script) and the `SL.glm` (included in the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) R package).  When using a SuperLearner-based function for a metalearner, an `N x L` matrix will be pulled into R memory from H2O (`n` is number of observations and `L` is the number of base learners).  This may cause the code to fail for training sets of greater than ~8M rows due to a memory allocation issue.  Support for SuperLearner-based metalearners will be deprecated in the future.
+- At this time, we still support using SuperLearner-based functions for metalearners, although, for performance reasons, it is not recommended.  For example, you can use the `SL.glm` (included in the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) R package).  When using a SuperLearner-based function for a metalearner, an `N x L` matrix will be pulled into R memory from H2O (`n` is number of observations and `L` is the number of base learners).  This may cause the code to fail for training sets of greater than ~8M rows due to a memory allocation issue.  Support for SuperLearner-based metalearners will be deprecated in the future.
 
 
 ## Saving Ensembles

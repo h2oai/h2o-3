@@ -7,14 +7,14 @@
   Print ensemble and base learner performance for an \code{\link[h2oEnsemble]{h2o.ensemble_performance}} object and specific metric.  
 }
 \usage{
-  \method{print}{h2o.ensemble_performance}(x, metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"), ...)
+  \method{print}{h2o.ensemble_performance}(x, metric = c("AUTO", "logloss", "MSE", "AUC", "r2"), ...)
 }
 \arguments{
   \item{x}{
     An object of class 'h2o.ensemble_performance', which is returned from the \code{\link[h2oEnsemble]{h2o.ensemble_performance}} function.
   }
   \item{metric}{
-    Metric to use for printed performance. Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+    Metric to use for printed performance. Can be one of "AUTO", "logloss", "MSE", "AUC", "r2".
   }
   \item{...}{
     Additional arguments passed on to the function.

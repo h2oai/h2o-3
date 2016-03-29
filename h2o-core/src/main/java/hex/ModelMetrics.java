@@ -21,7 +21,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   final Key _frameKey;
   final ModelCategory _model_category;
   final long _model_checksum;
-  final long _frame_checksum;
+  long _frame_checksum;
   public final long _scoring_time;
 
   // Cached fields - cached them when needed
@@ -38,7 +38,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _frameKey = frame._key;
     _model_category = model._output.getModelCategory();
     _model_checksum = model.checksum();
-    _frame_checksum = frame.checksum();
+    try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
     _scoring_time = System.currentTimeMillis();
   }

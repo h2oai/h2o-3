@@ -150,7 +150,7 @@ class H2OEstimator(ModelBase):
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
-    kwargs = dict([(k, (kwargs[k]).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+    kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self._compute_algo()
 
     model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))
@@ -163,6 +163,15 @@ class H2OEstimator(ModelBase):
     if '_rest_version' in list(kwargs.keys()): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
     else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
     self._resolve_model(model.dest_key,model_json)
+
+  @staticmethod
+  def _keyify_if_H2OFrame(item):
+    if isinstance(item, H2OFrame):
+      return item.frame_id
+    elif isinstance(item, list) and all(i is None or isinstance(i, H2OFrame) for i in item):
+      return [h2o.h2o._quoted(i) if i is None else h2o.h2o._quoted(i.frame_id) for i in item]
+    else:
+      return item
 
   def _resolve_model(self, model_id, model_json):
     metrics_class, model_class = H2OEstimator._metrics_class(model_json)

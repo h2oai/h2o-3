@@ -273,6 +273,12 @@ final class RollupStats extends Iced {
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
+
+    /**
+     * Added to avoid deadlocks when running from idea in debug mode (evaluating toSgtring on mr task causes rollups to be computed)
+     * @return
+     */
+    @Override public String toString(){return "Roll(" + _fr.anyVec()._key +")";}
   }
 
   static void start(final Vec vec, Futures fs, boolean computeHisto) {
@@ -443,69 +449,65 @@ final class RollupStats extends Iced {
       tryComplete();
     }
 
-    final void computeHisto(final RollupStats rs, Vec vec, final Value nnn){
+    final void computeHisto(final RollupStats rs, Vec vec, final Value nnn) {
       // All NAs or non-math; histogram has zero bins
-      if( rs._naCnt == vec.length() || vec.isUUID() ) {
+      if (rs._naCnt == vec.length() || vec.isUUID()) {
         rs._bins = new long[0];
         installResponse(nnn, rs);
         return;
       }
       // Constant: use a single bin
-      double span = rs._maxs[0]-rs._mins[0];
-      final long rows = vec.length()-rs._naCnt;
-      assert rows > 0:"rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
-      if( span==0 ) {
+      double span = rs._maxs[0] - rs._mins[0];
+      final long rows = vec.length() - rs._naCnt;
+      assert rows > 0 : "rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
+      if (span == 0) {
         rs._bins = new long[]{rows};
         installResponse(nnn, rs);
         return;
       }
       // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
       // - unless the count gets too high; allow a very high count for categoricals.
-      int nbins=MAX_SIZE;
-      if( rs._isInt && span < Integer.MAX_VALUE ) {
-        nbins = (int)span+1;      // 1 bin per int
+      int nbins = MAX_SIZE;
+      if (rs._isInt && span < Integer.MAX_VALUE) {
+        nbins = (int) span + 1;      // 1 bin per int
         int lim = vec.isCategorical() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
-        nbins = Math.min(lim,nbins); // Cap nbins at sane levels
+        nbins = Math.min(lim, nbins); // Cap nbins at sane levels
       }
-      addToPendingCount(1);
-      new Histo(new H2OCallback<Histo>(this){
-        @Override public void callback(Histo histo) {
-          assert ArrayUtils.sum(histo._bins) == rows;
-          rs._bins = histo._bins;
-          // Compute percentiles from histogram
-          rs._pctiles = new double[Vec.PERCENTILES.length];
-          int j = 0;                 // Histogram bin number
-          int k = 0;                 // The next non-zero bin after j
-          long hsum = 0;             // Rolling histogram sum
-          double base = rs.h_base();
-          double stride = rs.h_stride();
-          double lastP = -1.0;       // any negative value to pass assert below first time
-          for (int i = 0; i < Vec.PERCENTILES.length; i++) {
-            final double P = Vec.PERCENTILES[i];
-            assert P>=0 && P<=1 && P>=lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
-            lastP = P;
-            double pdouble = 1.0 + P*(rows-1);   // following stats:::quantile.default type 7
-            long pint = (long) pdouble;          // 1-based into bin vector
-            double h = pdouble - pint;           // any fraction h to linearly interpolate between?
-            assert P!=1 || (h==0.0 && pint==rows);  // i.e. max
-            while (hsum < pint) hsum += rs._bins[j++];
-            // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
-            // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
-            rs._pctiles[i] = base + stride * (j - 1);
-            if (h>0 && pint==hsum) {
-              // linearly interpolate between adjacent non-zero bins
-              //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
-              // AND ii) h>0 so we do need to find the next non-zero bin
-              if (k<j) k=j; // if j jumped over the k needed for the last P, catch k up to j
-                            // Saves potentially winding k forward over the same zero stretch many times
-              while (rs._bins[k]==0) k++;  // find the next non-zero bin
-              rs._pctiles[i] += h * stride * (k-j+1);
-            } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
-            // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
-          }
-          installResponse(nnn, rs);
-        }
-      },rs,nbins).dfork(vec); // intentionally using dfork here to increase priority level
+      Histo histo = new Histo(null, rs, nbins).doAll(vec);
+      assert ArrayUtils.sum(histo._bins) == rows;
+      rs._bins = histo._bins;
+      // Compute percentiles from histogram
+      rs._pctiles = new double[Vec.PERCENTILES.length];
+      int j = 0;                 // Histogram bin number
+      int k = 0;                 // The next non-zero bin after j
+      long hsum = 0;             // Rolling histogram sum
+      double base = rs.h_base();
+      double stride = rs.h_stride();
+      double lastP = -1.0;       // any negative value to pass assert below first time
+      for (int i = 0; i < Vec.PERCENTILES.length; i++) {
+        final double P = Vec.PERCENTILES[i];
+        assert P >= 0 && P <= 1 && P >= lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
+        lastP = P;
+        double pdouble = 1.0 + P * (rows - 1);   // following stats:::quantile.default type 7
+        long pint = (long) pdouble;          // 1-based into bin vector
+        double h = pdouble - pint;           // any fraction h to linearly interpolate between?
+        assert P != 1 || (h == 0.0 && pint == rows);  // i.e. max
+        while (hsum < pint) hsum += rs._bins[j++];
+        // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
+        // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
+        rs._pctiles[i] = base + stride * (j - 1);
+        if (h > 0 && pint == hsum) {
+          // linearly interpolate between adjacent non-zero bins
+          //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
+          // AND ii) h>0 so we do need to find the next non-zero bin
+          if (k < j) k = j; // if j jumped over the k needed for the last P, catch k up to j
+          // Saves potentially winding k forward over the same zero stretch many times
+          while (rs._bins[k] == 0) k++;  // find the next non-zero bin
+          rs._pctiles[i] += h * stride * (k - j + 1);
+        } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
+        // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
+      }
+      installResponse(nnn, rs);
     }
   }
 }

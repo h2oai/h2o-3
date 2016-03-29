@@ -27,7 +27,9 @@
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
                          col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL) {
   parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings, parse_type=parse_type)
-
+  for(w in parse.params$warnings){
+    cat('WARNING:',w,'\n')
+  }
   parse.params <- list(
             source_frames = .collapse.char(parse.params$source_frames),
             destination_frame  = parse.params$destination_frame,
@@ -91,7 +93,6 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
   if( !is.null(na.strings) ) parseSetup.params$na_strings <- .collapse.array(na.strings)
 
   parseSetup <- .h2o.__remoteSend(.h2o.__PARSE_SETUP, method = "POST", .params = parseSetup.params)
-
   # set the column names
   if (!is.null(col.names)) {
     parseSetup$column_names <- if(is.H2OFrame(col.names)) colnames(col.names) else col.names
@@ -153,7 +154,8 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
         column_types       = parseSetup$column_types,
         na_strings         = parseSetup$na_strings,
         chunk_size         = parseSetup$chunk_size,
-        delete_on_done     = TRUE
+        delete_on_done     = TRUE,
+        warnings           = parseSetup$warnings
         )
 }
 

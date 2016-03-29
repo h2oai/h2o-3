@@ -1220,25 +1220,61 @@ public class Frame extends Lockable<Frame> {
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   private static class DeepSelect extends MRTask<DeepSelect> {
+
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      Chunk pred = chks[chks.length-1];
-      BufferedString tmpStr = new BufferedString();
-      for( int j = 0; j < chks.length - 1; j++ ) {
-        Chunk chk = chks[j];
-        NewChunk nchk = nchks[j];
-        for(int i = 0; i < pred._len; ++i) {
-          if( pred.atd(i) != 0 && !pred.isNA(i) ) {
-            if( chk.isNA(i) )                   nchk.addNA();
-            else if( chk instanceof C16Chunk )  nchk.addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchk.addStr(chk.atStr(tmpStr, i));
-            else if( chk.hasFloat() )           nchk.addNum(chk.atd(i));
-            else                                nchk.addNum(chk.at8(i),0);
+      Chunk pred = chks[chks.length - 1];
+      int[] ids = new int[pred._len];
+      double[] vals = new double[ids.length];
+      int selected = pred.nonzeros(ids);
+      int[] selectedIds = new int[selected];
+      // todo keeping old behavior of ignoring missing, while R does insert missing into result
+      // filter out missing
+      int non_nas = 0;
+      for(int i = 0; i < selected; ++i)
+        if(!pred.isNA(ids[i]))
+          selectedIds[non_nas++] = ids[i];
+      selected = non_nas;
+      for (int i = 0; i < chks.length - 1; ++i) {
+        Chunk c = chks[i]; // do not need to inflate cause sparse does not compress doubles
+        NewChunk nc = nchks[i];
+        if (c.isSparseZero() || c.isSparseNA()) {
+          nc.alloc_indices(selectedIds.length);
+          nc.alloc_doubles(selectedIds.length);
+          nc._sparseNA = c.isSparseNA();
+          int n = c.asSparseDoubles(vals, ids);
+          int k = 0;
+          int l = -1;
+          for (int j = 0; j < n; ++j) {
+            while (k < selected && selectedIds[k] < ids[j]) ++k;
+            if (k == selected) break;
+            if (selectedIds[k] == ids[j]) {
+              int add = k - l - 1;
+              if(add > 0) {
+                if (c.isSparseZero()) nc.addZeros(add);
+                else nc.addNAs(add);
+              }
+              nc.addNum(vals[j]);
+              l = k;
+              k++;
+            }
           }
+          int add = selected - l - 1;
+          if(add > 0) {
+            if (c.isSparseZero()) nc.addZeros(add);
+            else nc.addNAs(add);
+          }
+          assert nc.len() == selected:"len = " + nc.len() + ", selected = " + selected;
+        } else {
+          NewChunk src = new NewChunk(c);
+          src = c.inflate_impl(src);
+//          if(src.sparseNA() || src.sparseZero())
+//            src.cancel_sparse();
+          for (int j = 0; j < selected; ++j)
+            src.add2Chunk(nc, selectedIds[j]);
         }
       }
     }
   }
-
   private String[][] domains(int [] cols){
     Vec[] vecs = vecs();
     String[][] res = new String[cols.length][];
