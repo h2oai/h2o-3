@@ -66,7 +66,7 @@ print.h2o.ensemble_performance <- function(x, metric = c("AUTO", "logloss", "MSE
     } else {
       decreasing <- TRUE
     }
-    cat("\n\nBase learner performance, sorted by metric:\n")
+    cat("\nBase learner performance, sorted by specified metric:\n")
     res <- res[order(res[, metric], decreasing = decreasing), ]
     print(res)
   }

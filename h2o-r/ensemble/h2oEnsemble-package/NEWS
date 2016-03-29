@@ -2,12 +2,18 @@
 
 h2oEnsemble (devel)
 -----------------
-* TO DO: Add utility function, `h2o.stack` which takes as input a list of "H2OModel" objects and returns an object of class, "h2o.ensemble".  
 * TO DO: Remove a learner from the level-one matrix, Z, if the algorithm fails to run.
 * TO DO: Add a check that CV folds produce training sets that have both pos/neg examples instead of a constant response col (in the case of imbalanced data)
 * TO DO: Update the `runtime` list to include times for `cv` and `baselearning`.  These were dropped in version 0.0.5.
 * TO DO: Add ability to generate predicted values using the `validation_frame` argument; currently this arg is ignored and doesn't do anything, and predictions must be made with the `predict.h2o.ensemble` function.  This should also include setting a new output object to store metrics.
 * TO DO: Add support for multi-class classification.
+
+
+h2oEnsemble 0.1.8 (2016-03-29)
+-----------------
+* Added new ensembling function, `h2o.stack`, which takes a list of "H2OModel" objects as input, along with a metalearner, and returns an object of class, "h2o.ensemble".  Documented here: https://0xdata.atlassian.net/browse/PUBDEV-2638  
+* Fixed bug in `print.h2o.ensemble_performance` that caused error when `score_base_models = FALSE`. Documented here: https://0xdata.atlassian.net/browse/PUBDEV-2780
+* Restricted the metrics argument in `print.h2o.ensemble_performance` to metrics common to all algorithms and sorted the printed base learner results by the metric.
 
 
 h2oEnsemble 0.1.7 (2016-03-08)
