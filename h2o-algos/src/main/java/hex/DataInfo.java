@@ -824,8 +824,6 @@ public class DataInfo extends Keyed<DataInfo> {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
     public void setResponse(int i, double z) {response[i] = z;}
-
-    private void resetDense(){ Arrays.fill(numVals,0); }
   }
 
   /**
