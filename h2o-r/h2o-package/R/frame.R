@@ -1941,7 +1941,6 @@ mean.H2OFrame <- h2o.mean
 #   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #   "all.obs"               - presence of missing observations will throw an error
 #   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
-#   "pairwise.complete.obs" - uses all complete pairs of observations
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \donttest{
@@ -1952,16 +1951,17 @@ mean.H2OFrame <- h2o.mean
 #' }
 #' @export
 h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
-  if( na.rm ) stop("na.rm versions not impl")
-  if( is.null(y) ) y <- x
-  if(!missing(use)) {
-    if (use %in% c("pairwise.complete.obs", "na.or.complete"))
-  stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", or \"complete.obs\"")
-  } else
-  use <- "everything"
+  symmetric <- FALSE
+  if( is.null(y) ) {
+    y <- x
+    symmetric <- TRUE
+  }
+  if(missing(use)) {
+    if (na.rm) use <- "complete.obs" else use <- "everything"
+  }
   # Eager, mostly to match prior semantics but no real reason it need to be
-  expr <- .newExpr("var",x,y,.quote(use))
-  if( (nrow(x)==1L || ncol(x)==1L) ) .eval.scalar(expr)
+  expr <- .newExpr("var",x,y,.quote(use),symmetric)
+  if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
   else .fetch.data(expr,ncol(x))
 }
 
