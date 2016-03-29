@@ -335,6 +335,12 @@ public class DataInfo extends Keyed<DataInfo> {
     res._valid = true;
     res._interactions=_interactions;
     res._interactionColumns=_interactionColumns;
+
+    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
+    for( Vec v: res._adaptedFrame.vecs() )
+      if( v instanceof InteractionWrappedVec )
+        if( null==DKV.get(v._key) )
+          DKV.put(v);
     return res;
   }
 
@@ -648,7 +654,7 @@ public class DataInfo extends Keyed<DataInfo> {
     } else {
       for (int i = _cats; i <= _nums; i++) {
         InteractionWrappedVec v;
-        if( i >= _adaptedFrame._names.length ) break;
+        if( i >= n ) break;
         if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domains() != null)) { // in this case, get the categoricalOffset
           for (int j = _useAllFactorLevels?0:1; j < v.domains().length; ++j) {
             if (getCategoricalIdFromInteraction(i, j) < 0) continue;
@@ -932,6 +938,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int numValsIdx=0; // since we're dense, need a second index to track interaction nums
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
+        row.numVals[i]=0;
         int offset = getInteractionOffset(chunks,_cats+i,rid);
         if( offset >=0 )
           row.numVals[numValsIdx+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
