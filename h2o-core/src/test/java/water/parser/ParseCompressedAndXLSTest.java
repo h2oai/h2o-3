@@ -65,7 +65,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
         assertTrue("Should have thrown ParseException since file isn't XLS file",false); // fail - should've thrown
         k1.delete();
       } catch (Throwable t) {
-        assertTrue(t instanceof H2OParseException || t.getCause() instanceof H2OParseException);
+        assertTrue(t instanceof ParseDataset.H2OParseException || t.getCause() instanceof ParseDataset.H2OParseException);
       }
     } finally {
       if( k1 != null ) k1.delete();

@@ -139,6 +139,8 @@ setMethod("show", "H2OModel", function(object) {
   if( !is.null(model.parts$vm) ) print(model.parts$vm)
   cat("\n")
   if( !is.null(model.parts$xm) ) print(model.parts$xm)
+  cat("\n")
+  if( !is.null(model.parts$xms) ) print(model.parts$xms)
 })
 
 #'
@@ -164,6 +166,10 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(model.parts$tm) ) print(model.parts$tm)
   cat("\n")
   if( !is.null(model.parts$vm) ) print(model.parts$vm)
+  cat("\n")
+  if( !is.null(model.parts$xm) ) print(model.parts$xm)
+  cat("\n")
+  if( !is.null(model.parts$xms) ) print(model.parts$xms)
 
   # History
   cat("\n")
@@ -395,9 +401,9 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
   if( !is.null(object@metrics) ) {
     callNextMethod(object)  # call super
     if( object@on_train ) .showMultiMetrics(object, "Training")
-    if( object@on_valid ) .showMultiMetrics(object, "Validation")
-    if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
-    if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
+    else if( object@on_valid ) .showMultiMetrics(object, "Validation")
+    else if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
+    else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class

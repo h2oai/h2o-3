@@ -56,6 +56,10 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
   @API(help="Sample data", direction=API.Direction.OUTPUT)
   public String[][] data;
 
+  @API(help="Warnings", direction=API.Direction.OUTPUT)
+  public String[] warnings;
+
+
   @API(help="Size of individual parse tasks", direction=API.Direction.OUTPUT)
   public int chunk_size = FileVec.DFLT_CHUNK_SIZE;
 

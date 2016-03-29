@@ -5,6 +5,7 @@ import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.PojoUtils;
 
 import java.util.*;
 
@@ -194,16 +195,56 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                       C search_criteria) {
       _params = params;
       _hyperParams = hyperParams;
-
-      for (String key : hyperParams.keySet())
-        if (0 == hyperParams.get(key).length)
-          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
-
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
       _search_criteria = search_criteria;
-    }
+
+      // Sanity check the hyperParams map, and check it against the params object
+      MP defaults = null;
+      try {
+        defaults = (MP) params.getClass().newInstance();
+      }
+      catch (Exception e) {
+        throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to getht edefault values.");
+      }
+
+      for (String key : hyperParams.keySet()) {
+        // Throw if the user passed an empty value list:
+        Object[] values = hyperParams.get(key);
+        if (0 == values.length)
+          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
+
+        if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
+
+        // Ugh.  Java callers, like the JUnits or Sparkling Water users, use a leading _.  REST users don't.
+        String prefix = (key.startsWith("_") ? "" : "_");
+
+        // Throw if params has a non-default value which is not in the hyperParams map
+        Object defaultVal = PojoUtils.getFieldValue(defaults, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
+        Object actualVal = PojoUtils.getFieldValue(params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
+
+        if (defaultVal != null && actualVal != null && !Arrays.asList(values).contains(actualVal)) {
+          // both are set
+          if (defaultVal.getClass().isArray() &&
+              // array
+              !PojoUtils.arraysEquals(defaultVal, actualVal)) {
+              throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+          } // array
+          if (!defaultVal.getClass().isArray() &&
+              // ! array
+              !defaultVal.equals(actualVal)) {
+            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+          } // ! array
+        } // both are set: defaultVal != null && actualVal != null
+
+        // TODO: contains probably doesn't work properly with arrays
+        if (defaultVal == null && !(actualVal == null) && !Arrays.asList(values).contains(actualVal)) {
+          // only actual is set
+            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+        }
+      } // for all keys
+    } // BaseWalker()
 
     @Override
     public String[] getHyperParamNames() {

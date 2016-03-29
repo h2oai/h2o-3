@@ -117,11 +117,14 @@ public abstract class Parser extends Iced {
     private int _cidx0=-1, _cidx1=-1; // Chunk #s
     private int _coff0=-1, _coff1=-1; // Last used byte in a chunk
     private StreamData(InputStream is){_is = is;}
+    long _gOff;
     @Override public byte[] getChunkData(int cidx) {
       if( cidx == _cidx0 ) return _bits0;
+      _gOff = _bits0.length;
       if( cidx == _cidx1 ) return _bits1;
       assert cidx==_cidx0+1 || cidx==_cidx1+1;
       byte[] bits = _cidx0<_cidx1 ? _bits0 : _bits1;
+      _gOff += bits.length;
       if( _cidx0<_cidx1 ) { _cidx0 = cidx; _coff0 = -1; }
       else                { _cidx1 = cidx; _coff1 = -1; }
       // Read as much as the buffer will hold
@@ -151,6 +154,11 @@ public abstract class Parser extends Iced {
     @Override public void setChunkDataStart(int cidx, int offset) { 
       if( _cidx0 == cidx ) _coff0 = offset;
       if( _cidx1 == cidx ) _coff1 = offset;
+    }
+
+    @Override
+    public long getGlobalByteOffset() {
+      return 0;
     }
   }
 }

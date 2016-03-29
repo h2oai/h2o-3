@@ -683,8 +683,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms, double mse_train, double mse_valid ) {
-      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this,mse_train,mse_valid));
+    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms) {
+      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
     }
 
   }

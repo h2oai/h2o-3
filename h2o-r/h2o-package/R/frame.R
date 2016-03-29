@@ -244,7 +244,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
       for( i in 1:length(data) ) {  # Set factor levels
         dom <- res$columns[[i]]$domain
-        if( !is.null(dom) ) # H2O has a domain; force R to do so also
+        if( !is.null(dom) && length(dom)>0 ) # H2O has a domain; force R to do so also
           data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
         else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
           data[,i] <- as.character(data[,i]) # Force to string type
@@ -1941,7 +1941,6 @@ mean.H2OFrame <- h2o.mean
 #   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #   "all.obs"               - presence of missing observations will throw an error
 #   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
-#   "pairwise.complete.obs" - uses all complete pairs of observations
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \donttest{
@@ -1955,12 +1954,9 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   symmetric <- FALSE
   if( is.null(y) ) {
     y <- x
-    if( ncol(x) > 1 && nrow(x) > 1) symmetric <- TRUE
+    symmetric <- TRUE
   }
-  if(!missing(use)) {
-    if (use == "na.or.complete")
-      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", \"complete.obs\", or \"pairwise.complete.obs\"")
-  } else {
+  if(missing(use)) {
     if (na.rm) use <- "complete.obs" else use <- "everything"
   }
   # Eager, mostly to match prior semantics but no real reason it need to be

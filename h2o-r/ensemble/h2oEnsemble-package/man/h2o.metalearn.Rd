@@ -97,8 +97,7 @@ Erin LeDell \email{erin@h2o.ai}
     
 # An example of binary classification on a local machine using h2o.ensemble
 
-library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
+library(h2oEnsemble)  # Requires version >=0.1.7 of h2oEnsemble
 localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
@@ -135,38 +134,65 @@ fit <- h2o.ensemble(x = x, y = y,
 perf <- h2o.ensemble_performance(fit, newdata = test)
 print(perf, metric = "AUC")
 
+# Base learner performance, sorted by specified metric:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+# 
+# 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
 # Ensemble performance (AUC): 0.786960998427388
-# 
-# Base learner performance:
+
+
+# Now let's re-train the metalearner fit to see if we get better performance.
+# Previously, we used a GLM metalearner, and now we will try a non-negative GLM.
+
+h2o.glm_nn <- function(..., non_negative = TRUE) h2o.glm.wrapper(..., non_negative = non_negative)
+newfit <- h2o.metalearn(fit, metalearner = "h2o.glm_nn")
+
+# Compute test set performance:
+newperf <- h2o.ensemble_performance(newfit, newdata = test)
+print(newperf, metric = "AUC") 
+
+# Base learner performance, sorted by specified metric:
 #              learner       AUC
 # 1    h2o.glm.wrapper 0.6871334
 # 2 h2o.randomForest.1 0.7785505
 # 3          h2o.gbm.1 0.7803885
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786998403256231
+
+# Ok, so the non-negative restriction improved the results, but not by much in this case.
 
 
-# Now let's re-train the metalearner fit to see if we get better performance.
-# Previously, we used a GLM metalearner, and now we will try a GBM.
+# Next we will try a GBM (defined above) for a metalearner.
 newfit <- h2o.metalearn(fit, metalearner = "h2o.gbm.1")
 
 # Compute test set performance:
 newperf <- h2o.ensemble_performance(newfit, newdata = test)
 print(newperf, metric = "AUC") 
 
+# Base learner performance, sorted by specified metric:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+# 
+# 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
 # Ensemble performance (AUC): 0.780514980030648
-# 
-# Base learner performance:
-#              learner       AUC
-# 1    h2o.glm.wrapper 0.6871334
-# 2 h2o.randomForest.1 0.7785505
-# 3          h2o.gbm.1 0.7803885
 
 
 # We see that on this dataset & base learner combination,
@@ -183,17 +209,18 @@ newperf <- h2o.ensemble_performance(newfit, newdata = test)
 print(newperf, metric = "AUC") 
 
 
-# H2O Ensemble Performance on <newdata>:
-# ----------------
-# Family: binomial
-# 
-# Ensemble performance (AUC): 0.786791590750952
-# 
-# Base learner performance:
+# Base learner performance, sorted by specified metric:
 #              learner       AUC
 # 1    h2o.glm.wrapper 0.6871334
 # 2 h2o.randomForest.1 0.7785505
 # 3          h2o.gbm.1 0.7803885
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786774296045143
 
 # Here we have performance similar to a GLM.  
 # It's a good idea to always try at least a GLM and DNN.

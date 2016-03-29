@@ -35,6 +35,7 @@
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
 #'        Must be "AUTO", "Random" or "Modulo"
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
@@ -60,6 +61,7 @@ h2o.kmeans <- function(training_frame, x, k,
                        fold_column = NULL,
                        fold_assignment = c("AUTO","Random","Modulo"),
                        keep_cross_validation_predictions = FALSE,
+                       keep_cross_validation_fold_assignment = FALSE,
                        max_runtime_secs=0)
 {
   # Training_frame may be a key or an H2OFrame object
@@ -93,6 +95,7 @@ h2o.kmeans <- function(training_frame, x, k,
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
+  if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
 
   # Check if init is an acceptable set of user-specified starting points

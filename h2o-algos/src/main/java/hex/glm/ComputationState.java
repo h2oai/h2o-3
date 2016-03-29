@@ -10,6 +10,7 @@ import hex.optimization.ADMM;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import water.H2O;
+import water.Job;
 import water.Key;
 import water.MemoryManager;
 import water.util.ArrayUtils;
@@ -39,14 +40,14 @@ public final class ComputationState {
   private double[] _beta; // vector of coefficients corresponding to active data
   final DataInfo _dinfo;
   private GLMGradientSolver _gslvr;
-  private final Key _jobKey;
+  private final Job _job;
 
   /**
    *
    * @param nclasses - number of classes for multinomial, 1 for everybody else
    */
-  public ComputationState(Key jobKey, GLMParameters parms, DataInfo dinfo, BetaConstraint bc,  int nclasses){
-    _jobKey = jobKey;
+  public ComputationState(Job job, GLMParameters parms, DataInfo dinfo, BetaConstraint bc, int nclasses){
+    _job = job;
     _parms = parms;
     _bc = bc;
     _activeBC = _bc;
@@ -65,7 +66,7 @@ public final class ComputationState {
     _lambda = lambda;
     applyStrongRules();
     adjustToNewLambda();
-    _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,l2pen(),_activeBC);
+    _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
   }
   public double [] beta(){
     return _beta;
@@ -139,7 +140,7 @@ public final class ComputationState {
         _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, newlySelected));
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_jobKey,_parms,_activeData,(1-_alpha)*_lambda,_bc);
+        _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
         assert _beta.length == newlySelected;
         return newlySelected;
       }
@@ -267,7 +268,7 @@ public final class ComputationState {
     if(_activeData._activeCols != null)
       beta = ArrayUtils.expandAndScatter(beta,_dinfo.fullN() + 1,_activeData._activeCols);
     int [] activeCols = _activeData.activeCols();
-    _gslvr = new GLMGradientSolver(_jobKey,_parms,_dinfo,(1-_alpha)*_lambda,_bc);
+    _gslvr = new GLMGradientSolver(_job,_parms,_dinfo,(1-_alpha)*_lambda,_bc);
     GLMGradientInfo ginfo = _gslvr.getGradient(beta);
     double[] grad = ginfo._gradient.clone();
     double err = 1e-4;
@@ -301,7 +302,7 @@ public final class ComputationState {
         _ginfo = new GLMGradientInfo(ginfo._likelihood, ginfo._objVal, ArrayUtils.select(ginfo._gradient, newCols));
         _activeData = _dinfo.filterExpandedColumns(newCols);
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
-        _gslvr = new GLMGradientSolver(_jobKey, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+        _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
         return false;
       }
     }
@@ -315,7 +316,7 @@ public final class ComputationState {
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
-    _gslvr = new GLMGradientSolver(_jobKey, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
+    _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
     return activeCols;
   }
 

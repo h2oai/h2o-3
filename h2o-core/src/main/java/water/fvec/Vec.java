@@ -624,7 +624,8 @@ public class Vec extends Keyed<Vec> {
   public final boolean isBad() { return naCnt()==length(); }
   /** Vecs's mean 
    *  @return Vec's mean */
-  public double mean() { return rollupStats()._mean; }
+  public double mean() { 
+    return rollupStats()._mean; }
   /** Vecs's standard deviation
    *  @return Vec's standard deviation */
   public double sigma(){ return rollupStats()._sigma; }

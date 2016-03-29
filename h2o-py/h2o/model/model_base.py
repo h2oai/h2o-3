@@ -663,3 +663,45 @@ class ModelBase(object):
     """
     if len(y_actual) != len(y_predicted):
       raise ValueError("Row mismatch: [{},{}]".format(len(y_actual),len(y_predicted)))
+
+  def cross_validation_models(self):
+    """
+    Obtain a list of cross-validation models.
+    :return: list of H2OModel objects
+    """
+    cvmodels = self._model_json["output"]["cross_validation_models"]
+    if cvmodels is None: return None
+    m = []
+    for p in cvmodels: m.append(h2o.get_model(p["name"]))
+    return m
+
+  def cross_validation_predictions(self):
+    """
+    Obtain the (out-of-sample) holdout predictions of all cross-validation models on their holdout data.
+    Note that the predictions are expanded to the full number of rows of the training data, with 0 fill-in.
+    :return: list of H2OFrame objects
+    """
+    preds = self._model_json["output"]["cross_validation_predictions"]
+    if preds is None: return None
+    m = []
+    for p in preds: m.append(h2o.get_frame(p["name"]))
+    return m
+
+  def cross_validation_holdout_predictions(self):
+    """
+    Obtain the (out-of-sample) holdout predictions of all cross-validation models on the training data.
+    This is equivalent to summing up all H2OFrames returned by cross_validation_predictions.
+    :return: H2OFrame
+    """
+    preds = self._model_json["output"]["cross_validation_holdout_predictions_frame_id"]
+    if preds is None: return None
+    return h2o.get_frame(preds["name"])
+
+  def cross_validation_fold_assignment(self):
+    """
+    Obtain the cross-validation fold assignment for all rows in the training data.
+    :return: H2OFrame
+    """
+    fid = self._model_json["output"]["cross_validation_fold_assignment_frame_id"]
+    if fid is None: return None
+    return h2o.get_frame(fid["name"])
