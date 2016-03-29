@@ -318,7 +318,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public DataInfo scoringInfo(Frame adaptFrame){
     DataInfo res = deep_clone();
-    res._normMul = null;
+//    res._normMul = null;
     res._normRespSub = null;
     res._normRespMul = null;
     res._normRespSub = null;
@@ -338,9 +338,11 @@ public class DataInfo extends Keyed<DataInfo> {
 
     // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
     for( Vec v: res._adaptedFrame.vecs() )
-      if( v instanceof InteractionWrappedVec )
-        if( null==DKV.get(v._key) )
-          DKV.put(v);
+      if( v instanceof InteractionWrappedVec ) {
+        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
+        ((InteractionWrappedVec)v)._useAllFactorLevels=_skipMissing;
+        if (null == DKV.get(v._key)) DKV.put(v);
+      }
     return res;
   }
 
@@ -356,7 +358,6 @@ public class DataInfo extends Keyed<DataInfo> {
         // denormalize only the numeric coefs (categoricals are not normalized)
         final int numoff = numStart();
         for (int i = numoff; i < N-1; i++) {
-          if( isInteractionVec(i) ) continue; // interactions are not normalized!
           double b = beta[off + i] * _normMul[i - numoff];
           norm += b * _normSub[i - numoff]; // Also accumulate the intercept adjustment
           beta[off + i] = b;
@@ -536,34 +537,33 @@ public class DataInfo extends Keyed<DataInfo> {
     int idx=0; // idx!=i when interactions are in play, otherwise, it's just 'i'
     for (int i = 0; i < n; ++i) {
       Vec v = _adaptedFrame.vec(vecStart + i);
-      boolean isIWV = isInteractionVec(vecStart+i);
+      boolean isIWV = v instanceof InteractionWrappedVec;
       switch (t) {
         case STANDARDIZE:
-          normMul[idx] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          if( isIWV )
-            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
-              normMul[j]=1;
-          normSub[idx] = v.mean();
+          if( isIWV ) {
+            InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+            for(int offset=0;offset<iwv.expandedLength();++offset) {
+              normMul[idx+offset] = iwv.getMul(offset+(_useAllFactorLevels?0:1));
+              normSub[idx+offset] = iwv.getSub(offset+(_useAllFactorLevels?0:1));
+            }
+          } else {
+            normMul[idx] = (v.sigma() != 0) ? 1.0 / v.sigma() : 1.0;
+            normSub[idx] = v.mean();
+          }
           break;
         case NORMALIZE:
+          if( isIWV ) throw H2O.unimpl();
           normMul[idx] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
-          if( isIWV )
-            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
-              normMul[j]=1;
           normSub[idx] = v.mean();
           break;
         case DEMEAN:
+          if( isIWV ) throw H2O.unimpl();
           normMul[idx] = 1;
-          if( isIWV )
-            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
-              normMul[j]=1;
           normSub[idx] = v.mean();
           break;
         case DESCALE:
+          if( isIWV ) throw H2O.unimpl();
           normMul[idx] = (v.sigma() != 0)?1.0/v.sigma():1.0;
-          if( isIWV )
-            for(int j=idx+1;j<nextNumericIdx(i)+idx;j++)
-              normMul[j]=1;
           normSub[idx] = 0;
           break;
         default:
@@ -824,6 +824,8 @@ public class DataInfo extends Keyed<DataInfo> {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
     public void setResponse(int i, double z) {response[i] = z;}
+
+    private void resetDense(){ Arrays.fill(numVals,0); }
   }
 
   /**
@@ -938,11 +940,19 @@ public class DataInfo extends Keyed<DataInfo> {
     int numValsIdx=0; // since we're dense, need a second index to track interaction nums
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
-        row.numVals[i]=0;
-        int offset = getInteractionOffset(chunks,_cats+i,rid);
-        if( offset >=0 )
-          row.numVals[numValsIdx+offset] = chunks[_cats+i].atd(rid);  // essentially: chunks[v1].atd(rid) * chunks[v2].atd(rid) (see InteractionWrappedVec)
-        numValsIdx+=nextNumericIdx(i);
+        InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vec(_cats+i);
+        int interactionOffset = getInteractionOffset(chunks,_cats+i,rid);
+        for(int offset=0;offset<iwv.expandedLength();++offset) {
+          double d=0;
+          if( offset==interactionOffset ) d=chunks[_cats + i].atd(rid);
+          if( Double.isNaN(d) )
+            d = iwv.t!=null?iwv.getSub(offset+(_useAllFactorLevels?0:1)):iwv.v1().mean()*iwv.v2().mean();
+          if( _normMul != null && _normSub != null ) {
+            d -= iwv.getSub(offset+(_useAllFactorLevels?0:1));
+            d *= iwv.getMul(offset+(_useAllFactorLevels?0:1));
+          }
+          row.numVals[numValsIdx++]=d;
+        }
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
