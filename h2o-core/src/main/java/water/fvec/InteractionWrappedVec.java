@@ -30,11 +30,12 @@ public class InteractionWrappedVec extends WrappedVec {
   private final Key<Vec> _masterVecKey2;
   private transient Vec _masterVec1;  private String[] _v1Domain;
   private transient Vec _masterVec2;  private String[] _v2Domain;
-  public final boolean _useAllFactorLevels;
-  private boolean _skipMissing;
-  private boolean _standardize;
+  public boolean _useAllFactorLevels;
+  public boolean _skipMissing;
   private long _bins[];
 
+
+  public GetMeanTask t;
   private final String _v1Enums[]; // only interact these enums from vec 1
   private final String _v2Enums[]; // only interact these enums from vec 2
 
@@ -48,9 +49,9 @@ public class InteractionWrappedVec extends WrappedVec {
     _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
     _skipMissing=skipMissing;
-    _standardize=standardize;
     setupDomain();  // performs MRTask if both vecs are categorical!!
     DKV.put(this);
+    if( null!=t ) t.doAll(this);
   }
 
   public String[] v1Domain() { return _v1Enums==null?_v1Domain:_v1Enums; }
@@ -75,8 +76,73 @@ public class InteractionWrappedVec extends WrappedVec {
     else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
   }
 
-  @Override public double mean() { return 0; } // do no manip on interaction vecs (protects from auto normalization etc.)
-  @Override public double sigma() {return 1; } // no scaling
+
+  public double getSub(int i) {
+    if( null==t ) return mean();
+    return t._d[i];
+  }
+  public double getMul(int i) {
+    double sigma;
+    if( null==t ) sigma=sigma();
+    else          sigma=t._sigma[i];
+    return sigma==0?1:1./sigma;
+  }
+
+  private static class GetMeanTask extends MRTask<GetMeanTask> {
+    private double  _d[];    // means, NA skipped
+    private double _sigma[]; // sds, NA skipped
+    private long _rows;
+
+    private final int _len;
+    GetMeanTask(int len) { _len=len; }
+
+    @Override public void map(Chunk c) {
+      _d = new double[_len];
+      _sigma = new double[_len];
+      InteractionWrappedChunk cc = (InteractionWrappedChunk)c;
+      Chunk lC = cc._c[0]; Chunk rC = cc._c[1];  // get the "left" chk and the "rite" chk
+      if( cc._c2IsCat ) { lC=rC; rC=cc._c[0]; }  // left is always cat
+      long rows=0;
+      for(int rid=0;rid<c._len;++rid) {
+        if( lC.isNA(rid) || rC.isNA(rid) ) continue; // skipmissing
+        int idx = (int)lC.at8(rid);
+        rows++;
+        for(int i=0;i<_d.length;++i) {
+          double x = i==idx?rC.atd(rid):0;
+          double delta = x - _d[i];
+          _d[i] += delta / rows;
+          _sigma[i] += delta * (x - _d[i]);
+        }
+      }
+      _rows=rows;
+    }
+    @Override public void reduce(GetMeanTask t) {
+      if (_rows == 0) { _d = t._d;  _sigma = t._sigma; }
+      else if(t._rows != 0){
+        for(int i=0;i<_d.length;++i) {
+          double delta = _d[i] - t._d[i];
+          _d[i] = (_d[i]* _rows + t._d[i] * t._rows) / (_rows + t._rows);
+          _sigma[i] += t._sigma[i] + delta * delta * _rows * t._rows / (_rows + t._rows);
+        }
+      }
+      _rows += t._rows;
+    }
+    @Override public void postGlobal() {
+      for(int i=0;i<_sigma.length;++i )
+        _sigma[i] = Math.sqrt(_sigma[i]/(_rows-1));
+    }
+  }
+
+  @Override public double mean() {
+    if( null==t && null==v1Domain() && null==v2Domain() )
+      return super.mean();
+    return 0;
+  }
+  @Override public double sigma() {
+    if( null==t && null==v1Domain() && null==v2Domain() )
+      return super.sigma();
+    return 1;
+  }
   @Override public int mode() {
     if( !isCategorical() ) throw H2O.unimpl();
     return ArrayUtils.maxIndex(_bins);
@@ -91,7 +157,8 @@ public class InteractionWrappedVec extends WrappedVec {
         setDomain(t._dom);
         _bins=t._bins;
         _type = Vec.T_CAT; // vec is T_NUM up to this point
-      }
+      } else
+        t = new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length);
     }
   }
 
@@ -177,11 +244,11 @@ public class InteractionWrappedVec extends WrappedVec {
     Chunk[] cs = new Chunk[2];
     cs[0] = (_masterVec1!=null?_masterVec1: (_masterVec1=_masterVecKey1.get())).chunkForChunkIdx(cidx);
     cs[1] = (_masterVec2!=null?_masterVec2: (_masterVec2=_masterVecKey2.get())).chunkForChunkIdx(cidx);
-    return new InteractionWrappedChunk(this, cs,_standardize);
+    return new InteractionWrappedChunk(this, cs);
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, false, _masterVecKey1, _masterVecKey2);
     if( null!=domain()  ) v.setDomain(domain());
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();
@@ -193,30 +260,16 @@ public class InteractionWrappedVec extends WrappedVec {
     private final boolean _c1IsCat; // left chunk is categorical
     private final boolean _c2IsCat; // rite chunk is categorical
     private final boolean _isCat;   // this vec is categorical
-    // these values are used for on-the-fly standardization
-    private final double _v1Sub;    // the mean of vec v1
-    private final double _v2Sub;    // the mean of vec v2
-    private double _v1Mul;    // the multiplier for vec v1
-    private double _v2Mul;    // the multiplier for vec v2
-    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c, boolean standardize) {
+    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
       _c1IsCat=_c[0]._vec.isCategorical();
       _c2IsCat=_c[1]._vec.isCategorical();
       _isCat = _vec.isCategorical();
-      _v1Sub=standardize?transformWrappedVec.v1().mean():0;
-      _v2Sub=standardize?transformWrappedVec.v2().mean():0;
-      _v1Mul=standardize?transformWrappedVec.v1().sigma():1;
-      _v2Mul=standardize?transformWrappedVec.v2().sigma():1;
-      if( _v1Mul==0 ) _v1Mul=1;
-      if( _v2Mul==0 ) _v2Mul=1;
-      _v1Mul=1./_v1Mul;
-      _v2Mul=1./_v2Mul;
     }
 
-    @Override public double atd_impl(int idx) {return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1: _v1Mul*(_c[0].atd(idx)-_v1Sub )) * ( _c2IsCat?1: _v2Mul*(_c[1].atd(idx)-_v2Sub) );}
-
+    @Override public double atd_impl(int idx) {return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );}
 //    @Override public double atd_impl(int idx) { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].atd(idx) ) * ( _c2IsCat?1:_c[1].atd(idx) ); }
     @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
     private String getKey(int idx) { return _c[0]._vec.domain()[(int)_c[0].at8(idx)] + _c[1]._vec.domain()[(int)_c[1].at8(idx)]; }
