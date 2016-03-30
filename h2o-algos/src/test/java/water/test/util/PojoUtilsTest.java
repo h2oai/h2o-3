@@ -1,5 +1,6 @@
-package water.util;
+package water.test.util;
 
+import water.util.PojoUtils;
 import hex.kmeans.KMeansModel;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
