@@ -258,7 +258,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             # check for conflicts:
             signature = '{method}({parms});'.format(method = method, parms = parms)
             if signature in signatures:
-                print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
+                print('ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature)
             else:
                 signatures[signature] = signature
 
