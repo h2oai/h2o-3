@@ -34,8 +34,10 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
 
     if simple_type == 'string':
         return simple_type.capitalize() + brackets
+    # TODO: for input keys are String; for output they are KeyV3 and children
     if h2o_type.startswith('Key<'): # Key<Frame> is a schema of FrameKeyVx
-        return 'String' + brackets
+#        return 'String' + brackets
+        return schema_name + brackets
     if simple_type in ['int', 'float', 'double', 'long', 'boolean', 'byte', 'short']:
         return simple_type + brackets
     if simple_type == 'enum':
@@ -71,6 +73,7 @@ def generate_pojo(schema, pojo_name):
         if field['type'].startswith('Map'):
             has_map = True
 
+    pojo.append("import com.google.gson.Gson;")
     if has_map:
         pojo.append("import java.util.Map;")
         pojo.append("")
@@ -109,9 +112,19 @@ def generate_pojo(schema, pojo_name):
         if not first:
             pojo.append("")
 
-        pojo.append("    /** {help} */".format(help=help))
-        pojo.append("    public {type} {name};".format(type=java_type, name=name))
+        if field['is_inherited']:
+            pojo.append("    /* INHERITED: {help} ".format(help=help))
+            pojo.append("     * public {type} {name};".format(type=java_type, name=name))
+            pojo.append("     */")
+        else:
+            pojo.append("    /** {help} */".format(help=help))
+            pojo.append("    public {type} {name};".format(type=java_type, name=name))
+
         first = False
+
+    pojo.append("    public String toString() {")
+    pojo.append("        return new Gson().toJson(this);")
+    pojo.append("    }")
 
     pojo.append("}")
     return pojo
@@ -140,7 +153,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
 
     public interface GitHubService {
         @GET("/users/{user}/repos")
-        List<Repo> listRepos(@Path("user") String user);
+        Call<List<Repo>> listRepos(@Path("user") String user);
     }
     '''
     pojos = {}
@@ -152,6 +165,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
     entity_pattern_str = r"/[0-9]+?/([^/]+)(/.*)?"  # Python raw string
     entity_pattern = re.compile(entity_pattern_str)
 
+    # Collect the endpoints for each REST entity
     for meta in endpoints_meta:
         h2o.H2O.verboseprint('finding entity for url_pattern: ' + meta['url_pattern'])
         m = entity_pattern.match(meta['url_pattern'])
@@ -176,13 +190,13 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
     # Walk across all the entities and generate a class with methods for all its endpoints:
     for entity in endpoints_by_entity:
         pojo = []
-        #signatures = {}
+        signatures = {}
 
         pojo.append("package water.bindings.proxies.retrofit;")
         pojo.append("")
         pojo.append("import water.bindings.pojos.*;")
-        pojo.append("import retrofit.*;")
-        pojo.append("import retrofit.http.*;")
+        pojo.append("import retrofit2.*;")
+        pojo.append("import retrofit2.http.*;")
         pojo.append("")
         pojo.append("public interface " + entity + " {")
 
@@ -198,6 +212,22 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             handler_method = meta['handler_method']
 
             method = handler_method
+
+            # NOTE: hackery due to the way the paths are formed: POST to /99/Grid/glm and to /3/Grid/deeplearning both call methods called train
+            if (entity == 'Grid' or entity == 'ModelBuilders') and (method == 'train'):
+                # /99/Grid/glm or /3/ModelBuilders/glm
+                pieces = path.split('/')
+                if len(pieces) != 4:
+                    raise Exception("Expected 3 parts to this path (something like /99/Grid/glm): " + path)
+                algo = pieces[3]
+                method = method + '_' + algo  # train_glm()
+            elif (entity == 'ModelBuilders') and (method == 'validate_parameters'):
+                # /3/ModelBuilders/glm/parameters
+                pieces = path.split('/')
+                if len(pieces) != 5:
+                    raise Exception("Expected 3 parts to this path (something like /3/ModelBuilders/glm/parameters): " + path)
+                algo = pieces[3]
+                method = method + '_' + algo  # validate_parameters_glm()
 
             # TODO: handle query parameters from RequestSchema
             if http_method == 'POST':
@@ -226,17 +256,17 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     first_parm = False
 
             # check for conflicts:
-            #signature = '{method}({parms});'.format(method = method, parms = parms)
-            #if signature in signatures:
-            #    print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
-            #else:
-            #    signatures[signature] = True
+            signature = '{method}({parms});'.format(method = method, parms = parms)
+            if signature in signatures:
+                print 'ERROR: found a duplicate method signature in entity ' + entity + ': ' + signature
+            else:
+                signatures[signature] = signature
 
             if not first: pojo.append('')
             if http_method == 'POST':
                 pojo.append('    @Headers("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")')
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
-            pojo.append('    {output_schema_name} {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
+            pojo.append('    Call<{output_schema_name}> {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
 
             first = False
 
@@ -331,62 +361,83 @@ for num in range(len(endpoints)):
     endpoints_meta.append(meta)
 
 ## Generate source code for a class for each entity (e.g., ModelBuilders):
-#retrofitProxies = generate_retrofit_proxies(endpoints_meta, all_schemas_map)
-#
-## TODO: makedirs only once!
-#
-## Write them out:
-#for entity, proxy in retrofitProxies.iteritems():
-#    save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + entity + '.java'
-#    save_dir = os.path.dirname(save_full)
-#
-#    # create dirs without race:
-#    try:
-#        os.makedirs(save_dir)
-#    except OSError as exception:
-#        if exception.errno != errno.EEXIST:
-#            raise
-#
-#    with open(save_full, 'w') as the_file:
-#        for line in proxy:
-#            the_file.write("%s\n" % line)
-#
-#
-######################################################
-## Write out an example program that uses the proxies.
-######################################################
-#retrofit_example = '''
-#package water.bindings.proxies.retrofit;
-#
-#import retrofit.*;
-#import retrofit.http.*;
-#import water.bindings.pojos.*;
-#
-#public class Example {
-#
-#    public static void main (String[] args) {
-#        RestAdapter restAdapter = new RestAdapter.Builder()
-#            .setEndpoint("http://localhost:54321")
-#            .build();
-#
-#        Frames framesService = restAdapter.create(Frames.class);
-#        Models modelsService = restAdapter.create(Models.class);
-#
-#        FramesV3 all_frames = framesService.list();
-#        ModelsV3 all_models = modelsService.list();
-#    }
-#}
-#'''
-#
-#save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + 'Example' + '.java'
-#save_dir = os.path.dirname(save_full)
-#
-## create dirs without race:
-#try:
-#    os.makedirs(save_dir)
-#except OSError as exception:
-#    if exception.errno != errno.EEXIST:
-#        raise
-#
-#with open(save_full, 'w') as the_file:
-#    the_file.write("%s\n" % retrofit_example)
+retrofitProxies = generate_retrofit_proxies(endpoints_meta, all_schemas_map)
+
+# TODO: makedirs only once!
+
+# Write them out:
+for entity, proxy in retrofitProxies.iteritems():
+    save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + entity + '.java'
+    save_dir = os.path.dirname(save_full)
+
+    # create dirs without race:
+    try:
+        os.makedirs(save_dir)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
+    with open(save_full, 'w') as the_file:
+        for line in proxy:
+            the_file.write("%s\n" % line)
+
+
+#####################################################
+# Write out an example program that uses the proxies.
+#####################################################
+retrofit_example = '''package water.bindings.proxies.retrofit;
+
+import water.bindings.pojos.*;
+import com.google.gson.Gson;
+import retrofit2.*;
+import retrofit2.http.*;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.Call;
+import java.io.IOException;
+
+public class Example {
+
+    public static void main (String[] args) {
+        Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl("http://localhost:54321/") // note trailing slash for Retrofit 2
+        .addConverterFactory(GsonConverterFactory.create())
+        .build();
+
+        Frames framesService = retrofit.create(Frames.class);
+        Models modelsService = retrofit.create(Models.class);
+
+        try {
+            // NOTE: the Call objects returned by the service can't be reused, but they can be cloned.
+            Response<FramesV3> all_frames_response = framesService.list().execute();
+            Response<ModelsV3> all_models_response = modelsService.list().execute();
+
+            if (all_frames_response.isSuccessful()) {
+                FramesV3 all_frames = all_frames_response.body();
+                System.out.println("All Frames: ");
+                System.out.println(all_frames);
+            }
+            if (all_models_response.isSuccessful()) {
+                ModelsV3 all_models = all_models_response.body();
+                System.out.println("All Models: ");
+                System.out.println(all_models);
+            }
+        }
+        catch (IOException e) {
+            System.err.println("Caught exception: " + e);
+        }
+    }
+}
+'''
+
+save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + 'Example' + '.java'
+save_dir = os.path.dirname(save_full)
+
+# create dirs without race:
+try:
+    os.makedirs(save_dir)
+except OSError as exception:
+    if exception.errno != errno.EEXIST:
+        raise
+
+with open(save_full, 'w') as the_file:
+    the_file.write("%s\n" % retrofit_example)

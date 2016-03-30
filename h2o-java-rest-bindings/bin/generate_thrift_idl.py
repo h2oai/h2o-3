@@ -166,19 +166,14 @@ def generate_enum(name, values):
     return struct
 
 # NOTE: not complete yet
-def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
+def generate_thrift_services(endpoints_meta, all_schemas_map):
     '''
-    Walk across all the endpoint metadata returning a map of classnames to interface definitions.
-    Retrofit interfaces look like this:
+    Walk across all the endpoint metadata returning a map of classnames to service definitions.
+    Thrift methods look like this:
 
-    public interface GitHubService {
-        @GET("/users/{user}/repos")
-        List<Repo> listRepos(@Path("user") String user);
-    }
+    bool postTweet(1:Tweet tweet) throws (1:TwitterUnavailable unavailable)
     '''
     structs = {}
-    thrift_type_map = { 'string': 'String' }
-
     endpoints_by_entity = {}  # entity (e.g., Frames) maps to an array of endpoints
 
     # For each endpoint grab the endpoint prefix (the entity), e.g. ModelBuilders, for use as the classname:
@@ -419,7 +414,7 @@ for num in range(len(endpoints)):
     endpoints_meta.append(meta)
 
 ## Generate source code for a class for each entity (e.g., ModelBuilders):
-#retrofitProxies = generate_retrofit_proxies(endpoints_meta, all_schemas_map)
+#retrofitProxies = generate_thrift_services(endpoints_meta, all_schemas_map)
 #
 ## TODO: makedirs only once!
 #
