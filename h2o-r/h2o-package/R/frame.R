@@ -1941,7 +1941,6 @@ mean.H2OFrame <- h2o.mean
 #   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #   "all.obs"               - presence of missing observations will throw an error
 #   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
-#   "pairwise.complete.obs" - uses all complete pairs of observations
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \donttest{
@@ -1955,12 +1954,9 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   symmetric <- FALSE
   if( is.null(y) ) {
     y <- x
-    if( ncol(x) > 1 && nrow(x) > 1) symmetric <- TRUE
+    symmetric <- TRUE
   }
-  if(!missing(use)) {
-    if (use == "na.or.complete")
-      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", \"complete.obs\", or \"pairwise.complete.obs\"")
-  } else {
+  if(missing(use)) {
     if (na.rm) use <- "complete.obs" else use <- "everything"
   }
   # Eager, mostly to match prior semantics but no real reason it need to be
@@ -2373,7 +2369,7 @@ h2o.cbind <- function(...) {
 #'
 #' @name h2o.rbind
 #' @param \dots A sequence of H2OFrame arguments. All datasets must exist on the same H2O instance
-#'        (IP and port) and contain the same number of rows.
+#'        (IP and port) and contain the same number and types of columns.
 #' @return An H2OFrame object containing the combined \dots arguments row-wise.
 #' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
 #' @examples

@@ -33,6 +33,10 @@ test.var <- function() {
 
   expect_equal(h2o_vec, r_vec, tol=1e-6)
 
+  for (i in c(1e1,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9)) { 
+    expect_equal(h2o.var(as.h2o(c(i,1+i,10+i))), 30 + 1/3);
+  }
+
   
 }
 

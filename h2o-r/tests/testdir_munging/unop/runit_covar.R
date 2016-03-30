@@ -32,7 +32,7 @@ test.var <- function() {
 run.var.tests <- function (g,h,one_row=FALSE,has_nas=FALSE) {
   h2o_g <- as.h2o(g)
   h2o_h <- as.h2o(h)
-  uses <- c("everything", "all.obs", "complete.obs", "pairwise.complete.obs")
+  uses <- c("everything", "all.obs", "complete.obs")
   if (has_nas) uses <- uses[-2]
   for (na.rm in c(FALSE, TRUE)) {
     for (use in uses) {

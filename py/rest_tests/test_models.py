@@ -41,6 +41,8 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
 
     grids_to_build = [
+        # setting a hyperparameter in both places:
+        # GridSpec.for_dataset('kmeans_prostate_grid', 'kmeans', datasets['prostate_clustering'], { 'k': 6 }, { 'k': [2, 3, 4] } ),
         GridSpec.for_dataset('kmeans_prostate_grid', 'kmeans', datasets['prostate_clustering'], { }, { 'k': [2, 3, 4] } ),
     
         GridSpec.for_dataset('glm_prostate_regression_grid', 'glm', datasets['prostate_regression'], {'family': 'gaussian'}, { 'lambda': [0.0001, 0.001, 0.01, 0.1] } ),

@@ -61,6 +61,7 @@ public class CNAXDChunk extends CNAXIChunk {
     if(_ridsz == 2){
       for (int i = 0; i < _sparseLen; ++i, off += inc) {
         ids[i] = UnsafeUtils.get2(_mem,off)  & 0xFFFF;
+        ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
         vals[i] = UnsafeUtils.get8d(_mem,off+2);
       }
     } else if(_ridsz == 4){
