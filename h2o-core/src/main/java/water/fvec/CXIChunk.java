@@ -63,25 +63,25 @@ public class CXIChunk extends Chunk {
       switch(_valsz){
         case 1:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off);
+            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
             vals[i] = _mem[off+2]&0xFF;
           }
           break;
         case 2:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off);
+            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
             vals[i] = UnsafeUtils.get2(_mem,off+2);
           }
           break;
         case 4:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off);
+            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
             vals[i] = UnsafeUtils.get4(_mem,off+2);
           }
           break;
         case 8:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
-            ids[i] = UnsafeUtils.get2(_mem,off);
+            ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
             long v = UnsafeUtils.get8(_mem,off+2);
             vals[i] = v == C8Chunk._NA?Double.NaN:v;
           }
