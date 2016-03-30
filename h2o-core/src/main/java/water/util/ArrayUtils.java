@@ -169,6 +169,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+  public static double[] add(double[] a, double b) {
+    for(int i = 0; i < a.length; i++ ) a[i] += b;
+    return a;
+  }
 
   public static double[] wadd(double[] a, double[] b, double w) {
     if( a==null ) return b;

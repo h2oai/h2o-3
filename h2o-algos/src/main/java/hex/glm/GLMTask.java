@@ -126,7 +126,6 @@ public abstract class GLMTask  {
    final int _weightId;
    final double [] _mean;
    public double [] _varSum;
-   boolean _skipNAs; // else replace with mean
    public WeightedSDTask(int wId, double [] mean){
      _weightId = wId;
      _mean = mean;
@@ -444,26 +443,143 @@ public abstract class GLMTask  {
       _likelihood += gwt._likelihood;
     }
   }
-  static abstract class GLMGradientTask extends FrameTask2<GLMGradientTask> {
+  static abstract class GLMGradientTask extends MRTask<GLMGradientTask> {
     final double [] _beta;
     public double [] _gradient;
     public double _likelihood;
     final transient  double _currentLambda;
     final transient double _reg;
+    protected final DataInfo _dinfo;
+
 
     protected GLMGradientTask(Key jobKey, DataInfo dinfo, double reg, double lambda, double[] beta){
-      super(null,dinfo, jobKey);
-      _beta = beta;
+      _dinfo = dinfo;
+      _beta = beta.clone();
       _reg = reg;
       _currentLambda = lambda;
+
     }
-    @Override public boolean handlesSparseData(){return true;}
-    protected transient double _sparseOffset;
-    @Override public final void chunkInit(){
-      int icptId = _dinfo.fullN();
-      _gradient = MemoryManager.malloc8d(icptId+1);
-      if(_sparse)
-        _sparseOffset = GLM.sparseOffset(_beta,_dinfo);
+    protected abstract void comuteGradientMultipliers(double [] es, double [] ys, double [] ws);
+
+    private final void computeCategoricalEtas(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+      // categoricals
+      for(int cid = 0; cid < _dinfo._cats; ++cid){
+        Chunk c = chks[cid];
+        if(c.isSparseZero()) {
+          int nvals = c.asSparseDoubles(vals,ids,_dinfo._catModes[cid]);
+          for(int i = 0; i < nvals; ++i){
+            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
+            if(id >=0) etas[ids[i]] += _beta[id];
+          }
+        } else {
+          c.getDoubles(vals, 0, c._len,_dinfo._catModes[cid]);
+          for(int i = 0; i < vals.length; ++i){
+            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
+            if(id >=0) etas[i] += _beta[id];
+          }
+        }
+      }
+    }
+
+    private final void computeCategoricalGrads(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+      // categoricals
+      for(int cid = 0; cid < _dinfo._cats; ++cid){
+        Chunk c = chks[cid];
+        if(c.isSparseZero()) {
+          int nvals = c.asSparseDoubles(vals,ids,_dinfo._catModes[cid]);
+          for(int i = 0; i < nvals; ++i){
+            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
+            if(id >=0) _gradient[id] += etas[ids[i]];
+          }
+        } else {
+          c.getDoubles(vals, 0, c._len,_dinfo._catModes[cid]);
+          for(int i = 0; i < vals.length; ++i){
+            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
+            if(id >=0) _gradient[id] += etas[i];
+          }
+        }
+      }
+    }
+
+    private final void computeNumericEtas(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+      int numOff = _dinfo.numStart();
+      for(int cid = 0; cid < _dinfo._nums; ++cid){
+        double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
+        double NA = _dinfo._numMeans[cid];
+        Chunk c = chks[cid+_dinfo._cats];
+        double b = scale*_beta[numOff+cid];
+        if(c.isSparseZero() || c.isSparseNA()){
+          int nvals = c.asSparseDoubles(vals,ids,NA);
+          for(int i = 0; i < nvals; ++i)
+            etas[ids[i]] += vals[i] * b;
+        } else {
+          c.getDoubles(vals,0,vals.length,NA);
+          double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
+          for(int i = 0; i < vals.length; ++i)
+            etas[i] += (vals[i] - off) * b;
+        }
+      }
+    }
+
+    private final void computeNumericGrads(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+      int numOff = _dinfo.numStart();
+      for(int cid = 0; cid < _dinfo._nums; ++cid){
+        double NA = _dinfo._numMeans[cid];
+        Chunk c = chks[cid+_dinfo._cats];
+        double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
+        if(c.isSparseZero() || c.isSparseNA()){
+          double g = 0;
+          int nVals = c.asSparseDoubles(vals,ids,NA);
+          for(int i = 0; i < nVals; ++i)
+            g += vals[i]*scale*etas[ids[i]];
+          _gradient[numOff+cid] = g;
+        } else {
+          double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
+          c.getDoubles(vals,0,vals.length,NA);
+          double g = 0;
+          for(int i = 0; i < vals.length; ++i)
+            g += (vals[i]-off)*scale*etas[i];
+          _gradient[numOff+cid] = g;
+        }
+      }
+    }
+
+    public void map(Chunk [] chks) {
+      _gradient = MemoryManager.malloc8d(_beta.length);
+      Chunk response = chks[chks.length-1];
+      Chunk weights = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,response._len);
+      Chunk offset = _dinfo._offset?chks[_dinfo.offsetChunkId()]:new C0DChunk(0,response._len);
+      double [] ws = weights.getDoubles(MemoryManager.malloc8d(weights._len),0,weights._len);
+      double [] ys = response.getDoubles(MemoryManager.malloc8d(weights._len),0,response._len);
+      double [] etas = MemoryManager.malloc8d(response._len);
+      if(_dinfo._offset)
+        chks[_dinfo.offsetChunkId()].getDoubles(etas,0,etas.length);
+      double sparseOffset = 0;
+      int numStart = _dinfo.numStart();
+      if(_dinfo._normSub != null)
+        for(int i = 0; i < _dinfo._nums; ++i)
+          if(chks[_dinfo._cats + i].isSparseZero())
+            sparseOffset -= _beta[numStart + i]*_dinfo._normSub[i]*_dinfo._normMul[i];
+      ArrayUtils.add(etas,sparseOffset + _beta[_beta.length-1]);
+      double [] vals = MemoryManager.malloc8d(response._len);
+      int [] ids = MemoryManager.malloc4(response._len);
+      computeCategoricalEtas(chks,etas,vals,ids);
+      computeNumericEtas(chks,etas,vals,ids);
+      comuteGradientMultipliers(etas,ys,ws);
+      // walk the chunks again, add to the gradient
+      computeCategoricalGrads(chks,etas,vals,ids);
+      computeNumericGrads(chks,etas,vals,ids);
+      // add intercept
+      _gradient[_gradient.length-1] = ArrayUtils.sum(etas);
+      if(_dinfo._normSub != null) {
+        double icpt = _gradient[_gradient.length-1];
+        for(int i = 0; i < _dinfo._normSub.length; ++i) {
+          if(chks[_dinfo._cats+i].isSparseZero()) {
+            double d = _dinfo._normSub[i] * _dinfo._normMul[i];
+            _gradient[numStart + i] -= d * icpt;
+          }
+        }
+      }
     }
 
     @Override
@@ -472,16 +588,10 @@ public abstract class GLMTask  {
       _likelihood += gmgt._likelihood;
     }
     @Override public final void postGlobal(){
-      if(_sparse && _dinfo._normSub != null) {
-        int numStart = _dinfo.numStart();
-        for(int i = 0; i < _dinfo._normSub.length; ++i) {
-          double d = _dinfo._normSub[i]*_dinfo._normMul[i];
-          _gradient[numStart+i] -= d*_gradient[_gradient.length-1];
-        }
-      }
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - 1; ++j)
         _gradient[j] += _currentLambda * _beta[j];
+      System.out.println("grad at " + Arrays.toString(_beta) + " = " + Arrays.toString(_gradient) + ", likelihood = " + _likelihood);
     }
   }
 
@@ -491,24 +601,21 @@ public abstract class GLMTask  {
       super(jobKey, dinfo, parms._obj_reg, lambda, beta);
       _glmf = new GLMWeightsFun(parms);
     }
-    @Override protected void processRow(Row row) {
-      double eta = row.innerProduct(_beta) + _sparseOffset + row.offset;
-      double mu = _glmf.linkInv(eta);
-      double [] g = _gradient;
-      _likelihood += row.weight * _glmf.likelihood(row.response(0), mu);
-      double var = _glmf.variance(mu);
-      if (var < 1e-6) var = 1e-6; // to avoid numerical problems with 0 variance
-      double gval = row.weight * (mu - row.response(0)) / (var * _glmf.linkDeriv(mu));
-      // categoricals
-      for (int i = 0; i < row.nBins; ++i)
-        g[row.binIds[i]] += gval;
-      int off = _dinfo.numStart();
-      // numbers
-      for (int j = 0; j < _dinfo._nums; ++j)
-        g[j + off] += row.numVals[j] * gval;
-      // intercept
-      if (_dinfo._intercept)
-        g[g.length - 1] += gval;
+
+    @Override protected void comuteGradientMultipliers(double [] es, double [] ys, double [] ws){
+      double l = 0;
+      for(int i = 0; i < es.length; ++i) {
+        if (Double.isNaN(ys[i])) {
+          es[i] = 0;
+        } else {
+          double mu = _glmf.linkInv(es[i]);
+          l += ws[i] * _glmf.likelihood(ys[i], mu);
+          double var = _glmf.variance(mu);
+          if (var < 1e-6) var = 1e-6;
+          es[i] = ws[i] * (mu - ys[i]) / (var * _glmf.linkDeriv(mu));
+        }
+      }
+      _likelihood = l;
     }
   }
 
@@ -518,25 +625,15 @@ public abstract class GLMTask  {
       super(jobKey,dinfo,parms._obj_reg,lambda,beta);
       assert parms._family == Family.binomial && parms._link == Link.logit;
     }
+
     @Override
-    protected void processRow(Row row) {
-      double [] g = _gradient;
-      double [] b = _beta;
-      double y = -1 + 2*row.response(0);
-      double eta = row.innerProduct(b) + _sparseOffset + row.offset;
-      double gval;
-      double d = 1 + Math.exp(-y * eta);
-      _likelihood += row.weight*Math.log(d);
-      gval = row.weight*-y*(1-1.0/d);
-      // categoricals
-      for(int i = 0; i < row.nBins; ++i)
-        g[row.binIds[i]] += gval;
-      int off = _dinfo.numStart();
-      // numbers
-      for (int j = 0; j < row.nNums; ++j)
-        _gradient[(row.numIds == null ? j + off : row.numIds[j])] += row.numVals[j] * gval;
-      // intercept
-      g[g.length-1] += gval;
+    protected void comuteGradientMultipliers(double[] es, double[] ys, double[] ws) {
+      for(int i = 0; i < es.length; ++i) {
+        double e = es[i], y = 1 - 2*ys[i], w = ws[i];
+        double d = 1 + Math.exp(y*e);
+        _likelihood += w*Math.log(d);
+        es[i] = w*y*(1-1.0/d);
+      }
     }
   }
 
@@ -545,24 +642,18 @@ public abstract class GLMTask  {
       super(jobKey,dinfo,parms._obj_reg,lambda,beta);
       assert parms._family == Family.gaussian && parms._link == Link.identity;
     }
+
     @Override
-    protected void processRow(Row row) {
-      double [] g = _gradient;
-      double [] b = _beta;
-      double y = row.response(0);
-      double eta = row.innerProduct(b) + _sparseOffset + row.offset;
-      double diff = y - eta;
-      _likelihood += row.weight*diff*diff;
-      double gval = row.weight*(eta-y);
-      // categoricals
-      for(int i = 0; i < row.nBins; ++i)
-        g[row.binIds[i]] += gval;
-      int off = _dinfo.numStart();
-      // numbers
-      for (int j = 0; j < row.nNums; ++j)
-        _gradient[(row.numIds == null ? j + off : row.numIds[j])] += row.numVals[j] * gval;
-      // intercept
-      g[g.length-1] += gval;
+    protected void comuteGradientMultipliers(double[] es, double[] ys, double[] ws) {
+      for(int i = 0; i < es.length; ++i) {
+        double w = ws[i];
+        if(w == 0)continue;
+        double e = es[i], y = ys[i];
+        double d = (e-y);
+        double wd = w*d;
+        _likelihood += wd*d;
+        es[i] = wd;
+      }
     }
   }
 
@@ -597,7 +688,7 @@ public abstract class GLMTask  {
 
     @Override public void map(Chunk[] chks) {
       if(_job != null && _job.stop_requested()) throw new Job.JobCancelledException();
-      if(_beta[0].length > 5000) {
+      if(_beta[0].length*_beta.length > 5000) {
         Chunk response = chks[chks.length-1];
         Chunk weights = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,response._len);
         chks = Arrays.copyOf(chks,chks.length-1-(_dinfo._weights?1:0));

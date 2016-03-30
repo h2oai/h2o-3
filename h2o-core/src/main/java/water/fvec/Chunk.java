@@ -119,7 +119,8 @@ public abstract class Chunk extends Iced<Chunk> {
    * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
-  public int asSparseDoubles(double [] vals, int [] ids) {
+  public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
+  public int asSparseDoubles(double [] vals, int [] ids, double NA) {
     if(vals.length < sparseLenZero())
       throw new IllegalArgumentException();
     getDoubles(vals,0,_len);
@@ -133,7 +134,8 @@ public abstract class Chunk extends Iced<Chunk> {
    * @param from
    * @param to
    */
-  public double [] getDoubles(double [] vals, int from, int to){
+  public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i)
       vals[i-from] = atd(i);
     return vals;

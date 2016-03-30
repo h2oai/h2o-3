@@ -14,6 +14,27 @@ public class CXDChunk extends CXIChunk {
     throw H2O.fail();
   }
 
+  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
+    if(vals.length < _sparseLen) throw new IllegalArgumentException();
+    int off = _OFF;
+    final int inc = 8 + _ridsz;
+    if(_ridsz == 2){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
+        double d = UnsafeUtils.get8d(_mem,off+2);
+        vals[i] = Double.isNaN(d)?NA:d;
+      }
+    } else if(_ridsz == 4){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get4(_mem,off);
+        double d = UnsafeUtils.get8d(_mem,off+4);
+        vals[i] = Double.isNaN(d)?NA:d;
+
+      }
+    } else throw H2O.unimpl();
+    return _sparseLen;
+  }
+
   @Override public int asSparseDoubles(double [] vals, int[] ids) {
     if(vals.length < _sparseLen) throw new IllegalArgumentException();
     int off = _OFF;

@@ -42,7 +42,7 @@ public class C1NChunk extends Chunk {
    * @param to
    */
   @Override
-  public double [] getDoubles(double [] vals, int from, int to){
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i)
       vals[i-from] = 0xFF&_mem[i];
     return vals;

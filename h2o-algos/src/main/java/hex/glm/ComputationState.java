@@ -356,7 +356,8 @@ public final class ComputationState {
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     double objOld = objective();
-    _beta = beta;
+    if(_beta == null)_beta = beta.clone();
+    else System.arraycopy(beta,0,_beta,0,beta.length);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
 
