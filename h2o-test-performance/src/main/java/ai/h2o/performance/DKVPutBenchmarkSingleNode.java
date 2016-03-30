@@ -33,12 +33,9 @@ package org.sample;
 
 import org.openjdk.jmh.annotations.*;
 
-import water.H2O;
-import water.Key;
-import water.Value;
-import water.util.IcedInt;
-import water.util.Log;
+import water.nbhm.NonBlockingHashMap;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Fork(5)
@@ -49,90 +46,45 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class DKVPutBenchmarkSingleNode {
 
-    /* The size of the store at the beginning of each benchmark iteration. */
-    int startIterStoreSize;
+    /* The size of the nbhm. */
+    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(524288);
 
-    @Setup(Level.Trial)
-    public void startH2O() {
-        H2O.main(new String[] {"-name", Long.toString(System.currentTimeMillis()) });
-        H2O.registerRestApis(System.getProperty("user.dir"));
-        H2O.waitForCloudSize(1, 30000);
+    public static String getRandomKey() {
+        UUID uid = UUID.randomUUID();
+        long l1 = uid.getLeastSignificantBits();
+        long l2 = uid. getMostSignificantBits();
+        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
     }
 
     @Setup(Level.Iteration)
-    public void initNBHM() {
-        /* Clear out the H2O.STORE */
-        Log.info("@Setup for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
-        Log.info("Empting the H2O.STORE.");
-        H2O.STORE.clear();
-
-        /* Grow the H2O.STORE large enough to be confident that we won't do any resize operations during the
-        *  measurement phase. */
-        Key k;
-        startIterStoreSize = ((H2O.STORE.kvs().length-2)>>1);
-        while (startIterStoreSize < 500000) {
-            k = Key.make();
-            H2O.STORE.put(k, new Value(k, new IcedInt(0)));
-            startIterStoreSize = ((H2O.STORE.kvs().length-2)>>1);
-        }
-        Log.info("Done initializing the H2O.STORE. Number of allowed keys: "+startIterStoreSize+
-                ". Number of actual keys: "+H2O.STORE.size()+".");
-    }
+    public void clearNBHM() { nbhm.clear(); }
 
     @TearDown(Level.Iteration)
     public void checkNBHM() throws InterruptedException {
-        Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Benchmark");
-        Log.info("Checking the H2O.STORE. Number of actual keys: "+H2O.STORE.size()+". ");
-        /* Check that the H2O.STORE has not resized. If the H2O.STORE has resized, then throw an
-        *  InterruptedException. */
-        int endIterStoreSize = (H2O.STORE.kvs().length-2)>>1;
-        if (startIterStoreSize < endIterStoreSize) {
-            Log.err("H2O.STORE resized.");
-            throw new InterruptedException("Looks like the H2O.STORE was resized from "+startIterStoreSize+" to "+
+        int endIterStoreSize = (nbhm.kvs().length-2)>>1;
+        if (524288 < endIterStoreSize) {
+            throw new InterruptedException("Looks like the nbhm was resized from "+524288+" to "+
                     endIterStoreSize+". For this benchmark, we want to avoid this.");
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class ThreadState {
-        Key k;
-        Value v;
-        int invocations;
-
-        @Setup(Level.Invocation)
-        public void setKeyValue() {
-            k = Key.make();
-            v = new Value(k, new IcedInt(0));
-            invocations += 1;
-        }
-
-        @Setup(Level.Iteration)
-        public void initInvocations() { invocations = 0; }
-
-        @TearDown(Level.Iteration)
-        public void logInvocations() {
-            Log.info("@TearDown for DKVPutBenchmarkSingleNode Iteration - Scope.Thread");
-            Log.info("Number of method invocations for this thread: "+ invocations);
         }
     }
 
     @Benchmark
     @Threads(value=1)
-    public void putTest1(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void putTest1() { nbhm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=2)
-    public void putTest2(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void putTest2() { nbhm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=4)
-    public void putTest4(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void putTest4() { nbhm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=8)
-    public void putTest8(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void putTest8() { nbhm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=16)
-    public void putTest16(ThreadState ts) { H2O.STORE.put(ts.k,ts.v); }
+    public void putTest16() { nbhm.put(getRandomKey(),0); }
 }

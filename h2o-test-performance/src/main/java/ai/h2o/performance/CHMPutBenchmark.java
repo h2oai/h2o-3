@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class CHMPutBenchmark {
 
-    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(550000);
+    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(524288);
 
     public static String getRandomKey() {
         UUID uid = UUID.randomUUID();
@@ -55,66 +55,33 @@ public class CHMPutBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void initCHM() {
-        /* Clear out the chm */
-        System.out.println("@Setup for CHMPutBenchmark Iteration - Scope.Benchmark");
-        System.out.println("Empting the CHM.");
-        chm.clear();
-
-        /* Grow the CHM */
-        for (int i=0; i<65000; i++) chm.put(getRandomKey(),0);
-        System.out.println("Done initializing the CHM. Number of actual keys: "+chm.size()+".");
-    }
+    public void clearCHM() { chm.clear();}
 
     @TearDown(Level.Iteration)
     public void checkCHM() throws InterruptedException {
-        System.out.println("@TearDown for CHMPutBenchmark Iteration - Scope.Benchmark");
-        System.out.println("Checking the CHM. Number of actual keys: "+chm.size()+". ");
-        /* Check that we didn't put enough keys that would trigger a CHM resize. */
-        if (chm.size() > 550000*.75) {
+        if (chm.size() > 524288*.75) {
             System.out.println("CHM probably resized. Invalid experiment.");
             throw new InterruptedException();
         }
     }
 
-    @State(Scope.Thread)
-    public static class ThreadState {
-        String k;
-        int invocations;
-
-        @Setup(Level.Invocation)
-        public void setKey() {
-            k = CHMPutBenchmark.getRandomKey();
-            invocations += 1;
-        }
-
-        @Setup(Level.Iteration)
-        public void initInvocations() { invocations = 0; }
-
-        @TearDown(Level.Iteration)
-        public void logInvocations() {
-            System.out.println("@TearDown for CHMPutBenchmark Iteration - Scope.Thread");
-            System.out.println("Number of method invocations for this thread: "+ invocations);
-        }
-    }
-
     @Benchmark
     @Threads(value=1)
-    public void chmPutTest1(ThreadState ts) { chm.put(ts.k,0); }
+    public void chmPutTest1() { chm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=2)
-    public void chmPutTest2(ThreadState ts) { chm.put(ts.k,0); }
+    public void chmPutTest2() { chm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=4)
-    public void chmPutTest4(ThreadState ts) { chm.put(ts.k,0); }
+    public void chmPutTest4() { chm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=8)
-    public void chmPutTest8(ThreadState ts) { chm.put(ts.k,0); }
+    public void chmPutTest8() { chm.put(getRandomKey(),0); }
 
     @Benchmark
     @Threads(value=16)
-    public void chmPutTest16(ThreadState ts) { chm.put(ts.k,0); }
+    public void chmPutTest16() { chm.put(getRandomKey(),0); }
 }
