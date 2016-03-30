@@ -64,19 +64,22 @@ public class CXIChunk extends Chunk {
         case 1:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            vals[i] = _mem[off+2]&0xFF;
+            long v = _mem[off+2]&0xFF;
+            vals[i] = v == NAS[_valsz_log]?NA:v;
           }
           break;
         case 2:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            vals[i] = UnsafeUtils.get2(_mem,off+2);
+            long v = UnsafeUtils.get2(_mem,off+2);
+            vals[i] = v == NAS[_valsz_log]?NA:v;
           }
           break;
         case 4:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            vals[i] = UnsafeUtils.get4(_mem,off+2);
+            long v = UnsafeUtils.get4(_mem,off+2);
+            vals[i] = v == NAS[_valsz_log]?NA:v;
           }
           break;
         case 8:
