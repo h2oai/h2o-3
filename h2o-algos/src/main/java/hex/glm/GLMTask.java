@@ -591,7 +591,6 @@ public abstract class GLMTask  {
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - 1; ++j)
         _gradient[j] += _currentLambda * _beta[j];
-      System.out.println("grad at " + Arrays.toString(_beta) + " = " + Arrays.toString(_gradient) + ", likelihood = " + _likelihood);
     }
   }
 
