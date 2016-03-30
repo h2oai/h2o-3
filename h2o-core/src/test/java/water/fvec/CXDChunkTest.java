@@ -22,8 +22,16 @@ public class CXDChunkTest extends TestUtil {
       for (double v : vals) nc.addNum(v);
       nc.addNA();
 
+      nc.addZeros(40000);
+      int pos1 = nc.len();
+      nc.addNum(123,0);
+      int maxLen = l == 0?65535-1:65535*2;
+      nc.addZeros(maxLen - nc._len - 1);
+      nc.addNum(456,0);
+
       Chunk cc = nc.compress();
-      Assert.assertEquals(vals.length + 1 + l, cc._len);
+      Assert.assertEquals(maxLen, cc._len);
+      Assert.assertEquals(((CXIChunk)cc)._ridsz,l == 0?2:4);
       Assert.assertTrue(cc instanceof CXDChunk);
       if (l==1) {
         Assert.assertTrue(cc.isNA(0));
@@ -33,12 +41,13 @@ public class CXDChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at_abs(i + l), 0);
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
-
+      Assert.assertEquals(cc.at8(pos1),123);
+      Assert.assertEquals(cc.at8(maxLen-1),456);
       nc = new NewChunk(null, 0);
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
-      Assert.assertEquals(vals.length+l+1, nc._len);
-      Assert.assertEquals(2+1+l, nc._sparseLen);
+      Assert.assertEquals(maxLen, nc._len);
+      Assert.assertEquals(2+2+1+l, nc._sparseLen);
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+l+1);
       if (l==1) Assert.assertTrue(it.next().rowId0() == 0);
       Assert.assertTrue(it.next().rowId0() == 3+l);
@@ -69,7 +78,7 @@ public class CXDChunkTest extends TestUtil {
       }
 
       Chunk cc2 = nc.compress();
-      Assert.assertEquals(vals.length+1+l, cc2._len);
+      Assert.assertEquals(maxLen, cc2._len);
       Assert.assertTrue(cc2 instanceof CXDChunk);
       if (l==1) {
         Assert.assertTrue(cc2.isNA(0));
@@ -79,7 +88,6 @@ public class CXDChunkTest extends TestUtil {
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at_abs(i + l), 0);
       Assert.assertTrue(cc2.isNA(vals.length + l));
       Assert.assertTrue(cc2.isNA_abs(vals.length + l));
-
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
   }

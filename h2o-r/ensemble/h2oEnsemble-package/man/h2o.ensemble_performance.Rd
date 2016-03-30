@@ -38,7 +38,7 @@ Erin LeDell \email{erin@h2o.ai}
 \code{\link[h2oEnsemble:h2o.ensemble]{h2o.ensemble}}
 }
 \examples{
-# See h2o.ensemble documentation for an example.
+# See h2o.ensemble or h2o.stack documentation for an example.
 
 }
 

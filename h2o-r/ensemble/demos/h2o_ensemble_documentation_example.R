@@ -1,8 +1,7 @@
 # An example of binary classification on a local machine using h2o.ensemble
-# This example requires h2oEnsemble v>=0.1.7
 
-library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-localH2O <- h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+library(h2oEnsemble)  # Requires version >=0.1.7 of h2oEnsemble
+localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
 # Import a sample binary outcome train/test set into R
@@ -38,34 +37,36 @@ perf <- h2o.ensemble_performance(fit, newdata = test)
 
 # The "perf" object has a print method, so we can print results (for the default metric) by simply typing: perf
 perf  #prints the following
+# Base learner performance, sorted by specified metric:
+#                   learner       AUC
+# 1          h2o.glm.wrapper 0.6871334
+# 4 h2o.deeplearning.wrapper 0.7261466
+# 2 h2o.randomForest.wrapper 0.7655972
+# 3          h2o.gbm.wrapper 0.7817096
+# 
+# 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
-# Ensemble performance (AUC): 0.785868133901243
-#
-# Base learner performance:
-#                    learner       AUC
-# 1          h2o.glm.wrapper 0.6871334
-# 2 h2o.randomForest.wrapper 0.7677700
-# 3          h2o.gbm.wrapper 0.7817096
-# 4 h2o.deeplearning.wrapper 0.7201829
+# Ensemble performance (AUC): 0.784785565758091
 
 # To print the results for a particular metric, like MSE, do the following:
 print(perf, metric = "MSE")
 
+# Base learner performance, sorted by specified metric:
+#                    learner       MSE
+# 1          h2o.glm.wrapper 0.2216862
+# 4 h2o.deeplearning.wrapper 0.2182509
+# 2 h2o.randomForest.wrapper 0.1981485
+# 3          h2o.gbm.wrapper 0.1900497
+# 
+# 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
-# Ensemble performance (MSE): 0.188517262690549
-# 
-# Base learner performance:
-#                    learner       MSE
-# 1          h2o.glm.wrapper 0.2216862
-# 2 h2o.randomForest.wrapper 0.1977456
-# 3          h2o.gbm.wrapper 0.1900497
-# 4 h2o.deeplearning.wrapper 0.2221495
+# Ensemble performance (MSE): 0.189215219642971
 
 # By calculating the base learner test set metrics, we can compare the performance
 # of the ensemble to the top base learner - GBM is the top base learner, both by AUC and MSE.
@@ -79,7 +80,7 @@ print(perf, metric = "MSE")
 
 # Ensemble test set AUC
 perf$ensemble@metrics$AUC
-# [1] 0.7858681
+# [1] 0.7847856
 
 # Base learner test set AUC (for comparison)
 L <- length(learner)
@@ -87,9 +88,9 @@ auc <- sapply(seq(L), function(l) perf$base[[l]]@metrics$AUC)
 data.frame(learner, auc)
 #                    learner       auc
 # 1          h2o.glm.wrapper 0.6871334
-# 2 h2o.randomForest.wrapper 0.7677700
+# 2 h2o.randomForest.wrapper 0.7655972
 # 3          h2o.gbm.wrapper 0.7817096
-# 4 h2o.deeplearning.wrapper 0.7201829
+# 4 h2o.deeplearning.wrapper 0.7261466
 
 
 
