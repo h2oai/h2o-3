@@ -263,7 +263,8 @@ public class InteractionWrappedVec extends WrappedVec {
       _bins = new long[_perChkMap.size()];
       for(String s:_dom)
         _bins[idx++] = _perChkMap.get(s)._val;
-      Arrays.sort(_missingDom = _perChkMapMissing.keySet().toArray(new String[_perChkMapMissing.size()]));
+      if( _missingDom!=null )
+        Arrays.sort(_missingDom = _perChkMapMissing.keySet().toArray(new String[_perChkMapMissing.size()]));
     }
   }
 
