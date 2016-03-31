@@ -1447,8 +1447,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     public static InteractionPair[] generatePairwiseInteractionsFromList(int... indexes) {
       if( null==indexes ) return null;
-      if( indexes.length < 2 )
+      if( indexes.length < 2 ) {
+        if( indexes.length==1 && indexes[0]==-1 ) return null;
         throw new IllegalArgumentException("Must supply 2 or more columns.");
+      }
       InteractionPair[] res = new InteractionPair[ (indexes.length-1)*(indexes.length)>>1]; // n*(n+1) / 2
       int idx=0;
       for(int i=0;i<indexes.length;++i)
