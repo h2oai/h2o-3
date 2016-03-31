@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
-* Created by tomasnykodym on 1/29/15.
+ * Created by tomasnykodym on 1/29/15.
  *
  * Provides higher level interface for accessing data row-wise.
  *
@@ -244,9 +244,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if( _interactions==null ) {
       interactionIds = new ArrayList<>();
       for(int i=0;i<tvecs.length;++i)
-        if( tvecs[i] instanceof InteractionWrappedVec ) {
-          interactionIds.add(i);
-      }
+        if( tvecs[i] instanceof InteractionWrappedVec ) interactionIds.add(i);
       if( interactionIds.size() > 0 ) {
         _interactionVecs = new int[interactionIds.size()];
         for (int i = 0; i < _interactionVecs.length; ++i)
@@ -321,7 +319,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public DataInfo scoringInfo(Frame adaptFrame){
     DataInfo res = deep_clone();
-//    res._normMul = null;
+    res._normMul = null;
     res._normRespSub = null;
     res._normRespMul = null;
     res._normRespSub = null;
