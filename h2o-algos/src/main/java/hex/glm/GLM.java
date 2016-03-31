@@ -953,6 +953,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       _model._output.pickBestModel();
       scoreAndUpdateModel();
+      if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
+        _job.update(_workPerIteration*(_parms._max_iterations - _state._iter));
+      }
       if(_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
         assert _parms._intercept;
         double [] b = _model._output._global_beta;
