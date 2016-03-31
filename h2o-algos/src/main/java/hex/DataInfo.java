@@ -190,8 +190,10 @@ public class DataInfo extends Keyed<DataInfo> {
       interactionIDs = new int[interactions.length];
       for(int i=0;i<interactions.length;++i) {
         interactionIDs[i] = train.find(interactions[i]);
-        if( interactionIDs[i]==-1 )
-          throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
+        if( interactionIDs[i]==-1 ) {
+          interactionIDs=null; break;
+        }
+//          throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
       }
     }
     _interactions=Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
