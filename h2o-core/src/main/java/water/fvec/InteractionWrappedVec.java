@@ -56,11 +56,12 @@ public class InteractionWrappedVec extends WrappedVec {
 
   public String[] v1Domain() { return _v1Enums==null?_v1Domain:_v1Enums; }
   public String[] v2Domain() { return _v2Enums==null?_v2Domain:_v2Enums; }
-  public String[] domains() { // always returns the "correct" domains, so accidental mixup of domain vs domains is ok
+  @Override public String[] domain() { // always returns the "correct" domains, so accidental mixup of domain vs domains is ok
     String[] res;
-    if( null!=(res=domain())) return res;
-    if( null==(res=v1Domain()) ) return v2Domain();
-    return res;
+    if( null==(res=v1Domain()) || null==v2Domain() ) {
+      return res==null?v2Domain():res;
+    }
+    return super.domain();
   }
 
   public Vec v1() { return _masterVec1==null?(_masterVec1=_masterVecKey1.get()):_masterVec1; }
