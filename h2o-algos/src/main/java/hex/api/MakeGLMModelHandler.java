@@ -57,11 +57,11 @@ public class MakeGLMModelHandler extends Handler {
     return args;
   }
 
-  public Frame HoTDAAWWG(Frame fr, String[] interactions, boolean useAll, boolean standardize) {
+  public static Frame HoTDAAWWG(Frame fr, String[] interactions, boolean useAll, boolean standardize) {
     final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,true,false,false,false,false,false,interactions);
     byte[] types = new byte[dinfo.fullN()];
     Arrays.fill(types, Vec.T_NUM);
-    return new MRTask() {
+    Frame res = new MRTask() {
       @Override public void map(Chunk[] cs, NewChunk ncs[]) {
         DataInfo.Row r = dinfo.newDenseRow();
         for(int i=0;i<cs[0]._len;++i) {
@@ -71,5 +71,8 @@ public class MakeGLMModelHandler extends Handler {
         }
       }
     }.doAll(types,dinfo._adaptedFrame.vecs()).outputFrame(Key.make(), dinfo.coefNames(), null);
+    dinfo.dropInteractions();
+    dinfo.remove();
+    return res;
   }
 }
