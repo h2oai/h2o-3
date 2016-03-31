@@ -46,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class DKVPutBenchmarkSingleNode {
 
-    /* The size of the nbhm. */
     NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(524288);
 
     public static String getRandomKey() {

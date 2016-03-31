@@ -33,15 +33,12 @@ package org.sample;
 
 import org.openjdk.jmh.annotations.*;
 
-import water.H2O;
-import water.Key;
-import water.Value;
-import water.util.IcedInt;
-import water.util.Log;
+import water.nbhm.NonBlockingHashMap;
 
+import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
-import java.util.Set;
 
 @Fork(5)
 @BenchmarkMode(Mode.AverageTime)
@@ -51,68 +48,50 @@ import java.util.Set;
 @State(Scope.Benchmark)
 public class DKVGetBenchmarkSingleNode {
 
-    @Setup(Level.Trial)
-    public void initH2O() {
-        // Start up h2o
-        H2O.main(new String[] {"-name", Long.toString(System.currentTimeMillis()) });
-        H2O.registerRestApis(System.getProperty("user.dir"));
-        H2O.waitForCloudSize(1, 30000);
+    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(131072);
 
+    public static String getRandomKey() {
+        UUID uid = UUID.randomUUID();
+        long l1 = uid.getLeastSignificantBits();
+        long l2 = uid. getMostSignificantBits();
+        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
+    }
+
+    @Setup(Level.Trial)
+    public void initNBMH() {
         // Load up 1000 keys
-        Key k;
-        for (int i=0; i<1000; i++) {
-            k = Key.make();
-            H2O.STORE.put(Key.make(), new Value(k, new IcedInt(0)));
-        }
-        Log.info("@Setup for DKVGetBenchmarkSingleNode Trial - Scope.Benchmark");
-        Log.info("Done initializing the H2O.STORE. Number of actual keys: "+H2O.STORE.size());
+        for (int i=0; i<1000; i++) nbhm.put(getRandomKey(),0);
     }
 
     @State(Scope.Thread)
     public static class ThreadState {
-        Set<Key> keySet;
-        Key tk;
-        int invocations;
+        String[] keySet;
+        Random rand = new Random();
 
         @Setup(Level.Trial)
-        public void getKeySet() {
-            keySet = H2O.STORE.keySet();
-        }
-
-        @Setup(Level.Invocation)
-        public void setKeyForGetOp() {
-            // Pick a key from the H2O.STORE at random
-            tk = (Key) keySet.toArray()[new Random().nextInt(keySet.size())];
-            invocations += 1;
-        }
-
-        @Setup(Level.Iteration)
-        public void initInvocations() { invocations = 0; }
-
-        @TearDown(Level.Iteration)
-        public void logInvocations() {
-            Log.info("@TearDown for DKVGetBenchmarkSingleNode Iteration - Scope.Thread");
-            Log.info("Number of method invocations for this thread: "+ invocations);
+        public void getKeySet(DKVGetBenchmarkSingleNode bm) {
+            Object[] oa = bm.nbhm.keySet().toArray();
+            keySet = Arrays.copyOf(oa, oa.length, String[].class);
         }
     }
 
     @Benchmark
     @Threads(value=1)
-    public Value getTest1(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer getTest1(ThreadState ts) { return nbhm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=2)
-    public Value getTest2(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer getTest2(ThreadState ts) { return nbhm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=4)
-    public Value getTest4(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer getTest4(ThreadState ts) { return nbhm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=8)
-    public Value getTest8(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer getTest8(ThreadState ts) { return nbhm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=16)
-    public Value getTest16(ThreadState ts) { return H2O.STORE.get(ts.tk); }
+    public Integer getTest16(ThreadState ts) { return nbhm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 }

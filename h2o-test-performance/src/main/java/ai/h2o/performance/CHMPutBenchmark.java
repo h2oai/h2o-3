@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-//java -cp /Users/ece/0xdata/h2o-3/build/h2o.jar:target/benchmarks.jar org.openjdk.jmh.Main -rf csv -rff perf.csv
+//java -cp h2o-3/build/h2o.jar:target/benchmarks.jar org.openjdk.jmh.Main -rf csv -rff perf.csv
 package org.sample;
 
 import org.openjdk.jmh.annotations.*;

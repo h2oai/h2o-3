@@ -37,7 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
-import java.util.Set;
+import java.util.Arrays;
 
 @Fork(5)
 @BenchmarkMode(Mode.AverageTime)
@@ -54,60 +54,42 @@ public class CHMGetBenchmark {
         return "_"+Long.toHexString(l1)+Long.toHexString(l2);
     }
 
-    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(10000);
+    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(131072);
 
     @Setup(Level.Trial)
     public void initCHM() {
         // Load up 1000 keys
         for (int i=0; i<1000; i++) chm.put(getRandomKey(), 0);
-        System.out.println("@Setup for CHMGetBenchmark Trial - Scope.Benchmark");
-        System.out.println("Done initializing the CHM. Number of actual keys: "+chm.size());
     }
 
     @State(Scope.Thread)
     public static class ThreadState {
-        Set<String> keySet;
-        String tk;
-        int invocations;
+        String[] keySet;
+        Random rand = new Random();
 
         @Setup(Level.Trial)
         public void getKeySet(CHMGetBenchmark bm) {
-            keySet = bm.chm.keySet();
-        }
-
-        @Setup(Level.Iteration)
-        public void initInvocations() { invocations = 0; }
-
-        @TearDown(Level.Iteration)
-        public void logInvocations() {
-            System.out.println("@TearDown for CHMGetBenchmark Iteration - Scope.Thread");
-            System.out.println("Number of method invocations for this thread: "+ invocations);
-        }
-
-        @Setup(Level.Invocation)
-        public void setKeyForGetOp() {
-            tk = (String) keySet.toArray()[new Random().nextInt(keySet.size())];
-            invocations += 1;
-        }
+            Object[] oa = bm.chm.keySet().toArray();
+            keySet = Arrays.copyOf(oa, oa.length, String[].class); }
     }
 
     @Benchmark
     @Threads(value=1)
-    public Integer chmGetTest1(ThreadState ts) { return chm.get(ts.tk); }
+    public Integer chmGetTest1(ThreadState ts) { return chm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=2)
-    public Integer chmGetTest2(ThreadState ts) { return chm.get(ts.tk); }
+    public Integer chmGetTest2(ThreadState ts) { return chm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=4)
-    public Integer chmGetTest4(ThreadState ts) { return chm.get(ts.tk); }
+    public Integer chmGetTest4(ThreadState ts) { return chm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=8)
-    public Integer chmGetTest8(ThreadState ts) { return chm.get(ts.tk); }
+    public Integer chmGetTest8(ThreadState ts) { return chm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 
     @Benchmark
     @Threads(value=16)
-    public Integer chmGetTest16(ThreadState ts) { return chm.get(ts.tk); }
+    public Integer chmGetTest16(ThreadState ts) { return chm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }
 }
