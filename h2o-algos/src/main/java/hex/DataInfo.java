@@ -775,14 +775,6 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
 
-
-    // TODO: improvement to shrink _normMul and _normSub for interactions
-//    public double getMul(int expandedIdx, int colIdx) {
-//    }
-//
-//    public double getSub(int i) {
-//    }
-
     public void addNum(int id, double val) {
       if(numIds.length == nNums) {
         int newSz = Math.max(4,numIds.length + (numIds.length >> 1));
@@ -950,12 +942,13 @@ public class DataInfo extends Keyed<DataInfo> {
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
         InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vec(_cats+i);
+        iwv._useAllFactorLevels&=_useAllFactorLevels;
         int interactionOffset = getInteractionOffset(chunks,_cats+i,rid);
         for(int offset=0;offset<iwv.expandedLength();++offset) {
           double d=0;
           if( offset==interactionOffset ) d=chunks[_cats + i].atd(rid);
           if( Double.isNaN(d) )
-            d = iwv.t!=null?iwv.getSub(offset+(_useAllFactorLevels?0:1)):iwv.mean();
+            d = iwv.mean();
           if( _normMul != null && _normSub != null )
             d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
           row.numVals[numValsIdx++]=d;
@@ -1106,7 +1099,7 @@ public class DataInfo extends Keyed<DataInfo> {
             if( c.atd(r)==0 ) continue;
             double d = c.atd(r);
             if( Double.isNaN(d) )
-              d = iwv.t!=null?iwv.getSub(cidVirtualOffset+(iwv._useAllFactorLevels?0:1)):iwv.v1().mean()*iwv.v2().mean();  // FIXME: if this produces a "true" NA then should sub with mean? with?
+              d =iwv.mean();  // FIXME: if this produces a "true" NA then should sub with mean? with?
             if (_normMul != null)
               d *= _normMul[interactionOffset+cidVirtualOffset];
             row.addNum(_numOffsets[cid] + cidVirtualOffset, d);
