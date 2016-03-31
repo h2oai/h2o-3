@@ -21,7 +21,7 @@ test.glm.interactions3 <- function() {
   h2o_glm1 <- h2o.glm(y="Petal.Width", x=c("Species","Species_Sepal.Length.versicolor", "Species_Sepal.Length.virginica", "Species_Petal.Length.versicolor", "Species_Petal.Length.virginica", "Sepal.Length","Sepal.Width", "Petal.Length", "Sepal.Length_Petal.Length"), training_frame=df, lambda=0, standardize=TRUE)
 
 
-  h2o_glm2 <- h2o.glm(y="Petal.Width", x=c("Species","Sepal.Length","Sepal.Width", "Petal.Length"), interactions=c("Species", "Sepal.Length", "Petal.Length"), lambda=0, standardize=FALSE, training_frame=as.h2o(iris))
+  h2o_glm2 <- h2o.glm(y="Petal.Width", x=c("Species","Sepal.Length","Sepal.Width", "Petal.Length"), interactions=c("Species", "Sepal.Length", "Petal.Length"), lambda=0, standardize=TRUE, training_frame=as.h2o(iris))
 
 
   R_glm <- lm(Petal.Width ~ Species*Sepal.Length + Species*Petal.Length + Sepal.Width + Petal.Length + Sepal.Length*Petal.Length, data=iris)
@@ -48,9 +48,17 @@ test.glm.interactions3 <- function() {
     R_coef <- as.vector(m_R_coefs)[i]
     print( paste0("H2O Coeff1: ",  h2o_coef1))
     print( paste0("H2O Coeff2: ",  h2o_coef2))
-    print( paste0("R   Coeff: ",  R_coef))
-    expect_true( abs( h2o_coef1-R_coef) < 1e-11 )
-    expect_true( abs( h2o_coef2-h2o_coef1 ) < 1e-15  )
+    print( paste0("R   Coeff:  ",  R_coef))
+    expect_true( abs( h2o_coef2 - R_coef    ) < 1e-10  )
+    expect_true( abs( h2o_coef2 - h2o_coef1 ) < 1e-10  )
+
+
+    h2o_norm_coef1 <- h2o_glm1_coefs[h2o_glm1_coefs$names==name,"standardized_coefficients"]
+    h2o_norm_coef2 <- h2o_glm2_coefs[h2o_glm2_coefs$names==name,"standardized_coefficients"]
+
+    print( paste0("H2O Standardized Coeff1: ",  h2o_norm_coef1))
+    print( paste0("H2O Standardized Coeff2: ",  h2o_norm_coef2))
+    expect_true( abs( h2o_coef2 - h2o_coef1 ) < 1e-11  )
   }
 
 }
