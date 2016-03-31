@@ -53,7 +53,7 @@ public class MakeGLMModelHandler extends Handler {
   public DataInfoFrameV3 getDataInfoFrame(int version, DataInfoFrameV3 args) {
     Frame fr = DKV.getGet(args.frame.key());
     if( null==fr ) throw new IllegalArgumentException("no frame found");
-    args.result = new KeyV3.FrameKeyV3(HoTDAAWWG(fr,args.interactions,args.useAll,args.standardize)._key);
+    args.result = new KeyV3.FrameKeyV3(HoTDAAWWG(fr,args.interactions,args.use_all,args.standardize)._key);
     return args;
   }
 

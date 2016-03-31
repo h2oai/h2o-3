@@ -1032,7 +1032,7 @@ h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
 .getExpanded <- function(data,interactions,useAll,standardize) {
   interactions <- .collapse.char(interactions)
   if( interactions=="") interactions <- NULL
-  res <- .h2o.__remoteSend("DataInfoFrame", method = "POST", frame=h2o.getId(data), interactions=interactions, useAll=useAll,standardize=standardize)
+  res <- .h2o.__remoteSend("DataInfoFrame", method = "POST", frame=h2o.getId(data), interactions=interactions, use_all=useAll,standardize=standardize)
   h2o.getFrame(res$result$name)
 }
 
