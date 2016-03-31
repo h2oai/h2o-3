@@ -1000,6 +1000,15 @@ h2o.runif <- function(x, seed = -1) {
   .newExpr("h2o.runif", chk.H2OFrame(x), seed)
 }
 
+#' Produce a k-fold column vector.
+#'
+#' Create a k-fold vector useful for H2O algorithms that take a fold_assignments argument.
+#'
+#' @param data A dataframe against which to create the fold column.
+#' @param nfolds The number of desired folds.
+#' @param seed A random seed, -1 indicates that H2O will choose one.
+h2o.kfold_column <- function(data,nfolds,seed=-1) .eval.frame(.newExpr("kfold_column",data,nfolds,seed))
+
 #' Check H2OFrame columns for factors
 #'
 #' Determines if any column of an H2OFrame object contains categorical data.
