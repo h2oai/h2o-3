@@ -188,8 +188,11 @@ public class DataInfo extends Keyed<DataInfo> {
     int[] interactionIDs=null;
     if( null!=interactions ) {
       interactionIDs = new int[interactions.length];
-      for(int i=0;i<interactions.length;++i)
-        interactionIDs[i]=train.find(interactions[i]);
+      for(int i=0;i<interactions.length;++i) {
+        interactionIDs[i] = train.find(interactions[i]);
+        if( interactionIDs[i]==-1 )
+          throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
+      }
     }
     _interactions=Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
 
@@ -646,7 +649,15 @@ public class DataInfo extends Keyed<DataInfo> {
           continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
       }
-      if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0) res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0)
+        res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+      if( vecs[i] instanceof InteractionWrappedVec ) {
+        InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
+        if( null!=iwv.missingDomains() ) {
+          for(String s: iwv.missingDomains() )
+            res[k++] = s+".missing(NA)";
+        }
+      }
     }
     // now loop over the numerical columns, collecting up any expanded InteractionVec names
     if( _interactions==null ) {
@@ -658,7 +669,8 @@ public class DataInfo extends Keyed<DataInfo> {
         if( i >= n ) break;
         if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domain() != null)) { // in this case, get the categoricalOffset
           for (int j = _useAllFactorLevels?0:1; j < v.domain().length; ++j) {
-            if (getCategoricalIdFromInteraction(i, j) < 0) continue;
+            if (getCategoricalIdFromInteraction(i, j) < 0)
+              continue;
             res[k++] = _adaptedFrame._names[i] + "." + v.domain()[j];
           }
         } else
