@@ -397,8 +397,10 @@ public class GLMTest  extends TestUtil {
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
       assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
-      for(int i = 0; i < gmt._gradient.length; ++i)
-        assertEquals("Mismatch at coefficient " + i,exp_grad[i], gmt._gradient[i], 1e-8);
+      System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
+      double [] g = gmt.gradient();
+      for(int i = 0; i < g.length; ++i)
+        assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
     } finally {
       if(origRes != null)origRes.remove();
       if (fr != null) fr.delete();
