@@ -944,11 +944,9 @@ public class DataInfo extends Keyed<DataInfo> {
           double d=0;
           if( offset==interactionOffset ) d=chunks[_cats + i].atd(rid);
           if( Double.isNaN(d) )
-            d = iwv.t!=null?iwv.getSub(offset+(_useAllFactorLevels?0:1)):iwv.v1().mean()*iwv.v2().mean();
-          if( _normMul != null && _normSub != null ) {
-            d -= iwv.getSub(offset+(_useAllFactorLevels?0:1));
-            d *= iwv.getMul(offset+(_useAllFactorLevels?0:1));
-          }
+            d = iwv.t!=null?iwv.getSub(offset+(_useAllFactorLevels?0:1)):iwv.mean();
+          if( _normMul != null && _normSub != null )
+            d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
           row.numVals[numValsIdx++]=d;
         }
       } else {
@@ -1087,13 +1085,21 @@ public class DataInfo extends Keyed<DataInfo> {
       Chunk c = chunks[_cats + cid];
       int oldRow = -1;
       if (c instanceof InteractionWrappedVec.InteractionWrappedChunk) {  // for each row, only 1 value in an interaction is 'hot' all other values are off (i.e., are 0)
+        InteractionWrappedVec iwv = (InteractionWrappedVec)c.vec();
         for(int r=0;r<c._len;++r) {  // the vec is "vertically" dense and "horizontally" sparse (i.e., every row has one, and only one, value)
           Row row = rows[r];
           if( row.bad ) continue;
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
-          if( cidVirtualOffset>=0 )
-            row.addNum(_numOffsets[cid]+cidVirtualOffset,c.atd(r));  // FIXME: if this produces a "true" NA then should sub with mean? with?
+          if( cidVirtualOffset>=0 ) {
+            if( c.atd(r)==0 ) continue;
+            double d = c.atd(r);
+            if( Double.isNaN(d) )
+              d = iwv.t!=null?iwv.getSub(cidVirtualOffset+(iwv._useAllFactorLevels?0:1)):iwv.v1().mean()*iwv.v2().mean();  // FIXME: if this produces a "true" NA then should sub with mean? with?
+            if (_normMul != null)
+              d *= _normMul[interactionOffset+cidVirtualOffset];
+            row.addNum(_numOffsets[cid] + cidVirtualOffset, d);
+          }
         }
         interactionOffset+=nextNumericIdx(cid);
       } else {
