@@ -33,7 +33,7 @@ public class InteractionWrappedVec extends WrappedVec {
   public boolean _useAllFactorLevels;
   public boolean _skipMissing;
   private long _bins[];
-
+  private String[] _missingDomains;
 
   public GetMeanTask t;
   private final String _v1Enums[]; // only interact these enums from vec 1
@@ -149,6 +149,7 @@ public class InteractionWrappedVec extends WrappedVec {
     return ArrayUtils.maxIndex(_bins);
   }
   public long[] getBins() { return _bins; }
+  public String[] missingDomains() { return _missingDomains; }
   private void setupDomain() {
     if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
       _v1Domain = _masterVec1.domain();
@@ -158,6 +159,7 @@ public class InteractionWrappedVec extends WrappedVec {
         setDomain(t._dom);
         _bins=t._bins;
         _type = Vec.T_CAT; // vec is T_NUM up to this point
+        _missingDomains=t._missingDom;
       } else
         t = new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length);
     }
@@ -166,6 +168,7 @@ public class InteractionWrappedVec extends WrappedVec {
   private static class CombineDomainTask extends MRTask<CombineDomainTask> {
     private String[] _dom;        // out, sorted (uses Arrays.sort)
     private long[] _bins;         // out, sorted according to _dom
+    private String[] _missingDom; // out, the missing levels due to !_useAllLvls
     private final String _left[]; // in
     private final String _rite[]; // in
     private final String _leftLimit[]; // in
@@ -173,6 +176,7 @@ public class InteractionWrappedVec extends WrappedVec {
     private final boolean _useAllLvls; // in
     private final boolean _skipMissing; // in
     private IcedHashMap<String, IcedLong> _perChkMap;
+    private IcedHashMap<String, String> _perChkMapMissing; // skipped cats
 
     CombineDomainTask(String[] left, String[] rite, String[] leftLimit, String[] riteLimit, boolean useAllLvls, boolean skipMissing) {
       _left = left;
@@ -185,6 +189,7 @@ public class InteractionWrappedVec extends WrappedVec {
 
     @Override public void map(Chunk[] c) {
       _perChkMap = new IcedHashMap<>();
+      if( !_useAllLvls ) _perChkMapMissing = new IcedHashMap<>();
       Chunk left = c[0];
       Chunk rite = c[1];
       String k;
@@ -199,7 +204,10 @@ public class InteractionWrappedVec extends WrappedVec {
         if( (!((leftIsNA=left.isNA(i)) | (riteIsNA=rite.isNA(i)))) ) {
           lval = (int)left.at8(i);
           rval = (int)rite.at8(i);
-          if( !_useAllLvls &&  ( 0==lval || 0==rval )) continue; // skipping first level! => but use all domains!
+          if( !_useAllLvls && ( 0==lval || 0==rval )) {
+            _perChkMapMissing.putIfAbsent(_left[lval] + "_" + _rite[rval],"");
+            continue;
+          }
           l = _left[lval];
           r = _rite[rval];
           if (A != null && !A.contains(l)) continue;
@@ -209,12 +217,20 @@ public class InteractionWrappedVec extends WrappedVec {
         } else if( !_skipMissing ) {
           if( !(leftIsNA && riteIsNA) ) {  // not both missing
             if( leftIsNA ) {
-              r = _rite[(int)rite.at8(i)];
+              r = _rite[rval=(int)rite.at8(i)];
+              if( !_useAllLvls && 0==rval ) {
+                _perChkMapMissing.putIfAbsent("NA_" + _rite[rval],"");
+                continue;
+              }
               if( B!=null && !B.contains(r) ) continue;
               if( null!=_perChkMap.putIfAbsent((k="NA_"+r), new IcedLong(1)) )
                 _perChkMap.get(k)._val++;
             } else {
-              l = _left[(int)left.at8(i)];
+              l = _left[lval=(int)left.at8(i)];
+              if( !_useAllLvls && 0==lval ) {
+                _perChkMapMissing.putIfAbsent(_left[lval] + "_NA","");
+                continue;
+              }
               if( null!=A && !A.contains(l) ) continue;
               if( null!=_perChkMap.putIfAbsent((k=l+"_NA"), new IcedLong(1)) )
                 _perChkMap.get(k)._val++;
@@ -230,6 +246,15 @@ public class InteractionWrappedVec extends WrappedVec {
         else _perChkMap.put(e.getKey(), e.getValue());
       }
       t._perChkMap = null;
+      if(_perChkMapMissing==null && t._perChkMapMissing!=null ) {
+        _perChkMapMissing=new IcedHashMap<>();
+        _perChkMapMissing.putAll(t._perChkMapMissing);
+      }
+      else if( _perChkMapMissing!=null && t._perChkMapMissing!=null ) {
+        for (String s: t._perChkMapMissing.keySet())
+          _perChkMapMissing.putIfAbsent(s,"");
+      }
+      t._perChkMapMissing=null;
     }
 
     @Override public void postGlobal() {
@@ -238,6 +263,7 @@ public class InteractionWrappedVec extends WrappedVec {
       _bins = new long[_perChkMap.size()];
       for(String s:_dom)
         _bins[idx++] = _perChkMap.get(s)._val;
+      Arrays.sort(_missingDom = _perChkMapMissing.keySet().toArray(new String[_perChkMapMissing.size()]));
     }
   }
 
