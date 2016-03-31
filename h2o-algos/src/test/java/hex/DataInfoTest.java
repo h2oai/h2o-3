@@ -311,6 +311,56 @@ public class DataInfoTest extends TestUtil {
     }
   }
 
+//  @Test public void personalChecker() {
+//    final Frame gold = parse_test_file(Key.make("gold"), "/Users/spencer/Desktop/ffff.csv");
+//    Frame fr = parse_test_file(Key.make("a.hex"), "/Users/spencer/Desktop/iris.csv");
+//    fr.swap(3,4);
+//    DataInfo di0=null;
+//    try {
+//      di0 = new DataInfo(
+//              fr.clone(),  // train
+//              null,        // valid
+//              1,           // num responses
+//              false,       // use all factor levels
+//              DataInfo.TransformType.STANDARDIZE,  // predictor transform
+//              DataInfo.TransformType.NONE,  // response  transform
+//              true,        // skip missing
+//              false,       // impute missing
+//              false,       // missing bucket
+//              false,       // weight
+//              false,       // offset
+//              false,       // fold
+//              new String[]{"Species", "Sepal.Length", "Petal.Length"}           // interactions
+//      );
+//      final DataInfo di=di0;
+//      new MRTask() {
+//        @Override public void map(Chunk[] cs) {
+//          DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
+//          for(int i=0;i<cs[0]._len;++i) {
+////            di.extractDenseRow(cs, i, r);
+//            DataInfo.Row r = sparseRows[i];
+//            int idx=1;
+//            for (int j = di.numStart(); j < di.fullN(); ++j) {
+//              double goldValue = gold.vec(idx++).at(i+cs[0].start());
+//              double thisValue = r.get(j) - (di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]);
+//              double diff = Math.abs(goldValue - thisValue);
+//              if( diff > 1e-12 )
+//                throw new RuntimeException("bonk");
+//            }
+//          }
+//        }
+//      }.doAll(di0._adaptedFrame);
+//    } finally {
+//      fr.delete();
+//      gold.delete();
+//      if( di0!=null ) {
+//        di0.dropInteractions();
+//        di0.remove();
+//      }
+//    }
+//  }
+
+
   private static void printVals(DataInfo di, DataInfo.Row denseRow, DataInfo.Row sparseRow) {
     System.out.println("col|dense|sparse|sparseScaled");
     double sparseScaled;
@@ -329,8 +379,8 @@ public class DataInfoTest extends TestUtil {
     new MRTask() {
       @Override public void map(Chunk[] cs) {
         DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
+        DataInfo.Row r = di.newDenseRow();
         for(int i=0;i<cs[0]._len;++i) {
-          DataInfo.Row r = di.newDenseRow();
           di.extractDenseRow(cs, i, r);
           for (int j = 0; j < di.fullN(); ++j) {
             double sparseDoubleScaled = sparseRows[i].get(j);  // extracting sparse rows does not do the full scaling!!
