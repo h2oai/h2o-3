@@ -33,9 +33,8 @@ package org.sample;
 
 import org.openjdk.jmh.annotations.*;
 
-import water.nbhm.NonBlockingHashMap;
-
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Fork(3)
@@ -44,9 +43,9 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations=10)
 @OutputTimeUnit(value=TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-public class DKVLargeStorePutSingleNode {
+public class CHMLargePutBenchmark {
 
-    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(4194304);
+    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(4194304);
 
     public static String getRandomKey() {
         UUID uid = UUID.randomUUID();
@@ -56,9 +55,9 @@ public class DKVLargeStorePutSingleNode {
     }
 
     @Setup(Level.Trial)
-    public void initNBMH() {
+    public void initCHM() {
         // Load up 1,000,000 keys
-        for (int i=0; i<1000000; i++) nbhm.put(getRandomKey(),0);
+        for (int i=0; i<1000000; i++) chm.put(getRandomKey(),0);
     }
 
 
@@ -67,26 +66,26 @@ public class DKVLargeStorePutSingleNode {
         String key;
 
         @Setup(Level.Iteration)
-        public void getKey(DKVLargeStorePutSingleNode bm) { key = getRandomKey(); }
+        public void getKey(CHMLargePutBenchmark bm) { key = getRandomKey(); }
     }
 
     @Benchmark
     @Threads(value=1)
-    public void largeStorePutTest1(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largePutTest1(ThreadState ts) { chm.put(ts.key,0); }
 
     @Benchmark
     @Threads(value=2)
-    public void largeStorePutTest2(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest2(ThreadState ts) { chm.put(ts.key,0); }
 
     @Benchmark
     @Threads(value=4)
-    public void largeStorePutTest4(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest4(ThreadState ts) { chm.put(ts.key,0); }
 
     @Benchmark
     @Threads(value=8)
-    public void largeStorePutTest8(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest8(ThreadState ts) { chm.put(ts.key,0); }
 
     @Benchmark
     @Threads(value=16)
-    public void largeStorePutTest16(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largePutTest16(ThreadState ts) { chm.put(ts.key,0); }
 }

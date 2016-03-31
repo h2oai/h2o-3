@@ -48,7 +48,7 @@ import java.util.Random;
 @State(Scope.Benchmark)
 public class DKVLargeStoreGetSingleNode {
 
-    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>();
+    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(4194304);
 
     public static String getRandomKey() {
         UUID uid = UUID.randomUUID();
@@ -70,11 +70,13 @@ public class DKVLargeStoreGetSingleNode {
         String key;
 
         @Setup(Level.Trial)
-        public void getKey(DKVLargeStoreGetSingleNode bm) {
+        public void getKeySet(DKVLargeStoreGetSingleNode bm) {
             Object[] oa = bm.nbhm.keySet().toArray();
             keySet = Arrays.copyOf(oa, oa.length, String[].class);
-            key = keySet[rand.nextInt(keySet.length)];
         }
+
+        @Setup(Level.Iteration)
+        public void getKey() { key = keySet[rand.nextInt(keySet.length)]; }
     }
 
     @Benchmark
