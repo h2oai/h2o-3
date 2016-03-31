@@ -257,7 +257,7 @@ public class DataInfo extends Keyed<DataInfo> {
       if( v instanceof InteractionWrappedVec ) {
         if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
         _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
-        _catOffsets[i + 1] = (len += ((InteractionWrappedVec)v).domains().length + (missingBucket ? 1 : 0));
+        _catOffsets[i + 1] = (len += ((InteractionWrappedVec)v).domain().length + (missingBucket ? 1 : 0));
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
@@ -506,17 +506,18 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public void updateWeightedSigmaAndMean(double [] sigmas, double [] mean) {
+    int sub = numNums() - _nums;
     if(_predictor_transform.isSigmaScaled()) {
-      if(sigmas.length != _normMul.length)
+      if(sigmas.length+(sub) != _normMul.length)  // numNums() - _nums  checks for interactions (numNums() > _nums in the case of numerical interactions)
         throw new IllegalArgumentException("Length of sigmas does not match number of scaled columns.");
-      for(int i = 0; i < sigmas.length; ++i)
-        _normMul[i] = isInteractionVec(i)?1:(sigmas[i] != 0?1.0/sigmas[i]:1);
+      for(int i = 0; i < _normMul.length; ++i)
+        _normMul[i] = i<sub?_normMul[i]:(sigmas[i-sub] != 0?1.0/sigmas[i-sub]:1);
     }
     if(_predictor_transform.isMeanAdjusted()) {
-      if(mean.length != _normSub.length)
+      if(mean.length+(sub) != _normSub.length)  // numNums() - _nums  checks for interactions (numNums() > _nums in the case of numerical interactions)
         throw new IllegalArgumentException("Length of means does not match number of scaled columns.");
-      for(int i=0;i<sigmas.length;++i)
-        _normSub[i] = isInteractionVec(i)?0:mean[i];
+      for(int i=0;i<_normSub.length;++i)
+        _normSub[i] = i<sub?_normSub[i]:mean[i-sub];
     }
   }
   public void updateWeightedSigmaAndMeanForResponse(double [] sigmas, double [] mean) {
@@ -655,10 +656,10 @@ public class DataInfo extends Keyed<DataInfo> {
       for (int i = _cats; i <= _nums; i++) {
         InteractionWrappedVec v;
         if( i >= n ) break;
-        if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domains() != null)) { // in this case, get the categoricalOffset
-          for (int j = _useAllFactorLevels?0:1; j < v.domains().length; ++j) {
+        if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domain() != null)) { // in this case, get the categoricalOffset
+          for (int j = _useAllFactorLevels?0:1; j < v.domain().length; ++j) {
             if (getCategoricalIdFromInteraction(i, j) < 0) continue;
-            res[k++] = _adaptedFrame._names[i] + "." + v.domains()[j];
+            res[k++] = _adaptedFrame._names[i] + "." + v.domain()[j];
           }
         } else
           res[k++] = _adaptedFrame._names[i];
@@ -850,7 +851,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalIdFromInteraction(int cid, int val) {
     InteractionWrappedVec v;
     if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
-    assert v.domains()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
+    assert v.domain()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
     if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
       assert _valid:"interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
       val = v.mode();
