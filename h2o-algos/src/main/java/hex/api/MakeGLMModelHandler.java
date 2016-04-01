@@ -12,10 +12,7 @@ import water.Key;
 import water.MRTask;
 import water.api.Handler;
 import water.api.KeyV3;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -53,24 +50,67 @@ public class MakeGLMModelHandler extends Handler {
   public DataInfoFrameV3 getDataInfoFrame(int version, DataInfoFrameV3 args) {
     Frame fr = DKV.getGet(args.frame.key());
     if( null==fr ) throw new IllegalArgumentException("no frame found");
-    args.result = new KeyV3.FrameKeyV3(HoTDAAWWG(fr,args.interactions,args.use_all,args.standardize)._key);
+    args.result = new KeyV3.FrameKeyV3(HoTDAAWWG(fr,args.interactions,args.use_all,args.standardize, args.interactions_only)._key);
     return args;
   }
 
-  public static Frame HoTDAAWWG(Frame fr, String[] interactions, boolean useAll, boolean standardize) {
+  public static Frame HoTDAAWWG(Frame fr, String[] interactions, boolean useAll, boolean standardize, final boolean interactionsOnly) {
     final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,true,false,false,false,false,false,interactions);
-    byte[] types = new byte[dinfo.fullN()];
-    Arrays.fill(types, Vec.T_NUM);
-    Frame res = new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk ncs[]) {
-        DataInfo.Row r = dinfo.newDenseRow();
-        for(int i=0;i<cs[0]._len;++i) {
-          r=dinfo.extractDenseRow(cs,i,r);
-          for(int n=0;n<ncs.length;++n)
-            ncs[n].addNum(r.get(n));
+    Frame res;
+    if( interactionsOnly ) {
+      if( dinfo._interactionVecs==null ) throw new IllegalArgumentException("no interactions");
+      int noutputs=0;
+      final int[] colIds = new int[dinfo._interactionVecs.length];
+      int idx=0;
+      String[] coefNames = dinfo.coefNames();
+      for(int i : dinfo._interactionVecs)
+        colIds[idx++] = (noutputs+= ((InteractionWrappedVec)dinfo._adaptedFrame.vec(i)).expandedLength());
+      String[] names = new String[noutputs];
+      int offset=idx=0;
+      final int[] offsetIds = new int[colIds.length];
+      for(int i=0;i<dinfo._adaptedFrame.numCols();++i) {
+        Vec v = dinfo._adaptedFrame.vec(i);
+        if( v instanceof InteractionWrappedVec ) { // ding! start copying coefNmes into names while offset < colIds[idx+1]
+          int namesIdx=0;
+          offsetIds[idx] = offset;
+          while( namesIdx < colIds[idx] )
+            names[namesIdx++] = coefNames[offset++];
+          idx++;
+          if( idx >= colIds.length ) break;
+        } else {
+          if( v.isCategorical() ) offset+= v.domain().length - (useAll?0:1);
+          else                    offset++;
         }
       }
-    }.doAll(types,dinfo._adaptedFrame.vecs()).outputFrame(Key.make(), dinfo.coefNames(), null);
+      res = new MRTask() {
+        @Override public void map(Chunk[] cs, NewChunk ncs[]) {
+          DataInfo.Row r = dinfo.newDenseRow();
+          for(int i=0;i<cs[0]._len;++i) {
+            r=dinfo.extractDenseRow(cs,i,r);
+            int newChkIdx=0;
+            for(int idx=0;idx<offsetIds.length;++idx) {
+              int startOffset = offsetIds[idx];
+              for(int start=startOffset;start<(startOffset+colIds[idx]);++start )
+                ncs[newChkIdx++].addNum(r.get(start));
+            }
+          }
+        }
+      }.doAll(noutputs,Vec.T_NUM,dinfo._adaptedFrame).outputFrame(Key.make(),names,null);
+    } else {
+      byte[] types = new byte[dinfo.fullN()];
+      Arrays.fill(types, Vec.T_NUM);
+      res = new MRTask() {
+        @Override
+        public void map(Chunk[] cs, NewChunk ncs[]) {
+          DataInfo.Row r = dinfo.newDenseRow();
+          for (int i = 0; i < cs[0]._len; ++i) {
+            r = dinfo.extractDenseRow(cs, i, r);
+            for (int n = 0; n < ncs.length; ++n)
+              ncs[n].addNum(r.get(n));
+          }
+        }
+      }.doAll(types, dinfo._adaptedFrame.vecs()).outputFrame(Key.make(), dinfo.coefNames(), null);
+    }
     dinfo.dropInteractions();
     dinfo.remove();
     return res;
