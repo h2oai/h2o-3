@@ -1,54 +1,6 @@
 package jacoco.report.internal.html.parse;
 
-import jacoco.report.internal.html.parse.util.RepeatingList;
-import jacoco.report.internal.html.parse.util.SLL;
-import jacoco.report.internal.html.parse.util.SLLIterator;
-
-/**
- * Created by nkalonia1 on 3/28/16.
- */
-class NameString {
-    private boolean _defined;
-    private boolean _wild;
-    private String _name;
-
-    protected NameString(String name, boolean defined, boolean wild) {
-        _name = name == null ? "" : name;
-        _defined = defined;
-        _wild = wild;
-    }
-
-    public NameString() {
-        this(null, false, false);
-    }
-
-    public NameString(String s) {
-        this(s, true, false);
-    }
-
-    public String get() {
-        return _name;
-    }
-
-    public void clear() {
-        _defined = false;
-    }
-
-    public boolean isDefined() { return _defined; }
-
-    public boolean matches(NameString ns) {
-        return ns != null && _defined && ns._defined && (_wild || ns._wild || _name.equals(ns._name));
-    }
-}
-
-class WildString extends NameString {
-    public WildString() {
-        super(null, true, true);
-    }
-
-    @Override
-    public void clear() {}
-}
+import jacoco.report.internal.html.parse.util.*;
 
 class PackageName implements Cloneable {
     private NameString _name;
@@ -61,12 +13,11 @@ class PackageName implements Cloneable {
     public void clear() { _name.clear(); }
 
     @Override
-    public PackageName clone() {
-        return new PackageName(_name);
+    public PackageName clone() { return new PackageName(_name);
     }
 
-    public boolean matches(PackageName p) {
-        return p != null && _name.matches(p._name);
+    public boolean matches(String packageName) {
+        return packageName != null && _name.matches(packageName);
     }
 
     public String toString() {
@@ -103,12 +54,12 @@ class ClassName implements Cloneable {
         return new ClassName(_name, _signature, _superclass, _interfaces);
     }
 
-    public boolean matches(ClassName c) {
-        return c != null &&
-                _name.matches(c._name) &&
-                _signature.matches(c._signature) &&
-                _superclass.matches(c._superclass) &&
-                _interfaces.matches(c._interfaces);
+    public boolean matches(String name, String signature, String superclass, String[] interfaces) {
+        return name != null && signature != null && superclass != null && interfaces != null &&
+                _name.matches(name) &&
+                _signature.matches(signature) &&
+                _superclass.matches(superclass) &&
+                _interfaces.matches(interfaces);
     }
 
     public String toString() {
@@ -140,72 +91,11 @@ class MethodName implements Cloneable {
         return new MethodName(_name, _desc, _signature);
     }
 
-    public boolean matches(MethodName m) {
-        return m != null &&
-                _name.matches(m._name) &&
-                _desc.matches(m._desc) &&
-                _signature.matches(m._signature);
+    public boolean matches(String name, String description, String signature) {
+        return name != null && description != null && signature != null &&
+                _name.matches(name) &&
+                _desc.matches(description) &&
+                _signature.matches(signature);
     }
 }
 
-class NameList {
-    private SLL<NameString> _names;
-    private boolean _repeating;
-
-    public NameList() {
-        this(false);
-    }
-    public NameList(boolean repeat) {
-        _names = (_repeating = repeat) ? new RepeatingList<NameString>() : new SLL<NameString>();
-    }
-    public NameList(String[] names, boolean repeat) {
-        this(repeat);
-        if (names != null) {
-            for (String s : names) {
-                _names.add(new NameString(s));
-            }
-        }
-    }
-
-    public NameList(String[] names) {
-        this(names, false);
-    }
-
-    public NameList(NameString[] n, boolean repeat) {
-        this(repeat);
-        if (n != null) {
-            for (NameString ns : n) {
-                _names.add(ns);
-            }
-        }
-    }
-
-    public NameList(NameString[] n) {
-        this(n, false);
-    }
-
-    public void clear() {
-        _names = _repeating ? new RepeatingList<NameString>() : new SLL<NameString>();
-    }
-
-    public boolean isDefined() { return true; }
-
-    public SLLIterator<NameString> iterator() {
-        return _names.iterator();
-    }
-
-    public boolean matches(NameList n) {
-        if (n == null) return false;
-        SLLIterator<NameString> a = iterator();
-        SLLIterator<NameString> b = n.iterator();
-        while (!a.atEnd() || !b.atEnd()) {
-            if (!a.hasNext() || !b.hasNext()) {
-                return false;
-            }
-            if (!a.next().matches(b.next())) {
-                return false;
-            }
-        }
-        return true;
-    }
-}

@@ -1,5 +1,5 @@
 import diff.*;
-import jacoco.core.DiffAnalyzerTest;
+import report.HighlightHTMLReportGenerator;
 import parse.*;
 
 import java.io.File;
@@ -11,7 +11,7 @@ import java.util.*;
 public class CoverageTool {
 
     public static void run(String commit_from, String commit_to, Path root) throws IOException {
-        // STEP 1: Get a DiffReport via DiffReportGenerator
+        /*// STEP 1: Get a DiffReport via DiffReportGenerator
         System.out.println("STEP 1");
         System.out.println("RUNNING...");
         DiffReport dr = DiffReportGenerator.run(commit_from, commit_to, root);
@@ -20,9 +20,9 @@ public class CoverageTool {
         System.out.println("STEP 2");
         System.out.println("RUNNING...");
 
-        DiffAnalyzerTest dat = new DiffAnalyzerTest(new File("/Users/nkalonia1/h2o-3/h2o-core/"), dr);
+        HighlightHTMLReportGenerator dat = new HighlightHTMLReportGenerator(new File("/Users/nkalonia1/h2o-3/h2o-core/"), dr);
         dat.create();
-        System.out.println("STEP 2 COMPLETE");
+        System.out.println("STEP 2 COMPLETE");*/
     }
 
     private static Set<String> getClassNames(DiffFile df, List<ClassHunk> c) {

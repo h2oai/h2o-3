@@ -1,4 +1,6 @@
 package jacoco.report.internal.html.parse;
+import jacoco.report.internal.html.parse.util.NameList;
+import jacoco.report.internal.html.parse.util.NameString;
 import org.jacoco.core.analysis.ICoverageNode.CounterEntity;
 
 import java.io.*;
@@ -13,7 +15,7 @@ import java.util.regex.Pattern;
 public class DSVParser {
     private List<CounterEntity> _default_headers;
 
-    private static final Pattern _DEFAULT = Pattern.compile("(default\\[([^\\]]*)\\]?):"); // Entire token in group 1, parameters in group 2
+    private static final Pattern _DEFAULT = Pattern.compile("(default(?:\\[([^\\]]*)\\])?):"); // Entire token in group 1, parameters in group 2
     private static final Pattern _HEADERS = Pattern.compile("(headers):"); // Entire token in group 1
     private static final Pattern _PACKAGE = Pattern.compile("(package):"); // Entire token in group 1
     private static final Pattern _CLASS = Pattern.compile("(class):"); // Entire token in group 1
@@ -33,6 +35,7 @@ public class DSVParser {
     private ClassName _class_name;
     private MethodName _method_name;
     private boolean _propagate;
+    private static final NameString _wild = new NameString("*");
     private Map<CounterEntity, Double> _default_values;
 
     private List<ParseItem> _items;
@@ -69,6 +72,7 @@ public class DSVParser {
     public DSVParser() { this(null, null); }
 
     public List<ParseItem> parse(File params) {
+        if (params == null) return _items;
         try {
             List<CounterEntity> headers = _default_headers;
             Scanner sc = new Scanner(params);
@@ -79,7 +83,8 @@ public class DSVParser {
                 m = _DEFAULT.matcher(token);
                 if (m.matches()) {
                     log("Found default token: " + m.group(1));
-                    setDefaults(getNextQuoted(sc), getHeaders(m.group(2)));
+                    String group = m.group(2) != null ? m.group(2) : "";
+                    setDefaults(getNextQuoted(sc), getHeaders(group));
                     continue;
                 }
 
@@ -136,7 +141,7 @@ public class DSVParser {
         Matcher m = _PACKAGE_NAME.matcher(s);
         if (m.matches()) {
             String p_name = m.group(1).replace('.', '/');
-            name = isWild(p_name) ? new WildString() : new NameString(p_name);
+            name = isWild(p_name) ? _wild : new NameString(p_name);
             _package_name.set(name);
         } else {
             err("Invalid package name: " + s);
@@ -150,11 +155,11 @@ public class DSVParser {
     }
 
     private void setClassName(String s) {
-        _class_name.set(new NameString(_package_name.getPackageName().get() + "/" + s.trim().replace('.', '$')), new WildString(), new WildString(), new NameList(new NameString[] {new WildString()}, true));
+        _class_name.set(new NameString(_package_name.getPackageName().get() + "/" + s.trim().replace('.', '$')), _wild, _wild, new NameList(new NameString[] {_wild}, true));
     }
 
     private void setMethodName(String s) {
-        _method_name.set(new NameString(s.trim()), new WildString(), new WildString());
+        _method_name.set(new NameString(s.trim()), _wild, _wild);
     }
 
     private ParseItem applyValues(String values) {

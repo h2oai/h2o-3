@@ -36,16 +36,15 @@ public class ParseItem {
     }
 
     public boolean matches(IPackageCoverage p) {
-        return _package.matches(new PackageName(new NameString(p.getName())));
+        return _package.matches(p.getName());
     }
 
     public boolean matches(IClassCoverage c) {
-        return _class.matches(new ClassName(new NameString(c.getName()),
-                new NameString(c.getSignature()), new NameString(c.getSuperName()), new NameList(c.getInterfaceNames())));
+        return _class.matches(c.getName(), c.getSignature(), c.getSuperName(), c.getInterfaceNames());
     }
 
     public boolean matches(IMethodCoverage m) {
-        return _method.matches(new MethodName(new NameString(m.getName()), new NameString(m.getDesc()), new NameString(m.getSignature())));
+        return _method.matches(m.getName(), m.getDesc(), m.getSignature());
     }
 
     public boolean hasPackageName() {
