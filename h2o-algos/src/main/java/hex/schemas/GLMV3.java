@@ -139,7 +139,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public int max_active_predictors = -1;
 
     @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction=Direction.INPUT, level=Level.expert)
-    public int[] interactions;
+    public String[] interactions;
 
     // dead unused args, formely inherited from supervised model schema
     /**

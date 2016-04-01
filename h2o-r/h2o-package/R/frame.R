@@ -1000,6 +1000,15 @@ h2o.runif <- function(x, seed = -1) {
   .newExpr("h2o.runif", chk.H2OFrame(x), seed)
 }
 
+#' Produce a k-fold column vector.
+#'
+#' Create a k-fold vector useful for H2O algorithms that take a fold_assignments argument.
+#'
+#' @param data A dataframe against which to create the fold column.
+#' @param nfolds The number of desired folds.
+#' @param seed A random seed, -1 indicates that H2O will choose one.
+h2o.kfold_column <- function(data,nfolds,seed=-1) .eval.frame(.newExpr("kfold_column",data,nfolds,seed))
+
 #' Check H2OFrame columns for factors
 #'
 #' Determines if any column of an H2OFrame object contains categorical data.
@@ -1017,6 +1026,15 @@ h2o.runif <- function(x, seed = -1) {
 #' }
 #' @export
 h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
+
+
+
+.getExpanded <- function(data,interactions,useAll,standardize) {
+  interactions <- .collapse.char(interactions)
+  if( interactions=="") interactions <- NULL
+  res <- .h2o.__remoteSend("DataInfoFrame", method = "POST", frame=h2o.getId(data), interactions=interactions, use_all=useAll,standardize=standardize)
+  h2o.getFrame(res$result$name)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -2369,7 +2387,7 @@ h2o.cbind <- function(...) {
 #'
 #' @name h2o.rbind
 #' @param \dots A sequence of H2OFrame arguments. All datasets must exist on the same H2O instance
-#'        (IP and port) and contain the same number of rows.
+#'        (IP and port) and contain the same number and types of columns.
 #' @return An H2OFrame object containing the combined \dots arguments row-wise.
 #' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
 #' @examples
