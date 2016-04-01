@@ -32,6 +32,12 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
         idx = h2o_type.find('[]')
         brackets = '' if idx is -1 else h2o_type[idx:]
 
+    if h2o_type.startswith('Map'):
+        java_type = h2o_type
+        java_type = java_type.replace('<string,', '<String,')
+        java_type = java_type.replace(',string>', ',String>')
+        return java_type
+
     if simple_type == 'string':
         return simple_type.capitalize() + brackets
     # TODO: for input keys are String; for output they are KeyV3 and children
@@ -96,12 +102,7 @@ def generate_pojo(schema, pojo_name):
 
         if type == 'Iced': continue  # TODO
 
-        if type.startswith('Map'):
-            java_type = type
-            java_type = java_type.replace('<string,', '<String,')
-            java_type = java_type.replace(',string>', ',String>')
-        else:
-            java_type = cons_java_type(pojo_name, name, type, schema_name)
+        java_type = cons_java_type(pojo_name, name, type, schema_name)
 
         if type.startswith('enum'):
             enum_name = field['schema_name']
@@ -121,6 +122,10 @@ def generate_pojo(schema, pojo_name):
             pojo.append("    public {type} {name};".format(type=java_type, name=name))
 
         first = False
+
+    pojo.append("")
+    pojo.append("    /** Return the contents of this object as a JSON String. */")
+    pojo.append("    @Override")
 
     pojo.append("    public String toString() {")
     pojo.append("        return new Gson().toJson(this);")
@@ -197,6 +202,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         pojo.append("import water.bindings.pojos.*;")
         pojo.append("import retrofit2.*;")
         pojo.append("import retrofit2.http.*;")
+        pojo.append("import java.util.Map;")
         pojo.append("")
         pojo.append("public interface " + entity + " {")
 
@@ -230,26 +236,50 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 method = method + '_' + algo  # validate_parameters_glm()
 
             # TODO: handle query parameters from RequestSchema
-            if http_method == 'POST':
-                parms = input_schema_name + ' ' + 'parms'
-            else:
-                parms = ""
-                path_parm_names = meta['path_params']
-                input_schema = all_schemas_map[input_schema_name]
+            parms = ""
 
-                first_parm = True
-                for parm in path_parm_names:
-                    # find the metadata for the field from the input schema:
-                    fields = [field for field in input_schema['fields'] if field['name'] == parm]
-                    if len(fields) != 1:
-                        print('Failed to find parameter: ' + parm + ' for endpoint: ' + repr(meta))
-                    field = fields[0]
+            if http_method == 'POST':
+                is_post = True
+            else:
+                is_post = False
+            
+            path_parm_names = meta['path_params']
+            input_schema = all_schemas_map[input_schema_name]
+
+            # calculate indent
+            indent = ' ' * len('    Call<{output_schema_name}> {method}('.format(output_schema_name = output_schema_name, method = method))
+            
+            # include query path parms first, and then POST body parms
+            first_parm = True
+            for parm in path_parm_names:
+                # find the metadata for the field from the input schema:
+                fields = [field for field in input_schema['fields'] if field['name'] == parm]
+                if len(fields) != 1:
+                    print('Failed to find parameter: ' + parm + ' for endpoint: ' + repr(meta))
+                field = fields[0]
+                if field['direction'] == 'OUTPUT': continue
+
+                # cons up the proper Java type:
+                parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
+
+                if not first_parm: parms += ',\n'; parms += indent
+                parms += '@Query("{parm}") '.format(parm = parm)
+                parms += parm_type
+                parms += ' '
+                parms += parm
+                first_parm = False
+
+            if is_post:
+                for field in input_schema['fields']:
+                    if field['direction'] == 'OUTPUT': continue
+                    if field['name'] in path_parm_names: continue
 
                     # cons up the proper Java type:
-                    parm_type = field['schema_name'] if field['is_schema'] else field['type']
-                    if parm_type in java_type_map: parm_type = java_type_map[parm_type]
+                    parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
+                    parm = field['name']
 
-                    if not first_parm: parms += ', '
+                    if not first_parm: parms += ',\n'; parms += indent
+                    parms += '@Field("{parm}") '.format(parm = parm)
                     parms += parm_type
                     parms += ' '
                     parms += parm
@@ -264,7 +294,8 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
 
             if not first: pojo.append('')
             if http_method == 'POST':
-                pojo.append('    @Headers("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")')
+#                pojo.append('    @Headers("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")')
+                pojo.append('    @FormUrlEncoded')
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
             pojo.append('    Call<{output_schema_name}> {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
 
@@ -366,7 +397,7 @@ retrofitProxies = generate_retrofit_proxies(endpoints_meta, all_schemas_map)
 # TODO: makedirs only once!
 
 # Write them out:
-for entity, proxy in retrofitProxies.iteritems():
+for entity, proxy in retrofitProxies.items():
     save_full = args.dest + os.sep + 'water/bindings/proxies/retrofit/' + entity + '.java'
     save_dir = os.path.dirname(save_full)
 
@@ -403,6 +434,7 @@ public class Example {
         .addConverterFactory(GsonConverterFactory.create())
         .build();
 
+        CreateFrame createFrameService = retrofit.create(CreateFrame.class);
         Frames framesService = retrofit.create(Frames.class);
         Models modelsService = retrofit.create(Models.class);
 
@@ -415,11 +447,35 @@ public class Example {
                 FramesV3 all_frames = all_frames_response.body();
                 System.out.println("All Frames: ");
                 System.out.println(all_frames);
+            } else {
+                System.err.println("framesService.list() failed");
             }
             if (all_models_response.isSuccessful()) {
                 ModelsV3 all_models = all_models_response.body();
                 System.out.println("All Models: ");
                 System.out.println(all_models);
+            } else {
+                System.err.println("modelsService.list() failed");
+            }
+
+            Response<JobV3> create_frame_response = createFrameService.run(null, 1000, 100, 42, 42, true, 0, 100000, 0.2, 100, 0.2, 32767, 0.2, 0.5, 0.2, 0, 0.2, 2, true, null).execute();
+            if (create_frame_response.isSuccessful()) {
+                JobV3 job = create_frame_response.body(); // TODO: poll
+                try { Thread.sleep(30000); } catch (InterruptedException e) {}
+                KeyV3 new_frame = job.dest;
+                System.out.println("Created frame: " + new_frame);
+
+                all_frames_response = framesService.list().execute();
+                if (all_frames_response.isSuccessful()) {
+                    FramesV3 all_frames = all_frames_response.body();
+                    System.out.println("All Frames (after createFrame): ");
+                    System.out.println(all_frames);
+                } else {
+                    System.err.println("framesService.list() failed");
+                }
+
+            } else {
+                System.err.println("createFrameService.run() failed");
             }
         }
         catch (IOException e) {
