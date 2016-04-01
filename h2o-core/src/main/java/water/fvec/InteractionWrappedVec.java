@@ -78,6 +78,14 @@ public class InteractionWrappedVec extends WrappedVec {
     else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
   }
 
+  public double[] getMeans() {
+    if( null!=_v1Domain && null!=_v2Domain ) {
+      double[] res = new double[domain().length];
+      Arrays.fill(res,Double.NaN);
+      return res;
+    } else if( null==_v1Domain && null==_v2Domain ) return new double[]{super.mean()};
+    return new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length).doAll(this)._d;
+  }
 
   public double getSub(int i) {
     if( null==t ) return mean();
@@ -164,6 +172,7 @@ public class InteractionWrappedVec extends WrappedVec {
       } else
         t = standardize?new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length):null;
     }
+    if( null==_v1Domain && null==_v2Domain ) _useAllFactorLevels=true;  // just makes life easier to have this when the vec is categorical
   }
 
   private static class CombineDomainTask extends MRTask<CombineDomainTask> {
