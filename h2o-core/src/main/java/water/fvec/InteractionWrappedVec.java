@@ -32,6 +32,7 @@ public class InteractionWrappedVec extends WrappedVec {
   private transient Vec _masterVec2;  private String[] _v2Domain;
   public boolean _useAllFactorLevels;
   public boolean _skipMissing;
+  public boolean _standardize;
   private long _bins[];
   private String[] _missingDomains;
 
@@ -49,7 +50,7 @@ public class InteractionWrappedVec extends WrappedVec {
     _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
     _skipMissing=skipMissing;
-    setupDomain();  // performs MRTask if both vecs are categorical!!
+    setupDomain(_standardize=standardize);  // performs MRTask if both vecs are categorical!!
     DKV.put(this);
     if( null!=t ) t.doAll(this);
   }
@@ -150,7 +151,7 @@ public class InteractionWrappedVec extends WrappedVec {
   }
   public long[] getBins() { return _bins; }
   public String[] missingDomains() { return _missingDomains; }
-  private void setupDomain() {
+  private void setupDomain(boolean standardize) {
     if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
@@ -161,7 +162,7 @@ public class InteractionWrappedVec extends WrappedVec {
         _type = Vec.T_CAT; // vec is T_NUM up to this point
         _missingDomains=t._missingDom;
       } else
-        t = new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length);
+        t = standardize?new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length):null;
     }
   }
 
@@ -276,7 +277,7 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, false, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecKey1, _masterVecKey2);
     if( null!=domain()  ) v.setDomain(domain());
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();
