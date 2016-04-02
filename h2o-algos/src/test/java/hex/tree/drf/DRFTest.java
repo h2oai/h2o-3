@@ -14,6 +14,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Triple;
 import water.util.VecUtils;
@@ -1358,7 +1359,7 @@ public class DRFTest extends TestUtil {
   @Test
   public void testStochasticDRFEquivalent() {
     Frame tfr = null, vfr = null;
-    DRFModel gbm = null;
+    DRFModel drf = null;
 
     Scope.enter();
     try {
@@ -1381,15 +1382,15 @@ public class DRFTest extends TestUtil {
       parms._sample_rate = 0.5f;
 
       // Build a first model; all remaining models should be equal
-      gbm = new DRF(parms).trainModel().get();
+      drf = new DRF(parms).trainModel().get();
 
-      ModelMetricsRegression mm = (ModelMetricsRegression)gbm._output._training_metrics;
+      ModelMetricsRegression mm = (ModelMetricsRegression)drf._output._training_metrics;
       assertEquals(0.11870495410303755, mm.mse(), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
       if (vfr != null) vfr.remove();
-      if (gbm != null) gbm.delete();
+      if (drf != null) drf.delete();
       Scope.exit();
     }
   }
@@ -1467,6 +1468,56 @@ public class DRFTest extends TestUtil {
       if (tfr != null) tfr.remove();
       for (Key k : ksplits)
         if (k!=null) k.remove();
+    }
+  }
+  @Test public void minSplitImprovement() {
+    Frame tfr = null;
+    Key[] ksplits = null;
+    DRFModel drf = null;
+    try {
+      Scope.enter();
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      int resp = 54;
+//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      int resp = 784;
+      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      DKV.put(tfr);
+      SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
+      // Invoke the job
+      sf.exec().get();
+      ksplits = sf._destination_frames;
+      double[] msi = new double[]{0, 1e-10, 1e-8, 1e-6, 1e-4, 1e-2};
+      final int N = msi.length;
+      double[] loglosses = new double[N];
+      for (int i = 0; i < N; ++i) {
+        // Load data, hack frames
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = ksplits[0];
+        parms._valid = ksplits[1];
+        parms._response_column = tfr.names()[resp];
+        parms._min_split_improvement = msi[i];
+        parms._ntrees = 20;
+        parms._score_tree_interval = parms._ntrees;
+        parms._max_depth = 15;
+        parms._seed = 1234;
+
+        DRF job = new DRF(parms);
+        drf = job.trainModel().get();
+        loglosses[i] = drf._output._scored_valid[drf._output._scored_valid.length - 1]._logloss;
+        if (drf!=null) drf.delete();
+      }
+      for (int i = 0; i < msi.length; ++i) {
+        Log.info("min_split_improvement: " + msi[i] + " -> validation logloss: " + loglosses[i]);
+      }
+      int idx = ArrayUtils.minIndex(loglosses);
+      Log.info("Optimal min_split_improvement: " + msi[idx]);
+      Assert.assertTrue(0 != idx);
+    } finally {
+      if (drf!=null) drf.delete();
+      if (tfr!=null) tfr.delete();
+      if (ksplits[0]!=null) ksplits[0].remove();
+      if (ksplits[1]!=null) ksplits[1].remove();
+      Scope.exit();
     }
   }
 }
