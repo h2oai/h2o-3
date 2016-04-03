@@ -628,6 +628,7 @@ public abstract class GLMTask  {
     @Override
     protected void comuteGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
+        if(Double.isNaN(ys[i])) continue;
         double e = es[i], y = 1 - 2*ys[i], w = ws[i];
         double d = 1 + Math.exp(y*e);
         _likelihood += w*Math.log(d);
