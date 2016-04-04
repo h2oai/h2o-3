@@ -140,6 +140,21 @@ public abstract class Chunk extends Iced<Chunk> {
       vals[i-from] = atd(i);
     return vals;
   }
+
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    for(int i = from; i < to; ++i) {
+      double d = atd(i);
+      if(Double.isNaN(d))
+        vals[i] = NA;
+      else {
+        vals[i] = (int)d;
+        if(vals[i] != d) throw new IllegalArgumentException("Calling getIntegers on non-integer column");
+      }
+    }
+    return vals;
+  }
+
+
   /**
    * Dense bulk interface, fetch values from the given ids
    * @param vals

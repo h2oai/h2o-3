@@ -76,4 +76,13 @@ public class C1Chunk extends Chunk {
     return vals;
   }
 
+  @Override
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    for(int i = from; i < to; ++i) {
+      int res = 0xFF & _mem[i];
+      vals[i - from] = res != _NA?res:NA;
+    }
+    return vals;
+  }
+
 }

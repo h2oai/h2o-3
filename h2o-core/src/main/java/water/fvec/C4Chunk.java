@@ -75,4 +75,13 @@ public class C4Chunk extends Chunk {
     return vals;
   }
 
+  @Override
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    for(int i = from; i < to; ++i) {
+      int res = UnsafeUtils.get4(_mem, i << 2);
+      vals[i - from] = res != _NA?res:NA;
+    }
+    return vals;
+  }
+
 }
