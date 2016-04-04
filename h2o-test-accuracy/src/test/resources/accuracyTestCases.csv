@@ -1,0 +1,4 @@
+test_case_id,algorithm,algo_parameters,tuned,regression,training_data_set_id,testing_data_set_id,test_case_description
+1,gbm,;;;x;;;;;;;;;;;;;;;;;;;;;;;,0,0,1,2,"Multinomial classification, iris train/test split, gbm default parameters"
+2,gbm,;;x;;;;;;;;;;;;;;;;;;;;;;;;,0,0,61,62,"Binomial classification, prostate train/test split, gbm default parameters"
+3,gbm,;x;;;;;;;;;;;;;;;;;;;;;;;;;,0,1,63,64,"Regression, milsongs train/test split, gbm default parameters"

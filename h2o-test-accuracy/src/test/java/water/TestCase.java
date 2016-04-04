@@ -27,13 +27,14 @@ public class TestCase {
   private boolean regression;
   private int trainingDataSetId;
   private int testingDataSetId;
+  private String testCaseDescription;
 
   private Model.Parameters params;
   private DataSet trainingDataSet;
   private DataSet testingDataSet;
 
   public TestCase(int testCaseId, String algo, String algoParameters, boolean tuned, boolean regression, int
-    trainingDataSetId, int testingDataSetId) throws Exception {
+    trainingDataSetId, int testingDataSetId, String testCaseDescription) throws Exception {
     this.testCaseId = testCaseId;
     this.algo = algo;
     this.algoParameters = algoParameters;
@@ -41,6 +42,7 @@ public class TestCase {
     this.regression = regression;
     this.trainingDataSetId = trainingDataSetId;
     this.testingDataSetId = testingDataSetId;
+    this.testCaseDescription = testCaseDescription;
 
     trainingDataSet = new DataSet(this.trainingDataSetId);
     testingDataSet = new DataSet(this.testingDataSetId);
