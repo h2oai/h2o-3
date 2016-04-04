@@ -14,7 +14,6 @@ import water.H2O.H2OCountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
@@ -460,7 +459,7 @@ public abstract class GLMTask  {
       _currentLambda = lambda;
 
     }
-    protected abstract void comuteGradientMultipliers(double [] es, double [] ys, double [] ws);
+    protected abstract void computeGradientMultipliers(double [] es, double [] ys, double [] ws);
 
     private final void computeCategoricalEtas(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
       // categoricals
@@ -565,7 +564,7 @@ public abstract class GLMTask  {
       int [] ids = MemoryManager.malloc4(response._len);
       computeCategoricalEtas(chks,etas,vals,ids);
       computeNumericEtas(chks,etas,vals,ids);
-      comuteGradientMultipliers(etas,ys,ws);
+      computeGradientMultipliers(etas,ys,ws);
       // walk the chunks again, add to the gradient
       computeCategoricalGrads(chks,etas,vals,ids);
       computeNumericGrads(chks,etas,vals,ids);
@@ -601,10 +600,10 @@ public abstract class GLMTask  {
       _glmf = new GLMWeightsFun(parms);
     }
 
-    @Override protected void comuteGradientMultipliers(double [] es, double [] ys, double [] ws){
+    @Override protected void computeGradientMultipliers(double [] es, double [] ys, double [] ws){
       double l = 0;
       for(int i = 0; i < es.length; ++i) {
-        if (Double.isNaN(ys[i])) {
+        if (Double.isNaN(ys[i]) || ws[i] == 0) {
           es[i] = 0;
         } else {
           double mu = _glmf.linkInv(es[i]);
@@ -626,9 +625,9 @@ public abstract class GLMTask  {
     }
 
     @Override
-    protected void comuteGradientMultipliers(double[] es, double[] ys, double[] ws) {
+    protected void computeGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
-        if(Double.isNaN(ys[i])) continue;
+        if(Double.isNaN(ys[i]) || ws[i] == 0){es[i] = 0; continue;}
         double e = es[i], y = 1 - 2*ys[i], w = ws[i];
         double d = 1 + Math.exp(y*e);
         _likelihood += w*Math.log(d);
@@ -644,10 +643,13 @@ public abstract class GLMTask  {
     }
 
     @Override
-    protected void comuteGradientMultipliers(double[] es, double[] ys, double[] ws) {
+    protected void computeGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
         double w = ws[i];
-        if(w == 0 || Double.isNaN(ys[i]))continue;
+        if(w == 0 || Double.isNaN(ys[i])){
+          es[i] = 0;
+          continue;
+        }
         double e = es[i], y = ys[i];
         double d = (e-y);
         double wd = w*d;
@@ -778,7 +780,10 @@ public abstract class GLMTask  {
       double [] exps = new double[K+1];
       for(int i = 0; i < etas.length; ++i) {
         double w = ws[i];
-        if(w == 0)continue;
+        if(w == 0){
+          Arrays.fill(etas[i],0);
+          continue;
+        }
         int y = (int) ys[i];
         double logSumExp = computeMultinomialEtas(etas[i], exps);
         _likelihood -= w * (etas[i][y] - logSumExp);
