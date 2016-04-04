@@ -751,8 +751,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean isSupervised() { return true; }
 
     @Override public String[] interactions() { return _dinfo._interactionColumns; }
-    public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize) {
-      return MakeGLMModelHandler.HoTDAAWWG(fr,interactions,useAll,standardize,false);
+    public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+      return MakeGLMModelHandler.HoTDAAWWG(fr,interactions,useAll,standardize,false,skipMissing);
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
