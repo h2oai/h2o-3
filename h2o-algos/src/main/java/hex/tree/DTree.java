@@ -1,11 +1,13 @@
 package hex.tree;
 
+import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
+import java.util.concurrent.ForkJoinTask;
 
 /** A Decision Tree, laid over a Frame of Vecs, and built distributed.
  *
@@ -429,7 +431,7 @@ public class DTree extends Iced {
       DTree.Split best = new DTree.Split(-1,-1,null,(byte)0,Double.MAX_VALUE,Double.MAX_VALUE,Double.MAX_VALUE,0L,0L,0,0);
       if( hs == null ) return best;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
-      FindSplits[] findSplits = new FindSplits[maxCols];
+      List<FindSplits> findSplits = new ArrayList<>();
       //total work is to find the best split across sum_over_cols_to_split(nbins)
       long nbinsSum = 0;
       for( int i=0; i<maxCols; i++ ) {
@@ -442,29 +444,29 @@ public class DTree extends Iced {
       for( int i=0; i<maxCols; i++ ) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
         if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        findSplits[i] = new FindSplits(hs, col, u._nid);
-        if (isSmall) findSplits[i].compute2();
-        else H2O.submitTask(findSplits[i]);
+        FindSplits fs = new FindSplits(hs, col, u._nid);
+        findSplits.add(fs);
+        if (isSmall) fs.compute();
       }
-      for( int i=0; i<maxCols; i++ ) {
-        if (findSplits[i]==null) continue;
-        findSplits[i].join();
-        DTree.Split s = findSplits[i]._s;
+      if (!isSmall) jsr166y.ForkJoinTask.invokeAll(findSplits);
+      for( FindSplits fs : findSplits) {
+        DTree.Split s = fs._s;
         if( s == null ) continue;
         if (s.se() < best.se()) best = s;
       }
       return best;
     }
 
-    class FindSplits extends H2O.H2OCountedCompleter<FindSplits> {
-      FindSplits(DHistogram[] hs, int col, int nid) { _hs = hs; _col = col; _nid = nid;}
+    class FindSplits extends RecursiveAction {
+      FindSplits(DHistogram[] hs, int col, int nid) {
+        _hs = hs; _col = col; _nid = nid;
+      }
       final DHistogram[] _hs;
       final int _col;
       DTree.Split _s;
       final int _nid;
-      @Override public void compute2() {
+      @Override public void compute() {
         _s = _hs[_col].scoreMSE(_col, _tree._min_rows, _nid);
-        tryComplete();
       }
     }
 

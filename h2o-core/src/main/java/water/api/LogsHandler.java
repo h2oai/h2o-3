@@ -16,7 +16,7 @@ public class LogsHandler extends Handler {
     public boolean success = false;
 
     public GetLogTask() {
-      super( H2O.MIN_HI_PRIORITY);
+      super(H2O.GUI_PRIORITY);
       log = null;
     }
 
@@ -28,11 +28,13 @@ public class LogsHandler extends Handler {
         }
 
         if (name.equals("stdout") || name.equals("stderr")) {
-          if (! LinuxProcFileReader.refresh()) {
+          LinuxProcFileReader lpfr = new LinuxProcFileReader();
+          lpfr.read();
+          if (! lpfr.valid()) {
             log = "This option only works for Linux hosts";
           }
           else {
-            int pid = LinuxProcFileReader.getProcessID();
+            String pid = lpfr.getProcessID();
             String fdFileName = "/proc/" + pid + "/fd/" + (name.equals("stdout") ? "1" : "2");
             File f = new File(fdFileName);
             logPathFilename = f.getCanonicalPath();

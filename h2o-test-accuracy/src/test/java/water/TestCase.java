@@ -27,13 +27,14 @@ public class TestCase {
   private boolean regression;
   private int trainingDataSetId;
   private int testingDataSetId;
+  private String testCaseDescription;
 
   private Model.Parameters params;
   private DataSet trainingDataSet;
   private DataSet testingDataSet;
 
   public TestCase(int testCaseId, String algo, String algoParameters, boolean tuned, boolean regression, int
-    trainingDataSetId, int testingDataSetId) throws Exception {
+    trainingDataSetId, int testingDataSetId, String testCaseDescription) throws Exception {
     this.testCaseId = testCaseId;
     this.algo = algo;
     this.algoParameters = algoParameters;
@@ -41,6 +42,7 @@ public class TestCase {
     this.regression = regression;
     this.trainingDataSetId = trainingDataSetId;
     this.testingDataSetId = testingDataSetId;
+    this.testCaseDescription = testCaseDescription;
 
     trainingDataSet = new DataSet(this.trainingDataSetId);
     testingDataSet = new DataSet(this.testingDataSetId);
@@ -195,6 +197,7 @@ public class TestCase {
     String[] glmAlgoParamsMap = new String[]{
       "gaussian",
       "binomial",
+      "multinomial",
       "poisson",
       "gamma",
       "tweedie",
@@ -216,7 +219,6 @@ public class TestCase {
       "betaConstraints",
       "lowerBound",
       "upperBound",
-      "",
       "_intercept",
       "_prior",
       "_max_active_predictors"
@@ -228,19 +230,20 @@ public class TestCase {
     // _distribution
     if      (tokens[0].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gaussian; }
     else if (tokens[1].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.binomial; }
-    else if (tokens[2].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.poisson; }
-    else if (tokens[3].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gamma; }
-    else if (tokens[4].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.tweedie; }
+    else if (tokens[2].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.multinomial; }
+    else if (tokens[3].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.poisson; }
+    else if (tokens[4].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gamma; }
+    else if (tokens[5].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.tweedie; }
 
     // _solver
-    if      (tokens[5].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.AUTO; }
-    else if (tokens[6].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.IRLSM; }
-    else if (tokens[7].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.L_BFGS; }
-    else if (tokens[8].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT_NAIVE; }
-    else if (tokens[9].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT; }
+    if      (tokens[6].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.AUTO; }
+    else if (tokens[7].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.IRLSM; }
+    else if (tokens[8].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.L_BFGS; }
+    else if (tokens[9].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT_NAIVE; }
+    else if (tokens[10].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT; }
 
-    for (int i = 10; i < tokens.length; i++) {
-      if (tokens[i].isEmpty() || i == 20 || i == 21 || i == 22 || i == 23) { continue; } // skip _beta_constraints
+    for (int i = 11; i < tokens.length; i++) {
+      if (tokens[i].isEmpty() || i == 21 || i == 22 || i == 23) { continue; } // skip _beta_constraints
       switch (glmAlgoParamsMap[i]) {
         case "_nfolds":                    glmParams._nfolds = Integer.parseInt(tokens[i]);
           break;
@@ -278,9 +281,9 @@ public class TestCase {
     glmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
 
     // beta constraints
-    if (tokens[20].equals("x")) {
-      double lowerBound = Double.parseDouble(tokens[21]);
-      double upperBound = Double.parseDouble(tokens[22]);
+    if (tokens[21].equals("x")) {
+      double lowerBound = Double.parseDouble(tokens[22]);
+      double upperBound = Double.parseDouble(tokens[23]);
       glmParams._beta_constraints = makeBetaConstraints(lowerBound, upperBound);
     }
     return glmParams;

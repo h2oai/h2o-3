@@ -74,6 +74,8 @@ class H2ORandomForestEstimator(H2OEstimator):
       Relative tolerance for metric-based stopping criterion (stop if relative improvement
       is not at least this much)
       Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+    min_split_improvement : float
+      Minimum relative improvement in squared error reduction for a split to happen
     """
   def __init__(self, model_id=None, mtries=None, sample_rate=None, col_sample_rate_per_tree=None,
                build_tree_one_node=None, ntrees=None, max_depth=None, min_rows=None, nbins=None,
@@ -83,7 +85,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                score_each_iteration=None, score_tree_interval=None,
                keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
-               checkpoint=None):
+               checkpoint=None, min_split_improvement=None):
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -271,4 +273,12 @@ class H2ORandomForestEstimator(H2OEstimator):
   @checkpoint.setter
   def checkpoint(self, value):
     self._parms["checkpoint"] = value
+
+  @property
+  def min_split_improvement(self):
+    return self._parms["min_split_improvement"]
+
+  @min_split_improvement.setter
+  def min_split_improvement(self, value):
+    self._parms["min_split_improvement"] = value
 

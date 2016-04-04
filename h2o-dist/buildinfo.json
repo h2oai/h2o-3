@@ -77,9 +77,9 @@
             "distribution" : "mapr5.0",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr5.0.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr5.0.zip"
-        }
+        },
         {
-            "distribution" : "mapr5.0",
+            "distribution" : "mapr5.1",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr5.1.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr5.1.zip"
         }
