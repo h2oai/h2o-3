@@ -167,6 +167,44 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names,
                                     col_types, na_strings)
 
+def import_sql_table(database_sys, database, table, username, password, host=None, port=None, optimize=None):
+  """Import SQL table to H2OFrame in memory.
+  
+  Parameters
+  ----------
+    database_sys : str
+      Database management system. Must be one of: MySQL
+      
+    database : str
+      Name of SQL database
+      
+    table : str
+      Name of SQL table
+      
+    username : str
+      Username of SQL server
+      
+    password : str
+      Password of SQL server
+      
+    host : str, default is "localhost"
+      Host of SQL server
+      
+    port : int or str, default is 3306
+      Port of SQL server
+      
+    optimize : bool, default is True
+      Optimize import of SQL table for faster imports. Experimental.  
+      
+  Returns
+  -------
+    H2OFrame containing data of specified SQL table
+"""
+  p = {}
+  p.update({k:v for k,v in locals().items() if k is not "p"})
+  p["_rest_version"] = 99
+  j = H2OJob(H2OConnection.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+  return get_frame(j.dest_key)
 
 def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="", column_names=None, column_types=None, na_strings=None):
   """During parse setup, the H2O cluster will make several guesses about the attributes of

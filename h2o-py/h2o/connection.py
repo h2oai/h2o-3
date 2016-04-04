@@ -543,6 +543,7 @@ class H2OConnection(object):
     
     query_string = ""
     for k,v in iteritems(kwargs):
+      if v is None: continue #don't send args set to None so backend defaults take precedence
       if isinstance(v, list):
         x = '['
         for l in v:
