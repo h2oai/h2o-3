@@ -460,9 +460,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         gram.dropIntercept();
         xy = Arrays.copyOf(xy, xy.length - 1);
       }
-      int [] zeros = gram.dropZeroCols();
-      xy = ArrayUtils.removeIds(xy,zeros);
-      _state.removeCols(zeros);
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
@@ -564,6 +561,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(t._beta, t._likelihood))
               return;
+            int [] zeros = t._gram.dropZeroCols();
+            t._xy = ArrayUtils.removeIds(t._xy,zeros);
+            t._beta = ArrayUtils.removeIds(t._beta,zeros);
+            _state.removeCols(zeros);
             betaCnd = _parms._solver == Solver.COORDINATE_DESCENT ? COD_solve(t, _state._alpha, _state.lambda()) : solveGram(t._gram, t._xy);
           }
           firstIter = false;
