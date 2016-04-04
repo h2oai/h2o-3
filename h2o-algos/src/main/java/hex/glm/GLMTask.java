@@ -700,9 +700,9 @@ public abstract class GLMTask  {
             if(id >=0)ArrayUtils.add(etas[ids[i]],_beta[id]);
           }
         } else {
-          c.getDoubles(vals, 0, c._len,_dinfo._catModes[cid]);
-          for(int i = 0; i < vals.length; ++i){
-            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
+          c.getIntegers(ids, 0, c._len,_dinfo._catModes[cid]);
+          for(int i = 0; i < ids.length; ++i){
+            int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) ArrayUtils.add(etas[i],_beta[id]);
           }
         }
@@ -720,9 +720,9 @@ public abstract class GLMTask  {
             if(id >=0) ArrayUtils.add(_gradient[id],etas[ids[i]]);
           }
         } else {
-          c.getDoubles(vals, 0, c._len,_dinfo._catModes[cid]);
-          for(int i = 0; i < vals.length; ++i){
-            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
+          c.getIntegers(ids, 0, c._len,_dinfo._catModes[cid]);
+          for(int i = 0; i < ids.length; ++i){
+            int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[i]);
           }
         }

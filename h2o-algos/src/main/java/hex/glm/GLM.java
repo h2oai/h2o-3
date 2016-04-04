@@ -461,8 +461,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         xy = Arrays.copyOf(xy, xy.length - 1);
       }
       int [] zeros = gram.dropZeroCols();
-
-      assert zeros.length == 0:"zero column(s) in gram matrix";
+      xy = ArrayUtils.removeIds(xy,zeros);
+      _state.removeCols(zeros);
       gram.mul(_parms._obj_reg);
       ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {

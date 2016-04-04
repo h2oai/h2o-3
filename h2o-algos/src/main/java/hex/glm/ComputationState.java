@@ -109,6 +109,7 @@ public final class ComputationState {
     int newlySelected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
+    _allIn = _allIn || _parms._alpha[0] == 0;
     if (!_allIn) {
       final double rhs = Math.abs(_alpha * (2 * _lambda - _previousLambda));
       int [] newCols = MemoryManager.malloc4(P);
