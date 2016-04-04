@@ -647,7 +647,7 @@ public abstract class GLMTask  {
     protected void comuteGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
         double w = ws[i];
-        if(w == 0)continue;
+        if(w == 0 || Double.isNaN(ys[i]))continue;
         double e = es[i], y = ys[i];
         double d = (e-y);
         double wd = w*d;

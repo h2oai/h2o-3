@@ -136,8 +136,11 @@ public abstract class Chunk extends Iced<Chunk> {
    */
   public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
   public double [] getDoubles(double [] vals, int from, int to, double NA){
-    for(int i = from; i < to; ++i)
-      vals[i-from] = atd(i);
+    for(int i = from; i < to; ++i) {
+      vals[i - from] = atd(i);
+      if(Double.isNaN(vals[i-from]))
+        vals[i - from] = NA;
+    }
     return vals;
   }
 
