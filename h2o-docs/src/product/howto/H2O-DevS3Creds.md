@@ -48,7 +48,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
 
   - To import the data from the Python API:
   
-        `h2o.import_frame(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
+        `h2o.import_file(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
   
 ---
 <a name="Multi"></a>
