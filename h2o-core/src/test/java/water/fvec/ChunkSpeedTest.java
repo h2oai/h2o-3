@@ -47,8 +47,6 @@ public class ChunkSpeedTest extends TestUtil {
 //      mrtask(false);
 //    for (int i = 0; i < ll; ++i)
 //      rollups(false);
-//    for (int i = 0; i < ll; ++i)
-//      bulk();
 //    Log.info("Now doing funny stuff.\n\n");
 //    for (int i = 0; i < ll; ++i)
 //      mrtask(true);
@@ -278,32 +276,6 @@ public class ChunkSpeedTest extends TestUtil {
     }
     Log.info("Data size: " + PrettyPrint.bytes(siz));
     Log.info("Time for INVERTED INLINE chunks atd(): " + PrettyPrint.msecs(done - start, true));
-    Log.info("");
-  }
-
-  void bulk()
-  {
-    long start = 0;
-    double sum = 0;
-    double[] bulk = new double[rows]; //allocate only once
-    for (int r = 0; r < rep; ++r) {
-      if (r==rep/10)
-        start = System.currentTimeMillis();
-      for (int j=0; j<cols; ++j) {
-        chunks[j].toDoubleArray(bulk);
-        for (int i = 0; i < rows; ++i) {
-          sum += bulk[i];
-        }
-      }
-    }
-    long done = System.currentTimeMillis();
-    Log.info("Sum: " + sum);
-    long siz = 0;
-    for (int j=0; j<cols; ++j) {
-      siz += chunks[j].byteSize();
-    }
-    Log.info("Data size: " + PrettyPrint.bytes(siz));
-    Log.info("Time for bulk reader: " + PrettyPrint.msecs(done - start, true));
     Log.info("");
   }
 

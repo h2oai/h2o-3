@@ -179,7 +179,7 @@ public class Vec extends Keyed<Vec> {
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
    *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
-  public final String[] domain() { return _domain; }
+  public String[] domain() { return _domain; }   // made no longer final so that InteractionWrappedVec which are _type==T_NUM but have a categorical interaction
   /** Returns the {@code i}th factor for this categorical column.
    *  @return The {@code i}th factor */
   public final String factor( long i ) { return _domain[(int)i]; }
@@ -205,7 +205,7 @@ public class Vec extends Keyed<Vec> {
    *  {@link #isInt}, but not vice-versa.
    *  @return true if this is an categorical column.  */
   public final boolean isCategorical() {
-    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null);
+    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null) || (_type==T_NUM && this instanceof InteractionWrappedVec && _domain!=null);
     return _type==T_CAT;
   }
 

@@ -78,5 +78,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Score the model after every so many trees. Disabled if set to 0.", level = API.Level.secondary, gridable = false)
     public int score_tree_interval;
+
+    @API(help="Minimum relative improvement in squared error reduction for a split to happen.", level = API.Level.secondary, gridable = true)
+    public double min_split_improvement;
   }
 }

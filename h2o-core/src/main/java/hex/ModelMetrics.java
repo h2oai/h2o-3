@@ -137,9 +137,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
                             model._output._validation_metrics :
                             model._output._training_metrics;
     ConfusionMatrix cm = m.cm();
+    Set<String> excluded = new HashSet<>();
+    excluded.add("makeSchema");
+    excluded.add("hr");
+    excluded.add("cm");
+    excluded.add("auc_obj");
+    excluded.add("remove");
     if (m!=null) {
       for (Method meth : m.getClass().getMethods()) {
-        if (meth.getName().equals("makeSchema")) continue;
+        if (excluded.contains(meth.getName())) continue;
         try {
           double c = (double) meth.invoke(m);
           res.add(meth.getName());
@@ -150,6 +156,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     }
     if (cm!=null) {
       for (Method meth : cm.getClass().getMethods()) {
+        if (excluded.contains(meth.getName())) continue;
         try {
           double c = (double) meth.invoke(cm);
           res.add(meth.getName());

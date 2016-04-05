@@ -11,12 +11,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.Pair;
-import water.util.Triple;
+import water.util.*;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -1807,6 +1806,57 @@ public class GBMTest extends TestUtil {
       if( test != null ) test.remove();
       if( train_preds  != null ) train_preds .remove();
       if( test_preds  != null ) test_preds .remove();
+      Scope.exit();
+    }
+  }
+
+  @Test public void minSplitImprovement() {
+    Frame tfr = null;
+    Key[] ksplits = null;
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      int resp = 54;
+//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      int resp = 784;
+      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      DKV.put(tfr);
+      SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
+      // Invoke the job
+      sf.exec().get();
+      ksplits = sf._destination_frames;
+      double[] msi = new double[]{0, 1e-1};
+      final int N = msi.length;
+      double[] loglosses = new double[N];
+      for (int i = 0; i < N; ++i) {
+        // Load data, hack frames
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = ksplits[0];
+        parms._valid = ksplits[1];
+        parms._response_column = tfr.names()[resp];
+        parms._learn_rate = 0.05f;
+        parms._min_split_improvement = msi[i];
+        parms._ntrees = 10;
+        parms._score_tree_interval = parms._ntrees;
+        parms._max_depth = 5;
+
+        GBM job = new GBM(parms);
+        gbm = job.trainModel().get();
+        loglosses[i] = gbm._output._scored_valid[gbm._output._scored_valid.length - 1]._logloss;
+        if (gbm!=null) gbm.delete();
+      }
+      for (int i = 0; i < msi.length; ++i) {
+        Log.info("min_split_improvement: " + msi[i] + " -> validation logloss: " + loglosses[i]);
+      }
+      int idx = ArrayUtils.minIndex(loglosses);
+      Log.info("Optimal min_split_improvement: " + msi[idx]);
+      assertTrue(0 == idx);
+    } finally {
+      if (gbm!=null) gbm.delete();
+      if (tfr!=null) tfr.delete();
+      if (ksplits[0]!=null) ksplits[0].remove();
+      if (ksplits[1]!=null) ksplits[1].remove();
       Scope.exit();
     }
   }
