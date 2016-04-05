@@ -34,26 +34,19 @@ package org.sample;
 import org.openjdk.jmh.annotations.*;
 
 import water.nbhm.NonBlockingHashMap;
+import water.Key;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Fork(5)
 @BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=250)
-@Warmup(iterations=2, timeUnit=TimeUnit.MILLISECONDS, time=5)
+@Measurement(iterations=20, timeUnit=TimeUnit.MILLISECONDS, time=100)
+@Warmup(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=10)
 @OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 public class DKVPutBenchmarkSingleNode {
 
     NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(524288);
-
-    public static String getRandomKey() {
-        UUID uid = UUID.randomUUID();
-        long l1 = uid.getLeastSignificantBits();
-        long l2 = uid. getMostSignificantBits();
-        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
-    }
 
     @Setup(Level.Iteration)
     public void clearNBHM() { nbhm.clear(); }
@@ -69,21 +62,21 @@ public class DKVPutBenchmarkSingleNode {
 
     @Benchmark
     @Threads(value=1)
-    public void putTest1() { nbhm.put(getRandomKey(),0); }
+    public void putTest1() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=2)
-    public void putTest2() { nbhm.put(getRandomKey(),0); }
+    public void putTest2() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=4)
-    public void putTest4() { nbhm.put(getRandomKey(),0); }
+    public void putTest4() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=8)
-    public void putTest8() { nbhm.put(getRandomKey(),0); }
+    public void putTest8() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=16)
-    public void putTest16() { nbhm.put(getRandomKey(),0); }
+    public void putTest16() { nbhm.put(Key.rand(),0); }
 }

@@ -32,8 +32,8 @@
 package org.sample;
 
 import org.openjdk.jmh.annotations.*;
+import water.Key;
 
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
@@ -41,38 +41,35 @@ import java.util.Arrays;
 
 @Fork(5)
 @BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=10)
-@Warmup(iterations=3)
+@Measurement(iterations=20)
+@Warmup(iterations=10)
 @OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 public class CHMGetBenchmark {
 
-    public static String getRandomKey() {
-        UUID uid = UUID.randomUUID();
-        long l1 = uid.getLeastSignificantBits();
-        long l2 = uid. getMostSignificantBits();
-        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
-    }
-
     ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(131072);
 
+    // prior to a jmh trial, put 1000 key, value pairs into the hash map
     @Setup(Level.Trial)
     public void initCHM() {
-        // Load up 1000 keys
-        for (int i=0; i<1000; i++) chm.put(getRandomKey(), 0);
+        for (int i=0; i<1000; i++) chm.put(Key.rand(), 0);
     }
 
     @State(Scope.Thread)
     public static class ThreadState {
-        String[] keySet;
+        String[] keySet; // each thread has its own copy the the hash map's keys
         Random rand = new Random();
 
+        // prior to a jmh trial, each thread will retrieve a copy of the hash map's (1000) keys
         @Setup(Level.Trial)
         public void getKeySet(CHMGetBenchmark bm) {
             Object[] oa = bm.chm.keySet().toArray();
             keySet = Arrays.copyOf(oa, oa.length, String[].class); }
     }
 
+    // measure the amount of time it takes to get a value from the hash map (for a random key) for various numbers of
+    // threads. note that we are also measuring the time for the ts.keySet[ts.rand.nextInt(ts.keySet.length)] operation.
+    // i think this is okay because these gets will be compared to h2o NBHM gets, and we do the same thing there.
     @Benchmark
     @Threads(value=1)
     public Integer chmGetTest1(ThreadState ts) { return chm.get(ts.keySet[ts.rand.nextInt(ts.keySet.length)]); }

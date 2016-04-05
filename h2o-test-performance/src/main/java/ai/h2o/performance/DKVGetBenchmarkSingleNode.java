@@ -34,34 +34,24 @@ package org.sample;
 import org.openjdk.jmh.annotations.*;
 
 import water.nbhm.NonBlockingHashMap;
+import water.Key;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
 @Fork(5)
 @BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=10)
-@Warmup(iterations=3)
+@Measurement(iterations=20)
+@Warmup(iterations=10)
 @OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 public class DKVGetBenchmarkSingleNode {
 
     NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(131072);
 
-    public static String getRandomKey() {
-        UUID uid = UUID.randomUUID();
-        long l1 = uid.getLeastSignificantBits();
-        long l2 = uid. getMostSignificantBits();
-        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
-    }
-
     @Setup(Level.Trial)
-    public void initNBMH() {
-        // Load up 1000 keys
-        for (int i=0; i<1000; i++) nbhm.put(getRandomKey(),0);
-    }
+    public void initNBMH() { for (int i=0; i<1000; i++) nbhm.put(Key.rand(),0); }
 
     @State(Scope.Thread)
     public static class ThreadState {

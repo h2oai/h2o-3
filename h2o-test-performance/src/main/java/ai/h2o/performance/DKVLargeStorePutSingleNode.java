@@ -34,59 +34,60 @@ package org.sample;
 import org.openjdk.jmh.annotations.*;
 
 import water.nbhm.NonBlockingHashMap;
+import water.Key;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@Fork(3)
+@Fork(5)
 @BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=1000)
-@Warmup(iterations=10)
-@OutputTimeUnit(value=TimeUnit.NANOSECONDS)
+@Measurement(iterations=20, timeUnit=TimeUnit.MILLISECONDS, time=100)
+@Warmup(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=10)
+@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
+
+// Alternative setup. Only do 1 method invocation per iteration. Generate unique key prior to each interation.
+//@Fork(3)
+//@BenchmarkMode(Mode.AverageTime)
+//@Measurement(iterations=1000)
+//@Warmup(iterations=10)
+//@OutputTimeUnit(value=TimeUnit.NANOSECONDS)
+//@State(Scope.Benchmark)
 public class DKVLargeStorePutSingleNode {
 
     NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(4194304);
 
-    public static String getRandomKey() {
-        UUID uid = UUID.randomUUID();
-        long l1 = uid.getLeastSignificantBits();
-        long l2 = uid. getMostSignificantBits();
-        return "_"+Long.toHexString(l1)+Long.toHexString(l2);
-    }
-
-    @Setup(Level.Trial)
+    @Setup(Level.Iteration)
     public void initNBMH() {
-        // Load up 1,000,000 keys
-        for (int i=0; i<1000000; i++) nbhm.put(getRandomKey(),0);
+        nbhm.clear();
+        for (int i=0; i<1000000; i++) nbhm.put(Key.rand(),0);
     }
 
 
-    @State(Scope.Thread)
-    public static class ThreadState {
-        String key;
-
-        @Setup(Level.Iteration)
-        public void getKey(DKVLargeStorePutSingleNode bm) { key = getRandomKey(); }
-    }
+    //@State(Scope.Thread)
+    //public static class ThreadState {
+    //    String key;
+    //
+    //    @Setup(Level.Iteration)
+    //    public void getKey(DKVLargeStorePutSingleNode bm) { key = Key.rand(); }
+    //}
 
     @Benchmark
     @Threads(value=1)
-    public void largeStorePutTest1(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest1() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=2)
-    public void largeStorePutTest2(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest2() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=4)
-    public void largeStorePutTest4(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest4() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=8)
-    public void largeStorePutTest8(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest8() { nbhm.put(Key.rand(),0); }
 
     @Benchmark
     @Threads(value=16)
-    public void largeStorePutTest16(ThreadState ts) { nbhm.put(ts.key,0); }
+    public void largeStorePutTest16() { nbhm.put(Key.rand(),0); }
 }
