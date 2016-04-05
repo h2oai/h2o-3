@@ -7,6 +7,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.util.Log;
+import water.util.PrettyPrint;
 
 import static water.fvec.Vec.makeCon;
 
@@ -24,7 +25,7 @@ public class JDBCTest extends TestUtil{
     String host = "localhost";
     String port = "3306";
     String database = "menagerie";
-    final String table = "pet";
+    final String table = "air";
     String user = "root";
     String password = "ludi";
 
@@ -121,14 +122,12 @@ public class JDBCTest extends TestUtil{
     
     double binary_ones_fraction = 0.5; //estimate
     
-    int rows_per_chunk = FileVec.calcOptimalChunkSize(
+    double rows_per_chunk = FileVec.calcOptimalChunkSize(
             (int)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8), //8 bytes for real and time (long) values
             numCol, numCol*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
     
-    rows_per_chunk = 0;
-
     //create template vectors in advance and run MR
     Vec _v = makeCon(0, numRow, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
     
@@ -175,14 +174,16 @@ public class JDBCTest extends TestUtil{
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
       //fetch data from sql table with limit and offset
+      System.out.println("Entered map");
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
       String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
+        long t0 = System.currentTimeMillis();
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
-
+        System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
         while (rs.next()) {
           for (int i = 0; i < _sqlColumnTypes.length; i++) {
             Object res = rs.getObject(i+1);
@@ -242,6 +243,7 @@ public class JDBCTest extends TestUtil{
           stmt = null;
         }
       }
+      System.out.println("Exit map");
     }
 
     @Override
