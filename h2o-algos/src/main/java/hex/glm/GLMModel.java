@@ -123,7 +123,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-6;
+    public double _objective_epsilon = 1e-4;
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;

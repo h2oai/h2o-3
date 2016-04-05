@@ -764,6 +764,7 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._lambda = new double[]{0};
       params._obj_reg = 1.0/380;
+      params._objective_epsilon = 0;
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       double[] beta_1 = model.beta();
@@ -1442,6 +1443,7 @@ public class GLMTest  extends TestUtil {
       params._prior = -1;
       params._obj_reg = -1;
       params._max_iterations = 500;
+      params._objective_epsilon = 1e-6;
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
       model3 = glm.trainModel().get();

@@ -512,6 +512,7 @@ public class GLMBasicTestRegression extends TestUtil {
     parms._alpha = new double[]{0};
     parms._response_column = "Claims";
     parms._compute_p_values = true;
+    parms._objective_epsilon = 0;
     parms._missing_values_handling = DeepLearningModel.DeepLearningParameters.MissingValuesHandling.Skip;
 
     GLMModel model = null;
