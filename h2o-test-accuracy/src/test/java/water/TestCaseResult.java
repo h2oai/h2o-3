@@ -38,6 +38,14 @@ public class TestCaseResult {
     AccuracyTestingSuite.summaryLog.println("Successfully executed the following sql statement: " + sql);
   }
 
+  public void printValidationMetrics() {
+    AccuracyTestingSuite.summaryLog.println("Validation metrics:");
+    for (String m : metrics) {
+      AccuracyTestingSuite.summaryLog.println("Metric: "+ m + ", Value: " + (testingMetrics.get(m) == null ||
+              Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
+    }
+  }
+
   private String makeSQLCmd() {
     AccuracyTestingSuite.summaryLog.println("Making the sql statement.");
     String sql = String.format("insert into %s values(%s, ", resultsDBTableName, testCaseId);

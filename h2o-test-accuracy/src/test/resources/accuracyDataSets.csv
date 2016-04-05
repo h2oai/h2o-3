@@ -57,5 +57,9 @@ data_set_id,uri,respose_col_idx
 56,s3://h2o-public-test-data/smalldata/testng/airquality_validation2.csv,0
 57,s3://h2o-public-test-data/smalldata/testng/insurance_train1.csv,4
 58,s3://h2o-public-test-data/smalldata/testng/insurance_validation1.csv,4
-59,s3://h2o-public-test-data/bigdata/laptop/testng/newsgroup_train1.csv,
-60,s3://h2o-public-test-data/bigdata/laptop/testng/newsgroup_validation1.csv,
+59,s3://h2o-public-test-data/bigdata/laptop/testng/newsgroup_train1.csv,0
+60,s3://h2o-public-test-data/bigdata/laptop/testng/newsgroup_validation1.csv,0
+61,s3://h2o-public-test-data/smalldata/logreg/prostate_train.csv,0
+62,s3://h2o-public-test-data/smalldata/logreg/prostate_test.csv,0
+63,s3://h2o-public-test-data/bigdata/laptop/testng/milsongs-train.csv.gz,0
+64,s3://h2o-public-test-data/bigdata/laptop/testng/milsongs-test.csv.gz,0

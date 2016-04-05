@@ -122,6 +122,7 @@ public class AccuracyTestingSuite {
 
         tcResult = tc.execute();
 
+        tcResult.printValidationMetrics();
         if (recordResults) {
           summaryLog.println("Recording test case " + id + " result.");
           tcResult.saveToAccuracyTable(resultsDBTableConn);
@@ -191,7 +192,7 @@ public class AccuracyTestingSuite {
         testCaseArray.add(
                           new TestCase(Integer.parseInt(testCaseEntry[0]), testCaseEntry[1], testCaseEntry[2],
                                        testCaseEntry[3].equals("1"), testCaseEntry[4].equals("1"), Integer.parseInt(testCaseEntry[5]),
-                                       Integer.parseInt(testCaseEntry[6]))
+                                       Integer.parseInt(testCaseEntry[6]), testCaseEntry[7])
                           );
       } catch (Exception e) {
         summaryLog.println("Couldn't create test case: " + t);
