@@ -45,12 +45,7 @@ class TestGLMMultinomial:
     test2_glm_lambda_search(): test lambda search with alpha set to 0.5 per Tomas's
         suggestion.  Make sure loglss and prediction accuracy generated here is comparable in
         value to H2O GLM model with no regularization.
-    test3_glm_grid_search_over_params("IRLSM"): test grid search with solver set to IRLSM over
-        various alpha values while lambda is set to be the best value obtained
-        from test 2.  Cross validation with k=5 and random assignment is enabled
-        as well.  The best model performance hopefully will generate logloss and
-        prediction accuracies close to H2O model with no regularization in test 1.
-    test3_glm_grid_search_over_params("L_BFGS"): test grid search with solver set to L_BFGS over
+    test3_glm_grid_search_over_params(): test grid search over
         various alpha values while lambda is set to be the best value obtained
         from test 2.  Cross validation with k=5 and random assignment is enabled
         as well.  The best model performance hopefully will generate logloss and
@@ -120,11 +115,12 @@ class TestGLMMultinomial:
     weight_filename = family+"_"+curr_time+"_weight.csv"
     weight_filename_enum = family+"_"+curr_time+"_weight_enum.csv"
 
-    total_test_number = 8   # number of tests run for GLM Multinomial family, only 7.  Use 8 to use tear_down
-                            # of other distribution families
+    # number of tests run for GLM Multinomial family, only 7.  Use 8 to use tear_down
+    #  of other distribution families
+    total_test_number = 7
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed, only for Gaussian
-    allowed_diff = 2e-2   # tolerance of comparison for logloss/prediction accuracy
+    allowed_diff = 1e-1   # tolerance of comparison for logloss/prediction accuracy
 
     nan_fraction = 0.2          # denote maximum fraction of NA's to be inserted into a column
 
@@ -134,7 +130,7 @@ class TestGLMMultinomial:
     enum_col = 0                # set maximum number of categorical columns in predictor
     enum_level_vec = []         # vector containing number of levels for each categorical column
 
-    noise_std = 0            # noise variance in Multinomial noise generation added to response
+    noise_std = 0               # noise variance in Multinomial noise generation added to response
 
     train_row_count = 0         # training data row count, randomly generated later
     train_col_count = 0         # training data column count, randomly generated later
@@ -189,7 +185,6 @@ class TestGLMMultinomial:
     valid_data = []     # store validation data set
     training_data_grid = []     # store combined training and validation data set for cross validation
 
-    best_solver = ""    # store the best solver found
     best_alpha = -1     # store best alpha value found
     best_grid_logloss = -1   # store lowest logloss found from grid search
 
@@ -611,7 +606,7 @@ class TestGLMMultinomial:
                                                                                 num_test_failed, self.test_failed)
         self.test_num += 1
 
-    def test3_glm_grid_search(self, solver_name):
+    def test3_glm_grid_search(self):
         """
         This test is used to test GridSearch with the following parameters:
         1. Lambda = best_lambda value from test2
@@ -620,13 +615,10 @@ class TestGLMMultinomial:
 
         We will look at the best results from the grid search and compare it with H2O model built in test 1.
 
-        :param solver_name: string representing the solver method that we would like to use for our GLM model
-
         :return: None
         """
         print("*******************************************************************************************")
-        print("Test3: explores various parameter settings in training the GLM using GridSearch using solver "
-              + solver_name)
+        print("Test3: explores various parameter settings in training the GLM using GridSearch using solver ")
         h2o.cluster_info()
 
         hyper_parameters = {'alpha': [0, 0.5, 0.99]}  # set hyper_parameters for grid search
@@ -634,7 +626,7 @@ class TestGLMMultinomial:
         # train H2O GLM model with grid search
         model_h2o_grid_search =\
             H2OGridSearch(H2OGeneralizedLinearEstimator(family=self.family, Lambda=self.best_lambda, nfolds=5,
-                                                        fold_assignment='Random', solver=solver_name), hyper_parameters)
+                                                        fold_assignment='Random'), hyper_parameters)
         model_h2o_grid_search.train(x=self.x_indices, y=self.y_index, training_frame=self.training_data_grid)
 
         # print out the model sequence ordered by the best MSE values, thanks Ludi!
@@ -642,21 +634,11 @@ class TestGLMMultinomial:
 
         # obtain the model ID of best model (with smallest MSE) and use that for our evaluation
         best_model_id = temp_model['Model Id'][0]
-        best_xval_logloss = temp_model['logloss(xval=True)'][0]
+        self.best_grid_logloss = temp_model['logloss(xval=True)'][0]
+        self.best_alpha = model_h2o_grid_search.get_hyperparams(best_model_id)
 
         best_model = h2o.get_model(best_model_id)
-
         best_model_test_metrics = best_model.model_performance(test_data=self.test_data)
-
-        # extract best grid MSE, solver, alpha values used in later tests
-        if self.best_grid_logloss < 0:
-            self.best_grid_logloss = best_xval_logloss
-            self.best_alpha = model_h2o_grid_search.get_hyperparams(best_model_id)
-            self.best_solver = solver_name
-        elif best_xval_logloss < self.best_grid_logloss:
-            self.best_grid_logloss = best_xval_logloss
-            self.best_alpha = model_h2o_grid_search.get_hyperparams(best_model_id)
-            self.best_solver = solver_name
 
         num_test_failed = self.test_failed
 
@@ -664,7 +646,7 @@ class TestGLMMultinomial:
         self.test_failed =\
             pyunit_utils.extract_comparison_attributes_and_print_multinomial(best_model, best_model_test_metrics,
                                                                              self.family,
-                                                                             "\nTest3 "+solver_name+" Done!",
+                                                                             "\nTest3 Done!",
                                                                              test_model=self.test_template_model,
                                                                              test_model_metric
                                                                              =self.test_template_model_metrics,
@@ -1315,8 +1297,7 @@ def test_glm_multinomial():
     test_glm_multinomial = TestGLMMultinomial()
     test_glm_multinomial.test1_glm_no_regularization()
     test_glm_multinomial.test2_glm_lambda_search()
-    test_glm_multinomial.test3_glm_grid_search("IRLSM")
-    test_glm_multinomial.test3_glm_grid_search("L_BFGS")
+    test_glm_multinomial.test3_glm_grid_search()
     test_glm_multinomial.test_num += 1      # increment the test number to reuse tear_down()
     test_glm_multinomial.test5_missing_values()
     test_glm_multinomial.test6_enum_missing_values()

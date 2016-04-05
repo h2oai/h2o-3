@@ -226,7 +226,7 @@ Similarly, model accessor methods are members of their respective classes.
 |`h2o.getFrame`|`h2o.get_frame`| Obtains a handle to the frame in H2O with the frame_id key.|
 |`h2o.getModel`|`h2o.get_model`| Returns the specified model.|
 |`h2o.groupBy`|`group_by`| |
-|`h2o.importFile`|`h2o.import_frame`| Imports a frame from a file on a remote or local machine. When running H2O on Hadoop, you can access HDFS.|
+|`h2o.importFile`|`h2o.import_file`| Imports a frame from a file on a remote or local machine. When running H2O on Hadoop, you can access HDFS.|
 |`h2o.impute`|`impute`| Imputes a column in the H2OFrame.|
 |`h2o.init`|`h2o.init`| Initiates an H2O connection to the specified IP address and port.|
 |`h2o.insertMissingValues`|`insert_missing_values`|  Primarily used for testing. Randomly replaces a user-specified fraction of entries in a H2O dataset with missing values. **Caution**: This will modify the original dataset. Unless this is intended, this function should only be called on a subset of the original. |
