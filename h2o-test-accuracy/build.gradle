@@ -48,7 +48,7 @@ test {
                 }
             }
         }
-        new File("h2o-test-accuracy/testng.xml").write(xmlWriter.toString())
+        file("testng.xml").write(xmlWriter.toString())
 
         suites("testng.xml")
     }
