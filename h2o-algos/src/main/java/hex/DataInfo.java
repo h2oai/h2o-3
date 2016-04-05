@@ -358,8 +358,8 @@ public class DataInfo extends Keyed<DataInfo> {
     for( Vec v: res._adaptedFrame.vecs() )
       if( v instanceof InteractionWrappedVec ) {
         ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_skipMissing;
-        if (null == DKV.get(v._key)) DKV.put(v);
+        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
+        DKV.put(v);
       }
     return res;
   }
@@ -917,6 +917,7 @@ public class DataInfo extends Keyed<DataInfo> {
     InteractionWrappedVec v;
     if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
     assert v.domain()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
+    cid -= _cats;
     if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
       assert _valid:"interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
       val = v.mode();
@@ -955,7 +956,6 @@ public class DataInfo extends Keyed<DataInfo> {
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
         InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vec(_cats+i);
-        iwv._useAllFactorLevels&=_useAllFactorLevels;
         int interactionOffset = getInteractionOffset(chunks,_cats+i,rid);
         for(int offset=0;offset<iwv.expandedLength();++offset) {
           if( i < _intLvls.length && _intLvls[i]!=null && Arrays.binarySearch(_intLvls[i],offset) < 0 ) continue; // skip the filtered out interactions
