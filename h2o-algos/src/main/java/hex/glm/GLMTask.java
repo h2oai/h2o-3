@@ -572,7 +572,7 @@ public abstract class GLMTask  {
       _gradient[_gradient.length-1] = ArrayUtils.sum(etas);
       if(_dinfo._normSub != null) {
         double icpt = _gradient[_gradient.length-1];
-        for(int i = 0; i < _dinfo._normSub.length; ++i) {
+        for(int i = 0; i < _dinfo._nums; ++i) {
           if(chks[_dinfo._cats+i].isSparseZero()) {
             double d = _dinfo._normSub[i] * _dinfo._normMul[i];
             _gradient[numStart + i] -= d * icpt;
