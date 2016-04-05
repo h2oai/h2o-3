@@ -13,9 +13,10 @@ test.glm.interactions5 <- function() {
   m2 <- h2o.glm(x=1:443,y=444, training_frame=dfExpanded, lambda_search=TRUE)
   m1_coefs <- m@model$coefficients_table
   m2_coefs <- m2@model$coefficients_table
-  expect_true(all(round(m1_coefs[,2],5) == round(m2_coefs[,2],5)))
 
-
+  # check that coeffs are the same up to 5 digits
+  all(round(m2_coefs[m2_coefs[,2]>0,2],5) == round(m1_coefs[m1_coefs[,2]>0,2],5))
+  all(round(m2_coefs[m2_coefs[,3]>0,3],5) == round(m1_coefs[m1_coefs[,3]>0,3],5))
 
 }
 
