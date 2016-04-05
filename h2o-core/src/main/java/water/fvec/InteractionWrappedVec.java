@@ -28,16 +28,19 @@ import java.util.Map;
 public class InteractionWrappedVec extends WrappedVec {
   private final Key<Vec> _masterVecKey1;
   private final Key<Vec> _masterVecKey2;
-  private transient Vec _masterVec1;  private String[] _v1Domain;
-  private transient Vec _masterVec2;  private String[] _v2Domain;
+  private transient Vec _masterVec1;
+  private transient Vec _masterVec2;
+  private String[] _v1Domain;
+  private String[] _v2Domain;
   public boolean _useAllFactorLevels;
   public boolean _skipMissing;
+  public boolean _standardize;
   private long _bins[];
   private String[] _missingDomains;
 
-  public GetMeanTask t;
-  private final String _v1Enums[]; // only interact these enums from vec 1
-  private final String _v2Enums[]; // only interact these enums from vec 2
+  public transient GetMeanTask t;
+  private String _v1Enums[]; // only interact these enums from vec 1
+  private String _v2Enums[]; // only interact these enums from vec 2
 
   public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
     super(key, rowLayout, null);
@@ -49,7 +52,7 @@ public class InteractionWrappedVec extends WrappedVec {
     _masterVec2=_masterVecKey2.get();
     _useAllFactorLevels=useAllFactorLevels;
     _skipMissing=skipMissing;
-    setupDomain();  // performs MRTask if both vecs are categorical!!
+    setupDomain(_standardize=standardize);  // performs MRTask if both vecs are categorical!!
     DKV.put(this);
     if( null!=t ) t.doAll(this);
   }
@@ -77,6 +80,14 @@ public class InteractionWrappedVec extends WrappedVec {
     else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
   }
 
+  public double[] getMeans() {
+    if( null!=_v1Domain && null!=_v2Domain ) {
+      double[] res = new double[domain().length];
+      Arrays.fill(res,Double.NaN);
+      return res;
+    } else if( null==_v1Domain && null==_v2Domain ) return new double[]{super.mean()};
+    return new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length).doAll(this)._d;
+  }
 
   public double getSub(int i) {
     if( null==t ) return mean();
@@ -150,7 +161,7 @@ public class InteractionWrappedVec extends WrappedVec {
   }
   public long[] getBins() { return _bins; }
   public String[] missingDomains() { return _missingDomains; }
-  private void setupDomain() {
+  private void setupDomain(boolean standardize) {
     if( _masterVec1.isCategorical() || _masterVec2.isCategorical() ) {
       _v1Domain = _masterVec1.domain();
       _v2Domain = _masterVec2.domain();
@@ -161,8 +172,9 @@ public class InteractionWrappedVec extends WrappedVec {
         _type = Vec.T_CAT; // vec is T_NUM up to this point
         _missingDomains=t._missingDom;
       } else
-        t = new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length);
+        t = standardize?new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length):null;
     }
+    if( null==_v1Domain && null==_v2Domain ) _useAllFactorLevels=true;  // just makes life easier to have this when the vec is categorical
   }
 
   private static class CombineDomainTask extends MRTask<CombineDomainTask> {
@@ -276,18 +288,41 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   @Override public Vec doCopy() {
-    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, false, _masterVecKey1, _masterVecKey2);
+    InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecKey1, _masterVecKey2);
     if( null!=domain()  ) v.setDomain(domain());
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();
     return v;
   }
 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    ab.putAStr(_v1Domain);
+    ab.putAStr(_v2Domain);
+    ab.putZ(_useAllFactorLevels);
+    ab.putZ(_skipMissing);
+    ab.putZ(_standardize);
+    ab.putAStr(_missingDomains);
+    ab.putAStr(_v1Enums);
+    ab.putAStr(_v2Enums);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    _v1Domain=ab.getAStr();
+    _v2Domain=ab.getAStr();
+    _useAllFactorLevels=ab.getZ();
+    _skipMissing=ab.getZ();
+    _standardize=ab.getZ();
+    _missingDomains=ab.getAStr();
+    _v1Enums=ab.getAStr();
+    _v2Enums=ab.getAStr();
+    return super.readAll_impl(ab,fs);
+  }
+
   public static class InteractionWrappedChunk extends Chunk {
     public final transient Chunk _c[];
-    private final boolean _c1IsCat; // left chunk is categorical
-    private final boolean _c2IsCat; // rite chunk is categorical
-    private final boolean _isCat;   // this vec is categorical
+    public final boolean _c1IsCat; // left chunk is categorical
+    public final boolean _c2IsCat; // rite chunk is categorical
+    public final boolean _isCat;   // this vec is categorical
     InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);

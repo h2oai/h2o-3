@@ -159,7 +159,7 @@ public class NewChunk extends Chunk {
     if(!isSparseNA() && !isSparseZero())
       add2Chunk_impl(c,i);
     else {
-      int j = Arrays.binarySearch(_id,i);
+      int j = Arrays.binarySearch(_id,0,_sparseLen,i);
       if(j >= 0)
         add2Chunk_impl(c,j);
       else if(isSparseNA())

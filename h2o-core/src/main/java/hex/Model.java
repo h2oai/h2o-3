@@ -690,7 +690,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int[] interactionIndexes = new int[interactions.length];
       for(int i=0;i<interactions.length;++i)
         interactionIndexes[i] = test.find(interactions[i]);
-      test.add(makeInteractions(test, false, InteractionPair.generatePairwiseInteractionsFromList(interactionIndexes), true, false, false));
+      test.add(makeInteractions(test, false, InteractionPair.generatePairwiseInteractionsFromList(interactionIndexes), true, true, false));
     }
 
 

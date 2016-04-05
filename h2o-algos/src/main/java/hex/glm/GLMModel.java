@@ -5,6 +5,7 @@ import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -749,7 +750,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // GLM is always supervised
     public boolean isSupervised() { return true; }
 
-    public String[] interactions() { return _dinfo._interactionColumns; }
+    @Override public String[] interactions() { return _dinfo._interactionColumns; }
+    public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+      return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
+    }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
