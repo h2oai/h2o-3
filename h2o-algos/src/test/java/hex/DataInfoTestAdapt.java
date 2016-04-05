@@ -170,19 +170,19 @@ public class DataInfoTestAdapt extends TestUtil {
       new MRTask() {
         @Override public void map(Chunk[] cs) {
           int off = di._adaptedFrame.numCols();
-//          DataInfo.Row r = di.newDenseRow();
-          DataInfo.Row rows[] = di.extractSparseRows(cs);
+          DataInfo.Row r = di.newDenseRow();
+//          DataInfo.Row rows[] = di.extractSparseRows(cs);
           for (int i = 0; i < cs[0]._len; ++i) {
-            DataInfo.Row r = rows[i];
-//            di.extractDenseRow(cs, i, r);
+//            DataInfo.Row r = rows[i];
+            di.extractDenseRow(cs, i, r);
             if( skipMissing && r.bad ) continue;
             for (int j = 0; j < di.fullN(); ++j) {
               double goldValue = cs[off+j].atd(i);
-              double thisValue = r.get(j) - (di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]);
+              double thisValue = r.get(j); // - (di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]);
               double diff = Math.abs(goldValue - thisValue);
               if (diff > 1e-12) {
-                if( skipMissing && diff < 10 )
-                  System.out.println("row mismatch: " + i + " column= " + j  + "; diff= " + diff);
+                if( !skipMissing && diff < 10 )
+                  System.out.println("row mismatch: " + i + " column= " + j  + "; diff= " + diff + " but not skipping missing, so due to discrepancies in taking mean on split frames");
                 else throw new RuntimeException("bonk");
               }
             }
