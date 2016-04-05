@@ -30,6 +30,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins_cats = 1024; // Categorical (factor) cols: Build a histogram of this many bins, then split at the best point
 
+    public double _min_split_improvement = 0; // Minimum relative improvement in squared error reduction for a split to happen
+
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
     public long _seed = -1;

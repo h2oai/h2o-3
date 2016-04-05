@@ -38,6 +38,7 @@ import water.util.*;
 */
 public final class DHistogram extends Iced {
   public final transient String _name; // Column name (for debugging)
+  public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
   public final char  _nbin;     // Bin count
   public final double _step;     // Linear interpolation step per bin
@@ -85,7 +86,7 @@ public final class DHistogram extends Iced {
       old = _maxIn;
   }
 
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx) {
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -95,6 +96,7 @@ public final class DHistogram extends Iced {
     _maxEx=maxEx;               // Set Exclusive max
     _min2 =  Double.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Double.MAX_VALUE;
+    _minSplitImprovement = minSplitImprovement;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
@@ -178,7 +180,7 @@ public final class DHistogram extends Iced {
   }
 
   // The initial histogram bins are setup from the Vec rollups.
-  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, DHistogram hs[]) {
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, double minSplitImprovement, DHistogram hs[]) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -187,14 +189,14 @@ public final class DHistogram extends Iced {
       final double maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins, nbins_cats, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx);
+        make(fr._names[c],nbins, nbins_cats, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, minSplitImprovement);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;
   }
 
-  public static DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx) {
-    return new DHistogram(name,nbins, nbins_cats, isInt, min, maxEx);
+  public static DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement) {
+    return new DHistogram(name,nbins, nbins_cats, isInt, min, maxEx, minSplitImprovement);
   }
 
   // Check for a constant response variable
@@ -429,7 +431,8 @@ public final class DHistogram extends Iced {
 
     if( best==0 ) return null;  // No place to split
     double se = ssqs1[0] - sums1[0]*sums1[0]/ns1[0]; // Squared Error with no split
-    if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    //if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    if (!(best_se0+best_se1 < se * (1- _minSplitImprovement))) return null; // Ultimately roundoff error loses, and no split actually helped
     double n0 = equal != 1 ?   ns0[best] :   ns0[best]+  ns1[best+1];
     double n1 = equal != 1 ?   ns1[best] :  bins[best]              ;
     double p0 = equal != 1 ? sums0[best] : sums0[best]+sums1[best+1];

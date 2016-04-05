@@ -191,12 +191,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Do we need to limit the model build time?
           if (max_runtime_secs < Double.MAX_VALUE) {
             Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
+            double scale = params._nfolds > 0 ? params._nfolds+1 : 1; //remaining time per cv model is less
             if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = time_remaining_secs;
+              params._max_runtime_secs = time_remaining_secs/scale;
               Log.info("Due to the grid time limit, changing model max runtime to: " + mSformatter.format(params._max_runtime_secs) + "S.");
             } else {
               double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
+              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs/scale);
               Log.info("Due to the grid time limit, changing model max runtime from: " + mSformatter.format(was) + " to: " + mSformatter.format(params._max_runtime_secs) + "S.");
             }
           }

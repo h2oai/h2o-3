@@ -67,6 +67,9 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     @API(help="Is this field an input, output or inout?", values={"INPUT", "OUTPUT", "INOUT"}, direction=API.Direction.OUTPUT)
     public API.Direction direction;
 
+    @API(help="Is the field inherited from the parent schema?", direction = API.Direction.OUTPUT)
+    public boolean is_inherited;
+
     @API(help="Is the field gridable (i.e., it can be used in grid call)", direction = API.Direction.OUTPUT)
     public boolean is_gridable;
 
@@ -111,6 +114,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
     ab.putJSONStrUnquoted("required", required ? "true" : "false");   ab.put1(',');
     ab.putJSONStr("level", level.toString());                         ab.put1(',');
     ab.putJSONStr("direction", direction.toString());                 ab.put1(',');
+    ab.putJSONStrUnquoted("is_inherited", is_inherited ? "true" : "false"); ab.put1(',');
     ab.putJSONStrUnquoted("is_gridable", is_gridable ? "true" : "false"); ab.put1(',');
     ab.putJSONAStr("values", values);                                 ab.put1(',');
     ab.putJSONStrUnquoted("json", json ? "true" : "false");           ab.put1(',');

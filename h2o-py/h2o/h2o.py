@@ -51,8 +51,9 @@ def _import(path):
 
 
 def upload_file(path, destination_frame="", header=(-1,0,1), sep="", col_names=None, col_types=None, na_strings=None):
-  """Upload a dataset at the path given from the local machine to the H2O cluster.
-
+  """Upload a dataset at the path given from the local machine to the H2O cluster. Does a single-threaded push to H2O.
+  Also see import_file. 
+  
   Parameters
   ----------
     path : str
@@ -110,7 +111,8 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
                 col_names=None, col_types=None, na_strings=None):
     """Have H2O import a dataset into memory. The path to the data must be a valid path for
     each node in the H2O cluster. If some node in the H2O cluster cannot see the file, then
-    an exception will be thrown by the H2O cluster.
+    an exception will be thrown by the H2O cluster. Does a parallel/distributed multi-threaded pull 
+    of the data. Also see upload_file.
 
     Parameters
     ----------
