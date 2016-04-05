@@ -10,7 +10,7 @@ import java.util.zip.ZipOutputStream;
 import water.H2O;
 import water.codegen.SBPrintStream;
 import water.codegen.java.CompilationUnitGenerator;
-import water.codegen.java.ModelCodeGenerator;
+import water.codegen.java.POJOModelCodeGenerator;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -39,7 +39,7 @@ public class ZipOutputDriver extends CodeGenDriver {
     }
   }
 
-  public static void codegen(ModelCodeGenerator<?, ?> mcg, OutputStream os, ZipInputStream zis, boolean appendGenModelLib) throws IOException {
+  public static void codegen(POJOModelCodeGenerator<?, ?> mcg, OutputStream os, ZipInputStream zis, boolean appendGenModelLib) throws IOException {
     // Append content of existing zip file
     ZipOutputStream zos = new ZipOutputStream(os);
     if (zis != null) {
@@ -106,7 +106,7 @@ public class ZipOutputDriver extends CodeGenDriver {
   }
 
   @Override
-  public void codegen(ModelCodeGenerator<?, ?> mcg, OutputStream os) throws IOException {
+  public void codegen(POJOModelCodeGenerator<?, ?> mcg, OutputStream os) throws IOException {
     codegen(mcg,
             os,
             new ZipInputStream(this.getClass().getResourceAsStream("/model-pojo/model-pojo.zip")),

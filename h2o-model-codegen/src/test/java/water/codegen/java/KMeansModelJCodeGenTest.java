@@ -9,12 +9,8 @@ import java.io.IOException;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel;
-import water.Key;
 import water.codegen.driver.CodeGenDriver;
 import water.codegen.driver.DirectOutputDriver;
-import water.codegen.driver.ZipOutputDriver;
 import water.fvec.Frame;
 
 /**
@@ -48,7 +44,7 @@ public class KMeansModelJCodeGenTest extends water.TestUtil {
       try {
         // FIXME: i cannot switch the driver without switching a target
         // Probably builder patter would be better here
-        driver.codegen(new KMeansModelJCodeGen(model).build(), fos);
+        driver.codegen(new KMeansPOJOModelJCodeGen(model).build(), fos);
       } finally {
         fos.close();
       }

@@ -11,7 +11,7 @@ import static water.util.ArrayUtils.append;
 /**
  * FIXME: WIP
  */
-public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerator> {
+public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerator, CodeGenerator> {
 
   public static MethodCodeGenerator codegen(String name) {
     return new MethodCodeGenerator(name);

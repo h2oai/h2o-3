@@ -17,7 +17,7 @@ public @interface CG {
   String comment() default NA;
 
   /** Skip value generation when query is true: ".output#isSupervised" */
-  String when() default NA;
+  String when() default NA; // FIXME: rename to manual
 
   String NA = "N/A";
 

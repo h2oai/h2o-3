@@ -10,9 +10,9 @@ import water.codegen.java.ClassGenContainer;
  * It composes code generators and allows for their execution
  * later.
  */
-public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S>> extends ArrayList<CodeGenerator> implements
-                                                                    CodeGenerator,
-                                                                    HasId<S> {
+public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S, E>, E extends CodeGenerator>
+    extends ArrayList<E>
+    implements CodeGenerator, HasId<S> {
 
   @Override
   public void generate(JCodeSB out) {
@@ -23,7 +23,7 @@ public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S>> extends A
   }
 
   @Override
-  public boolean add(CodeGenerator codeGenerator) {
+  public boolean add(E codeGenerator) {
     assert codeGenerator != null : "Ups - cannot append null code generator";
     return super.add(codeGenerator);
   }

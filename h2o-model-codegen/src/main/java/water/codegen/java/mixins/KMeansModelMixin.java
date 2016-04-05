@@ -1,4 +1,4 @@
-package water.codegen.java;
+package water.codegen.java.mixins;
 
 import hex.genmodel.annotations.CG;
 
