@@ -5,7 +5,7 @@ import java.io.OutputStream;
 
 import water.codegen.SBPrintStream;
 import water.codegen.java.CompilationUnitGenerator;
-import water.codegen.java.ModelCodeGenerator;
+import water.codegen.java.POJOModelCodeGenerator;
 
 /**
  * Generate all output into a single output.
@@ -13,7 +13,7 @@ import water.codegen.java.ModelCodeGenerator;
 public class DirectOutputDriver extends CodeGenDriver {
 
   @Override
-  public void codegen(ModelCodeGenerator<?, ?> mcg, OutputStream os) throws IOException {
+  public void codegen(POJOModelCodeGenerator<?, ?> mcg, OutputStream os) throws IOException {
     SBPrintStream sbos = new SBPrintStream(os);
     try {
       // FIXME need to create a new top-level CU and attach all classes under it

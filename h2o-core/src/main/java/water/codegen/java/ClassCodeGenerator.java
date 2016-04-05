@@ -15,7 +15,7 @@ import static water.codegen.java.JCodeGenUtil.VALUE;
 /**
  * FIXME:
  */
-public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator> {
+public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator, CodeGenerator> {
 
   /** Name of class to generate. */
   final String name;
@@ -25,7 +25,7 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
   Class extendClass;
   /** Implements interface */
   Class[] interfaces;
-  /** Annotation generators */
+  /** Annotation generators */   // FIXME remove
   CodeGenerator[] acgs;
 
   private CompilationUnitGenerator cug;

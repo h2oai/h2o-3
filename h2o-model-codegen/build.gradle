@@ -1,0 +1,47 @@
+//
+// H2O Core Module
+//
+description = "H2O Model Codegen"
+
+dependencies {
+  // Dependency on shared model support
+  compile project (':h2o-core')
+  compile project (':h2o-algos')
+  
+  // Javacode loader
+  compile "com.google.code.javaparser:javaparser:1.0.11"
+
+  testCompile "junit:junit:${junitVersion}"
+}
+
+// The default 'test' behavior is broken in that it does not grok clusters.
+// For H2O, all tests need to be run on a cluster, where each JVM is
+// "free-running" - it's stdout/stderr are NOT hooked by another process.  If
+// they are hooked (e.g., by the gradle driver process) then the stdout/err get
+// buffered and when all CPUs are maxed out (happens over a large fraction of
+// the test run) no output is visible.  If the JVMs then crash (again, common
+// enough), we get NO output for the test run.  So instead we need to arrange a
+// complete cluster of free-running JVMs and redirect all output (at the OS
+// level) to files - then scrape the files later for test results.
+test {
+  //dependsOn ":h2o-core:testJar"
+  //dependsOn cpLibs, testMultiNode, testJar
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}
+/*
+task copyMixinsToWebRoot(type: Copy) {
+  from "src/"
+  into "build/resources/main/www/${h2oRESTApiVersion}/"
+  rename { filename -> "h2o-genmodel.jar"}
+}
+
+task deleteMixinsFromWebRoot(type: Delete) {
+    delete "src/main/resources/www/${h2oRESTApiVersion}/h2o-genmodel.jar"
+}
+
+processResources.dependsOn copyMixinsToWebRoot
+clean.dependsOn deleteMixinsFromWebRoot
+*/
+

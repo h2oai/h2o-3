@@ -1687,7 +1687,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * Activation functions
      */
     public enum Activation {
-      Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout, ExpRectifier, ExpRectifierWithDropout
+      Tanh, TanhWithDropout,
+      Rectifier, RectifierWithDropout,
+      Maxout, MaxoutWithDropout,
+      ExpRectifier, ExpRectifierWithDropout;
+
+      public boolean isTanh() {
+        return this == Tanh || this == TanhWithDropout;
+      }
+
+      public boolean isRelu() {
+        return this == Rectifier || this == RectifierWithDropout;
+      }
+
+      public boolean isMaxout() {
+        return this == Maxout || this == MaxoutWithDropout;
+      }
     }
   
     /**

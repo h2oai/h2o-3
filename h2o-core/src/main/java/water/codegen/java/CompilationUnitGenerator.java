@@ -13,7 +13,7 @@ import static water.util.ArrayUtils.*;
  * FIXME: this is generator for top-level compilation unit:
  *
  */
-public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationUnitGenerator> {
+public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationUnitGenerator, ClassCodeGenerator> {
 
   /** Package where to generate the class. */
   public final String packageName;

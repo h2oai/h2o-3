@@ -10,7 +10,6 @@ import hex.tree.drf.DRFModel;
 import water.Key;
 import water.codegen.driver.DirectOutputDriver;
 import water.fvec.Frame;
-import water.util.FileUtils;
 
 /**
  * Created by michal on 3/21/16.
@@ -36,7 +35,7 @@ public class DRFModelJCodeGenTest extends water.TestUtil {
 
       // FIXME: calling new XXX().build() is bad pattern here, since you can
       // forget call of build and result will have no output.
-      new DirectOutputDriver().codegen(new DRFModelJCodeGen(model).build(), System.err);
+      new DirectOutputDriver().codegen(new DRFPOJOModelJCodeGen(model).build(), System.err);
       model.toJava(System.err, false, true);
 
     } finally {
