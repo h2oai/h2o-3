@@ -542,6 +542,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitLSM(){
       GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
+      int [] zeros = t._gram.dropZeroCols();
+      t._xy = ArrayUtils.removeIds(t._xy,zeros);
+      _state.removeCols(zeros);
       _state.updateState(solveGram(t._gram,t._xy), -1);
     }
 
