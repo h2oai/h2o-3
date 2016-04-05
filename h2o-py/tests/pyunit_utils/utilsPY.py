@@ -23,6 +23,7 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
+from decimal import *
 import urllib.request, urllib.error, urllib.parse
 import numpy as np
 import shutil
@@ -1711,7 +1712,10 @@ def extract_comparison_attributes_and_print_multinomial(model_h2o, h2o_model_tes
     compare_index += 1
     # this is logloss from training data set,
     if not(just_print[compare_index]) and not(can_be_better_than_template[compare_index]):
-        if h2o_logloss_train < template_logloss_train:    # H2O performed better than template which is not allowed
+        if (h2o_logloss_train < template_logloss_train) and \
+                (abs(h2o_logloss_train-template_logloss_train) > 1e-5):
+
+            # H2O performed better than template which is not allowed
             failed_test_number += 1     # increment failed_test_number and just print the results
             compare_two_arrays([h2o_logloss_train], [template_logloss_train], ignored_eps, allowed_diff,
                                compare_att_str[compare_index], h2o_att_str[compare_index],
@@ -1934,7 +1938,7 @@ def add_fold_weights_offset_columns(h2o_frame, nfold_max_weight_offset, column_n
 
 def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_parameters, gridable_types,
                     gridable_defaults, max_int_number, max_int_val, min_int_val, max_real_number, max_real_val,
-                    min_real_val):
+                    min_real_val, quantize_level='1.00000000'):
     """
     This function is written to randomly generate griddable parameters for a gridsearch.  For parameters already
     found in hyper_params, no random list will be generated.  In addition, we will check to make sure that the
@@ -1952,6 +1956,7 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
     :param max_real_number: integer, size of real gridable parameter list
     :param max_real_val: float, maximum real value for real gridable parameter
     :param min_real_val: float, minimum real value for real gridable parameter
+    :param quantize_level: string representing the quantization level of floating point values generated randomly.
 
     :return: a tuple of hyper_params: dict of hyper parameters for gridsearch, true_gridable_parameters:
     a list of string containing names of truely gridable parameters, true_gridable_types: a list of string
@@ -1976,12 +1981,29 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
                     hyper_params[para_name] = list(set(np.random.random_integers(min_int_val, max_int_val,
                                                                                  max_int_number)))
                 elif 'double' in gridable_types[count_index]:
-                    hyper_params[para_name] = list(set(np.around(np.random.uniform(min_real_val, max_real_val,
-                                                                                   max_real_number), 4)))
+                    hyper_params[para_name] = fix_float_precision(list(np.random.uniform(min_real_val, max_real_val,
+                                                                     max_real_number)), quantize_level=quantize_level)
 
         count_index += 1
 
     return hyper_params, true_gridable_parameters, true_gridable_types, true_gridable_defaults
+
+
+def fix_float_precision(float_list, quantize_level='1.00000000'):
+    """
+    This function takes in a floating point tuple and attempt to change it to floating point number with fixed
+    precision.
+
+    :param float_list: tuple/list of floating point numbers
+    :param quantize_level: string, optional, represent the number of fix points we care
+
+    :return: tuple of floats to the exact precision specified in quantize_level
+    """
+    fixed_float = []
+    for num in float_list:
+        fixed_float.append(float(Decimal(num).quantize(Decimal(quantize_level))))
+
+    return list(set(fixed_float))
 
 
 def extract_used_params(model_param_names, grid_model_params, params_dict):
@@ -2160,3 +2182,175 @@ def generate_redundant_parameters(hyper_params, gridable_parameters, gridable_de
         del params_dict["lambda"]
 
     return params_dict, error_hyper_params
+
+
+def count_models(hyper_params):
+    """
+    Given a hyper_params dict, this function will return the maximum number of models that can be built out of all
+    the combination of hyper-parameters.
+
+    :param hyper_params: dict containing parameter name and a list of values to iterate over
+    :return: max_model_number: int representing maximum number of models built
+    """
+    max_model_number = 1
+
+    for key in list(hyper_params):
+        max_model_number *= len(hyper_params[key])
+
+    return max_model_number
+
+
+def error_diff_2_models(grid_table1, grid_table2, metric_name):
+    """
+    This function will take two models generated by gridsearch and calculate the mean absolute differences of
+     the metric values specified by the metric_name in the two model.  It will return the mean differences.
+
+    :param grid_table1: first H2OTwoDimTable generated by gridsearch
+    :param grid_table2: second H2OTwoDimTable generated by gridsearch
+    :param metric_name: string, name of the metric of interest
+
+    :return: real number which is the mean absolute metric difference between the two models
+    """
+    num_model = len(grid_table1.cell_values)
+    metric_diff = 0
+
+    for model_index in range(num_model):
+        metric_diff += abs(grid_table1.cell_values[model_index][-1] - grid_table2.cell_values[model_index][-1])
+
+    if (num_model > 0):
+        return metric_diff/num_model
+    else:
+        print("error_diff_2_models: your table contains zero models.")
+        sys.exit(1)
+
+
+def find_grid_runtime(model_list):
+    """
+    This function given a grid_model built by gridsearch will go into the model and calculate the total amount of
+    time it took to actually build all the models in second
+
+    :param model_list: list of model built by gridsearch, cartesian or randomized
+    :return: total_time_sec: total number of time in seconds in building all the models
+    """
+    total_time_sec = 0
+
+    for each_model in model_list:
+        total_time_sec += each_model._model_json["output"]["run_time"]  # time in ms
+
+    return total_time_sec/1000.0        # return total run time in seconds
+
+
+def evaluate_metrics_stopping(model_list, metric_name, bigger_is_better, search_criteria, possible_model_number):
+    """
+    This function given a list of dict that contains the value of metric_name will manually go through the
+    early stopping condition and see if the randomized grid search will give us the correct number of models
+    generated.  Note that you cannot assume the model_list is in the order of when a model is built.  It actually
+    already come sorted which we do not want....
+
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :param metric_name: string representing name of metric that we want to based our stopping condition on
+    :param bigger_is_better: bool indicating if the metric is optimized by getting bigger if True and vice versa
+    :param search_criteria: dict structure containing the search criteria for randomized gridsearch
+    :param possible_model_number: integer, represent the absolute possible number of models built based on the
+    hyper-parameter size
+
+    :return: bool indicating if the early topping condition is justified
+    """
+    if ("stopping_tolerance" in search_criteria) and ("stopping_rounds" in search_criteria):
+        tolerance = search_criteria["stopping_tolerance"]
+        stop_round = search_criteria["stopping_rounds"]
+
+        min_list_len = 2*stop_round     # minimum length of metrics needed before we start early stopping evaluation
+
+        metric_list = []    # store metric of optimization
+        stop_now = False
+
+        # provide metric list sorted by time.  Oldest model appear first.
+        metric_list_time_ordered = sort_model_by_time(model_list, metric_name)
+
+        for metric_value in metric_list_time_ordered:
+            metric_list.append(metric_value)
+
+            if len(metric_list) > min_list_len:     # start early stopping evaluation now
+                stop_now, metric_list = evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better)
+
+            if stop_now:
+                if len(metric_list) < len(model_list):  # could have stopped early in randomized gridsearch
+                    return False
+                else:       # randomized gridsearch stopped at the correct condition
+                    return True
+    else:
+        print("Error: stopping_tolerance and stopping_rounds must be found in your search_criteria.")
+
+    if len(metric_list) == possible_model_number:   # never meet early stopping condition at end of random gridsearch
+        return True     # if max number of model built, still ok
+    else:
+        return False    # early stopping condition never met but random gridsearch did not build all models, bad!
+
+def sort_model_by_time(model_list, metric_name):
+    """
+    This function is written to sort the metrics that we care in the order of when the model was built.  The
+    oldest model metric will be the first element.
+
+    :param model_list: list of models built sequentially that contains metric of interest among other fields
+    :param metric_name: string representing name of metric that we want to based our stopping condition on
+    :return: model_metric_list sorted by time
+    """
+
+    model_num = len(model_list)
+
+    model_metric_list = [None] * model_num
+
+    for index in range(model_num):
+        model_index = int(model_list[index]._id.split('_')[-1])
+        model_metric_list[model_index] = \
+            model_list[index]._model_json["output"]["cross_validation_metrics"]._metric_json[metric_name]
+
+    return model_metric_list
+
+
+def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better):
+    """
+    This function mimics the early stopping function as implemented in ScoreKeeper.java.  Please see the Java file
+    comment to see the explanation of how the early stopping works.
+
+    :param metric_list: list containing the optimization metric under consideration for gridsearch model
+    :param stop_round:  integer, determine averaging length
+    :param tolerance:   real, tolerance to see if the grid search model has improved enough to keep going
+    :param bigger_is_better:    bool: True if metric is optimized as it gets bigger and vice versa
+    :return:    bool indicating if we should stop early and sorted metric_list
+    """
+
+    if bigger_is_better:
+        metric_list.sort()
+    else:
+        metric_list.sort(reverse=True)
+
+    metric_len = len(metric_list)
+
+    start_index = metric_len - 2*stop_round     # start index for reference
+    all_moving_values = []
+
+    # this part is purely used to make sure we agree with ScoreKeeper.java implementation
+    for index in range(stop_round+1):
+        index_start = start_index+index
+        all_moving_values.append(sum(metric_list[index_start:index_start+stop_round]))
+
+    if ((min(all_moving_values) > 0) and (max(all_moving_values) > 0)) or ((min(all_moving_values) < 0)
+                                                                           and (max(all_moving_values) < 0)):
+
+        reference_value = all_moving_values[0]
+        last_value = all_moving_values[-1]
+
+        if ((reference_value > 0) and (last_value > 0)) or ((reference_value < 0) and (last_value < 0)):
+            ratio = last_value / reference_value
+
+            if bigger_is_better:
+                return not (ratio > 1+tolerance), metric_list
+            else:
+                return not (ratio < 1-tolerance), metric_list
+
+        else:   # zero in reference metric, or sign of metrics differ, marked as not yet converge
+            return False, metric_list
+    else:
+        return False, metric_list
