@@ -28,17 +28,19 @@ import java.util.Map;
 public class InteractionWrappedVec extends WrappedVec {
   private final Key<Vec> _masterVecKey1;
   private final Key<Vec> _masterVecKey2;
-  private transient Vec _masterVec1;  private String[] _v1Domain;
-  private transient Vec _masterVec2;  private String[] _v2Domain;
+  private transient Vec _masterVec1;
+  private transient Vec _masterVec2;
+  private String[] _v1Domain;
+  private String[] _v2Domain;
   public boolean _useAllFactorLevels;
   public boolean _skipMissing;
   public boolean _standardize;
   private long _bins[];
   private String[] _missingDomains;
 
-  public GetMeanTask t;
-  private final String _v1Enums[]; // only interact these enums from vec 1
-  private final String _v2Enums[]; // only interact these enums from vec 2
+  public transient GetMeanTask t;
+  private String _v1Enums[]; // only interact these enums from vec 1
+  private String _v2Enums[]; // only interact these enums from vec 2
 
   public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
     super(key, rowLayout, null);
@@ -293,11 +295,34 @@ public class InteractionWrappedVec extends WrappedVec {
     return v;
   }
 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    ab.putAStr(_v1Domain);
+    ab.putAStr(_v2Domain);
+    ab.putZ(_useAllFactorLevels);
+    ab.putZ(_skipMissing);
+    ab.putZ(_standardize);
+    ab.putAStr(_missingDomains);
+    ab.putAStr(_v1Enums);
+    ab.putAStr(_v2Enums);
+    return super.writeAll_impl(ab);
+  }
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    _v1Domain=ab.getAStr();
+    _v2Domain=ab.getAStr();
+    _useAllFactorLevels=ab.getZ();
+    _skipMissing=ab.getZ();
+    _standardize=ab.getZ();
+    _missingDomains=ab.getAStr();
+    _v1Enums=ab.getAStr();
+    _v2Enums=ab.getAStr();
+    return super.readAll_impl(ab,fs);
+  }
+
   public static class InteractionWrappedChunk extends Chunk {
     public final transient Chunk _c[];
-    private final boolean _c1IsCat; // left chunk is categorical
-    private final boolean _c2IsCat; // rite chunk is categorical
-    private final boolean _isCat;   // this vec is categorical
+    public final boolean _c1IsCat; // left chunk is categorical
+    public final boolean _c2IsCat; // rite chunk is categorical
+    public final boolean _isCat;   // this vec is categorical
     InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
