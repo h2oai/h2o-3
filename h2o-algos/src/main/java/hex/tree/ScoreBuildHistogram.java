@@ -254,7 +254,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     // in a few cases (top-level splits have few total bins across all
     // the (few) splits) so it's safe to bin more; also categoricals want
     // to split one bin-per-level no matter how many levels).
-    if( rhbinslen >= binslen) { // Grow bins if needed
+    if( rhbinslen > binslen) { // Grow bins if needed
       bins = new double[rhbinslen];
       sums = new double[rhbinslen];
       ssqs = new double[rhbinslen];
