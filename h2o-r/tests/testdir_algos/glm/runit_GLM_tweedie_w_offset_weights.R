@@ -13,9 +13,9 @@ test <- function() {
 	print("build models w/ and w/o weights")
 	myX = setdiff(colnames(dh),c("IDpol","ClaimNb","Exposure"))
 	hh_with_weights <- h2o.glm(x = myX,y = "ClaimNb",family = "tweedie",tweedie_variance_power = 1.05,
-                weights_column = "Exposure",tweedie_link_power = 0,lambda = 0,alpha = 0,training_frame = dh)
+                weights_column = "Exposure",tweedie_link_power = 0,lambda = 0,alpha = 0,training_frame = dh, objective_epsilon=0)
 	hh_no_weights <- h2o.glm(x = myX,y = "ClaimNb",family = "tweedie",tweedie_variance_power = 1.05,
-                tweedie_link_power = 0,lambda = 0,alpha = 0,training_frame = dh)
+                tweedie_link_power = 0,lambda = 0,alpha = 0,training_frame = dh, objective_epsilon=0)
 
 	# From glm in R
         dd = as.data.frame(dh)
@@ -44,11 +44,11 @@ test <- function() {
 	print("build models w/ and w/o offset")
 	myX = setdiff(colnames(hdd),c("Claims","offset"))
 	hh_with_offset <- h2o.glm(x = myX,y = "Claims",family = "tweedie",tweedie_variance_power = 1.7,tweedie_link_power = 0,
-               lambda = 0,alpha = 0,offset_column = "offset",training_frame = hdd)
+               lambda = 0,alpha = 0,offset_column = "offset",training_frame = hdd, objective_epsilon=0)
 	gg_with_offset <- glm(Claims~.- offset + offset(offset),family=tweedie(var.power=1.7,link.power=0),data = dd)
 
 	hh_no_offset <- h2o.glm(x = myX,y = "Claims",family = "tweedie",tweedie_variance_power = 1.7,tweedie_link_power = 0,
-               lambda = 0,alpha = 0,training_frame = hdd)
+               lambda = 0,alpha = 0,training_frame = hdd, objective_epsilon=0)
 	gg_no_offset <- glm(Claims~.-offset,family=tweedie(var.power=1.7,link.power=0),data = dd)
 
 	print("Check deviance and predictions")
