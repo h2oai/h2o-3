@@ -107,9 +107,13 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       max_active_predictors : int, optional
         Convergence criteria for number of predictors when using L1 penalty.
 
-      missing_values_handling:  str
+      missing_values_handling : str
         A character string specifying how to handle missing value:
         "MeanImputation","Skip".
+
+      interactions : list, optional
+        A list of column names to interact. All pairwise combinations of columns will be
+        interacted.
 
     Returns
     -------
@@ -130,7 +134,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                keep_cross_validation_fold_assignment=None,
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
-               compute_p_values=False, remove_collinear_columns=False, missing_values_handling = None):
+               compute_p_values=False, remove_collinear_columns=False,
+               missing_values_handling=None, interactions=None):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.items() if k != "self"}
