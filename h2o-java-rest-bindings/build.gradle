@@ -12,12 +12,10 @@ dependencies {
 }
 
 dependencies {
-//    compile 'com.squareup.retrofit:retrofit:1.9.0'
-    compile 'com.squareup.retrofit2:retrofit:2.0.0'
-    compile 'com.squareup.okhttp:okhttp-urlconnection:2.0.0'
-    compile 'com.squareup.okhttp:okhttp:2.0.0'
-    compile 'com.squareup.retrofit2:converter-gson:2.0.0'
     compile 'com.google.code.gson:gson:2.6.2'
+    compile 'com.squareup.retrofit2:retrofit:2.0.1'
+    compile 'com.squareup.retrofit2:converter-gson:2.0.1'  
+    compile 'com.squareup.okhttp3:okhttp:3.2.0'
 }
 
 def runner = new File("$rootDir/scripts/run.py").canonicalPath
@@ -34,6 +32,12 @@ sourceSets {
     java {
       srcDir srcGenBindingsDir
     }
+  }
+}
+
+jar {
+  manifest {
+    attributes 'Main-Class': 'water.bindings.proxies.retrofit.Example'
   }
 }
 
