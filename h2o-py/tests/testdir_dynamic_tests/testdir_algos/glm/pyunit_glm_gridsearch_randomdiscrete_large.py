@@ -82,11 +82,11 @@ class Test_glm_random_grid_search:
 
     max_int_val = 1000            # maximum size of random integer values
     min_int_val = 0             # minimum size of random integer values
-    max_int_number = 12          # maximum number of integer random grid values to generate
+    max_int_number = 10          # maximum number of integer random grid values to generate
 
     max_real_val = 1          # maximum size of random float values
     min_real_val = 0.0          # minimum size of random float values
-    max_real_number = 12         # maximum number of real grid values to generate
+    max_real_number = 10         # maximum number of real grid values to generate
 
     lambda_scale = 100          # scale lambda value to be from 0 to 100 instead of 0 to 1
 
