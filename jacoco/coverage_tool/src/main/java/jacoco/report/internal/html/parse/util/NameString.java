@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
  * Created by nkalonia1 on 3/28/16.
  */
 public class NameString {
+    public static final String WILD = "*";
     private static final Pattern _WILD_WORD = Pattern.compile("\\*");
     private static final Pattern _WILD_CHAR = Pattern.compile("\\?");
     private static final Pattern _WILD;

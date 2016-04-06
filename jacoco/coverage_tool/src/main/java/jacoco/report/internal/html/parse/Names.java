@@ -9,7 +9,7 @@ class PackageName implements Cloneable {
     public PackageName() { this(new NameString()); }
     public boolean defined() { return _name.isDefined(); }
     public NameString getPackageName() { return _name; }
-    public void set(NameString name) { _name = name; }
+    void set(NameString name) { _name = name; }
     public void clear() { _name.clear(); }
 
     @Override
@@ -42,7 +42,7 @@ class ClassName implements Cloneable {
     public NameString getSignature() { return _signature; }
     public NameString getSuperClass() { return _superclass; }
     public NameList getInterfaces() { return _interfaces; }
-    public void set(final NameString name, final NameString signature, final NameString superclass, final NameList interfaces) {
+    void set(final NameString name, final NameString signature, final NameString superclass, final NameList interfaces) {
         _name = name;
         _signature = signature;
         _superclass = superclass;
@@ -80,7 +80,7 @@ class MethodName implements Cloneable {
     public NameString getMethodName() { return _name; }
     public NameString getDesc() { return _desc; }
     public NameString getSignature() { return _signature; }
-    public void set(final NameString name, final NameString desc, final NameString signature) {
+    void set(final NameString name, final NameString desc, final NameString signature) {
         _name = name;
         _desc = desc;
         _signature = signature;

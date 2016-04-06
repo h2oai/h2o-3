@@ -1,5 +1,6 @@
-package jacoco.report.internal.html.wrapper;
+package jacoco.core.analysis;
 
+import jacoco.report.internal.html.wrapper.NodeHighlightResults;
 import org.jacoco.core.analysis.ICoverageNode;
 
 /**

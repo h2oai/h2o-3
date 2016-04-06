@@ -11,7 +11,7 @@ public class NodeHighlightResults {
     Hashtable<ICoverageNode.CounterEntity, Boolean> entity_total_results;
     Hashtable<ICoverageNode.CounterEntity, Boolean> entity_body_results;
 
-    NodeHighlightResults() {
+    public NodeHighlightResults() {
         entity_body_results = new Hashtable<ICoverageNode.CounterEntity, Boolean>();
         entity_total_results = new Hashtable<ICoverageNode.CounterEntity, Boolean>();
         for (ICoverageNode.CounterEntity ce : ICoverageNode.CounterEntity.values()) {

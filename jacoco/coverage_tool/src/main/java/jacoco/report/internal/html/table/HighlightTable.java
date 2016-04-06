@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import jacoco.report.internal.html.wrapper.IHighlightNode;
+import jacoco.core.analysis.IHighlightNode;
 import org.jacoco.core.analysis.ICoverageNode;
 import org.jacoco.report.internal.ReportOutputFolder;
 import org.jacoco.report.internal.html.HTMLElement;

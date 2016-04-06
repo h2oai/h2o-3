@@ -1,13 +1,17 @@
 package jacoco.report.internal.html.wrapper;
 
+import jacoco.core.analysis.IHighlightNode;
+import jacoco.core.internal.analysis.BundleCoverageHighlight;
+import jacoco.core.internal.analysis.ClassCoverageHighlight;
+import jacoco.core.internal.analysis.MethodCoverageHighlight;
+import jacoco.core.internal.analysis.PackageCoverageHighlight;
 import jacoco.report.internal.html.parse.DSVParser;
 import jacoco.report.internal.html.parse.ParseItem;
+import jacoco.report.internal.html.parse.YAMLParser;
 import org.jacoco.core.analysis.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by nkalonia1 on 3/17/16.
@@ -59,7 +63,7 @@ public class CoverageWrapper {
     }
 
     public static List<ParseItem> parse(File path) {
-        return (new DSVParser(System.out, System.err)).parse(path);
+        return (new YAMLParser(System.out, System.err)).parse(path);
     }
 
     public static BundleCoverageHighlight parseBundle(BundleCoverageHighlight b, File path) {

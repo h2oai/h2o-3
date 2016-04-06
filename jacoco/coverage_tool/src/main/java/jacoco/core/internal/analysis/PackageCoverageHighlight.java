@@ -1,13 +1,12 @@
-package jacoco.report.internal.html.wrapper;
+package jacoco.core.internal.analysis;
 
-import org.jacoco.core.analysis.IPackageCoverage;
+import jacoco.core.analysis.IHighlightNode;
+import jacoco.report.internal.html.wrapper.NodeHighlightResults;
 import org.jacoco.core.analysis.IClassCoverage;
 import org.jacoco.core.analysis.ISourceFileCoverage;
 import org.jacoco.core.internal.analysis.PackageCoverageImpl;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Created by nkalonia1 on 3/17/16.

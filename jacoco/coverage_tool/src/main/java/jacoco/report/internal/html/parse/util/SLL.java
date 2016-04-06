@@ -55,6 +55,9 @@ public class SLL<T> {
         public boolean atEnd() {
             return _curr == _end;
         }
+
+        @Override
+        public void remove() {}
     }
 
     protected class Node {
