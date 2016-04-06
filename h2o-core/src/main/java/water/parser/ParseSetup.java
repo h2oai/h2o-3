@@ -305,8 +305,11 @@ public final class ParseSetup extends Iced {
                 || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bits, _userSetup);
-          for(ParseWriter.ParseErr e:_gblSetup._errs)
+          for(ParseWriter.ParseErr e:_gblSetup._errs) {
+            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
+            e._cidx = 0;
             e._file = _file;
+          }
         } catch (ParseDataset.H2OParseException pse) {
           throw pse.resetMsg(pse.getMessage()+" for "+key);
         }
