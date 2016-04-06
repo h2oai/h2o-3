@@ -72,6 +72,36 @@ public final class ParseDataset {
     return colNames;
   }
 
+
+  public static Job forkParseSVMLight(final Key<Frame> dest, final Key [] keys, final ParseSetup setup) {
+    int nchunks = 0;
+    Vec v = null;
+    // set the parse chunk size for files
+    for( int i = 0; i < keys.length; ++i ) {
+      Iced ice = DKV.getGet(keys[i]);
+      if(ice instanceof FileVec) {
+        if(i == 0) v = ((FileVec) ice);
+        ((FileVec) ice).setChunkSize(setup._chunk_size);
+        nchunks += ((FileVec) ice).nChunks();
+        Log.info("Parse chunk size " + setup._chunk_size);
+      } else if(ice instanceof Frame && ((Frame)ice).vec(0) instanceof FileVec) {
+        if(i == 0) v = ((Frame)ice).vec(0);
+        ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
+        nchunks += (((Frame) ice).vec(0)).nChunks();
+        Log.info("Parse chunk size " + setup._chunk_size);
+      }
+    }
+    final VectorGroup vg = v.group();
+    final ParseDataset pds = new ParseDataset(dest);
+    new Frame(pds._job._result,new String[0],new Vec[0]).delete_and_lock(pds._job); // Write-Lock BEFORE returning
+    return pds._job.start(new H2OCountedCompleter() {
+      @Override
+      public void compute2() {
+        ParseDataset.parseAllKeys(pds,keys,setup,true);
+        tryComplete();
+      }
+    },nchunks);
+  }
   // Same parse, as a backgroundable Job
   public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup setup, boolean deleteOnDone) {
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
@@ -180,7 +210,7 @@ public final class ParseDataset {
   }
   // --------------------------------------------------------------------------
   // Top-level parser driver
-  private static void parseAllKeys(ParseDataset pds, Key[] fkeys, ParseSetup setup, boolean deleteOnDone) {
+  private static ParseDataset parseAllKeys(ParseDataset pds, Key[] fkeys, ParseSetup setup, boolean deleteOnDone) {
     final Job<Frame> job = pds._job;
     assert setup._number_columns > 0;
     if( setup._column_names != null &&
@@ -188,14 +218,14 @@ public final class ParseDataset {
           (setup._column_names.length == 1 && setup._column_names[0].isEmpty())) )
       setup._column_names = null; // // FIXME: annoyingly front end sends column names as String[] {""} even if setup returned null
     if(setup._na_strings != null && setup._na_strings.length != setup._number_columns) setup._na_strings = null;
-    if( fkeys.length == 0) { job.stop();  return;  }
+    if( fkeys.length == 0) { job.stop();  return pds;  }
 
     job.update(0, "Ingesting files.");
     VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = pds._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,deleteOnDone);
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
-    if( job.stop_requested() ) return;
+    if( job.stop_requested() ) return pds;
 
     final AppendableVec [] avs = mfpt.vecs();
     setup._column_names = getColumnNames(avs.length, setup._column_names);
@@ -260,14 +290,14 @@ public final class ParseDataset {
       Log.trace("Done closing all Vecs.");
     }
     // Check for job cancellation
-    if ( job.stop_requested() ) return;
+    if ( job.stop_requested() ) return pds;
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
     if (setup._parse_type == ParserType.SVMLight)
       new SVFTask(fr).doAllNodes();
 
     // Check for job cancellation
-    if ( job.stop_requested() ) return;
+    if ( job.stop_requested() ) return pds;
 
     ParseWriter.ParseErr [] errs = ArrayUtils.append(setup._errs,mfpt._errors);
     if(errs.length > 0) {
@@ -309,6 +339,7 @@ public final class ParseDataset {
     if( deleteOnDone )
       for( Key k : fkeys )
         assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
+    return pds;
   }
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {
     private final Key _parseCatMapsKey;

@@ -18,7 +18,7 @@
       stop("Invalid column names: ", paste(x[!(x %in% cc)], collapse=','))
     x_i <- match(x, cc)
   } else {
-    if(any( x < 1L | x > length(cc)))
+    if(any( x < 1L | x > attr(x,'ncol')))
       stop('out of range explanatory variable ', paste(x[x < 1L | x > length(cc)], collapse=','))
     x_i <- x
     x <- cc[x_i]
@@ -110,10 +110,9 @@
   #---------- Check user parameter types ----------#
   param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
-  .h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
+  #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
   #---------- Build! ----------#
   res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
 

@@ -25,7 +25,7 @@
 #'        Valid types are "ARFF", "XLS", "CSV", "SVMLight"
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL) {
+                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL, chunk_size=NULL) {
   parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings, parse_type=parse_type)
   for(w in parse.params$warnings){
     cat('WARNING:',w,'\n')
@@ -59,6 +59,57 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   x
 }
 
+
+.h2o.get.source.keys <- function(data, destination_frame){
+ # Allow single frame or list of frames; turn singleton into a list
+  if( is.H2OFrame(data) ) data <- list(data)
+  print(data)
+  for (d in data) chk.H2OFrame(d)
+  .key.validate(destination_frame)
+  # Prep srcs: must be of the form [src1,src2,src3,...]
+  .collapse.char(sapply(data, function (d) attr(d, "id")))
+}
+
+#' @name h2o.importFile
+#' @export
+h2o.read.svmlight <- function(path, pattern = "", destination_frame = "") {
+  if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
+  if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
+  .key.validate(destination_frame)
+  if(length(path) > 1L) {
+    destFrames <- c()
+    fails <- c()
+    for(path2 in path){
+      res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path2)
+      destFrames <- c(destFrames, res$destination_frames)
+      fails <- c(fails, res$fails)
+    }
+    res$destination_frames <- destFrames
+    res$fails <- fails
+  } else {
+    res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path)
+  }
+  if(length(res$fails) > 0L) {
+    for(i in seq_len(length(res$fails)))
+      cat(res$fails[[i]], "failed to import")
+  }
+  # Return only the files that successfully imported
+  if(length(res$files) <= 0L) stop("all files failed to import")
+  data=.newH2OFrame(op="ImportFolder",id=res$destination_frames,-1,-1)
+  srcKeys <- .h2o.get.source.keys(data, destination_frame)
+  parms = list(source_frames = srcKeys)
+  if(!missing(destination_frame)) {
+    parms$destination_frame = destination_frame
+  }
+  parse.job <- .h2o.__remoteSend(.h2o.__PARSE_SVMLIGHT, method = "POST", .params = parms)
+  hex <- parse.job$dest$name
+  # Poll on job
+  .h2o.__waitOnJob(parse.job$key$name)
+  # Return a new H2OFrame object
+  x <- .newH2OFrame("Parse",id=hex,-1,-1)
+  .fetch.data(x,10,100) # Fill in nrow and ncol
+  x
+}
 
 #'
 #' Get a parse setup back for the staged data.
