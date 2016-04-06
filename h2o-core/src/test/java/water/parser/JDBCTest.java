@@ -11,7 +11,7 @@ import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.sql.*;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import static water.fvec.Vec.makeCon;
 
@@ -150,7 +150,7 @@ public class JDBCTest extends TestUtil{
     final String _host, _port, _database, _table, _user, _password;
     final int[] _sqlColumnTypes;
 
-    transient LinkedBlockingQueue<Connection> sqlConn = new LinkedBlockingQueue<>();
+    transient ArrayBlockingQueue<Connection> sqlConn = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
 
     private SqlTableToH2OFrame(String host, String port, String database, String table, String user, String password,
                                int[] sqlColumnTypes) {
