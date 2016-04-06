@@ -152,6 +152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_offset_column", "Offset must be different from weights");
       if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
         glm.error("_alpha", "Alpha value must be between 0 and 1");
+      if(_lambda != null && _lambda[0] < 0)
+        glm.error("_lambda", "Lambda value must be >= 0");
       if(_lambda_search)
         if(_nlambdas == -1)
           _nlambdas = 100;
