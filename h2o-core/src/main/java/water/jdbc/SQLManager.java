@@ -1,0 +1,293 @@
+package water.jdbc;
+
+import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.fvec.*;
+import water.parser.BufferedString;
+import water.util.Log;
+import water.util.PrettyPrint;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+
+import static water.fvec.Vec.makeCon;
+
+public class SQLManager {
+
+
+  /**
+   * 
+   * @param JDBCDriver (Input) 
+   * @param host (Input)
+   * @param port (Input)
+   * @param database (Input)
+   * @param table (Input)
+   * @param username (Input)
+   * @param password (Input)
+   * @param key (Output)
+   */
+  public static void importSqlTable(String JDBCDriver, String host, String port, String database, String table,
+                             String username, String password, String[] key) {
+    
+    //Determine url based on driver type
+    String url;
+    String driverType = JDBCDriver.toLowerCase();
+    switch (driverType) {
+      case "mysql":
+        url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", host, port, database);
+        break;
+      default:
+        throw new IllegalArgumentException(JDBCDriver + " is not supported. Must be one of: MySQL.");
+    }
+
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet rs = null;
+
+    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol, numRow;
+    String[] columnNames;
+    int[] columnSQLTypes;
+    byte[] columnH2OTypes;
+    try {
+      conn = DriverManager.getConnection(url, username, password);
+      stmt = conn.createStatement();
+      rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
+      rs.next();
+      numRow = rs.getInt(1);
+      rs = stmt.executeQuery("SELECT * FROM " + table + " LIMIT 1");
+      ResultSetMetaData rsmd = rs.getMetaData();
+      numCol = rsmd.getColumnCount();
+
+      columnNames = new String[numCol];
+      columnSQLTypes = new int[numCol];
+      columnH2OTypes = new byte[numCol];
+
+      for (int i = 0; i < numCol; i++) {
+        columnNames[i] = rsmd.getColumnName(i + 1);
+        int sqlType = rsmd.getColumnType(i + 1);
+        columnSQLTypes[i] = sqlType;
+        switch (sqlType) {
+          case Types.NUMERIC:
+          case Types.REAL:
+          case Types.DOUBLE:
+          case Types.FLOAT:
+          case Types.DECIMAL:
+            columnH2OTypes[i] = Vec.T_NUM;
+            realcols += 1;
+            break;
+          case Types.INTEGER:
+          case Types.TINYINT:
+          case Types.SMALLINT:
+          case Types.BIGINT:
+            columnH2OTypes[i] = Vec.T_NUM;
+            intcols += 1;
+            break;
+          case Types.BIT:
+          case Types.BOOLEAN:
+            columnH2OTypes[i] = Vec.T_NUM;
+            bincols += 1;
+            break;
+          case Types.VARCHAR:
+          case Types.NVARCHAR:
+          case Types.CHAR:
+          case Types.NCHAR:
+          case Types.LONGVARCHAR:
+          case Types.LONGNVARCHAR:
+            columnH2OTypes[i] = Vec.T_STR;
+            stringcols += 1;
+            break;
+          case Types.DATE:
+          case Types.TIME:
+          case Types.TIMESTAMP:
+            columnH2OTypes[i] = Vec.T_TIME;
+            timecols += 1;
+            break;
+          default:
+            Log.warn("Unsupported column type: " + rsmd.getColumnTypeName(i + 1));
+            columnH2OTypes[i] = Vec.T_BAD;
+        }
+      }
+
+    } catch (SQLException ex) {
+      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with url: " + url);
+    } finally {
+      // release resources in a finally{} block in reverse-order of their creation
+      if (rs != null) {
+        try {
+          rs.close();
+        } catch (SQLException sqlEx) {} // ignore
+        rs = null;
+      }
+
+      if (stmt != null) {
+        try {
+          stmt.close();
+        } catch (SQLException sqlEx) {} // ignore
+        stmt = null;
+      }
+
+      if (conn != null) {
+        try {
+          conn.close();
+        } catch (SQLException sqlEx) {} // ignore
+        conn = null;
+      }
+    }
+
+    double binary_ones_fraction = 0.5; //estimate
+
+    double rows_per_chunk = FileVec.calcOptimalChunkSize(
+            (int)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
+                    +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
+                    +(float)(realcols+timecols+stringcols) *numRow*8), //8 bytes for real and time (long) values
+            numCol, numCol*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+
+    //create template vectors in advance and run MR
+    Vec _v = makeCon(0, numRow, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
+
+    //create frame
+    Key destination_key = Key.make(table + "_sql_to_hex");
+    key[0] = (destination_key.toString());
+    Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes).doAll(columnH2OTypes, _v)
+            .outputFrame(destination_key, columnNames, null);
+
+    
+    System.out.println(fr);
+    if (fr != null) fr.delete();
+    _v.remove();
+
+
+  }
+
+  public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
+    final String _url, _table, _user, _password;
+    final int[] _sqlColumnTypes;
+
+    transient LinkedList<Connection> sqlConn = new LinkedList<>();
+
+    private SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes) {
+      _url = url;
+      _table = table;
+      _user = user;
+      _password = password;
+      _sqlColumnTypes = sqlColumnTypes;
+
+    }
+
+    @Override
+    protected void setupLocal() {
+      String url = null;
+      try {
+        int totCons = Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < totCons; i++) {
+          Connection conn = DriverManager.getConnection(_url, _user, _password);
+          sqlConn.add(conn);
+        }
+      } catch (SQLException ex) {
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + url);
+      }
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      //fetch data from sql table with limit and offset
+      System.out.println("Entered map");
+      Statement stmt = null;
+      ResultSet rs = null;
+      Chunk c0 = cs[0];
+      String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
+      try {
+        long t0 = System.currentTimeMillis();
+        Connection conn = null;
+        int j = 0;
+        while (conn == null) {
+          try {
+            conn = sqlConn.remove(j);
+          } catch (NoSuchElementException e) {}
+          j += 1;
+          if (j == sqlConn.size()) j = 0;
+        }
+        sqlConn.add(conn);
+        stmt = conn.createStatement();
+        rs = stmt.executeQuery(sqlText);
+        System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
+        while (rs.next()) {
+          for (int i = 0; i < _sqlColumnTypes.length; i++) {
+            Object res = rs.getObject(i + 1);
+            if (res == null) ncs[i].addNA();
+            else
+              switch (_sqlColumnTypes[i]) {
+                case Types.NUMERIC:
+                case Types.REAL:
+                case Types.DOUBLE:
+                case Types.FLOAT:
+                case Types.DECIMAL:
+                  ncs[i].addNum((double) res);
+                  break;
+                case Types.INTEGER:
+                case Types.TINYINT:
+                case Types.SMALLINT:
+                case Types.BIGINT:
+                  ncs[i].addNum((long) (int) res, 0);
+                  break;
+                case Types.BIT:
+                case Types.BOOLEAN:
+                  ncs[i].addNum(((boolean) res ? 1 : 0), 0);
+                  break;
+                case Types.VARCHAR:
+                case Types.NVARCHAR:
+                case Types.CHAR:
+                case Types.NCHAR:
+                case Types.LONGVARCHAR:
+                case Types.LONGNVARCHAR:
+                  ncs[i].addStr(new BufferedString((String) res));
+                  break;
+                case Types.DATE:
+                case Types.TIME:
+                case Types.TIMESTAMP:
+                  ncs[i].addNum(((Date) res).getTime(), 0);
+                  break;
+                default:
+                  ncs[i].addNA();
+              }
+          }
+        }
+      } catch (SQLException ex) {
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
+      } finally {
+        //close statment 
+        if (rs != null) {
+          try {
+            rs.close();
+          } catch (SQLException sqlEx) {
+          } // ignore
+          rs = null;
+        }
+
+        if (stmt != null) {
+          try {
+            stmt.close();
+          } catch (SQLException sqlEx) {
+          } // ignore
+          stmt = null;
+        }
+      }
+      System.out.println("Exit map");
+    }
+
+    @Override
+    protected void closeLocal() {
+      try {
+        for (Connection conn : sqlConn) {
+          conn.close();
+        }
+      } catch (Exception ex) {
+      } // ignore
+    }
+  }
+
+}
+
