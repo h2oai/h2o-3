@@ -190,7 +190,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
       Model model = (Model)Keyed.readAll(new AutoBuffer(is));
       s.models = new ModelSchema[]{(ModelSchema) Schema.schema(version, model).fillFromImpl(model)};
     } catch (FSIOException e) {
-      throw new H2OIllegalArgumentException("dir", "importModel", e);
+      throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
     }
     return s;
   }
