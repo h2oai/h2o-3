@@ -1,18 +1,17 @@
 package water.parser;
 
-import java.sql.*;
-import java.sql.Connection;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-
-import org.eclipse.jetty.io.*;
-import org.eclipse.jetty.plus.jndi.Link;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.*;
+import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.TestUtil;
 import water.fvec.*;
 import water.util.Log;
 import water.util.PrettyPrint;
+
+import java.sql.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static water.fvec.Vec.makeCon;
 
@@ -151,7 +150,7 @@ public class JDBCTest extends TestUtil{
     final String _host, _port, _database, _table, _user, _password;
     final int[] _sqlColumnTypes;
 
-    transient LinkedList<Connection> sqlConn = new LinkedList<>();
+    transient LinkedBlockingQueue<Connection> sqlConn = new LinkedBlockingQueue<>();
 
     private SqlTableToH2OFrame(String host, String port, String database, String table, String user, String password,
                                int[] sqlColumnTypes) {
@@ -184,22 +183,19 @@ public class JDBCTest extends TestUtil{
     public void map(Chunk[] cs, NewChunk[] ncs) {
       //fetch data from sql table with limit and offset
       System.out.println("Entered map");
+      Connection conn = null;
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
       String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
         long t0 = System.currentTimeMillis();
-        Connection conn = null;
-        int j = 0;
-        while (conn == null) {
-          try {
-            conn = sqlConn.remove(j);
-          } catch (NoSuchElementException e) {}
-            j += 1;
-            if (j == sqlConn.size()) j = 0;
+        try {
+          conn = sqlConn.take();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          throw new RuntimeException("Interrupted exception when trying to take connection from pool");
         }
-        sqlConn.add(conn);
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
         System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
@@ -247,7 +243,8 @@ public class JDBCTest extends TestUtil{
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
       } finally {
-        //close statment 
+
+        //close result set
         if (rs != null) {
           try {
             rs.close();
@@ -256,6 +253,7 @@ public class JDBCTest extends TestUtil{
           rs = null;
         }
 
+        //close statement
         if (stmt != null) {
           try {
             stmt.close();
@@ -263,6 +261,10 @@ public class JDBCTest extends TestUtil{
           } // ignore
           stmt = null;
         }
+
+        //return connection to pool
+        sqlConn.add(conn);
+
       }
       System.out.println("Exit map");
     }
