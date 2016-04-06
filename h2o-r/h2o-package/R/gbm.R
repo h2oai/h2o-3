@@ -35,6 +35,9 @@
 #'        confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param balance_classes logical, indicates whether or not to balance training data class
 #'        counts via over/under-sampling (for imbalanced data).
+#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic
+#'        order). If not specified, sampling factors will be automatically computed to obtain class
+#'        balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
 #'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling).
@@ -95,6 +98,7 @@ h2o.gbm <- function(x, y, training_frame,
                     nbins_cats = 1024,
                     validation_frame = NULL,
                     balance_classes = FALSE,
+                    class_sampling_factors,
                     max_after_balance_size = 1,
                     seed,
                     build_tree_one_node = FALSE,
@@ -176,6 +180,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$validation_frame <- validation_frame
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
+  if(!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
   if (!missing(seed))

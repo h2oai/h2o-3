@@ -34,6 +34,9 @@
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
+#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic
+#'        order). If not specified, sampling factors will be automatically computed to obtain class
+#'        balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
 #'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling) - Note: only
@@ -79,6 +82,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              nbins_cats = 1024,
                              binomial_double_trees = FALSE,
                              balance_classes = FALSE,
+                             class_sampling_factors,
                              max_after_balance_size = 5,
                              seed,
                              offset_column = NULL,
@@ -151,6 +155,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$nbins_cats <- nbins_cats
   if(!missing(balance_classes))
     parms$balance_classes <- balance_classes
+  if(!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
   if(!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
   if(!missing(seed))
