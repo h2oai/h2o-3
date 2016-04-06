@@ -417,6 +417,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         _parms._lambda[_parms._lambda.length-1] = _lambdaCVEstimate;
       }
+      if(_parms._objective_epsilon == -1)
+        _parms._objective_epsilon = _parms._lambda[0] == 0?1e-6:1e-4; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
       // clone2 so that I don't change instance which is in the DKV directly
       // (clone2 also shallow clones _output)
       _model.clone2().delete_and_lock(_job._key);
