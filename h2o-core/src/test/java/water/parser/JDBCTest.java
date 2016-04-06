@@ -1,7 +1,12 @@
 package water.parser;
 
 import java.sql.*;
+import java.sql.Connection;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
+import org.eclipse.jetty.io.*;
+import org.eclipse.jetty.plus.jndi.Link;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -14,7 +19,7 @@ import static water.fvec.Vec.makeCon;
 public class JDBCTest extends TestUtil{
   @BeforeClass
   static public void setup() { stall_till_cloudsize(1);}
-  
+
   @Test
   public void run() {
     Connection conn = null;
@@ -119,22 +124,22 @@ public class JDBCTest extends TestUtil{
         conn = null;
       }
     }
-    
+
     double binary_ones_fraction = 0.5; //estimate
-    
+
     double rows_per_chunk = FileVec.calcOptimalChunkSize(
             (int)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8), //8 bytes for real and time (long) values
             numCol, numCol*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
-    
+
     //create template vectors in advance and run MR
     Vec _v = makeCon(0, numRow, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
-    
+
     //create frame
     Frame fr = new SqlTableToH2OFrame(host, port, database, table, user, password, columnSQLTypes).doAll(columnH2OTypes, _v)
             .outputFrame(Key.make(table + "_sql_to_hex"), columnNames, null);
-    
+
     System.out.println(fr);
     if (fr != null) fr.delete();
     _v.remove();
@@ -146,8 +151,8 @@ public class JDBCTest extends TestUtil{
     final String _host, _port, _database, _table, _user, _password;
     final int[] _sqlColumnTypes;
 
-    transient Connection conn;
-    
+    transient LinkedList<Connection> sqlConn = new LinkedList<>();
+
     private SqlTableToH2OFrame(String host, String port, String database, String table, String user, String password,
                                int[] sqlColumnTypes) {
       _host = host;
@@ -157,17 +162,21 @@ public class JDBCTest extends TestUtil{
       _user = user;
       _password = password;
       _sqlColumnTypes = sqlColumnTypes;
-      
+
     }
 
     @Override
     protected void setupLocal() {
       String url = null;
       try {
+        int totCons = Runtime.getRuntime().availableProcessors();
         url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", _host, _port, _database);
-        conn = DriverManager.getConnection(url, _user, _password);
+        for (int i = 0; i < totCons; i++) {
+          Connection conn = DriverManager.getConnection(url, _user, _password);
+          sqlConn.add(conn);
+        }
       } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: "+ url);
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + url);
       }
     }
 
@@ -181,12 +190,22 @@ public class JDBCTest extends TestUtil{
       String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
         long t0 = System.currentTimeMillis();
+        Connection conn = null;
+        int j = 0;
+        while (conn == null) {
+          try {
+            conn = sqlConn.remove(j);
+          } catch (NoSuchElementException e) {}
+            j += 1;
+            if (j == sqlConn.size()) j = 0;
+        }
+        sqlConn.add(conn);
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
         System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
         while (rs.next()) {
           for (int i = 0; i < _sqlColumnTypes.length; i++) {
-            Object res = rs.getObject(i+1);
+            Object res = rs.getObject(i + 1);
             if (res == null) ncs[i].addNA();
             else
               switch (_sqlColumnTypes[i]) {
@@ -203,13 +222,13 @@ public class JDBCTest extends TestUtil{
                 case Types.BIGINT:
                   ncs[i].addNum((long) (int) res, 0);
                   break;
-                case Types.BIT: 
+                case Types.BIT:
                 case Types.BOOLEAN:
-                  ncs[i].addNum(((boolean) res ? 1: 0), 0);
+                  ncs[i].addNum(((boolean) res ? 1 : 0), 0);
                   break;
                 case Types.VARCHAR:
-                case Types.NVARCHAR: 
-                case Types.CHAR: 
+                case Types.NVARCHAR:
+                case Types.CHAR:
                 case Types.NCHAR:
                 case Types.LONGVARCHAR:
                 case Types.LONGNVARCHAR:
@@ -232,14 +251,16 @@ public class JDBCTest extends TestUtil{
         if (rs != null) {
           try {
             rs.close();
-          } catch (SQLException sqlEx) {} // ignore
+          } catch (SQLException sqlEx) {
+          } // ignore
           rs = null;
         }
 
         if (stmt != null) {
           try {
             stmt.close();
-          } catch (SQLException sqlEx) {} // ignore
+          } catch (SQLException sqlEx) {
+          } // ignore
           stmt = null;
         }
       }
@@ -248,13 +269,13 @@ public class JDBCTest extends TestUtil{
 
     @Override
     protected void closeLocal() {
-      if (conn != null) {
-        try {
+      try {
+        for (Connection conn : sqlConn) {
           conn.close();
-        } catch (SQLException sqlEx) {} // ignore
-        conn = null;
-      }
+        }
+      } catch (Exception ex) {
+      } // ignore
     }
   }
-  
+
 }
