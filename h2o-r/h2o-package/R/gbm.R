@@ -23,8 +23,9 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
-#' @param sample_rate Row sample rate (from \code{0.0} to \code{1.0})
-#' @param col_sample_rate Column sample rate (from \code{0.0} to \code{1.0})
+#' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
+#' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
+#' @param col_sample_rate Column sample rate per split (from \code{0.0} to \code{1.0})
 #' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
@@ -91,6 +92,7 @@ h2o.gbm <- function(x, y, training_frame,
                     min_rows = 10,
                     learn_rate = 0.1,
                     sample_rate = 1.0,
+                    sample_rate_per_class,
                     col_sample_rate = 1.0,
                     col_sample_rate_per_tree = 1.0,
                     nbins = 20,
@@ -166,6 +168,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$learn_rate <- learn_rate
   if (!missing(sample_rate))
     parms$sample_rate <- sample_rate
+  if (!missing(sample_rate_per_class))
+    parms$sample_rate_per_class <- sample_rate_per_class
   if (!missing(col_sample_rate))
     parms$col_sample_rate <- col_sample_rate
   if (!missing(col_sample_rate_per_tree))
