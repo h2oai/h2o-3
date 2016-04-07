@@ -225,6 +225,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 idx += 1
 
             retrofit_path = retrofit_path.replace('\\', '\\\\')
+            summary = meta['summary']
             http_method = meta['http_method']
             input_schema_name  = meta['input_schema']
             output_schema_name = meta['output_schema']
@@ -316,6 +317,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 signatures[signature] = signature
 
             if not first: pojo.append('')
+            pojo.append('    /** {summary} */'.format(summary = summary))
             if http_method == 'POST':
                 pojo.append('    @FormUrlEncoded')
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
@@ -451,10 +453,41 @@ import java.lang.reflect.Type;
 
 public class Example {
 
+    /**
+     * Keys get sent as Strings and returned as objects also containing the type and URL,
+     * so they need a custom GSON serializer.
+     */
     private static class KeySerializer implements JsonSerializer<KeyV3> {
         public JsonElement serialize(KeyV3 key, Type typeOfKey, JsonSerializationContext context) {
             return new JsonPrimitive(key.name);
         }
+    }
+
+    public static JobV3 poll(Retrofit retrofit, String job_id) {
+        Jobs jobsService = retrofit.create(Jobs.class);
+        Response<JobsV3> jobs_response = null;
+
+        int retries = 3;
+        JobsV3 jobs = null;
+        do {
+            try {
+                jobs_response = jobsService.fetch(job_id).execute();
+            }
+            catch (IOException e) {
+                System.err.println("Caught exception: " + e);
+            }
+            if (! jobs_response.isSuccessful())
+                if (retries-- > 0) 
+                   continue;
+                else
+                    throw new RuntimeException("/3/Jobs/{job_id} failed 3 times.");
+
+            jobs = jobs_response.body();
+            if (null == jobs.jobs || jobs.jobs.length != 1)
+                throw new RuntimeException("Failed to find Job: " + job_id);
+            if (! "RUNNING".equals(jobs.jobs[0].status)) try { Thread.sleep(100); } catch (InterruptedException e) {} // wait 100mS
+        } while ("RUNNING".equals(jobs.jobs[0].status));
+        return jobs.jobs[0];
     }
 
     public static void main (String[] args) {
@@ -491,8 +524,13 @@ public class Example {
 
             Response<JobV3> create_frame_response = createFrameService.run(null, 1000, 100, 42, 42, true, 0, 100000, 0.2, 100, 0.2, 32767, 0.2, 0.5, 0.2, 0, 0.2, 2, true, null).execute();
             if (create_frame_response.isSuccessful()) {
-                JobV3 job = create_frame_response.body(); // TODO: poll
-                try { Thread.sleep(30000); } catch (InterruptedException e) {}
+                JobV3 job = create_frame_response.body();
+
+                if (null == job || null == job.key)
+                    throw new RuntimeException("CreateFrame returned a bad Job: " + job);
+
+                job = poll(retrofit, job.key.name);
+
                 KeyV3 new_frame = job.dest;
                 System.out.println("Created frame: " + new_frame);
 
