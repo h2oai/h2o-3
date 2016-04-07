@@ -168,6 +168,35 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
                                     col_types, na_strings)
 
 def import_sql_table(database_sys, host, port, database, table, username, password):
+  """Import SQL table to H2OFrame in memory.
+  
+  Parameters
+  ----------
+    database_sys : str
+      Database management system. Must be one of: MySQL
+  
+    host : str,
+      Host of SQL server
+      
+    port : int or str
+      Port of SQL server
+      
+    database : str
+      Name of SQL database
+      
+    table : str
+      Name of SQL table
+      
+    username : str
+      Username of SQL server
+      
+    password : str
+      Password of SQL server
+      
+  Returns
+  -------
+    H2OFrame containing data of specified SQL table
+"""
   p = {}
   p.update({k:v for k,v in locals().items() if k is not "p"})
   p["_rest_version"] = 99
