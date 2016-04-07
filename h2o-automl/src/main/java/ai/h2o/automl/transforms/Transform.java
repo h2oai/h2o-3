@@ -16,20 +16,6 @@ import java.util.Set;
  * be transformed. The set of transforms (in the String[] ops) are the names of the AST
  * operations
  *
- *
- *
- * Some heuristics:
- *    Allowing users to do a log(), or log1p() quickly would be nice.
- *    Trying it behind their back might be useful. I've started to rattle off
- *        "if your numbers span more than an order of magnitude,x
- *         you might try a log transform"
- *    quite often. Reasonable enough heuristic. Heuristics are good for DSiaB.
- *
- *   Hard-coding a few common things to look for: "Year" is an integer, but log
- *   transforming it likely doesn't make as much sense; special transforms exist
- *   for that, so we might want to understand the difference and be willing to guess.
- *
- *
  * Here are the features that are currently going to be generated:
  *      1. apply unary op to a single column
  *      2. multiply/add/subtract/divide two columns
