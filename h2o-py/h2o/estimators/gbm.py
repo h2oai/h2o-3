@@ -46,6 +46,10 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   balance_classes : bool
     logical, indicates whether or not to balance training data class counts via
     over/under-sampling (for imbalanced data)
+  class_sampling_factors : list
+    Desired over/under-sampling ratios per class (in lexicographic
+    order). If not specified, sampling factors will be automatically computed to obtain class
+    balance during training. Requires balance_classes.
   max_after_balance_size : float
     Maximum relative size of the training data after balancing class counts
     (can be less than 1.0). Ignored if balance_classes is False, which is the
@@ -89,7 +93,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   def __init__(self, model_id=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
                sample_rate=None, col_sample_rate=None, col_sample_rate_per_tree=None,
-               nbins_top_level=None, nbins_cats=None, balance_classes=None,
+               nbins_top_level=None, nbins_cats=None, balance_classes=None, class_sampling_factors=None,
                max_after_balance_size=None, seed=None, build_tree_one_node=None,
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
@@ -210,6 +214,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @balance_classes.setter
   def balance_classes(self, value):
     self._parms["balance_classes"] = value
+
+  @property
+  def class_sampling_factors(self):
+    return self._parms["class_sampling_factors"]
+
+  @class_sampling_factors.setter
+  def class_sampling_factors(self, value):
+    self._parms["class_sampling_factors"] = value
 
   @property
   def max_after_balance_size(self):

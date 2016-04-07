@@ -74,10 +74,10 @@ public class C2SChunk extends Chunk {
    * @param to
    */
   @Override
-  public double [] getDoubles(double [] vals, int from, int to){
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i) {
       long res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      vals[i-from] = res != C2Chunk._NA?(res + _bias)*_scale:Double.NaN;
+      vals[i-from] = res != C2Chunk._NA?(res + _bias)*_scale:NA;
     }
     return vals;
   }

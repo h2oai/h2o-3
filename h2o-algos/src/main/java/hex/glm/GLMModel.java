@@ -123,7 +123,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-6;
+    public double _objective_epsilon = -1;
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
@@ -152,6 +152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_offset_column", "Offset must be different from weights");
       if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
         glm.error("_alpha", "Alpha value must be between 0 and 1");
+      if(_lambda != null && _lambda[0] < 0)
+        glm.error("_lambda", "Lambda value must be >= 0");
       if(_lambda_search)
         if(_nlambdas == -1)
           _nlambdas = 100;

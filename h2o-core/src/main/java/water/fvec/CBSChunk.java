@@ -115,10 +115,10 @@ public class CBSChunk extends Chunk {
    * @param to
    */
   @Override
-  public double[] getDoubles(double [] vals, int from, int to){
+  public double[] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i) {
       byte b = atb(i);
-      vals[i - from] = b == _NA ? Double.NaN : b;
+      vals[i - from] = b == _NA ? NA : b;
     }
     return vals;
   }

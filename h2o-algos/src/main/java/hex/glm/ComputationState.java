@@ -109,6 +109,7 @@ public final class ComputationState {
     int newlySelected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
+    _allIn = _allIn || _parms._alpha[0]*_lambda == 0;
     if (!_allIn) {
       final double rhs = Math.abs(_alpha * (2 * _lambda - _previousLambda));
       int [] newCols = MemoryManager.malloc4(P);
@@ -312,7 +313,7 @@ public final class ComputationState {
     int [] activeCols = ArrayUtils.removeIds(_activeData.activeCols(),cols);
     if(_beta != null)
       _beta = ArrayUtils.removeIds(_beta,cols);
-    if(_ginfo != null)
+    if(_ginfo != null && _ginfo._gradient != null)
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
@@ -356,7 +357,8 @@ public final class ComputationState {
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     double objOld = objective();
-    _beta = beta;
+    if(_beta == null)_beta = beta.clone();
+    else System.arraycopy(beta,0,_beta,0,beta.length);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
 

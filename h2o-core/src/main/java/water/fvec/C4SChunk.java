@@ -69,10 +69,10 @@ public class C4SChunk extends Chunk {
    * @param to
    */
   @Override
-  public double [] getDoubles(double [] vals, int from, int to){
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i) {
       long res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-      vals[i-from] = res != C4Chunk._NA?(res + _bias)*_scale:Double.NaN;
+      vals[i-from] = res != C4Chunk._NA?(res + _bias)*_scale:NA;
     }
     return vals;
   }

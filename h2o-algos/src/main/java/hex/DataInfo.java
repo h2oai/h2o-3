@@ -854,7 +854,7 @@ public class DataInfo extends Keyed<DataInfo> {
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
         res += vec[binIds[i]];
-      if(numIds == null || (vec.length == nBins + nNums + 1)) {
+      if(numIds == null) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
