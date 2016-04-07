@@ -109,18 +109,20 @@ public abstract class Collector {
       private long[][] _ticks;
       @Override public void run() {
         HashMap<String, Object> hm = new HashMap<>();
+        LinuxProcFileReader lpfr = new LinuxProcFileReader();
         while(true) {
-          if( LinuxProcFileReader.refresh() ) {
+          lpfr.read();
+          if( lpfr.valid() ) {
             hm.put("ConfigID", ConfigID);
             hm.put("ts", System.currentTimeMillis());
             hm.put("rss", AutoCollect.SQLNAN);
             hm.put("sys_cpu", AutoCollect.SQLNAN);
             hm.put("proc_cpu", AutoCollect.SQLNAN);
             hm.put("num_cpu", AutoCollect.SQLNAN);
-            hm.put("rss", LinuxProcFileReader.getProcessRss());
-            long[][] newTicks = new long[LinuxProcFileReader.getCpuTicks().length][];
+            hm.put("rss", lpfr.getProcessRss());
+            long[][] newTicks = new long[lpfr.getCpuTicks().length][];
             for(int i=0;i<newTicks.length;++i)
-              newTicks[i] = LinuxProcFileReader.getCpuTicks()[i].clone();
+              newTicks[i] = lpfr.getCpuTicks()[i].clone();
             if( _ticks == null ) _ticks = newTicks;
             else {
               double deltaUser = deltaAv(_ticks, newTicks, 0);
