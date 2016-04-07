@@ -191,8 +191,9 @@ public class AccuracyTestingSuite {
       try {
         testCaseArray.add(
                           new TestCase(Integer.parseInt(testCaseEntry[0]), testCaseEntry[1], testCaseEntry[2],
-                                       testCaseEntry[3].equals("1"), testCaseEntry[4].equals("1"), Integer.parseInt(testCaseEntry[5]),
-                                       Integer.parseInt(testCaseEntry[6]), testCaseEntry[7])
+                                  testCaseEntry[3].equals("1"), testCaseEntry[4], testCaseEntry[5],
+                                  testCaseEntry[6].equals("1"), Integer.parseInt(testCaseEntry[7]),
+                                  Integer.parseInt(testCaseEntry[8]), testCaseEntry[9])
                           );
       } catch (Exception e) {
         summaryLog.println("Couldn't create test case: " + t);
