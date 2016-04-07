@@ -12,7 +12,7 @@ public class ImportSQLTableHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ImportSQLTableV99 importSQLTable(int version, ImportSQLTableV99 importSqlTable) {
     String[] key = new String[1];
-    SQLManager.importSqlTable(importSqlTable.JDBCDriver, importSqlTable.host, importSqlTable.port, 
+    SQLManager.importSqlTable(importSqlTable.database_sys, importSqlTable.host, importSqlTable.port, 
             importSqlTable.database, importSqlTable.table, importSqlTable.username, importSqlTable.password, key);
     
     importSqlTable.destination_frame = key[0];

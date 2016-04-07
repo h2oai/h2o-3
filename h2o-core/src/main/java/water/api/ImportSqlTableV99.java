@@ -6,8 +6,8 @@ import water.Iced;
 public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
   
   //Input fields
-  @API(help="JDBCDriver", required = true)
-  String JDBCDriver;
+  @API(help="database_sys", required = true)
+  String database_sys;
 
   @API(help="host", required = true)
   String host;

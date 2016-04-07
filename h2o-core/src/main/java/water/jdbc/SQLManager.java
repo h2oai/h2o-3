@@ -9,9 +9,7 @@ import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import static water.fvec.Vec.makeCon;
 
@@ -20,7 +18,7 @@ public class SQLManager {
 
   /**
    * 
-   * @param JDBCDriver (Input) 
+   * @param database_sys (Input) 
    * @param host (Input)
    * @param port (Input)
    * @param database (Input)
@@ -29,18 +27,18 @@ public class SQLManager {
    * @param password (Input)
    * @param key (Output)
    */
-  public static void importSqlTable(String JDBCDriver, String host, String port, String database, String table,
+  public static void importSqlTable(String database_sys, String host, String port, String database, String table,
                              String username, String password, String[] key) {
     
-    //Determine url based on driver type
+    //Determine url based on database system
     String url;
-    String driverType = JDBCDriver.toLowerCase();
-    switch (driverType) {
+    String d_sys = database_sys.toLowerCase();
+    switch (d_sys) {
       case "mysql":
         url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", host, port, database);
         break;
       default:
-        throw new IllegalArgumentException(JDBCDriver + " is not supported. Must be one of: MySQL.");
+        throw new IllegalArgumentException(database_sys + " is not supported. Must be one of: MySQL.");
     }
 
     Connection conn = null;
@@ -139,23 +137,26 @@ public class SQLManager {
 
     double binary_ones_fraction = 0.5; //estimate
 
-    double rows_per_chunk = FileVec.calcOptimalChunkSize(
-            (int)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
-                    +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
-                    +(float)(realcols+timecols+stringcols) *numRow*8), //8 bytes for real and time (long) values
-            numCol, numCol*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
-
     //create template vectors in advance and run MR
-    Vec _v = makeCon(0, numRow, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
-
+    long totSize =
+            (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
+                    +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
+                    +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
+    Vec _v;
+    boolean optimize = true;
+    if (optimize) {
+      _v = makeCon(totSize, numRow);
+    } else {
+      double rows_per_chunk = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
+              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+      _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+    }
     //create frame
     Key destination_key = Key.make(table + "_sql_to_hex");
     key[0] = (destination_key.toString());
     Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes).doAll(columnH2OTypes, _v)
             .outputFrame(destination_key, columnNames, null);
 
-    
-    System.out.println(fr);
     if (fr != null) fr.delete();
     _v.remove();
 
@@ -166,9 +167,10 @@ public class SQLManager {
     final String _url, _table, _user, _password;
     final int[] _sqlColumnTypes;
 
-    transient LinkedList<Connection> sqlConn = new LinkedList<>();
+    transient ArrayBlockingQueue<Connection> sqlConn = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
 
-    private SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes) {
+    private SqlTableToH2OFrame(String url, String table, String user, String password,
+                               int[] sqlColumnTypes) {
       _url = url;
       _table = table;
       _user = user;
@@ -179,15 +181,14 @@ public class SQLManager {
 
     @Override
     protected void setupLocal() {
-      String url = null;
       try {
-        int totCons = Runtime.getRuntime().availableProcessors();
+        int totCons = Runtime.getRuntime().availableProcessors() / H2O.getCloudSize();
         for (int i = 0; i < totCons; i++) {
           Connection conn = DriverManager.getConnection(_url, _user, _password);
           sqlConn.add(conn);
         }
       } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + url);
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
     }
 
@@ -195,22 +196,19 @@ public class SQLManager {
     public void map(Chunk[] cs, NewChunk[] ncs) {
       //fetch data from sql table with limit and offset
       System.out.println("Entered map");
+      Connection conn = null;
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
       String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
         long t0 = System.currentTimeMillis();
-        Connection conn = null;
-        int j = 0;
-        while (conn == null) {
-          try {
-            conn = sqlConn.remove(j);
-          } catch (NoSuchElementException e) {}
-          j += 1;
-          if (j == sqlConn.size()) j = 0;
+        try {
+          conn = sqlConn.take();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          throw new RuntimeException("Interrupted exception when trying to take connection from pool");
         }
-        sqlConn.add(conn);
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
         System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
@@ -258,7 +256,8 @@ public class SQLManager {
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
       } finally {
-        //close statment 
+
+        //close result set
         if (rs != null) {
           try {
             rs.close();
@@ -267,6 +266,7 @@ public class SQLManager {
           rs = null;
         }
 
+        //close statement
         if (stmt != null) {
           try {
             stmt.close();
@@ -274,6 +274,10 @@ public class SQLManager {
           } // ignore
           stmt = null;
         }
+
+        //return connection to pool
+        sqlConn.add(conn);
+
       }
       System.out.println("Exit map");
     }

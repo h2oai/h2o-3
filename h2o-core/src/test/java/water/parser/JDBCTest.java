@@ -143,7 +143,7 @@ public class JDBCTest extends TestUtil{
     System.out.println("num chunks: " + (_v.espc().length - 1));
 
     //create frame
-    Frame fr = new SqlTableToH2OFrame(host, port, database, table, user, password, columnSQLTypes).doAll(columnH2OTypes, _v)
+    Frame fr = new SqlTableToH2OFrame(url, table, user, password, columnSQLTypes).doAll(columnH2OTypes, _v)
             .outputFrame(Key.make(table + "_sql_to_hex"), columnNames, null);
 
     System.out.println(fr);
@@ -152,16 +152,14 @@ public class JDBCTest extends TestUtil{
   }
 
   public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
-    final String _host, _port, _database, _table, _user, _password;
+    final String _url, _table, _user, _password;
     final int[] _sqlColumnTypes;
 
     transient ArrayBlockingQueue<Connection> sqlConn = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
 
-    private SqlTableToH2OFrame(String host, String port, String database, String table, String user, String password,
+    private SqlTableToH2OFrame(String url, String table, String user, String password,
                                int[] sqlColumnTypes) {
-      _host = host;
-      _port = port;
-      _database = database;
+      _url = url;
       _table = table;
       _user = user;
       _password = password;
@@ -171,16 +169,14 @@ public class JDBCTest extends TestUtil{
 
     @Override
     protected void setupLocal() {
-      String url = null;
       try {
-        int totCons = Runtime.getRuntime().availableProcessors();
-        url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", _host, _port, _database);
+        int totCons = Runtime.getRuntime().availableProcessors() / H2O.getCloudSize();
         for (int i = 0; i < totCons; i++) {
-          Connection conn = DriverManager.getConnection(url, _user, _password);
+          Connection conn = DriverManager.getConnection(_url, _user, _password);
           sqlConn.add(conn);
         }
       } catch (SQLException ex) {
-        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + url);
+        throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect to SQL database with url: " + _url);
       }
     }
 
