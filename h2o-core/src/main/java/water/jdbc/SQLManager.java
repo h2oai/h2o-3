@@ -24,10 +24,9 @@ public class SQLManager {
    * @param table (Input)
    * @param username (Input)
    * @param password (Input)
-   * @param key (Output)
    */
   public static JobV3 importSqlTable(String database_sys, String host, String port, String database, final String table,
-                                     final String username, final String password, String[] key) {
+                                     final String username, final String password) {
     
     //Determine url based on database system
     final String url;
@@ -45,7 +44,7 @@ public class SQLManager {
     ResultSet rs = null;
 
     int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol; 
-    final int numRow;
+    long numRow;
     final String[] columnNames;
     final int[] columnSQLTypes;
     final byte[] columnH2OTypes;
@@ -138,7 +137,7 @@ public class SQLManager {
     double binary_ones_fraction = 0.5; //estimate
 
     //create template vectors in advance and run MR
-    final long totSize =
+    long totSize =
             (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
@@ -154,23 +153,20 @@ public class SQLManager {
     
     //create frame
     final Key destination_key = Key.make(table + "_sql_to_hex");
-    key[0] = (destination_key.toString());
     final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
 
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        Vec _v = makeCon(totSize, numRow);
         Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes, j).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
-        System.out.println(fr);
         DKV.put(fr);
+        _v.remove();
         tryComplete();
       }
     };
     j.start(work, _v.nChunks());
     
-    _v.remove();
     return new JobV3().fillFromImpl(j);
   }
 
