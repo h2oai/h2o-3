@@ -13,9 +13,6 @@ import java.util.Map;
  * Created by nkalonia1 on 3/27/16.
  */
 public class ParseItem {
-    enum Field {
-        PACKAGE, CLASS, METHOD
-    }
     PackageName _package;
     ClassName _class;
     MethodName _method;
@@ -29,10 +26,6 @@ public class ParseItem {
         _method = m;
         _propagate = propagate;
         _values = new HashMap<ICoverageNode.CounterEntity, Double>();
-    }
-
-    ParseItem() {
-        this(new PackageName(), new ClassName(), new MethodName(), false);
     }
 
     public boolean matches(IPackageCoverage p) {

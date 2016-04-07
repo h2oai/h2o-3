@@ -5,7 +5,6 @@ import jacoco.core.internal.analysis.BundleCoverageHighlight;
 import jacoco.core.internal.analysis.ClassCoverageHighlight;
 import jacoco.core.internal.analysis.MethodCoverageHighlight;
 import jacoco.core.internal.analysis.PackageCoverageHighlight;
-import jacoco.report.internal.html.parse.DSVParser;
 import jacoco.report.internal.html.parse.ParseItem;
 import jacoco.report.internal.html.parse.YAMLParser;
 import org.jacoco.core.analysis.*;

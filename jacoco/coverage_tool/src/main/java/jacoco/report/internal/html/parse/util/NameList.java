@@ -39,11 +39,7 @@ public class NameList {
         this(n, false);
     }
 
-    public void clear() {
-        _names = _repeating ? new RepeatingList<NameString>() : new SLL<NameString>();
-    }
-
-    public boolean isDefined() { return true; }
+    public boolean repeats() { return _repeating; }
 
     public SLLIterator<NameString> iterator() {
         return _names.iterator();

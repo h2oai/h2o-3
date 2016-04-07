@@ -7,26 +7,12 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.util.*;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by nkalonia1 on 3/23/16.
  */
 public class YAMLParser {
     private Set<CounterEntity> _default_headers;
-
-    private static final Pattern _DEFAULT = Pattern.compile("(default(?:\\[([^\\]]*)\\])?):"); // Entire token in group 1, parameters in group 2
-    private static final Pattern _HEADERS = Pattern.compile("(headers):"); // Entire token in group 1
-    private static final Pattern _PACKAGE = Pattern.compile("(package):"); // Entire token in group 1
-    private static final Pattern _CLASS = Pattern.compile("(class):"); // Entire token in group 1
-    private static final Pattern _METHOD = Pattern.compile("(method):"); // Entire token in group 1
-    private static final Pattern _PROPAGATE = Pattern.compile("(propagate):"); // Entire token in group 1
-    private static final Pattern _QUOTE = Pattern.compile("\\s*(?:\\\"([^\"]*)\\\"|(\\S*)\\s*)", Pattern.MULTILINE); // Quoted result in group 1, unquoted in group 2
-    private static final Pattern _DEFAULT_VALUE = Pattern.compile("\\*");
-    private static final Pattern _WILD_VALUE = Pattern.compile("\\*");
-    private static final Pattern _PACKAGE_NAME = Pattern.compile("\\s*(\\S*)\\s*");
 
     private boolean _log_out;
     private boolean _log_err;
@@ -76,69 +62,84 @@ public class YAMLParser {
         Yaml yaml = new Yaml();
         try {
             for(Object o : yaml.loadAll(new FileInputStream(params))) {
-                if (!(o instanceof Map)) {err("Object " + o + " is not a map"); continue; }
+                if (!(o instanceof Map)) {err("Object " + o + " is not a map. Skipping..."); continue; }
+                log("Starting block...");
                 Map m = (Map) o;
 
-                 // Load Package Name
-                if (m.containsKey("package")) {
-                    Object p_o = m.get("package");
-                    if (p_o instanceof Map) {
-                        setPackageName((Map) p_o);
-                    } else if (p_o instanceof String) {
-                        setPackageName((String) p_o);
+                Object val;
+
+                if ((val = m.get("default")) != null) {
+                    log("Found \"default\"");
+                    if (val instanceof Map) {
+                        setDefault((Map) val);
+                    } else if (val instanceof Number) {
+                        setDefault((Number) val);
                     } else {
-                        err("Invalid value for \"package\"");
+                        err("Invalid value for \"default\":" + val);
                     }
-                    _class_name.clear();
-                    _method_name.clear();
+                }
+
+                // Load Package Name
+                if ((val = m.get("package")) != null) {
+                    log("Found \"package\"");
+                    if (val instanceof Map) {
+                        setPackageName((Map) val);
+                    } else if (val instanceof String) {
+                        setPackageName((String) val);
+                    } else {
+                        err("Invalid value for \"package\":" + val);
+                    }
+                    _class_name = new ClassName();
+                    _method_name = new MethodName();
                 }
 
                 // Load Class Name
-                if (m.containsKey("class")) {
-                    Object c_o = m.get("class");
-                    if (c_o instanceof Map) {
-                        setClassName((Map) c_o);
-                    } else if (c_o instanceof String) {
-                        setClassName((String) c_o);
+                if ((val = m.get("class")) != null) {
+                    log("Found \"class\"");
+                    if (val instanceof Map) {
+                        setClassName((Map) val);
+                    } else if (val instanceof String) {
+                        setClassName((String) val);
                     } else {
-                        err("Invalid value for \"class\"");
+                        err("Invalid value for \"class\":" + val);
                     }
-                    _method_name.clear();
+                    _method_name = new MethodName();
                 }
 
                 // Load Method Name
-                if (m.containsKey("class")) {
-                    Object m_o = m.get("class");
-                    if (m_o instanceof Map) {
-                        setMethodName((Map) m_o);
-                    } else if (m_o instanceof String) {
-                        setMethodName((String) m_o);
+                if ((val = m.get("method")) != null) {
+                    log("Found \"method\"");
+                    if (val instanceof Map) {
+                        setMethodName((Map) val);
+                    } else if (val instanceof String) {
+                        setMethodName((String) val);
                     } else {
-                        err("Invalid value for \"method\"");
+                        err("Invalid value for \"method\":" + val);
                     }
                 }
 
                 // Set propagate
-                if (m.containsKey("propagate")) {
-                    Object b_o = m.get("propagate");
-                    if (b_o instanceof Boolean) {
-                        setPropagate((boolean) b_o);
+                if ((val = m.get("propagate")) != null) {
+                    log("Found \"propagate\"");
+                    if (val instanceof Boolean) {
+                        setPropagate((boolean) val);
                     } else {
                         err("Invalid value for \"propagate\"");
                     }
                 }
 
                 // Apply values
-                if (m.containsKey("values")) {
-                    Object v_o = m.get("values");
-                    if (v_o instanceof Map) {
-                        _items.add(setValues((Map) v_o));
-                    } else if (v_o instanceof Number) {
-                        _items.add(setValues(((Number) v_o).doubleValue()));
+                if ((val = m.get("values")) != null) {
+                    log("Found \"values\"");
+                    if (val instanceof Map) {
+                        _items.add(setValues((Map) val));
+                    } else if (val instanceof Number) {
+                        _items.add(setValues((Number) val));
                     } else {
                         err("Invalid value for \"values\"");
                     }
                 }
+                log("Ending block...");
             }
         } catch (FileNotFoundException fnfe) {
             err("Couldn't find file: " + params);
@@ -147,15 +148,34 @@ public class YAMLParser {
         return _items;
     }
 
+    private void setDefault(Map m) {
+        for (CounterEntity ce :_default_headers) {
+            String key = ce.name().toLowerCase();
+            if (m.get(key) instanceof Number) {
+                _default_values.put(ce, ((Number) m.get(key)).doubleValue());
+            }
+            log("For \"" + key + "\": " + _default_values.get(ce));
+        }
+    }
+
+    private void setDefault(Number n) {
+        Map<String, Number> m = new HashMap<String, Number>();
+        for (CounterEntity ce :_default_headers) {
+            m.put(ce.name().toLowerCase(), n);
+        }
+        setDefault(m);
+    }
+
     private void setPackageName(Map m) {
         NameString name;
-        System.out.println(m.get("name") instanceof String);
         if (m.containsKey("name") && m.get("name") instanceof String) {
-            name = new NameString(((String) m.get("name")).replace('.','/'));
-            _package_name.set(name);
+            String string_name = (String) m.get("name");
+            log("Found name: " + string_name);
+            name = new NameString(string_name.replace('.','/'));
+            _package_name = new PackageName(name);
         } else {
             log("Did not find valid value for \"name\"");
-            _package_name.set(_wild_name);
+            _package_name = new PackageName(_wild_name);
         }
     }
 
@@ -171,30 +191,38 @@ public class YAMLParser {
         NameString superclass;
         NameList interfaces;
         if (m.containsKey("name") && m.get("name") instanceof String) {
-            name = new NameString(_package_name.getPackageName().get() + "/" + ((String) m.get("name")).replace('.','$'));
+            String string_name = (String) m.get("name");
+            log("Found name: " + string_name);
+            name = new NameString(_package_name.getPackageName().get() + "/" + string_name.replace('.','$'));
         } else {
             log("Did not find valid value for \"name\"");
             name = _wild_name;
         }
         if (m.containsKey("signature") && m.get("signature") instanceof String) {
-            signature = new NameString((String) m.get("signature"));
+            String string_sig = (String) m.get("signature");
+            log("Found signature: " + string_sig);
+            signature = new NameString(string_sig);
         } else {
             log("Did not find valid value for \"signature\"");
             signature = _wild_name;
         }
         if (m.containsKey("superclass") && m.get("superclass") instanceof String) {
-            superclass = new NameString((String) m.get("superclass"));
+            String string_super = (String) m.get("superclass");
+            log("Found superclass: " + string_super);
+            superclass = new NameString(string_super);
         } else {
             log("Did not find valid value for \"superclass\"");
             superclass = _wild_name;
         }
         if (m.containsKey("interfaces") && m.get("interfaces") instanceof String[]) {
-            interfaces = new NameList((String[]) m.get("interfaces"));
+            String[] string_inter = (String[]) m.get("interfaces");
+            log("Found interfaces: " + Arrays.toString(string_inter));
+            interfaces = new NameList(string_inter);
         } else {
             log("Did not find valid value for \"interfaces\"");
             interfaces = _wild_list;
         }
-        _class_name.set(name, signature, superclass, interfaces);
+        _class_name = new ClassName(name, signature, superclass, interfaces);
     }
 
     private void setClassName(String s) {
@@ -208,24 +236,30 @@ public class YAMLParser {
         NameString desc;
         NameString signature;
         if (m.containsKey("name") && m.get("name") instanceof String) {
-            name = new NameString(_package_name.getPackageName().get() + "/" + ((String) m.get("name")).replace('.','$'));
+            String string_name = (String) m.get("name");
+            log("Found name: " + string_name);
+            name = new NameString(string_name);
         } else {
             log("Did not find valid value for \"name\"");
             name = _wild_name;
         }
         if (m.containsKey("desc") && m.get("desc") instanceof String) {
-            desc = new NameString((String) m.get("desc"));
+            String string_desc = (String) m.get("desc");
+            log("Found description: " + string_desc);
+            desc = new NameString(string_desc);
         } else {
             log("Did not find valid value for \"desc\"");
             desc = _wild_name;
         }
         if (m.containsKey("signature") && m.get("signature") instanceof String) {
-            signature = new NameString((String) m.get("superclass"));
+            String string_sig = (String) m.get("signature");
+            log("Found signature: " + string_sig);
+            signature = new NameString(string_sig);
         } else {
             log("Did not find valid value for \"signature\"");
             signature = _wild_name;
         }
-        _method_name.set(name, desc, signature);
+        _method_name = new MethodName(name, desc, signature);
     }
 
     private void setMethodName(String s) {
@@ -238,25 +272,27 @@ public class YAMLParser {
         ParseItem p = new ParseItem(_package_name, _class_name, _method_name, _propagate);
         for (CounterEntity ce :_default_headers) {
             String key = ce.name().toLowerCase();
-            if (m.containsKey(key) && m.get(key) instanceof Double) {
-                p._values.put(ce, (Double) m.get(key));
+            if (m.get(key) instanceof Number) {
+                p._values.put(ce, ((Number) m.get(key)).doubleValue());
             } else {
                 p._values.put(ce, _default_values.get(ce));
             }
+            log("For \"" + key + "\": " + p._values.get(ce));
         }
         return p;
     }
 
-    private ParseItem setValues(Double d) {
-        Map<String, Double> m = new HashMap<String, Double>();
+    private ParseItem setValues(Number n) {
+        Map<String, Number> m = new HashMap<String, Number>();
         for (CounterEntity ce :_default_headers) {
-            m.put(ce.name().toLowerCase(), d);
+            m.put(ce.name().toLowerCase(), n);
         }
         return setValues(m);
     }
 
     private void setPropagate(boolean b) {
         _propagate = b;
+        log("\"Propagate\" is set to " + b);
     }
 
     private void log(String s) {
