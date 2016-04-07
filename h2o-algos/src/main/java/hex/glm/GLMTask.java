@@ -617,6 +617,30 @@ public abstract class GLMTask  {
     }
   }
 
+  static class GLMPoissonGradientTask extends GLMGradientTask {
+    private final GLMWeightsFun _glmf;
+    public GLMPoissonGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double[] beta) {
+      super(jobKey, dinfo, parms._obj_reg, lambda, beta);
+      _glmf = new GLMWeightsFun(parms);
+    }
+    @Override protected void computeGradientMultipliers(double [] es, double [] ys, double [] ws){
+      double l = 0;
+      for(int i = 0; i < es.length; ++i) {
+        if (Double.isNaN(ys[i]) || ws[i] == 0) {
+          es[i] = 0;
+        } else {
+          double eta = es[i];
+          double mu = Math.exp(eta);
+          double yr = ys[i];
+          double diff = mu - yr;
+          l += ws[i] * (yr == 0?mu:yr*Math.log(yr/mu) + diff);
+          es[i] = ws[i]*diff;
+        }
+      }
+      _likelihood = 2*l;
+    }
+  }
+
 
   static class GLMBinomialGradientTask extends GLMGradientTask {
     public GLMBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta) {
