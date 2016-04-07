@@ -126,14 +126,21 @@ public class JDBCTest extends TestUtil{
 
     double binary_ones_fraction = 0.5; //estimate
 
-    double rows_per_chunk = FileVec.calcOptimalChunkSize(
-            (int)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
-                    +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
-                    +(float)(realcols+timecols+stringcols) *numRow*8), //8 bytes for real and time (long) values
-            numCol, numCol*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
-
     //create template vectors in advance and run MR
-    Vec _v = makeCon(0, numRow, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
+    long totSize =
+            (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
+                    +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
+                    +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
+    Vec _v;
+    boolean optimize = true;
+    if (optimize) {
+      _v = makeCon(totSize, numRow);
+    } else {
+      double rows_per_chunk = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
+              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+      _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+    }
+    System.out.println("num chunks: " + (_v.espc().length - 1));
 
     //create frame
     Frame fr = new SqlTableToH2OFrame(host, port, database, table, user, password, columnSQLTypes).doAll(columnH2OTypes, _v)
@@ -142,8 +149,6 @@ public class JDBCTest extends TestUtil{
     System.out.println(fr);
     if (fr != null) fr.delete();
     _v.remove();
-
-
   }
 
   public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
