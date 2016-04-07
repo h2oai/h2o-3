@@ -18,13 +18,13 @@ public class AutoMLBuilderHandler extends Handler {
             Key.<AutoML>make(),
             args.dataset,
             frame,
-            args.targetName,
+            args.target_name,
             args.loss,
-            args.maxTime,
+            args.max_time,
             -1,     // min accuracy or stopping crit ... "loss threshold"
             args.ensemble,
             args.exclude,
-            args.tryMutations);
+            args.try_mutations);
     DKV.put(aml);
     args.job = new JobV3().fillFromImpl(new H2OJob(aml,aml._key).start());
     return args;
