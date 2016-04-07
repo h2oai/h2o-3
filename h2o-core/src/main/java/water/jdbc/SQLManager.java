@@ -1,9 +1,7 @@
 package water.jdbc;
 
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
+import water.api.JobV3;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.Log;
@@ -28,11 +26,11 @@ public class SQLManager {
    * @param password (Input)
    * @param key (Output)
    */
-  public static void importSqlTable(String database_sys, String host, String port, String database, String table,
-                             String username, String password, String[] key) {
+  public static JobV3 importSqlTable(String database_sys, String host, String port, String database, final String table,
+                                     final String username, final String password, String[] key) {
     
     //Determine url based on database system
-    String url;
+    final String url;
     String d_sys = database_sys.toLowerCase();
     switch (d_sys) {
       case "mysql":
@@ -46,10 +44,11 @@ public class SQLManager {
     Statement stmt = null;
     ResultSet rs = null;
 
-    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol, numRow;
-    String[] columnNames;
-    int[] columnSQLTypes;
-    byte[] columnH2OTypes;
+    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol; 
+    final int numRow;
+    final String[] columnNames;
+    final int[] columnSQLTypes;
+    final byte[] columnH2OTypes;
     try {
       conn = DriverManager.getConnection(url, username, password);
       stmt = conn.createStatement();
@@ -139,11 +138,11 @@ public class SQLManager {
     double binary_ones_fraction = 0.5; //estimate
 
     //create template vectors in advance and run MR
-    long totSize =
+    final long totSize =
             (long)((float)(catcols+intcols)*numRow*4 //4 bytes for categoricals and integers
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
-    Vec _v;
+    final Vec _v;
     boolean optimize = true;
     if (optimize) {
       _v = makeCon(totSize, numRow);
@@ -152,32 +151,43 @@ public class SQLManager {
               Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
       _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
     }
+    
     //create frame
-    Key destination_key = Key.make(table + "_sql_to_hex");
+    final Key destination_key = Key.make(table + "_sql_to_hex");
     key[0] = (destination_key.toString());
-    Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes).doAll(columnH2OTypes, _v)
-            .outputFrame(destination_key, columnNames, null);
-    System.out.println(fr);
-    DKV.put(fr);
-    //if (fr != null) fr.delete();
+    final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
+
+    H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
+      @Override
+      public void compute2() {
+        Vec _v = makeCon(totSize, numRow);
+        Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes, j).doAll(columnH2OTypes, _v)
+                .outputFrame(destination_key, columnNames, null);
+        System.out.println(fr);
+        DKV.put(fr);
+        tryComplete();
+      }
+    };
+    j.start(work, _v.nChunks());
+    
     _v.remove();
-
-
+    return new JobV3().fillFromImpl(j);
   }
 
   public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
     final String _url, _table, _user, _password;
     final int[] _sqlColumnTypes;
+    final Job _job;
 
     transient ArrayBlockingQueue<Connection> sqlConn = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
 
-    private SqlTableToH2OFrame(String url, String table, String user, String password,
-                               int[] sqlColumnTypes) {
+    private SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes, Job job) {
       _url = url;
       _table = table;
       _user = user;
       _password = password;
       _sqlColumnTypes = sqlColumnTypes;
+      _job = job;
 
     }
 
@@ -196,6 +206,7 @@ public class SQLManager {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
+      if (isCancelled() || _job != null && _job.stop_requested()) return;
       //fetch data from sql table with limit and offset
       System.out.println("Entered map");
       Connection conn = null;
@@ -282,6 +293,7 @@ public class SQLManager {
 
       }
       System.out.println("Exit map");
+      if (_job != null) _job.update(1);
     }
 
     @Override
