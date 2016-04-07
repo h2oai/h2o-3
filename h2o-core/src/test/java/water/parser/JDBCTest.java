@@ -7,6 +7,7 @@ import water.Key;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.*;
+import water.jdbc.SQLManager;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -21,24 +22,35 @@ public class JDBCTest extends TestUtil{
 
   @Test
   public void run() {
-    Connection conn = null;
-    Statement stmt = null;
-    ResultSet rs = null;
-    String url = null;
-
+    String database_sys = "mysql";
     String host = "localhost";
     String port = "3306";
     String database = "menagerie";
-    final String table = "air";
+    final String table = "pet";
     String user = "root";
     String password = "ludi";
-
-    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol, numRow;
+    boolean optimize = false;
+    
+    final String url;
+    String d_sys = database_sys.toLowerCase();
+    switch (d_sys) {
+      case "mysql":
+        url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", host, port, database);
+        break;
+      default:
+        throw new IllegalArgumentException(database_sys + " is not supported. Must be one of: MySQL.");
+    }
+    
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet rs = null;
+    
+    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol;
+    long numRow;
     String[] columnNames;
     int[] columnSQLTypes;
     byte[] columnH2OTypes;
     try {
-      url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", host, port, database);
       conn = DriverManager.getConnection(url, user, password);
       stmt = conn.createStatement();
       rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
@@ -132,7 +144,6 @@ public class JDBCTest extends TestUtil{
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
     Vec _v;
-    boolean optimize = true;
     if (optimize) {
       _v = makeCon(totSize, numRow);
     } else {
@@ -140,7 +151,7 @@ public class JDBCTest extends TestUtil{
               Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
       _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
     }
-    System.out.println("num chunks: " + (_v.espc().length - 1));
+    System.out.println("num chunks: " + (_v.nChunks()));
 
     //create frame
     Frame fr = new SqlTableToH2OFrame(url, table, user, password, columnSQLTypes).doAll(columnH2OTypes, _v)
@@ -191,15 +202,11 @@ public class JDBCTest extends TestUtil{
       String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
         long t0 = System.currentTimeMillis();
-        try {
-          conn = sqlConn.take();
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-          throw new RuntimeException("Interrupted exception when trying to take connection from pool");
-        }
+        conn = sqlConn.take();
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
-        System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
+        System.out.println("SQL execution: " + PrettyPrint.msecs((System.currentTimeMillis() - t0), true));
+        t0 = System.currentTimeMillis();
         while (rs.next()) {
           for (int i = 0; i < _sqlColumnTypes.length; i++) {
             Object res = rs.getObject(i + 1);
@@ -241,8 +248,12 @@ public class JDBCTest extends TestUtil{
               }
           }
         }
+        System.out.println("Reading data: " + PrettyPrint.msecs(System.currentTimeMillis() - t0, true));
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
+      } catch (InterruptedException e) {
+          e.printStackTrace();
+          throw new RuntimeException("Interrupted exception when trying to take connection from pool");
       } finally {
 
         //close result set

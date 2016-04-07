@@ -26,9 +26,8 @@ public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
   
   @API(help="password", required = true)
   String password;
-  
-  //Output fields
-  @API(help="name", direction = API.Direction.OUTPUT)
-  String destination_frame;
+
+  @API(help="optimize")
+  boolean optimize;
   
 }

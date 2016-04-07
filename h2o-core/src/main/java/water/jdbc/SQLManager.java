@@ -26,7 +26,7 @@ public class SQLManager {
    * @param password (Input)
    */
   public static JobV3 importSqlTable(String database_sys, String host, String port, String database, final String table,
-                                     final String username, final String password) {
+                                     final String username, final String password, boolean optimize) {
     
     //Determine url based on database system
     final String url;
@@ -142,7 +142,6 @@ public class SQLManager {
                     +(float)bincols          *numRow*1*binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                     +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
     final Vec _v;
-    boolean optimize = true;
     if (optimize) {
       _v = makeCon(totSize, numRow);
     } else {
@@ -150,7 +149,7 @@ public class SQLManager {
               Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
       _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
     }
-    
+    Log.info("Number of chunks: " + _v.nChunks());
     //create frame
     final Key destination_key = Key.make(table + "_sql_to_hex");
     final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
@@ -177,7 +176,7 @@ public class SQLManager {
 
     transient ArrayBlockingQueue<Connection> sqlConn = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
 
-    private SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes, Job job) {
+    public SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes, Job job) {
       _url = url;
       _table = table;
       _user = user;
@@ -204,23 +203,15 @@ public class SQLManager {
     public void map(Chunk[] cs, NewChunk[] ncs) {
       if (isCancelled() || _job != null && _job.stop_requested()) return;
       //fetch data from sql table with limit and offset
-      System.out.println("Entered map");
       Connection conn = null;
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
       String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
-        long t0 = System.currentTimeMillis();
-        try {
-          conn = sqlConn.take();
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-          throw new RuntimeException("Interrupted exception when trying to take connection from pool");
-        }
+        conn = sqlConn.take();
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
-        System.out.println(PrettyPrint.msecs((System.currentTimeMillis() - t0), false) + " offset: " + c0.start());
         while (rs.next()) {
           for (int i = 0; i < _sqlColumnTypes.length; i++) {
             Object res = rs.getObject(i + 1);
@@ -264,6 +255,9 @@ public class SQLManager {
         }
       } catch (SQLException ex) {
         throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to read SQL data");
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        throw new RuntimeException("Interrupted exception when trying to take connection from pool");
       } finally {
 
         //close result set
@@ -288,7 +282,6 @@ public class SQLManager {
         sqlConn.add(conn);
 
       }
-      System.out.println("Exit map");
       if (_job != null) _job.update(1);
     }
 
