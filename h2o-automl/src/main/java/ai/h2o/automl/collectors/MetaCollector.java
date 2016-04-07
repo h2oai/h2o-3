@@ -103,7 +103,7 @@ public class MetaCollector {
       final double minIn = Math.max(min,-Double.MAX_VALUE);   // inclusive vector min
       final double maxIn = Math.min(max, Double.MAX_VALUE);   // inclusive vector max
       final double maxEx = DHistogram.find_maxEx(maxIn,isInt==1?1:0); // smallest exclusive max
-      return DHistogram.make(name,nbins,nbins_cats,isInt,minIn,maxEx);
+      return DHistogram.make(name,nbins,nbins_cats,isInt,minIn,maxEx,0);
     }
     public double binAt(int b) { return _h.binAt(b); }
 
