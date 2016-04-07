@@ -1,5 +1,6 @@
 package water.jdbc;
 
+import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
@@ -156,8 +157,9 @@ public class SQLManager {
     key[0] = (destination_key.toString());
     Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes).doAll(columnH2OTypes, _v)
             .outputFrame(destination_key, columnNames, null);
-
-    if (fr != null) fr.delete();
+    System.out.println(fr);
+    DKV.put(fr);
+    //if (fr != null) fr.delete();
     _v.remove();
 
 

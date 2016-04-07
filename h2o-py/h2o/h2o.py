@@ -167,6 +167,18 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names,
                                     col_types, na_strings)
 
+def import_sql_table(database_sys, host, port, database, table, username, password):
+  p = {}
+  p.update({k:v for k,v in locals().items() if k is not "p"})
+  p["_rest_version"] = 99
+  #H2OJob(H2OConnection.post_json(url_suffix="ImportSQLTable", **p), "ImportSQLTable").poll()
+  j = H2OConnection.post_json(url_suffix="ImportSQLTable", **p)
+  # Need to return a Frame here for nearly all callers
+  # ... but job stats returns only a dest_key, requiring another REST call to get nrow/ncol
+  fr = H2OFrame()
+  fr._ex._cache._id = j["destination_frame"]
+  fr._ex._cache.fill()
+  return fr
 
 def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="", column_names=None, column_types=None, na_strings=None):
   """During parse setup, the H2O cluster will make several guesses about the attributes of
