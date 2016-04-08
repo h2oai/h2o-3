@@ -58,7 +58,9 @@ public class CNAXIChunk extends CXIChunk {
     int off = _OFF;
     for( int i = 0; i < _sparseLen; ++i, off += ridsz() + valsz()) {
       long v = getIValue(off);
-      nc.addNumSparse(v,0,getId(off));
+      int id = getId(off);
+      nc.addNAs(id-nc._len);
+      nc.addNum(v,0);
     }
     nc.set_len(_len);
     return nc;

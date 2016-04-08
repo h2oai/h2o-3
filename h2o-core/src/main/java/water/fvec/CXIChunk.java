@@ -56,16 +56,17 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc._ms = new NewChunk.Mantissas(_sparseLen);
-    nc._xs = new NewChunk.Exponents(_sparseLen);
+    nc.alloc_nums(_sparseLen);
     nc.alloc_indices(_sparseLen);
     int off = _OFF;
     for( int i = 0; i < _sparseLen; ++i, off += _ridsz + _valsz) {
+      int id = getId(off);
+      nc.addZeros(id-nc._len);
       long v = getIValue(off);
       if(v == NAS[_valsz_log])
         nc.addNA();
       else
-        nc.addNumSparse(v,0,getId(off));
+        nc.addNum(v,0);
     }
     nc.set_len(_len);
     assert nc._sparseLen == _sparseLen;

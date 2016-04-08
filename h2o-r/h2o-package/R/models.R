@@ -113,9 +113,14 @@
   #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
   #---------- Build! ----------#
   res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  warn <- lapply(res$messages, function(i) {
+        if( i$message_type == "WARN" )
+          paste0(i$message, ".\n")
+        else ""
+      })
+  if(any(nzchar(warn))) warning(warn)
   job_key  <- res$job$key$name
   dest_key <- res$job$dest$name
-
   new("H2OModelFuture",job_key=job_key, model_id=dest_key)
 }
 
