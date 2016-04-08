@@ -1861,4 +1861,41 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void sampleRatePerClass() {
+    Frame tfr = null;
+    Key[] ksplits = null;
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      int resp = 54;
+      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      DKV.put(tfr);
+      SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
+      // Invoke the job
+      sf.exec().get();
+      ksplits = sf._destination_frames;
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = ksplits[0];
+      parms._valid = ksplits[1];
+      parms._response_column = tfr.names()[resp];
+      parms._learn_rate = 0.05f;
+      parms._min_split_improvement = 1e-5;
+      parms._ntrees = 10;
+      parms._score_tree_interval = parms._ntrees;
+      parms._max_depth = 5;
+      parms._sample_rate_per_class = new float[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+      if (gbm!=null) gbm.delete();
+    } finally {
+      if (gbm!=null) gbm.delete();
+      if (tfr!=null) tfr.delete();
+      if (ksplits[0]!=null) ksplits[0].remove();
+      if (ksplits[1]!=null) ksplits[1].remove();
+      Scope.exit();
+    }
+  }
+
 }

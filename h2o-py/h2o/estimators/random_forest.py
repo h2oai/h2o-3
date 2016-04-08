@@ -14,7 +14,9 @@ class H2ORandomForestEstimator(H2OEstimator):
       defaults to sqrt{p} for classification, and p/3 for regression, where p is the
       number of predictors.
     sample_rate : float
-      Row sample rate (from 0.0 to 1.0)
+      Row sample rate per tree (from 0.0 to 1.0)
+    sample_rate_per_class : list
+      Row sample rate per tree per class (one per class, from 0.0 to 1.0)
     col_sample_rate_per_tree : float
       Column sample rate per tree (from 0.0 to 1.0)
     build_tree_one_node : bool
@@ -81,7 +83,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     min_split_improvement : float
       Minimum relative improvement in squared error reduction for a split to happen
     """
-  def __init__(self, model_id=None, mtries=None, sample_rate=None, col_sample_rate_per_tree=None,
+  def __init__(self, model_id=None, mtries=None, sample_rate=None, sample_rate_per_class=None, col_sample_rate_per_tree=None,
                build_tree_one_node=None, ntrees=None, max_depth=None, min_rows=None, nbins=None,
                nbins_cats=None, binomial_double_trees=None, balance_classes=None, class_sampling_factors=None,
                max_after_balance_size=None, seed=None, nfolds=None, fold_assignment=None,
@@ -109,6 +111,14 @@ class H2ORandomForestEstimator(H2OEstimator):
   @sample_rate.setter
   def sample_rate(self, value):
     self._parms["sample_rate"] = value
+
+  @property
+  def sample_rate_per_class(self):
+    return self._parms["sample_rate_per_class"]
+
+  @sample_rate_per_class.setter
+  def sample_rate_per_class(self, value):
+    self._parms["sample_rate_per_class"] = value
 
   @property
   def col_sample_rate_per_tree(self):

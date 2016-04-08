@@ -18,7 +18,8 @@
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
-#' @param sample_rate Sample rate, from 0 to 1.0.
+#' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
+#' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
 #' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
@@ -72,6 +73,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              checkpoint,
                              mtries = -1,
                              sample_rate = 0.632,
+                             sample_rate_per_class,
                              col_sample_rate_per_tree = 1.0,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
@@ -135,6 +137,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$mtries <- mtries
   if(!missing(sample_rate))
     parms$sample_rate <- sample_rate
+  if (!missing(sample_rate_per_class))
+    parms$sample_rate_per_class <- sample_rate_per_class
   if(!missing(col_sample_rate_per_tree))
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if(!missing(build_tree_one_node))
