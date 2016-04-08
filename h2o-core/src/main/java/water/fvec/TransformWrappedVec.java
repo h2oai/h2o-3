@@ -36,12 +36,18 @@ public class TransformWrappedVec extends WrappedVec {
   private transient Vec[] _masterVecs;
   private final AST _fun;
 
-  public TransformWrappedVec(Key key, int rowLayout, AST fun, Key<Vec>[] masterVecKeys) {
+  public TransformWrappedVec(Key key, int rowLayout, AST fun, Key<Vec>... masterVecKeys) {
     super(key, rowLayout, null);
     _fun=fun;
     _masterVecKeys = masterVecKeys;
     DKV.put(this);
   }
+
+  public TransformWrappedVec(Vec v, AST fun) {
+    this(v.group().addVec(), v._rowLayout, fun, v._key);
+  }
+
+
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     Chunk[] cs = new Chunk[_masterVecKeys.length];
@@ -66,7 +72,7 @@ public class TransformWrappedVec extends WrappedVec {
     private final double[] _ds;
     private final Env _env;
 
-    TransformWrappedChunk(AST fun, Vec transformWrappedVec, Chunk[] c) {
+    TransformWrappedChunk(AST fun, Vec transformWrappedVec, Chunk... c) {
 
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
