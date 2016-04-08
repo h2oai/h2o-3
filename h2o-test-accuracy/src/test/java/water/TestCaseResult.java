@@ -16,14 +16,16 @@ public class TestCaseResult {
   private static final String[] metrics = new String[]{ "R2", "Logloss", "MeanResidualDeviance", "AUC", "AIC", "Gini",
     "MSE", "ResidualDeviance", "ResidualDegreesOfFreedom", "NullDeviance", "NullDegreesOfFreedom", "F1", "F2",
     "F0point5", "Accuracy", "Error", "Precision", "Recall", "MCC", "MaxPerClassError"};
+  private String modelJson;
   private static final String resultsDBTableName = "AccuracyTestCaseResults"; //TODO: get this from the connection instead
 
   public TestCaseResult(int testCaseId, HashMap<String,Double> trainingMetrics, HashMap<String,Double> testingMetrics,
-                        double modelBuildTime) throws Exception {
+                        double modelBuildTime, String modelJson) throws Exception {
     this.testCaseId = testCaseId;
     this.trainingMetrics = trainingMetrics;
     this.testingMetrics = testingMetrics;
     this.modelBuildTime = modelBuildTime;
+    this.modelJson = modelJson;
 
     this.ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
     this.ncpu = Runtime.getRuntime().availableProcessors();
@@ -57,8 +59,8 @@ public class TestCaseResult {
       sql += (testingMetrics.get(m) == null || Double.isNaN(testingMetrics.get(m)) ? "NULL, " :
         Double.toString(testingMetrics.get(m)) + ", ");
     }
-    sql += String.format("%s, '%s', '%s', '%s', %s, '%s', %s)", "NOW()", "H2O", h2oVersion, ipAddr, ncpu, gitHash,
-      modelBuildTime);
+    sql += String.format("%s, '%s', '%s', '%s', %s, '%s', %s, '%s')", "NOW()", "H2O", h2oVersion, ipAddr, ncpu, gitHash,
+      modelBuildTime, modelJson);
     return sql;
   }
 }

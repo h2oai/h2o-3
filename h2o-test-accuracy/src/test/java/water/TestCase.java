@@ -76,6 +76,7 @@ public class TestCase {
       GBMModel gbmModel = null;
       DeepLearning dlJob;
       DeepLearningModel dlModel = null;
+      String bestModelJson = null;
 
       try {
         switch (algo) {
@@ -86,6 +87,7 @@ public class TestCase {
             drfModel = drfJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = drfModel._output;
+            bestModelJson = drfModel._parms.toJsonString();
             break;
           case "glm":
             glmJob = new GLM((GLMModel.GLMParameters) params, Key.<GLMModel>make("GLMModel"));
@@ -94,6 +96,7 @@ public class TestCase {
             glmModel = glmJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = glmModel._output;
+            bestModelJson = glmModel._parms.toJsonString();
             break;
           case "gbm":
             gbmJob = new GBM((GBMModel.GBMParameters) params);
@@ -102,6 +105,7 @@ public class TestCase {
             gbmModel = gbmJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = gbmModel._output;
+            bestModelJson = gbmModel._parms.toJsonString();
             break;
           case "dl":
             dlJob = new DeepLearning((DeepLearningModel.DeepLearningParameters) params);
@@ -110,6 +114,7 @@ public class TestCase {
             dlModel = dlJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = dlModel._output;
+            bestModelJson = dlModel._parms.toJsonString();
             break;
         }
       } catch (Exception e) {
@@ -130,12 +135,13 @@ public class TestCase {
       }
       removeTestCaseDataSetFrames();
       return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-              getMetrics(modelOutput._validation_metrics), stopTime - startTime);
+              getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson);
     } else {
       assert !gridCriteria.equals("");
       makeGridParameters();
       Grid grid = null;
       Model bestModel = null;
+      String bestModelJson = null;
       try {
         switch (algo) {  // TODO: Hack for PUBDEV-2812
           case "drf":
@@ -165,10 +171,11 @@ public class TestCase {
           if (higherIsBetter ? validationMetricScore > bestScore : validationMetricScore < bestScore) {
             bestScore = validationMetricScore;
             bestModel = m;
+            bestModelJson = bestModel._parms.toJsonString();
           }
         }
         AccuracyTestingSuite.summaryLog.println("Best model: " + bestModel._key.toString());
-        AccuracyTestingSuite.summaryLog.println("Best model parameters: " + bestModel._parms.toJsonString());
+        AccuracyTestingSuite.summaryLog.println("Best model parameters: " + bestModelJson);
       } catch (Exception e) {
         throw new Exception(e);
       } finally {
@@ -178,7 +185,7 @@ public class TestCase {
       }
       removeTestCaseDataSetFrames();
       return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-              getMetrics(bestModel._output._validation_metrics), stopTime - startTime);
+              getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson);
     }
   }
 
