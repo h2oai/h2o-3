@@ -1,7 +1,7 @@
 data_set_id,uri,respose_col_idx
 1,s3://h2o-public-test-data/smalldata/testng/iris_train1.csv,4
 2,s3://h2o-public-test-data/smalldata/testng/iris_validation1.csv,4
-3,s3://h2o-public-test-data/smalldata/logreg/prostate_train.csv,0
-4,s3://h2o-public-test-data/smalldata/logreg/prostate_test.csv,0
+3,s3://h2o-public-test-data/smalldata/testng/prostate_train.csv,0
+4,s3://h2o-public-test-data/smalldata/testng/prostate_test.csv,0
 5,s3://h2o-public-test-data/bigdata/laptop/testng/milsongs-train.csv.gz,0
 6,s3://h2o-public-test-data/bigdata/laptop/testng/milsongs-test.csv.gz,0
