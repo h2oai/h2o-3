@@ -186,8 +186,8 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiLength(NewChunk nc) {
     //pre-allocate since size is known
-    nc._ls = MemoryManager.malloc8(_len);
-    nc._xs = MemoryManager.malloc4(_len); // sadly, a waste
+    nc.alloc_mantissa(_len);
+    nc.alloc_exponent(_len); // sadly, a waste
     // fill in lengths
     for(int i=0; i < _len; i++) {
       int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);

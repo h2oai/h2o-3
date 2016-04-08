@@ -52,17 +52,15 @@ public class CNAXIChunk extends CXIChunk {
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.setSparseNA();
-    nc.set_len(_len);
-    nc.set_sparseLen(_sparseLen);
     nc.alloc_mantissa(_sparseLen);
     nc.alloc_exponent(_sparseLen);
     nc.alloc_indices(_sparseLen);
     int off = _OFF;
     for( int i = 0; i < _sparseLen; ++i, off += ridsz() + valsz()) {
-      nc.indices()[i] = getId(off);
       long v = getIValue(off);
-      nc.mantissa()[i] = v;
+      nc.addNumSparse(v,0,getId(off));
     }
+    nc.set_len(_len);
     return nc;
   }
 

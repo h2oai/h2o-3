@@ -659,8 +659,8 @@ class ASTStrLength extends ASTPrim {
         }
         @Override public void map(Chunk chk, NewChunk newChk){
           // pre-allocate since the size is known
-          newChk._ls = MemoryManager.malloc8(chk._len);
-          newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
+          newChk._ms = new NewChunk.Mantissas(chk._len);
+          newChk._xs = new NewChunk.Exponents(chk._len); // sadly, a waste
           for (int i =0; i < chk._len; i++)
             if(chk.isNA(i))
               newChk.addNA();
