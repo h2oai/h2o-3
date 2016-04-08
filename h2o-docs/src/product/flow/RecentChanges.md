@@ -2,6 +2,66 @@
 
 ##H2O
 
+###Turchin (3.8.2.1) - 4/7/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2055'>PUBDEV-2055</a>] -         Create test cases to show that POJO prediction behavior can be different than in-h2o-model prediction behavior
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2620'>PUBDEV-2620</a>] -         Populate start/end/duration time in milliseconds for all models
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2736'>PUBDEV-2736</a>] -         Alert the user if columns can&#39;t be histogrammed due to numerical extremities
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2756'>PUBDEV-2756</a>] -         GLM should generate error if user enter an alpha value greater than 1.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2766'>PUBDEV-2766</a>] -         AIOOBE for quantile regression with stochastic GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2770'>PUBDEV-2770</a>] -         Naive Bayes AIOOBE
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2772'>PUBDEV-2772</a>] -         AIOOBE for GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2775'>PUBDEV-2775</a>] -         Number of CPUs incorrect in Flow when using a hypervisor
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2796'>PUBDEV-2796</a>] -         Grid search runtime isn&#39;t enforced for CV models
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2806'>PUBDEV-2806</a>] -         on-the-fly interactions
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2540'>PUBDEV-2540</a>] -         Compute and display statistics of cross-validation model metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2774'>PUBDEV-2774</a>] -         Add keep_cross_validation_fold_assignment and more CV accessors
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2776'>PUBDEV-2776</a>] -         Set initial weights and biases for DL models
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2791'>PUBDEV-2791</a>] -         Control min. relative squared error reduction for a node to split (DRF/GBM)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2815'>PUBDEV-2815</a>] -         Add stratified sampling per-tree for DRF/GBM
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2695'>PUBDEV-2695</a>] -         Consistent handling of missing categories in GBM/DRF (and between H2O and POJO)
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2763'>PUBDEV-2763</a>] -         Create full holdout prediction frame for cross-validation predictions
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2769'>PUBDEV-2769</a>] -         Support Validation Frame and Cross-Validation for Naive Bayes
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2810'>PUBDEV-2810</a>] -         Add class_sampling_factors argument to DRF/GBM for R and Python APIs
+</li>
+</ul>
+
 ###Turan (3.8.1.4) - 3/16/16
 
 <h4>        Bug
