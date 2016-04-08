@@ -12,3 +12,7 @@ test_case_id,algorithm,algo_parameters,grid,grid_parameters,grid_criteria,regres
 11,dl,_distribution=bernoulli,0,,,0,61,62,"Binomial classification, prostate train/test split, dl default parameters"
 12,dl,_distribution=gaussian,0,,,1,63,64,"Regression, milsongs train/test split, dl default parameters"
 13,gbm,_distribution=multinomial,1,_ntrees=10|20;_max_depth=2|3|5;_min_rows=2|10,MSE,0,1,2,"Multinomial classification, iris train/test split, gbm grid parameters"
+14,drf,_distribution=multinomial,1,_ntrees=10|20;_max_depth=2|3;_mtries=-1|2|3,R2,0,1,2,"Multinomial classification, iris train/test split, drf grid parameters"
+15,glm,_distribution=bernoulli;_lambda_search=true,1,,R2,0,61,62,"Binomial classification, prostate train/test split, glm grid parameters"
+16,glm,_distribution=bernoulli,1,_alpha=.1|.5|.8;_lambda=.0001|.01,R2,0,61,62,"Binomial classification, prostate train/test split, glm grid parameters"
+17,dl,_distribution=multinomial,1,_epochs=10|20;_hidden=10:10|30:60:15,Accuracy,0,1,2,"Multinomial classification, iris train/test split, dl grid parameters"
