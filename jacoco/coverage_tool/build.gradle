@@ -11,6 +11,12 @@ repositories {
     mavenCentral()
 }
 
+/*
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest { attributes 'Main-Class': 'report.HighlightHTMLReportGenerator' }
+}*/
+
 task wrapper(type: Wrapper) {
     gradleVersion = '2.9'
 }

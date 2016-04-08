@@ -162,7 +162,7 @@ public class HighlightHTMLReportGenerator {
             }
             ++i;
         }
-        if (params.title == null) params.title = root.toAbsolutePath().getFileName().toString();
+        if (params.title.isEmpty()) params.title = root.toAbsolutePath().normalize().getFileName().toString();
         return params;
     }
 

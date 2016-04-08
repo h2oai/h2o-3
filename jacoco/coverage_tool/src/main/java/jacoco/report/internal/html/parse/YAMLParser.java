@@ -26,6 +26,7 @@ public class YAMLParser {
     private static final NameString _wild_name = new NameString("*");
     private static final NameList _wild_list = new NameList(new NameString[] {_wild_name}, true);
     private Map<CounterEntity, Double> _default_values;
+    private Map<CounterEntity, Double> _current_values;
 
     private List<ParseItem> _items;
 
@@ -43,6 +44,7 @@ public class YAMLParser {
         _method_name = new MethodName();
         _propagate = false;
         _default_values = new HashMap<CounterEntity, Double>();
+        _current_values = new HashMap<CounterEntity, Double>();
         _items = new ArrayList<ParseItem>();
         for (CounterEntity ce : CounterEntity.values()) {
             _default_values.put(ce, 0.0);
@@ -61,6 +63,7 @@ public class YAMLParser {
         if (params == null) return _items;
         Yaml yaml = new Yaml();
         try {
+            _current_values = new HashMap<CounterEntity, Double>();
             for(Object o : yaml.loadAll(new FileInputStream(params))) {
                 if (!(o instanceof Map)) {err("Object " + o + " is not a map. Skipping..."); continue; }
                 log("Starting block...");
@@ -132,13 +135,15 @@ public class YAMLParser {
                 if ((val = m.get("values")) != null) {
                     log("Found \"values\"");
                     if (val instanceof Map) {
-                        _items.add(setValues((Map) val));
+                        setValues((Map) val);
                     } else if (val instanceof Number) {
-                        _items.add(setValues((Number) val));
+                        setValues((Number) val);
                     } else {
                         err("Invalid value for \"values\"");
                     }
                 }
+
+                _items.add(createParseItem());
                 log("Ending block...");
             }
         } catch (FileNotFoundException fnfe) {
@@ -268,26 +273,34 @@ public class YAMLParser {
         setMethodName(m);
     }
 
-    private ParseItem setValues(Map m) {
-        ParseItem p = new ParseItem(_package_name, _class_name, _method_name, _propagate);
+    private void setValues(Map m) {
         for (CounterEntity ce :_default_headers) {
             String key = ce.name().toLowerCase();
             if (m.get(key) instanceof Number) {
-                p._values.put(ce, ((Number) m.get(key)).doubleValue());
-            } else {
-                p._values.put(ce, _default_values.get(ce));
+                _current_values.put(ce, ((Number) m.get(key)).doubleValue());
             }
-            log("For \"" + key + "\": " + p._values.get(ce));
+            log("For \"" + key + "\": " + _current_values.get(ce));
         }
-        return p;
     }
 
-    private ParseItem setValues(Number n) {
+    private void setValues(Number n) {
         Map<String, Number> m = new HashMap<String, Number>();
         for (CounterEntity ce :_default_headers) {
             m.put(ce.name().toLowerCase(), n);
         }
-        return setValues(m);
+        setValues(m);
+    }
+
+    private ParseItem createParseItem() {
+        ParseItem p = new ParseItem(_package_name, _class_name, _method_name, _propagate);
+        for (CounterEntity ce : _default_headers) {
+            if (_current_values.containsKey(ce)) {
+                p._values.put(ce, _current_values.get(ce));
+            } else {
+                p._values.put(ce, _default_values.get(ce));
+            }
+        }
+        return p;
     }
 
     private void setPropagate(boolean b) {
