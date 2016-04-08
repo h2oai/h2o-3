@@ -5,6 +5,7 @@ import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.Model;
 import hex.ModelMetrics;
+import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
@@ -122,7 +123,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_iterations = -1;
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
-    public double _objective_epsilon = 1e-6;
+    public double _objective_epsilon = -1;
     public double _gradient_epsilon = 1e-4;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
@@ -151,6 +152,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_offset_column", "Offset must be different from weights");
       if(_alpha != null && (_alpha[0] < 0 || _alpha[0] > 1))
         glm.error("_alpha", "Alpha value must be between 0 and 1");
+      if(_lambda != null && _lambda[0] < 0)
+        glm.error("_lambda", "Lambda value must be >= 0");
       if(_lambda_search)
         if(_nlambdas == -1)
           _nlambdas = 100;
@@ -749,7 +752,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     // GLM is always supervised
     public boolean isSupervised() { return true; }
 
-    public String[] interactions() { return _dinfo._interactionColumns; }
+    @Override public String[] interactions() { return _dinfo._interactionColumns; }
+    public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
+      return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
+    }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);

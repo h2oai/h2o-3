@@ -48,6 +48,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public float _sample_rate = 0.632f; //fraction of rows to sample for each tree
 
+    public float[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
+
     @Override public long progressUnits() { return _ntrees; }
 
     @Override protected long nFoldSeed() {

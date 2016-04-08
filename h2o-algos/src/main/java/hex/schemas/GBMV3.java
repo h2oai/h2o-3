@@ -49,6 +49,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "tweedie_power",
       "checkpoint",
       "sample_rate",
+      "sample_rate_per_class",
       "col_sample_rate",
       "col_sample_rate_per_tree",
       "min_split_improvement"

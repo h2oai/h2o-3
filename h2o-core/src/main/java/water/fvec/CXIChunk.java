@@ -37,13 +37,13 @@ public class CXIChunk extends Chunk {
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
   }
 
-  @Override public double [] getDoubles(double [] vals,int from, int to){
+  @Override public double [] getDoubles(double [] vals,int from, int to, double NA){
     double fill = isSparseNA()?Double.NaN:0;
     if(from == 0 && to == _len) {
       Arrays.fill(vals,fill);
       double [] svals = new double[_sparseLen];
       int [] sids = new int[_sparseLen];
-      asSparseDoubles(svals,sids);
+      asSparseDoubles(svals,sids, NA);
       for(int i = 0; i < sids.length && sids[i] < to; ++i)
         vals[sids[i]] = svals[i];
     } else {
@@ -55,7 +55,7 @@ public class CXIChunk extends Chunk {
     return vals;
   }
 
-  @Override public int asSparseDoubles(double [] vals, int[] ids) {
+  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
     if(vals.length < _sparseLen)throw new IllegalArgumentException();
     int off = _OFF;
     final int inc = _valsz + _ridsz;
@@ -64,19 +64,22 @@ public class CXIChunk extends Chunk {
         case 1:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            vals[i] = _mem[off+2]&0xFF;
+            long v = _mem[off+2]&0xFF;
+            vals[i] = v == NAS[_valsz_log]?NA:v;
           }
           break;
         case 2:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            vals[i] = UnsafeUtils.get2(_mem,off+2);
+            long v = UnsafeUtils.get2(_mem,off+2);
+            vals[i] = v == NAS[_valsz_log]?NA:v;
           }
           break;
         case 4:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
-            vals[i] = UnsafeUtils.get4(_mem,off+2);
+            long v = UnsafeUtils.get4(_mem,off+2);
+            vals[i] = v == NAS[_valsz_log]?NA:v;
           }
           break;
         case 8:
@@ -92,32 +95,33 @@ public class CXIChunk extends Chunk {
         case 1:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get4(_mem,off);
-            vals[i] = _mem[off+4]&0xFF;
+            long v = _mem[off+4]&0xFF;
+            vals[i] = v == C1Chunk._NA?NA:v;
           }
           break;
         case 2:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get4(_mem,off);
-            vals[i] = UnsafeUtils.get2(_mem,off+4);
+            long v = UnsafeUtils.get2(_mem,off+4);
+            vals[i] = v == C2Chunk._NA?NA:v;
           }
           break;
         case 4:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get4(_mem,off);
-            vals[i] = UnsafeUtils.get4(_mem,off+4);
+            long v = UnsafeUtils.get4(_mem,off+4);
+            vals[i] = v == C4Chunk._NA?NA:v;
           }
           break;
         case 8:
           for (int i = 0; i < _sparseLen; ++i, off += inc) {
             ids[i] = UnsafeUtils.get4(_mem,off);
             long v = UnsafeUtils.get8(_mem,off+4);
-            vals[i] = v == C8Chunk._NA?Double.NaN:v;
+            vals[i] = v == C8Chunk._NA?NA:v;
           }
           break;
       }
     } else throw H2O.unimpl();
-    for (int i = 0; i < _sparseLen; ++i)
-      vals[i] = vals[i] == NAS[_valsz_log] ? Double.NaN : vals[i];
     return sparseLenZero();
   }
 

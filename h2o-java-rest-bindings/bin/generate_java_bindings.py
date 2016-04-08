@@ -209,8 +209,23 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         first = True
         for meta in endpoints_by_entity[entity]:
             path = meta['url_pattern']
-            retrofit_path = var_pattern.sub(r'{\1}', path)
+
+            # These redundant paths cause conflicts:
+            if path == "/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)" or \
+               path == "/3/ModelMetrics/frames/(?<frame>.*)":
+                continue
+            
+            path_parm_names = meta['path_params']
+
+            # replace all the vars in the path with the actual field names from path_params
+            retrofit_path = path
+            idx = 0
+            while re.search(var_pattern, retrofit_path):
+                retrofit_path = var_pattern.sub(r'{' + path_parm_names[idx] + '}', retrofit_path, 1)
+                idx += 1
+
             retrofit_path = retrofit_path.replace('\\', '\\\\')
+            summary = meta['summary']
             http_method = meta['http_method']
             input_schema_name  = meta['input_schema']
             output_schema_name = meta['output_schema']
@@ -243,13 +258,12 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             else:
                 is_post = False
             
-            path_parm_names = meta['path_params']
             input_schema = all_schemas_map[input_schema_name]
 
             # calculate indent
             indent = ' ' * len('    Call<{output_schema_name}> {method}('.format(output_schema_name = output_schema_name, method = method))
             
-            # include query path parms first, and then POST body parms
+            # include path parms first, and then POST body parms
             first_parm = True
             for parm in path_parm_names:
                 # find the metadata for the field from the input schema:
@@ -262,8 +276,13 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 # cons up the proper Java type:
                 parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
 
+                # Send keys as Strings
+                # TODO: brackets
+                if parm_type.endswith('KeyV3'):
+                    parm_type = 'String'
+
                 if not first_parm: parms += ',\n'; parms += indent
-                parms += '@Query("{parm}") '.format(parm = parm)
+                parms += '@Path("{parm}") '.format(parm = parm)
                 parms += parm_type
                 parms += ' '
                 parms += parm
@@ -277,6 +296,11 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     # cons up the proper Java type:
                     parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
                     parm = field['name']
+
+                    # Send keys as Strings
+                    # TODO: brackets
+                    if parm_type.endswith('KeyV3'):
+                        parm_type = 'String'
 
                     if not first_parm: parms += ',\n'; parms += indent
                     parms += '@Field("{parm}") '.format(parm = parm)
@@ -293,8 +317,8 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 signatures[signature] = signature
 
             if not first: pojo.append('')
+            pojo.append('    /** {summary} */'.format(summary = summary))
             if http_method == 'POST':
-#                pojo.append('    @Headers("Content-Type: application/x-www-form-urlencoded; charset=UTF-8")')
                 pojo.append('    @FormUrlEncoded')
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
             pojo.append('    Call<{output_schema_name}> {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
@@ -419,19 +443,59 @@ for entity, proxy in retrofitProxies.items():
 retrofit_example = '''package water.bindings.proxies.retrofit;
 
 import water.bindings.pojos.*;
-import com.google.gson.Gson;
+import com.google.gson.*;
 import retrofit2.*;
 import retrofit2.http.*;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.Call;
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 public class Example {
 
+    /**
+     * Keys get sent as Strings and returned as objects also containing the type and URL,
+     * so they need a custom GSON serializer.
+     */
+    private static class KeySerializer implements JsonSerializer<KeyV3> {
+        public JsonElement serialize(KeyV3 key, Type typeOfKey, JsonSerializationContext context) {
+            return new JsonPrimitive(key.name);
+        }
+    }
+
+    public static JobV3 poll(Retrofit retrofit, String job_id) {
+        Jobs jobsService = retrofit.create(Jobs.class);
+        Response<JobsV3> jobs_response = null;
+
+        int retries = 3;
+        JobsV3 jobs = null;
+        do {
+            try {
+                jobs_response = jobsService.fetch(job_id).execute();
+            }
+            catch (IOException e) {
+                System.err.println("Caught exception: " + e);
+            }
+            if (! jobs_response.isSuccessful())
+                if (retries-- > 0) 
+                   continue;
+                else
+                    throw new RuntimeException("/3/Jobs/{job_id} failed 3 times.");
+
+            jobs = jobs_response.body();
+            if (null == jobs.jobs || jobs.jobs.length != 1)
+                throw new RuntimeException("Failed to find Job: " + job_id);
+            if (! "RUNNING".equals(jobs.jobs[0].status)) try { Thread.sleep(100); } catch (InterruptedException e) {} // wait 100mS
+        } while ("RUNNING".equals(jobs.jobs[0].status));
+        return jobs.jobs[0];
+    }
+
     public static void main (String[] args) {
+        Gson gson = new GsonBuilder().registerTypeAdapter(KeyV3.class, new KeySerializer()).create();
+
         Retrofit retrofit = new Retrofit.Builder()
         .baseUrl("http://localhost:54321/") // note trailing slash for Retrofit 2
-        .addConverterFactory(GsonConverterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .build();
 
         CreateFrame createFrameService = retrofit.create(CreateFrame.class);
@@ -460,8 +524,13 @@ public class Example {
 
             Response<JobV3> create_frame_response = createFrameService.run(null, 1000, 100, 42, 42, true, 0, 100000, 0.2, 100, 0.2, 32767, 0.2, 0.5, 0.2, 0, 0.2, 2, true, null).execute();
             if (create_frame_response.isSuccessful()) {
-                JobV3 job = create_frame_response.body(); // TODO: poll
-                try { Thread.sleep(30000); } catch (InterruptedException e) {}
+                JobV3 job = create_frame_response.body();
+
+                if (null == job || null == job.key)
+                    throw new RuntimeException("CreateFrame returned a bad Job: " + job);
+
+                job = poll(retrofit, job.key.name);
+
                 KeyV3 new_frame = job.dest;
                 System.out.println("Created frame: " + new_frame);
 
@@ -472,6 +541,15 @@ public class Example {
                     System.out.println(all_frames);
                 } else {
                     System.err.println("framesService.list() failed");
+                }
+
+                Response<FramesV3> one_frame_response = framesService.fetch(new_frame.name).execute();
+                if (one_frame_response.isSuccessful()) {
+                    FramesV3 one_frames = one_frame_response.body();
+                    System.out.println("One Frame (after createFrame): ");
+                    System.out.println(one_frames);
+                } else {
+                    System.err.println("framesService.fetch() failed");
                 }
 
             } else {

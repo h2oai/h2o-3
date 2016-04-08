@@ -43,6 +43,7 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
 				"build_tree_one_node",
         "mtries",
         "sample_rate",
+        "sample_rate_per_class",
         "binomial_double_trees",
         "checkpoint",
         "col_sample_rate_per_tree",

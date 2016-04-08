@@ -397,8 +397,10 @@ public class GLMTest  extends TestUtil {
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
       GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
       assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
-      for(int i = 0; i < gmt._gradient.length; ++i)
-        assertEquals("Mismatch at coefficient " + i,exp_grad[i], gmt._gradient[i], 1e-8);
+      System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
+      double [] g = gmt.gradient();
+      for(int i = 0; i < g.length; ++i)
+        assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
     } finally {
       if(origRes != null)origRes.remove();
       if (fr != null) fr.delete();
@@ -762,6 +764,7 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._lambda = new double[]{0};
       params._obj_reg = 1.0/380;
+      params._objective_epsilon = 0;
       GLM glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
       double[] beta_1 = model.beta();
@@ -1440,6 +1443,7 @@ public class GLMTest  extends TestUtil {
       params._prior = -1;
       params._obj_reg = -1;
       params._max_iterations = 500;
+      params._objective_epsilon = 1e-6;
       // test the same data and model with prior, should get the same model except for the intercept
       glm = new GLM(params,glmkey("prostate_model2"));
       model3 = glm.trainModel().get();

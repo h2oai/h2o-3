@@ -124,9 +124,10 @@ public class DataInfo extends Keyed<DataInfo> {
   public final boolean _skipMissing;
   public final boolean _imputeMissing;
   public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
-  public final int [][] _catLvls;
+  public final int [][] _catLvls; // cat lvls post filter (e.g. by strong rules)
+  public final int [][] _intLvls; // interaction lvls post filter (e.g. by strong rules)
 
-  private DataInfo() {  _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
+  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
   public String[] _coefNames;
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
@@ -190,8 +191,10 @@ public class DataInfo extends Keyed<DataInfo> {
       interactionIDs = new int[interactions.length];
       for(int i=0;i<interactions.length;++i) {
         interactionIDs[i] = train.find(interactions[i]);
-        if( interactionIDs[i]==-1 )
-          throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
+        if( interactionIDs[i]==-1 ) {
+          interactionIDs=null; break;
+        }
+//          throw new IllegalArgumentException("missing column from the dataset, could not make interaction: " + interactions[i]);
       }
     }
     _interactions=Model.InteractionPair.generatePairwiseInteractionsFromList(interactionIDs);
@@ -258,14 +261,13 @@ public class DataInfo extends Keyed<DataInfo> {
       if( v instanceof InteractionWrappedVec ) {
         if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
         _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
-        _catOffsets[i + 1] = (len += ((InteractionWrappedVec)v).domain().length + (missingBucket ? 1 : 0));
+        _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
       _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length:-100;
       _permutation[i] = cats[i];
     }
-    _numMeans = new double[nnums];
     _numOffsets = MemoryManager.malloc4(nnums+1);
     _numOffsets[0]=len;
     boolean isIWV; // is InteractionWrappedVec?
@@ -279,8 +281,22 @@ public class DataInfo extends Keyed<DataInfo> {
         _interactionVecs[interactionIdx++]=i+ncats;
       }
       _numOffsets[i+1] = (len+= (isIWV ? ((InteractionWrappedVec) v).expandedLength() : 1));
-      _numMeans[i] = train.vec(nums[i]).mean();
       _permutation[i+ncats] = nums[i];
+    }
+    _numMeans = new double[numNums()];
+    int meanIdx=0;
+    for(int i=0;i<nnums;++i) {
+      Vec v = train.vec(nums[i]);
+      if( v instanceof InteractionWrappedVec ) {
+        InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+        double[] means = iwv.getMeans();
+        int start = iwv._useAllFactorLevels?0:1;
+        int length   = iwv.expandedLength();
+        System.arraycopy(means,start,_numMeans,meanIdx,length);
+        meanIdx+=length;
+      }
+      else
+        _numMeans[meanIdx++]=v.mean();
     }
     for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
@@ -295,6 +311,7 @@ public class DataInfo extends Keyed<DataInfo> {
     setPredictorTransform(predictor_transform);
     if(_responses > 0)
       setResponseTransform(response_transform);
+    _intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][];
   }
 
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean intercept) {
@@ -341,8 +358,8 @@ public class DataInfo extends Keyed<DataInfo> {
     for( Vec v: res._adaptedFrame.vecs() )
       if( v instanceof InteractionWrappedVec ) {
         ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_skipMissing;
-        if (null == DKV.get(v._key)) DKV.put(v);
+        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
+        DKV.put(v);
       }
     return res;
   }
@@ -373,7 +390,8 @@ public class DataInfo extends Keyed<DataInfo> {
 
   protected int [] fullCatOffsets(){ return _fullCatOffsets == null?_catOffsets:_fullCatOffsets;}
   // private constructor called by filterExpandedColumns
-  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int [] catModes){
+  private DataInfo(DataInfo dinfo,Frame fr, double [] normMul, double [] normSub, int[][] catLevels, int[][] intLvls, int [] catModes, int[] activeCols) {
+    _activeCols=activeCols;
     _fullCatOffsets = dinfo._catOffsets;
     if(!dinfo._useAllFactorLevels) {
       _fullCatOffsets = dinfo._catOffsets.clone();
@@ -409,23 +427,15 @@ public class DataInfo extends Keyed<DataInfo> {
       _catOffsets[i] = s;
       s += catLevels[i].length;
     }
-    _catLvls = catLevels;
     _catOffsets[_catOffsets.length-1] = s;
+    _catLvls = catLevels;
+    _intLvls = intLvls;
     _responses = dinfo._responses;
     _cats = catLevels.length;
-    _nums = fr.numCols()-_cats - dinfo._responses - (_offset?1:0) - (_weights?1:0) - (_fold?1:0);
-    _numOffsets = _nums==0?new int[0]:dinfo._numOffsets.clone();
-    int diff = _numOffsets.length>0?_numOffsets[0]-s:0;
-    if( diff > 0 )
-      for(int i=0;i<_numOffsets.length; i++)  // need to shift everyone down by the offset!
-        _numOffsets[i] -= diff;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
-    _numMeans = new double[_nums];
     _normMul = normMul;
     _normSub = normSub;
     _catModes = catModes;
-    for(int i = 0; i < _nums; i++)
-      _numMeans[i] = _adaptedFrame.vec(_cats+i).mean();
   }
 
   public static int imputeCat(Vec v) {
@@ -434,15 +444,24 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
 
+  /**
+   * Filter the _adaptedFrame so that it contains only the Vecs referenced by the cols
+   * parameter.
+   *
+   * @param cols Array of the expanded column indices to keep.
+   * @return A DataInfo with _activeCols specifying the active columns
+   */
   public DataInfo filterExpandedColumns(int [] cols){
+    assert _activeCols==null;
     assert _predictor_transform != null;
     assert  _response_transform != null;
-    if(cols == null)return deep_clone();
+    if(cols == null)return deep_clone();  // keep all columns
     int hasIcpt = (cols.length > 0 && cols[cols.length-1] == fullN())?1:0;
     int i = 0, j = 0, ignoredCnt = 0;
     //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
-    int [][] catLvls = new int[_cats][];
-    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);
+    int [][] catLvls = new int[_cats][];  // categorical levels to keep (used in getCategoricalOffsetId binary search)
+    int [][] intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][]; // interactions levels to keep (used in getInteractionOffsetId binary search)
+    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd
     // first do categoricals...
     if(_catOffsets != null) {
       int coff = _useAllFactorLevels?0:1;
@@ -463,18 +482,47 @@ public class DataInfo extends Keyed<DataInfo> {
       int [][] cs = new int[_cats-ignoredCnt][];
       catModes = new int[_cats-ignoredCnt];
       int y = 0;
-      for (int c = 0; c < catLvls.length; ++c) if (catLvls[c] != null) {
-        catModes[y] = _catModes[c];
-        cs[y++] = catLvls[c];
-      }
+      for (int c = 0; c < catLvls.length; ++c)
+        if (catLvls[c] != null) {
+          catModes[y] = _catModes[c];
+          cs[y++] = catLvls[c];
+        }
       assert y == cs.length;
       catLvls = cs;
     }
+
+    // now do the interaction vecs -- these happen to always sit first in the "nums" section of _adaptedFrame
+    // also, these have the exact same filtering logic as the categoricals above
+    int prev=j=0; // reset j for _numOffsets
+    if( _interactionVecs!=null ) {
+      while( i < cols.length && cols[i] < _numOffsets[intLvls.length]) {
+        int[] lvls = MemoryManager.malloc4(_numOffsets[j+1] - _numOffsets[j]);
+        int k=0; // same as above
+        while(i<cols.length && cols[i] < _numOffsets[j+1])
+          lvls[k++] = (cols[i++] - _numOffsets[j]); // no useAllFactorLevels offset since it's tucked away in the count already
+        if( k>0 )
+          intLvls[j] = Arrays.copyOf(lvls,k);
+        ++j;
+      }
+      int preIgnoredCnt=ignoredCnt;
+      for(int k=0;k<intLvls.length;++k)
+        if( null==intLvls[k] ) { ignoredCols[ignoredCnt++] = k+_cats; }
+      if( ignoredCnt > preIgnoredCnt ) {  // got more ignored, trim out the nulls
+        int[][] is = new int[_interactionVecs.length - (ignoredCnt-preIgnoredCnt)][];
+        int y=0;
+        for (int[] intLvl : intLvls)
+          if (intLvl != null)
+            is[y++] = intLvl;
+        intLvls=is;
+      }
+    }
+
     // now numerics
-    int prev = j = 0;
-    for(; i < cols.length; ++i){
-      for(int k = prev; k < (cols[i]-numStart()); ++k ){
-        ignoredCols[ignoredCnt++] = k+_cats;
+    prev=j=_interactionVecs==null?0:_interactionVecs.length;
+    for(;i<cols.length;++i){
+      int numsToIgnore = (cols[i]-_numOffsets[j]);
+      for(int k=0;k<numsToIgnore;++k){
+        ignoredCols[ignoredCnt++] = _cats+prev++;
         ++j;
       }
       prev = ++j;
@@ -500,9 +548,11 @@ public class DataInfo extends Keyed<DataInfo> {
       for(int k = id; k < (id + nnums); ++k)
         normMul[k-id] = _normMul[cols[k]-off];
     }
-    // public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
-    DataInfo dinfo = new DataInfo(this,f, normMul, normSub, catLvls, catModes);
-    dinfo._activeCols = cols;
+    DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
+    dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
+    dinfo._numMeans=new double[nnums];
+    for(int k=id; k < (id+nnums);++k )
+      dinfo._numMeans[k-id] = _numMeans[cols[k]-off];
     return dinfo;
   }
 
@@ -623,12 +673,25 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int largestCat(){ return _cats > 0?_catOffsets[1]:0; }
   public final int numStart()  { return _catOffsets[_cats];         }
   public final int numCats()   { return _catOffsets[_cats];         }
-  public final int numNums()   { return _interactionVecs!=null?(_numOffsets[_numOffsets.length-1]-numStart()):_nums; }
+  public final int numNums()   {
+    int nnums=0;
+    if( _numOffsets==null && _intLvls.length>0 ) {  // filtered columns?
+      for (int[] _intLvl : _intLvls) nnums += _intLvl==null?0:_intLvl.length-1;  // minus 1 for the fact that we get a +1 from the dummy interaction vec sitting in the frame!
+      return nnums+_nums;
+    }
+    return _interactionVecs!=null&&_numOffsets!=null?(_numOffsets[_numOffsets.length-1]-numStart()):_nums;
+  }
 
   /**
    * Get the next expanded number-column index.
    */
   public final int nextNumericIdx(int currentColIdx) {
+    if( _numOffsets==null ) {
+      if( currentColIdx < _interactionVecs.length ) {  // currently sitting on an interaction vec, return the number of levels
+        return _intLvls[currentColIdx].length;
+      } else
+        return 1;
+    }
     if( currentColIdx+1 >= _numOffsets.length ) return fullN() - _numOffsets[currentColIdx];
     return _numOffsets[currentColIdx+1] - _numOffsets[currentColIdx];
   }
@@ -662,17 +725,17 @@ public class DataInfo extends Keyed<DataInfo> {
       final int nums = n-k;
       System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
     } else {
-      for (int i = _cats; i <= _nums; i++) {
+      for (int i = 0; i <= _nums; i++) {
         InteractionWrappedVec v;
-        if( i >= n ) break;
-        if (vecs[i] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i]).domain() != null)) { // in this case, get the categoricalOffset
+        if( i+_cats >= n || k >=n ) break;
+        if (vecs[i+_cats] instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs[i+_cats]).domain() != null)) { // in this case, get the categoricalOffset
           for (int j = _useAllFactorLevels?0:1; j < v.domain().length; ++j) {
-            if (getCategoricalIdFromInteraction(i, j) < 0)
+            if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
               continue;
-            res[k++] = _adaptedFrame._names[i] + "." + v.domain()[j];
+            res[k++] = _adaptedFrame._names[i+_cats] + "." + v.domain()[j];
           }
         } else
-          res[k++] = _adaptedFrame._names[i];
+          res[k++] = _adaptedFrame._names[i+_cats];
       }
     }
     _coefNames = res;
@@ -791,7 +854,7 @@ public class DataInfo extends Keyed<DataInfo> {
       int numStart = numStart();
       for(int i = 0; i < nBins; ++i)
         res += vec[binIds[i]];
-      if(numIds == null || (vec.length == nBins + nNums + 1)) {
+      if(numIds == null) {
         for (int i = 0; i < numVals.length; ++i)
           res += numVals[i] * vec[numStart + i];
       } else {
@@ -854,67 +917,18 @@ public class DataInfo extends Keyed<DataInfo> {
     InteractionWrappedVec v;
     if( (v=(InteractionWrappedVec)_adaptedFrame.vec(cid)).isCategorical() ) return getCategoricalId(cid,val);
     assert v.domain()!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
+    cid -= _cats;
     if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
       assert _valid:"interaction value out of bounds, got " + val + ", next cat starts at " + _numOffsets[cid+1];
       val = v.mode();
     }
+    if( cid < _intLvls.length && _intLvls[cid]!=null ) {
+      assert _useAllFactorLevels;
+      val = Arrays.binarySearch(_intLvls[cid],val);
+    }
     return val < 0?-1:val+_numOffsets[cid];
   }
 
-  public final Row extractDenseRow(double [] vals, Row row) {
-    row.bad = false;
-    row.rid = 0;
-    row.cid = 0;
-    if(row.weight == 0) return row;
-
-    if (_skipMissing)
-      for (double d:vals)
-        if(Double.isNaN(d)) {
-          row.bad = true;
-          return row;
-        }
-    int nbins = 0;
-    for (int i = 0; i < _cats; ++i) {
-      int c = getCategoricalId(i,Double.isNaN(vals[i])?_catModes[i]:(int)vals[i]);
-      if(c >= 0)row.binIds[nbins++] = c;
-    }
-    row.nBins = nbins;
-    final int n = _nums;
-    int numValsIdx=0;
-    for (int i = 0; i < n; ++i) {
-      if( isInteractionVec(i) ) {
-        int offset;
-        InteractionWrappedVec iwv = ((InteractionWrappedVec)_adaptedFrame.vec(_cats+i));
-        int v1 = _adaptedFrame.find(iwv.v1());
-        int v2 = _adaptedFrame.find(iwv.v2());
-        if ( v1 < _cats ) offset = getCategoricalId(v1,Double.isNaN(vals[v1])?_catModes[v1]:(int)vals[v1]);
-        else if (v2 < _cats) offset = getCategoricalId(v2,Double.isNaN(vals[v2])?_catModes[v1]:(int)vals[v2]);
-        else offset = 0;
-        row.numVals[numValsIdx + offset] = vals[_cats + i];  // essentially: vals[v1] * vals[v2])
-        numValsIdx+=nextNumericIdx(i);
-      } else {
-        double d = vals[_cats + i]; // can be NA if skipMissing() == false
-        if( Double.isNaN(d) )                      d = _numMeans[numValsIdx];
-        if( _normMul != null && _normSub != null ) d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
-        row.numVals[numValsIdx++] = d;
-      }
-    }
-    int off = responseChunkId(0);
-    for (int i = off; i < Math.min(vals.length,off + _responses); ++i) {
-      try {
-        row.response[i] = vals[responseChunkId(i)];
-      } catch(Throwable t){
-        throw new RuntimeException(t);
-      }
-      if (_normRespMul != null)
-        row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
-      if (Double.isNaN(row.response[i])) {
-        row.bad = true;
-        return row;
-      }
-    }
-    return row;
-  }
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
@@ -942,13 +956,13 @@ public class DataInfo extends Keyed<DataInfo> {
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
         InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vec(_cats+i);
-        iwv._useAllFactorLevels&=_useAllFactorLevels;
         int interactionOffset = getInteractionOffset(chunks,_cats+i,rid);
         for(int offset=0;offset<iwv.expandedLength();++offset) {
+          if( i < _intLvls.length && _intLvls[i]!=null && Arrays.binarySearch(_intLvls[i],offset) < 0 ) continue; // skip the filtered out interactions
           double d=0;
           if( offset==interactionOffset ) d=chunks[_cats + i].atd(rid);
           if( Double.isNaN(d) )
-            d = iwv.mean();
+            d = _numMeans[numValsIdx];
           if( _normMul != null && _normSub != null )
             d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
           row.numVals[numValsIdx++]=d;
@@ -956,7 +970,7 @@ public class DataInfo extends Keyed<DataInfo> {
       } else {
         double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
-          d = _numMeans[i];
+          d = _numMeans[numValsIdx];
         if (_normMul != null && _normSub != null)
           d = (d - _normSub[numValsIdx]) * _normMul[numValsIdx];
         row.numVals[numValsIdx++] = d;
@@ -980,30 +994,11 @@ public class DataInfo extends Keyed<DataInfo> {
     return row;
   }
   public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
-    int v1=-1,v2=-1;
-    boolean useAllFactors; //=_useAllFactorLevels;
-    InteractionWrappedVec iwv;
-    if( _adaptedFrame==null ) {
-      iwv = (InteractionWrappedVec)chunks[cid].vec();
-      Vec vec1 = iwv.v1();
-      Vec vec2 = iwv.v2();
-      useAllFactors=iwv._useAllFactorLevels;
-      for(int i=0;i<chunks.length;++i) {
-        if( v1>=0 && v2>=0 ) break; // found both vecs already
-        if( v1==-1 && chunks[i].vec()==vec1 ) v1=i;
-        if( v2==-1 && chunks[i].vec()==vec2 ) v2=i;
-      }
-      if( v1==-1 && v2 >= _cats ) return (int)vec1.at(rid) - (useAllFactors?0:1);
-      if( v2==-1 && v1 >= _cats ) return (int)vec2.at(rid) - (useAllFactors?0:1);
-    } else {
-      iwv = ((InteractionWrappedVec) _adaptedFrame.vec(cid));
-      v1 = _adaptedFrame.find(iwv.v1());
-      v2 = _adaptedFrame.find(iwv.v2());
-    }
-    useAllFactors=iwv._useAllFactorLevels;
-    if( v1 < _cats )       return (int)chunks[v1].at8(rid) - (useAllFactors?0:1);  // v1 is some categorical column
-    else if( v2 < _cats )  return (int)chunks[v2].at8(rid) - (useAllFactors?0:1);  // or v2 is some categorical column
-    return 0;                                                // or neither is categorical
+    boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
+    InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
+    if(      c._c1IsCat ) return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
+    else if( c._c2IsCat ) return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
+    return 0;
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
@@ -1096,13 +1091,14 @@ public class DataInfo extends Keyed<DataInfo> {
           if( c.isNA(r) ) row.bad = _skipMissing;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
           if( cidVirtualOffset>=0 ) {
+            if( cid < _intLvls.length && _intLvls[cid]!=null && Arrays.binarySearch(_intLvls[cid],cidVirtualOffset) < 0 ) continue; // skip the filtered out interactions
             if( c.atd(r)==0 ) continue;
             double d = c.atd(r);
             if( Double.isNaN(d) )
-              d =iwv.mean();  // FIXME: if this produces a "true" NA then should sub with mean? with?
+              d = _numMeans[interactionOffset+cidVirtualOffset];  // FIXME: if this produces a "true" NA then should sub with mean? with?
             if (_normMul != null)
               d *= _normMul[interactionOffset+cidVirtualOffset];
-            row.addNum(_numOffsets[cid] + cidVirtualOffset, d);
+            row.addNum(numStart()+interactionOffset+cidVirtualOffset, d);
           }
         }
         interactionOffset+=nextNumericIdx(cid);
@@ -1119,7 +1115,7 @@ public class DataInfo extends Keyed<DataInfo> {
             d = _numMeans[cid];
           if (_normMul != null)
             d *= _normMul[interactionOffset];
-          row.addNum(_numOffsets[cid], d);
+          row.addNum(numStart()+interactionOffset,d);
         }
         interactionOffset++;
       }

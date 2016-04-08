@@ -142,7 +142,7 @@ public class OptimizationUtils {
       this(gslvr,betaStart,gslvr.getGradient(betaStart),.1,.1,1e-2);
     }
     public MoreThuente(GradientSolver gslvr, double [] betaStart, GradientInfo ginfo){
-      this(gslvr,betaStart,ginfo,.1,.1,1e-2);
+      this(gslvr,betaStart,ginfo,.1,.1,1e-8);
     }
     public MoreThuente(GradientSolver gslvr, double [] betaStart, GradientInfo ginfo, double ftol, double gtol, double xtol){
       _gslvr = gslvr;
@@ -168,7 +168,7 @@ public class OptimizationUtils {
     @Override
     public double[] getX() { return _beta;}
 
-    double _xtol = 1e-2;
+    double _xtol = 1e-8;
     double _ftol = .1; // .2/.25 works
     double _gtol = .1;
     double _xtrapf = 4;
