@@ -1,6 +1,7 @@
 package ai.h2o.automl.transforms;
 
 import org.reflections.Reflections;
+import water.Key;
 import water.fvec.Vec;
 import water.rapids.ASTUniOp;
 
@@ -83,22 +84,16 @@ public class Transform {
  *    Is this legal?
  *       Expr.plus(v1, Expr.log(v2));
  *       e.plus(e, Expr.log(v))
- *
- *
- *
  */
-class Expr {
+class Expr implements Cloneable {
   ArrayList<Expr> _exprs; // dag
   String _op;             // opcode string ("+", "log", etc.)
   static final String ARGPREFIX="x"; // the arg prefix  { x1 x2 x3 .
+  static HashMap<Key, String> _argNames = new HashMap<>(); // mapping of Vec keys to arg names
+  static AtomicInteger _argCnter = new AtomicInteger(0);   // argument counter, for labeling args nicely
 
   protected Expr() {}
-  private Expr(String op, Expr... exprs) {
-    Expr e = new Expr();
-    e._op=op;
-    e._exprs = new ArrayList<>();
-    Collections.addAll(e._exprs, exprs);
-  }
+  private Expr(String op, Expr... exprs) { compose(op, exprs); }
 
   public static Expr binOp(String op, Expr l, Expr r)   { return new Expr(op,l,r); }
   public static Expr binOp(String op, Expr l, Vec r)    { return new Expr(op,l, new ExprVec(r)); }
@@ -110,27 +105,88 @@ class Expr {
   public static Expr binOp(String op, double l, Vec r)  { return new Expr(op, new ExprNum(l), new ExprVec(r)); }
   // op(double, double) is not interesting...
 
+  public static Expr unOp(String op, Expr e) { return new Expr(op, e); }
+  public static Expr unOp(String op, Vec  v) { return new Expr(op, new ExprVec(v)); }
+
+  private void compose(String op, Expr... exprs) {
+    ArrayList<Expr> exprz = new ArrayList<>();
+    Collections.addAll(exprz, exprs);
+    _op=op;
+    _exprs=exprz;
+  }
+
+  @Override protected Expr clone() {
+    Expr e = new Expr();
+    e._op = _op;
+    e._exprs = new ArrayList<>();
+    for(Expr expr: _exprs)
+      e._exprs.add(expr.clone());
+    return e;
+  }
+
+  public void bop(String op, Expr l, Expr r)   {
+    boolean left;
+    if( (left=this!=r) && this!=l )
+      throw new IllegalArgumentException("expected this expr to appear in arguments.");
+    compose(op,left?clone():l,left?r:clone());
+  }
+
+  public void bop(String op, Expr l, Vec r)    {
+    if( this!=l )
+      throw new IllegalArgumentException("expected expr to appear in args");
+    compose(op,clone(),new ExprVec(r));
+  }
+  public void bop(String op, Expr l, double r) {
+    if( this!=l )
+      throw new IllegalArgumentException("expected expr to appear in args");
+    compose(op,clone(),new ExprNum(r));
+  }
+  public void bop(String op, Vec l, Expr r)    {
+    if( this!=r )
+      throw new IllegalArgumentException("expected expr to appear in args");
+    compose(op,new ExprVec(l),clone());
+  }
+  public void bop(String op, double l, Expr r) {
+    if( this!=r )
+      throw new IllegalArgumentException("expected expr to appear in args");
+    compose(op,new ExprNum(l),clone());
+  }
+  // op(double, double) is not interesting...
+
+  public void uop(String op) { compose(op,clone()); }
+
   /**
    * Construct a Rapids expression!
    * @return String that is a rapids expression
    */
   public String toRapids() {
-    AtomicInteger argCnter = new AtomicInteger(1);
-    assignArgs(argCnter);
-    return asRapids().toString();
+    _argCnter.set(0);
+    _argNames.clear();
+    assignArgs();
+    StringBuilder sb = constructArgs();
+    return sb.append(asRapids()).append("}").toString();
+  }
+
+  StringBuilder constructArgs() {
+    StringBuilder sb = new StringBuilder("{");
+    for(String arg: _argNames.values())
+      sb.append(" ").append(arg);
+    sb.append(" ").append(".").append(" ");
+    return sb;
   }
 
   StringBuilder asRapids() {
     StringBuilder sb = new StringBuilder("(");
     sb.append(_op);
     for(Expr expr: _exprs)
-      sb.append(" ").append(expr.toRapids());
+      sb.append(" ").append(expr.asRapids());
+    sb.append(")");
     return sb;
   }
 
-  void assignArgs(AtomicInteger argCnter) {
+  void assignArgs() {
     for(Expr expr: _exprs)
-      expr.assignArgs(argCnter);
+      expr.assignArgs();
   }
 }
 
@@ -138,7 +194,8 @@ class ExprNum extends Expr {
   double _d;
   ExprNum(double d) { _d=d; }
   @Override StringBuilder asRapids() { return new StringBuilder(""+_d); }
-  @Override void assignArgs(AtomicInteger argCnter) { }
+  @Override void assignArgs() { }
+  @Override protected ExprNum clone() { return new ExprNum(_d); }
 }
 
 class ExprVec extends Expr {
@@ -146,6 +203,10 @@ class ExprVec extends Expr {
   String _argName;
   ExprVec(Vec v) { _v=v; }
   @Override StringBuilder asRapids() { return new StringBuilder(_argName); }
-  @Override void assignArgs(AtomicInteger argCnter) { _argName = ARGPREFIX+argCnter.getAndIncrement(); }
-
+  @Override void assignArgs() {
+    _argName = _argNames.get(_v._key);
+    if( null==_argName )
+      _argNames.put(_v._key, _argName=ARGPREFIX+_argCnter.incrementAndGet());
+  }
+  @Override protected ExprVec clone() { return new ExprVec(_v); }
 }
