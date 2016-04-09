@@ -151,7 +151,7 @@ class H2OEstimator(ModelBase):
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
     kwargs["interactions"] = None if "interactions" not in kwargs else [h2o.h2o._quoted(col) for col in kwargs["interactions"]]
-    kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+    kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs])  # gruesome one-liner
     algo = self._compute_algo()
 
     model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))

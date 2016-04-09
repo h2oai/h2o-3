@@ -336,6 +336,24 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x,len,log_rows_per_chunk,true);
   }
 
+  /**
+   * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
+   * @param totSize
+   * @param len
+   * @return
+   */
+  public static Vec makeCon(long totSize, long len) {
+    int safetyInflationFactor = 8;
+    int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
+    long[] espc = new long[nchunks+1];
+    espc[0] = 0;
+    for( int i=1; i<nchunks; i++ )
+      espc[i] = espc[i-1]+len/nchunks;
+    espc[nchunks] = len;
+    VectorGroup vg = VectorGroup.VG_LEN1;
+    return makeCon(0,vg,ESPC.rowLayout(vg._key,espc));
+  }
+
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
