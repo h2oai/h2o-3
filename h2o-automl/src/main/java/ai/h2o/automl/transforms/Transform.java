@@ -2,8 +2,11 @@ package ai.h2o.automl.transforms;
 
 import org.reflections.Reflections;
 import water.Key;
+import water.fvec.TransformWrappedVec;
 import water.fvec.Vec;
+import water.rapids.AST;
 import water.rapids.ASTUniOp;
+import water.rapids.Exec;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -86,15 +89,16 @@ public class Transform {
  *       e.plus(e, Expr.log(v))
  */
 class Expr implements Cloneable {
-  ArrayList<Expr> _exprs; // dag
-  String _op;             // opcode string ("+", "log", etc.)
-  static final String ARGPREFIX="x"; // the arg prefix  { x1 x2 x3 .
+  private ArrayList<Expr> _exprs; // dag
+  private String _op;             // opcode string ("+", "log", etc.)
+  static final String ARGPREFIX="x";                       // the arg prefix  { x1 x2 x3 .
   static HashMap<Key, String> _argNames = new HashMap<>(); // mapping of Vec keys to arg names
   static AtomicInteger _argCnter = new AtomicInteger(0);   // argument counter, for labeling args nicely
+  protected Vec _anyVec;                                   // any random vec to be used for constructing the TransformWrappedVec
+  static ArrayList<Key<Vec>> _vecs = new ArrayList<>();    // order of vecs, used for TransformWrappedVec making
 
   protected Expr() {}
   private Expr(String op, Expr... exprs) { compose(op, exprs); }
-
   public static Expr binOp(String op, Expr l, Expr r)   { return new Expr(op,l,r); }
   public static Expr binOp(String op, Expr l, Vec r)    { return new Expr(op,l, new ExprVec(r)); }
   public static Expr binOp(String op, Expr l, double r) { return new Expr(op,l, new ExprNum(r)); }
@@ -162,20 +166,27 @@ class Expr implements Cloneable {
   public String toRapids() {
     _argCnter.set(0);
     _argNames.clear();
+    _vecs.clear();
     assignArgs();
+    _anyVec = _vecs.get(0).get();
     StringBuilder sb = constructArgs();
     return sb.append(asRapids()).append("}").toString();
   }
 
-  StringBuilder constructArgs() {
+  public TransformWrappedVec toWrappedVec() {
+    AST fun = new Exec(toRapids()).parse();
+    return new TransformWrappedVec(_anyVec.group().addVec(), _anyVec._rowLayout, fun, _vecs.toArray(new Key[_vecs.size()]));
+  }
+
+  private StringBuilder constructArgs() {
     StringBuilder sb = new StringBuilder("{");
-    for(String arg: _argNames.values())
-      sb.append(" ").append(arg);
+    for(int i=1;i<=_argCnter.get();++i)
+      sb.append(" ").append(ARGPREFIX).append(i);
     sb.append(" ").append(".").append(" ");
     return sb;
   }
 
-  StringBuilder asRapids() {
+  protected StringBuilder asRapids() {
     StringBuilder sb = new StringBuilder("(");
     sb.append(_op);
     for(Expr expr: _exprs)
@@ -184,7 +195,7 @@ class Expr implements Cloneable {
     return sb;
   }
 
-  void assignArgs() {
+  protected void assignArgs() {
     for(Expr expr: _exprs)
       expr.assignArgs();
   }
@@ -193,8 +204,8 @@ class Expr implements Cloneable {
 class ExprNum extends Expr {
   double _d;
   ExprNum(double d) { _d=d; }
-  @Override StringBuilder asRapids() { return new StringBuilder(""+_d); }
-  @Override void assignArgs() { }
+  @Override protected StringBuilder asRapids() { return new StringBuilder(""+_d); }
+  @Override protected void assignArgs() { }
   @Override protected ExprNum clone() { return new ExprNum(_d); }
 }
 
@@ -202,11 +213,13 @@ class ExprVec extends Expr {
   Vec _v;
   String _argName;
   ExprVec(Vec v) { _v=v; }
-  @Override StringBuilder asRapids() { return new StringBuilder(_argName); }
-  @Override void assignArgs() {
+  @Override protected StringBuilder asRapids() { return new StringBuilder(_argName); }
+  @Override protected void assignArgs() {
     _argName = _argNames.get(_v._key);
-    if( null==_argName )
-      _argNames.put(_v._key, _argName=ARGPREFIX+_argCnter.incrementAndGet());
+    if( null==_argName ) {
+      _argNames.put(_v._key, _argName = ARGPREFIX + _argCnter.incrementAndGet());
+      _vecs.add(_v._key);
+    }
   }
   @Override protected ExprVec clone() { return new ExprVec(_v); }
 }
