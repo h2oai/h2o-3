@@ -149,7 +149,7 @@ public class SQLManager {
       _v = makeCon(totSize, numRow);
     } else {
       double rows_per_chunk = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
-              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+              Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false, false);
       _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
     }
     Log.info("Number of chunks: " + _v.nChunks());
