@@ -29,6 +29,7 @@ from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .grid.grid_search import H2OGridSearch
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 
@@ -387,6 +388,34 @@ def get_model(model_id):
   m._resolve_model(model_id, model_json)
   return m
 
+def get_grid(grid_id):
+  """Return the specified grid
+
+  Parameters
+  ----------
+    grid_id : str
+      The grid identification in h2o
+
+  Returns
+  -------
+    H2OGridSearch instance
+  """
+  grid_json = H2OConnection.get_json("Grids/"+grid_id, _rest_version=99)
+  models = [get_model(key['name']) for key in grid_json['model_ids']]
+  #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
+  first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=99)['models'][0]
+  gs = H2OGridSearch(None, {}, grid_id)
+  gs._resolve_grid(grid_id, grid_json, first_model_json)
+  gs.models = models
+  hyper_params = {param:set() for param in gs.hyper_names}
+  for param in gs.hyper_names:
+    for model in models:
+      hyper_params[param].add(model.full_parameters[param][u'actual_value'][0])
+  hyper_params = {str(param):list(vals) for param, vals in hyper_params.items()}
+  gs.hyper_params = hyper_params
+  gs.model = model.__class__()
+  return gs
+  
 
 def get_frame(frame_id):
   """Obtain a handle to the frame in H2O with the frame_id key.

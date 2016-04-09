@@ -6,8 +6,10 @@ from ..model.dim_reduction import H2ODimReductionModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
-from ..h2o import H2OConnection, H2OJob, H2OFrame
 import h2o
+from h2o.connection import H2OConnection
+from h2o.job import H2OJob
+from h2o.frame import H2OFrame
 import inspect
 import warnings
 import types

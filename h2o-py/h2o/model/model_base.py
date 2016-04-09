@@ -10,7 +10,7 @@ from builtins import object
 import h2o
 import imp, traceback, warnings
 from ..utils.shared_utils import can_use_pandas
-from ..h2o import H2OJob
+from h2o.job import H2OJob
 
 
 class ModelBase(object):
