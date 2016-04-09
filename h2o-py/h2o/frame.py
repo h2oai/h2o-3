@@ -13,6 +13,7 @@ import os
 import tempfile
 import sys
 import traceback
+import random
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote
 from .display import H2ODisplay
 from .connection import H2OConnection
@@ -2126,7 +2127,9 @@ class H2OFrame(object):
     -------
       Single-column H2OFrame filled with doubles sampled uniformly from [0,1).
     """
-    fr = H2OFrame._expr(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
+    if seed==-1 or seed is None:
+      seed = random.randint(1, sys.maxint)
+    fr = H2OFrame._expr(expr=ExprNode("h2o.runif", self, seed))
     fr._ex._cache.ncols=1
     fr._ex._cache.nrows=self.nrow
     return fr
