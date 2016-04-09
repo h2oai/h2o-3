@@ -14,30 +14,15 @@ public class SQLManager {
 
 
   /**
-   * @param database_sys (Input) 
-   * @param database (Input)
+   * @param connection_url (Input) 
    * @param table (Input)
    * @param username (Input)
    * @param password (Input)
-   * @param host (Input)
-   * @param port (Input)
    * @param optimize (Input)                
    */
-  public static Job<Frame> importSqlTable(String database_sys, String database, final String table, 
-                                          final String username, final String password, String host,
-                                          String port, boolean optimize) {
+  public static Job<Frame> importSqlTable(final String connection_url, final String table, final String username, final String password,
+                                          boolean optimize) {
     
-    //Determine url based on database system
-    final String url;
-    String d_sys = database_sys.toLowerCase();
-    switch (d_sys) {
-      case "mysql":
-        url = String.format("jdbc:mysql://%s:%s/%s?&useSSL=false", host, port, database);
-        break;
-      default:
-        throw new IllegalArgumentException(database_sys + " is not supported. Must be one of: MySQL.");
-    }
-
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
@@ -49,7 +34,7 @@ public class SQLManager {
     final int[] columnSQLTypes;
     final byte[] columnH2OTypes;
     try {
-      conn = DriverManager.getConnection(url, username, password);
+      conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
       rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
       rs.next();
@@ -112,7 +97,7 @@ public class SQLManager {
       }
 
     } catch (SQLException ex) {
-      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with url: " + url);
+      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to connect and read from SQL database with connection_url: " + connection_url);
     } finally {
       // release resources in a finally{} block in reverse-order of their creation
       if (rs != null) {
@@ -160,7 +145,7 @@ public class SQLManager {
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        Frame fr = new SqlTableToH2OFrame(url, table, username, password, columnSQLTypes, maxCon, j).doAll(columnH2OTypes, _v)
+        Frame fr = new SqlTableToH2OFrame(connection_url, table, username, password, columnSQLTypes, maxCon, j).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();

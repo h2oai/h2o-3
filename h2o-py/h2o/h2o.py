@@ -167,16 +167,14 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names,
                                     col_types, na_strings)
 
-def import_sql_table(database_sys, database, table, username, password, host=None, port=None, optimize=None):
+def import_sql_table(connection_url, table, username, password, optimize=None):
   """Import SQL table to H2OFrame in memory.
   
   Parameters
   ----------
-    database_sys : str
-      Database management system. Must be one of: MySQL
-      
-    database : str
-      Name of SQL database
+    connection_url : str
+      URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
+      For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
       
     table : str
       Name of SQL table
@@ -186,12 +184,6 @@ def import_sql_table(database_sys, database, table, username, password, host=Non
       
     password : str
       Password of SQL server
-      
-    host : str, default is "localhost"
-      Host of SQL server
-      
-    port : int or str, default is 3306
-      Port of SQL server
       
     optimize : bool, default is True
       Optimize import of SQL table for faster imports. Experimental.  

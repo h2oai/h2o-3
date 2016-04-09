@@ -6,12 +6,9 @@ import water.Iced;
 public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
   
   //Input fields
-  @API(help="database_sys", required = true)
-  String database_sys;
-
-  @API(help="database", required = true)
-  String database;
-
+  @API(help="connection_url", required = true)
+  String connection_url;
+  
   @API(help="table", required = true)
   String table;
 
@@ -20,12 +17,6 @@ public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
 
   @API(help="password", required = true)
   String password;
-
-  @API(help="host")
-  String host="localhost";
-
-  @API(help="port")
-  String port="3306";
 
   @API(help="optimize")
   boolean optimize = true;
