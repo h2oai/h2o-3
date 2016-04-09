@@ -13,7 +13,7 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
   @API(help="Source frames", required=true, direction=API.Direction.INOUT)
   public FrameKeyV3[] source_frames;
 
-  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"}, direction=API.Direction.INOUT)
+  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight", "AVRO"}, direction=API.Direction.INOUT)
   public ParserType parse_type = ParserType.GUESS;
 
   @API(help="Field separator", direction=API.Direction.INOUT)

@@ -86,7 +86,7 @@ public class ParseSetupHandler extends Handler {
       p.total_filtered_column_count = keep_indexes.size();
     }
     p.destination_frame = ParseSetup.createHexName(p.source_frames[0].toString());
-    if( p.check_header==ParseSetup.HAS_HEADER && Arrays.equals(p.column_names, p.data[0])) p.data = Arrays.copyOfRange(p.data,1,p.data.length);
+    if( p.check_header==ParseSetup.HAS_HEADER && p.data != null && Arrays.equals(p.column_names, p.data[0])) p.data = Arrays.copyOfRange(p.data,1,p.data.length);
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
     return p;

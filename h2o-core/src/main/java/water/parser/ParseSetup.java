@@ -16,7 +16,7 @@ import java.util.HashSet;
 /**
  * Configuration and base guesser for a parse;
  */
-public final class ParseSetup extends Iced {
+public class ParseSetup extends Iced {
   public static final byte GUESS_SEP = -1;
   public static final int NO_HEADER = -1;
   public static final int GUESS_HEADER = 0;
@@ -154,6 +154,7 @@ public final class ParseSetup extends Iced {
       case XLS:      return new      XlsParser(this,jobKey);
       case SVMLight: return new SVMLightParser(this,jobKey);
       case ARFF:     return new     ARFFParser(this,jobKey);
+      case AVRO:     return new     AvroParser(this,jobKey, ((AvroParser.AvroParseSetup) this).header );
     }
     throw new H2OIllegalArgumentException("Unknown file type.  Parse cannot be completed.",
             "Attempted to invoke a parser for ParseType:" + _parse_type +", which doesn't exist.");
@@ -388,6 +389,7 @@ public final class ParseSetup extends Iced {
     }
 
     private ParseSetup mergeSetups(ParseSetup setupA, ParseSetup setupB, String fileA, String fileB) {
+      // FIXME: have a merge function defined on a specific parser setup (each parser setup is responsible for merge)
       if (setupA == null) return setupB;
       ParseSetup mergedSetup = setupA;
 
@@ -475,19 +477,25 @@ public final class ParseSetup extends Iced {
     return guessSetup(bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, userSetup._column_names, userSetup._column_types, null, null);
   }
 
-  private static final ParserType guessFileTypeOrder[] = {ParserType.ARFF, ParserType.XLS,ParserType.XLSX,ParserType.SVMLight,ParserType.CSV};
+  private static final ParserType guessFileTypeOrder[] = { ParserType.ARFF, ParserType.XLS, ParserType.XLSX,ParserType.SVMLight, ParserType.AVRO, ParserType.CSV};
   public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
     switch( pType ) {
       case CSV:      return      CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, naStrings);
       case SVMLight: return SVMLightParser.guessSetup(bits);
       case XLS:      return      XlsParser.guessSetup(bits);
       case ARFF:     return      ARFFParser.guessSetup(bits, sep, singleQuotes, columnNames, naStrings);
+      case AVRO:     return      AvroParser.guessSetup(bits);
       case GUESS:
         for( ParserType pTypeGuess : guessFileTypeOrder ) {
           try {
             ParseSetup ps = guessSetup(bits,pTypeGuess,sep,ncols,singleQuotes,checkHeader,columnNames,columnTypes, domains, naStrings);
-            if( ps != null) return ps;
-          } catch( Throwable ignore ) { /*ignore failed parse attempt*/ }
+            if( ps != null) {
+              return ps;
+            }
+          } catch( Throwable ignore ) {
+            //ignore.printStackTrace();
+            /*ignore failed parse attempt*/
+          }
         }
     }
     throw new ParseDataset.H2OParseException("Cannot determine file type.");

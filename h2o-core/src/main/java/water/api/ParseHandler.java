@@ -31,12 +31,14 @@ class ParseHandler extends Handler {
     }
     return parse;
   }
-  String[] delNulls(String[] names) {
+
+  private static String[] delNulls(String[] names) {
     if (names == null) return null;
     for(int i=0; i < names.length; i++)
       if (names[i].equals("null")) names[i] = null;
     return names;
   }
+
   public JobV3 parseSVMLight(int version, ParseSVMLightV3 parse) {
     Key [] fkeys = new Key[parse.source_frames.length];
     for(int i = 0; i < fkeys.length; ++i)

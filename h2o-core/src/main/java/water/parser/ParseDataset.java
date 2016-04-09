@@ -103,7 +103,14 @@ public final class ParseDataset {
     },nchunks);
   }
   // Same parse, as a backgroundable Job
-  public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup setup, boolean deleteOnDone) {
+  public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup parseSetup, boolean deleteOnDone) {
+    // FIXME - get parser specific setup - we need instance returned by a parser setup since it can be specific to a parser!
+    final ParseSetup setup = ParseSetup.guessSetup(keys, parseSetup);
+    if (setup._parse_type == ParserType.AVRO) {
+      setup._chunk_size = (int) ((AvroParser.AvroParseSetup) setup).blockSize;
+    }
+    // ---- MM end of experiment ----
+
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
     if ( x != null && !x.equals(""))
@@ -765,7 +772,10 @@ public final class ParseDataset {
     // Called once per file
     @Override public void map( Key key ) {
       if( _jobKey.get().stop_requested() ) return;
-      ParseSetup localSetup = new ParseSetup(_parseSetup);
+      // FIXME: refactor parser setup to be configurable via parser object
+      ParseSetup localSetup = _parseSetup._parse_type == ParserType.AVRO
+                              ? new AvroParser.AvroParseSetup(_parseSetup, ((AvroParser.AvroParseSetup) _parseSetup).header)
+                              : new ParseSetup(_parseSetup);
       ByteVec vec = getByteVec(key);
       final int chunkStartIdx = _fileChunkOffsets[_lo];
       Log.trace("Begin a map stage of a file parse with start index " + chunkStartIdx + ".");
@@ -924,6 +934,10 @@ public final class ParseDataset {
         case SVMLight:
           p = new SVMLightParser(_setup, _jobKey);
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
+          break;
+        case AVRO:
+          p = new AvroParser(_setup, _jobKey, ((AvroParser.AvroParseSetup) _setup).header);
+          dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types, _setup._chunk_size, avs);
           break;
         default:
           throw H2O.unimpl();
