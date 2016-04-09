@@ -4,8 +4,9 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.rapids.AST;
-import water.rapids.ASTRow;
 import water.rapids.Env;
+
+import static water.rapids.ASTParameter.makeNum;
 
 /**
  * This wrapper pushes a transform down into each chunk so that
@@ -69,7 +70,6 @@ public class TransformWrappedVec extends WrappedVec {
     public final transient Chunk _c[];
 
     private final AST[] _asts;
-    private final double[] _ds;
     private final Env _env;
 
     TransformWrappedChunk(AST fun, Vec transformWrappedVec, Chunk... c) {
@@ -79,18 +79,17 @@ public class TransformWrappedVec extends WrappedVec {
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
 
       _fun=fun;
-      _ds = new double[_c.length];
-      _asts = new AST[]{_fun,new ASTRow(_ds,null)};
+      _asts = new AST[1+_c.length];
+      _asts[0]=_fun;
       _env = new Env(null);
     }
 
 
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
-      for(int i=0;i<_ds.length;++i)
-        _ds[i] = _c[i].atd(idx);
-      double[] valRow = _fun.apply(_env,_env.stk(),_asts).getRow(); // Make the call per-row
-      return valRow[0];
+      for(int i=1;i<_asts.length;++i)
+        _asts[i] = makeNum(_c[i-1].atd(idx));
+      return _fun.apply(_env,_env.stk(),_asts).getNum(); // Make the call per-row
     }
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
