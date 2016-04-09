@@ -27,6 +27,5 @@ public class TransformWrappedVecTest extends TestUtil {
     } finally {
       if( null!=v ) v.remove();
     }
-
   }
 }

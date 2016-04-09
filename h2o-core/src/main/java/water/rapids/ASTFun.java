@@ -57,8 +57,7 @@ public class ASTFun extends AST {
 
   // Function execution.  Just throw self on stack like a constant.  However,
   // capture the existing global scope.
-  @Override
-  public Val exec(Env env) { return new ValFun(new ASTFun(this,null,env._scope)); }
+  @Override public Val exec(Env env) { return new ValFun(new ASTFun(this,null,env._scope)); }
 
   // Expected argument count, plus self
   @Override int nargs() { return _ids.length; }
