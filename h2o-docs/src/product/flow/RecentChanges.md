@@ -2,6 +2,22 @@
 
 ##H2O
 
+###Turchin (3.8.2.2) - 4/8/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2820'>PUBDEV-2820</a>] -         Implement max_runtime_secs to limit total runtime of building GLM models with and without cross-validation enabled
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2815'>PUBDEV-2815</a>] -         Add stratified sampling per-tree for DRF/GBM
+</li>
+</ul>
+
 ###Turchin (3.8.2.1) - 4/7/2016
 
 <h4>        Bug
