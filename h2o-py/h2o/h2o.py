@@ -403,7 +403,7 @@ def get_grid(grid_id):
   grid_json = H2OConnection.get_json("Grids/"+grid_id, _rest_version=99)
   models = [get_model(key['name']) for key in grid_json['model_ids']]
   #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-  first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=99)['models'][0]
+  first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'])['models'][0]
   gs = H2OGridSearch(None, {}, grid_id)
   gs._resolve_grid(grid_id, grid_json, first_model_json)
   gs.models = models
