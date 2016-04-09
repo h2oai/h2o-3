@@ -310,7 +310,7 @@ public class Vec extends Keyed<Vec> {
   }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeCon(0L,len); }
+  public static Vec makeZero( long len ) { return makeCon(0d,len); }
 
   /** Make a new constant vector with the given row count, and redistribute the data
    * evenly around the cluster.
@@ -338,10 +338,7 @@ public class Vec extends Keyed<Vec> {
 
   /**
    * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
-   * @param totSize
-   * @param len
-   * @return
-   */
+   *  @return New constant vector with the given row count. */
   public static Vec makeCon(long totSize, long len) {
     int safetyInflationFactor = 8;
     int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
