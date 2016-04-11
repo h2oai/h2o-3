@@ -338,7 +338,7 @@ public class InteractionWrappedVec extends WrappedVec {
       return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );
     }
     @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
-    private String getKey(int idx) { return _c[0]._vec.domain()[(int)_c[0].at8(idx)] + _c[1]._vec.domain()[(int)_c[1].at8(idx)]; }
+    private String getKey(int idx) { return _c[0]._vec.domain()[(int)_c[0].at8(idx)] + "_" + _c[1]._vec.domain()[(int)_c[1].at8(idx)]; }
     @Override public boolean isNA_impl(int idx) { return _c[0].isNA(idx) || _c[1].isNA(idx); }
     // Returns true if the masterVec is missing, false otherwise
     @Override public boolean set_impl(int idx, long l)   { return false; }
