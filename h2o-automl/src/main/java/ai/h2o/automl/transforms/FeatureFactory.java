@@ -14,7 +14,10 @@ import water.fvec.Vec;
 import water.rapids.ASTGroup;
 import water.util.IcedHashMap;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /** Automatic Synthesis of Features
  *
@@ -108,23 +111,30 @@ import java.util.HashMap;
 public class FeatureFactory {
 
   private final FrameMeta _fm;             // the input frame
-  private final String _response;     // target column
-  private final String[] _predictors; // names of predictor columns
 
   private HashMap<String,Expr> _basicTransforms;
   private Frame _basicTransformFrame;
   private Frame _catInteractions;
+  private final String _response;
+  private final String[] _predictors;
+  private final boolean _isClassification;
+
 
   /**
    * Create a new FeatureFactory for this Frame
    * @param f Frame upon which to generate new features
    */
-  public FeatureFactory(Frame f, String[] predictors, String response) {
-    _fm = new FrameMeta(f,f.find(response),f._key.toString());
+  public FeatureFactory(Frame f, String[] predictors, String response, boolean isClassification) {
     _predictors=predictors;
     _response=response;
+    _isClassification=isClassification;
+    _fm = new FrameMeta(f,f.find(response),predictors,f._key.toString(),isClassification);
   }
 
+  public void delete() {
+    if(null!=_basicTransformFrame)_basicTransformFrame.delete();
+    if(null!=_catInteractions)    _catInteractions.delete();
+  }
 
   /**
    * Build some very basic transforms by looking for rates, taking logs, and doing
@@ -159,7 +169,7 @@ public class FeatureFactory {
       Vec[] tVecs = new Vec[sz];
       int i=0;
       for(String n: names)
-        tVecs[i] = _basicTransforms.get(n).toWrappedVec();
+        tVecs[i++] = _basicTransforms.get(n).toWrappedVec();
       _basicTransformFrame = new Frame(Key.<Frame>make("basicTransFrame" + Key.make().toString()),names, tVecs);
       DKV.put(_basicTransformFrame);
     }
@@ -178,13 +188,79 @@ public class FeatureFactory {
    *
    * @return
    */
-//  public Frame synthesizeAggFeatures() {
-//    // choose group-by keys:
-//    //  1. must be categorical
-//    //  2. must have combined total-cardinality < 1M
-//    //  3. at most 5 cols per key
-//    //     =>
-//  }
+  public void synthesizeAggFeatures() {
+    // choose group-by keys:
+    //  1. must be categorical
+    //  2. must have combined total-cardinality < 1M
+    //  3. at most 5 cols per key
+    //     => and then all combinations therein
+    // AGG fcns:
+    ASTGroup.FCN[] fcns = new ASTGroup.FCN[]{ASTGroup.FCN.mean, ASTGroup.FCN.var, ASTGroup.FCN.sum, ASTGroup.FCN.nrow};
+    ArrayList<ASTGroup.AGG[]> agg = new ArrayList<>();
+    ArrayList<Integer[]> gbCols = new ArrayList<>();
+
+    HashSet<String> preds = new HashSet<>();
+    Collections.addAll(preds,_predictors);
+    Frame fullFrame = new Frame(_fm._fr.names().clone(), _fm._fr.vecs().clone());
+    if( null!=_basicTransformFrame) {
+      Collections.addAll(preds,_basicTransformFrame.names());
+      fullFrame.add(_basicTransformFrame);
+    }
+    if( null!=_catInteractions )  {
+      Collections.addAll(preds, _catInteractions.names());
+      fullFrame.add(_catInteractions);
+    }
+
+    FrameMeta fullFrameMeta = new FrameMeta(fullFrame,fullFrame.find(_response),preds.toArray(new String[preds.size()]), "synthesized_fullFrame",_isClassification);
+    fullFrameMeta.numberOfCategoricalFeatures();
+    int[] catFeats = fullFrameMeta._catFeats;
+    for(int i=0;i<catFeats.length;++i) {
+      gbCols.add(new Integer[]{catFeats[i]});
+      agg.add(makeAggs(new int[]{catFeats[i]}, fullFrameMeta));
+      for(int j=i+1;j<catFeats.length; ++j) {
+        gbCols.add(new Integer[]{catFeats[i],catFeats[j]});
+        agg.add(makeAggs(new int[]{catFeats[i],catFeats[j]},fullFrameMeta));
+//        for(int k=j+1;k<fullFrameMeta._catFeats.length;++k) {
+//          gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k]});
+//          agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k]},fullFrameMeta));
+//          for(int l=k+1;l<fullFrameMeta._catFeats.length;++l) {
+//            gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]});
+//            agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]},fullFrameMeta));
+//          }
+//        }
+      }
+    }
+    int[][] groupByCols = new int[gbCols.size()][];
+    ASTGroup.AGG[][] aggs = new ASTGroup.AGG[agg.size()][];
+
+    // could launch all group-by tasks in parallel => BIG memory overhead EEKS!
+    for(int i=0;i<groupByCols.length;++i) {
+      groupByCols[i] = new int[gbCols.get(i).length];
+      for(int j=0;j<groupByCols[i].length;++j)
+        groupByCols[i][j] = gbCols.get(i)[j];
+      aggs[i] = agg.get(i);
+    }
+    GBTasks gbs = new GBTasks(groupByCols,aggs);
+    gbs.doAll(fullFrame);
+    System.out.println();
+  }
+
+  private ASTGroup.AGG[] makeAggs(int[] gbCols, FrameMeta fm) {
+    // categorical columns get counted
+    // numerical columns get sum, mean, var
+    ArrayList<ASTGroup.AGG> aggs = new ArrayList<>();
+    int[] cols = fm.diffCols(gbCols);
+    for(int i=0; i<cols.length;++i) {
+      if( fm._fr.vec(cols[i]).isCategorical() )
+        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.nrow,cols[i], ASTGroup.NAHandling.IGNORE,-1));
+      else if( fm._fr.vec(cols[i]).isNumeric()) {
+        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.mean,cols[i], ASTGroup.NAHandling.IGNORE,-1));
+//        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.var,cols[i], ASTGroup.NAHandling.IGNORE,-1));
+//        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.sum,cols[i], ASTGroup.NAHandling.IGNORE,-1));
+      }
+    }
+    return aggs.toArray(new ASTGroup.AGG[aggs.size()]);
+  }
 
 
 
@@ -316,11 +392,12 @@ public class FeatureFactory {
     final IcedHashMap<ASTGroup.G,String> _gss[]; // Shared per-node, common, racy
     private final int[][] _gbCols; // Columns used to define group
     private final ASTGroup.AGG[][] _aggs;   // Aggregate descriptions
-    GBTasks(int[][] gbCols, ASTGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap[_gbCols.length]; }
+    GBTasks(int[][] gbCols, ASTGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap[_gbCols.length]; for(int i=0;i<_gss.length;++i) _gss[i]=new IcedHashMap<>(); }
     @Override public void map(Chunk[] cs) {
       // Groups found in this Chunk
       IcedHashMap<ASTGroup.G,String> gs[] = new IcedHashMap[_gbCols.length];
       for(int gId=0;gId<_gbCols.length;++gId) {
+        gs[gId] = new IcedHashMap<>();
         ASTGroup.G gWork = new ASTGroup.G(_gbCols[gId].length,_aggs[gId]);
         ASTGroup.G gOld;
         for( int row=0; row<cs[0]._len; row++ ) {
@@ -331,7 +408,7 @@ public class FeatureFactory {
             gWork=new ASTGroup.G(_gbCols[gId].length,_aggs[gId]);   // need entirely new G
           } else gOld=gs[gId].getk(gWork);            // Else get existing group
 
-          for( int i=0; i<_aggs.length; i++ ) // Accumulate aggregate reductions
+          for( int i=0; i<_aggs[gId].length; i++ ) // Accumulate aggregate reductions
             _aggs[gId][i].op(gOld._dss,gOld._ns,i, cs[_aggs[gId][i]._col].atd(row));
         }
       }
@@ -350,7 +427,7 @@ public class FeatureFactory {
       for( ASTGroup.G rg : r.keySet() )
         if( _gss[gID].putIfAbsent(rg,"")!=null ) {
           ASTGroup.G lg = _gss[gID].getk(rg);
-          for( int i=0; i<_aggs.length; i++ )
+          for( int i=0; i<_aggs[gID].length; i++ )
             _aggs[gID][i].atomic_op(lg._dss,lg._ns,i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
         }
     }
