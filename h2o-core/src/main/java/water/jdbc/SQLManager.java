@@ -145,7 +145,7 @@ public class SQLManager {
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        Frame fr = new SqlTableToH2OFrame(connection_url, table, username, password, columnSQLTypes, maxCon, j).doAll(columnH2OTypes, _v)
+        Frame fr = new SqlTableToH2OFrame(connection_url, table, username, password, columnSQLTypes, maxCon, _v.nChunks(), j).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
@@ -160,25 +160,27 @@ public class SQLManager {
   public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
     final String _url, _table, _user, _password;
     final int[] _sqlColumnTypes;
-    final int _maxCon;
+    final int _nChunks, _maxCon;
     final Job _job;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
-    public SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes, int maxCon, Job job) {
+    public SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes, int maxCon, int nChunks, Job job) {
       _url = url;
       _table = table;
       _user = user;
       _password = password;
       _sqlColumnTypes = sqlColumnTypes;
       _maxCon = maxCon;
+      _nChunks = nChunks;
       _job = job;
 
     }
 
     @Override
     protected void setupLocal() {
-      int conPerNode = Math.min(Runtime.getRuntime().availableProcessors(), _maxCon / H2O.getCloudSize());
+      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks/ H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
+      conPerNode = Math.min(conPerNode, _maxCon / H2O.getCloudSize()); //upper bound on number of connections
       Log.info("Database connections per node: " + conPerNode);
       sqlConn = new ArrayBlockingQueue<>(conPerNode);
       try {
