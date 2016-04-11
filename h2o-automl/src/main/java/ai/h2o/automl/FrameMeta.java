@@ -23,8 +23,9 @@ import java.util.List;
  * Cache common questions asked upon the frame.
  */
 public class FrameMeta extends Iced {
-  final String _datasetName;
-  final Frame _fr;
+  public final String _datasetName;
+  public final Frame _fr;
+  public int[] _catFeats;
   public int[] _numFeats;
   public int[] _intCols;
   public int[] _dblCols;
@@ -133,8 +134,17 @@ public class FrameMeta extends Iced {
 
   public int numberOfCategoricalFeatures() {
     if( _catFeat!=-1 ) return _catFeat;
+    ArrayList<Integer> idxs = new ArrayList<>();
     int cnt=0;
-    for(Vec v: _fr.vecs()) cnt+= v.isCategorical() ? 1 : 0;
+    int idx=0;
+    for(Vec v: _fr.vecs())  {
+      if( v.isCategorical() ) {
+        cnt += 1;
+        idxs.add(idx);
+      }
+      idx++;
+    }
+    _catFeats = intListToA(idxs);
     return (_catFeat=cnt);
   }
 
