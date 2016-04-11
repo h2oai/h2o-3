@@ -2127,9 +2127,7 @@ class H2OFrame(object):
     -------
       Single-column H2OFrame filled with doubles sampled uniformly from [0,1).
     """
-    if seed==-1 or seed is None:
-      seed = random.randint(1, sys.maxint)
-    fr = H2OFrame._expr(expr=ExprNode("h2o.runif", self, seed))
+    fr = H2OFrame._expr(expr=ExprNode("h2o.runif", self, -1 if seed is None else seed))
     fr._ex._cache.ncols=1
     fr._ex._cache.nrows=self.nrow
     return fr
