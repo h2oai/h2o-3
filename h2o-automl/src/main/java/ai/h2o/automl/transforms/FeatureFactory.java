@@ -4,9 +4,15 @@ import ai.h2o.automl.FrameMeta;
 import hex.Model;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import water.DKV;
 import water.H2O;
+import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.rapids.ASTGroup;
+import water.util.IcedHashMap;
 
 import java.util.HashMap;
 
@@ -106,6 +112,8 @@ public class FeatureFactory {
   private final String[] _predictors; // names of predictor columns
 
   private HashMap<String,Expr> _basicTransforms;
+  private Frame _basicTransformFrame;
+  private Frame _catInteractions;
 
   /**
    * Create a new FeatureFactory for this Frame
@@ -139,6 +147,21 @@ public class FeatureFactory {
       cnt += tryRates(nBasicFeats-cnt);
       cnt += tryCombos(nBasicFeats-cnt);
       // cnt += tryTime(nBasicFeats-cnt);
+      cnt += tryCatInteractions(nBasicFeats-cnt);
+      generateBasicTransformFrame();
+    }
+  }
+
+  private void generateBasicTransformFrame() {
+    int sz;
+    if( (sz=_basicTransforms.size()) > 0) {
+      String[] names = _basicTransforms.keySet().toArray(new String[sz]);
+      Vec[] tVecs = new Vec[sz];
+      int i=0;
+      for(String n: names)
+        tVecs[i] = _basicTransforms.get(n).toWrappedVec();
+      _basicTransformFrame = new Frame(Key.<Frame>make("basicTransFrame" + Key.make().toString()),names, tVecs);
+      DKV.put(_basicTransformFrame);
     }
   }
 
@@ -150,18 +173,19 @@ public class FeatureFactory {
    * want to compute these types of aggregates:
    *    mean, sum, var, count
    *
-   *  over the original columns + any basic columns above
-   *
-   *
+   *  over the original columns + any basic synthesize features
    *  Can do a single pass to compute all group-by results (for all groupings).
    *
    * @return
    */
-  public Frame synthesizeAggFeatures() {
+//  public Frame synthesizeAggFeatures() {
+//    // choose group-by keys:
+//    //  1. must be categorical
+//    //  2. must have combined total-cardinality < 1M
+//    //  3. at most 5 cols per key
+//    //     =>
+//  }
 
-    return null;
-
-  }
 
 
   /**
@@ -221,6 +245,16 @@ public class FeatureFactory {
     return cnt;
   }
 
+  private int tryCatInteractions(int maxFeats) {
+    int cnt=0;
+    if( cnt >= maxFeats ) return cnt;
+    _fm.numberOfCategoricalFeatures();
+    Model.InteractionPair[] ips = Model.InteractionPair.generatePairwiseInteractionsFromList(_fm._catFeats);
+    _catInteractions = Model.makeInteractions(_fm._fr, false, ips, true,false,false);
+    cnt += _catInteractions.numCols();
+    return cnt;
+  }
+
 
   // launch a model and monitor performance on some holdout set
   // for sake of getting something done, the model is GBM and we monitor first
@@ -275,5 +309,50 @@ public class FeatureFactory {
       return p;
     }
     protected GBM makeModelBuilder(Model.Parameters p) { return new GBM((GBMModel.GBMParameters)p); }
+  }
+
+
+  private static class GBTasks extends MRTask<GBTasks> {
+    final IcedHashMap<ASTGroup.G,String> _gss[]; // Shared per-node, common, racy
+    private final int[][] _gbCols; // Columns used to define group
+    private final ASTGroup.AGG[][] _aggs;   // Aggregate descriptions
+    GBTasks(int[][] gbCols, ASTGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap[_gbCols.length]; }
+    @Override public void map(Chunk[] cs) {
+      // Groups found in this Chunk
+      IcedHashMap<ASTGroup.G,String> gs[] = new IcedHashMap[_gbCols.length];
+      for(int gId=0;gId<_gbCols.length;++gId) {
+        ASTGroup.G gWork = new ASTGroup.G(_gbCols[gId].length,_aggs[gId]);
+        ASTGroup.G gOld;
+        for( int row=0; row<cs[0]._len; row++ ) {
+          // Find the Group being worked on
+          gWork.fill(row,cs,_gbCols[gId]);            // Fill the worker Group for the hashtable lookup
+          if( gs[gId].putIfAbsent(gWork,"")==null ) { // Insert if not absent (note: no race, no need for atomic)
+            gOld=gWork;                          // Inserted 'gWork' into table
+            gWork=new ASTGroup.G(_gbCols[gId].length,_aggs[gId]);   // need entirely new G
+          } else gOld=gs[gId].getk(gWork);            // Else get existing group
+
+          for( int i=0; i<_aggs.length; i++ ) // Accumulate aggregate reductions
+            _aggs[gId][i].op(gOld._dss,gOld._ns,i, cs[_aggs[gId][i]._col].atd(row));
+        }
+      }
+      reduce(gs);               // Atomically merge Group stats
+    }
+    // Racy update on a subtle path: reduction is always single-threaded, but
+    // the shared global hashtable being reduced into is ALSO being written by
+    // parallel map calls.
+    @Override public void reduce(GBTasks t) { if( _gss != t._gss ) reduce(t._gss); }
+    // Non-blocking race-safe update of the shared per-node groups hashtable
+    private void reduce(IcedHashMap<ASTGroup.G,String>[] r) {
+      for(int gId=0;gId<r.length;++gId)
+        reduce(r[gId],gId);
+    }
+    private void reduce( IcedHashMap<ASTGroup.G,String> r, int gID ) {
+      for( ASTGroup.G rg : r.keySet() )
+        if( _gss[gID].putIfAbsent(rg,"")!=null ) {
+          ASTGroup.G lg = _gss[gID].getk(rg);
+          for( int i=0; i<_aggs.length; i++ )
+            _aggs[gID][i].atomic_op(lg._dss,lg._ns,i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+        }
+    }
   }
 }
