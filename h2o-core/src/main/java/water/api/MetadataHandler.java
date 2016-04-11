@@ -26,7 +26,18 @@ public class MetadataHandler extends Handler {
     docs.routes = new RouteBase[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
-      docs.routes[i++] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
+      docs.routes[i] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
+
+      // ModelBuilder input / output schema hackery
+      MetadataV3 look = new MetadataV3();
+      look.routes = new RouteBase[1];
+      look.routes[0] = docs.routes[i];
+      look.path = route._url_pattern.toString();
+      look.http_method = route._http_method;
+      look = fetchRoute(version, look);
+
+      docs.routes[i].input_schema = look.routes[0].input_schema;
+      docs.routes[i].output_schema = look.routes[0].output_schema;
 
       builder.tableRow(
               route._http_method,
@@ -34,6 +45,7 @@ public class MetadataHandler extends Handler {
               Handler.getHandlerMethodInputSchema(route._handler_method).getSimpleName(),
               Handler.getHandlerMethodOutputSchema(route._handler_method).getSimpleName(),
               route._summary);
+      i++;
     }
 
     docs.markdown = builder.toString();
@@ -75,6 +87,8 @@ public class MetadataHandler extends Handler {
       sinput  = Schema.newInstance(Handler.getHandlerMethodInputSchema (route._handler_method));
       soutput = Schema.newInstance(Handler.getHandlerMethodOutputSchema(route._handler_method));
     }
+    docs.routes[0].input_schema = sinput.getClass().getSimpleName();
+    docs.routes[0].output_schema = soutput.getClass().getSimpleName();
     docs.routes[0].markdown = route.markdown(sinput,soutput).toString();
     return docs;
   }
