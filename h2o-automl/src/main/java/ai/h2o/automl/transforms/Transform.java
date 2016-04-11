@@ -40,14 +40,6 @@ public class Transform {
     timeOpsList.add("week"); timeOpsList.add("dayOfWeek");
     advancedOpsList.add("Impute"); advancedOpsList.add("Cut");
 
-
-//    Reflections reflections = new Reflections("water.rapids");
-//
-//    Set<Class<? extends ASTUniOp>> uniOpClasses = reflections.getSubTypesOf(water.rapids.ASTUniOp.class);
-//
-//    for(Class c: uniOpClasses)
-//      ops.add(c.getSimpleName().substring("AST".length()));
-
     opsList.addAll(basicOpsList);
     opsList.addAll(binaryOpsList);
     opsList.addAll(timeOpsList);
@@ -59,11 +51,13 @@ public class Transform {
     advancedOps = advancedOpsList.toArray(new String[advancedOpsList.size()]);
   }
   public static void printOps() { for(String op: ops) System.out.println(op); }
-
-
-  // for AutoCollect type scenario:
-  //  1. decide if situation 1, 2, or 3
-  //  2. "apply" the transformation (push the transformed vec onto the pile)
-
-
 }
+
+
+
+//    Reflections reflections = new Reflections("water.rapids");
+//
+//    Set<Class<? extends ASTUniOp>> uniOpClasses = reflections.getSubTypesOf(water.rapids.ASTUniOp.class);
+//
+//    for(Class c: uniOpClasses)
+//      ops.add(c.getSimpleName().substring("AST".length()));
