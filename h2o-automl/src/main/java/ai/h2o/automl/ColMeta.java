@@ -99,7 +99,7 @@ public class ColMeta extends Iced {
     _ignored=ignored;
     _idx = idx;
     _nameType=ColNameScanner.IGNORED;
-    if( !_ignored ) {
+    if( !_ignored || response ) {
       _nameType = ColNameScanner.scan(_name);
       _response = response;
       _specialNAs = new SpecialNA(
@@ -132,6 +132,7 @@ public class ColMeta extends Iced {
     if( _v.isBinary() ) return "none";
     if( _v.isTime() || _isDate ) return "time";  // actually we have a time/date column, so apply some time transforms
     if( _v.max() - _v.min() > 2e10) return "log";  // take a log if spans more than 2 orders
+//    if( _v.isInt() && (_v.b))
     return Transform.basicOps[new Random().nextInt(Transform.basicOps.length)];  // choose a random log to just try
   }
 
