@@ -14,16 +14,13 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Cache common questions asked upon the frame.
  */
 public class FrameMeta extends Iced {
-  public final String _datasetName;
+  final String _datasetName;
   public final Frame _fr;
   public int[] _catFeats;
   public int[] _numFeats;
@@ -31,7 +28,7 @@ public class FrameMeta extends Iced {
   public int[] _dblCols;
   public int[] _binaryCols;
   public int[] _intNotBinaryCols;
-  private final int _response;
+  final int _response;
   private long _naCnt=-1;  // count of nas across whole frame
   private int _numFeat=-1; // count of numerical features
   private int _catFeat=-1; // count of categorical features
@@ -119,7 +116,6 @@ public class FrameMeta extends Iced {
     _dblCols  = intListToA(dblCols);
     _binaryCols  = intListToA(binCols);
     _intNotBinaryCols = intListToA(intNotBinCols);
-
     return (_numFeat=cnt);
   }
 
@@ -170,6 +166,15 @@ public class FrameMeta extends Iced {
     _fr=fr;
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
+    if( _includeCols==null )
+      for (int i = 0; i < _fr.numCols(); ++i)
+        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response);
+    else {
+      HashSet<String> preds = new HashSet<>();
+      Collections.addAll(preds,_includeCols);
+      for(int i=0;i<_fr.numCols();++i)
+        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response,!preds.contains(_fr.name(i)));
+    }
   }
 
   public FrameMeta(Frame fr, int response, String datasetName, boolean isClassification) {
