@@ -5,6 +5,8 @@ import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.grid.Grid;
+import hex.grid.GridSearch;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
@@ -12,6 +14,7 @@ import hex.tree.gbm.GBMModel;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
+
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -23,102 +26,187 @@ public class TestCase {
   private int testCaseId;
   private String algo;
   private String algoParameters;
-  private boolean tuned;
+  private boolean grid;
+  private String gridParameters;
+  private String gridCriteria;
   private boolean regression;
   private int trainingDataSetId;
   private int testingDataSetId;
+  private String testCaseDescription;
 
   private Model.Parameters params;
   private DataSet trainingDataSet;
   private DataSet testingDataSet;
+  private HashMap<String, Object[]> hyperParms;
 
-  public TestCase(int testCaseId, String algo, String algoParameters, boolean tuned, boolean regression, int
-    trainingDataSetId, int testingDataSetId) throws Exception {
+  private static boolean glmRegistered = false;
+  private static boolean gbmRegistered = false;
+  private static boolean drfRegistered = false;
+  private static boolean dlRegistered = false;
+
+  public TestCase(int testCaseId, String algo, String algoParameters, boolean grid, String gridParameters,
+                  String gridCriteria, boolean regression, int trainingDataSetId, int testingDataSetId,
+                  String testCaseDescription) throws Exception {
     this.testCaseId = testCaseId;
     this.algo = algo;
     this.algoParameters = algoParameters;
-    this.tuned = tuned;
+    this.grid = grid;
+    this.gridParameters = gridParameters;
+    this.gridCriteria = gridCriteria;
     this.regression = regression;
     this.trainingDataSetId = trainingDataSetId;
     this.testingDataSetId = testingDataSetId;
+    this.testCaseDescription = testCaseDescription;
 
     trainingDataSet = new DataSet(this.trainingDataSetId);
     testingDataSet = new DataSet(this.testingDataSetId);
   }
 
-  public int getTestCaseId() { return testCaseId; }
+  public int getTestCaseId() {
+    return testCaseId;
+  }
 
   public TestCaseResult execute() throws Exception, AssertionError {
     loadTestCaseDataSets();
-
     makeModelParameters();
 
-    Model.Output modelOutput = null;
+    double startTime = 0, stopTime = 0;
+    if (!grid) {
+      Model.Output modelOutput = null;
+      DRF drfJob;
+      DRFModel drfModel = null;
+      GLM glmJob;
+      GLMModel glmModel = null;
+      GBM gbmJob;
+      GBMModel gbmModel = null;
+      DeepLearning dlJob;
+      DeepLearningModel dlModel = null;
+      String bestModelJson = null;
 
-    DRF drfJob = null;
-    DRFModel drfModel = null;
-    GLM glmJob = null;
-    GLMModel glmModel = null;
-    GBM gbmJob = null;
-    GBMModel gbmModel = null;
-    DeepLearning dlJob = null;
-    DeepLearningModel dlModel = null;
-
-    double modelStartTime = 0, modelStopTime = 0;
-
-    try {
-      Scope.enter();
-      switch (algo) {
-        case "drf":
-          drfJob = new DRF((DRFModel.DRFParameters) params);
-          AccuracyTestingSuite.summaryLog.println("Training DRF model.");
-          modelStartTime = System.currentTimeMillis();
-          drfModel = drfJob.trainModel().get();
-          modelStopTime = System.currentTimeMillis();
-          modelOutput = drfModel._output;
-          break;
-        case "glm":
-          glmJob = new GLM((GLMModel.GLMParameters) params,Key.<GLMModel>make("GLMModel"));
-          AccuracyTestingSuite.summaryLog.println("Training GLM model.");
-          modelStartTime = System.currentTimeMillis();
-          glmModel = glmJob.trainModel().get();
-          modelStopTime = System.currentTimeMillis();
-          modelOutput = glmModel._output;
-          break;
-        case "gbm":
-          gbmJob = new GBM((GBMModel.GBMParameters) params);
-          AccuracyTestingSuite.summaryLog.println("Training GBM model.");
-          modelStartTime = System.currentTimeMillis();
-          gbmModel = gbmJob.trainModel().get();
-          modelStopTime = System.currentTimeMillis();
-          modelOutput = gbmModel._output;
-          break;
-        case "dl":
-          dlJob = new DeepLearning((DeepLearningModel.DeepLearningParameters) params);
-          AccuracyTestingSuite.summaryLog.println("Training DL model.");
-          modelStartTime = System.currentTimeMillis();
-          dlModel = dlJob.trainModel().get();
-          modelStopTime = System.currentTimeMillis();
-          modelOutput = dlModel._output;
-          break;
+      try {
+        switch (algo) {
+          case "drf":
+            drfJob = new DRF((DRFModel.DRFParameters) params);
+            AccuracyTestingSuite.summaryLog.println("Training DRF model.");
+            startTime = System.currentTimeMillis();
+            drfModel = drfJob.trainModel().get();
+            stopTime = System.currentTimeMillis();
+            modelOutput = drfModel._output;
+            bestModelJson = drfModel._parms.toJsonString();
+            break;
+          case "glm":
+            glmJob = new GLM((GLMModel.GLMParameters) params, Key.<GLMModel>make("GLMModel"));
+            AccuracyTestingSuite.summaryLog.println("Training GLM model.");
+            startTime = System.currentTimeMillis();
+            glmModel = glmJob.trainModel().get();
+            stopTime = System.currentTimeMillis();
+            modelOutput = glmModel._output;
+            bestModelJson = glmModel._parms.toJsonString();
+            break;
+          case "gbm":
+            gbmJob = new GBM((GBMModel.GBMParameters) params);
+            AccuracyTestingSuite.summaryLog.println("Training GBM model.");
+            startTime = System.currentTimeMillis();
+            gbmModel = gbmJob.trainModel().get();
+            stopTime = System.currentTimeMillis();
+            modelOutput = gbmModel._output;
+            bestModelJson = gbmModel._parms.toJsonString();
+            break;
+          case "dl":
+            dlJob = new DeepLearning((DeepLearningModel.DeepLearningParameters) params);
+            AccuracyTestingSuite.summaryLog.println("Training DL model.");
+            startTime = System.currentTimeMillis();
+            dlModel = dlJob.trainModel().get();
+            stopTime = System.currentTimeMillis();
+            modelOutput = dlModel._output;
+            bestModelJson = dlModel._parms.toJsonString();
+            break;
+        }
+      } catch (Exception e) {
+        throw new Exception(e);
+      } finally {
+        if (drfModel != null) {
+          drfModel.delete();
+        }
+        if (glmModel != null) {
+          glmModel.delete();
+        }
+        if (gbmModel != null) {
+          gbmModel.delete();
+        }
+        if (dlModel != null) {
+          dlModel.delete();
+        }
       }
-    } catch (Exception e) {
-      throw new Exception(e);
-    } finally {
-      if (drfModel != null) { drfModel.delete(); }
-      if (glmModel != null) { glmModel.delete(); }
-      if (gbmModel != null) { gbmModel.delete(); }
-      if (dlModel != null)  { dlModel.delete(); }
-      Scope.exit();
+      removeTestCaseDataSetFrames();
+      return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+              getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson);
+    } else {
+      assert !gridCriteria.equals("");
+      makeGridParameters();
+      Grid grid = null;
+      Model bestModel = null;
+      String bestModelJson = null;
+      try {
+        switch (algo) {  // TODO: Hack for PUBDEV-2812
+          case "drf":
+            if (!drfRegistered) {
+              new DRF(true);
+              drfRegistered = true;
+            }
+            break;
+          case "glm":
+            if (!glmRegistered) {
+              new GLM(true);
+              glmRegistered = true;
+            }
+            break;
+          case "gbm":
+            if (!gbmRegistered) {
+              new GBM(true);
+              gbmRegistered = true;
+            }
+            break;
+          case "dl":
+            if (!dlRegistered) {
+              new DeepLearning(true);
+              dlRegistered = true;
+            }
+            break;
+        }
+        startTime = System.currentTimeMillis();
+        Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+        grid = gs.get();
+        stopTime = System.currentTimeMillis();
+
+        boolean higherIsBetter = higherIsBetter(gridCriteria);
+        double bestScore = higherIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
+        for (Model m : grid.getModels()) {
+          double validationMetricScore = getMetrics(m._output._validation_metrics).get(gridCriteria);
+          AccuracyTestingSuite.summaryLog.println(gridCriteria + " for model " + m._key.toString() + " is " +
+                  validationMetricScore);
+          if (higherIsBetter ? validationMetricScore > bestScore : validationMetricScore < bestScore) {
+            bestScore = validationMetricScore;
+            bestModel = m;
+            bestModelJson = bestModel._parms.toJsonString();
+          }
+        }
+        AccuracyTestingSuite.summaryLog.println("Best model: " + bestModel._key.toString());
+        AccuracyTestingSuite.summaryLog.println("Best model parameters: " + bestModelJson);
+      } catch (Exception e) {
+        throw new Exception(e);
+      } finally {
+        if (grid != null) {
+          grid.delete();
+        }
+      }
+      removeTestCaseDataSetFrames();
+      return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+              getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson);
     }
-
-    removeTestCaseDataSetFrames();
-
-    return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-      getMetrics(modelOutput._validation_metrics), modelStopTime - modelStartTime);
   }
 
-  private void loadTestCaseDataSets() throws IOException{
+  private void loadTestCaseDataSets() throws IOException {
     trainingDataSet.load(regression);
     testingDataSet.load(regression);
   }
@@ -128,7 +216,7 @@ public class TestCase {
     testingDataSet.removeFrame();
   }
 
-  private void makeModelParameters() throws Exception{
+  private void makeModelParameters() throws Exception {
     switch (algo) {
       case "drf":
         params = makeDrfModelParameters();
@@ -147,44 +235,70 @@ public class TestCase {
     }
   }
 
-  private HashMap<String,Double> getMetrics(ModelMetrics mm) {
-    HashMap<String,Double> mmMap = new HashMap<String,Double>();
+  private void makeGridParameters() throws Exception {
+    switch (algo) {
+      case "drf":
+        hyperParms = makeDrfGridParameters();
+        break;
+      case "glm":
+        hyperParms = makeGlmGridParameters();
+        break;
+      case "dl":
+        hyperParms = makeDlGridParameters();
+        break;
+      case "gbm":
+        hyperParms = makeGbmGridParameters();
+        break;
+      default:
+        throw new Exception("No algo: " + algo);
+    }
+  }
+
+  private HashMap<String, Double> getMetrics(ModelMetrics mm) {
+    HashMap<String, Double> mmMap = new HashMap<String, Double>();
     // Supervised metrics
-    mmMap.put("MSE",mm.mse());
-    mmMap.put("R2",((ModelMetricsSupervised) mm).r2());
+    mmMap.put("MSE", mm.mse());
+    mmMap.put("R2", ((ModelMetricsSupervised) mm).r2());
     // Regression metrics
-    if(mm instanceof ModelMetricsRegression) {
-      mmMap.put("MeanResidualDeviance",((ModelMetricsRegression) mm)._mean_residual_deviance);
+    if (mm instanceof ModelMetricsRegression) {
+      mmMap.put("MeanResidualDeviance", ((ModelMetricsRegression) mm)._mean_residual_deviance);
     }
     // Binomial metrics
-    if(mm instanceof ModelMetricsBinomial) {
-      mmMap.put("AUC",((ModelMetricsBinomial) mm).auc());
-      mmMap.put("Gini",((ModelMetricsBinomial) mm)._auc._gini);
-      mmMap.put("Logloss",((ModelMetricsBinomial) mm).logloss());
-      mmMap.put("F1",((ModelMetricsBinomial) mm).cm().F1());
-      mmMap.put("F2",((ModelMetricsBinomial) mm).cm().F2());
-      mmMap.put("F0point5",((ModelMetricsBinomial) mm).cm().F0point5());
-      mmMap.put("Accuracy",((ModelMetricsBinomial) mm).cm().accuracy());
-      mmMap.put("Error",((ModelMetricsBinomial) mm).cm().err());
-      mmMap.put("Precision",((ModelMetricsBinomial) mm).cm().precision());
-      mmMap.put("Recall",((ModelMetricsBinomial) mm).cm().recall());
-      mmMap.put("MCC",((ModelMetricsBinomial) mm).cm().mcc());
-      mmMap.put("MaxPerClassError",((ModelMetricsBinomial) mm).cm().max_per_class_error());
+    if (mm instanceof ModelMetricsBinomial) {
+      mmMap.put("AUC", ((ModelMetricsBinomial) mm).auc());
+      mmMap.put("Gini", ((ModelMetricsBinomial) mm)._auc._gini);
+      mmMap.put("Logloss", ((ModelMetricsBinomial) mm).logloss());
+      mmMap.put("F1", ((ModelMetricsBinomial) mm).cm().F1());
+      mmMap.put("F2", ((ModelMetricsBinomial) mm).cm().F2());
+      mmMap.put("F0point5", ((ModelMetricsBinomial) mm).cm().F0point5());
+      mmMap.put("Accuracy", ((ModelMetricsBinomial) mm).cm().accuracy());
+      mmMap.put("Error", ((ModelMetricsBinomial) mm).cm().err());
+      mmMap.put("Precision", ((ModelMetricsBinomial) mm).cm().precision());
+      mmMap.put("Recall", ((ModelMetricsBinomial) mm).cm().recall());
+      mmMap.put("MCC", ((ModelMetricsBinomial) mm).cm().mcc());
+      mmMap.put("MaxPerClassError", ((ModelMetricsBinomial) mm).cm().max_per_class_error());
+    }
+    // Multinomial metrics
+    if (mm instanceof ModelMetricsMultinomial) {
+      mmMap.put("Logloss", ((ModelMetricsMultinomial) mm).logloss());
+      mmMap.put("Error", ((ModelMetricsMultinomial) mm).cm().err());
+      mmMap.put("MaxPerClassError", ((ModelMetricsMultinomial) mm).cm().max_per_class_error());
+      mmMap.put("Accuracy", ((ModelMetricsMultinomial) mm).cm().accuracy());
     }
     // GLM-specific metrics
-    if(mm instanceof ModelMetricsRegressionGLM) {
-      mmMap.put("ResidualDeviance",((ModelMetricsRegressionGLM) mm)._resDev);
-      mmMap.put("ResidualDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) mm)._residualDegressOfFreedom);
-      mmMap.put("NullDeviance",((ModelMetricsRegressionGLM) mm)._nullDev);
-      mmMap.put("NullDegreesOfFreedom",(double)((ModelMetricsRegressionGLM) mm)._nullDegressOfFreedom);
-      mmMap.put("AIC",((ModelMetricsRegressionGLM) mm)._AIC);
+    if (mm instanceof ModelMetricsRegressionGLM) {
+      mmMap.put("ResidualDeviance", ((ModelMetricsRegressionGLM) mm)._resDev);
+      mmMap.put("ResidualDegreesOfFreedom", (double) ((ModelMetricsRegressionGLM) mm)._residualDegressOfFreedom);
+      mmMap.put("NullDeviance", ((ModelMetricsRegressionGLM) mm)._nullDev);
+      mmMap.put("NullDegreesOfFreedom", (double) ((ModelMetricsRegressionGLM) mm)._nullDegressOfFreedom);
+      mmMap.put("AIC", ((ModelMetricsRegressionGLM) mm)._AIC);
     }
-    if(mm instanceof ModelMetricsBinomialGLM) {
-      mmMap.put("ResidualDeviance",((ModelMetricsBinomialGLM) mm)._resDev);
-      mmMap.put("ResidualDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) mm)._residualDegressOfFreedom);
-      mmMap.put("NullDeviance",((ModelMetricsBinomialGLM) mm)._nullDev);
-      mmMap.put("NullDegreesOfFreedom",(double)((ModelMetricsBinomialGLM) mm)._nullDegressOfFreedom);
-      mmMap.put("AIC",((ModelMetricsBinomialGLM) mm)._AIC);
+    if (mm instanceof ModelMetricsBinomialGLM) {
+      mmMap.put("ResidualDeviance", ((ModelMetricsBinomialGLM) mm)._resDev);
+      mmMap.put("ResidualDegreesOfFreedom", (double) ((ModelMetricsBinomialGLM) mm)._residualDegressOfFreedom);
+      mmMap.put("NullDeviance", ((ModelMetricsBinomialGLM) mm)._nullDev);
+      mmMap.put("NullDegreesOfFreedom", (double) ((ModelMetricsBinomialGLM) mm)._nullDegressOfFreedom);
+      mmMap.put("AIC", ((ModelMetricsBinomialGLM) mm)._AIC);
     }
     return mmMap;
   }
@@ -192,97 +306,111 @@ public class TestCase {
   private GLMModel.GLMParameters makeGlmModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making GLM model parameters.");
     GLMModel.GLMParameters glmParams = new GLMModel.GLMParameters();
-    String[] glmAlgoParamsMap = new String[]{
-      "gaussian",
-      "binomial",
-      "poisson",
-      "gamma",
-      "tweedie",
-      "auto",
-      "irlsm",
-      "lbfgs",
-      "coordinate_descent_naive",
-      "coordinate_descent",
-      "_nfolds",
-      "_fold_column",
-      "_ignore_const_cols",
-      "_offset_column",
-      "_weights_column",
-      "_alpha",
-      "_lambda",
-      "_lambda_search",
-      "_standardize",
-      "_non_negative",
-      "betaConstraints",
-      "lowerBound",
-      "upperBound",
-      "",
-      "_intercept",
-      "_prior",
-      "_max_active_predictors"
-    };
-
     String[] tokens = algoParameters.trim().split(";", -1);
-    assert tokens.length == 27;
-
-    // _distribution
-    if      (tokens[0].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gaussian; }
-    else if (tokens[1].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.binomial; }
-    else if (tokens[2].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.poisson; }
-    else if (tokens[3].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.gamma; }
-    else if (tokens[4].equals("x")) { glmParams._family = GLMModel.GLMParameters.Family.tweedie; }
-
-    // _solver
-    if      (tokens[5].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.AUTO; }
-    else if (tokens[6].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.IRLSM; }
-    else if (tokens[7].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.L_BFGS; }
-    else if (tokens[8].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT_NAIVE; }
-    else if (tokens[9].equals("x")) { glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT; }
-
-    for (int i = 10; i < tokens.length; i++) {
-      if (tokens[i].isEmpty() || i == 20 || i == 21 || i == 22 || i == 23) { continue; } // skip _beta_constraints
-      switch (glmAlgoParamsMap[i]) {
-        case "_nfolds":                    glmParams._nfolds = Integer.parseInt(tokens[i]);
+    for (int i = 0; i < tokens.length; i++) {
+      String parameterName = tokens[i].split("=", -1)[0];
+      String parameterValue = tokens[i].split("=", -1)[1];
+      switch (parameterName) {
+        case "_distribution":
+          switch (parameterValue) {
+            case "AUTO":
+              glmParams._distribution = Distribution.Family.AUTO;
+              break;
+            case "gaussian":
+              glmParams._distribution = Distribution.Family.gaussian;
+              break;
+            case "bernoulli":
+              glmParams._distribution = Distribution.Family.bernoulli;
+              break;
+            case "multinomial":
+              glmParams._distribution = Distribution.Family.multinomial;
+              break;
+            case "poisson":
+              glmParams._distribution = Distribution.Family.poisson;
+              break;
+            case "gamma":
+              glmParams._distribution = Distribution.Family.gamma;
+              break;
+            case "tweedie":
+              glmParams._distribution = Distribution.Family.tweedie;
+              break;
+            default:
+              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+          }
           break;
-        case "_fold_column":               glmParams._fold_column = tokens[i];
+        case "_solver":
+          switch (parameterValue) {
+            case "AUTO":
+              glmParams._solver = GLMModel.GLMParameters.Solver.AUTO;
+              break;
+            case "irlsm":
+              glmParams._solver = GLMModel.GLMParameters.Solver.IRLSM;
+              break;
+            case "lbfgs":
+              glmParams._solver = GLMModel.GLMParameters.Solver.L_BFGS;
+              break;
+            case "coordinate_descent_naive":
+              glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT_NAIVE;
+              break;
+            case "coordinate_descent":
+              glmParams._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
+              break;
+            default:
+              throw new Exception(parameterValue + " solver is not supported for gbm test cases");
+          }
           break;
-        case "_ignore_const_cols":         glmParams._ignore_const_cols = true;
+        case "_nfolds":
+          glmParams._nfolds = Integer.parseInt(parameterValue);
           break;
-        case "_offset_column":             glmParams._offset_column = tokens[i];
+        case "_fold_column":
+          glmParams._fold_column = tokens[i];
           break;
-        case "_weights_column":            glmParams._weights_column = tokens[i];
+        case "_ignore_const_cols":
+          glmParams._ignore_const_cols = true;
           break;
-        case "_alpha":                     glmParams._alpha = new double[]{Double.parseDouble(tokens[i])};
+        case "_offset_column":
+          glmParams._offset_column = tokens[i];
           break;
-        case "_lambda":                    glmParams._lambda = new double[]{Double.parseDouble(tokens[i])};
+        case "_weights_column":
+          glmParams._weights_column = tokens[i];
           break;
-        case "_lambda_search":             glmParams._lambda_search = true;
+        case "_alpha":
+          glmParams._alpha = new double[]{Double.parseDouble(parameterValue)};
           break;
-        case "_standardize":               glmParams._standardize = true;
+        case "_lambda":
+          glmParams._lambda = new double[]{Double.parseDouble(parameterValue)};
           break;
-        case "_non_negative":              glmParams._non_negative = true;
+        case "_lambda_search":
+          glmParams._lambda_search = true;
           break;
-        case "_intercept":                 glmParams._intercept = true;
+        case "_standardize":
+          glmParams._standardize = true;
           break;
-        case "_prior":                     glmParams._prior = Double.parseDouble(tokens[i]);
+        case "_non_negative":
+          glmParams._non_negative = true;
           break;
-        case "_max_active_predictors":     glmParams._max_active_predictors = Integer.parseInt(tokens[i]);
+        case "_intercept":
+          glmParams._intercept = true;
+          break;
+        case "_prior":
+          glmParams._prior = Double.parseDouble(parameterValue);
+          break;
+        case "_max_active_predictors":
+          glmParams._max_active_predictors = Integer.parseInt(parameterValue);
+          break;
+        case "_beta_constraints":
+          double lowerBound = Double.parseDouble(tokens[i].split("|")[0]);
+          double upperBound = Double.parseDouble(tokens[i].split("|")[1]);
+          glmParams._beta_constraints = makeBetaConstraints(lowerBound, upperBound);
           break;
         default:
-          throw new Exception(glmAlgoParamsMap[i] + " parameter is not supported for glm test cases");
+          throw new Exception(parameterName + " parameter is not supported for glm test cases");
       }
     }
     // _train, _valid, _response
     glmParams._train = trainingDataSet.getFrame()._key;
     glmParams._valid = testingDataSet.getFrame()._key;
     glmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
-
-    // beta constraints
-    if (tokens[20].equals("x")) {
-      double lowerBound = Double.parseDouble(tokens[21]);
-      double upperBound = Double.parseDouble(tokens[22]);
-      glmParams._beta_constraints = makeBetaConstraints(lowerBound, upperBound);
-    }
     return glmParams;
   }
 
@@ -300,8 +428,7 @@ public class TestCase {
           for (String level : trainingFrame.vec(name).domain()) {
             betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
           }
-        }
-        else { // numeric columns only need one coefficient name
+        } else { // numeric columns only need one coefficient name
           betaConstraintsString += String.format("%s,%s,%s\n", name, lowerBound, upperBound);
         }
       }
@@ -311,92 +438,119 @@ public class TestCase {
     return ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey)._key;
   }
 
+  private HashMap<String, Object[]> makeGlmGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making GLM grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> glmHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      if (tokens[i].equals("")) return glmHyperParms;
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_alpha":
+          glmHyperParms.put("_alpha", stringArrayToDoubleAA(gridParameterValues));
+          break;
+        case "_lambda":
+          glmHyperParms.put("_lambda", stringArrayToDoubleAA(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for glm test cases");
+      }
+    }
+    return glmHyperParms;
+  }
+
   private GBMModel.GBMParameters makeGbmModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making GBM model parameters.");
     GBMModel.GBMParameters gbmParams = new GBMModel.GBMParameters();
-    String[] gbmAlgoParamsMap = new String[]{
-      "auto",
-      "gaussian",
-      "binomial",
-      "multinomial",
-      "poisson",
-      "gamma",
-      "tweedie",
-      "_nfolds",
-      "_fold_column",
-      "_ignore_const_cols",
-      "_offset_column",
-      "_weights_column",
-      "_ntrees",
-      "_max_depth",
-      "_min_rows",
-      "_nbins",
-      "_nbins_cats",
-      "_learn_rate",
-      "_score_each_iteration",
-      "_balance_classes",
-      "_max_confusion_matrix_size",
-      "_max_hit_ratio_k",
-      "_r2_stopping",
-      "_build_tree_one_node",
-      "_class_sampling_factors",
-      "_sample_rate",
-      "_col_sample_rate"
-    };
-
     String[] tokens = algoParameters.trim().split(";", -1);
-    assert tokens.length == 27;
-
-    // _distribution
-    if      (tokens[0].equals("x")) { gbmParams._distribution = Distribution.Family.AUTO; }
-    else if (tokens[1].equals("x")) { gbmParams._distribution = Distribution.Family.gaussian; }
-    else if (tokens[2].equals("x")) { gbmParams._distribution = Distribution.Family.bernoulli; }
-    else if (tokens[3].equals("x")) { gbmParams._distribution = Distribution.Family.multinomial; }
-    else if (tokens[4].equals("x")) { gbmParams._distribution = Distribution.Family.poisson; }
-    else if (tokens[5].equals("x")) { gbmParams._distribution = Distribution.Family.gamma; }
-    else if (tokens[6].equals("x")) { gbmParams._distribution = Distribution.Family.tweedie; }
-
-    for (int i = 7; i < tokens.length; i++) {
-      if (tokens[i].isEmpty()) { continue; }
-      switch (gbmAlgoParamsMap[i]) {
-        case "_nfolds":                    gbmParams._nfolds = Integer.parseInt(tokens[i]);
+    for (int i = 0; i < tokens.length; i++) {
+      String parameterName = tokens[i].split("=", -1)[0];
+      String parameterValue = tokens[i].split("=", -1)[1];
+      switch (parameterName) {
+        case "_distribution":
+          switch (parameterValue) {
+            case "AUTO":
+              gbmParams._distribution = Distribution.Family.AUTO;
+              break;
+            case "gaussian":
+              gbmParams._distribution = Distribution.Family.gaussian;
+              break;
+            case "bernoulli":
+              gbmParams._distribution = Distribution.Family.bernoulli;
+              break;
+            case "multinomial":
+              gbmParams._distribution = Distribution.Family.multinomial;
+              break;
+            case "poisson":
+              gbmParams._distribution = Distribution.Family.poisson;
+              break;
+            case "gamma":
+              gbmParams._distribution = Distribution.Family.gamma;
+              break;
+            case "tweedie":
+              gbmParams._distribution = Distribution.Family.tweedie;
+              break;
+            default:
+              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+          }
           break;
-        case "_fold_column":               gbmParams._fold_column = tokens[i];
+        case "_nfolds":
+          gbmParams._nfolds = Integer.parseInt(parameterValue);
           break;
-        case "_ignore_const_cols":         gbmParams._ignore_const_cols = true;
+        case "_fold_column":
+          gbmParams._fold_column = tokens[i];
           break;
-        case "_offset_column":             gbmParams._offset_column = tokens[i];
+        case "_ignore_const_cols":
+          gbmParams._ignore_const_cols = true;
           break;
-        case "_weights_column":            gbmParams._weights_column = tokens[i];
+        case "_offset_column":
+          gbmParams._offset_column = tokens[i];
           break;
-        case "_ntrees":                    gbmParams._ntrees = Integer.parseInt(tokens[i]);
+        case "_weights_column":
+          gbmParams._weights_column = tokens[i];
           break;
-        case "_max_depth":                 gbmParams._max_depth = Integer.parseInt(tokens[i]);
+        case "_ntrees":
+          gbmParams._ntrees = Integer.parseInt(parameterValue);
           break;
-        case "_min_rows":                  gbmParams._min_rows = Double.parseDouble(tokens[i]);
+        case "_max_depth":
+          gbmParams._max_depth = Integer.parseInt(parameterValue);
           break;
-        case "_nbins":                     gbmParams._nbins = Integer.parseInt(tokens[i]);
+        case "_min_rows":
+          gbmParams._min_rows = Double.parseDouble(parameterValue);
           break;
-        case "_nbins_cats":                gbmParams._nbins_cats = Integer.parseInt(tokens[i]);
+        case "_nbins":
+          gbmParams._nbins = Integer.parseInt(parameterValue);
           break;
-        case "_learn_rate":                gbmParams._learn_rate = Float.parseFloat(tokens[i]);
+        case "_nbins_cats":
+          gbmParams._nbins_cats = Integer.parseInt(parameterValue);
           break;
-        case "_score_each_iteration":      gbmParams._score_each_iteration = true;
+        case "_learn_rate":
+          gbmParams._learn_rate = Float.parseFloat(parameterValue);
           break;
-        case "_balance_classes":           gbmParams._balance_classes = true;
+        case "_score_each_iteration":
+          gbmParams._score_each_iteration = true;
           break;
-        case "_max_confusion_matrix_size": gbmParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
+        case "_balance_classes":
+          gbmParams._balance_classes = true;
           break;
-        case "_r2_stopping":               gbmParams._r2_stopping = Double.parseDouble(tokens[i]);
+        case "_max_confusion_matrix_size":
+          gbmParams._max_confusion_matrix_size = Integer.parseInt(parameterValue);
           break;
-        case "_build_tree_one_node":       gbmParams._build_tree_one_node = true;
+        case "_r2_stopping":
+          gbmParams._r2_stopping = Double.parseDouble(parameterValue);
           break;
-        case "_sample_rate":               gbmParams._sample_rate = Float.parseFloat(tokens[i]);
+        case "_build_tree_one_node":
+          gbmParams._build_tree_one_node = true;
           break;
-        case "_col_sample_rate":           gbmParams._col_sample_rate = Float.parseFloat(tokens[i]);
+        case "_sample_rate":
+          gbmParams._sample_rate = Float.parseFloat(parameterValue);
+          break;
+        case "_col_sample_rate":
+          gbmParams._col_sample_rate = Float.parseFloat(parameterValue);
           break;
         default:
-          throw new Exception(gbmAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
+          throw new Exception(parameterName + " parameter is not supported for gbm test cases");
       }
     }
     // _train, _valid, _response
@@ -406,278 +560,368 @@ public class TestCase {
     return gbmParams;
   }
 
+  private HashMap<String, Object[]> makeGbmGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making GBM grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> gbmHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_ntrees":
+          gbmHyperParms.put("_ntrees", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_max_depth":
+          gbmHyperParms.put("_max_depth", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_min_rows":
+          gbmHyperParms.put("_min_rows", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_nbins":
+          gbmHyperParms.put("_nbins", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_nbins_cats":
+          gbmHyperParms.put("_nbins_cats", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_learn_rate":
+          gbmHyperParms.put("_learn_rate", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_balance_classes":
+          gbmHyperParms.put("_balance_classes", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_r2_stopping":
+          gbmHyperParms.put("_r2_stopping", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_build_tree_one_node":
+          gbmHyperParms.put("_build_tree_one_node", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_sample_rate":
+          gbmHyperParms.put("_sample_rate", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_col_sample_rate":
+          gbmHyperParms.put("_col_sample_rate", stringArrayToFloatArray(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for gbm test cases");
+      }
+    }
+    return gbmHyperParms;
+  }
+
   private DeepLearningModel.Parameters makeDlModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making DL model parameters.");
     DeepLearningModel.DeepLearningParameters dlParams = new DeepLearningModel.DeepLearningParameters();
-    String[] dlAlgoParamsMap = new String[]{
-      "auto",
-      "bernoulli",
-      "multinomial",
-      "gaussian",
-      "poisson",
-      "gamma",
-      "tweedie",
-      "_nfolds",
-      "tanh",
-      "tanhwithdropout",
-      "rectifier",
-      "rectifierwithdropout",
-      "maxout",
-      "maxoutwithdropout",
-      "_hidden", // TODO: only 2 hidden layers supported at this time
-      "_epochs",
-      "_variable_importances",
-      "_fold_column",
-      "_offset_column",
-      "_weights_column",
-      "_balance_classes",
-      "_max_confusion_matrix_size",
-      "_max_hit_ratio_k",
-      "_check_point",
-      "_use_all_factor_levels",
-      "_train_samples_per_iteration",
-      "_adaptive_rate",
-      "_input_dropout_ratio",
-      "_l1",
-      "_l2",
-      "automatic",
-      "crossentropy",
-      "quadratic",
-      "huber",
-      "absolute",
-      "",
-      "_score_interval",
-      "_score_training_samples",
-      "_score_duty_cycle",
-      "_replicate_training_data",
-      "_autoencoder",
-      "_class_sampling_factors",
-      "_target_ratio_comm_to_comp",
-      "_seed",
-      "_rho",
-      "_epsilon",
-      "_max_w2",
-      "_initial_weight_distribution",
-      "_regression_stop",
-      "_diagnostics",
-      "_fast_mode",
-      "_force_load_balance",
-      "_single_node_mode",
-      "_shuffle_training_data",
-      "_missing_values_handling",
-      "_quiet_mode",
-      "_sparse",
-      "_col_major",
-      "_average_activation",
-      "_sparsity_beta",
-      "_max_categorical_features",
-      "_reproducible",
-      "_export_weights_and_biases"
-    };
-
     String[] tokens = algoParameters.trim().split(";", -1);
-    assert tokens.length == 63;
-
-    // _distribution
-    if      (tokens[0].equals("x")) { dlParams._distribution = Distribution.Family.AUTO; }
-    else if (tokens[1].equals("x")) { dlParams._distribution = Distribution.Family.bernoulli; }
-    else if (tokens[2].equals("x")) { dlParams._distribution = Distribution.Family.multinomial; }
-    else if (tokens[3].equals("x")) { dlParams._distribution = Distribution.Family.gaussian; }
-    else if (tokens[4].equals("x")) { dlParams._distribution = Distribution.Family.poisson; }
-    else if (tokens[5].equals("x")) { dlParams._distribution = Distribution.Family.gamma; }
-    else if (tokens[6].equals("x")) { dlParams._distribution = Distribution.Family.tweedie; }
-
-    // _activation
-    if      (tokens[8].equals("x"))  { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh; }
-    else if (tokens[9].equals("x"))  { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout; }
-    else if (tokens[10].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Rectifier; }
-    else if (tokens[11].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout; }
-    else if (tokens[12].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Maxout; }
-    else if (tokens[13].equals("x")) { dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout; }
-
-    // _loss
-    if      (tokens[30].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Automatic; }
-    else if (tokens[31].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy; }
-    else if (tokens[32].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Quadratic; }
-    else if (tokens[33].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber; }
-    else if (tokens[34].equals("x")) { dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute; }
-
-    for (int i = 7; i < tokens.length; i++) {
-      if (tokens[i].isEmpty() || i == 8 || i == 9 || i == 10 || i == 11 || i == 12 || i == 13 || i == 30 || i == 31
-        || i == 32 || i == 33 || i == 34 || i == 35) { continue; } // skip _activation, _loss
-      switch (dlAlgoParamsMap[i]) {
+    for (int i = 0; i < tokens.length; i++) {
+      String parameterName = tokens[i].split("=", -1)[0];
+      String parameterValue = tokens[i].split("=", -1)[1];
+      switch (parameterName) {
+        case "_distribution":
+          switch (parameterValue) {
+            case "AUTO":
+              dlParams._distribution = Distribution.Family.AUTO;
+              break;
+            case "gaussian":
+              dlParams._distribution = Distribution.Family.gaussian;
+              break;
+            case "bernoulli":
+              dlParams._distribution = Distribution.Family.bernoulli;
+              break;
+            case "multinomial":
+              dlParams._distribution = Distribution.Family.multinomial;
+              break;
+            case "poisson":
+              dlParams._distribution = Distribution.Family.poisson;
+              break;
+            case "gamma":
+              dlParams._distribution = Distribution.Family.gamma;
+              break;
+            case "tweedie":
+              dlParams._distribution = Distribution.Family.tweedie;
+              break;
+            default:
+              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+          }
+          break;
+        case "_activation":
+          switch (parameterValue) {
+            case "tanh":
+              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+              break;
+            case "tanhwithdropout":
+              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout;
+              break;
+            case "rectifier":
+              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Rectifier;
+              break;
+            case "rectifierwithdropout":
+              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
+              break;
+            case "maxout":
+              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Maxout;
+              break;
+            case "maxoutwithdropout":
+              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout;
+              break;
+            default:
+              throw new Exception(parameterValue + " activation is not supported for gbm test cases");
+          }
+          break;
+        case "_loss":
+          switch (parameterValue) {
+            case "AUTO":
+              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Automatic;
+              ;
+              break;
+            case "crossentropy":
+              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy;
+              break;
+            case "quadratic":
+              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Quadratic;
+              break;
+            case "huber":
+              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
+              break;
+            case "absolute":
+              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute;
+              break;
+            default:
+              throw new Exception(parameterValue + " loss is not supported for gbm test cases");
+          }
+          break;
         case "_hidden":
           String[] hidden = tokens[i].trim().split(":", -1);
-          dlParams._hidden = new int[]{ Integer.parseInt(hidden[0]), Integer.parseInt(hidden[0])};
+          dlParams._hidden = stringArrayTointArray(hidden);
           break;
-        case "_epochs":                      dlParams._epochs = Double.parseDouble(tokens[i]);
+        case "_epochs":
+          dlParams._epochs = Double.parseDouble(parameterValue);
           break;
-        case "_variable_importances":        dlParams._variable_importances = true;
+        case "_variable_importances":
+          dlParams._variable_importances = true;
           break;
-        case "_fold_column":                 dlParams._fold_column = tokens[i];
+        case "_fold_column":
+          dlParams._fold_column = tokens[i];
           break;
-        case "_weights_column":              dlParams._weights_column = tokens[i];
+        case "_weights_column":
+          dlParams._weights_column = tokens[i];
           break;
-        case "_balance_classes":             dlParams._balance_classes = true;
+        case "_balance_classes":
+          dlParams._balance_classes = true;
           break;
-        case "_max_confusion_matrix_size":   dlParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
+        case "_max_confusion_matrix_size":
+          dlParams._max_confusion_matrix_size = Integer.parseInt(parameterValue);
           break;
-        case "_use_all_factor_levels":       dlParams._use_all_factor_levels = true;
+        case "_use_all_factor_levels":
+          dlParams._use_all_factor_levels = true;
           break;
-        case "_train_samples_per_iteration": dlParams._train_samples_per_iteration = Long.parseLong(tokens[i]);
+        case "_train_samples_per_iteration":
+          dlParams._train_samples_per_iteration = Long.parseLong(parameterValue);
           break;
-        case "_adaptive_rate":               dlParams._adaptive_rate = true;
+        case "_adaptive_rate":
+          dlParams._adaptive_rate = true;
           break;
-        case "_input_dropout_ratio":         dlParams._input_dropout_ratio = Double.parseDouble(tokens[i]);
+        case "_input_dropout_ratio":
+          dlParams._input_dropout_ratio = Double.parseDouble(parameterValue);
           break;
-        case "_l1":                          dlParams._l1 = Double.parseDouble(tokens[i]);
+        case "_l1":
+          dlParams._l1 = Double.parseDouble(parameterValue);
           break;
-        case "_l2":                          dlParams._l2 = Double.parseDouble(tokens[i]);
+        case "_l2":
+          dlParams._l2 = Double.parseDouble(parameterValue);
           break;
-        case "_score_interval":              dlParams._score_interval = Double.parseDouble(tokens[i]);
+        case "_score_interval":
+          dlParams._score_interval = Double.parseDouble(parameterValue);
           break;
-        case "_score_training_samples":      dlParams._score_training_samples = Long.parseLong(tokens[i]);
+        case "_score_training_samples":
+          dlParams._score_training_samples = Long.parseLong(parameterValue);
           break;
-        case "_score_duty_cycle":            dlParams._score_duty_cycle = Double.parseDouble(tokens[i]);
+        case "_score_duty_cycle":
+          dlParams._score_duty_cycle = Double.parseDouble(parameterValue);
           break;
-        case "_replicate_training_data":     dlParams._replicate_training_data = true;
+        case "_replicate_training_data":
+          dlParams._replicate_training_data = true;
           break;
-        case "_autoencoder":                 dlParams._autoencoder = true;
+        case "_autoencoder":
+          dlParams._autoencoder = true;
           break;
-        case "_target_ratio_comm_to_comp":   dlParams._target_ratio_comm_to_comp = Double.parseDouble(tokens[i]);
+        case "_target_ratio_comm_to_comp":
+          dlParams._target_ratio_comm_to_comp = Double.parseDouble(parameterValue);
           break;
-        case "_seed":                        dlParams._seed = Long.parseLong(tokens[i]);
+        case "_seed":
+          dlParams._seed = Long.parseLong(parameterValue);
           break;
-        case "_rho":                         dlParams._rho = Double.parseDouble(tokens[i]);
+        case "_rho":
+          dlParams._rho = Double.parseDouble(parameterValue);
           break;
-        case "_epsilon":                     dlParams._epsilon = Double.parseDouble(tokens[i]);
+        case "_epsilon":
+          dlParams._epsilon = Double.parseDouble(parameterValue);
           break;
-        case "_max_w2":                      dlParams._max_w2 = Float.parseFloat(tokens[i]);
+        case "_max_w2":
+          dlParams._max_w2 = Float.parseFloat(parameterValue);
           break;
-        case "_regression_stop":             dlParams._regression_stop = Double.parseDouble(tokens[i]);
+        case "_regression_stop":
+          dlParams._regression_stop = Double.parseDouble(parameterValue);
           break;
-        case "_diagnostics":                 dlParams._diagnostics = true;
+        case "_diagnostics":
+          dlParams._diagnostics = true;
           break;
-        case "_fast_mode":                   dlParams._fast_mode = true;
+        case "_fast_mode":
+          dlParams._fast_mode = true;
           break;
-        case "_force_load_balance":          dlParams._force_load_balance = true;
+        case "_force_load_balance":
+          dlParams._force_load_balance = true;
           break;
-        case "_single_node_mode":            dlParams._single_node_mode = true;
+        case "_single_node_mode":
+          dlParams._single_node_mode = true;
           break;
-        case "_shuffle_training_data":       dlParams._shuffle_training_data = true;
+        case "_shuffle_training_data":
+          dlParams._shuffle_training_data = true;
           break;
-        case "_quiet_mode":                  dlParams._quiet_mode = true;
+        case "_quiet_mode":
+          dlParams._quiet_mode = true;
           break;
-        case "_sparse":                      dlParams._sparse = true;
+        case "_sparse":
+          dlParams._sparse = true;
           break;
-        case "_col_major":                   dlParams._col_major = true;
+        case "_col_major":
+          dlParams._col_major = true;
           break;
-        case "_average_activation":          dlParams._average_activation = Double.parseDouble(tokens[i]);
+        case "_average_activation":
+          dlParams._average_activation = Double.parseDouble(parameterValue);
           break;
-        case "_sparsity_beta":               dlParams._sparsity_beta = Double.parseDouble(tokens[i]);
+        case "_sparsity_beta":
+          dlParams._sparsity_beta = Double.parseDouble(parameterValue);
           break;
-        case "_max_categorical_features":    dlParams._max_categorical_features = Integer.parseInt(tokens[i]);
+        case "_max_categorical_features":
+          dlParams._max_categorical_features = Integer.parseInt(parameterValue);
           break;
-        case "_reproducible":                dlParams._reproducible = true;
+        case "_reproducible":
+          dlParams._reproducible = true;
           break;
-        case "_export_weights_and_biases":   dlParams._export_weights_and_biases = true;
+        case "_export_weights_and_biases":
+          dlParams._export_weights_and_biases = true;
           break;
         default:
-          throw new Exception(dlAlgoParamsMap[i] + " parameter is not supported for dl test cases");
+          throw new Exception(parameterName + " parameter is not supported for dl test cases");
       }
     }
     // _train, _valid, _response
     dlParams._train = trainingDataSet.getFrame()._key;
     dlParams._valid = testingDataSet.getFrame()._key;
     dlParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
-
     return dlParams;
+  }
+
+  private HashMap<String, Object[]> makeDlGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making DL grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> dlHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      if (tokens[i].equals("")) return dlHyperParms;
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_hidden":
+          dlHyperParms.put("_hidden", hiddenStringArrayTointAA(gridParameterValues));
+          break;
+        case "_epochs":
+          dlHyperParms.put("_epochs", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for dl test cases");
+      }
+    }
+    return dlHyperParms;
   }
 
   private DRFModel.DRFParameters makeDrfModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making DRF model parameters.");
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
-    String[] drfAlgoParamsMap = new String[]{
-      "auto",
-      "gaussian",
-      "binomial",
-      "multinomial",
-      "poisson",
-      "gamma",
-      "tweedie",
-      "_nfolds",
-      "_fold_column",
-      "_ignore_const_cols",
-      "_offset_column",
-      "_weights_column",
-      "_ntrees",
-      "_max_depth",
-      "_min_rows",
-      "_nbins",
-      "_nbins_cats",
-      "_score_each_iteration",
-      "_balance_classes",
-      "_max_confusion_matrix_size",
-      "_max_hit_ratio_k",
-      "_r2_stopping",
-      "_build_tree_one_node",
-      "_class_sampling_factors",
-      "_binomial_double_trees",
-      "_checkpoint",
-      "_nbins_top_level"
-    };
-
     String[] tokens = algoParameters.trim().split(";", -1);
-    assert tokens.length == 27;
-
-    // _distribution
-    if      (tokens[0].equals("x")) { drfParams._distribution = Distribution.Family.AUTO; }
-    else if (tokens[1].equals("x")) { drfParams._distribution = Distribution.Family.gaussian; }
-    else if (tokens[2].equals("x")) { drfParams._distribution = Distribution.Family.bernoulli; }
-    else if (tokens[3].equals("x")) { drfParams._distribution = Distribution.Family.multinomial; }
-    else if (tokens[4].equals("x")) { drfParams._distribution = Distribution.Family.poisson; }
-    else if (tokens[5].equals("x")) { drfParams._distribution = Distribution.Family.gamma; }
-    else if (tokens[6].equals("x")) { drfParams._distribution = Distribution.Family.tweedie; }
-
-    for (int i = 7; i < tokens.length; i++) {
-      if (tokens[i].isEmpty()) { continue; }
-      switch (drfAlgoParamsMap[i]) {
-        case "_nfolds":                    drfParams._nfolds = Integer.parseInt(tokens[i]);
+    for (int i = 0; i < tokens.length; i++) {
+      String parameterName = tokens[i].split("=", -1)[0];
+      String parameterValue = tokens[i].split("=", -1)[1];
+      switch (parameterName) {
+        case "_distribution":
+          switch (parameterValue) {
+            case "AUTO":
+              drfParams._distribution = Distribution.Family.AUTO;
+              break;
+            case "gaussian":
+              drfParams._distribution = Distribution.Family.gaussian;
+              break;
+            case "bernoulli":
+              drfParams._distribution = Distribution.Family.bernoulli;
+              break;
+            case "multinomial":
+              drfParams._distribution = Distribution.Family.multinomial;
+              break;
+            case "poisson":
+              drfParams._distribution = Distribution.Family.poisson;
+              break;
+            case "gamma":
+              drfParams._distribution = Distribution.Family.gamma;
+              break;
+            case "tweedie":
+              drfParams._distribution = Distribution.Family.tweedie;
+              break;
+            default:
+              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+          }
           break;
-        case "_fold_column":               drfParams._fold_column = tokens[i];
+        case "_nfolds":
+          drfParams._nfolds = Integer.parseInt(parameterValue);
           break;
-        case "_ignore_const_cols":         drfParams._ignore_const_cols = true;
+        case "_fold_column":
+          drfParams._fold_column = tokens[i];
           break;
-        case "_offset_column":             drfParams._offset_column = tokens[i];
+        case "_ignore_const_cols":
+          drfParams._ignore_const_cols = true;
           break;
-        case "_weights_column":            drfParams._weights_column = tokens[i];
+        case "_offset_column":
+          drfParams._offset_column = tokens[i];
           break;
-        case "_ntrees":                    drfParams._ntrees = Integer.parseInt(tokens[i]);
+        case "_weights_column":
+          drfParams._weights_column = tokens[i];
           break;
-        case "_max_depth":                 drfParams._max_depth = Integer.parseInt(tokens[i]);
+        case "_ntrees":
+          drfParams._ntrees = Integer.parseInt(parameterValue);
           break;
-        case "_min_rows":                  drfParams._min_rows = Double.parseDouble(tokens[i]);
+        case "_max_depth":
+          drfParams._max_depth = Integer.parseInt(parameterValue);
           break;
-        case "_nbins":                     drfParams._nbins = Integer.parseInt(tokens[i]);
+        case "_min_rows":
+          drfParams._min_rows = Double.parseDouble(parameterValue);
           break;
-        case "_nbins_cats":                drfParams._nbins_cats = Integer.parseInt(tokens[i]);
+        case "_nbins":
+          drfParams._nbins = Integer.parseInt(parameterValue);
           break;
-        case "_score_each_iteration":      drfParams._score_each_iteration = true;
+        case "_nbins_cats":
+          drfParams._nbins_cats = Integer.parseInt(parameterValue);
           break;
-        case "_balance_classes":           drfParams._balance_classes = true;
+        case "_score_each_iteration":
+          drfParams._score_each_iteration = true;
           break;
-        case "_max_confusion_matrix_size": drfParams._max_confusion_matrix_size = Integer.parseInt(tokens[i]);
+        case "_balance_classes":
+          drfParams._balance_classes = true;
           break;
-        case "_r2_stopping":               drfParams._r2_stopping = Double.parseDouble(tokens[i]);
+        case "_max_confusion_matrix_size":
+          drfParams._max_confusion_matrix_size = Integer.parseInt(parameterValue);
           break;
-        case "_build_tree_one_node":       drfParams._build_tree_one_node = true;
+        case "_r2_stopping":
+          drfParams._r2_stopping = Double.parseDouble(parameterValue);
           break;
-        case "_binomial_double_trees":     drfParams._binomial_double_trees = true;
+        case "_build_tree_one_node":
+          drfParams._build_tree_one_node = true;
           break;
-        case "_nbins_top_level":           drfParams._nbins_top_level = Integer.parseInt(tokens[i]);
+        case "_binomial_double_trees":
+          drfParams._binomial_double_trees = true;
+          break;
+        case "_nbins_top_level":
+          drfParams._nbins_top_level = Integer.parseInt(parameterValue);
           break;
         default:
-          throw new Exception(drfAlgoParamsMap[i] + " parameter is not supported for gbm test cases");
+          throw new Exception(parameterName + " parameter is not supported for gbm test cases");
       }
     }
     // _train, _valid, _response
@@ -686,5 +930,108 @@ public class TestCase {
     drfParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
     return drfParams;
   }
+
+  private HashMap<String, Object[]> makeDrfGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making DRF grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> drfHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_ntrees":
+          drfHyperParms.put("_ntrees", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_max_depth":
+          drfHyperParms.put("_max_depth", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_min_rows":
+          drfHyperParms.put("_min_rows", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_nbins":
+          drfHyperParms.put("_nbins", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_nbins_cats":
+          drfHyperParms.put("_nbins_cats", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_balance_classes":
+          drfHyperParms.put("_balance_classes", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_r2_stopping":
+          drfHyperParms.put("_r2_stopping", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_build_tree_one_node":
+          drfHyperParms.put("_build_tree_one_node", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_mtries":
+          drfHyperParms.put("_mtries", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_sample_rate":
+          drfHyperParms.put("_sample_rate", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_binomial_double_trees":
+          drfHyperParms.put("_binomial_double_trees", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_col_sample_rate_per_tree":
+          drfHyperParms.put("_col_sample_rate_per_tree", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_min_split_improvement":
+          drfHyperParms.put("_min_split_improvement", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for drf test cases");
+      }
+    }
+    return drfHyperParms;
+  }
+
+  static Integer[] stringArrayToIntegerArray(String[] sa) {
+    Integer[] ia = new Integer[sa.length];
+    for (int v = 0; v < sa.length; v++) ia[v] = Integer.parseInt(sa[v]);
+    return ia;
+  }
+
+  static int[] stringArrayTointArray(String[] sa) {
+    int[] ia = new int[sa.length];
+    for (int v = 0; v < sa.length; v++) ia[v] = Integer.parseInt(sa[v]);
+    return ia;
+  }
+
+  static int[][] hiddenStringArrayTointAA(String[] sa) {
+    int[][] iaa = new int[sa.length][];
+    for (int h=0; h<sa.length; h++) iaa[h] = stringArrayTointArray(sa[h].trim().split(":", -1));
+    return iaa;
+  }
+
+  static Double[] stringArrayToDoubleArray(String[] sa) {
+    Double[] da = new Double[sa.length];
+    for (int v = 0; v < sa.length; v++) da[v] = Double.parseDouble(sa[v]);
+    return da;
+  }
+
+  static double[][] stringArrayToDoubleAA(String[] sa) {
+    double[][] daa = new double[sa.length][1];
+    for (int v = 0; v < sa.length; v++) daa[v] = new double[]{Double.parseDouble(sa[v])};
+    return daa;
+  }
+
+  static Float[] stringArrayToFloatArray(String[] sa) {
+    Float[] fa = new Float[sa.length];
+    for (int v = 0; v < sa.length; v++) fa[v] = Float.parseFloat(sa[v]);
+    return fa;
+  }
+
+  static Boolean[] stringArrayToBooleanArray(String[] sa) {
+    Boolean[] ba = new Boolean[sa.length];
+    for (int v = 0; v < sa.length; v++) ba[v] = Boolean.parseBoolean(sa[v]);
+    return ba;
+  }
+
+  static boolean higherIsBetter(String metric) {
+    return metric.equals("R2") || metric.equals("AUC") || metric.equals("Precision") || metric.equals("Recall") ||
+            metric.equals("F1") || metric.equals("F2") || metric.equals("F0point5") || metric.equals("Accuracy") ||
+            metric.equals("Gini") || metric.equals("MCC");
+  }
 }
+
 
