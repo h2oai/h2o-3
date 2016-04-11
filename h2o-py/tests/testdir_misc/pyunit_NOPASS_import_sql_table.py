@@ -6,7 +6,7 @@ from tests import pyunit_utils
 
 def sql_table():
 
-  pet = h2o.import_sql_table("mysql", "menagerie", "pet", "root", "ludi")
+  pet = h2o.import_sql_table("jdbc:mysql://localhost:3306/menagerie?&useSSL=false", "pet", "root", "ludi")
   print(pet)
 
 

@@ -14,16 +14,14 @@ public class JDBCTest extends TestUtil{
 
   @Ignore @Test
   public void run() {
-    String database_sys = "mysql";
-    String database = "menagerie";
+    String conUrl = "jdbc:mysql://localhost:3306/menagerie?&useSSL=false";
     final String table = "pet";
     String user = "root";
     String password = "ludi";
-    String host = "localhost";
-    String port = "3306";
-    boolean optimize = false;
+    boolean optimize = true;
     
-    Frame f = SQLManager.importSqlTable(database_sys, database, table, user, password, host, port, optimize).get();
+    Frame f = SQLManager.importSqlTable(conUrl, table, user, password, optimize).get();
+    
     Log.info("Number of rows: " + f.numRows());
     f.delete();
   }

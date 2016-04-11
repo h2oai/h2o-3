@@ -51,7 +51,7 @@ class H2OConnection(object):
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
     :param port: A port, default is 54321
-    :param start_h2o: A boolean dictating whether this module should start the H2O jvm. An attempt is made anyways if _connect fails.
+    :param start_h2o: A boolean dictating whether this module should start the H2O jvm.
     :param enable_assertions: If start_h2o, pass `-ea` as a VM option.
     :param license: If not None, is a path to a license file.
     :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used. 

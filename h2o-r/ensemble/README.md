@@ -17,7 +17,7 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 
 
 ### Install H2O Ensemble (Stable)
-The latest stable version, compatible with the H2O "Turan" release, be installed as follows:
+The latest stable version, compatible with the H2O "Turchin" release, be installed as follows:
 
 ```r
 install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz", repos = NULL)
@@ -27,6 +27,7 @@ To install **h2oEnsemble** for a previous stable release of H2O, you can replace
 
 |H2O Stable Release| Recommended version| Other versions |
 |:---------|:----------|:----------|
+|H2O 3.8.2.1 - [3.8.2.2](http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/2/index.html) (Turchin)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.8.1.1 - [3.8.1.4](http://h2o-release.s3.amazonaws.com/h2o/rel-turan/4/index.html) (Turan)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.8.8.1 - [3.8.0.6](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/6/index.html) (Tukey)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.6.0.1 - [3.6.0.8](http://h2o-release.s3.amazonaws.com/h2o/rel-tibshirani/8/index.html) (Tibshirani)|[h2oEnsemble 0.1.5](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.5.tar.gz)||
