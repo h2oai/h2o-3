@@ -17,6 +17,7 @@ import water.util.AtomicUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Cache common questions asked upon the frame.
@@ -24,6 +25,11 @@ import java.util.HashMap;
 public class FrameMeta extends Iced {
   final String _datasetName;
   final Frame _fr;
+  public int[] _numFeats;
+  public int[] _intCols;
+  public int[] _dblCols;
+  public int[] _binaryCols;
+  public int[] _intNotBinaryCols;
   private final int _response;
   private long _naCnt=-1;  // count of nas across whole frame
   private int _numFeat=-1; // count of numerical features
@@ -89,9 +95,40 @@ public class FrameMeta extends Iced {
 
   public int numberOfNumericFeatures() {
     if( _numFeat!=-1 ) return _numFeat;
+    ArrayList<Integer> idxs = new ArrayList<>();
+    ArrayList<Integer> intCols = new ArrayList<>();
+    ArrayList<Integer> dblCols = new ArrayList<>();
+    ArrayList<Integer> binCols = new ArrayList<>();
+    ArrayList<Integer> intNotBinCols = new ArrayList<>();
     int cnt=0;
-    for(Vec v: _fr.vecs()) cnt+= v.isNumeric() ? 1 : 0;
+    int idx=0;
+    for(Vec v: _fr.vecs()) {
+      if( v.isNumeric() ) {
+        cnt += 1;
+        idxs.add(idx);
+        if( v.isInt() ) intCols.add(idx);
+        if( v.isBinary() ) binCols.add(idx);
+        if( v.isInt() && !v.isBinary() ) intNotBinCols.add(idx);
+        if( v.isNumeric() && !v.isInt() ) dblCols.add(idx);
+      }
+      idx++;
+    }
+    _numFeats = intListToA(idxs);
+    _intCols  = intListToA(intCols);
+    _dblCols  = intListToA(dblCols);
+    _binaryCols  = intListToA(binCols);
+    _intNotBinaryCols = intListToA(intNotBinCols);
+
     return (_numFeat=cnt);
+  }
+
+  private int[] intListToA(List<Integer> list) {
+    int[] a=new int[0];
+    if( list.size() >0 ) {
+      a = new int[list.size()];
+      for(int i=0;i<a.length;++i) a[i] = list.get(i);
+    }
+    return a;
   }
 
   public int numberOfCategoricalFeatures() {
