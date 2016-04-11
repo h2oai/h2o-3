@@ -39,6 +39,11 @@ public class TestCase {
   private DataSet testingDataSet;
   private HashMap<String, Object[]> hyperParms;
 
+  private static boolean glmRegistered = false;
+  private static boolean gbmRegistered = false;
+  private static boolean drfRegistered = false;
+  private static boolean dlRegistered = false;
+
   public TestCase(int testCaseId, String algo, String algoParameters, boolean grid, String gridParameters,
                   String gridCriteria, boolean regression, int trainingDataSetId, int testingDataSetId,
                   String testCaseDescription) throws Exception {
@@ -145,16 +150,28 @@ public class TestCase {
       try {
         switch (algo) {  // TODO: Hack for PUBDEV-2812
           case "drf":
-            new DRF(true);
+            if (!drfRegistered) {
+              new DRF(true);
+              drfRegistered = true;
+            }
             break;
           case "glm":
-            new GLM(true);
+            if (!glmRegistered) {
+              new GLM(true);
+              glmRegistered = true;
+            }
             break;
           case "gbm":
-            new GBM(true);
+            if (!gbmRegistered) {
+              new GBM(true);
+              gbmRegistered = true;
+            }
             break;
           case "dl":
-            new DeepLearning(true);
+            if (!dlRegistered) {
+              new DeepLearning(true);
+              dlRegistered = true;
+            }
             break;
         }
         startTime = System.currentTimeMillis();
