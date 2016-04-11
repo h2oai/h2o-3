@@ -1,11 +1,14 @@
 package ai.h2o.automl.transforms;
 
+import ai.h2o.automl.FrameMeta;
 import hex.Model;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+
+import java.util.HashMap;
 
 /** Automatic Synthesis of Features
  *
@@ -98,16 +101,18 @@ import water.fvec.Vec;
  */
 public class FeatureFactory {
 
-  private final Frame _f;             // the input frame
+  private final FrameMeta _fm;             // the input frame
   private final String _response;     // target column
   private final String[] _predictors; // names of predictor columns
+
+  private HashMap<String,Expr> _basicTransforms;
 
   /**
    * Create a new FeatureFactory for this Frame
    * @param f Frame upon which to generate new features
    */
   public FeatureFactory(Frame f, String[] predictors, String response) {
-    _f=f;
+    _fm = new FrameMeta(f,f.find(response),f._key.toString());
     _predictors=predictors;
     _response=response;
   }
@@ -116,8 +121,81 @@ public class FeatureFactory {
   /**
    * Launch the generation and pruning process.
    */
-  public void synthesizeFeatures() {
+  public void synthesizeBasicFeatures() {
+    // generate min(nnum*nnum,200) features
+    int nBasicFeats = Math.min(_fm.numberOfNumericFeatures()*_fm.numberOfNumericFeatures(),200);
+    if( _fm.numberOfNumericFeatures() > 0) {
+      _basicTransforms = new HashMap<>();
+      String op;
+      int cnt=0;
+      for(int i=0;i<_fm._numFeats.length;++i) {
+        String name = _fm._cols[_fm._numFeats[i]]._name + "_" + (op=_fm._cols[_fm._numFeats[i]].selectBasicTransform());
+        if(op.equals("ignore") || op.equals("none")) continue;
+        if( op.equals("time")) throw H2O.unimpl("does not generate time-based ops yet...");
+        _basicTransforms.put(name, Expr.unOp(op,_fm._cols[_fm._numFeats[i]]._v));
+        cnt++;
+      }
+      cnt += tryRates(nBasicFeats-cnt);
+      cnt += tryCombos(nBasicFeats-cnt);
+    }
+  }
 
+
+  /**
+   * Try to find rates by dividing numerical columns by integral columns.
+   *
+   * Find dblCols and divide by all integer non binary cols (fudge the denom by eps)
+   *
+   * Try to sum up double cols and then divide by all integer cols
+   *
+   * TODO: misses the case where we want to find rates of integer cols
+   */
+  private int tryRates(int maxFeats) {
+    int cnt=0;
+    for(int i: _fm._dblCols) {
+      for(int j: _fm._intNotBinaryCols) {
+        String name = _fm._cols[i]._name + "_rate_" + _fm._cols[j]._name;
+        _basicTransforms.put(name, Expr.binOp("/", _fm._cols[i]._v, _fm._cols[j]._v));
+        cnt+=1;
+        if( cnt >= maxFeats ) return cnt;
+      }
+    }
+
+    // now try to do all the pairwise additions of double columns divided by every int col
+    for(int i=0;i<_fm._dblCols.length;++i)
+      for(int j=i+1;j<_fm._dblCols.length;++j)
+        for(int k: _fm._intNotBinaryCols) {
+          if( cnt >= maxFeats ) return cnt;
+          String name = _fm._cols[i]._name + "_plus_" + _fm._cols[j]._name + "_rate_" + _fm._cols[k]._v;
+          _basicTransforms.put(name, Expr.binOp("+",_fm._cols[i]._v,_fm._cols[j]._v).bop("/",_fm._cols[k]._v));
+          cnt++;
+        }
+
+    // now with all combinations of three double vecs
+    for(int i=0;i<_fm._dblCols.length;++i)
+      for(int j=i+1;j<_fm._dblCols.length;++j)
+        for(int k=j+1;k<_fm._dblCols.length;++k)
+          for(int l: _fm._intNotBinaryCols) {
+            if( cnt >= maxFeats ) return cnt;
+            String name = _fm._cols[i]._name + "_plus_" + _fm._cols[j]._name + _fm._cols[k]._name + "_rate_" + _fm._cols[l]._v;
+            _basicTransforms.put(name, Expr.binOp("+",_fm._cols[i]._v,_fm._cols[j]._v).bop("+",_fm._cols[k]._v).bop("/",_fm._cols[l]._v));
+            cnt++;
+          }
+    return cnt;
+  }
+
+  private int tryCombos(int maxFeats) {
+    int cnt=0;
+    String[] transforms = _basicTransforms.keySet().toArray(new String[_basicTransforms.size()]);
+    for(int i=0;i<transforms.length;++i) {
+      for(int j=i+1;j<transforms.length;++j) {
+        if( cnt >= maxFeats ) return cnt;
+        String name = transforms[i] + "_plus_" + transforms[j];
+        _basicTransforms.put(name, _basicTransforms.get(transforms[i]).bop("+", _basicTransforms.get(transforms[j])));
+        cnt++;
+      }
+    }
+    return cnt;
   }
 
 
