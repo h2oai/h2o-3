@@ -31,6 +31,7 @@ public final class ColNameScanner {
   // pattern I've been mentioning. If you have IDs and you expect to continue to see
   // them and it's valid to reuse them, then take guesses at a lot of calculations about
   // those IDs.
+  public final static byte IGNORED=-1;
   public final static byte ID  = 1;
   public final static byte AGE = 2;
   public final static byte GENDER = 3;
