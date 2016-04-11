@@ -12,9 +12,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 
 /**
- * Configuration and base guesser for a parse;
+ * A generic configuration and base guesser for a parser.
  */
 public class ParseSetup extends Iced {
   public static final byte GUESS_SEP = -1;
@@ -146,18 +147,51 @@ public class ParseSetup extends Iced {
     }
     return types;
   }
-  public void setColumnTypes(String[] strs) { _column_types = strToColumnTypes(strs); }
 
-  public Parser parser(Key jobKey) {
+  /** This is a single entry-point to create a parser.
+   *
+   * Should be override in subclasses. */
+  protected Parser parser(Key jobKey) {
     switch(_parse_type) {
       case CSV:      return new      CsvParser(this,jobKey);
       case XLS:      return new      XlsParser(this,jobKey);
       case SVMLight: return new SVMLightParser(this,jobKey);
       case ARFF:     return new     ARFFParser(this,jobKey);
-      case AVRO:     return new     AvroParser(this,jobKey, ((AvroParser.AvroParseSetup) this).header );
+      case OTHER:    {
+        ParserProvider pp = ParserService.INSTANCE.getByName(_parser_name);
+        if (pp != null) {
+          return pp.createParser(this, jobKey);
+        }
+        break;
+      }
     }
     throw new H2OIllegalArgumentException("Unknown file type.  Parse cannot be completed.",
-            "Attempted to invoke a parser for ParseType:" + _parse_type +", which doesn't exist.");
+            "Attempted to invoke a parser for ParseType:" + _parse_type + "(" + _parser_name + "), which doesn't exist.");
+  }
+
+  /** Return create a final parser-specific setup
+   * for this configuration.
+   *
+   * @param inputKeys  inputs
+   *
+   * @return a parser specific setup
+   */
+  public final ParseSetup getFinalSetup(Key[] inputKeys) {
+    switch(_parse_type) {
+      case CSV:
+      case XLS:
+      case SVMLight:
+      case ARFF:
+        return this;
+      case OTHER:    {
+        ParserProvider pp = ParserService.INSTANCE.getByName(_parser_name);
+        if (pp != null) {
+          return pp.createParser(this, jobKey);
+        }
+        break;
+      }
+    }
+    throw new H2OIllegalArgumentException("Unknown parser configuration! Configuration=" + this);
   }
 
   // Set of duplicated column names
@@ -223,6 +257,7 @@ public class ParseSetup extends Iced {
     t.doAll(fkeys).getResult();
 
     //Calc chunk-size
+    // FIXME: should be a parser specific - or at least parser should be able to override defaults
     Iced ice = DKV.getGet(fkeys[0]);
     if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
@@ -477,14 +512,26 @@ public class ParseSetup extends Iced {
     return guessSetup(bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, userSetup._column_names, userSetup._column_types, null, null);
   }
 
-  private static final ParserType guessFileTypeOrder[] = { ParserType.ARFF, ParserType.XLS, ParserType.XLSX,ParserType.SVMLight, ParserType.AVRO, ParserType.CSV};
+  private static final ParserType guessFileTypeOrder[] = { ParserType.ARFF, ParserType.XLS, ParserType.XLSX,ParserType.SVMLight, ParserType.OTHER, ParserType.CSV};
   public static ParseSetup guessSetup( byte[] bits, ParserType pType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
     switch( pType ) {
       case CSV:      return      CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, naStrings);
       case SVMLight: return SVMLightParser.guessSetup(bits);
       case XLS:      return      XlsParser.guessSetup(bits);
       case ARFF:     return      ARFFParser.guessSetup(bits, sep, singleQuotes, columnNames, naStrings);
-      case AVRO:     return      AvroParser.guessSetup(bits);
+      case OTHER:    {
+        Iterator<ParserProvider> it = ParserService.INSTANCE.getAllProviders().iterator();
+        while (it.hasNext()) {
+          try {
+            ParseSetup ps = it.next().guessSetup(bits);
+            if (ps != null) {
+              return ps;
+            }
+          } catch (Throwable ignored) {
+          }
+        }
+        break;
+      }
       case GUESS:
         for( ParserType pTypeGuess : guessFileTypeOrder ) {
           try {

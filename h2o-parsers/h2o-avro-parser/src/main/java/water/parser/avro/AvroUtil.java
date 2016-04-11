@@ -1,7 +1,8 @@
-package water.parser;
+package water.parser.avro;
 
 import org.apache.avro.Schema;
 
+import java.util.Arrays;
 import java.util.List;
 
 import water.fvec.Vec;
@@ -113,5 +114,24 @@ public final class AvroUtil {
       default:
         throw new IllegalArgumentException("Unsupported Avro schema type: " + s);
     }
+  }
+
+  /**
+   * The method "flattenize" the given Avro schema.
+   * @param s  Avro schema
+   * @return  List of supported fields which were extracted from original Schema
+   */
+  public static Schema.Field[] flatSchema(Schema s) {
+    List<Schema.Field> fields = s.getFields();
+    Schema.Field[] flatSchema = new Schema.Field[fields.size()];
+    int cnt = 0;
+    for (Schema.Field f : fields) {
+      if (isSupportedSchema(f.schema())) {
+        flatSchema[cnt] = f;
+        cnt++;
+      }
+    }
+    // Return resized array
+    return cnt != flatSchema.length ? Arrays.copyOf(flatSchema, cnt) : flatSchema;
   }
 }

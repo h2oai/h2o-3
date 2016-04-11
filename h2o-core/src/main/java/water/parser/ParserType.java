@@ -1,10 +1,17 @@
 package water.parser;
 
-/** Which parse flavor is being used, and does it support parallel parsing.
- */
+/** Which parse flavor is being used, and does it support parallel parsing. */
 public enum ParserType {
-  GUESS(false), ARFF(true), XLS(false), XLSX(false), CSV(true), SVMLight(true), AVRO(true);
+  GUESS(false),
+  ARFF(true),
+  XLS(false),
+  XLSX(false),
+  CSV(true),
+  SVMLight(true),
+  OTHER(true);
+
   final boolean _parallelParseSupported;
+
   ParserType( boolean par ) { _parallelParseSupported = par; }
   String toString( int ncols, byte separator ) {
     if( this== GUESS) return "";

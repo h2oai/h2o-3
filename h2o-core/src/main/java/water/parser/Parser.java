@@ -59,11 +59,11 @@ public abstract class Parser extends Iced {
 
   protected final ParseSetup _setup;
   protected final Key<Job> _jobKey;
-  Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
+  protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
-  abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
+  protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
   ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
     if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();

@@ -10,8 +10,9 @@ import water.util.UnsafeUtils;
 
 class XlsParser extends Parser {
   XlsParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
+
   @Override
-  ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) { throw H2O.unimpl(); }
+  protected ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout) { throw H2O.unimpl(); }
 
   // A Stream, might be a Zip stream
   private InputStream _is;

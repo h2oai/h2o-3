@@ -72,7 +72,6 @@ public final class ParseDataset {
     return colNames;
   }
 
-
   public static Job forkParseSVMLight(final Key<Frame> dest, final Key [] keys, final ParseSetup setup) {
     int nchunks = 0;
     Vec v = null;
@@ -102,13 +101,19 @@ public final class ParseDataset {
       }
     },nchunks);
   }
-  // Same parse, as a backgroundable Job
+
+  /**
+   * The entry-point for data set parsing.
+   *
+   * @param dest  name for destination key
+   * @param keys  input keys
+   * @param parseSetup  a generic parser setup
+   * @param deleteOnDone  delete input data when finished
+   * @return a new parse job
+   */
   public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup parseSetup, boolean deleteOnDone) {
-    // FIXME - get parser specific setup - we need instance returned by a parser setup since it can be specific to a parser!
-    final ParseSetup setup = ParseSetup.guessSetup(keys, parseSetup);
-    if (setup._parse_type == ParserType.AVRO) {
-      setup._chunk_size = (int) ((AvroParser.AvroParseSetup) setup).blockSize;
-    }
+    // Note: get a parser specific setup
+    final ParseSetup setup = parseSetup.getFinalSetup(keys);
     // ---- MM end of experiment ----
 
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
@@ -773,9 +778,7 @@ public final class ParseDataset {
     @Override public void map( Key key ) {
       if( _jobKey.get().stop_requested() ) return;
       // FIXME: refactor parser setup to be configurable via parser object
-      ParseSetup localSetup = _parseSetup._parse_type == ParserType.AVRO
-                              ? new AvroParser.AvroParseSetup(_parseSetup, ((AvroParser.AvroParseSetup) _parseSetup).header)
-                              : new ParseSetup(_parseSetup);
+      ParseSetup localSetup = (ParseSetup) _parseSetup.clone();
       ByteVec vec = getByteVec(key);
       final int chunkStartIdx = _fileChunkOffsets[_lo];
       Log.trace("Begin a map stage of a file parse with start index " + chunkStartIdx + ".");
@@ -919,24 +922,25 @@ public final class ParseDataset {
           if (_setup._column_types == null) // SVMLight
             avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, Vec.T_NUM, _startChunkIdx);
           else
-           avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _setup._column_types[i], _startChunkIdx);
+            avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _setup._column_types[i], _startChunkIdx);
         // Break out the input & output vectors before the parse loop
         FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout;
-        Parser p;
+        // Get a parser
+        Parser p = _setup.parser(_jobKey);
         switch(_setup._parse_type) {
         case ARFF:
         case CSV:
           Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
-          p = new CsvParser(_setup, _jobKey);
+          //p = new CsvParser(_setup, _jobKey);
           dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
           break;
         case SVMLight:
-          p = new SVMLightParser(_setup, _jobKey);
+          //p = new SVMLightParser(_setup, _jobKey);
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
           break;
-        case AVRO:
-          p = new AvroParser(_setup, _jobKey, ((AvroParser.AvroParseSetup) _setup).header);
+        case OTHER:
+          //p = _setup.parser(_jobKey);
           dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types, _setup._chunk_size, avs);
           break;
         default:

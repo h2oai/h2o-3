@@ -63,6 +63,7 @@ ext {
       project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),
       project(':h2o-java-rest-bindings'),
+      project(':h2o-avro-parser'),
     ]
 
     scalaProjects = [

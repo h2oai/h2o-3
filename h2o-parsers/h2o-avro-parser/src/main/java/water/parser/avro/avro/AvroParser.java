@@ -1,4 +1,4 @@
-package water.parser;
+package water.parser.avro.avro;
 
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
@@ -18,34 +18,39 @@ import java.util.List;
 import water.H2O;
 import water.Job;
 import water.Key;
+import water.parser.BufferedString;
+import water.parser.ParseReader;
+import water.parser.ParseSetup;
+import water.parser.ParseWriter;
+import water.parser.Parser;
+import water.parser.ParserType;
 import water.util.ArrayUtils;
 import water.util.Log;
 
-import static water.parser.AvroUtil.isSupportedSchema;
-import static water.parser.AvroUtil.schemaToColumnType;
-import static water.parser.AvroUtil.toPrimitiveType;
+import static water.parser.avro.AvroUtil.*;
 
 /**
  * AVRO parser for H2O distributed parsing subsystem.
  */
 public class AvroParser extends Parser {
 
+  /** Avro header */
   private final byte[] header;
 
-  AvroParser(ParseSetup setup, Key<Job> jobKey, byte[] header) {
+  AvroParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
-    this.header = header;
+    this.header = ((AvroParser.AvroParseSetup) setup).header;
   }
 
   @Override
-  ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
+  protected final ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
     // We will read GenericRecord and load them based on schema
     final DatumReader<GenericRecord> datumReader = new GenericDatumReader<>();
     final H2OSeekableInputAdaptor sbai = new H2OSeekableInputAdaptor(cidx, din);
     DataFileReader<GenericRecord> dataFileReader = null;
     int cnt = 0;
     try {
-      // Reconstruct Header
+      // Reconstruct Avro header
       DataFileStream.Header
           fakeHeader = new DataFileReader<GenericRecord>(new SeekableByteArrayInput(this.header), datumReader).getHeader();
       dataFileReader = DataFileReader.openReader(sbai, datumReader, fakeHeader, true);
@@ -57,6 +62,7 @@ public class AvroParser extends Parser {
         while (dataFileReader.hasNext() && dataFileReader.previousSync() == sync) {
           gr = dataFileReader.next(gr);
           // Write values to the output
+          // FIXME: what if user change input names, or ignore an input column?
           write2frame(gr, _setup.getColumnNames(), flatSchema, _setup.getColumnTypes(), dout);
           cnt++;
         }
@@ -188,20 +194,6 @@ public class AvroParser extends Parser {
     }
   }
 
-  public static Schema.Field[] flatSchema(Schema s) {
-    List<Schema.Field> fields = s.getFields();
-    Schema.Field[] flatSchema = new Schema.Field[fields.size()];
-    int cnt = 0;
-    for (Schema.Field f : fields) {
-      if (isSupportedSchema(f.schema())) {
-        flatSchema[cnt] = f;
-        cnt++;
-      }
-    }
-    // Return resized array
-    return cnt != flatSchema.length ? Arrays.copyOf(flatSchema, cnt) : flatSchema;
-  }
-
   /**
    * The main method transforming Avro record into a row in H2O frame.
    *
@@ -251,18 +243,25 @@ public class AvroParser extends Parser {
   }
 
   public static class AvroParseSetup extends ParseSetup {
-    byte[] header;
+    public byte[] header; //FIXME no public
     long blockSize;
 
-    public AvroParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols,
-                          String[] columnNames, byte[] ctypes, String[][] domains,
-                          String[][] naStrings, String[][] data) {
-      super(t, sep, singleQuotes, checkHeader, ncols, columnNames, ctypes, domains, naStrings, data);
+    public AvroParseSetup(int ncols,
+                          String[] columnNames, byte[] ctypes,
+                          String[][] domains,
+                          String[][] naStrings,
+                          String[][] data) {
+      super(ParserType.OTHER, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data);
     }
 
     public AvroParseSetup(ParseSetup ps, byte[] header) {
       super(ps);
       this.header = header;
+    }
+
+    @Override
+    protected Parser parser(Key jobKey) {
+      return new AvroParser(this, jobKey);
     }
   }
 
@@ -321,10 +320,6 @@ public class AvroParser extends Parser {
     }
 
     AvroParseSetup ps = new AvroParseSetup(
-        ParserType.AVRO,
-        (byte) '?',
-        false,
-        ParseSetup.HAS_HEADER,
         supportedFieldCnt,
         names,
         types,
@@ -334,7 +329,7 @@ public class AvroParser extends Parser {
     );
     ps.header = header;
     ps.blockSize = blockSize;
-    ps._chunk_size = (int) blockSize;
+    ps.setChunkSize((int) blockSize);
     return ps;
   }
 

@@ -20,8 +20,6 @@ dependencies {
   compile ("com.github.rwl:jtransforms:2.4.0") { exclude module: "junit" }
   // For Java6 we need named groups in regexp to have nice user API
   compile "com.github.tony19:named-regexp:0.2.3"
-  // Avro support direclty in the core
-  compile "org.apache.avro:avro:1.8.0"
 
   compile("log4j:log4j:1.2.15") { 
     exclude module: "activation" 

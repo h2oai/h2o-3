@@ -1,7 +1,5 @@
 package water.parser;
 
-// ------------------------------------------------------------------------
-
 import water.fvec.Chunk;
 import water.fvec.Vec;
 
