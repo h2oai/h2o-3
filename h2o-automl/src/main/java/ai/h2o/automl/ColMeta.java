@@ -6,6 +6,8 @@ import ai.h2o.automl.guessers.ColNameScanner;
 import ai.h2o.automl.transforms.Transform;
 import hex.tree.DHistogram;
 import water.Iced;
+import water.fvec.InteractionWrappedVec;
+import water.fvec.TransformWrappedVec;
 import water.fvec.Vec;
 
 import java.util.Arrays;
@@ -23,7 +25,7 @@ public class ColMeta extends Iced {
           "TimeToMRTaskMillis"};
 
   public final Vec _v;          // the column
-  public final byte _nameType;  // guessed at by ColNameScanner
+  public byte _nameType;  // guessed at by ColNameScanner
   public final String _name;    // column name
   public final int _idx;        // index into the input frame from automl
   public boolean _ignored;      // should this column be ignored outright
@@ -91,25 +93,35 @@ public class ColMeta extends Iced {
    *  4. Numerical,   Numerical          - not defined, could do a stupid thing with quantile
    */
 
-  public ColMeta(Vec v, String colname, int idx, boolean response) {
+  public ColMeta(Vec v, String colname, int idx, boolean response, boolean ignored) {
     _v = v;
     _name = colname;
-    _nameType = ColNameScanner.scan(_name);
+    _ignored=ignored;
     _idx = idx;
-    _response = response;
-    _specialNAs = new SpecialNA(
-            _v.isNumeric()
-                    ? (_v.isInt() ? SpecialNA.INT : SpecialNA.DBL)
-                    : SpecialNA.STR
-    );
-    _percentNA = (double)v.naCnt() / (double)v.length();
-    _ignored = v.isConst() || v.isString() || v.isBad() || v.isUUID(); // auto ignore from the outset
-    _sigma=v.sigma();
-    _variance=_sigma*_sigma;
-    _vif=-1;
+    _nameType=ColNameScanner.IGNORED;
+    if( !_ignored ) {
+      _nameType = ColNameScanner.scan(_name);
+      _response = response;
+      _specialNAs = new SpecialNA(
+              _v.isNumeric()
+                      ? (_v.isInt() ? SpecialNA.INT : SpecialNA.DBL)
+                      : SpecialNA.STR
+      );
+      _percentNA = (double) v.naCnt() / (double) v.length();
+      if (!(v instanceof TransformWrappedVec) && !(v instanceof InteractionWrappedVec)) {
+        _ignored = v.isConst() || v.isString() || v.isBad() || v.isUUID(); // auto ignore from the outset
+        _sigma = v.sigma();
+        _variance = _sigma * _sigma;
+        _vif = -1;
+      }
+    }
   }
 
-  public static HashMap<String, Object> makeEmptyColMeta() {
+  public ColMeta(Vec v, String colname, int idx, boolean response) {
+    this(v,colname,idx,response,false);
+  }
+
+    public static HashMap<String, Object> makeEmptyColMeta() {
     HashMap<String,Object> hm = new HashMap<>();
     for(String key: ColMeta.METAVALUES) hm.put(key,null);
     return hm;
