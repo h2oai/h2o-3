@@ -119,7 +119,8 @@ public class FeatureFactory {
 
 
   /**
-   * Launch the generation and pruning process.
+   * Build some very basic transforms by looking for rates, taking logs, and doing
+   * simple binary addition of features
    */
   public void synthesizeBasicFeatures() {
     // generate min(nnum*nnum,200) features
@@ -137,7 +138,29 @@ public class FeatureFactory {
       }
       cnt += tryRates(nBasicFeats-cnt);
       cnt += tryCombos(nBasicFeats-cnt);
+      // cnt += tryTime(nBasicFeats-cnt);
     }
+  }
+
+  /**
+   * Choose all keys to group-by up to 200 resulting aggregate columns
+   * that will be joining back to the Frame.
+   *
+   *
+   * want to compute these types of aggregates:
+   *    mean, sum, var, count
+   *
+   *  over the original columns + any basic columns above
+   *
+   *
+   *  Can do a single pass to compute all group-by results (for all groupings).
+   *
+   * @return
+   */
+  public Frame synthesizeAggFeatures() {
+
+    return null;
+
   }
 
 
