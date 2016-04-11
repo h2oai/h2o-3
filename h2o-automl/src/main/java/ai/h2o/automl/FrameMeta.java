@@ -84,6 +84,22 @@ public class FrameMeta extends Iced {
     fm.put("NClass", _nclass);
   }
 
+  /**
+   * Get the non-ignored columns that are not in the filter; do not include the response.
+   * @param filterThese remove these columns
+   * @return an int[] of the non-ignored column indexes
+   */
+  public int[] diffCols(int[] filterThese){
+    HashSet<Integer> filter = new HashSet<>();
+    for(int i:filterThese)filter.add(i);
+    ArrayList<Integer> res = new ArrayList<>();
+    for(int i=0;i<_cols.length;++i) {
+      if( _cols[i]._ignored || _cols[i]._response || filter.contains(i) ) continue;
+      res.add(i);
+    }
+    return intListToA(res);
+  }
+
   public long naCount() {
     if( _naCnt!=-1 ) return _naCnt;
     long cnt=0;
@@ -91,6 +107,11 @@ public class FrameMeta extends Iced {
     return (_naCnt=cnt);
   }
 
+  /**
+   * If predictors were passed, then any values computed/cached are based on those
+   * predictors
+   * @return
+   */
   public int numberOfNumericFeatures() {
     if( _numFeat!=-1 ) return _numFeat;
     ArrayList<Integer> idxs = new ArrayList<>();
@@ -101,7 +122,9 @@ public class FrameMeta extends Iced {
     int cnt=0;
     int idx=0;
     for(Vec v: _fr.vecs()) {
-      if( v.isNumeric() ) {
+      boolean ignored = _cols[idx]._ignored;
+      boolean response= _cols[idx]._response;
+      if( v.isNumeric() && !ignored && !response) {
         cnt += 1;
         idxs.add(idx);
         if( v.isInt() ) intCols.add(idx);
@@ -119,7 +142,7 @@ public class FrameMeta extends Iced {
     return (_numFeat=cnt);
   }
 
-  private int[] intListToA(List<Integer> list) {
+  public static int[] intListToA(List<Integer> list) {
     int[] a=new int[0];
     if( list.size() >0 ) {
       a = new int[list.size()];
@@ -134,7 +157,9 @@ public class FrameMeta extends Iced {
     int cnt=0;
     int idx=0;
     for(Vec v: _fr.vecs())  {
-      if( v.isCategorical() ) {
+      boolean ignored = _cols[idx]._ignored;
+      boolean response= _cols[idx]._response;
+      if( v.isCategorical() && !ignored && !response) {
         cnt += 1;
         idxs.add(idx);
       }
@@ -166,15 +191,6 @@ public class FrameMeta extends Iced {
     _fr=fr;
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
-    if( _includeCols==null )
-      for (int i = 0; i < _fr.numCols(); ++i)
-        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response);
-    else {
-      HashSet<String> preds = new HashSet<>();
-      Collections.addAll(preds,_includeCols);
-      for(int i=0;i<_fr.numCols();++i)
-        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response,!preds.contains(_fr.name(i)));
-    }
   }
 
   public FrameMeta(Frame fr, int response, String datasetName, boolean isClassification) {
@@ -189,6 +205,15 @@ public class FrameMeta extends Iced {
   public FrameMeta(Frame fr, int response, String[] predictors, String datasetName, boolean isClassification) {
     this(fr, response, datasetName, isClassification);
     _includeCols = predictors;
+    if( null==_includeCols )
+      for (int i = 0; i < _fr.numCols(); ++i)
+        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response);
+    else {
+      HashSet<String> preds = new HashSet<>();
+      Collections.addAll(preds,_includeCols);
+      for(int i=0;i<_fr.numCols();++i)
+        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response,!preds.contains(_fr.name(i)));
+    }
   }
 
   public boolean isClassification() { return _isClassification; }
