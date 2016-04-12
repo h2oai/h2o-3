@@ -678,17 +678,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
           if ("null".equals(stripped.toLowerCase()) || "na".equals(stripped.toLowerCase())) {
             a[i] = null;
             continue;
-          } else if (!stripped.startsWith("\"") || !stripped.endsWith("\"")) {
-            String msg = "Illegal argument for field: " + field_name + " of schema: " + schemaClass.getSimpleName() + ": string and key arrays' values must be double quoted, but the client sent: " + stripped;
-            IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
-            values.put("function", fclz.getSimpleName() + ".fillFromParms()");
-            values.put("argument", field_name);
-            values.put("value", stripped);
-
-            throw new H2OIllegalArgumentException(msg, msg, values);
           }
 
-          stripped = stripped.substring(1, stripped.length() - 1);
+          // Quotes are now optional because standard clients will send arrays of length one as just strings.
+          if (stripped.startsWith("\"") && stripped.endsWith("\"")) {
+            stripped = stripped.substring(1, stripped.length() - 1);
+          }
+
           a[i] = (E) parse(field_name, stripped, afclz, required, schemaClass);
         } else {
           a[i] = (E) parse(field_name, splits[i].trim(), afclz, required, schemaClass);

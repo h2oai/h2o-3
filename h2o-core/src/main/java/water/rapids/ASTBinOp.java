@@ -34,9 +34,13 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.NUM:  return new ValNum( op (dlf,rite.getNum()));
       case Val.NUMS: return new ValNum(op(dlf,rite.getNums()[0]));
       case Val.FRM:  return scalar_op_frame(dlf,rite.getFrame());
+      case Val.ROW:
+        double[] lft = new double[rite.getRow().length];
+        Arrays.fill(lft,dlf);
+        return row_op_row(lft,rite.getRow(),((ValRow)rite).getNames());
       case Val.STR:  throw H2O.unimpl();
       case Val.STRS: throw H2O.unimpl();
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
     case Val.NUMS:
@@ -45,9 +49,13 @@ abstract class ASTBinOp extends ASTPrim {
         case Val.NUM:  return new ValNum( op (ddlf,rite.getNum()));
         case Val.NUMS: return new ValNum(op(ddlf,rite.getNums()[0]));
         case Val.FRM:  return scalar_op_frame(ddlf,rite.getFrame());
+        case Val.ROW:
+          double[] lft = new double[rite.getRow().length];
+          Arrays.fill(lft,ddlf);
+          return row_op_row(lft,rite.getRow(),((ValRow)rite).getNames());
         case Val.STR:  throw H2O.unimpl();
         case Val.STRS: throw H2O.unimpl();
-        default: throw H2O.fail();
+        default: throw H2O.unimpl();
       }
 
     case Val.FRM:
@@ -58,7 +66,7 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.STR:  return frame_op_scalar(flf, rite.getStr());
       case Val.STRS: return frame_op_scalar(flf,rite.getStrs()[0]);
       case Val.FRM:  return frame_op_frame (flf,rite.getFrame());
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
     case Val.STR:
@@ -69,7 +77,7 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.STR:  throw H2O.unimpl();
       case Val.STRS: throw H2O.unimpl();
       case Val.FRM:  return scalar_op_frame(slf, rite.getFrame());
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
     case Val.STRS:
@@ -80,7 +88,7 @@ abstract class ASTBinOp extends ASTPrim {
         case Val.STR:  throw H2O.unimpl();
         case Val.STRS: throw H2O.unimpl();
         case Val.FRM:  return scalar_op_frame(sslf,rite.getFrame());
-        default: throw H2O.fail();
+        default: throw H2O.unimpl();
       }
 
     case Val.ROW:
@@ -92,10 +100,10 @@ abstract class ASTBinOp extends ASTPrim {
         return row_op_row(dslf,right,((ValRow)left).getNames());
       case Val.ROW:  return row_op_row(dslf,rite.getRow(),((ValRow)rite).getNames());
       case Val.FRM:  return row_op_row(dslf,rite.getRow(),rite.getFrame().names());
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
-    default: throw H2O.fail();
+    default: throw H2O.unimpl();
     }
   }
 

@@ -6,8 +6,10 @@ from ..model.dim_reduction import H2ODimReductionModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
-from ..h2o import H2OConnection, H2OJob, H2OFrame
 import h2o
+from h2o.connection import H2OConnection
+from h2o.job import H2OJob
+from h2o.frame import H2OFrame
 import inspect
 import warnings
 import types
@@ -150,7 +152,8 @@ class H2OEstimator(ModelBase):
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
-    kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+    kwargs["interactions"] = None if ("interactions" not in kwargs or kwargs["interactions"] is None) else [h2o.h2o._quoted(col) for col in kwargs["interactions"]]
+    kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs])  # gruesome one-liner
     algo = self._compute_algo()
 
     model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))

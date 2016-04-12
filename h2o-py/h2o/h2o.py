@@ -29,6 +29,7 @@ from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .grid.grid_search import H2OGridSearch
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 
@@ -167,6 +168,36 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names,
                                     col_types, na_strings)
 
+def import_sql_table(connection_url, table, username, password, optimize=None):
+  """Import SQL table to H2OFrame in memory.
+  
+  Parameters
+  ----------
+    connection_url : str
+      URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
+      For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+      
+    table : str
+      Name of SQL table
+      
+    username : str
+      Username of SQL server
+      
+    password : str
+      Password of SQL server
+      
+    optimize : bool, default is True
+      Optimize import of SQL table for faster imports. Experimental.  
+      
+  Returns
+  -------
+    H2OFrame containing data of specified SQL table
+"""
+  p = {}
+  p.update({k:v for k,v in locals().items() if k is not "p"})
+  p["_rest_version"] = 99
+  j = H2OJob(H2OConnection.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+  return get_frame(j.dest_key)
 
 def parse_setup(raw_frames, destination_frame="", header=(-1,0,1), separator="", column_names=None, column_types=None, na_strings=None):
   """During parse setup, the H2O cluster will make several guesses about the attributes of
@@ -357,6 +388,34 @@ def get_model(model_id):
   m._resolve_model(model_id, model_json)
   return m
 
+def get_grid(grid_id):
+  """Return the specified grid
+
+  Parameters
+  ----------
+    grid_id : str
+      The grid identification in h2o
+
+  Returns
+  -------
+    H2OGridSearch instance
+  """
+  grid_json = H2OConnection.get_json("Grids/"+grid_id, _rest_version=99)
+  models = [get_model(key['name']) for key in grid_json['model_ids']]
+  #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
+  first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'])['models'][0]
+  gs = H2OGridSearch(None, {}, grid_id)
+  gs._resolve_grid(grid_id, grid_json, first_model_json)
+  gs.models = models
+  hyper_params = {param:set() for param in gs.hyper_names}
+  for param in gs.hyper_names:
+    for model in models:
+      hyper_params[param].add(model.full_parameters[param][u'actual_value'][0])
+  hyper_params = {str(param):list(vals) for param, vals in hyper_params.items()}
+  gs.hyper_params = hyper_params
+  gs.model = model.__class__()
+  return gs
+  
 
 def get_frame(frame_id):
   """Obtain a handle to the frame in H2O with the frame_id key.

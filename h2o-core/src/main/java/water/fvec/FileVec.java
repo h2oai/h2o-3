@@ -136,9 +136,11 @@ public abstract class FileVec extends ByteVec {
    * @param numCols - number of columns expected in dataset
    * @param cores - number of processing cores per node
    * @param cloudsize - number of compute nodes
+   * @param verbose - print the parse heuristics
    * @return - optimal chunk size in bytes (always a power of 2).
    */
-  public static int calcOptimalChunkSize(long totalSize, int numCols, long maxLineLength, int cores, int cloudsize, boolean oldHeuristic) {
+  public static int calcOptimalChunkSize(long totalSize, int numCols, long maxLineLength, int cores, int cloudsize, 
+                                         boolean oldHeuristic, boolean verbose) {
     long localParseSize = (long) (double) totalSize / cloudsize;
 
     if (oldHeuristic) {
@@ -202,8 +204,8 @@ public abstract class FileVec extends ByteVec {
       }
       assert(chunkSize >= minParseChunkSize);
       assert(chunkSize <= maxParseChunkSize);
-
-      Log.info("ParseSetup heuristic: "
+      if (verbose) 
+        Log.info("ParseSetup heuristic: "
           + "cloudSize: " + cloudsize
           + ", cores: " + cores
           + ", numCols: " + numCols

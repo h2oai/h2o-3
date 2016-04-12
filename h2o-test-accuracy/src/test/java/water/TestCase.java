@@ -39,6 +39,11 @@ public class TestCase {
   private DataSet testingDataSet;
   private HashMap<String, Object[]> hyperParms;
 
+  private static boolean glmRegistered = false;
+  private static boolean gbmRegistered = false;
+  private static boolean drfRegistered = false;
+  private static boolean dlRegistered = false;
+
   public TestCase(int testCaseId, String algo, String algoParameters, boolean grid, String gridParameters,
                   String gridCriteria, boolean regression, int trainingDataSetId, int testingDataSetId,
                   String testCaseDescription) throws Exception {
@@ -61,6 +66,8 @@ public class TestCase {
     return testCaseId;
   }
 
+  public boolean isCrossVal() { return params._nfolds > 0; }
+
   public TestCaseResult execute() throws Exception, AssertionError {
     loadTestCaseDataSets();
     makeModelParameters();
@@ -76,6 +83,7 @@ public class TestCase {
       GBMModel gbmModel = null;
       DeepLearning dlJob;
       DeepLearningModel dlModel = null;
+      String bestModelJson = null;
 
       try {
         switch (algo) {
@@ -86,6 +94,7 @@ public class TestCase {
             drfModel = drfJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = drfModel._output;
+            bestModelJson = drfModel._parms.toJsonString();
             break;
           case "glm":
             glmJob = new GLM((GLMModel.GLMParameters) params, Key.<GLMModel>make("GLMModel"));
@@ -94,6 +103,7 @@ public class TestCase {
             glmModel = glmJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = glmModel._output;
+            bestModelJson = glmModel._parms.toJsonString();
             break;
           case "gbm":
             gbmJob = new GBM((GBMModel.GBMParameters) params);
@@ -102,6 +112,7 @@ public class TestCase {
             gbmModel = gbmJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = gbmModel._output;
+            bestModelJson = gbmModel._parms.toJsonString();
             break;
           case "dl":
             dlJob = new DeepLearning((DeepLearningModel.DeepLearningParameters) params);
@@ -110,6 +121,7 @@ public class TestCase {
             dlModel = dlJob.trainModel().get();
             stopTime = System.currentTimeMillis();
             modelOutput = dlModel._output;
+            bestModelJson = dlModel._parms.toJsonString();
             break;
         }
       } catch (Exception e) {
@@ -129,25 +141,48 @@ public class TestCase {
         }
       }
       removeTestCaseDataSetFrames();
-      return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-              getMetrics(modelOutput._validation_metrics), stopTime - startTime);
+
+      //Add check if cv is used
+      if(params._nfolds > 0){
+        return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
+      }
+      else{
+        return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false);
+      }
+
     } else {
+      assert !gridCriteria.equals("");
       makeGridParameters();
       Grid grid = null;
       Model bestModel = null;
+      String bestModelJson = null;
       try {
         switch (algo) {  // TODO: Hack for PUBDEV-2812
           case "drf":
-            new DRF(true);
+            if (!drfRegistered) {
+              new DRF(true);
+              drfRegistered = true;
+            }
             break;
           case "glm":
-            new GLM(true);
+            if (!glmRegistered) {
+              new GLM(true);
+              glmRegistered = true;
+            }
             break;
           case "gbm":
-            new GBM(true);
+            if (!gbmRegistered) {
+              new GBM(true);
+              gbmRegistered = true;
+            }
             break;
           case "dl":
-            new DeepLearning(true);
+            if (!dlRegistered) {
+              new DeepLearning(true);
+              dlRegistered = true;
+            }
             break;
         }
         startTime = System.currentTimeMillis();
@@ -164,9 +199,11 @@ public class TestCase {
           if (higherIsBetter ? validationMetricScore > bestScore : validationMetricScore < bestScore) {
             bestScore = validationMetricScore;
             bestModel = m;
+            bestModelJson = bestModel._parms.toJsonString();
           }
         }
         AccuracyTestingSuite.summaryLog.println("Best model: " + bestModel._key.toString());
+        AccuracyTestingSuite.summaryLog.println("Best model parameters: " + bestModelJson);
       } catch (Exception e) {
         throw new Exception(e);
       } finally {
@@ -175,8 +212,15 @@ public class TestCase {
         }
       }
       removeTestCaseDataSetFrames();
-      return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-              getMetrics(bestModel._output._validation_metrics), stopTime - startTime);
+      //Add check if cv is used
+      if(params._nfolds > 0){
+        return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
+      }
+      else{
+        return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false);
+      }
     }
   }
 
@@ -211,15 +255,15 @@ public class TestCase {
 
   private void makeGridParameters() throws Exception {
     switch (algo) {
-      //case "drf":
-      //  params = makeDrfGridParameters();
-      //  break;
-      //case "glm":
-      //  params = makeGlmGridParameters();
-      //  break;
-      //case "dl":
-      //  params = makeDlGridParameters();
-      //  break;
+      case "drf":
+        hyperParms = makeDrfGridParameters();
+        break;
+      case "glm":
+        hyperParms = makeGlmGridParameters();
+        break;
+      case "dl":
+        hyperParms = makeDlGridParameters();
+        break;
       case "gbm":
         hyperParms = makeGbmGridParameters();
         break;
@@ -252,6 +296,13 @@ public class TestCase {
       mmMap.put("MCC", ((ModelMetricsBinomial) mm).cm().mcc());
       mmMap.put("MaxPerClassError", ((ModelMetricsBinomial) mm).cm().max_per_class_error());
     }
+    // Multinomial metrics
+    if (mm instanceof ModelMetricsMultinomial) {
+      mmMap.put("Logloss", ((ModelMetricsMultinomial) mm).logloss());
+      mmMap.put("Error", ((ModelMetricsMultinomial) mm).cm().err());
+      mmMap.put("MaxPerClassError", ((ModelMetricsMultinomial) mm).cm().max_per_class_error());
+      mmMap.put("Accuracy", ((ModelMetricsMultinomial) mm).cm().accuracy());
+    }
     // GLM-specific metrics
     if (mm instanceof ModelMetricsRegressionGLM) {
       mmMap.put("ResidualDeviance", ((ModelMetricsRegressionGLM) mm)._resDev);
@@ -277,32 +328,29 @@ public class TestCase {
     for (int i = 0; i < tokens.length; i++) {
       String parameterName = tokens[i].split("=", -1)[0];
       String parameterValue = tokens[i].split("=", -1)[1];
-      switch (parameterValue) {
-        case "_distribution":
+      switch (parameterName) {
+        case "_family":
           switch (parameterValue) {
-            case "AUTO":
-              glmParams._distribution = Distribution.Family.AUTO;
-              break;
             case "gaussian":
-              glmParams._distribution = Distribution.Family.gaussian;
+              glmParams._family = GLMModel.GLMParameters.Family.gaussian;
               break;
-            case "bernoulli":
-              glmParams._distribution = Distribution.Family.bernoulli;
+            case "binomial":
+              glmParams._family = GLMModel.GLMParameters.Family.binomial;
               break;
             case "multinomial":
-              glmParams._distribution = Distribution.Family.multinomial;
+              glmParams._family = GLMModel.GLMParameters.Family.multinomial;
               break;
             case "poisson":
-              glmParams._distribution = Distribution.Family.poisson;
+              glmParams._family = GLMModel.GLMParameters.Family.poisson;
               break;
             case "gamma":
-              glmParams._distribution = Distribution.Family.gamma;
+              glmParams._family = GLMModel.GLMParameters.Family.gamma;
               break;
             case "tweedie":
-              glmParams._distribution = Distribution.Family.tweedie;
+              glmParams._family = GLMModel.GLMParameters.Family.tweedie;
               break;
             default:
-              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+              throw new Exception(parameterValue + " family is not supported for gbm test cases");
           }
           break;
         case "_solver":
@@ -403,6 +451,28 @@ public class TestCase {
     Key betaConsKey = Key.make("beta_constraints");
     FVecTest.makeByteVec(betaConsKey, betaConstraintsString);
     return ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey)._key;
+  }
+
+  private HashMap<String, Object[]> makeGlmGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making GLM grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> glmHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      if (tokens[i].equals("")) return glmHyperParms;
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_alpha":
+          glmHyperParms.put("_alpha", stringArrayToDoubleAA(gridParameterValues));
+          break;
+        case "_lambda":
+          glmHyperParms.put("_lambda", stringArrayToDoubleAA(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for glm test cases");
+      }
+    }
+    return glmHyperParms;
   }
 
   private GBMModel.GBMParameters makeGbmModelParameters() throws Exception {
@@ -634,9 +704,12 @@ public class TestCase {
               throw new Exception(parameterValue + " loss is not supported for gbm test cases");
           }
           break;
+        case "_nfolds":
+          dlParams._nfolds = Integer.parseInt(parameterValue);
+          break;
         case "_hidden":
           String[] hidden = tokens[i].trim().split(":", -1);
-          dlParams._hidden = new int[]{Integer.parseInt(hidden[0]), Integer.parseInt(hidden[0])};
+          dlParams._hidden = stringArrayTointArray(hidden);
           break;
         case "_epochs":
           dlParams._epochs = Double.parseDouble(parameterValue);
@@ -757,6 +830,28 @@ public class TestCase {
     return dlParams;
   }
 
+  private HashMap<String, Object[]> makeDlGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making DL grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> dlHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      if (tokens[i].equals("")) return dlHyperParms;
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_hidden":
+          dlHyperParms.put("_hidden", hiddenStringArrayTointAA(gridParameterValues));
+          break;
+        case "_epochs":
+          dlHyperParms.put("_epochs", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for dl test cases");
+      }
+    }
+    return dlHyperParms;
+  }
+
   private DRFModel.DRFParameters makeDrfModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making DRF model parameters.");
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
@@ -854,16 +949,88 @@ public class TestCase {
     return drfParams;
   }
 
+  private HashMap<String, Object[]> makeDrfGridParameters() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making DRF grid parameters.");
+    String[] tokens = gridParameters.trim().split(";", -1);
+    HashMap<String, Object[]> drfHyperParms = new HashMap<String, Object[]>();
+    for (int i = 0; i < tokens.length; i++) {
+      String gridParameterName = tokens[i].split("=", -1)[0];
+      String[] gridParameterValues = tokens[i].split("=", -1)[1].split("\\|", -1);
+      switch (gridParameterName) {
+        case "_ntrees":
+          drfHyperParms.put("_ntrees", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_max_depth":
+          drfHyperParms.put("_max_depth", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_min_rows":
+          drfHyperParms.put("_min_rows", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_nbins":
+          drfHyperParms.put("_nbins", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_nbins_cats":
+          drfHyperParms.put("_nbins_cats", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_balance_classes":
+          drfHyperParms.put("_balance_classes", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_r2_stopping":
+          drfHyperParms.put("_r2_stopping", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_build_tree_one_node":
+          drfHyperParms.put("_build_tree_one_node", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_mtries":
+          drfHyperParms.put("_mtries", stringArrayToIntegerArray(gridParameterValues));
+          break;
+        case "_sample_rate":
+          drfHyperParms.put("_sample_rate", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_binomial_double_trees":
+          drfHyperParms.put("_binomial_double_trees", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_col_sample_rate_per_tree":
+          drfHyperParms.put("_col_sample_rate_per_tree", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_min_split_improvement":
+          drfHyperParms.put("_min_split_improvement", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        default:
+          throw new Exception(gridParameterName + " grid parameter is not supported for drf test cases");
+      }
+    }
+    return drfHyperParms;
+  }
+
   static Integer[] stringArrayToIntegerArray(String[] sa) {
     Integer[] ia = new Integer[sa.length];
     for (int v = 0; v < sa.length; v++) ia[v] = Integer.parseInt(sa[v]);
     return ia;
   }
 
+  static int[] stringArrayTointArray(String[] sa) {
+    int[] ia = new int[sa.length];
+    for (int v = 0; v < sa.length; v++) ia[v] = Integer.parseInt(sa[v]);
+    return ia;
+  }
+
+  static int[][] hiddenStringArrayTointAA(String[] sa) {
+    int[][] iaa = new int[sa.length][];
+    for (int h=0; h<sa.length; h++) iaa[h] = stringArrayTointArray(sa[h].trim().split(":", -1));
+    return iaa;
+  }
+
   static Double[] stringArrayToDoubleArray(String[] sa) {
     Double[] da = new Double[sa.length];
     for (int v = 0; v < sa.length; v++) da[v] = Double.parseDouble(sa[v]);
     return da;
+  }
+
+  static double[][] stringArrayToDoubleAA(String[] sa) {
+    double[][] daa = new double[sa.length][1];
+    for (int v = 0; v < sa.length; v++) daa[v] = new double[]{Double.parseDouble(sa[v])};
+    return daa;
   }
 
   static Float[] stringArrayToFloatArray(String[] sa) {

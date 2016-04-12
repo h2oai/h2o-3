@@ -13,6 +13,7 @@ import os
 import tempfile
 import sys
 import traceback
+import random
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote
 from .display import H2ODisplay
 from .connection import H2OConnection

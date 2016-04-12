@@ -85,7 +85,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
             (int)((float)(catcols+intcols)*_createFrame.rows*4 //4 bytes for categoricals and integers
                  +(float)bincols          *_createFrame.rows*1*_createFrame.binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                  +(float)(realcols+timecols+stringcols) *_createFrame.rows*8), //8 bytes for real and time (long) values
-            _createFrame.cols, _createFrame.cols*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+            _createFrame.cols, _createFrame.cols*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false, true);
     _v = makeCon(_createFrame.value, _createFrame.rows, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
   }
 
