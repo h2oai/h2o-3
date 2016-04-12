@@ -17,6 +17,9 @@ public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
 
   @API(help="password", required = true)
   String password;
+  
+  @API(help="columns")
+  String columns = "*";
 
   @API(help="optimize")
   boolean optimize = true;

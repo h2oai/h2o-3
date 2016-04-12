@@ -980,7 +980,7 @@ public final class ParseDataset {
 
   // ------------------------------------------------------------------------
   // Log information about the dataset we just parsed.
-  private static void logParseResults(Frame fr) {
+  public static void logParseResults(Frame fr) {
     long numRows = fr.anyVec().length();
     Log.info("Parse result for " + fr._key + " (" + Long.toString(numRows) + " rows):");
     // get all rollups started in parallell, otherwise this takes ages!
