@@ -143,11 +143,11 @@ public class TestCase {
       //Add check if cv is used
       if(params._nfolds > 0){
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson);
+                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson);
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false);
       }
 
     } else {
@@ -213,11 +213,11 @@ public class TestCase {
       //Add check if cv is used
       if(params._nfolds > 0){
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson);
+                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson);
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false);
       }
     }
   }

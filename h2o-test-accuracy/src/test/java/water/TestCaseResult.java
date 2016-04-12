@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.HashMap;
+import water.TestCase;
 
 public class TestCaseResult {
   private int testCaseId;
@@ -17,15 +18,17 @@ public class TestCaseResult {
     "MSE", "ResidualDeviance", "ResidualDegreesOfFreedom", "NullDeviance", "NullDegreesOfFreedom", "F1", "F2",
     "F0point5", "Accuracy", "Error", "Precision", "Recall", "MCC", "MaxPerClassError"};
   private String modelJson;
+  private boolean nfold;
   private static final String resultsDBTableName = "AccuracyTestCaseResults"; //TODO: get this from the connection instead
 
   public TestCaseResult(int testCaseId, HashMap<String,Double> trainingMetrics, HashMap<String,Double> testingMetrics,
-                        double modelBuildTime, String modelJson) throws Exception {
+                        double modelBuildTime, String modelJson, boolean nfold) throws Exception {
     this.testCaseId = testCaseId;
     this.trainingMetrics = trainingMetrics;
     this.testingMetrics = testingMetrics;
     this.modelBuildTime = modelBuildTime;
     this.modelJson = modelJson;
+    this.nfold = nfold;
 
     this.ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
     this.ncpu = Runtime.getRuntime().availableProcessors();
@@ -41,10 +44,18 @@ public class TestCaseResult {
   }
 
   public void printValidationMetrics() {
-    AccuracyTestingSuite.summaryLog.println("Validation metrics:");
-    for (String m : metrics) {
-      AccuracyTestingSuite.summaryLog.println("Metric: "+ m + ", Value: " + (testingMetrics.get(m) == null ||
-              Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
+    if(nfold){
+      AccuracyTestingSuite.summaryLog.println("Cross Validation metrics:");
+      for (String m : metrics) {
+        AccuracyTestingSuite.summaryLog.println("Metric: "+ m + ", Value: " + (testingMetrics.get(m) == null ||
+                Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
+      }
+    }else{
+      AccuracyTestingSuite.summaryLog.println("Validation metrics:");
+      for (String m : metrics) {
+        AccuracyTestingSuite.summaryLog.println("Metric: "+ m + ", Value: " + (testingMetrics.get(m) == null ||
+                Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
+      }
     }
   }
 
