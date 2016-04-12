@@ -327,31 +327,28 @@ public class TestCase {
       String parameterName = tokens[i].split("=", -1)[0];
       String parameterValue = tokens[i].split("=", -1)[1];
       switch (parameterName) {
-        case "_distribution":
+        case "_family":
           switch (parameterValue) {
-            case "AUTO":
-              glmParams._distribution = Distribution.Family.AUTO;
-              break;
             case "gaussian":
-              glmParams._distribution = Distribution.Family.gaussian;
+              glmParams._family = GLMModel.GLMParameters.Family.gaussian;
               break;
-            case "bernoulli":
-              glmParams._distribution = Distribution.Family.bernoulli;
+            case "binomial":
+              glmParams._family = GLMModel.GLMParameters.Family.binomial;
               break;
             case "multinomial":
-              glmParams._distribution = Distribution.Family.multinomial;
+              glmParams._family = GLMModel.GLMParameters.Family.multinomial;
               break;
             case "poisson":
-              glmParams._distribution = Distribution.Family.poisson;
+              glmParams._family = GLMModel.GLMParameters.Family.poisson;
               break;
             case "gamma":
-              glmParams._distribution = Distribution.Family.gamma;
+              glmParams._family = GLMModel.GLMParameters.Family.gamma;
               break;
             case "tweedie":
-              glmParams._distribution = Distribution.Family.tweedie;
+              glmParams._family = GLMModel.GLMParameters.Family.tweedie;
               break;
             default:
-              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+              throw new Exception(parameterValue + " family is not supported for gbm test cases");
           }
           break;
         case "_solver":
