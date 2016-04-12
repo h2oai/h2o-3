@@ -139,8 +139,17 @@ public class TestCase {
         }
       }
       removeTestCaseDataSetFrames();
-      return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-              getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson);
+
+      //Add check if cv is used
+      if(params._nfolds > 0){
+        return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson);
+      }
+      else{
+        return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson);
+      }
+
     } else {
       assert !gridCriteria.equals("");
       makeGridParameters();
@@ -201,8 +210,15 @@ public class TestCase {
         }
       }
       removeTestCaseDataSetFrames();
-      return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-              getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson);
+      //Add check if cv is used
+      if(params._nfolds > 0){
+        return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson);
+      }
+      else{
+        return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson);
+      }
     }
   }
 
@@ -688,6 +704,9 @@ public class TestCase {
             default:
               throw new Exception(parameterValue + " loss is not supported for gbm test cases");
           }
+          break;
+        case "_nfolds":
+          dlParams._nfolds = Integer.parseInt(parameterValue);
           break;
         case "_hidden":
           String[] hidden = tokens[i].trim().split(":", -1);
