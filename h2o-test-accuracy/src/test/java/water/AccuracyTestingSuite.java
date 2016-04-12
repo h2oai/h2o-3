@@ -122,7 +122,7 @@ public class AccuracyTestingSuite {
 
         tcResult = tc.execute();
 
-        tcResult.printValidationMetrics();
+        tcResult.printValidationMetrics(tc.isCrossVal());
         if (recordResults) {
           summaryLog.println("Recording test case " + id + " result.");
           tcResult.saveToAccuracyTable(resultsDBTableConn);

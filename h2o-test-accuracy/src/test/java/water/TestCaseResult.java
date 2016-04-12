@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.HashMap;
-import water.TestCase;
 
 public class TestCaseResult {
   private int testCaseId;
@@ -18,7 +17,6 @@ public class TestCaseResult {
     "MSE", "ResidualDeviance", "ResidualDegreesOfFreedom", "NullDeviance", "NullDegreesOfFreedom", "F1", "F2",
     "F0point5", "Accuracy", "Error", "Precision", "Recall", "MCC", "MaxPerClassError"};
   private String modelJson;
-  private boolean nfold;
   private static final String resultsDBTableName = "AccuracyTestCaseResults"; //TODO: get this from the connection instead
 
   public TestCaseResult(int testCaseId, HashMap<String,Double> trainingMetrics, HashMap<String,Double> testingMetrics,
@@ -28,7 +26,6 @@ public class TestCaseResult {
     this.testingMetrics = testingMetrics;
     this.modelBuildTime = modelBuildTime;
     this.modelJson = modelJson;
-    this.nfold = nfold;
 
     this.ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
     this.ncpu = Runtime.getRuntime().availableProcessors();
@@ -43,22 +40,15 @@ public class TestCaseResult {
     AccuracyTestingSuite.summaryLog.println("Successfully executed the following sql statement: " + sql);
   }
 
-  public void printValidationMetrics() {
-    if(nfold){
-      AccuracyTestingSuite.summaryLog.println("Cross Validation metrics:");
-      for (String m : metrics) {
-        AccuracyTestingSuite.summaryLog.println("Metric: "+ m + ", Value: " + (testingMetrics.get(m) == null ||
-                Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
-      }
-    }else{
-      AccuracyTestingSuite.summaryLog.println("Validation metrics:");
-      for (String m : metrics) {
-        AccuracyTestingSuite.summaryLog.println("Metric: "+ m + ", Value: " + (testingMetrics.get(m) == null ||
-                Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
-      }
+  public void printValidationMetrics(boolean crossVal) {
+    if (crossVal) { AccuracyTestingSuite.summaryLog.println("Cross Validation metrics:"); }
+    else { AccuracyTestingSuite.summaryLog.println("Validation metrics:"); }
+    for (String m : metrics) {
+      AccuracyTestingSuite.summaryLog.println("Metric: " + m + ", Value: " + (testingMetrics.get(m) == null ||
+              Double.isNaN(testingMetrics.get(m)) ? "NULL " : Double.toString(testingMetrics.get(m))));
     }
   }
-
+  
   private String makeSQLCmd() {
     AccuracyTestingSuite.summaryLog.println("Making the sql statement.");
     String sql = String.format("insert into %s values(%s, ", resultsDBTableName, testCaseId);

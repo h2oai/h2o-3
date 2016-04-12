@@ -66,6 +66,8 @@ public class TestCase {
     return testCaseId;
   }
 
+  public boolean isCrossVal() { return params._nfolds > 0; }
+
   public TestCaseResult execute() throws Exception, AssertionError {
     loadTestCaseDataSets();
     makeModelParameters();
