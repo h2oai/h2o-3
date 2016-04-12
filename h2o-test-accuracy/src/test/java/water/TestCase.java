@@ -66,6 +66,8 @@ public class TestCase {
     return testCaseId;
   }
 
+  public boolean isCrossVal() { return params._nfolds > 0; }
+
   public TestCaseResult execute() throws Exception, AssertionError {
     loadTestCaseDataSets();
     makeModelParameters();
@@ -139,8 +141,17 @@ public class TestCase {
         }
       }
       removeTestCaseDataSetFrames();
-      return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-              getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson);
+
+      //Add check if cv is used
+      if(params._nfolds > 0){
+        return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
+      }
+      else{
+        return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false);
+      }
+
     } else {
       assert !gridCriteria.equals("");
       makeGridParameters();
@@ -201,8 +212,15 @@ public class TestCase {
         }
       }
       removeTestCaseDataSetFrames();
-      return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-              getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson);
+      //Add check if cv is used
+      if(params._nfolds > 0){
+        return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
+      }
+      else{
+        return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false);
+      }
     }
   }
 
@@ -311,31 +329,28 @@ public class TestCase {
       String parameterName = tokens[i].split("=", -1)[0];
       String parameterValue = tokens[i].split("=", -1)[1];
       switch (parameterName) {
-        case "_distribution":
+        case "_family":
           switch (parameterValue) {
-            case "AUTO":
-              glmParams._distribution = Distribution.Family.AUTO;
-              break;
             case "gaussian":
-              glmParams._distribution = Distribution.Family.gaussian;
+              glmParams._family = GLMModel.GLMParameters.Family.gaussian;
               break;
-            case "bernoulli":
-              glmParams._distribution = Distribution.Family.bernoulli;
+            case "binomial":
+              glmParams._family = GLMModel.GLMParameters.Family.binomial;
               break;
             case "multinomial":
-              glmParams._distribution = Distribution.Family.multinomial;
+              glmParams._family = GLMModel.GLMParameters.Family.multinomial;
               break;
             case "poisson":
-              glmParams._distribution = Distribution.Family.poisson;
+              glmParams._family = GLMModel.GLMParameters.Family.poisson;
               break;
             case "gamma":
-              glmParams._distribution = Distribution.Family.gamma;
+              glmParams._family = GLMModel.GLMParameters.Family.gamma;
               break;
             case "tweedie":
-              glmParams._distribution = Distribution.Family.tweedie;
+              glmParams._family = GLMModel.GLMParameters.Family.tweedie;
               break;
             default:
-              throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+              throw new Exception(parameterValue + " family is not supported for gbm test cases");
           }
           break;
         case "_solver":
@@ -688,6 +703,9 @@ public class TestCase {
             default:
               throw new Exception(parameterValue + " loss is not supported for gbm test cases");
           }
+          break;
+        case "_nfolds":
+          dlParams._nfolds = Integer.parseInt(parameterValue);
           break;
         case "_hidden":
           String[] hidden = tokens[i].trim().split(":", -1);

@@ -5,3 +5,13 @@ data_set_id,uri,respose_col_idx
 4,s3://h2o-public-test-data/smalldata/testng/prostate_test.csv,0
 5,s3://h2o-public-test-data/bigdata/laptop/testng/milsongs-train.csv.gz,0
 6,s3://h2o-public-test-data/bigdata/laptop/testng/milsongs-test.csv.gz,0
+7,s3://h2o-public-test-data/smalldata/testng/airlines_train.csv,0
+8,s3://h2o-public-test-data/smalldata/testng/airlines_test.csv,0
+9,s3://h2o-public-test-data/smalldata/testng/arcene_train.csv,0
+10,s3://h2o-public-test-data/smalldata/testng/arcene_test.csv,0
+11,s3://h2o-public-test-data/smalldata/testng/covtype_small_dense_multiclass_unbalanced_train.csv,0
+12,s3://h2o-public-test-data/smalldata/testng/covtype_small_dense_multiclass_unbalanced_test.csv,0
+13,s3://h2o-public-test-data/bigdata/laptop/testng/mnist_train.csv,0
+14,s3://h2o-public-test-data/bigdata/laptop/testng/mnist_test.csv,0
+15,s3://h2o-public-test-data/bigdata/laptop/testng/cup98_train.csv,0
+16,s3://h2o-public-test-data/bigdata/laptop/testng/cup98_test.csv,0
