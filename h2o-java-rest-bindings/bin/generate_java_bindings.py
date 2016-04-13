@@ -64,7 +64,7 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
 
 
 # generate a Schema POJO and find any Enums it uses
-def generate_pojo(schema, pojo_name):
+def generate_pojo(schema, pojo_name, model_builders_map):
     global args
     global enums
 
@@ -91,6 +91,17 @@ def generate_pojo(schema, pojo_name):
 
     pojo.append("public class " + pojo_name + " extends {superclass} ".format(superclass=superclass) + '{')
 
+    # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the parameters schema class. . .
+    is_model_builder = False
+    is_model_parameters = False
+    for field in schema['fields']:
+        if 'can_build' == field['name']:
+            is_model_builder = True
+        # UGH UGH UGH
+        if 'model_id' == field['name'] and 'Destination id for this model; auto-generated if not specified' == field['help']:
+            is_model_parameters = True
+#            model_builder_fields = model_builders_map[
+
     first = True
     for field in schema['fields']:
         help = field['help']
@@ -112,6 +123,17 @@ def generate_pojo(schema, pojo_name):
 
         if not first:
             pojo.append("")
+
+        # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the parameters schema class. . .
+        if is_model_builder and 'parameters' == field['name']:
+            if 'ModelBuilderSchema' == pojo_name:
+                pojo.append("    /** {help} */".format(help=help))
+                pojo.append("    public ModelParameterSchemaV3[] parameters;")
+            else:
+                pojo.append("    /* INHERITED: {help} ".format(help=help))
+                pojo.append("    public ModelParameterSchemaV3[] parameters;")
+                pojo.append("     */")
+            continue
 
         if field['is_inherited']:
             pojo.append("    /* INHERITED: {help} ".format(help=help))
@@ -237,11 +259,13 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             # NOTE: hackery due to the way the paths are formed: POST to /99/Grid/glm and to /3/Grid/deeplearning both call methods called train
             if (entity == 'Grid' or entity == 'ModelBuilders') and (method == 'train'):
                 # /99/Grid/glm or /3/ModelBuilders/glm
+                
                 pieces = path.split('/')
                 if len(pieces) != 4:
                     raise Exception("Expected 3 parts to this path (something like /99/Grid/glm): " + path)
                 algo = pieces[3]
                 method = method + '_' + algo  # train_glm()
+                
             elif (entity == 'ModelBuilders') and (method == 'validate_parameters'):
                 # /3/ModelBuilders/glm/parameters
                 pieces = path.split('/')
@@ -249,6 +273,17 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     raise Exception("Expected 3 parts to this path (something like /3/ModelBuilders/glm/parameters): " + path)
                 algo = pieces[3]
                 method = method + '_' + algo  # validate_parameters_glm()
+
+            input_schema = all_schemas_map[input_schema_name]
+            # print("input_schema: " + repr(input_schema))
+
+            if (entity == 'ModelBuilders') and ((method.startswith('train')) or (method.startswith('validate_parameters'))):
+                # print("will lift parameters object for: " + input_schema_name)
+                for builder_field in input_schema['fields']:
+                    if builder_field['name'] == 'parameters':
+                        input_schema_name = builder_field['schema_name']
+                        input_schema = all_schemas_map[input_schema_name]
+                        break
 
             # TODO: handle query parameters from RequestSchema
             parms = ""
@@ -258,8 +293,6 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             else:
                 is_post = False
             
-            input_schema = all_schemas_map[input_schema_name]
-
             # calculate indent
             indent = ' ' * len('    Call<{output_schema_name}> {method}('.format(output_schema_name = output_schema_name, method = method))
             
@@ -276,11 +309,13 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 # cons up the proper Java type:
                 parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
 
-                # Send keys as Strings
+                # Send keys and ColSpecifiers as Strings
                 # TODO: brackets
                 if parm_type.endswith('KeyV3'):
                     parm_type = 'String'
-
+                if parm_type == 'ColSpecifierV3':
+                    parm_type = 'String'
+                    
                 if not first_parm: parms += ',\n'; parms += indent
                 parms += '@Path("{parm}") '.format(parm = parm)
                 parms += parm_type
@@ -289,7 +324,8 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 first_parm = False
 
             if is_post:
-                for field in input_schema['fields']:
+                fields = input_schema['fields']
+                for field in fields:
                     if field['direction'] == 'OUTPUT': continue
                     if field['name'] in path_parm_names: continue
 
@@ -297,10 +333,14 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
                     parm = field['name']
 
-                    # Send keys as Strings
-                    # TODO: brackets
+                    # Send keys and ColSpecifiers as Strings
                     if parm_type.endswith('KeyV3'):
                         parm_type = 'String'
+                    if parm_type.endswith('KeyV3[]'):
+                        parm_type = 'String[]'
+                    if parm_type == 'ColSpecifierV3':
+                        parm_type = 'String'
+
 
                     if not first_parm: parms += ',\n'; parms += indent
                     parms += '@Field("{parm}") '.format(parm = parm)
@@ -346,6 +386,8 @@ a_node = h2o.H2O(args.host, args.port)
 print('creating the Java bindings in {}. . .'.format(args.dest))
 
 
+model_builders_map = a_node.model_builders()['model_builders']
+
 #################################################################
 # Get all the schemas and generate POJOs or Enums as appropriate.
 # Note the medium ugliness that the enums list is global. . .
@@ -376,7 +418,7 @@ for schema in all_schemas:
             raise
 
     with open(save_full, 'w') as the_file:
-        for line in generate_pojo(schema, pojo_name):
+        for line in generate_pojo(schema, pojo_name, model_builders_map):
             the_file.write("%s\n" % line)
 
 ########################
@@ -443,6 +485,7 @@ for entity, proxy in retrofitProxies.items():
 retrofit_example = '''package water.bindings.proxies.retrofit;
 
 import water.bindings.pojos.*;
+import water.bindings.proxies.*;
 import com.google.gson.*;
 import retrofit2.*;
 import retrofit2.http.*;
@@ -450,6 +493,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.Call;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Example {
 
@@ -462,6 +507,16 @@ public class Example {
             return new JsonPrimitive(key.name);
         }
     }
+
+    /**
+     * KeysColSpecifiers get sent as Strings and returned as objects also containing a list of Frames that the col must be a member of,
+     * so they need a custom GSON serializer.
+    private static class ColSpecifierSerializer implements JsonSerializer<ColSpecifierV3> {
+        public JsonElement serialize(ColSpecifierV3 cs, Type t, JsonSerializationContext context) {
+            return new JsonPrimitive(cs.column_name);
+        }
+    }
+     */
 
     public static JobV3 poll(Retrofit retrofit, String job_id) {
         Jobs jobsService = retrofit.create(Jobs.class);
@@ -490,7 +545,150 @@ public class Example {
         return jobs.jobs[0];
     }
 
-    public static void main (String[] args) {
+    public static void gbm_example_flow() {
+        GsonBuilder builder = new GsonBuilder();
+        builder.registerTypeAdapter(KeyV3.class, new KeySerializer());
+//        builder.registerTypeAdapter(ColSpecifierV3.class, new ColSpecifierSerializer());
+        Gson gson = builder.create();
+
+        Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl("http://localhost:54321/") // note trailing slash for Retrofit 2
+        .addConverterFactory(GsonConverterFactory.create(gson))
+        .build();
+
+        ImportFiles importService = retrofit.create(ImportFiles.class);
+        ParseSetup parseSetupService = retrofit.create(ParseSetup.class);
+        Parse parseService = retrofit.create(Parse.class);
+        Frames framesService = retrofit.create(Frames.class);
+        Models modelsService = retrofit.create(Models.class);
+        ModelBuilders modelBuildersService = retrofit.create(ModelBuilders.class);
+
+        try {
+            // STEP 1: import raw file
+            ImportFilesV3 importBody = importService.importFiles("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null).execute().body();
+            System.out.println("import: " + importBody);
+
+            // STEP 2: parse setup
+            ParseSetupV3 parseSetupBody = parseSetupService.guessSetup(importBody.destination_frames,
+                                                                  ParserType.GUESS, 
+                                                                  (byte)',', 
+                                                                  false,
+                                                                  -1,
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  0,
+                                                                  0,
+                                                                  0,
+                                                                  null
+                                                                  ).execute().body();
+            System.out.println("parseSetupBody: " + parseSetupBody);
+
+            // STEP 3: parse into columnar Frame
+            List<String> source_frames = new ArrayList<>();
+            for (FrameKeyV3 frame : parseSetupBody.source_frames)
+              source_frames.add(frame.name);
+
+            ParseV3 parseBody = parseService.parse("arrhythmia.hex",
+                                                   source_frames.toArray(new String[0]),
+                                                   parseSetupBody.parse_type,
+                                                   parseSetupBody.separator,
+                                                   parseSetupBody.single_quotes,
+                                                   parseSetupBody.check_header,
+                                                   parseSetupBody.number_columns,
+                                                   parseSetupBody.column_names,
+                                                   parseSetupBody.column_types,
+                                                   null, // domains
+                                                   parseSetupBody.na_strings,
+                                                   parseSetupBody.chunk_size,
+                                                   true,
+                                                   true,
+                                                   null).execute().body();
+            System.out.println("parseBody: " + parseBody);
+
+            // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
+            GBMParametersV3 gbm_parms = new GBMParametersV3();
+
+            FrameKeyV3 training_frame = new FrameKeyV3();
+            training_frame.name = "arrhythmia.hex";
+
+            gbm_parms.training_frame = training_frame;
+            gbm_parms.score_each_iteration = false;
+            gbm_parms.ntrees = 20;
+            gbm_parms.max_depth = 5;
+            gbm_parms.min_rows = 25;
+            gbm_parms.nbins = 20;
+            gbm_parms.nbins_top_level = 20;
+            gbm_parms.nbins_cats = 10;
+            gbm_parms.learn_rate = 0.3f;
+            gbm_parms.sample_rate = 0.9f;
+            gbm_parms.col_sample_rate = 0.9f;
+            gbm_parms.col_sample_rate_per_tree = 0.9f;
+            gbm_parms.distribution = Family.AUTO;
+            gbm_parms.balance_classes = false;
+            gbm_parms.max_confusion_matrix_size = 20;
+            gbm_parms.max_hit_ratio_k = 10;
+//            gbm_parms.class_sampling_factors = [];
+            gbm_parms.max_after_balance_size = 5;
+            gbm_parms.tweedie_power = 1.5f;
+            gbm_parms.seed = 0;
+            gbm_parms.r2_stopping = 0.999999;
+            gbm_parms.stopping_tolerance = 0.001;
+            gbm_parms.max_runtime_secs = 5;
+
+            GBMV3 gbmBody = (GBMV3)modelBuildersService.train_gbm(gbm_parms.learn_rate,
+								  gbm_parms.distribution,
+								  gbm_parms.quantile_alpha,
+								  gbm_parms.tweedie_power,
+								  gbm_parms.col_sample_rate,
+								  gbm_parms.balance_classes,
+								  gbm_parms.class_sampling_factors,
+								  gbm_parms.max_after_balance_size,
+								  gbm_parms.max_confusion_matrix_size,
+								  gbm_parms.max_hit_ratio_k,
+								  gbm_parms.ntrees,
+								  gbm_parms.max_depth,
+								  gbm_parms.min_rows,
+								  gbm_parms.nbins,
+								  gbm_parms.nbins_top_level,
+								  gbm_parms.nbins_cats,
+								  gbm_parms.r2_stopping,
+								  gbm_parms.seed,
+								  gbm_parms.build_tree_one_node,
+								  gbm_parms.sample_rate,
+								  gbm_parms.sample_rate_per_class,
+								  gbm_parms.col_sample_rate_per_tree,
+								  gbm_parms.score_tree_interval,
+								  gbm_parms.min_split_improvement,
+								  (gbm_parms.model_id == null ? null : gbm_parms.model_id.name),
+								  gbm_parms.training_frame.name,
+								  (gbm_parms.validation_frame == null ? null : gbm_parms.validation_frame.name),
+								  gbm_parms.nfolds,
+								  gbm_parms.keep_cross_validation_predictions,
+								  gbm_parms.keep_cross_validation_fold_assignment,
+								  gbm_parms.parallelize_cross_validation,
+								  "C1",
+								  null,
+								  null,
+								  null,
+								  gbm_parms.fold_assignment,
+								  gbm_parms.ignored_columns,
+								  gbm_parms.ignore_const_cols,
+								  gbm_parms.score_each_iteration,
+								  (gbm_parms.checkpoint == null ? null : gbm_parms.checkpoint.name),
+								  gbm_parms.stopping_rounds,
+								  gbm_parms.max_runtime_secs,
+								  gbm_parms.stopping_metric,
+								  gbm_parms.stopping_tolerance).execute().body();
+            System.out.println("gbmBody: " + gbmBody);
+        }
+        catch (IOException e) {
+            System.err.println("Caught exception: " + e);
+        }
+    }
+
+    public static void simple_example() {
         Gson gson = new GsonBuilder().registerTypeAdapter(KeyV3.class, new KeySerializer()).create();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -559,6 +757,10 @@ public class Example {
         catch (IOException e) {
             System.err.println("Caught exception: " + e);
         }
+    } // simple_example()
+
+    public static void main (String[] args) {
+        gbm_example_flow();
     }
 }
 '''
