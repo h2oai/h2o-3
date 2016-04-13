@@ -1937,7 +1937,7 @@ mean.H2OFrame <- h2o.mean
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.
-# TODO: figure out funcionality/use for documentation
+# TODO: figure out functionality/use for documentation
 # h2o.mode <-
 # function(x) {
 #  if(!is(x, "H2OFrame")) || nrow(x) > 1L) stop('`x` must be an H2OFrame object')
@@ -2303,9 +2303,8 @@ h2o.removeVecs <- function(data, cols) {
 #' Applies conditional statements to numeric vectors in H2O parsed data objects when the data are
 #' numeric.
 #'
-#' Only numeric values can be tested, and only numeric results can be returned for either condition.
-#' Categorical data is not currently supported for this funciton and returned values cannot be
-#' categorical in nature.
+#' Both numeric and categorical values can be tested. However when returning a yes and no condition
+#' both conditions must be either both categorical or numeric.
 #'
 #' @name h2o.ifelse
 #' @param test A logical description of the condition to be met (>, <, =, etc...)
