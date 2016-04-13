@@ -111,7 +111,9 @@ public class MetadataHandler extends Handler {
 
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(docs.schemaname)));
+    Schema schema = Schema.newInstance(docs.schemaname);
+    schema.fillFromImpl(schema.createImpl()); // get defaults
+    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
     docs.schemas[0] = meta;
     return docs;
   }

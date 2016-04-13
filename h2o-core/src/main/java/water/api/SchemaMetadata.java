@@ -381,6 +381,8 @@ public final class SchemaMetadata extends Iced {
     try {
       Class<? extends Schema> clz = (Class<? extends Schema>) Class.forName(classname);
       Schema s = clz.newInstance();
+      s.fillFromImpl(s.createImpl()); // get defaults
+
       return new SchemaMetadata(s);
     }
     catch (Exception e) {
