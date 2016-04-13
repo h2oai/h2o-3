@@ -46,7 +46,8 @@ public class DataSet {
 	public Frame getFrame() { return frame; }
 	public void removeFrame() {
 		if (frame != null) {
-			AccuracyTestingSuite.summaryLog.println("Removing frame: " + frame._key.toString() + " for data set id: " + id);
+			AccuracyTestingSuite.summaryLog.println("Removing frame: " + frame._key.toString() + " for data set id: " +
+					id);
 			frame.remove();
 			frame.delete();
 		}

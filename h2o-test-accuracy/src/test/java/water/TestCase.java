@@ -148,11 +148,13 @@ public class TestCase {
       //Add check if cv is used
       if(params._nfolds > 0){
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson,true,this,trainingDataSet,testingDataSet);
+                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson, this,
+                trainingDataSet, testingDataSet);
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false,this,trainingDataSet,testingDataSet);
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson, this,
+                trainingDataSet, testingDataSet);
       }
 
     } else {
@@ -218,11 +220,13 @@ public class TestCase {
       //Add check if cv is used
       if(params._nfolds > 0){
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson,true,this,trainingDataSet,testingDataSet);
+                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson, this,
+                trainingDataSet, testingDataSet);
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false,this,trainingDataSet,testingDataSet);
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson, this,
+                trainingDataSet,testingDataSet);
       }
     }
   }
