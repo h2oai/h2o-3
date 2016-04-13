@@ -1,7 +1,7 @@
 package water.automl;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.H2OJob;
+import ai.h2o.automl.TimedH2OJob;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
@@ -36,7 +36,7 @@ public class AutoMLBuilderHandler extends Handler {
             args.exclude,
             args.try_mutations);
     DKV.put(aml);
-    args.job = new JobV3().fillFromImpl(new H2OJob(aml,aml._key).start());
+    args.job = new JobV3().fillFromImpl(new TimedH2OJob(aml,aml._key).start());
     return args;
   }
 }

@@ -19,7 +19,7 @@ import java.util.*;
  * of execution in an effort to discover an optimal supervised model for some given
  * (dataset, response, loss) combo.
  */
-public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
+public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   private final String _datasetName;     // dataset name
   private final Frame _fr;               // all learning on this frame
@@ -32,6 +32,10 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
   FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
+
+  private long _startTime;
+  private long _timeRemaining;
+  private long _totalTime;
 
   public enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
@@ -70,7 +74,13 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
   }
 
   // used to launch the AutoML asynchronously
-  @Override public void run() { learn(); }
+  @Override public void run() {
+    _startTime = System.currentTimeMillis();
+    _totalTime = _startTime + _maxTime;
+    learn();
+  }
+  @Override public boolean keepRunning() { return (_timeRemaining = _totalTime - System.currentTimeMillis()) > 0; }
+  @Override public long timeRemaining() { return _timeRemaining; }
 
   // manager thread:
   //  1. Do extremely cursory pass over data and gather only the most basic information.
@@ -94,7 +104,7 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
     initModel._parms._ignored_columns = _fm.ignoredCols();
 
     Model m = build(initModel); // need to track this...
-    System.out.println("bink");
+    System.out.println("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
   }
 
