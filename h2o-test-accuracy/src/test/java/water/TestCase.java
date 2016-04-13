@@ -24,12 +24,15 @@ import java.util.List;
 public class TestCase {
 
   private int testCaseId;
-  private String algo;
-  private String algoParameters;
-  private boolean grid;
-  private String gridParameters;
-  private String gridCriteria;
-  private boolean regression;
+
+  //Only make these public to update table in TestCaseResult
+  public String algo;
+  public String algoParameters;
+  public boolean grid;
+  public String gridParameters;
+  public String gridCriteria;
+  public boolean regression;
+
   private int trainingDataSetId;
   private int testingDataSetId;
   private String testCaseDescription;
@@ -145,11 +148,11 @@ public class TestCase {
       //Add check if cv is used
       if(params._nfolds > 0){
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
+                getMetrics(modelOutput._cross_validation_metrics), stopTime - startTime, bestModelJson,true,this,trainingDataSet,testingDataSet);
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false);
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false,this,testingDataSet,testingDataSet);
       }
 
     } else {
@@ -215,11 +218,11 @@ public class TestCase {
       //Add check if cv is used
       if(params._nfolds > 0){
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson,true);
+                getMetrics(bestModel._output._cross_validation_metrics), stopTime - startTime, bestModelJson,true,this,trainingDataSet,testingDataSet);
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false);
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false,this,testingDataSet,testingDataSet);
       }
     }
   }

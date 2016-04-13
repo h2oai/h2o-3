@@ -8,7 +8,7 @@ import water.fvec.Frame;
 public class DataSet {
 
 	private int id;
-	private String uri;
+	public String uri;
 	private int responseColumn;
 
 	private Frame frame;
