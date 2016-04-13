@@ -152,7 +152,7 @@ public class TestCase {
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(modelOutput._training_metrics),
-                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false,this,testingDataSet,testingDataSet);
+                getMetrics(modelOutput._validation_metrics), stopTime - startTime, bestModelJson,false,this,trainingDataSet,testingDataSet);
       }
 
     } else {
@@ -222,7 +222,7 @@ public class TestCase {
       }
       else{
         return new TestCaseResult(testCaseId, getMetrics(bestModel._output._training_metrics),
-                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false,this,testingDataSet,testingDataSet);
+                getMetrics(bestModel._output._validation_metrics), stopTime - startTime, bestModelJson,false,this,trainingDataSet,testingDataSet);
       }
     }
   }
