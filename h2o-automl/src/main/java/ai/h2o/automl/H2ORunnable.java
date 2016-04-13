@@ -9,5 +9,6 @@ package ai.h2o.automl;
  *
  */
 public interface H2ORunnable {
-  public abstract void run();
+  public void run();
 }
+

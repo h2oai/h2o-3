@@ -7,8 +7,10 @@ import water.Key;
 
 public class H2OJob {
 
-  private final H2ORunnable _target;
-  private final Key _key;
+  protected final H2ORunnable _target;
+  protected final Key _key;
+  protected Key<Job> _jobKey;
+
   public H2OJob(H2ORunnable runnable) {
     _target=runnable;
     _key=Key.make();
@@ -20,9 +22,11 @@ public class H2OJob {
 
   public Job start() {
     Job j = new Job<>(_key,_target.getClass().getName(), _target.getClass().getName());
+    _jobKey=j._key;
     return j.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
         _target.run();
+        tryComplete();
       }
     },-1);
   }
