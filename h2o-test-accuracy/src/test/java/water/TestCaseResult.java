@@ -1,5 +1,6 @@
 package water;
 
+import javax.xml.crypto.Data;
 import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -18,14 +19,20 @@ public class TestCaseResult {
     "F0point5", "Accuracy", "Error", "Precision", "Recall", "MCC", "MaxPerClassError"};
   private String modelJson;
   private static final String resultsDBTableName = "AccuracyTestCaseResults"; //TODO: get this from the connection instead
+  private TestCase tc;
+  private DataSet tr;
+  private DataSet tt;
 
   public TestCaseResult(int testCaseId, HashMap<String,Double> trainingMetrics, HashMap<String,Double> testingMetrics,
-                        double modelBuildTime, String modelJson, boolean nfold) throws Exception {
+                        double modelBuildTime, String modelJson, boolean nfold, TestCase tc, DataSet tr, DataSet tt) throws Exception {
     this.testCaseId = testCaseId;
     this.trainingMetrics = trainingMetrics;
     this.testingMetrics = testingMetrics;
     this.modelBuildTime = modelBuildTime;
     this.modelJson = modelJson;
+    this.tc = tc;
+    this.tr = tr;
+    this.tt = tt;
 
     this.ipAddr = InetAddress.getLocalHost().getCanonicalHostName();
     this.ncpu = Runtime.getRuntime().availableProcessors();
@@ -60,8 +67,9 @@ public class TestCaseResult {
       sql += (testingMetrics.get(m) == null || Double.isNaN(testingMetrics.get(m)) ? "NULL, " :
         Double.toString(testingMetrics.get(m)) + ", ");
     }
-    sql += String.format("%s, '%s', '%s', '%s', %s, '%s', %s, '%s')", "NOW()", "H2O", h2oVersion, ipAddr, ncpu, gitHash,
-      modelBuildTime, modelJson);
+    sql += String.format("%s, '%s', '%s', '%s', %s, '%s', %s, '%s', '%s', '%s', %s, '%s', '%s', %s, '%s', '%s')", "NOW()", "H2O", h2oVersion, ipAddr, ncpu, gitHash,
+      modelBuildTime, modelJson, tc.algo, tc.algoParameters, tc.grid, tc.gridParameters, tc.gridCriteria,
+            tc.regression, tr.uri,tt.uri);
     return sql;
   }
 }
