@@ -5,9 +5,11 @@ import hex.Model;
 import hex.ModelBuilder;
 import water.*;
 import water.api.KeyV3;
+import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
+import water.util.IcedHashMap;
 
 import java.io.File;
 import java.util.*;
@@ -36,6 +38,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private long _startTime;
   private long _timeRemaining;
   private long _totalTime;
+  private transient ArrayList<Job> _jobs;
 
   public enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
@@ -56,6 +59,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
       _modelEx = m.toArray(new models[m.size()]);
     } else _modelEx=null;
     _allowMutations=tryMutations;
+    _jobs = new ArrayList<>();
   }
 
   public AutoML(Key<AutoML> key, String datasetName, Frame fr, String responseName, String loss, long maxTime,
@@ -77,7 +81,17 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   @Override public void run() {
     _startTime = System.currentTimeMillis();
     _totalTime = _startTime + _maxTime;
-    learn();
+    try {
+      learn();
+    } catch(AutoMLDoneException e) {
+      // pass :)
+    }
+  }
+  @Override public void stop() {
+    for(Job j: _jobs) j.stop();
+    _totalTime=-1;
+    _timeRemaining=-1;
+    _jobs=null;
   }
   @Override public boolean keepRunning() { return (_timeRemaining = _totalTime - System.currentTimeMillis()) > 0; }
   @Override public long timeRemaining() { return _timeRemaining; }
@@ -106,6 +120,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     Model m = build(initModel); // need to track this...
     System.out.println("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
+    stop();
   }
 
   public Key<Model> getLeaderKey() {
@@ -188,7 +203,12 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   // all model builds by AutoML call into this
   // expected to only ever have a single AutoML instance going at a time
   Model build(ModelBuilder mb) {
-    Model m = (Model)mb.trainModel().get();
+    Job j;
+    if( null==_jobs ) throw new AutoMLDoneException();
+    _jobs.add(j=mb.trainModel());
+    Model m = (Model)j.get();
+    if( null==_jobs ) throw new AutoMLDoneException();
+    _jobs.remove(j);
     final Key<Model> modelKey  = m._key;
     new TAtomic<ModelList>() {
       @Override public ModelList atomic(ModelList old) {
@@ -211,4 +231,15 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     public AutoMLKeyV3(Key<AutoML> key) { super(key); }
   }
   @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
+
+  private class AutoMLDoneException extends H2OAbstractRuntimeException {
+
+    public AutoMLDoneException() { this("done","done"); }
+    public AutoMLDoneException(String message, String dev_message, IcedHashMap.IcedHashMapStringObject values) {
+      super(message, dev_message, values);
+    }
+    public AutoMLDoneException(String msg, String dev_msg) {
+      super(msg, dev_msg, new IcedHashMap.IcedHashMapStringObject());
+    }
+  }
 }

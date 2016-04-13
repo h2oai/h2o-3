@@ -30,4 +30,5 @@ public class H2OJob {
       }
     },-1);
   }
+  public void stop() { _jobKey.get().stop(); }
 }
