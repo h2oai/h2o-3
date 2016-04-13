@@ -4,8 +4,6 @@ import ai.h2o.automl.TestUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
-import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.TransformWrappedVec;
 
@@ -49,11 +47,11 @@ public class TransformTest extends TestUtil {
       System.out.println((twv=x.toWrappedVec()).at(0));
       twv.remove();
 
-      new MRTask() {
-        @Override public void map(Chunk[] c) {
-          // TODO: fill in
-        }
-      }.doAll(x.toWrappedVec(), fr.vec(0), fr.vec(2));
+//      new MRTask() {
+//        @Override public void map(Chunk[] c) {
+//          TODO: fill in
+//        }
+//      }.doAll(x.toWrappedVec(), fr.vec(0), fr.vec(2));
 
     } finally {
       if( null!=fr ) fr.delete();
