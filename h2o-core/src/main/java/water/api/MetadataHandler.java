@@ -79,10 +79,7 @@ public class MetadataHandler extends Handler {
       String inputSchemaName = schemaDir+algoName+"V"+version2;  // hex.schemas.GBMV3
       sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
       sinput.init_meta();
-      // hex.schemas.GBMModelV3$GBMModelOutputV3
-      String outputSchemaName = schemaDir+algoName+"ModelV"+version2+"$"+algoName+"ModelOutputV"+version2;
-      soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
-      soutput.init_meta();
+      soutput = sinput;
     } else {
       sinput  = Schema.newInstance(Handler.getHandlerMethodInputSchema (route._handler_method));
       soutput = Schema.newInstance(Handler.getHandlerMethodOutputSchema(route._handler_method));
