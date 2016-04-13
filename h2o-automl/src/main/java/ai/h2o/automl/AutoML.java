@@ -50,7 +50,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     _fr=fr;
     _response=response;
     _loss=loss;
-    _maxTime=maxTime;
+    _maxTime=maxTime*1000;   // change to millis
     _minAcc=minAccuracy;
     _ensemble=ensemble;
     if( modelExclude!=null ) {
