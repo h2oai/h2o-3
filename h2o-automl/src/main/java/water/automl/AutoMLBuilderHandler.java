@@ -12,9 +12,19 @@ import water.fvec.Frame;
 public class AutoMLBuilderHandler extends Handler {
   public AutoMLBuilderV3 automl(int version, AutoMLBuilderV3 args) {
     Frame frame = DKV.getGet(args.dataset);
+    AutoML aml;
     if( null==frame )
-      throw new IllegalArgumentException("No such frame: " + args.dataset);
-    AutoML aml = new AutoML(
+      aml = AutoML.makeAutoML(Key.<AutoML>make(),
+              args.dataset,
+              args.target_name,
+              args.loss,
+              args.max_time,
+              -1,
+              args.ensemble,
+              args.exclude,
+              args.try_mutations);
+    else
+      aml = new AutoML(
             Key.<AutoML>make(),
             args.dataset,
             frame,
