@@ -6,7 +6,10 @@ import hex.ModelBuilder;
 import water.*;
 import water.api.KeyV3;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.parser.ParseDataset;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -54,6 +57,16 @@ public final class AutoML extends Keyed<AutoML> implements H2ORunnable {
   public AutoML(Key<AutoML> key, String datasetName, Frame fr, String responseName, String loss, long maxTime,
                 double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
     this(key,datasetName,fr,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
+  }
+
+  public static AutoML makeAutoML(Key<AutoML> key, String datasetPath, String responseName, String loss, long maxTime,
+                double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
+    File f = new File(datasetPath);
+    assert f.exists():" file not found: " + datasetPath;
+    NFSFileVec nfs = NFSFileVec.make(f);
+    String datasetName = datasetPath.split("\\.(?=[^\\.]+$)")[0];
+    Frame fr = ParseDataset.parse(Key.make("datasetName"), nfs._key);
+    return new AutoML(key,datasetName,fr,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
   }
 
   // used to launch the AutoML asynchronously
