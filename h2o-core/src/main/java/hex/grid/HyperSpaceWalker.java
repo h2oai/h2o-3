@@ -206,7 +206,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         defaults = (MP) params.getClass().newInstance();
       }
       catch (Exception e) {
-        throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to getht edefault values.");
+        throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to get the default values.");
       }
 
       // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
