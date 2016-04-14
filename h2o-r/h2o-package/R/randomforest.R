@@ -62,6 +62,7 @@
 #'        improvement is not at least this much, stop)
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
+#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -100,7 +101,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=1e-3,
                              max_runtime_secs=0,
-                             min_split_improvement)
+                             min_split_improvement,
+                             random_split_point=FALSE
+                             )
 {
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
@@ -180,6 +183,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
+  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
 
   .h2o.modelJob('drf', parms)
 }

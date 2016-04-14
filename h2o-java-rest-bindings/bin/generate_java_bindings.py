@@ -661,6 +661,7 @@ public class Example {
 								  gbm_parms.col_sample_rate_per_tree,
 								  gbm_parms.score_tree_interval,
 								  gbm_parms.min_split_improvement,
+								  gbm_parms.random_split_points,
 								  (gbm_parms.model_id == null ? null : gbm_parms.model_id.name),
 								  gbm_parms.training_frame.name,
 								  (gbm_parms.validation_frame == null ? null : gbm_parms.validation_frame.name),

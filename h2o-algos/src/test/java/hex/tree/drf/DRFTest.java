@@ -1520,6 +1520,58 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+  @Test public void randomizeSplitPoints() {
+    Frame tfr = null;
+    Key[] ksplits = null;
+    DRFModel drf = null;
+    try {
+      Scope.enter();
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      int resp = 54;
+//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      int resp = 784;
+      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      DKV.put(tfr);
+      SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
+      // Invoke the job
+      sf.exec().get();
+      ksplits = sf._destination_frames;
+      boolean[] randomize = new boolean[]{false, true};
+      final int N = randomize.length;
+      double[] loglosses = new double[N];
+      for (int i = 0; i < N; ++i) {
+        // Load data, hack frames
+        DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+        parms._train = ksplits[0];
+        parms._valid = ksplits[1];
+        parms._response_column = tfr.names()[resp];
+        parms._random_split_points = randomize[i];
+        parms._ntrees = 10;
+        parms._score_tree_interval = parms._ntrees;
+        parms._max_depth = 10;
+        parms._seed = 12345;
+        parms._nbins = 10;
+        parms._nbins_top_level = 10;
+
+        DRF job = new DRF(parms);
+        drf = job.trainModel().get();
+        loglosses[i] = drf._output._scored_valid[drf._output._scored_valid.length - 1]._logloss;
+        if (drf!=null) drf.delete();
+      }
+      for (int i = 0; i < randomize.length; ++i) {
+        Log.info("randomize: " + randomize[i] + " -> validation logloss: " + loglosses[i]);
+      }
+      int idx = ArrayUtils.minIndex(loglosses);
+      Log.info("Optimal randomization: " + randomize[idx]);
+      Assert.assertTrue(0 == idx); //this is a memorization problem, doesn't suffer from overfitting
+    } finally {
+      if (drf!=null) drf.delete();
+      if (tfr!=null) tfr.delete();
+      if (ksplits[0]!=null) ksplits[0].remove();
+      if (ksplits[1]!=null) ksplits[1].remove();
+      Scope.exit();
+    }
+  }
 
   @Test public void sampleRatePerClass() {
     Frame tfr = null;

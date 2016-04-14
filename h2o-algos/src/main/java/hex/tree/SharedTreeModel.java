@@ -32,6 +32,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _min_split_improvement = 0; // Minimum relative improvement in squared error reduction for a split to happen
 
+    public boolean _random_split_points; // Whether to use random split points for binning
+
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
     public long _seed = -1;

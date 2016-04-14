@@ -87,6 +87,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
   min_split_improvement : float
     Minimum relative improvement in squared error reduction for a split to happen
+  random_split_points : boolean
+    Whether to use random split points for histograms (to pick the best split from).
 
   Returns
   -------
@@ -100,7 +102,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
-               score_each_iteration=None, score_tree_interval=None, checkpoint=None, min_split_improvement=None):
+               score_each_iteration=None, score_tree_interval=None, checkpoint=None,
+               min_split_improvement=None, random_split_points=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -344,3 +347,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @min_split_improvement.setter
   def min_split_improvement(self, value):
       self._parms["min_split_improvement"] = value
+
+  @property
+  def random_split_points(self):
+    return self._parms["random_split_points"]
+
+  @random_split_points.setter
+  def random_split_points(self, value):
+    self._parms["random_split_points"] = value

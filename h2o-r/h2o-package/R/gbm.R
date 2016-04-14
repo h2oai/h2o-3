@@ -64,6 +64,7 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
+#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
@@ -117,7 +118,9 @@ h2o.gbm <- function(x, y, training_frame,
                     max_runtime_secs=0,
                     offset_column = NULL,
                     weights_column = NULL,
-                    min_split_improvement)
+                    min_split_improvement,
+                    random_split_point=FALSE
+                    )
 {
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
@@ -207,6 +210,7 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
+  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
 
   .h2o.modelJob('gbm', parms)
 }
