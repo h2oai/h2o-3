@@ -38,7 +38,16 @@ public class TimedH2OJob extends H2OJob {
     @Override public void onCompletion(CountedCompleter cc) {
       Log.info("Stopping Timed H2OJob");
       _j._target.stop();
+      Job j = _j._jobKey.get();
+      j.update(1);
+//      j.stop();
+    }
+    @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter cc) {
+      Log.info("Timed H2OJob finished exceptionally");
+      _j._target.stop();
       _j._jobKey.get().stop();
+      t.printStackTrace();
+      return false;
     }
   }
 }
