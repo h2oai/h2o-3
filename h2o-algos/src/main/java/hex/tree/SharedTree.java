@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.tree.drf.DRF;
 import hex.tree.gbm.GBMModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
@@ -52,6 +53,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Random _rand;
 
   public boolean isSupervised(){return true;}
+
+  public boolean scoreZeroTrees(){return true;}
 
   @Override protected boolean computePriorClassDistribution(){ return true;}
 
@@ -524,7 +527,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Score scv = new Score(this,false,false,vresponse()._key,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
-        out._scored_valid[out._ntrees].fillFrom(mmv);
+        if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
+          out._scored_valid[out._ntrees].fillFrom(mmv);
       }
       out._model_summary = createModelSummaryTable(out);
       out._scoring_history = createScoringHistoryTable(out);
@@ -601,7 +605,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     int rows = 0;
     for( int i = 0; i<_output._scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse) && (_output._scored_valid == null || Double.isNaN(_output._scored_valid[i]._mse))) continue;
       rows++;
     }
     TwoDimTable table = new TwoDimTable(
@@ -613,7 +617,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             "");
     int row = 0;
     for( int i = 0; i<_output._scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse) && (_output._scored_valid == null || Double.isNaN(_output._scored_valid[i]._mse))) continue;
       int col = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(_output._training_time_ms[i]));

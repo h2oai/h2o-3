@@ -114,7 +114,7 @@ public final class DHistogram extends Iced {
 
   // Interpolate d to find bin#
   public int bin( double col_data ) {
-    if( Double.isNaN(col_data) ) return 0; // Always NAs to bin 0
+    if( Double.isNaN(col_data) ) return _bins.length-1; // NAs go right, and for numeric features, this is consistent
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _bins.length-1;

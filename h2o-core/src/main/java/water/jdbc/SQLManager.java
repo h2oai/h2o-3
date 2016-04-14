@@ -3,8 +3,10 @@ package water.jdbc;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.parser.ParseDataset;
 import water.util.Log;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -18,43 +20,45 @@ public class SQLManager {
    * @param table (Input)
    * @param username (Input)
    * @param password (Input)
+   * @param columns (Input)
    * @param optimize (Input)                
    */
-  public static Job<Frame> importSqlTable(final String connection_url, final String table, final String username, final String password,
-                                          boolean optimize) {
+  public static Job<Frame> importSqlTable(final String connection_url, final String table, final String username, 
+                                          final String password, final String columns, boolean optimize) {
     
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
 
-    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0, numCol;
-    final int maxCon; 
+    int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0; 
+    final int numCol, maxCon; 
     long numRow;
     final String[] columnNames;
-    final int[] columnSQLTypes;
     final byte[] columnH2OTypes;
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
+      //get number of rows
       rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
       rs.next();
       numRow = rs.getInt(1);
+      //get max allowed connections to database
       rs = stmt.executeQuery("SELECT @@max_connections");
       rs.next();
       maxCon = rs.getInt(1);
-      rs = stmt.executeQuery("SELECT * FROM " + table + " LIMIT 1");
+      //get H2O column names and types 
+      rs = stmt.executeQuery("SELECT " + columns + " FROM " + table + " LIMIT 0");
       ResultSetMetaData rsmd = rs.getMetaData();
       numCol = rsmd.getColumnCount();
 
       columnNames = new String[numCol];
-      columnSQLTypes = new int[numCol];
       columnH2OTypes = new byte[numCol];
 
+      rs.next();
       for (int i = 0; i < numCol; i++) {
         columnNames[i] = rsmd.getColumnName(i + 1);
-        int sqlType = rsmd.getColumnType(i + 1);
-        columnSQLTypes[i] = sqlType;
-        switch (sqlType) {
+        //must iterate through sql types instead of getObject bc object could be null
+        switch (rsmd.getColumnType(i + 1)) {
           case Types.NUMERIC:
           case Types.REAL:
           case Types.DOUBLE:
@@ -145,10 +149,11 @@ public class SQLManager {
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        Frame fr = new SqlTableToH2OFrame(connection_url, table, username, password, columnSQLTypes, maxCon, _v.nChunks(), j).doAll(columnH2OTypes, _v)
+        Frame fr = new SqlTableToH2OFrame(connection_url, table, username, password, columns, numCol, maxCon, _v.nChunks(), j).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
+        ParseDataset.logParseResults(fr);
         tryComplete();
       }
     };
@@ -158,19 +163,19 @@ public class SQLManager {
   }
 
   public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
-    final String _url, _table, _user, _password;
-    final int[] _sqlColumnTypes;
-    final int _nChunks, _maxCon;
+    final String _url, _table, _user, _password, _columns;
+    final int _numCol, _nChunks, _maxCon;
     final Job _job;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
-    public SqlTableToH2OFrame(String url, String table, String user, String password, int[] sqlColumnTypes, int maxCon, int nChunks, Job job) {
+    public SqlTableToH2OFrame(String url, String table, String user, String password, String columns, int numCol, int maxCon, int nChunks, Job job) {
       _url = url;
       _table = table;
       _user = user;
       _password = password;
-      _sqlColumnTypes = sqlColumnTypes;
+      _columns = columns;
+      _numCol = numCol;
       _maxCon = maxCon;
       _nChunks = nChunks;
       _job = job;
@@ -201,50 +206,56 @@ public class SQLManager {
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
-      String sqlText = "SELECT * FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
+      String sqlText = "SELECT " + _columns + " FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
         conn = sqlConn.take();
         stmt = conn.createStatement();
         rs = stmt.executeQuery(sqlText);
         while (rs.next()) {
-          for (int i = 0; i < _sqlColumnTypes.length; i++) {
+          for (int i = 0; i < _numCol; i++) {
             Object res = rs.getObject(i + 1);
             if (res == null) ncs[i].addNA();
-            else
-              switch (_sqlColumnTypes[i]) {
-                case Types.NUMERIC:
-                case Types.REAL:
-                case Types.DOUBLE:
-                case Types.FLOAT:
-                case Types.DECIMAL:
+            else {
+              switch (res.getClass().getSimpleName()) {
+                case "Double":
                   ncs[i].addNum((double) res);
                   break;
-                case Types.INTEGER:
-                case Types.TINYINT:
-                case Types.SMALLINT:
-                case Types.BIGINT:
+                case "Integer":
                   ncs[i].addNum((long) (int) res, 0);
                   break;
-                case Types.BIT:
-                case Types.BOOLEAN:
+                case "Long":
+                  ncs[i].addNum((long) res, 0);
+                  break;
+                case "Float":
+                  ncs[i].addNum((double) (float) res);
+                  break;
+                case "Short":
+                  ncs[i].addNum((long) (short) res, 0);
+                  break;
+                case "Byte":
+                  ncs[i].addNum((long) (byte) res, 0);
+                case "BigDecimal":
+                  ncs[i].addNum(((BigDecimal) res).doubleValue());
+                  break;
+                case "Boolean":
                   ncs[i].addNum(((boolean) res ? 1 : 0), 0);
                   break;
-                case Types.VARCHAR:
-                case Types.NVARCHAR:
-                case Types.CHAR:
-                case Types.NCHAR:
-                case Types.LONGVARCHAR:
-                case Types.LONGNVARCHAR:
+                case "String":
                   ncs[i].addStr(new BufferedString((String) res));
                   break;
-                case Types.DATE:
-                case Types.TIME:
-                case Types.TIMESTAMP:
+                case "Date":
                   ncs[i].addNum(((Date) res).getTime(), 0);
+                  break;
+                case "Time":
+                  ncs[i].addNum(((Time) res).getTime(), 0);
+                  break;
+                case "Timestamp":
+                  ncs[i].addNum(((Timestamp) res).getTime(), 0);
                   break;
                 default:
                   ncs[i].addNA();
               }
+            }
           }
         }
       } catch (SQLException ex) {

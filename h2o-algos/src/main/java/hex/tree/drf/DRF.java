@@ -40,6 +40,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   /** Start the DRF training Job on an F/J thread. */
   @Override protected Driver trainModelImpl() { return new DRFDriver(); }
 
+  @Override public boolean scoreZeroTrees() { return false; }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses

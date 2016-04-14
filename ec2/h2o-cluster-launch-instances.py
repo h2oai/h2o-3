@@ -37,9 +37,9 @@ securityGroupName = 'SecurityDisabled'
 # Options you might want to change.
 # ---------------------------------
 
-numInstancesToLaunch = 3
-instanceType = 'm1.large'
-instanceNameRoot = 'H2ORStudioDemo'
+numInstancesToLaunch = 2
+instanceType = 'm3.large'
+instanceNameRoot = 'h2o-ai-latest-stable'
 
 
 # Options to help debugging.
