@@ -10,8 +10,9 @@ test.separator <- function(){
   path.hive = "smalldata/parser/test.hive"
   path.semi = "smalldata/parser/semi.scsv"
   path.caret = "smalldata/parser/caret.csv"
+  path.column = "smalldata/parser/column.csv"
   path.asterisk = "smalldata/parser/asterisk.asv"
-  
+
   #Tab delimited with argument
   tab.test = h2o.importFile(path = normalizePath(locate(path.tab)), destination_frame = "tab.hex",sep = "\t")
   expect_that(dim(tab.test), equals(c(3,3)))
@@ -61,6 +62,12 @@ test.separator <- function(){
   #asterisk.test.noarg = h2o.importFile(path = normalizePath(locate(path.asterisk)), destination_frame = "asterisk.hex",sep = "")
   #expect_that(dim(asterisk.test.noarg), equals(c(3,3)))
   #print(asterisk.test.noarg)
+  #--------------------------------------------------------------------------------------------------------------------
+  #One column 11 rows file with unique strings
+  #H2O should detect that it is one column dataset and not truncate levels by default delimiter
+  column.test = h2o.importFile(path = normalizePath(locate(path.column)), destination_frame = "column.hex")
+  column.test = as.matrix(column.test)
+  expect_that(length(unique(column.test)), equals(11))
 }
 
 doTest("Separator Test", test.separator)
