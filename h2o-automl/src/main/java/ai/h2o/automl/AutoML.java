@@ -35,7 +35,6 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
 
-  private long _startTime;
   private long _timeRemaining;
   private long _totalTime;
   private transient ArrayList<Job> _jobs;
@@ -79,8 +78,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   // used to launch the AutoML asynchronously
   @Override public void run() {
-    _startTime = System.currentTimeMillis();
-    _totalTime = _startTime + _maxTime;
+    _totalTime = System.currentTimeMillis() + _maxTime;
     try {
       learn();
     } catch(AutoMLDoneException e) {
@@ -88,6 +86,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     }
   }
   @Override public void stop() {
+    if( null==_jobs ) return; // already stopped
     for(Job j: _jobs) j.stop();
     _totalTime=-1;
     _timeRemaining=-1;
@@ -141,14 +140,14 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
 
   // track models built by automl
-  public static final Key<Model> MODELLIST = Key.make(" AutoMLModelList ", (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
-  static class ModelList extends Keyed {
+  public final Key<Model> MODELLIST = Key.make("AutoMLModelList"+Key.make().toString(), (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
+  class ModelList extends Keyed {
     Key<Model>[] _models;
     ModelList() { super(MODELLIST); _models = new Key[0]; }
     @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelList"); }
   }
 
-  static Model[] models() {
+  Model[] models() {
     final Value val = DKV.get(MODELLIST);
     if( val==null ) return new Model[0];
     ModelList ml = val.get();
@@ -162,14 +161,14 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     return models;
   }
 
-  public static final Key<Model> LEADER = Key.make(" AutoMLModelLeader ", (byte) 0, (byte) 2, false);
-  static class ModelLeader extends Keyed {
+  public final Key<Model> LEADER = Key.make("AutoMLModelLeader"+Key.make().toString(), (byte) 0, (byte) 2, false);
+  class ModelLeader extends Keyed {
     Key<Model> _leader;
     ModelLeader() { super(LEADER); _leader = null; }
     @Override protected long checksum_impl() { throw H2O.fail("no such method for ModelLeader"); }
   }
 
-  static Model leader() {
+  Model leader() {
     final Value val = DKV.get(LEADER);
     if( val==null ) return null;
     ModelLeader ml = val.get();
@@ -233,11 +232,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
 
   private class AutoMLDoneException extends H2OAbstractRuntimeException {
-
     public AutoMLDoneException() { this("done","done"); }
-    public AutoMLDoneException(String message, String dev_message, IcedHashMap.IcedHashMapStringObject values) {
-      super(message, dev_message, values);
-    }
     public AutoMLDoneException(String msg, String dev_msg) {
       super(msg, dev_msg, new IcedHashMap.IcedHashMapStringObject());
     }
