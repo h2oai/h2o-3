@@ -28,7 +28,7 @@ public class H2OJob {
         _target.run();
         tryComplete();
       }
-    },-1);
+    },1);
   }
   public void stop() { _jobKey.get().stop(); }
 }
