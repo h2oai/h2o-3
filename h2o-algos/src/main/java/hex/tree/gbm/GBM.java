@@ -415,9 +415,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // into the tree leaves.  Includes learn_rate.
       GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
       if (_parms._distribution == Distribution.Family.laplace) {
-        fitBestConstantsQuantile(ktrees, leafs, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
+        fitBestConstantsQuantile(ktrees, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
       } else if (_parms._distribution == Distribution.Family.quantile) {
-        fitBestConstantsQuantile(ktrees, leafs, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
+        fitBestConstantsQuantile(ktrees, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
         fitBestConstants(ktrees, leafs, gp);
       }
@@ -507,7 +507,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } // -- k-trees are done
     }
 
-    private void fitBestConstantsQuantile(DTree[] ktrees, int[] leafs, double quantile) {
+    private void fitBestConstantsQuantile(DTree[] ktrees, double quantile) {
       assert(_nclass==1);
       Vec response = new MRTask() {
         @Override
