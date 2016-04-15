@@ -84,5 +84,8 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
 
     @API(help="Minimum relative improvement in squared error reduction for a split to happen.", level = API.Level.secondary, gridable = true)
     public double min_split_improvement;
+
+    @API(help="Whether to use random split points for histograms (to pick the best split from).", level = API.Level.secondary, gridable = true)
+    public boolean random_split_points;
   }
 }

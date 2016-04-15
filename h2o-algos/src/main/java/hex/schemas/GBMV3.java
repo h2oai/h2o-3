@@ -44,6 +44,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "seed",
       "build_tree_one_node",
       "learn_rate",
+      "learn_rate_annealing",
       "distribution",
       "quantile_alpha",
       "tweedie_power",
@@ -52,12 +53,16 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "sample_rate_per_class",
       "col_sample_rate",
       "col_sample_rate_per_tree",
-      "min_split_improvement"
+      "min_split_improvement",
+      "random_split_points"
     };
 
     // Input fields
     @API(help="Learning rate (from 0.0 to 1.0)", gridable = true)
     public float learn_rate;
+
+    @API(help="Scale down the learning rate by this factor after each tree", gridable = true)
+    public float learn_rate_annealing;
 
     @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile" }, gridable = true)
     public Distribution.Family distribution;

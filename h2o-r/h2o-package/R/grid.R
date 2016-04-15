@@ -56,12 +56,12 @@ h2o.grid <- function(algorithm,
   algorithm <- .h2o.unifyAlgoName(algorithm)
   model_param_names <- names(dots)
   hyper_param_names <- names(hyper_params)
-  # Reject overlapping definition of parameters
-  if (any(model_param_names %in% hyper_param_names)) {
-    overlapping_params <- intersect(model_param_names, hyper_param_names)
-    stop(paste0("The following parameters are defined as common model parameters and also as hyper parameters: ",
-                .collapse(overlapping_params), "! Please choose only one way!"))
-  }
+  # Reject overlapping definition of parameters, this part is now done in Java backend
+#   if (any(model_param_names %in% hyper_param_names)) {
+#     overlapping_params <- intersect(model_param_names, hyper_param_names)
+#     stop(paste0("The following parameters are defined as common model parameters and also as hyper parameters: ",
+#                 .collapse(overlapping_params), "! Please choose only one way!"))
+#   }
   # Get model builder parameters for this model
   all_params <- .h2o.getModelParameters(algo = algorithm)
 
@@ -155,6 +155,12 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
                           x
                         })
   failure_details <- lapply(json$failure_details, function(msg) { msg })
+  
+  # print out the failure/warning messages from Java if it exists
+  if (length(failure_details) > 0) {
+    cat(sprintf("[%s] %s \n", Sys.time(), failure_details))
+  }
+  
   failure_stack_traces <- lapply(json$failure_stack_traces, function(msg) { msg })
   failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
 

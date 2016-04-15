@@ -130,6 +130,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
+    if( !(0. < _parms._learn_rate_annealing && _parms._learn_rate_annealing <= 1.0) )
+      error("_learn_rate", "learn_rate must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
@@ -415,9 +417,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // into the tree leaves.  Includes learn_rate.
       GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
       if (_parms._distribution == Distribution.Family.laplace) {
-        fitBestConstantsQuantile(ktrees, leafs, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
+        fitBestConstantsQuantile(ktrees, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
       } else if (_parms._distribution == Distribution.Family.quantile) {
-        fitBestConstantsQuantile(ktrees, leafs, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
+        fitBestConstantsQuantile(ktrees, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
         fitBestConstants(ktrees, leafs, gp);
       }
@@ -454,8 +456,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
-          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, _mtry_per_tree, rseed, _parms._min_split_improvement);
-          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, _parms._nbins_cats, _parms._min_split_improvement, hcs[k][0])); // The "root" node
+          ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _parms._min_rows, _mtry, _mtry_per_tree, rseed, _parms);
+          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins,hcs[k][0], _parms)); // The "root" node
         }
       }
 
@@ -507,7 +509,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } // -- k-trees are done
     }
 
-    private void fitBestConstantsQuantile(DTree[] ktrees, int[] leafs, double quantile) {
+    private void fitBestConstantsQuantile(DTree[] ktrees, double quantile) {
       assert(_nclass==1);
       Vec response = new MRTask() {
         @Override
@@ -527,8 +529,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       H2O.submitTask(sqt);
       sqt.join();
 
+      double annealing = Math.pow((double)_parms._learn_rate_annealing, (_model._output._ntrees-1));
       for (int i = 0; i < sqt._quantiles.length; i++) {
-        float val = (float) (_parms._learn_rate * sqt._quantiles[i]);
+        float val = (float) (_parms._learn_rate * annealing * sqt._quantiles[i]);
         assert !Float.isNaN(val) && !Float.isInfinite(val);
         ((LeafNode) ktrees[0].node(Math.max(0,(int)strata.min()) + i))._pred = val;
 //        Log.info("Leaf " + ((int)strata.min()+i) + " has quantile: " + sqt._quantiles[i]);
@@ -540,8 +543,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
+        double annealing = Math.pow((double)_parms._learn_rate_annealing, (_model._output._ntrees-1));
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          float gf = (float) (_parms._learn_rate * m1class * gp.gamma(k, i));
+          float gf = (float) (_parms._learn_rate * annealing * m1class * gp.gamma(k, i));
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.

@@ -206,9 +206,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         defaults = (MP) params.getClass().newInstance();
       }
       catch (Exception e) {
-        throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to getht edefault values.");
+        throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to get the default values.");
       }
 
+      // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
+      // parameter value is set to be default.  Otherwise, an exception will be thrown.
       for (String key : hyperParams.keySet()) {
         // Throw if the user passed an empty value list:
         Object[] values = hyperParams.get(key);
@@ -224,8 +226,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         Object defaultVal = PojoUtils.getFieldValue(defaults, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
         Object actualVal = PojoUtils.getFieldValue(params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
 
-        if (defaultVal != null && actualVal != null && !Arrays.asList(values).contains(actualVal)) {
-          // both are set
+        if (defaultVal != null && actualVal != null) {
+          // both are not set to null
           if (defaultVal.getClass().isArray() &&
               // array
               !PojoUtils.arraysEquals(defaultVal, actualVal)) {
@@ -238,8 +240,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           } // ! array
         } // both are set: defaultVal != null && actualVal != null
 
-        // TODO: contains probably doesn't work properly with arrays
-        if (defaultVal == null && !(actualVal == null) && !Arrays.asList(values).contains(actualVal)) {
+        // defaultVal is null but actualVal is not, raise exception
+        if (defaultVal == null && !(actualVal == null)) {
           // only actual is set
             throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
         }

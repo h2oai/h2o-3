@@ -7,7 +7,6 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
-import java.util.concurrent.ForkJoinTask;
 
 /** A Decision Tree, laid over a Frame of Vecs, and built distributed.
  *
@@ -41,14 +40,15 @@ public class DTree extends Iced {
   public final int _mtrys;           // Number of columns to choose amongst in splits (at every split)
   public final int _mtrys_per_tree;  // Number of columns to choose amongst in splits (once per tree)
   public final transient Random _rand; // RNG for split decisions & sampling
-  public final int[] _cols; // Per-tree selection of columns to consider for splits
-  final double _min_split_improvement;
+  public final transient int[] _cols; // Per-tree selection of columns to consider for splits
+  public transient SharedTreeModel.SharedTreeParameters _parms;
 
-  public DTree(Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, int mtrys_per_tree, long seed, double min_split_improvement) {
+  public DTree(Frame fr, int ncols, char nclass, double min_rows, int mtrys, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
     _names = fr.names();
     _ncols = ncols;
-    _nbins=nbins;
-    _nbins_cats=nbins_cats;
+    _parms = parms;
+    _nbins=(char)parms._nbins;
+    _nbins_cats=(char)parms._nbins_cats;
     _nclass=nclass;
     _min_rows = min_rows;
     _ns = new Node[1];
@@ -56,7 +56,6 @@ public class DTree extends Iced {
     _mtrys_per_tree = mtrys_per_tree;
     _seed = seed;
     _rand = RandomUtils.getRNG(seed);
-    _min_split_improvement = min_split_improvement;
     int[] activeCols=new int[_ncols];
     for (int i=0;i<activeCols.length;++i)
       activeCols[i] = i;
@@ -189,7 +188,7 @@ public class DTree extends Iced {
     // has constant data, or was not being tracked by a prior DHistogram
     // (for being constant data from a prior split), then that column will be
     // null in the returned array.
-    public DHistogram[] split(int way, char nbins, char nbins_cats, double min_rows, DHistogram hs[], double splat, double minSplitImprovement) {
+    public DHistogram[] split(int way, char nbins, double min_rows, DHistogram hs[], double splat, SharedTreeModel.SharedTreeParameters parms) {
       double n = way==0 ? _n0 : _n1;
       if( n < min_rows || n <= 1 ) return null; // Too few elements
       double se = way==0 ? _se0 : _se1;
@@ -242,7 +241,7 @@ public class DTree extends Iced {
         if( Double.isInfinite(adj_nbins/(maxEx-min)) ) continue;
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name, adj_nbins, nbins_cats, h._isInt, min, maxEx, minSplitImprovement);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, parms);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
@@ -489,7 +488,7 @@ public class DTree extends Iced {
 
       for( int b=0; b<2; b++ ) { // For all split-points
         // Setup for children splits
-        DHistogram nhists[] = _split.split(b,nbins, nbins_cats, min_rows, hs, _splat, _tree._min_split_improvement);
+        DHistogram nhists[] = _split.split(b,nbins, min_rows, hs, _splat, _tree._parms);
         assert nhists==null || nhists.length==_tree._ncols;
         _nids[b] = nhists == null ? -1 : makeUndecidedNode(nhists)._nid;
       }
