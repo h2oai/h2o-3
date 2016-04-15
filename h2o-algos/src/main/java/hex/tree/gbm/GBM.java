@@ -131,7 +131,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
     if( !(0. < _parms._learn_rate_annealing && _parms._learn_rate_annealing <= 1.0) )
-      error("_learn_rate", "learn_rate must be between 0 and 1");
+      error("_learn_rate_annealing", "learn_rate_annealing must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
@@ -456,7 +456,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
-          ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _parms._min_rows, _mtry, _mtry_per_tree, rseed, _parms);
+          ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _parms._min_rows, _mtry, _parms._col_sample_rate_change_per_level, _mtry_per_tree, rseed, _parms);
           new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins,hcs[k][0], _parms)); // The "root" node
         }
       }
@@ -477,7 +477,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Adds a layer to the trees each pass.
       int depth = 0;
       for (; depth < _parms._max_depth; depth++) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if (hcs == null) break;
       }

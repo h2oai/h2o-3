@@ -38,12 +38,18 @@ public class DTree extends Iced {
   public int _leaves;
   public int _depth;
   public final int _mtrys;           // Number of columns to choose amongst in splits (at every split)
+  public final double _mtrys_change;           // Number of columns to choose amongst in splits (at every split)
   public final int _mtrys_per_tree;  // Number of columns to choose amongst in splits (once per tree)
   public final transient Random _rand; // RNG for split decisions & sampling
   public final transient int[] _cols; // Per-tree selection of columns to consider for splits
   public transient SharedTreeModel.SharedTreeParameters _parms;
 
-  public DTree(Frame fr, int ncols, char nclass, double min_rows, int mtrys, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
+  // compute the effective number of columns to sample
+  public int actual_mtries() {
+    return Math.min(Math.max(1,(int)((double)_mtrys * Math.pow(_mtrys_change, _depth))),_ncols);
+  }
+
+  public DTree(Frame fr, int ncols, char nclass, double min_rows, int mtrys, double mtrys_change, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
     _names = fr.names();
     _ncols = ncols;
     _parms = parms;
@@ -53,6 +59,7 @@ public class DTree extends Iced {
     _min_rows = min_rows;
     _ns = new Node[1];
     _mtrys = mtrys;
+    _mtrys_change = mtrys_change;
     _mtrys_per_tree = mtrys_per_tree;
     _seed = seed;
     _rand = RandomUtils.getRNG(seed);
@@ -277,7 +284,7 @@ public class DTree extends Iced {
     // Can return null for 'all columns'.
     public int[] scoreCols() {
       DTree tree = _tree;
-      if (tree._mtrys == _hs.length && tree._mtrys_per_tree == _hs.length) return null;
+      if (tree.actual_mtries() == _hs.length && tree._mtrys_per_tree == _hs.length) return null;
 
       // per-tree pre-selected columns
       int[] activeCols = tree._cols;
@@ -300,12 +307,13 @@ public class DTree extends Iced {
 
       // This shortcut is correct, but would result in trivially reordering all columns
       // This reordering can change results due to tie-breaking, as different columns can get picked
-      // if (len == tree._mtrys) return Arrays.copyOfRange(cols, 0, len);
+      // if (len == tree.actual_mtries()) return Arrays.copyOfRange(cols, 0, len);
 
       // It can happen that we have no choices, because this node cannot be split any more (all active columns are constant, for example).
+      int mtries = tree.actual_mtries();
       if (choices > 0) {
         // Draw up to mtry columns at random without replacement.
-        for (int i = 0; i < tree._mtrys; i++) {
+        for (int i = 0; i < mtries; i++) {
           if (len == 0) break;   // Out of choices!
           int idx2 = tree._rand.nextInt(len);
           int col = cols[idx2];     // The chosen column
@@ -314,7 +322,7 @@ public class DTree extends Iced {
         }
         assert len < choices;
       }
-//      Log.info("Picking these (mtry=" + tree._mtrys + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
+//      Log.info("Picking these (mtry=" + mtries + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
       return Arrays.copyOfRange(cols, len, choices);
     }
 

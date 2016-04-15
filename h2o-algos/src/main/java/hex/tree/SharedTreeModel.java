@@ -58,6 +58,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
     }
 
+    public float _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level
     public float _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
     /** Fields which can NOT be modified if checkpoint is specified.
