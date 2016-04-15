@@ -277,6 +277,9 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         pojo = []
         signatures = {}
 
+        inner_class = []
+
+
         pojo.append("package water.bindings.proxies.retrofit;")
         pojo.append("")
         pojo.append("import water.bindings.pojos.*;")
@@ -287,6 +290,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         pojo.append("public interface " + entity + " {")
 
         first = True
+        found_key_array_parameter = False
         for meta in endpoints_by_entity[entity]:
             path = meta['url_pattern']
 
@@ -315,6 +319,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             method = handler_method
 
             # NOTE: hackery due to the way the paths are formed: POST to /99/Grid/glm and to /3/Grid/deeplearning both call methods called train
+            algo = None
             if (entity == 'Grid' or entity == 'ModelBuilders') and (method == 'train'):
                 # /99/Grid/glm or /3/ModelBuilders/glm
                 
@@ -333,9 +338,8 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 method = method + '_' + algo  # validate_parameters_glm()
 
             input_schema = all_schemas_map[input_schema_name]
-            # print("input_schema: " + repr(input_schema))
 
-            if (entity == 'ModelBuilders') and ((method.startswith('train')) or (method.startswith('validate_parameters'))):
+            if (entity == 'Grid' or entity == 'ModelBuilders') and ((method.startswith('train')) or (method.startswith('validate_parameters'))):
                 # print("will lift parameters object for: " + input_schema_name)
                 for builder_field in input_schema['fields']:
                     if builder_field['name'] == 'parameters':
@@ -345,6 +349,8 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
 
             # TODO: handle query parameters from RequestSchema
             parms = ""
+            parm_names = []
+            parm_types = []
 
             if http_method == 'POST':
                 is_post = True
@@ -391,6 +397,9 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
                     parm = field['name']
 
+                    parm_names.append(parm)
+                    parm_types.append(parm_type)
+
                     # Send keys and ColSpecifiers as Strings
                     if parm_type.endswith('KeyV3'):
                         parm_type = 'String'
@@ -405,6 +414,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     parms += parm_type
                     parms += ' '
                     parms += parm
+
                     first_parm = False
 
             # check for conflicts:
@@ -421,7 +431,50 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
             pojo.append('    Call<{output_schema_name}> {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
 
+            # TODO: helpers for grid search
+            if algo is not None and entity == 'ModelBuilders':
+                print(input_schema_name)
+                # we make two train_ and validate_ methods.  One
+                # (built here) takes the parameters schema, the other
+                # (built above) takes each parameter.
+                inner_class.append('    /** {summary} */'.format(summary = summary))
+                inner_class.append('    public static Call<{output_schema_name}> {method}(ModelBuilders modelBuildersService, {input_schema_name} parameters) '.format(input_schema_name = input_schema_name, output_schema_name = output_schema_name, method = method, parms = parms) + ' {')
+
+                the_list = ''
+                for parm_num in range(0, len(parm_names)):
+                    if parm_num > 0:
+                        the_list += ', '
+                    if parm_types[parm_num].endswith('KeyV3'):
+                        the_list += '(parameters.{parm} == null ? null : parameters.{parm}.name)'.format(parm=parm_names[parm_num])
+                    elif parm_types[parm_num].endswith('KeyV3[]'):
+                        found_key_array_parameter = True
+                        the_list += '(parameters.{parm} == null ? null : key_array_to_string_array(parameters.{parm}))'.format(parm=parm_names[parm_num])
+                    elif parm_types[parm_num].startswith('ColSpecifier'):
+                        the_list += '(parameters.{parm} == null ? null : parameters.{parm}.column_name)'.format(parm=parm_names[parm_num])
+                    else:
+                        the_list += 'parameters.{parm}'.format(parm=parm_names[parm_num])
+                    the_list_first = False
+                inner_class.append('        return modelBuildersService.{method}({the_list});'.format(method=method, the_list=the_list))
+                inner_class.append('    }')
+
             first = False
+
+        if found_key_array_parameter:
+            inner_class.append('    /** Return an array of Strings for an array of keys. */')
+            inner_class.append('    public static String[] key_array_to_string_array(KeyV3[] keys) {')
+            inner_class.append('        if (null == keys) return null;')
+            inner_class.append('        String[] ids = new String[keys.length];')
+            inner_class.append('        int i = 0;')
+            inner_class.append('        for (KeyV3 key : keys) ids[i++] = key.name;')
+            inner_class.append('        return ids;')
+            inner_class.append('    }')
+
+        if len(inner_class) > 0:
+            pojo.append('')
+            pojo.append('    public static class Helper {')
+            for line in inner_class:
+                pojo.append(line);
+            pojo.append('    }')
 
         pojo.append("}")
         pojos[entity] = pojo
@@ -673,53 +726,12 @@ public class Example {
 
             gbm_parms.training_frame = training_frame;
 
-            GBMV3 gbmBody = (GBMV3)modelBuildersService.train_gbm(gbm_parms.learn_rate,
-								  gbm_parms.learn_rate_annealing,
-								  gbm_parms.distribution,
-								  gbm_parms.quantile_alpha,
-								  gbm_parms.tweedie_power,
-								  gbm_parms.col_sample_rate,
-								  gbm_parms.balance_classes,
-								  gbm_parms.class_sampling_factors,
-								  gbm_parms.max_after_balance_size,
-								  gbm_parms.max_confusion_matrix_size,
-								  gbm_parms.max_hit_ratio_k,
-								  gbm_parms.ntrees,
-								  gbm_parms.max_depth,
-								  gbm_parms.min_rows,
-								  gbm_parms.nbins,
-								  gbm_parms.nbins_top_level,
-								  gbm_parms.nbins_cats,
-								  gbm_parms.r2_stopping,
-								  gbm_parms.seed,
-								  gbm_parms.build_tree_one_node,
-								  gbm_parms.sample_rate,
-								  gbm_parms.sample_rate_per_class,
-								  gbm_parms.col_sample_rate_change_per_level,
-								  gbm_parms.col_sample_rate_per_tree,
-								  gbm_parms.score_tree_interval,
-								  gbm_parms.min_split_improvement,
-								  gbm_parms.random_split_points,
-								  (gbm_parms.model_id == null ? null : gbm_parms.model_id.name),
-								  gbm_parms.training_frame.name,
-								  (gbm_parms.validation_frame == null ? null : gbm_parms.validation_frame.name),
-								  gbm_parms.nfolds,
-								  gbm_parms.keep_cross_validation_predictions,
-								  gbm_parms.keep_cross_validation_fold_assignment,
-								  gbm_parms.parallelize_cross_validation,
-								  "C1",
-								  null,
-								  null,
-								  null,
-								  gbm_parms.fold_assignment,
-								  gbm_parms.ignored_columns,
-								  gbm_parms.ignore_const_cols,
-								  gbm_parms.score_each_iteration,
-								  (gbm_parms.checkpoint == null ? null : gbm_parms.checkpoint.name),
-								  gbm_parms.stopping_rounds,
-								  gbm_parms.max_runtime_secs,
-								  gbm_parms.stopping_metric,
-								  gbm_parms.stopping_tolerance).execute().body();
+            ColSpecifierV3 response_column = new ColSpecifierV3();
+            response_column.column_name = "C1";
+            gbm_parms.response_column = response_column;
+
+            GBMV3 gbmBody = (GBMV3)ModelBuilders.Helper.train_gbm(modelBuildersService, gbm_parms).execute().body();
+
             System.out.println("gbmBody: " + gbmBody);
         }
         catch (IOException e) {
