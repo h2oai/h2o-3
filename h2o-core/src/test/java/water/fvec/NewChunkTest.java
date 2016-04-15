@@ -7,6 +7,7 @@ import water.DKV;
 import water.Futures;
 import water.TestUtil;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -160,6 +161,10 @@ public class NewChunkTest extends TestUtil {
       else
         assertTrue(c.isNA(i));
     v.remove();
+
+    // Test dense -> sparse -> dense flip
+
+
   }
   long [] ms1 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127};
   long [] ms4 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023};
@@ -170,6 +175,7 @@ public class NewChunkTest extends TestUtil {
     testIntegerChunk(ms4,4);
     testIntegerChunk(ms8,8);
   }
+
 
   @Test public void testSparseDoubles2(){
     NewChunk nc = new NewChunk(null, 0, false);
@@ -202,7 +208,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(c.atd(0), Math.PI,1e-16);
     assertEquals(c.atd(8), Math.E,1e-16);
 
-    // test flip from dense -> sparse -> desne
+    // test flip from dense -> sparse0 -> desne
     nc = new NewChunk(null, 0, false);
     double [] rvals = new double[2*1024];
     nc.addNum(rvals[0] = Math.PI);
@@ -222,6 +228,30 @@ public class NewChunkTest extends TestUtil {
     assertEquals(1546,c._len);
     for(int j = 0; j < c._len-1; ++j)
       assertEquals(rvals[j],c.atd(j),0);
+
+    // test flip from dense -> sparseNA -> desne
+    nc = new NewChunk(null, 0, false);
+    rvals = new double[2*1024];
+    Arrays.fill(rvals,Double.NaN);
+    nc.addNum(rvals[0] = Math.PI);
+    nc.addNum(rvals[1] = Double.MAX_VALUE);
+    nc.addNum(rvals[2] = Double.MIN_VALUE);
+    nc.addNAs(5);
+    nc.addNum(rvals[2+1+5] = Math.E);
+    nc.addNAs(512);
+    off = nc._len;
+    assertTrue(nc.isSparseNA());
+    for(int j  = 0; j < 1024; ++j)
+      nc.addNum(rvals[off+j] = rnd.nextDouble());
+    assertTrue(!nc.isSparseNA());
+    nc.addNA();
+    c = nc.compress();
+    assertEquals(1546,c._len);
+    for(int j = 0; j < c._len-1; ++j)
+      if(Double.isNaN(rvals[j]))
+        assertTrue(c.isNA(j));
+      else
+        assertEquals(rvals[j],c.atd(j),0);
   }
   /**
    * Constant Double Chunk - C0DChunk
