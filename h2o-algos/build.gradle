@@ -7,10 +7,9 @@ dependencies {
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
-  testRuntime("org.easyb:easyb-core:1.4") { transitive = true }
 }
 
-apply from: '../gradle/dataCheck.gradle'
+apply from: "${rootDir}/gradle/dataCheck.gradle"
 
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
