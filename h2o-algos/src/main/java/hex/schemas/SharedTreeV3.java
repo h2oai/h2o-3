@@ -55,10 +55,10 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point", gridable = true)
     public int nbins;
 
-    @API(help = "For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level", level = API.Level.expert, gridable = true)
+    @API(help = "For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level", level = API.Level.secondary, gridable = true)
     public int nbins_top_level;
 
-    @API(help="For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", gridable = true)
+    @API(help="For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", level = API.Level.secondary, gridable = true)
     public int nbins_cats;
 
     @API(help="Stop making trees when the R^2 metric equals or exceeds this", level = API.Level.secondary, gridable = true)
@@ -67,19 +67,19 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
     public long seed;
 
-    @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.secondary)
+    @API(help="Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.", level = API.Level.expert, gridable = false)
     public boolean build_tree_one_node;
 
     @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
     public float sample_rate;
 
-    @API(help = "Row sample rate per tree per class (from 0.0 to 1.0)", gridable = true)
+    @API(help = "Row sample rate per tree per class (from 0.0 to 1.0)", level = API.Level.expert, gridable = true)
     public float[] sample_rate_per_class;
 
-    @API(help = "Column sample rate per tree (from 0.0 to 1.0)", gridable = true)
+    @API(help = "Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public float col_sample_rate_per_tree;
 
-    @API(help = "Relative change of the column sampling rate for every level (from 0.0 to 2.0)", gridable = true)
+    @API(help = "Relative change of the column sampling rate for every level (from 0.0 to 2.0)", level = API.Level.expert, gridable = true)
     public float col_sample_rate_change_per_level;
 
     @API(help="Score the model after every so many trees. Disabled if set to 0.", level = API.Level.secondary, gridable = false)
