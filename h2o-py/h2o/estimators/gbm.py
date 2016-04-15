@@ -28,6 +28,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
     Learning rate (from 0.0 to 1.0)
+  learn_rate_annealing : float
+    Multiply the learning rate by this factor after every tree
   sample_rate : float
     Row sample rate per tree (from 0.0 to 1.0)
   sample_rate_per_class : list
@@ -163,6 +165,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @learn_rate.setter
   def learn_rate(self, value):
     self._parms["learn_rate"] = value
+
+  @property
+  def learn_rate_annealing(self):
+    return self._parms["learn_rate_annealing"]
+
+  @learn_rate_annealing.setter
+  def learn_rate_annealing(self, value):
+    self._parms["learn_rate_annealing"] = value
 
   @property
   def sample_rate(self):

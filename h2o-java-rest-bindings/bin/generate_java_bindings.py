@@ -638,6 +638,7 @@ public class Example {
             gbm_parms.max_runtime_secs = 5;
 
             GBMV3 gbmBody = (GBMV3)modelBuildersService.train_gbm(gbm_parms.learn_rate,
+								  gbm_parms.learn_rate_annealing,
 								  gbm_parms.distribution,
 								  gbm_parms.quantile_alpha,
 								  gbm_parms.tweedie_power,

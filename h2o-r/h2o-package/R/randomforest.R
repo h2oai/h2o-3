@@ -102,7 +102,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_tolerance=1e-3,
                              max_runtime_secs=0,
                              min_split_improvement,
-                             random_split_point=FALSE
+                             random_split_points=FALSE
                              )
 {
   # Training_frame and validation_frame may be a key or an H2OFrame object

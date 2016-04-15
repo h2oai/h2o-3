@@ -23,6 +23,7 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
+#' @param learn_rate_annealing Scale down the learning rate by this factor after every tree
 #' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
 #' @param col_sample_rate Column sample rate per split (from \code{0.0} to \code{1.0})
@@ -92,6 +93,7 @@ h2o.gbm <- function(x, y, training_frame,
                     max_depth = 5,
                     min_rows = 10,
                     learn_rate = 0.1,
+                    learn_rate_annealing = 1.0,
                     sample_rate = 1.0,
                     sample_rate_per_class,
                     col_sample_rate = 1.0,
@@ -119,7 +121,7 @@ h2o.gbm <- function(x, y, training_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     min_split_improvement,
-                    random_split_point=FALSE
+                    random_split_points=FALSE
                     )
 {
   # Required maps for different names params, including deprecated params
@@ -169,6 +171,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$min_rows <- min_rows
   if (!missing(learn_rate))
     parms$learn_rate <- learn_rate
+  if (!missing(learn_rate_annealing))
+    parms$learn_rate_annealing <- learn_rate_annealing
   if (!missing(sample_rate))
     parms$sample_rate <- sample_rate
   if (!missing(sample_rate_per_class))

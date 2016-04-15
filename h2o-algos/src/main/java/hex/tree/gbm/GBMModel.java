@@ -9,11 +9,13 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public float _learn_rate;
+    public float _learn_rate_annealing;
     public float _col_sample_rate;
 
     public GBMParameters() {
       super();
       _learn_rate = 0.1f;
+      _learn_rate_annealing = 1.0f;
       _col_sample_rate = 1.0f;
       _sample_rate = 1.0f;
       _ntrees = 50;
