@@ -23,6 +23,7 @@
 #'        progress bar.
 #' @param parse_type (Optional) Specify which parser type H2O will use.
 #'        Valid types are "ARFF", "XLS", "CSV", "SVMLight"
+#' @param chunk_size size of chunk of (input) data in bytes
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
                          col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL, chunk_size=NULL) {
