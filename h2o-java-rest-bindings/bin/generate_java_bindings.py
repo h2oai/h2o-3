@@ -74,6 +74,9 @@ def generate_pojo(schema, pojo_name, model_builders_map):
     pojo.append("package water.bindings.pojos;")
     pojo.append("")
 
+    constructor = []
+    constructor.append("    public {pojo_name}() ".format(pojo_name=pojo_name) + "{")
+
     has_map = False
     for field in schema['fields']:
         if field['type'].startswith('Map'):
@@ -89,18 +92,14 @@ def generate_pojo(schema, pojo_name, model_builders_map):
         # top of the schema class hierarchy
         superclass = 'Object'
 
+    pojo.append("")
     pojo.append("public class " + pojo_name + " extends {superclass} ".format(superclass=superclass) + '{')
 
     # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the parameters schema class. . .
     is_model_builder = False
-    is_model_parameters = False
     for field in schema['fields']:
         if 'can_build' == field['name']:
             is_model_builder = True
-        # UGH UGH UGH
-        if 'model_id' == field['name'] and 'Destination id for this model; auto-generated if not specified' == field['help']:
-            is_model_parameters = True
-#            model_builder_fields = model_builders_map[
 
     first = True
     for field in schema['fields']:
@@ -120,6 +119,56 @@ def generate_pojo(schema, pojo_name, model_builders_map):
             if enum_name not in enums:
                 # save it for later
                 enums[enum_name] = field['values']
+            else:
+                # note: we lose the ordering here
+                enums[enum_name].extend(field['values'])
+                enums[enum_name] = list(set(enums[enum_name]))
+            
+        value = field['value']
+        print("name: {name} value: {value}".format(name=name, value=value))
+        if java_type == 'long':
+            value = str(value) + "L"
+        elif java_type == 'float':
+            if value == "Infinity":
+                value = "Float.POSITIVE_INFINITY"
+            else:
+                value = str(value) + "f"
+        elif java_type == 'boolean':
+            value = str(value).lower()
+        elif java_type == 'String' and (value == '' or value == None):
+            value = '""';
+        elif java_type == 'String':
+            value = '"' + value + '"';
+        elif value == None:
+            value = "null";
+        elif type.startswith('enum'):
+            value = enum_name + '.' + value
+        elif type.endswith('[][]'):
+            # raise Exception('Cannot yet handle multidimensional arrays.')
+            # TODO: 
+            value = "null";
+        elif type.endswith('[]'):
+            if field['is_schema']:
+                basetype = field['schema_name']
+            else:
+                basetype = type.partition('[')[0]
+
+            if basetype == 'Iced':
+                basetype = 'Object'
+
+            value = str(value)
+            values = value[1:len(value) - 1]
+
+            value = "new {basetype}[]".format(basetype=basetype) + '{' + "{values}".format(values=values) + '}'
+        elif type.startswith('Map'):
+            # TODO:
+            value = "null"
+        elif type.startswith('Key'):
+            # TODO:
+            value = "null"
+
+            
+        print("name: {name} value: {value}".format(name=name, value=value))
 
         if not first:
             pojo.append("")
@@ -135,17 +184,26 @@ def generate_pojo(schema, pojo_name, model_builders_map):
                 pojo.append("     */")
             continue
 
+        # TODO: we want to redfine the field even if it's inherited, because the child class can have a different default value. . .
         if field['is_inherited']:
             pojo.append("    /* INHERITED: {help} ".format(help=help))
-            pojo.append("     * public {type} {name};".format(type=java_type, name=name))
+            pojo.append("    public {type} {name} = {value};".format(type=java_type, name=name, value=value))
             pojo.append("     */")
         else:
             pojo.append("    /** {help} */".format(help=help))
             pojo.append("    public {type} {name};".format(type=java_type, name=name))
 
+        constructor.append("        {name} = {value};".format(name=name, value=value))
+
         first = False
 
     pojo.append("")
+    
+    for line in constructor:
+        pojo.append(line)
+    pojo.append("    }")
+    pojo.append("")
+    
     pojo.append("    /** Return the contents of this object as a JSON String. */")
     pojo.append("    @Override")
 
@@ -570,7 +628,7 @@ public class Example {
 
             // STEP 2: parse setup
             ParseSetupV3 parseSetupBody = parseSetupService.guessSetup(importBody.destination_frames,
-                                                                  ParserType.GUESS, 
+                                                                  ParserParserType.GUESS, 
                                                                   (byte)',', 
                                                                   false,
                                                                   -1,
@@ -614,28 +672,6 @@ public class Example {
             training_frame.name = "arrhythmia.hex";
 
             gbm_parms.training_frame = training_frame;
-            gbm_parms.score_each_iteration = false;
-            gbm_parms.ntrees = 20;
-            gbm_parms.max_depth = 5;
-            gbm_parms.min_rows = 25;
-            gbm_parms.nbins = 20;
-            gbm_parms.nbins_top_level = 20;
-            gbm_parms.nbins_cats = 10;
-            gbm_parms.learn_rate = 0.3f;
-            gbm_parms.sample_rate = 0.9f;
-            gbm_parms.col_sample_rate = 0.9f;
-            gbm_parms.col_sample_rate_per_tree = 0.9f;
-            gbm_parms.distribution = Family.AUTO;
-            gbm_parms.balance_classes = false;
-            gbm_parms.max_confusion_matrix_size = 20;
-            gbm_parms.max_hit_ratio_k = 10;
-//            gbm_parms.class_sampling_factors = [];
-            gbm_parms.max_after_balance_size = 5;
-            gbm_parms.tweedie_power = 1.5f;
-            gbm_parms.seed = 0;
-            gbm_parms.r2_stopping = 0.999999;
-            gbm_parms.stopping_tolerance = 0.001;
-            gbm_parms.max_runtime_secs = 5;
 
             GBMV3 gbmBody = (GBMV3)modelBuildersService.train_gbm(gbm_parms.learn_rate,
 								  gbm_parms.learn_rate_annealing,
