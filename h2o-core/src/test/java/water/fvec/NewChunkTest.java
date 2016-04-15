@@ -201,6 +201,27 @@ public class NewChunkTest extends TestUtil {
     assertEquals(8,c.nextNZ(2));
     assertEquals(c.atd(0), Math.PI,1e-16);
     assertEquals(c.atd(8), Math.E,1e-16);
+
+    // test flip from dense -> sparse -> desne
+    nc = new NewChunk(null, 0, false);
+    double [] rvals = new double[2*1024];
+    nc.addNum(rvals[0] = Math.PI);
+    nc.addNum(rvals[1] = Double.MAX_VALUE);
+    nc.addNum(rvals[2] = Double.MIN_VALUE);
+    nc.addZeros(5);
+    nc.addNum(rvals[2+1+5] = Math.E);
+    nc.addZeros(512);
+    int off = nc._len;
+    assertTrue(nc.isSparseZero());
+    Random rnd = new Random();
+    for(int j  = 0; j < 1024; ++j)
+      nc.addNum(rvals[off+j] = rnd.nextDouble());
+    assertTrue(!nc.isSparseZero());
+    nc.addNA();
+    c = nc.compress();
+    assertEquals(1546,c._len);
+    for(int j = 0; j < c._len-1; ++j)
+      assertEquals(rvals[j],c.atd(j),0);
   }
   /**
    * Constant Double Chunk - C0DChunk
