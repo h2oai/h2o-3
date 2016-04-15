@@ -130,13 +130,15 @@ public final class DHistogram extends Iced {
     // When the model is exposed to new test data, we could have data that is
     // out of range of any bin - however this binning call only happens during
     // model-building.
-    int idx1 = (int) ((col_data - _min) * _step);
-    if (idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
-
+    double pos = ((col_data - _min) * _step);
+    int idx1;
     if (_splitPts!=null) {
-      idx1 = Arrays.binarySearch(_splitPts, (double)idx1);
-      if (idx1<0) idx1 = -idx1-1;
+      idx1 = Arrays.binarySearch(_splitPts, pos);
+      if (idx1<0) idx1 = -idx1-2;
+    } else {
+      idx1 = (int)pos;
     }
+    if (idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
     assert 0 <= idx1 && idx1 < _bins.length : idx1 + " " + _bins.length;
     return idx1;
   }
