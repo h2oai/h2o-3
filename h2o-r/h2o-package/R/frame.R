@@ -220,12 +220,13 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #` Fetch the first N rows on demand, caching them in x$data; also cache x$types.
 #` nrow and ncol are usually already set, but for getFrame they are set to -1
 #` and immediately set here.
-.fetch.data <- function(x,M, N = 100000000) {
+.fetch.data <- function(x,M, N) {
   stopifnot(!missing(M))
   M <- max(M,10L)
   data = attr(chk.H2OFrame(x), "data")
+  nstr = ifelse(missing(N),"",paste0("&column_count=",N))
   if( is.null(data) || (is.data.frame(data) && nrow(data) < M) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",M,"&column_count=",N))$frames[[1]]
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",M,nstr))$frames[[1]]
     .set(x,"types",lapply(res$columns, function(c) c$type))
     nrow <- .set.nlen(x,"nrow",res$rows)
     ncol <- .set.nlen(x,"ncol",res$num_columns)
