@@ -304,7 +304,7 @@ public final class DHistogram extends Iced {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  public DTree.Split scoreMSE( int col, double min_rows, int nid ) {
+  public DTree.Split scoreMSE( int col, double min_rows) {
     final int nbins = nbins();
     assert nbins > 1;
 
