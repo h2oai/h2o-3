@@ -50,12 +50,11 @@ public abstract class FileVec extends ByteVec {
       DKV.put(fr._key, fr, fs);
     }
     fs.blockForPending();
-
     return _chunkSize;
   }
 
   @Override public long length() { return _len; }
-  @Override public int nChunks() { return (int)Math.max(1,_len / _chunkSize); }
+  @Override public int nChunks() { return (int)Math.max(1,_len / _chunkSize + ((_len % _chunkSize != 0)?1:0)); }
   @Override public boolean writable() { return false; }
 
   /** Size of vector data. */

@@ -64,7 +64,6 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 .h2o.get.source.keys <- function(data, destination_frame){
  # Allow single frame or list of frames; turn singleton into a list
   if( is.H2OFrame(data) ) data <- list(data)
-  print(data)
   for (d in data) chk.H2OFrame(d)
   .key.validate(destination_frame)
   # Prep srcs: must be of the form [src1,src2,src3,...]
