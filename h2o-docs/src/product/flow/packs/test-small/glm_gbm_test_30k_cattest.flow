@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"X30k_cattest1.hex\", [0.25], [\"X30k_cattest1_test.hex_0.250\",\"X30k_cattest1_train.hex_0.750\"]"
+      "input": "splitFrame \"X30k_cattest1.hex\", [0.25], [\"X30k_cattest1_test.hex_0.250\",\"X30k_cattest1_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

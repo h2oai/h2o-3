@@ -23,11 +23,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"billion_rows.hex\""
+      "input": "assist splitFrame, \"billion_rows.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"billion_rows.hex\", [0.2], [\"billion_rows.hex_0.20\",\"billion_rows.hex_0.80\"]"
+      "input": "splitFrame \"billion_rows.hex\", [0.2], [\"billion_rows.hex_0.20\",\"billion_rows.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

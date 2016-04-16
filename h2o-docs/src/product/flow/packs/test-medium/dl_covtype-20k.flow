@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"covtype_20k_data.hex\""
+      "input": "assist splitFrame, \"covtype_20k_data.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"covtype_20k_data.hex\", [0.25], [\"covtype_20k_data_test\",\"covtype_20k_data_train\"]"
+      "input": "splitFrame \"covtype_20k_data.hex\", [0.25], [\"covtype_20k_data_test\",\"covtype_20k_data_train\"], 123456"
     },
     {
       "type": "cs",

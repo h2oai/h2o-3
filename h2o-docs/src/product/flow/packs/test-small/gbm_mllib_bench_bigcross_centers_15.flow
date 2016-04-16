@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"bigcross_centers_151.hex\", [0.2], [\"bigcross_centers_15_test.hex_0.20\",\"bigcross_centers_15_train.hex_0.80\"]"
+      "input": "splitFrame \"bigcross_centers_151.hex\", [0.2], [\"bigcross_centers_15_test.hex_0.20\",\"bigcross_centers_15_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

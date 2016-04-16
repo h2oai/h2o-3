@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"freMTPL2freq.hex\", [0.25], [\"freMTPL2freq_test\",\"freMTPL2freq_train\"]"
+      "input": "splitFrame \"freMTPL2freq.hex\", [0.25], [\"freMTPL2freq_test\",\"freMTPL2freq_train\"], 123456"
     },
     {
       "type": "cs",

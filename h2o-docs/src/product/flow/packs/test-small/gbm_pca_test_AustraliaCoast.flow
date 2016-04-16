@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"AustraliaCoast1.hex\", [0.2], [\"AustraliaCoast_test.hex_0.20\",\"AustraliaCoast_train.hex_0.80\"]"
+      "input": "splitFrame \"AustraliaCoast1.hex\", [0.2], [\"AustraliaCoast_test.hex_0.20\",\"AustraliaCoast_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

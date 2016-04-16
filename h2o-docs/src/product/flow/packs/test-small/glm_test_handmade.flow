@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"handmade.hex\", [0.25], [\"handmade_test\",\"handmade_train\"]"
+      "input": "splitFrame \"handmade.hex\", [0.25], [\"handmade_test\",\"handmade_train\"], 123456"
     },
     {
       "type": "cs",

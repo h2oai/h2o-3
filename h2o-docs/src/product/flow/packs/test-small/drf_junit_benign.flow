@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"benign2.hex\", [0.2], [\"benign_test.hex_0.20\",\"benign_train.hex_0.80\"]"
+      "input": "splitFrame \"benign2.hex\", [0.2], [\"benign_test.hex_0.20\",\"benign_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

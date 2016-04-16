@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"ecology_eval.hex\", [0.25], [\"ecology_eval_test.hex_0.250\",\"ecology_eval_train.hex_0.750\"]"
+      "input": "splitFrame \"ecology_eval.hex\", [0.25], [\"ecology_eval_test.hex_0.250\",\"ecology_eval_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

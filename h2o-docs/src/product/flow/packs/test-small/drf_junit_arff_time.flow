@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"time.hex\", [0.25], [\"time_test\",\"time_train\"]"
+      "input": "splitFrame \"time.hex\", [0.25], [\"time_test\",\"time_train\"], 123456"
     },
     {
       "type": "cs",

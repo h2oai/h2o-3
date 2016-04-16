@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"smtrees.hex\", [0.2], [\"smtrees-test.hex_0.20\",\"smtrees_train.hex_0.80\"]"
+      "input": "splitFrame \"smtrees.hex\", [0.2], [\"smtrees-test.hex_0.20\",\"smtrees_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

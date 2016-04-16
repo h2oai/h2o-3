@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"abalone.hex\""
+      "input": "assist splitFrame, \"abalone.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"abalone.hex\", [0.2], [\"abalone_test.hex_0.20\",\"abalone_train.hex_0.80\"]"
+      "input": "splitFrame \"abalone.hex\", [0.2], [\"abalone_test.hex_0.20\",\"abalone_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

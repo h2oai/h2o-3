@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"Mfgdata_gaussian_GBM_testing.hex\", [0.25], [\"Mfgdata_gaussian_GBM_testing_test.hex_0.250\",\"Mfgdata_gaussian_GBM_testing_train.hex_0.750\"]"
+      "input": "splitFrame \"Mfgdata_gaussian_GBM_testing.hex\", [0.25], [\"Mfgdata_gaussian_GBM_testing_test.hex_0.250\",\"Mfgdata_gaussian_GBM_testing_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

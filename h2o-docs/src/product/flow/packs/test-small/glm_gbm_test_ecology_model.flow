@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"ecology_model.hex\", [0.25], [\"ecology_model_test.hex_0.250\",\"ecology_model_train.hex_0.750\"]"
+      "input": "splitFrame \"ecology_model.hex\", [0.25], [\"ecology_model_test.hex_0.250\",\"ecology_model_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

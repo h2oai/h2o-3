@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"X40k_categoricals4.hex\", [0.3], [\"X40k_categoricals_test.hex_0.30\",\"X40k_categoricals_train.hex_0.70\"]"
+      "input": "splitFrame \"X40k_categoricals4.hex\", [0.3], [\"X40k_categoricals_test.hex_0.30\",\"X40k_categoricals_train.hex_0.70\"], 123456"
     },
     {
       "type": "cs",

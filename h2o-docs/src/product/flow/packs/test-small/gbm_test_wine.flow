@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"wine_data.hex\", [0.25], [\"wine_data_test.hex_0.250\",\"wine_data_train.hex_0.750\"]"
+      "input": "splitFrame \"wine_data.hex\", [0.25], [\"wine_data_test.hex_0.250\",\"wine_data_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",
