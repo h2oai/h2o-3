@@ -48,8 +48,8 @@ public class GBMGridTest extends TestUtil {
       DKV.put(fr);
 
       // Setup hyperparameter search space
-      final Float[] legalLearnRateOpts = new Float[]{0.01f, 0.1f, 0.3f};
-      final Float[] illegalLearnRateOpts = new Float[]{-1f};
+      final Double[] legalLearnRateOpts = new Double[]{0.01, 0.1, 0.3};
+      final Double[] illegalLearnRateOpts = new Double[]{-1.0};
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_ntrees", new Integer[]{1, 2});
         put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
@@ -140,7 +140,7 @@ public class GBMGridTest extends TestUtil {
         put("_distribution", new Distribution.Family[]{Distribution.Family.gaussian});
         put("_ntrees", new Integer[]{5, 5});
         put("_max_depth", new Integer[]{2, 2});
-        put("_learn_rate", new Float[]{.1f, .1f});
+        put("_learn_rate", new Double[]{.1, .1});
       }};
 
       // Fire off a grid search
@@ -214,10 +214,10 @@ public class GBMGridTest extends TestUtil {
         maxDepthSpace[i] = maxDepthList.get(i);
       }
 
-      Float[] learnRateArr = interval(0.01f, 1.0f, 0.01f);
-      ArrayList<Float> learnRateList = new ArrayList<>(Arrays.asList(learnRateArr));
+      Double[] learnRateArr = interval(0.01, 1.0, 0.01);
+      ArrayList<Double> learnRateList = new ArrayList<>(Arrays.asList(learnRateArr));
       Collections.shuffle(learnRateList);
-      Float[] learnRateSpace = new Float[learnRateDim];
+      Double[] learnRateSpace = new Double[learnRateDim];
       for (int i = 0; i < learnRateDim; i++) {
         learnRateSpace[i] = learnRateList.get(i);
       }
@@ -255,7 +255,7 @@ public class GBMGridTest extends TestUtil {
       Integer maxDepthVal = maxDepthSpace[rng.nextInt(maxDepthSpace.length)];
       randomHyperParms.put("_max_depth", maxDepthSpace);
 
-      Float learnRateVal = learnRateSpace[rng.nextInt(learnRateSpace.length)];
+      Double learnRateVal = learnRateSpace[rng.nextInt(learnRateSpace.length)];
       randomHyperParms.put("_learn_rate", learnRateSpace);
 
       //TODO: GBMModel gbmFromGrid = (GBMModel) g2.model(randomHyperParms).get();

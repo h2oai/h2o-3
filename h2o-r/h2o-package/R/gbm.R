@@ -67,6 +67,7 @@
 #' @param weights_column Specify the weights column.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
 #' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
+#' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
@@ -123,7 +124,8 @@ h2o.gbm <- function(x, y, training_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     min_split_improvement,
-                    random_split_points=FALSE
+                    random_split_points=FALSE,
+                    max_abs_leafnode_pred
                     )
 {
   # Required maps for different names params, including deprecated params
@@ -219,6 +221,7 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
   if(!missing(random_split_points)) parms$random_split_points <- random_split_points
+  if(!missing(max_abs_leafnode_pred)) parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
 
   .h2o.modelJob('gbm', parms)
 }

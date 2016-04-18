@@ -1935,7 +1935,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 10;
       parms._score_tree_interval = parms._ntrees;
       parms._max_depth = 5;
-      parms._sample_rate_per_class = new float[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
+      parms._sample_rate_per_class = new double[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
 
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();

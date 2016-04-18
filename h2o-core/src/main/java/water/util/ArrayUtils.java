@@ -1188,6 +1188,16 @@ public class ArrayUtils {
     return result;
   }
 
+  public static Double[] interval(Double start, Double end, Double step) {
+    int len = 1 + (int)((end - start) / step); // Include both ends of interval
+    Double[] result = new Double[len];
+    Double value = start;
+    for(int i = 0; i < len; i++, value = start + i*step) {
+      result[i] = value;
+    }
+    return result;
+  }
+
   public static String [] remove(String [] ary, String s) {
     if(s == null)return ary;
     int cnt = 0;
