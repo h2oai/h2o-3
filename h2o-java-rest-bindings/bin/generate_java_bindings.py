@@ -673,6 +673,9 @@ public class Example {
         Frames framesService = retrofit.create(Frames.class);
         Models modelsService = retrofit.create(Models.class);
         ModelBuilders modelBuildersService = retrofit.create(ModelBuilders.class);
+        Predictions predictionsService = retrofit.create(Predictions.class);
+
+        JobV3 job = null;
 
         try {
             // STEP 1: import raw file
@@ -730,9 +733,34 @@ public class Example {
             response_column.column_name = "C1";
             gbm_parms.response_column = response_column;
 
+            System.out.println("About to train GBM. . .");
             GBMV3 gbmBody = (GBMV3)ModelBuilders.Helper.train_gbm(modelBuildersService, gbm_parms).execute().body();
-
             System.out.println("gbmBody: " + gbmBody);
+
+            // STEP 6: poll for completion
+            job = gbmBody.job;
+            if (null == job || null == job.key)
+                throw new RuntimeException("train_gbm returned a bad Job: " + job);
+
+            job = poll(retrofit, job.key.name);
+            System.out.println("GBM build done.");
+
+            // STEP 7: fetch the model
+            // TODO: Retrofit seems to be only deserializing the base class.  What to do?
+            KeyV3 model_key = job.dest;
+            ModelsV3 models = modelsService.fetch(model_key.name).execute().body();
+            System.out.println("models: " + models);
+            // GBMModelV3 model = (GBMModelV3)models.models[0];
+            // System.out.println("new GBM model: " + model);
+            System.out.println("new GBM model: " + models.models[0]);
+
+            // STEP 8: predict!
+            ModelMetricsListSchemaV3 predictions = predictionsService.predict(model_key.name, 
+                                                                              training_frame.name, 
+                                                                              "predictions",
+                                                                              false, false, -1, false, false, false, false, null).execute().body();
+            System.out.println("predictions: " + predictions);
+
         }
         catch (IOException e) {
             System.err.println("Caught exception: " + e);
