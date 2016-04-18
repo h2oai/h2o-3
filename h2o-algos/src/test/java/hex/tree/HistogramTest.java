@@ -1,14 +1,18 @@
 package hex.tree;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
 import water.H2O;
 import water.TestUtil;
+import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -107,6 +111,45 @@ public class HistogramTest extends TestUtil {
         }
       }
       tryComplete();
+    }
+  }
+
+  @Test public void testSplits() {
+    int nbins = 13;
+    int nbins_cats = nbins;
+    byte isInt = 0;
+    double min = 1;
+    double maxEx = 6.900000000000001;
+    for (boolean randomSplitPoints : new boolean[]{false,true}) {
+      Log.info();
+      Log.info("random split points: " + randomSplitPoints);
+      long seed = new Random().nextLong();
+      if (randomSplitPoints)
+        Log.info("random seed: " + seed);
+      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,randomSplitPoints,seed);
+      hist.init();
+      int N=10000000;
+      int bin=-1;
+      double[] l1 = new double[nbins];
+      for (int i=0;i<N;++i) {
+        double col_data = min + (double)i/N*(maxEx-min);
+        int b = hist.bin(col_data);
+        if (b>bin) {
+          bin=b;
+          Log.info("Histogram maps " + col_data + " to bin  : " + hist.bin(col_data));
+          l1[b] = col_data;
+        }
+      }
+      double[] l2 = new double[nbins];
+      for (int i=0;i<nbins;++i) {
+        double col_data = hist.binAt(i);
+        Log.info("Histogram maps bin " + i + " to col_data: " + col_data);
+        l2[i] = col_data;
+      }
+
+      for (int i=0;i<nbins;++i) {
+        Assert.assertTrue(Math.abs(l1[i]-l2[i]) < 1e-6);
+      }
     }
   }
 }

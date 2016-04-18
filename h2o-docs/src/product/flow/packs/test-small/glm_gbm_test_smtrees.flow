@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"smtrees.hex\", [0.25], [\"smtrees_test.hex_0.250\",\"smtrees_train.hex_0.750\"]"
+      "input": "splitFrame \"smtrees.hex\", [0.25], [\"smtrees_test.hex_0.250\",\"smtrees_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

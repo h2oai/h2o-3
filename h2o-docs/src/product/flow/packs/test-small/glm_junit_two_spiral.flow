@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"two_spiral.hex\", [0.2], [\"two_spiral_test\",\"two_spiral_train\"]"
+      "input": "splitFrame \"two_spiral.hex\", [0.2], [\"two_spiral_test\",\"two_spiral_train\"], 123456"
     },
     {
       "type": "cs",

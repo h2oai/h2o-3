@@ -1,6 +1,7 @@
 package water.fvec;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
@@ -21,10 +22,14 @@ import static org.junit.Assert.assertTrue;
  * since it is used to avoid DKV call.
  * */
 public class CBSChunkTest extends TestUtil {
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   void testImpl(long[] ls, int[] xs, int expBpv, int expGap, int expClen, int expNA) {
     AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
     // Create a new chunk
     NewChunk nc = new NewChunk(av,0, ls, xs, null, null);
+    for(int i = 0; i < ls.length; ++i)
+      if(ls[i] == Long.MIN_VALUE)
+        nc.setNA_impl(i);
     nc.type();                  // Compute rollups, including NA
     assertEquals(expNA, nc.naCnt());
     // Compress chunk
@@ -40,7 +45,7 @@ public class CBSChunkTest extends TestUtil {
     assertEquals(expClen, cc._mem.length - CBSChunk._OFF);
     // Also, we can decompress correctly
     for( int i=0; i<ls.length; i++ )
-      if(xs[i]==0)assertEquals(ls[i], cc.at8(i));
+      if(ls[i]!=Long.MIN_VALUE)assertEquals(ls[i], cc.at8(i));
       else assertTrue(cc.isNA(i));
 
     // materialize the vector (prerequisite to free the memory)
@@ -70,20 +75,20 @@ public class CBSChunkTest extends TestUtil {
   // used for data containing NAs
   @Test public void test2BPV() {
    // Simple case only compressing 2*3bits into 1byte including 1 NA
-   testImpl(new long[] {0,Long.MAX_VALUE,                  1},
-            new int [] {0,Integer.MIN_VALUE,0},
+   testImpl(new long[] {0,Long.MIN_VALUE,                  1},
+            new int [] {0,0,0},
             2, 2, 1, 1);
    // Filling whole byte, one NA
-   testImpl(new long[] {1,Long.MAX_VALUE                ,0,1},
-            new int [] {0,Integer.MIN_VALUE,0,0},
+   testImpl(new long[] {1,Long.MIN_VALUE                ,0,1},
+            new int [] {0,0,0,0},
             2, 0, 1, 1);
    // crossing the border of two bytes by 4bits, one NA
-   testImpl(new long[] {1,0,Long.MAX_VALUE,                1, 0,0},
-            new int [] {0,0,Integer.MIN_VALUE,0, 0,0},
+   testImpl(new long[] {1,0,Long.MIN_VALUE,                1, 0,0},
+            new int [] {0,0,0,0, 0,0},
             2, 4, 2, 1);
    // Two full bytes, 5 NAs
-   testImpl(new long[] {Long.MAX_VALUE,Long.MAX_VALUE,Long.MAX_VALUE,1, 0,Long.MAX_VALUE,1,Long.MAX_VALUE},
-            new int [] {Integer.MIN_VALUE,Integer.MIN_VALUE,Integer.MIN_VALUE,0, 0,Integer.MIN_VALUE,0,Integer.MIN_VALUE},
+   testImpl(new long[] {Long.MIN_VALUE,Long.MIN_VALUE,Long.MIN_VALUE,1, 0,Long.MIN_VALUE,1,Long.MIN_VALUE},
+            new int [] {0,0,0,0, 0,0,0,0},
             2, 0, 2, 5);
   }
   @Test public void test_inflate_impl() {

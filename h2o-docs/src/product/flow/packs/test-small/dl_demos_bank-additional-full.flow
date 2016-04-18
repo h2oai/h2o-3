@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"bank_additional_full1.hex\""
+      "input": "assist splitFrame, \"bank_additional_full1.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"bank_additional_full1.hex\", [0.25], [\"bank_additional_full1_test.hex_0.250\",\"bank_additional_full1_train.hex_0.750\"]"
+      "input": "splitFrame \"bank_additional_full1.hex\", [0.25], [\"bank_additional_full1_test.hex_0.250\",\"bank_additional_full1_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

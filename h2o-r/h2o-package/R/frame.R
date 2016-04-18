@@ -220,15 +220,16 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #` Fetch the first N rows on demand, caching them in x$data; also cache x$types.
 #` nrow and ncol are usually already set, but for getFrame they are set to -1
 #` and immediately set here.
-.fetch.data <- function(x,N) {
-  stopifnot(!missing(N))
-  N <- max(N,10L)  # At least as many as the default head/tail use
+.fetch.data <- function(x,M, N) {
+  stopifnot(!missing(M))
+  M <- max(M,10L)
   data = attr(chk.H2OFrame(x), "data")
-  if( is.null(data) || (is.data.frame(data) && nrow(data) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",N))$frames[[1]]
+  nstr = ifelse(missing(N),"",paste0("&column_count=",N))
+  if( is.null(data) || (is.data.frame(data) && nrow(data) < M) ) {
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",M,nstr))$frames[[1]]
     .set(x,"types",lapply(res$columns, function(c) c$type))
     nrow <- .set.nlen(x,"nrow",res$rows)
-    ncol <- .set.nlen(x,"ncol",length(res$columns))
+    ncol <- .set.nlen(x,"ncol",res$num_columns)
     if( res$row_count==0 ) {
       data <- as.data.frame(matrix(NA,ncol=ncol,nrow=0L))
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))

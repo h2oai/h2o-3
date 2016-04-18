@@ -94,6 +94,7 @@ public class RequestServer extends NanoHTTPD {
     register("/99/ImportSQLTable" ,"POST",ImportSQLTableHandler.class,"importSQLTable" , null,"Import SQL table into an H2O Frame.");
     register("/3/ParseSetup" ,"POST",ParseSetupHandler.class,"guessSetup"  , null,"Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
     register("/3/Parse"      ,"POST",ParseHandler     .class,"parse"       , null,"Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
+    register("/3/ParseSVMLight"      ,"POST",ParseHandler     .class,"parseSVMLight"       , null,"Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
     // Admin
     register("/3/Cloud",      "GET", CloudHandler.class,  "status", null, "Determine the status of the nodes in the H2O cloud.");

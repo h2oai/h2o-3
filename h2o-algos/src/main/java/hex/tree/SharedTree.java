@@ -123,6 +123,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate + ".");
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
       error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
+    if( !(0. < _parms._col_sample_rate_change_per_level && _parms._col_sample_rate_change_per_level <= 2) )
+      error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be between 0 and 2");
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -284,7 +286,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             return;             // Stop when approaching round-off error
           }
           if (!Double.isNaN(training_r2)  //HACK to detect whether we scored at all
-                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last")) {
+                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
             doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
             _job.update(_ntrees-_model._output._ntrees); //finish
             return;
@@ -307,7 +309,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
-  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean subset, boolean build_tree_one_node) {
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
     // Build up the next-generation tree splits from the current histograms.
@@ -329,7 +331,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (idx_weight() >= 0)
         fr2.add(fr._names[idx_weight()],vecs[idx_weight()]); //observation weights
       // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar, _model._parms._distribution));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -352,13 +354,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final int _leafs[/*nclass*/];
     final DHistogram _hcs[/*nclass*/][][];
     final Frame _fr2;
-    final boolean _subset;      // True if working a subset of cols
     final boolean _build_tree_one_node;
     float[] _improvPerVar;      // Squared Error improvement per variable per split
     Distribution.Family _family;
 
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -367,7 +368,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _leafs= leafs;
       _hcs  = hcs;
       _fr2  = fr2;
-      _subset = subset;
       _build_tree_one_node = build_tree_one_node;
       _improvPerVar = improvPerVar;
       _family = family;

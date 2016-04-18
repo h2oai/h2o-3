@@ -639,7 +639,7 @@ public abstract class Chunk extends Iced<Chunk> {
   }
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
-   *  Bulk copy from the compressed form into the nc._ls array.   */
+   *  Bulk copy from the compressed form into the nc._ls8 array.   */
   public abstract NewChunk inflate_impl(NewChunk nc);
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or

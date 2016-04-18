@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"weather.hex\", [0.2], [\"weather_test\",\"weather_train\"]"
+      "input": "splitFrame \"weather.hex\", [0.2], [\"weather_test\",\"weather_train\"], 123456"
     },
     {
       "type": "cs",

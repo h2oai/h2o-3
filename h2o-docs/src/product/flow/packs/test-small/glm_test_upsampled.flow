@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"upsampled.hex\", [0.2], [\"upsampled.hex_test\",\"upsampled.hex_0.80\"]"
+      "input": "splitFrame \"upsampled.hex\", [0.2], [\"upsampled.hex_test\",\"upsampled.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

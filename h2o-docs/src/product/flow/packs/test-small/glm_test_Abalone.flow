@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"Abalone.hex\", [0.25], [\"Abalone_test\",\"Abalone_train\"]"
+      "input": "splitFrame \"Abalone.hex\", [0.25], [\"Abalone_test\",\"Abalone_train\"], 123456"
     },
     {
       "type": "cs",

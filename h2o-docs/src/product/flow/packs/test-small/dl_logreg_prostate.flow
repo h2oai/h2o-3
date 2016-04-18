@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"prostate2.hex\", [0.2], [\"prostate2_test.hex_0.20\",\"prostate2_train.hex_0.80\"]"
+      "input": "splitFrame \"prostate2.hex\", [0.2], [\"prostate2_test.hex_0.20\",\"prostate2_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

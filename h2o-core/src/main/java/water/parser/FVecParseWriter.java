@@ -3,6 +3,7 @@ package water.parser;
 import water.Futures;
 import water.Iced;
 import water.fvec.AppendableVec;
+import water.fvec.C1Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -124,7 +125,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         if(!_categoricals[colIdx].isMapFull()) {
           int id = _categoricals[_col = colIdx].addKey(str);
           if (_ctypes[colIdx] == Vec.T_BAD && id > 1) _ctypes[colIdx] = Vec.T_CAT;
-          _nvs[colIdx].addCategorical(id);
+          if(_ctypes[colIdx] == Vec.T_CAT) {
+            _nvs[colIdx].addNum(id, 0); // if we are sure we have a categorical column, we can only store the integer (more efficient than remembering this value was categorical)
+          } else
+            _nvs[colIdx].addCategorical(id);
         } else { // maxed out categorical map
           throw new ParseDataset.H2OParseException("Exceeded categorical limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
         }

@@ -659,6 +659,7 @@ public class Example {
 								  gbm_parms.build_tree_one_node,
 								  gbm_parms.sample_rate,
 								  gbm_parms.sample_rate_per_class,
+								  gbm_parms.col_sample_rate_change_per_level,
 								  gbm_parms.col_sample_rate_per_tree,
 								  gbm_parms.score_tree_interval,
 								  gbm_parms.min_split_improvement,

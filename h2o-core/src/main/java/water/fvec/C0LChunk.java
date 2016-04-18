@@ -35,9 +35,9 @@ public class C0LChunk extends Chunk {
       nc.addZeros(_len);
     } else {
       nc.alloc_mantissa(_len);
-      Arrays.fill(nc.mantissa(), _con);
       nc.alloc_exponent(_len);
-      nc.set_len(nc.set_sparseLen(_len));
+      for(int i = 0; i < _len; ++i)
+        nc.addNum(_con,0);
     }
     return nc;
   }

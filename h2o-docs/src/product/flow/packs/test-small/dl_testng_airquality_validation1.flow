@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"airquality_validation1.hex\", [0.2], [\"airquality_validation1_test\",\"airquality_validation1_train\"]"
+      "input": "splitFrame \"airquality_validation1.hex\", [0.2], [\"airquality_validation1_test\",\"airquality_validation1_train\"], 123456"
     },
     {
       "type": "cs",

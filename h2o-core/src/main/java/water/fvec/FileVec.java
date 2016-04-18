@@ -15,7 +15,6 @@ public abstract class FileVec extends ByteVec {
    *  "bite-sized" chunks.  Bigger increases batch sizes, lowers overhead
    *  costs, lower increases fine-grained parallelism. */
   public static final int DFLT_CHUNK_SIZE = 1 << DFLT_LOG2_CHUNK_SIZE;
-  public int _log2ChkSize = DFLT_LOG2_CHUNK_SIZE;
   public int _chunkSize = DFLT_CHUNK_SIZE;
 
   protected FileVec(Key key, long len, byte be) {
@@ -40,8 +39,7 @@ public abstract class FileVec extends ByteVec {
   public int setChunkSize(Frame fr, int chunkSize) {
     if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
     if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
-    _log2ChkSize = water.util.MathUtils.log2(chunkSize);
-    _chunkSize = 1 << _log2ChkSize;
+    _chunkSize = chunkSize;
 
     //Now reset the chunk size on each node
     Futures fs = new Futures();
@@ -52,12 +50,11 @@ public abstract class FileVec extends ByteVec {
       DKV.put(fr._key, fr, fs);
     }
     fs.blockForPending();
-
     return _chunkSize;
   }
 
   @Override public long length() { return _len; }
-  @Override public int nChunks() { return (int)Math.max(1,_len>>_log2ChkSize); }
+  @Override public int nChunks() { return (int)Math.max(1,_len / _chunkSize + ((_len % _chunkSize != 0)?1:0)); }
   @Override public boolean writable() { return false; }
 
   /** Size of vector data. */
@@ -69,7 +66,7 @@ public abstract class FileVec extends ByteVec {
   @Override
   public int elem2ChunkIdx(long i) {
     assert 0 <= i && i <= _len : " "+i+" < "+_len;
-    int cidx = (int)(i>>_log2ChkSize);
+    int cidx = (int)(i/_chunkSize);
     int nc = nChunks();
     if( i >= _len ) return nc;
     if( cidx >= nc ) cidx=nc-1; // Last chunk is larger
@@ -79,12 +76,12 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk-index into a starting row #. Constant sized chunks
   // (except for the last, which might be a little larger), and size-1 rows so
   // this is a little shift-n-add math.
-  @Override long chunk2StartElem( int cidx ) { return (long)cidx << _log2ChkSize; }
+  @Override long chunk2StartElem( int cidx ) { return (long)cidx*_chunkSize; }
 
   /** Convert a chunk-key to a file offset. Size 1-byte "rows", so this is a
    *  direct conversion.
    *  @return The file offset corresponding to this Chunk index */
-  public static long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)<< ((FileVec)Vec.getVecKey(ckey).get())._log2ChkSize; }
+  public static long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)*((FileVec)Vec.getVecKey(ckey).get())._chunkSize; }
   // Reverse: convert a chunk-key into a cidx
   static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.CHK; return UnsafeUtils.get4(ckey._kb, 1 + 1 + 4); }
 
@@ -169,7 +166,9 @@ public abstract class FileVec extends ByteVec {
       int perNodeChunkCountLimit = 1<<21; // don't create more than 2M Chunk POJOs per node
       int minParseChunkSize = 1<<12; // don't read less than this many bytes
       int maxParseChunkSize = Value.MAX-1; // don't read more than this many bytes per map() thread (needs to fit into a Value object)
-      long chunkSize = Math.max((localParseSize / (cores * 4)), minParseChunkSize); //lower hard limit
+      long chunkSize = Math.max((localParseSize / (4*cores))+1, minParseChunkSize); //lower hard limit
+      if(chunkSize > 1024*1024)
+        chunkSize = (chunkSize & 0xFFFFFE00) + 512; // align chunk size to 512B
 
       // Super small data check - file size is smaller than 64kB
       if (totalSize <= 1<<16) {
@@ -177,7 +176,7 @@ public abstract class FileVec extends ByteVec {
       } else {
 
         //round down to closest power of 2
-        chunkSize = 1L << MathUtils.log2(chunkSize);
+//        chunkSize = 1L << MathUtils.log2(chunkSize);
 
         // Small data check
         if (chunkSize < DFLT_CHUNK_SIZE && (localParseSize / chunkSize) * numCols < perNodeChunkCountLimit) {

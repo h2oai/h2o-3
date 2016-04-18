@@ -20,7 +20,7 @@ public class C1NChunk extends Chunk {
     nc.alloc_exponent(_len);
     nc.alloc_mantissa(_len);
     for( int i=0; i< _len; i++ )
-      nc.mantissa()[i] = 0xFF&_mem[i+_OFF];
+      nc.addNum(0xFF&_mem[i+_OFF],0);
     nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }

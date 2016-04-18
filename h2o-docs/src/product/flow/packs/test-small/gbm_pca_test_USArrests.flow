@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"USArrests2.hex\", [0.2], [\"USArrests_test.hex_0.20\",\"USArrests_train.hex_0.80\"]"
+      "input": "splitFrame \"USArrests2.hex\", [0.2], [\"USArrests_test.hex_0.20\",\"USArrests_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

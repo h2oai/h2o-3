@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"Mushroom.hex\", [0.25], [\"Mushroom_test\",\"Mushroom_train\"]"
+      "input": "splitFrame \"Mushroom.hex\", [0.25], [\"Mushroom_test\",\"Mushroom_train\"], 123456"
     },
     {
       "type": "cs",

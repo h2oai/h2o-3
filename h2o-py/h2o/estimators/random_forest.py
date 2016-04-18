@@ -13,6 +13,8 @@ class H2ORandomForestEstimator(H2OEstimator):
       Number of variables randomly sampled as candidates at each split. If set to -1,
       defaults to sqrt{p} for classification, and p/3 for regression, where p is the
       number of predictors.
+    col_sample_rate_change_per_level : float
+      Relative change of the column sampling rate for every level (from 0.0 to 2.0)
     sample_rate : float
       Row sample rate per tree (from 0.0 to 1.0)
     sample_rate_per_class : list
@@ -85,7 +87,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     random_split_points : boolean
       Whether to use random split points for histograms (to pick the best split from).
     """
-  def __init__(self, model_id=None, mtries=None, sample_rate=None, sample_rate_per_class=None, col_sample_rate_per_tree=None,
+  def __init__(self, model_id=None, mtries=None, col_sample_rate_change_per_level=None,
+               sample_rate=None, sample_rate_per_class=None, col_sample_rate_per_tree=None,
                build_tree_one_node=None, ntrees=None, max_depth=None, min_rows=None, nbins=None,
                nbins_cats=None, binomial_double_trees=None, balance_classes=None, class_sampling_factors=None,
                max_after_balance_size=None, seed=None, nfolds=None, fold_assignment=None,
@@ -105,6 +108,14 @@ class H2ORandomForestEstimator(H2OEstimator):
   @mtries.setter
   def mtries(self, value):
     self._parms["mtries"] = value
+
+  @property
+  def col_sample_rate_change_per_tree(self):
+    return self._parms["col_sample_rate_change_per_tree"]
+
+  @col_sample_rate_change_per_tree.setter
+  def col_sample_rate_change_per_tree(self, value):
+    self._parms["col_sample_rate_change_per_tree"] = value
 
   @property
   def sample_rate(self):
@@ -313,4 +324,3 @@ class H2ORandomForestEstimator(H2OEstimator):
   @random_split_points.setter
   def random_split_points(self, value):
     self._parms["random_split_points"] = value
-

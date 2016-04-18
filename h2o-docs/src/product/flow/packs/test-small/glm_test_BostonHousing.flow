@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"BostonHousing.hex\", [0.25], [\"BostonHousing_test\",\"BostonHousing_train\"]"
+      "input": "splitFrame \"BostonHousing.hex\", [0.25], [\"BostonHousing_test\",\"BostonHousing_train\"], 123456"
     },
     {
       "type": "cs",
