@@ -21,7 +21,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       _sample_rate = 1.0;
       _ntrees = 50;
       _max_depth = 5;
-      _max_abs_leafnode_pred = Double.POSITIVE_INFINITY;
+      _max_abs_leafnode_pred = Float.MAX_VALUE;
     }
 
     public String algoName() { return "GBM"; }
