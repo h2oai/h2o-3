@@ -140,7 +140,7 @@ public class CXIChunk extends Chunk {
           break;
       }
     } else throw H2O.unimpl();
-    return sparseLenZero();
+    return isSparseNA() ? sparseLenNA() : sparseLenZero();
   }
 
   @Override public boolean isSparseZero() {return true;}
