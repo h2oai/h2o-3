@@ -109,7 +109,7 @@ public final class DHistogram extends Iced {
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
     if( isInt>0 && maxEx-min <= xbins ) {
-      assert ((long)min)==min;                // No overflow
+      assert ((long)min)==min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
       xbins = (char)((long)maxEx-(long)min);  // Shrink bins
       _step = 1.0f;                           // Fixed stepsize
     } else {
