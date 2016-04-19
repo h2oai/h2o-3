@@ -30,6 +30,7 @@ import shutil
 import string
 import copy
 import json
+import math
 
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -2284,7 +2285,7 @@ def evaluate_metrics_stopping(model_list, metric_name, bigger_is_better, search_
         metric_list.append(metric_value)
 
         if len(metric_list) > min_list_len:     # start early stopping evaluation now
-            stop_now, metric_list = evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better)
+            stop_now = evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better)
 
         if stop_now:
             if len(metric_list) < len(model_list):  # could have stopped early in randomized gridsearch
@@ -2329,42 +2330,28 @@ def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better
     :param stop_round:  integer, determine averaging length
     :param tolerance:   real, tolerance to see if the grid search model has improved enough to keep going
     :param bigger_is_better:    bool: True if metric is optimized as it gets bigger and vice versa
+
     :return:    bool indicating if we should stop early and sorted metric_list
     """
+    metric_len = len(metric_list)
+    metric_list.sort(reverse=bigger_is_better)
+    shortest_len = 2*stop_round
+
+    bestInLastK = 1.0*sum(metric_list[0:stop_round])/stop_round
+    lastBeforeK = 1.0*sum(metric_list[stop_round:shortest_len])/stop_round
+
+    if not(np.sign(bestInLastK) == np.sign(lastBeforeK)):
+        return False
+
+    ratio = bestInLastK/lastBeforeK
+
+    if math.isnan(ratio):
+        return False
 
     if bigger_is_better:
-        metric_list.sort()
+        return not (ratio > 1+tolerance)
     else:
-        metric_list.sort(reverse=True)
-
-    metric_len = len(metric_list)
-
-    start_index = metric_len - 2*stop_round     # start index for reference
-    all_moving_values = []
-
-    # this part is purely used to make sure we agree with ScoreKeeper.java implementation, not efficient at all
-    for index in range(stop_round+1):
-        index_start = start_index+index
-        all_moving_values.append(sum(metric_list[index_start:index_start+stop_round]))
-
-    if ((min(all_moving_values) > 0) and (max(all_moving_values) > 0)) or ((min(all_moving_values) < 0)
-                                                                           and (max(all_moving_values) < 0)):
-
-        reference_value = all_moving_values[0]
-        last_value = all_moving_values[-1]
-
-        if ((reference_value > 0) and (last_value > 0)) or ((reference_value < 0) and (last_value < 0)):
-            ratio = last_value / reference_value
-
-            if bigger_is_better:
-                return not (ratio > 1+tolerance), metric_list
-            else:
-                return not (ratio < 1-tolerance), metric_list
-
-        else:   # zero in reference metric, or sign of metrics differ, marked as not yet converge
-            return False, metric_list
-    else:
-        return False, metric_list
+        return not (ratio < 1-tolerance)
 
 
 def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
