@@ -39,7 +39,7 @@ securityGroupName = 'SecurityDisabled'
 
 numInstancesToLaunch = 2
 instanceType = 'm3.large'
-instanceNameRoot = 'h2o-ai-latest-stable'
+instanceNameRoot = 'h2o-ai-stable'
 
 
 # Options to help debugging.
@@ -55,7 +55,7 @@ dryRun = False
 # --------------------------------------------------------
 
 regionName = 'us-east-1'
-amiId = 'ami-34fd845e'
+amiId = 'ami-0b100e61'
 
 
 #--------------------------------------------------------------------------
