@@ -132,7 +132,10 @@ def generate_pojo(schema, pojo_name, model_builders_map):
             if value == "Infinity":
                 value = "Float.POSITIVE_INFINITY"
             else:
-                value = str(value) + "f"
+              value = str(value) + "f"
+        elif java_type == 'double':
+            if value == "Infinity":
+              value = "Double.POSITIVE_INFINITY"
         elif java_type == 'boolean':
             value = str(value).lower()
         elif java_type == 'String' and (value == '' or value == None):
