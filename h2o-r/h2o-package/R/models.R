@@ -113,7 +113,7 @@
   #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
   #---------- Build! ----------#
   res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-  if(!is.null(res$messages)){
+  if(!is.null(res$messages) && length(res$messages) > 0){
     warn <- lapply(res$messages, function(i) {
       if( i$message_type == "WARN" )
         paste0(i$message, ".\n")
