@@ -653,12 +653,14 @@ evaluate_early_stopping <- function(metric_list, stop_round, tolerance, is_decre
 sort_model_metrics_by_time <- function(model_ids, metric_name) {
   all_models = lapply(model_ids, function(id) {model = h2o.getModel(id)})
   sorted_metrics = rep(0, length(model_ids))
+  m_index = 1
 
   for (model_id in model_ids) {
     # find id of the model, starting from 0
     temp_list = strsplit(model_id, '_')[[1]]
     index = as.integer(temp_list[length(temp_list)])
-    the_model = all_models[index+1][[1]]
+    the_model = all_models[m_index][[1]]
+    m_index = m_index + 1
     # get the metric value and put it in right place
     sorted_metrics[index+1] = the_model@model$cross_validation_metrics@metrics[[metric_name]]
   }
