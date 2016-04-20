@@ -6,10 +6,13 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.schemas.DataInfoFrameV3;
 import hex.schemas.GLMModelV3;
+import hex.schemas.GLMRegularizationPathV3;
 import hex.schemas.MakeGLMModelV3;
 import water.DKV;
+import water.Iced;
 import water.Key;
 import water.MRTask;
+import water.api.API;
 import water.api.Handler;
 import water.api.KeyV3;
 import water.fvec.*;
@@ -43,6 +46,12 @@ public class MakeGLMModelHandler extends Handler {
     return res;
   }
 
+  public GLMRegularizationPathV3 extractRegularizationPath(int v, GLMRegularizationPathV3 args) {
+    GLMModel model = DKV.getGet(args.model.key());
+    if(model == null)
+      throw new IllegalArgumentException("missing source model " + args.model);
+    return new GLMRegularizationPathV3().fillFromImpl(model.getRegularizationPath());
+  }
   // instead of adding a new endpoint, just put this stupid test functionality here
  /** Get the expanded (interactions + offsets) dataset. Careful printing! Test only
   */
