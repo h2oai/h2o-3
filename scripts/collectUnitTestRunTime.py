@@ -12,7 +12,7 @@ collect run time statistics especially for tests running with randomly generated
 and parameter values.  You should invoke this script using the following commands:
 
 python collectUnitTestRunTime.py 10 'python run.py_path/run.py --wipe --test dir_to_test/test1,
-string containing another test you want to run',...' True
+python run.py_path/run.py --wipe --test dir_to_test2/test2,...' True
 
 The above command will run all the commands in the list 10 times and collect the run time printed out
 by the run.  Make sure there is no space between each command.  They are only
@@ -69,7 +69,7 @@ def run_commands(command, number_to_run, temp_file):
 
                 temp_string = each_line.split()
                 if len(temp_string) > 0:
-                    if (temp_string[0] == 'PASS'):
+                    if temp_string[0] == 'PASS':
                         test_time = temp_string[2]
                         try:
                             runtime = test_time[:-1]
@@ -97,7 +97,7 @@ def write_result_summary(result_dict, directory_path, is_new_run):
     dict_keys = list(result_dict)
 
     if "test_name" in dict_keys:
-        json_file = os.path.join(directory_path, result_dict["test_name"])
+        json_file = os.path.join(directory_path, result_dict["test_name"]+'.json')
 
         run_time = []
         if os.path.exists(json_file) and not(is_new_run):
@@ -105,19 +105,24 @@ def write_result_summary(result_dict, directory_path, is_new_run):
                 temp_dict = json.load(test_file)
                 run_time = temp_dict["run_time_secs"]
 
-        if ("run_time_secs" in dict_keys) and (len(run_time) > 0):
-            run_time.extend(result_dict["run_time_secs"])
-            result_dict["max_run_time_secs"] = max(run_time)
-            result_dict["min_run_time_secs"] = min(run_time)
-            result_dict['mean_run_time_secs'] = np.mean(run_time)
-            result_dict['run_time_std'] = np.std(run_time)
-            result_dict["total_number_of_runs"] = len(run_time)
+        if "run_time_secs" in dict_keys:
+            if len(run_time) > 0:
+                run_time.extend(result_dict["run_time_secs"])
+            else:
+                run_time = result_dict["run_time_secs"]
 
-            # save results in json file
-            with open(json_file, 'a') as test_file:
-                json.dump(result_dict, test_file)
+            if len(run_time) > 0:
+                result_dict["max_run_time_secs"] = max(run_time)
+                result_dict["min_run_time_secs"] = min(run_time)
+                result_dict['mean_run_time_secs'] = np.mean(run_time)
+                result_dict['run_time_std'] = np.std(run_time)
+                result_dict["total_number_of_runs"] = len(run_time)
 
-            print("Run result summary: \n {0}".format(result_dict))
+                # save results in json file
+                with open(json_file, 'a') as test_file:
+                    json.dump(result_dict, test_file)
+
+                print("Run result summary: \n {0}".format(result_dict))
         else:
             print("Your result summary dictionary does not contain run time data!\n")
     else:
@@ -135,8 +140,8 @@ def main(argv):
     global g_temp_filename
 
     if len(argv) < 3:
-        print("invoke this script as python collectUnitTestRunTime.py 10 ['python run.py_path/run.py --wipe --test " \
-              "dir_to_test/test1', 'string containing another test you want to run',...] is_new_run\n")
+        print("invoke this script as python collectUnitTestRunTime.py 10 'python run.py_path/run.py --wipe "
+              "--test dir_to_test/test1,python run.py_path/run.py --wipe --test dir_to_test2/test2,...' True\n")
         sys.exit(1)
     else:   # we may be in business
         repeat_number = int(argv[1])         # number of times to run a unit test
