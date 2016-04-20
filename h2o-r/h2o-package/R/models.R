@@ -113,10 +113,10 @@
   #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
   #---------- Build! ----------#
   res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
-  if(!is.null(res$messages) && length(res$messages) > 0){
-    warn <- lapply(res$messages, function(i) {
-      if( i$message_type == "WARN" )
-        paste0(i$message, ".\n")
+  if(!is.null(res$messages) && length(res$messages) != 0L){
+    warn <- lapply(res$messages, function(y) {
+      if( y$message_type == "WARN" )
+        paste0(y$message, ".\n")
       else ""
     })
     if(any(nzchar(warn))) warning(warn)
@@ -133,9 +133,9 @@
 .h2o.validateModelParameters <- function(algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   validation <- .h2o.__remoteSend(method = "POST", paste0(.h2o.__MODEL_BUILDERS(algo), "/parameters"), .params = params, h2oRestApiVersion = h2oRestApiVersion)
   if(length(validation$messages) != 0L) {
-    error <- lapply(validation$messages, function(i) {
-      if( i$message_type == "ERRR" )
-        paste0(i$message, ".\n")
+    error <- lapply(validation$messages, function(x) {
+      if( x$message_type == "ERRR" )
+        paste0(x$message, ".\n")
       else ""
     })
     if(any(nzchar(error))) stop(error)
