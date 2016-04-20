@@ -972,7 +972,7 @@ public class NewChunk extends Chunk {
           ms.set(_id[i], _ms.get(i));
           missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
         }
-        assert _sparseNA || (ms._nzs == _ms._nzs && ms._nzs == _sparseLen);
+        assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
         _xs = xs;
         _missing = missing;
