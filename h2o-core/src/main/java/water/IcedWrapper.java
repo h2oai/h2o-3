@@ -40,6 +40,7 @@ public class IcedWrapper extends Iced {
   String[] s_ar;
   String[] e_ar; // TODO: JavaAssist is blowing up on enum fields
   KeyV3[] k_ar;
+  Iced[] iced_ar;
 
   public IcedWrapper(Object o) {
     if (null == o) {
@@ -98,6 +99,9 @@ public class IcedWrapper extends Iced {
       } else if (o instanceof KeyV3[]) {
         t = "K";
         k_ar = (KeyV3[])o;
+      } else if (o instanceof Iced[]) {
+        t = "Iced";
+        iced_ar = (Iced[])o;
       }
     } else {
       // scalar
@@ -160,6 +164,8 @@ public class IcedWrapper extends Iced {
         return e_ar;
       } else if (t.equals("K")) {
         return k_ar;
+      } else if (t.equals("Iced")) {
+        return iced_ar;
       }
     } else {
       if (t.equals("B")) {
@@ -236,6 +242,8 @@ public class IcedWrapper extends Iced {
         return ab.putJSONAStr(e_ar);
       else if (t.equals("K"))
         return ab.putJSONA(k_ar);
+      else if (t.equals("Iced"))
+        return ab.putJSONA(iced_ar);
     } else {
       if (t.equals("B"))
         return ab.putJSON1((byte)i);

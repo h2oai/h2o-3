@@ -43,8 +43,8 @@ public class DRFGridTest extends TestUtil {
       DKV.put(fr);
 
       // Setup hyperparameter search space
-      final Float[] legalSampleRateOpts = new Float[]{0.5f};
-      final Float[] illegalSampleRateOpts = new Float[]{1f};
+      final Double[] legalSampleRateOpts = new Double[]{0.5};
+      final Double[] illegalSampleRateOpts = new Double[]{1.0};
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_ntrees", new Integer[]{2, 4});
         put("_max_depth", new Integer[]{10, 20});
@@ -133,7 +133,7 @@ public class DRFGridTest extends TestUtil {
         put("_ntrees", new Integer[]{5, 5});
         put("_max_depth", new Integer[]{2, 2});
         put("_mtries", new Integer[]{-1, -1});
-        put("_sample_rate", new Float[]{.1f, .1f});
+        put("_sample_rate", new Double[]{.1, .1});
       }};
 
       // Fire off a grid search
@@ -217,10 +217,10 @@ public class DRFGridTest extends TestUtil {
         mtriesSpace[i] = mtriesList.get(i);
       }
 
-      Float[] sampleRateArr = interval(0.01f, 0.99f, 0.01f);
-      ArrayList<Float> sampleRateList = new ArrayList<>(Arrays.asList(sampleRateArr));
+      Double[] sampleRateArr = interval(0.01, 0.99, 0.01);
+      ArrayList<Double> sampleRateList = new ArrayList<>(Arrays.asList(sampleRateArr));
       Collections.shuffle(sampleRateList);
-      Float[] sampleRateSpace = new Float[sampleRateDim];
+      Double[] sampleRateSpace = new Double[sampleRateDim];
       for (int i = 0; i < sampleRateDim; i++) {
         sampleRateSpace[i] = sampleRateList.get(i);
       }
@@ -263,7 +263,7 @@ public class DRFGridTest extends TestUtil {
       Integer mtriesVal = mtriesSpace[rng.nextInt(mtriesSpace.length)];
       randomHyperParms.put("_max_depth", mtriesSpace);
 
-      Float sampleRateVal = sampleRateSpace[rng.nextInt(sampleRateSpace.length)];
+      Double sampleRateVal = sampleRateSpace[rng.nextInt(sampleRateSpace.length)];
       randomHyperParms.put("_sample_rate", sampleRateSpace);
 
       //TODO: DRFModel drfFromGrid = (DRFModel) g2.model(randomHyperParms).get();

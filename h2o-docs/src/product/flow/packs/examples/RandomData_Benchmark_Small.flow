@@ -7,7 +7,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"df.hex\", [0.25], [\"df.valid.hex\",\"df.train.hex\"]"
+      "input": "splitFrame \"df.hex\", [0.25], [\"df.valid.hex\",\"df.train.hex\"], 123456"
     },
     {
       "type": "cs",

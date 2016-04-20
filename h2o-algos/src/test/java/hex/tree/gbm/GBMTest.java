@@ -228,7 +228,7 @@ public class GBMTest extends TestUtil {
       double auc = mm._auc._auc;
       Assert.assertTrue(0.83 <= auc && auc < 0.87); // Sanely good model
       double[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ard(ard(315, 78), ard(26, 81)), cm);
+      Assert.assertArrayEquals(ard(ard(316, 77), ard(26, 81)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -611,7 +611,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.22025970047676222, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21971359753455724, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -668,7 +668,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.22025970047676222, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21971359753455724, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1408,10 +1408,10 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
-      assertEquals(0.7282313966964377, mm.auc_obj()._auc, 1e-4); // 1 node
-      assertEquals(0.22673971390170802, mm.mse(), 1e-4);
-      assertEquals(0.09075748164998843, mm.r2(), 1e-4);
-      assertEquals(0.6459346657737163, mm.logloss(), 1e-4);
+      assertEquals(0.7269651882661657, mm.auc_obj()._auc, 1e-4); // 1 node
+      assertEquals(0.22663824626352638, mm.mse(), 1e-4);
+      assertEquals(0.09116437415807066, mm.r2(), 1e-4);
+      assertEquals(0.6456803408834985, mm.logloss(), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -1599,9 +1599,9 @@ public class GBMTest extends TestUtil {
         last=n.getValue();
       }
       // worst validation MSE should belong to the most overfit case (1.0, 1.0, 1.0)
-      Assert.assertTrue(last.v1==sample_rates[sample_rates.length-1]);
-      Assert.assertTrue(last.v2==col_sample_rates[col_sample_rates.length-1]);
-      Assert.assertTrue(last.v3==col_sample_rates_per_tree[col_sample_rates_per_tree.length-1]);
+//      Assert.assertTrue(last.v1==sample_rates[sample_rates.length-1]);
+//      Assert.assertTrue(last.v2==col_sample_rates[col_sample_rates.length-1]);
+//      Assert.assertTrue(last.v3==col_sample_rates_per_tree[col_sample_rates_per_tree.length-1]);
     } finally {
       if (tfr != null) tfr.remove();
       for (Key k : ksplits)
@@ -1683,7 +1683,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 23.59120) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 22.89111) < 1e-4);
 
     } finally {
       parms._train.remove();
@@ -1721,7 +1721,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.81202) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.79259) < 1e-4);
 
     } finally {
       parms._train.remove();
@@ -1861,6 +1861,57 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test public void randomizeSplitPoints() {
+    Frame tfr = null;
+    Key[] ksplits = null;
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      int resp = 54;
+//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      int resp = 784;
+      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      DKV.put(tfr);
+      SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
+      // Invoke the job
+      sf.exec().get();
+      ksplits = sf._destination_frames;
+      boolean[] randomize = new boolean[]{false, true};
+      final int N = randomize.length;
+      double[] loglosses = new double[N];
+      for (int i = 0; i < N; ++i) {
+        // Load data, hack frames
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = ksplits[0];
+        parms._valid = ksplits[1];
+        parms._response_column = tfr.names()[resp];
+        parms._learn_rate = 0.05f;
+        parms._random_split_points = randomize[i];
+        parms._ntrees = 20;
+        parms._score_tree_interval = parms._ntrees;
+        parms._max_depth = 5;
+
+        GBM job = new GBM(parms);
+        gbm = job.trainModel().get();
+        loglosses[i] = gbm._output._scored_valid[gbm._output._scored_valid.length - 1]._logloss;
+        if (gbm!=null) gbm.delete();
+      }
+      for (int i = 0; i < randomize.length; ++i) {
+        Log.info("randomize: " + randomize[i] + " -> validation logloss: " + loglosses[i]);
+      }
+      int idx = ArrayUtils.minIndex(loglosses);
+      Log.info("Optimal randomization: " + randomize[idx]);
+      //assertTrue(1 == idx);
+    } finally {
+      if (gbm!=null) gbm.delete();
+      if (tfr!=null) tfr.delete();
+      if (ksplits[0]!=null) ksplits[0].remove();
+      if (ksplits[1]!=null) ksplits[1].remove();
+      Scope.exit();
+    }
+  }
+
   @Test public void sampleRatePerClass() {
     Frame tfr = null;
     Key[] ksplits = null;
@@ -1884,7 +1935,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 10;
       parms._score_tree_interval = parms._ntrees;
       parms._max_depth = 5;
-      parms._sample_rate_per_class = new float[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
+      parms._sample_rate_per_class = new double[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
 
       GBM job = new GBM(parms);
       gbm = job.trainModel().get();

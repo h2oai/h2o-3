@@ -11,7 +11,7 @@ public class C0LChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     final int K = 1<<18;
-    for (long l : new long[]{Long.MIN_VALUE, Long.MAX_VALUE, 23420384l, 0l, -23423423400023l /*, 8234234028823049934L this would overflow the double mantissa */}) {
+    for (long l : new long[]{Long.MIN_VALUE+1, Long.MAX_VALUE, 23420384l, 0l, -23423423400023l /*, 8234234028823049934L this would overflow the double mantissa */}) {
       NewChunk nc = new NewChunk(null, 0);
       for (int i=0;i<K;++i) nc.addNum(l,0);
       Assert.assertEquals(K, nc._len);
@@ -33,7 +33,7 @@ public class C0LChunkTest extends TestUtil {
       cc.getDoubles(densevals,0,cc.len());
       for (int i = 0; i < densevals.length; ++i) {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
-        else Assert.assertTrue(cc.at8(i)==(long)densevals[i]);
+        else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
       nc = new NewChunk(null, 0);

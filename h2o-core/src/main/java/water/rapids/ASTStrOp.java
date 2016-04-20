@@ -659,8 +659,7 @@ class ASTStrLength extends ASTPrim {
         }
         @Override public void map(Chunk chk, NewChunk newChk){
           // pre-allocate since the size is known
-          newChk._ls = MemoryManager.malloc8(chk._len);
-          newChk._xs = MemoryManager.malloc4(chk._len); // sadly, a waste
+          newChk.alloc_nums(chk._len);
           for (int i =0; i < chk._len; i++)
             if(chk.isNA(i))
               newChk.addNA();
@@ -987,7 +986,7 @@ class ASTEntropy extends ASTPrim {
       }
       @Override public void map(Chunk chk, NewChunk newChk) {
         //pre-allocate since the size is known
-        newChk._ds = MemoryManager.malloc8d(chk._len);
+        newChk.alloc_doubles(chk._len);
         for (int i = 0; i < chk._len; i++)
           if (chk.isNA(i))
             newChk.addNA();
@@ -1091,7 +1090,7 @@ class ASTCountSubstringsWords extends ASTPrim {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
         //pre-allocate since the size is known
-        newChk._ds = MemoryManager.malloc8d(chk._len);
+        newChk.alloc_doubles(chk._len);
         for (int i = 0; i < chk._len; i++)
           if (chk.isNA(i))
             newChk.addNA();

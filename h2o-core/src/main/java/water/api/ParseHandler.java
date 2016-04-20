@@ -1,13 +1,16 @@
 package water.api;
 
 import water.DKV;
+import water.Iced;
 import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.parser.ParseWriter;
+import water.util.Log;
 
 class ParseHandler extends Handler {
   // Entry point for parsing.
@@ -28,11 +31,21 @@ class ParseHandler extends Handler {
     }
     return parse;
   }
-
   String[] delNulls(String[] names) {
     if (names == null) return null;
     for(int i=0; i < names.length; i++)
       if (names[i].equals("null")) names[i] = null;
     return names;
   }
+  public JobV3 parseSVMLight(int version, ParseSVMLightV3 parse) {
+    Key [] fkeys = new Key[parse.source_frames.length];
+    for(int i = 0; i < fkeys.length; ++i)
+      fkeys[i] = parse.source_frames[i].key();
+    Key destKey = parse.destination_frame == null?null:parse.destination_frame.key();
+    if(destKey == null)
+      destKey = Key.make(ParseSetup.createHexName(parse.source_frames[0].toString()));
+    ParseSetup setup = ParseSetup.guessSetup(fkeys,ParseSetup.makeSVMLightSetup());
+    return new JobV3().fillFromImpl(ParseDataset.forkParseSVMLight(destKey,fkeys,setup));
+  }
+
 }

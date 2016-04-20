@@ -9,6 +9,9 @@ import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.util.*;
 
+import java.util.Arrays;
+import java.util.Random;
+
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>A {@code DHistogram} bins every value added to it, and computes a the
@@ -45,6 +48,9 @@ public final class DHistogram extends Iced {
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public double _bins[];   // Bins, shared, atomically incremented
   private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
+  public boolean _randomSplitPoints; //whether ot use random split points
+  private transient double _splitPts[]; // random split points between _min and _maxEx (instead of _delta)
+  private final transient long _seed;
 
   // Atomically updated double min/max
   protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
@@ -86,7 +92,7 @@ public final class DHistogram extends Iced {
       old = _maxIn;
   }
 
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement) {
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement, boolean randomSplitPoints, long seed) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -97,11 +103,13 @@ public final class DHistogram extends Iced {
     _min2 =  Double.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Double.MAX_VALUE;
     _minSplitImprovement = minSplitImprovement;
+    _randomSplitPoints = randomSplitPoints;
+    _seed = seed;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
     if( isInt>0 && maxEx-min <= xbins ) {
-      assert ((long)min)==min;                // No overflow
+      assert ((long)min)==min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
       xbins = (char)((long)maxEx-(long)min);  // Shrink bins
       _step = 1.0f;                           // Fixed stepsize
     } else {
@@ -114,20 +122,29 @@ public final class DHistogram extends Iced {
 
   // Interpolate d to find bin#
   public int bin( double col_data ) {
-    if( Double.isNaN(col_data) ) return 0; // Always NAs to bin 0
+    if( Double.isNaN(col_data) ) return _bins.length-1; // NAs go right, and for numeric features, this is consistent
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _bins.length-1;
+    assert _min <= col_data && col_data < _maxEx : "Coldata " + col_data + " out of range " + this;
     // When the model is exposed to new test data, we could have data that is
     // out of range of any bin - however this binning call only happens during
     // model-building.
-    assert _min <= col_data && col_data < _maxEx : "Coldata "+col_data+" out of range "+this;
-    int idx1  = (int)((col_data-_min)*_step);
-    assert 0 <= idx1 && idx1 <= _bins.length : idx1 + " " + _bins.length;
-    if( idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
+    double pos = ((col_data - _min) * _step);
+    int idx1;
+    if (_splitPts!=null) {
+      idx1 = Arrays.binarySearch(_splitPts, pos);
+      if (idx1<0) idx1 = -idx1-2;
+    } else {
+      idx1 = (int)pos;
+    }
+    if (idx1 == _bins.length) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
+    assert 0 <= idx1 && idx1 < _bins.length : idx1 + " " + _bins.length;
     return idx1;
   }
-  public double binAt( int b ) { return _min+b/_step; }
+  public double binAt( int b ) {
+    return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
+  }
 
   public int nbins() { return _nbin; }
   public double bins(int b) { return _bins[b]; }
@@ -137,6 +154,16 @@ public final class DHistogram extends Iced {
     assert _bins == null;
     _bins = MemoryManager.malloc8d(_nbin);
     init0();
+    if (_randomSplitPoints) {
+      // every node makes the same split points
+      Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
+      _splitPts = new double[_nbin];
+      _splitPts[0] = 0;
+      _splitPts[_nbin - 1] = _nbin-1;
+      for (int i = 1; i < _nbin-1; ++i)
+         _splitPts[i] = rng.nextFloat() * (_nbin-1);
+      Arrays.sort(_splitPts);
+    }
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -180,7 +207,7 @@ public final class DHistogram extends Iced {
   }
 
   // The initial histogram bins are setup from the Vec rollups.
-  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, int nbins_cats, double minSplitImprovement, DHistogram hs[]) {
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], SharedTreeModel.SharedTreeParameters parms) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -189,14 +216,14 @@ public final class DHistogram extends Iced {
       final double maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins, nbins_cats, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, minSplitImprovement);
+        make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, parms);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;
   }
 
-  public static DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement) {
-    return new DHistogram(name,nbins, nbins_cats, isInt, min, maxEx, minSplitImprovement);
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, SharedTreeModel.SharedTreeParameters parms) {
+    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._random_split_points, parms._seed);
   }
 
   // Check for a constant response variable
@@ -277,7 +304,7 @@ public final class DHistogram extends Iced {
   // Score is the sum of the MSEs when the data is split at a single point.
   // mses[1] == MSE for splitting between bins  0  and 1.
   // mses[n] == MSE for splitting between bins n-1 and n.
-  public DTree.Split scoreMSE( int col, double min_rows, int nid ) {
+  public DTree.Split scoreMSE( int col, double min_rows) {
     final int nbins = nbins();
     assert nbins > 1;
 

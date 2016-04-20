@@ -88,7 +88,7 @@ print(summary(bpd))
 
 # Function for doing class test/train/holdout split
 split_fit_predict <- function(data) {
-  r <- h2o.runif(data$Days)
+  r <- h2o.runif(data$Days,seed=1234)
   train <- data[r < 0.6,]
   test  <- data[(r >= 0.6) & (r < 0.9),]
   hold  <- data[r >= 0.9,]

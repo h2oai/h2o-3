@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"allyears2k3.hex\""
+      "input": "assist splitFrame, \"allyears2k3.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"allyears2k3.hex\", [0.25], [\"allyears2k3_test.hex_0.250\",\"allyears2k3_train.hex_0.750\"]"
+      "input": "splitFrame \"allyears2k3.hex\", [0.25], [\"allyears2k3_test.hex_0.250\",\"allyears2k3_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

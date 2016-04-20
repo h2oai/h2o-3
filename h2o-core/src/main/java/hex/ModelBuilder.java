@@ -218,6 +218,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public void computeCrossValidation() {
     assert _job.isRunning();    // main Job is still running
+    _job.setReadyForView(false); //wait until the main job starts to let the user inspect the main job
     final Integer N = nFoldWork();
     init(false);
     try {
@@ -371,7 +372,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info("Building main model.");
     _start_time = System.currentTimeMillis();
     modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
-    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking: start the main model
+    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking: start the main
+    _job.setReadyForView(true);
     return mainMB;
   }
 

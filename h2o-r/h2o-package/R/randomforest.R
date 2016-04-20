@@ -18,6 +18,7 @@
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0)
 #' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
 #' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
@@ -62,6 +63,7 @@
 #'        improvement is not at least this much, stop)
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
+#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -72,6 +74,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              ignore_const_cols = TRUE,
                              checkpoint,
                              mtries = -1,
+                             col_sample_rate_change_per_level = 1.0,
                              sample_rate = 0.632,
                              sample_rate_per_class,
                              col_sample_rate_per_tree = 1.0,
@@ -100,7 +103,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=1e-3,
                              max_runtime_secs=0,
-                             min_split_improvement)
+                             min_split_improvement,
+                             random_split_points=FALSE
+                             )
 {
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
@@ -135,6 +140,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$checkpoint <- checkpoint
   if(!missing(mtries))
     parms$mtries <- mtries
+  if(!missing(col_sample_rate_change_per_level))
+    parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if(!missing(sample_rate))
     parms$sample_rate <- sample_rate
   if (!missing(sample_rate_per_class))
@@ -180,6 +187,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
+  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
 
   .h2o.modelJob('drf', parms)
 }

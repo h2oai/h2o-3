@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.ModelBuilder;
+import water.Iced;
 import water.TypeMap;
 import water.util.MarkdownBuilder;
 
@@ -79,10 +80,7 @@ public class MetadataHandler extends Handler {
       String inputSchemaName = schemaDir+algoName+"V"+version2;  // hex.schemas.GBMV3
       sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
       sinput.init_meta();
-      // hex.schemas.GBMModelV3$GBMModelOutputV3
-      String outputSchemaName = schemaDir+algoName+"ModelV"+version2+"$"+algoName+"ModelOutputV"+version2;
-      soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
-      soutput.init_meta();
+      soutput = sinput;
     } else {
       sinput  = Schema.newInstance(Handler.getHandlerMethodInputSchema (route._handler_method));
       soutput = Schema.newInstance(Handler.getHandlerMethodOutputSchema(route._handler_method));
@@ -114,7 +112,16 @@ public class MetadataHandler extends Handler {
 
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(docs.schemaname)));
+    Schema schema = Schema.newInstance(docs.schemaname);
+    // get defaults
+    try {
+      Iced impl = (Iced) schema.getImplClass().newInstance();
+      schema.fillFromImpl(impl);
+    }
+    catch (Exception e) {
+      // ignore if create fails; this can happen for abstract classes
+    }
+    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -129,7 +136,18 @@ public class MetadataHandler extends Handler {
     int i = 0;
     for (Class<? extends Schema> schema_class : ss.values()) {
       // No hardwired version! YAY!  FINALLY!
-      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(schema_class)));
+
+      Schema schema = Schema.newInstance(schema_class);
+      // get defaults
+      try {
+        Iced impl = (Iced) schema.getImplClass().newInstance();
+        schema.fillFromImpl(impl);
+      }
+      catch (Exception e) {
+        // ignore if create fails; this can happen for abstract classes
+      }
+
+      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
     }
     return docs;
   }

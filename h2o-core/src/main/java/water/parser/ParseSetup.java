@@ -39,7 +39,7 @@ public final class ParseSetup extends Iced {
   String[][] _data;           // First few rows of parsed/tokenized data
 
   public ParseWriter.ParseErr[] _errs;
-  int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
+  public int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
 
   public ParseSetup(ParseSetup ps) {
@@ -48,6 +48,10 @@ public final class ParseSetup extends Iced {
             ps._column_names, ps._column_types, ps._domains, ps._na_strings, ps._data, new ParseWriter.ParseErr[0], ps._chunk_size);
   }
 
+  public static ParseSetup makeSVMLightSetup(){
+    return new ParseSetup(ParserType.SVMLight, ParseSetup.GUESS_SEP,
+        false,ParseSetup.NO_HEADER,1,null,new byte[]{Vec.T_NUM},null,null,null, new ParseWriter.ParseErr[0]);
+  }
   public ParseSetup(ParserType t, byte sep, boolean singleQuotes, int checkHeader, int ncols, String[] columnNames, byte[] ctypes, String[][] domains, String[][] naStrings, String[][] data, ParseWriter.ParseErr[] errs, int chunkSize) {
     _parse_type = t;
     _separator = sep;
@@ -301,8 +305,11 @@ public final class ParseSetup extends Iced {
                 || decompRatio > 1.0) { */
         try {
           _gblSetup = guessSetup(bits, _userSetup);
-          for(ParseWriter.ParseErr e:_gblSetup._errs)
+          for(ParseWriter.ParseErr e:_gblSetup._errs) {
+            e._byteOffset += e._cidx*Parser.StreamData.bufSz;
+            e._cidx = 0;
             e._file = _file;
+          }
         } catch (ParseDataset.H2OParseException pse) {
           throw pse.resetMsg(pse.getMessage()+" for "+key);
         }

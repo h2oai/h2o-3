@@ -110,7 +110,7 @@ public class FVecTest extends TestUtil {
   private static class TestNewVec extends MRTask<TestNewVec> {
     @Override public void map( Chunk in, NewChunk out ) {
       for( int i=0; i< in._len; i++ )
-        out.append2( in.at8_abs(i)+(in.at8_abs(i) >= ' ' ? 1 : 0),0);
+        out.addNum( in.at8_abs(i)+(in.at8_abs(i) >= ' ' ? 1 : 0),0);
     }
   }
 

@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"AirlinesTrainMM2.hex\""
+      "input": "assist splitFrame, \"AirlinesTrainMM2.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"AirlinesTrainMM2.hex\", [0.25], [\"AirlinesTrainMM2_test.hex_0.250\",\"AirlinesTrainMM2_train.hex_0.750\"]"
+      "input": "splitFrame \"AirlinesTrainMM2.hex\", [0.25], [\"AirlinesTrainMM2_test.hex_0.250\",\"AirlinesTrainMM2_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

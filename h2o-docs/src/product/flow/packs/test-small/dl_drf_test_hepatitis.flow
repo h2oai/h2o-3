@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"hepatitis_data.hex\""
+      "input": "assist splitFrame, \"hepatitis_data.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"hepatitis_data.hex\", [0.2], [\"hepatitis_data_test.hex_0.20\",\"hepatitis_data_train.hex_0.80\"]"
+      "input": "splitFrame \"hepatitis_data.hex\", [0.2], [\"hepatitis_data_test.hex_0.20\",\"hepatitis_data_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

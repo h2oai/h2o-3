@@ -64,7 +64,7 @@ def cons_java_type(pojo_name, name, h2o_type, schema_name):
 
 
 # generate a Schema POJO and find any Enums it uses
-def generate_pojo(schema, pojo_name):
+def generate_pojo(schema, pojo_name, model_builders_map):
     global args
     global enums
 
@@ -73,6 +73,9 @@ def generate_pojo(schema, pojo_name):
     pojo = []
     pojo.append("package water.bindings.pojos;")
     pojo.append("")
+
+    constructor = []
+    constructor.append("    public {pojo_name}() ".format(pojo_name=pojo_name) + "{")
 
     has_map = False
     for field in schema['fields']:
@@ -89,7 +92,14 @@ def generate_pojo(schema, pojo_name):
         # top of the schema class hierarchy
         superclass = 'Object'
 
+    pojo.append("")
     pojo.append("public class " + pojo_name + " extends {superclass} ".format(superclass=superclass) + '{')
+
+    # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the parameters schema class. . .
+    is_model_builder = False
+    for field in schema['fields']:
+        if 'can_build' == field['name']:
+            is_model_builder = True
 
     first = True
     for field in schema['fields']:
@@ -109,21 +119,94 @@ def generate_pojo(schema, pojo_name):
             if enum_name not in enums:
                 # save it for later
                 enums[enum_name] = field['values']
+            else:
+                # note: we lose the ordering here
+                enums[enum_name].extend(field['values'])
+                enums[enum_name] = list(set(enums[enum_name]))
+            
+        value = field['value']
+        print("name: {name} value: {value}".format(name=name, value=value))
+        if java_type == 'long':
+            value = str(value) + "L"
+        elif java_type == 'float':
+            if value == "Infinity":
+                value = "Float.POSITIVE_INFINITY"
+            else:
+              value = str(value) + "f"
+        elif java_type == 'double':
+            if value == "Infinity":
+              value = "Double.POSITIVE_INFINITY"
+        elif java_type == 'boolean':
+            value = str(value).lower()
+        elif java_type == 'String' and (value == '' or value == None):
+            value = '""';
+        elif java_type == 'String':
+            value = '"' + value + '"';
+        elif value == None:
+            value = "null";
+        elif type.startswith('enum'):
+            value = enum_name + '.' + value
+        elif type.endswith('[][]'):
+            # raise Exception('Cannot yet handle multidimensional arrays.')
+            # TODO: 
+            value = "null";
+        elif type.endswith('[]'):
+            if field['is_schema']:
+                basetype = field['schema_name']
+            else:
+                basetype = type.partition('[')[0]
+
+            if basetype == 'Iced':
+                basetype = 'Object'
+
+            value = str(value)
+            values = value[1:len(value) - 1]
+
+            value = "new {basetype}[]".format(basetype=basetype) + '{' + "{values}".format(values=values) + '}'
+        elif type.startswith('Map'):
+            # TODO:
+            value = "null"
+        elif type.startswith('Key'):
+            # TODO:
+            value = "null"
+
+            
+        print("name: {name} value: {value}".format(name=name, value=value))
 
         if not first:
             pojo.append("")
 
+        # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the parameters schema class. . .
+        if is_model_builder and 'parameters' == field['name']:
+            if 'ModelBuilderSchema' == pojo_name:
+                pojo.append("    /** {help} */".format(help=help))
+                pojo.append("    public ModelParameterSchemaV3[] parameters;")
+            else:
+                pojo.append("    /* INHERITED: {help} ".format(help=help))
+                pojo.append("    public ModelParameterSchemaV3[] parameters;")
+                pojo.append("     */")
+            continue
+
+        # TODO: we want to redfine the field even if it's inherited, because the child class can have a different default value. . .
         if field['is_inherited']:
             pojo.append("    /* INHERITED: {help} ".format(help=help))
-            pojo.append("     * public {type} {name};".format(type=java_type, name=name))
+            pojo.append("    public {type} {name} = {value};".format(type=java_type, name=name, value=value))
             pojo.append("     */")
         else:
             pojo.append("    /** {help} */".format(help=help))
             pojo.append("    public {type} {name};".format(type=java_type, name=name))
 
+        constructor.append("        {name} = {value};".format(name=name, value=value))
+
         first = False
 
     pojo.append("")
+    
+    for line in constructor:
+        pojo.append(line)
+    pojo.append("    }")
+    pojo.append("")
+    
     pojo.append("    /** Return the contents of this object as a JSON String. */")
     pojo.append("    @Override")
 
@@ -197,6 +280,9 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         pojo = []
         signatures = {}
 
+        inner_class = []
+
+
         pojo.append("package water.bindings.proxies.retrofit;")
         pojo.append("")
         pojo.append("import water.bindings.pojos.*;")
@@ -207,6 +293,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
         pojo.append("public interface " + entity + " {")
 
         first = True
+        found_key_array_parameter = False
         for meta in endpoints_by_entity[entity]:
             path = meta['url_pattern']
 
@@ -235,13 +322,16 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             method = handler_method
 
             # NOTE: hackery due to the way the paths are formed: POST to /99/Grid/glm and to /3/Grid/deeplearning both call methods called train
+            algo = None
             if (entity == 'Grid' or entity == 'ModelBuilders') and (method == 'train'):
                 # /99/Grid/glm or /3/ModelBuilders/glm
+                
                 pieces = path.split('/')
                 if len(pieces) != 4:
                     raise Exception("Expected 3 parts to this path (something like /99/Grid/glm): " + path)
                 algo = pieces[3]
                 method = method + '_' + algo  # train_glm()
+                
             elif (entity == 'ModelBuilders') and (method == 'validate_parameters'):
                 # /3/ModelBuilders/glm/parameters
                 pieces = path.split('/')
@@ -250,16 +340,26 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 algo = pieces[3]
                 method = method + '_' + algo  # validate_parameters_glm()
 
+            input_schema = all_schemas_map[input_schema_name]
+
+            if (entity == 'Grid' or entity == 'ModelBuilders') and ((method.startswith('train')) or (method.startswith('validate_parameters'))):
+                # print("will lift parameters object for: " + input_schema_name)
+                for builder_field in input_schema['fields']:
+                    if builder_field['name'] == 'parameters':
+                        input_schema_name = builder_field['schema_name']
+                        input_schema = all_schemas_map[input_schema_name]
+                        break
+
             # TODO: handle query parameters from RequestSchema
             parms = ""
+            parm_names = []
+            parm_types = []
 
             if http_method == 'POST':
                 is_post = True
             else:
                 is_post = False
             
-            input_schema = all_schemas_map[input_schema_name]
-
             # calculate indent
             indent = ' ' * len('    Call<{output_schema_name}> {method}('.format(output_schema_name = output_schema_name, method = method))
             
@@ -276,11 +376,13 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 # cons up the proper Java type:
                 parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
 
-                # Send keys as Strings
+                # Send keys and ColSpecifiers as Strings
                 # TODO: brackets
                 if parm_type.endswith('KeyV3'):
                     parm_type = 'String'
-
+                if parm_type == 'ColSpecifierV3':
+                    parm_type = 'String'
+                    
                 if not first_parm: parms += ',\n'; parms += indent
                 parms += '@Path("{parm}") '.format(parm = parm)
                 parms += parm_type
@@ -289,7 +391,8 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 first_parm = False
 
             if is_post:
-                for field in input_schema['fields']:
+                fields = input_schema['fields']
+                for field in fields:
                     if field['direction'] == 'OUTPUT': continue
                     if field['name'] in path_parm_names: continue
 
@@ -297,16 +400,24 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     parm_type = cons_java_type(entity, field['name'], field['type'], field['schema_name'])
                     parm = field['name']
 
-                    # Send keys as Strings
-                    # TODO: brackets
+                    parm_names.append(parm)
+                    parm_types.append(parm_type)
+
+                    # Send keys and ColSpecifiers as Strings
                     if parm_type.endswith('KeyV3'):
                         parm_type = 'String'
+                    if parm_type.endswith('KeyV3[]'):
+                        parm_type = 'String[]'
+                    if parm_type == 'ColSpecifierV3':
+                        parm_type = 'String'
+
 
                     if not first_parm: parms += ',\n'; parms += indent
                     parms += '@Field("{parm}") '.format(parm = parm)
                     parms += parm_type
                     parms += ' '
                     parms += parm
+
                     first_parm = False
 
             # check for conflicts:
@@ -323,7 +434,50 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             pojo.append('    @{http_method}("{path}")'.format(http_method = http_method, path = retrofit_path))
             pojo.append('    Call<{output_schema_name}> {method}({parms});'.format(output_schema_name = output_schema_name, method = method, parms = parms))
 
+            # TODO: helpers for grid search
+            if algo is not None and entity == 'ModelBuilders':
+                print(input_schema_name)
+                # we make two train_ and validate_ methods.  One
+                # (built here) takes the parameters schema, the other
+                # (built above) takes each parameter.
+                inner_class.append('    /** {summary} */'.format(summary = summary))
+                inner_class.append('    public static Call<{output_schema_name}> {method}(ModelBuilders modelBuildersService, {input_schema_name} parameters) '.format(input_schema_name = input_schema_name, output_schema_name = output_schema_name, method = method, parms = parms) + ' {')
+
+                the_list = ''
+                for parm_num in range(0, len(parm_names)):
+                    if parm_num > 0:
+                        the_list += ', '
+                    if parm_types[parm_num].endswith('KeyV3'):
+                        the_list += '(parameters.{parm} == null ? null : parameters.{parm}.name)'.format(parm=parm_names[parm_num])
+                    elif parm_types[parm_num].endswith('KeyV3[]'):
+                        found_key_array_parameter = True
+                        the_list += '(parameters.{parm} == null ? null : key_array_to_string_array(parameters.{parm}))'.format(parm=parm_names[parm_num])
+                    elif parm_types[parm_num].startswith('ColSpecifier'):
+                        the_list += '(parameters.{parm} == null ? null : parameters.{parm}.column_name)'.format(parm=parm_names[parm_num])
+                    else:
+                        the_list += 'parameters.{parm}'.format(parm=parm_names[parm_num])
+                    the_list_first = False
+                inner_class.append('        return modelBuildersService.{method}({the_list});'.format(method=method, the_list=the_list))
+                inner_class.append('    }')
+
             first = False
+
+        if found_key_array_parameter:
+            inner_class.append('    /** Return an array of Strings for an array of keys. */')
+            inner_class.append('    public static String[] key_array_to_string_array(KeyV3[] keys) {')
+            inner_class.append('        if (null == keys) return null;')
+            inner_class.append('        String[] ids = new String[keys.length];')
+            inner_class.append('        int i = 0;')
+            inner_class.append('        for (KeyV3 key : keys) ids[i++] = key.name;')
+            inner_class.append('        return ids;')
+            inner_class.append('    }')
+
+        if len(inner_class) > 0:
+            pojo.append('')
+            pojo.append('    public static class Helper {')
+            for line in inner_class:
+                pojo.append(line);
+            pojo.append('    }')
 
         pojo.append("}")
         pojos[entity] = pojo
@@ -345,6 +499,8 @@ a_node = h2o.H2O(args.host, args.port)
 
 print('creating the Java bindings in {}. . .'.format(args.dest))
 
+
+model_builders_map = a_node.model_builders()['model_builders']
 
 #################################################################
 # Get all the schemas and generate POJOs or Enums as appropriate.
@@ -376,7 +532,7 @@ for schema in all_schemas:
             raise
 
     with open(save_full, 'w') as the_file:
-        for line in generate_pojo(schema, pojo_name):
+        for line in generate_pojo(schema, pojo_name, model_builders_map):
             the_file.write("%s\n" % line)
 
 ########################
@@ -443,6 +599,7 @@ for entity, proxy in retrofitProxies.items():
 retrofit_example = '''package water.bindings.proxies.retrofit;
 
 import water.bindings.pojos.*;
+import water.bindings.proxies.*;
 import com.google.gson.*;
 import retrofit2.*;
 import retrofit2.http.*;
@@ -450,6 +607,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.Call;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Example {
 
@@ -462,6 +621,16 @@ public class Example {
             return new JsonPrimitive(key.name);
         }
     }
+
+    /**
+     * KeysColSpecifiers get sent as Strings and returned as objects also containing a list of Frames that the col must be a member of,
+     * so they need a custom GSON serializer.
+    private static class ColSpecifierSerializer implements JsonSerializer<ColSpecifierV3> {
+        public JsonElement serialize(ColSpecifierV3 cs, Type t, JsonSerializationContext context) {
+            return new JsonPrimitive(cs.column_name);
+        }
+    }
+     */
 
     public static JobV3 poll(Retrofit retrofit, String job_id) {
         Jobs jobsService = retrofit.create(Jobs.class);
@@ -490,7 +659,118 @@ public class Example {
         return jobs.jobs[0];
     }
 
-    public static void main (String[] args) {
+    public static void gbm_example_flow() {
+        GsonBuilder builder = new GsonBuilder();
+        builder.registerTypeAdapter(KeyV3.class, new KeySerializer());
+//        builder.registerTypeAdapter(ColSpecifierV3.class, new ColSpecifierSerializer());
+        Gson gson = builder.create();
+
+        Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl("http://localhost:54321/") // note trailing slash for Retrofit 2
+        .addConverterFactory(GsonConverterFactory.create(gson))
+        .build();
+
+        ImportFiles importService = retrofit.create(ImportFiles.class);
+        ParseSetup parseSetupService = retrofit.create(ParseSetup.class);
+        Parse parseService = retrofit.create(Parse.class);
+        Frames framesService = retrofit.create(Frames.class);
+        Models modelsService = retrofit.create(Models.class);
+        ModelBuilders modelBuildersService = retrofit.create(ModelBuilders.class);
+        Predictions predictionsService = retrofit.create(Predictions.class);
+
+        JobV3 job = null;
+
+        try {
+            // STEP 1: import raw file
+            ImportFilesV3 importBody = importService.importFiles("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null).execute().body();
+            System.out.println("import: " + importBody);
+
+            // STEP 2: parse setup
+            ParseSetupV3 parseSetupBody = parseSetupService.guessSetup(importBody.destination_frames,
+                                                                  ParserParserType.GUESS, 
+                                                                  (byte)',', 
+                                                                  false,
+                                                                  -1,
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  null,
+                                                                  0,
+                                                                  0,
+                                                                  0,
+                                                                  null
+                                                                  ).execute().body();
+            System.out.println("parseSetupBody: " + parseSetupBody);
+
+            // STEP 3: parse into columnar Frame
+            List<String> source_frames = new ArrayList<>();
+            for (FrameKeyV3 frame : parseSetupBody.source_frames)
+              source_frames.add(frame.name);
+
+            ParseV3 parseBody = parseService.parse("arrhythmia.hex",
+                                                   source_frames.toArray(new String[0]),
+                                                   parseSetupBody.parse_type,
+                                                   parseSetupBody.separator,
+                                                   parseSetupBody.single_quotes,
+                                                   parseSetupBody.check_header,
+                                                   parseSetupBody.number_columns,
+                                                   parseSetupBody.column_names,
+                                                   parseSetupBody.column_types,
+                                                   null, // domains
+                                                   parseSetupBody.na_strings,
+                                                   parseSetupBody.chunk_size,
+                                                   true,
+                                                   true,
+                                                   null).execute().body();
+            System.out.println("parseBody: " + parseBody);
+
+            // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
+            GBMParametersV3 gbm_parms = new GBMParametersV3();
+
+            FrameKeyV3 training_frame = new FrameKeyV3();
+            training_frame.name = "arrhythmia.hex";
+
+            gbm_parms.training_frame = training_frame;
+
+            ColSpecifierV3 response_column = new ColSpecifierV3();
+            response_column.column_name = "C1";
+            gbm_parms.response_column = response_column;
+
+            System.out.println("About to train GBM. . .");
+            GBMV3 gbmBody = (GBMV3)ModelBuilders.Helper.train_gbm(modelBuildersService, gbm_parms).execute().body();
+            System.out.println("gbmBody: " + gbmBody);
+
+            // STEP 6: poll for completion
+            job = gbmBody.job;
+            if (null == job || null == job.key)
+                throw new RuntimeException("train_gbm returned a bad Job: " + job);
+
+            job = poll(retrofit, job.key.name);
+            System.out.println("GBM build done.");
+
+            // STEP 7: fetch the model
+            // TODO: Retrofit seems to be only deserializing the base class.  What to do?
+            KeyV3 model_key = job.dest;
+            ModelsV3 models = modelsService.fetch(model_key.name).execute().body();
+            System.out.println("models: " + models);
+            // GBMModelV3 model = (GBMModelV3)models.models[0];
+            // System.out.println("new GBM model: " + model);
+            System.out.println("new GBM model: " + models.models[0]);
+
+            // STEP 8: predict!
+            ModelMetricsListSchemaV3 predictions = predictionsService.predict(model_key.name, 
+                                                                              training_frame.name, 
+                                                                              "predictions",
+                                                                              false, false, -1, false, false, false, false, null).execute().body();
+            System.out.println("predictions: " + predictions);
+
+        }
+        catch (IOException e) {
+            System.err.println("Caught exception: " + e);
+        }
+    }
+
+    public static void simple_example() {
         Gson gson = new GsonBuilder().registerTypeAdapter(KeyV3.class, new KeySerializer()).create();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -559,6 +839,10 @@ public class Example {
         catch (IOException e) {
             System.err.println("Caught exception: " + e);
         }
+    } // simple_example()
+
+    public static void main (String[] args) {
+        gbm_example_flow();
     }
 }
 '''

@@ -1387,7 +1387,10 @@ To replace specific column names, you can also use a `sub/gsub` in R:
 
 ```
 header <- c("user", "specified", "column", "names")
-## I want to replace "user" column with "computer"
+```
+To replace "user" column with "computer"
+
+```
 data   <- h2o.importFile(path = pathToData)
 names(data) <- sub(pattern = "user", replacement = "computer", x = names(header))
 ```

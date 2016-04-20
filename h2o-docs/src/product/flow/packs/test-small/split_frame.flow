@@ -7,7 +7,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"arrhythmia.hex\", [0.25], [\"frame_0.250\",\"frame_0.750\"] "
+      "input": "splitFrame \"arrhythmia.hex\", [0.25], [\"frame_0.250\",\"frame_0.750\"], 123456"
     }
   ]
 }

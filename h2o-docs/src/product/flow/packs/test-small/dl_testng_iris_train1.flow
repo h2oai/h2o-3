@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"iris_train1.hex\", [0.2], [\"iris_train1_test\",\"iris_train1_train\"]"
+      "input": "splitFrame \"iris_train1.hex\", [0.2], [\"iris_train1_test\",\"iris_train1_train\"], 123456"
     },
     {
       "type": "cs",

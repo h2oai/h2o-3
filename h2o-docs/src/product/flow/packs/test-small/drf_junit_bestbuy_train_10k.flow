@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"bestbuy_train_10k4.hex\", [0.2], [\"bestbuy_train_10k_test.hex_0.20\",\"bestbuy_train_10k_train.hex_0.80\"]"
+      "input": "splitFrame \"bestbuy_train_10k4.hex\", [0.2], [\"bestbuy_train_10k_test.hex_0.20\",\"bestbuy_train_10k_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

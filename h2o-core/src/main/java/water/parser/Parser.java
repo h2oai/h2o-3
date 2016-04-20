@@ -110,10 +110,11 @@ public abstract class Parser extends Iced {
   /** Class implementing DataIn from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
-  private final static class StreamData implements ParseReader {
+  final static class StreamData implements ParseReader {
+    public static int bufSz = 64*1024;
     final transient InputStream _is;
-    private byte[] _bits0 = new byte[64*1024];
-    private byte[] _bits1 = new byte[64*1024];
+    private byte[] _bits0 = new byte[bufSz];
+    private byte[] _bits1 = new byte[bufSz];
     private int _cidx0=-1, _cidx1=-1; // Chunk #s
     private int _coff0=-1, _coff1=-1; // Last used byte in a chunk
     private StreamData(InputStream is){_is = is;}

@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"arrhythmia2.hex\", [0.3], [\"arrhythmia2_test.hex_0.30\",\"arrhythmia2_train.hex_0.70\"]"
+      "input": "splitFrame \"arrhythmia2.hex\", [0.3], [\"arrhythmia2_test.hex_0.30\",\"arrhythmia2_train.hex_0.70\"], 123456"
     },
     {
       "type": "cs",

@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"prostate.hex\", [0.25], [\"prostate_test\",\"prostate_train\"]"
+      "input": "splitFrame \"prostate.hex\", [0.25], [\"prostate_test\",\"prostate_train\"], 123456"
     },
     {
       "type": "cs",

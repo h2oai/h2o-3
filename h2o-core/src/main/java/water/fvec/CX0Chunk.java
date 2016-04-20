@@ -37,13 +37,14 @@ public final class CX0Chunk extends CXIChunk {
   }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(_len);
-    nc.set_sparseLen(_sparseLen);
     nc.alloc_mantissa(_sparseLen);
-    Arrays.fill(nc.mantissa(),1);
     nc.alloc_exponent(_sparseLen);
     nc.alloc_indices(_sparseLen);
+    for(int i = 0; i < _sparseLen; ++i)
+      nc.addNum(1,0);
     nonzeros(nc.indices());
+    nc.set_len(_len);
+    assert nc._sparseLen == _sparseLen;
     return nc;
   }
 

@@ -23,9 +23,11 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
+#' @param learn_rate_annealing Scale down the learning rate by this factor after every tree
 #' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
 #' @param col_sample_rate Column sample rate per split (from \code{0.0} to \code{1.0})
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0)
 #' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
@@ -64,6 +66,8 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
+#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
+#' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
@@ -91,9 +95,11 @@ h2o.gbm <- function(x, y, training_frame,
                     max_depth = 5,
                     min_rows = 10,
                     learn_rate = 0.1,
+                    learn_rate_annealing = 1.0,
                     sample_rate = 1.0,
                     sample_rate_per_class,
                     col_sample_rate = 1.0,
+                    col_sample_rate_change_per_level = 1.0,
                     col_sample_rate_per_tree = 1.0,
                     nbins = 20,
                     nbins_top_level,
@@ -117,7 +123,10 @@ h2o.gbm <- function(x, y, training_frame,
                     max_runtime_secs=0,
                     offset_column = NULL,
                     weights_column = NULL,
-                    min_split_improvement)
+                    min_split_improvement,
+                    random_split_points=FALSE,
+                    max_abs_leafnode_pred
+                    )
 {
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
@@ -166,12 +175,16 @@ h2o.gbm <- function(x, y, training_frame,
     parms$min_rows <- min_rows
   if (!missing(learn_rate))
     parms$learn_rate <- learn_rate
+  if (!missing(learn_rate_annealing))
+    parms$learn_rate_annealing <- learn_rate_annealing
   if (!missing(sample_rate))
     parms$sample_rate <- sample_rate
   if (!missing(sample_rate_per_class))
     parms$sample_rate_per_class <- sample_rate_per_class
   if (!missing(col_sample_rate))
     parms$col_sample_rate <- col_sample_rate
+  if(!missing(col_sample_rate_change_per_level))
+    parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if (!missing(col_sample_rate_per_tree))
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(nbins))
@@ -207,6 +220,8 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
+  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
+  if(!missing(max_abs_leafnode_pred)) parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
 
   .h2o.modelJob('gbm', parms)
 }

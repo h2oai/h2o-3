@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"weights_all_tiny.hex\", [0.2], [\"weights_all_tiny_test\",\"weights_all_tiny_train\"]"
+      "input": "splitFrame \"weights_all_tiny.hex\", [0.2], [\"weights_all_tiny_test\",\"weights_all_tiny_train\"], 123456"
     },
     {
       "type": "cs",

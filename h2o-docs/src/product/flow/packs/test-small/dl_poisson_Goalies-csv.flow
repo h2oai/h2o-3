@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"Goalies.hex\", [0.25], [\"Goalies_test\",\"Goalies_train\"]"
+      "input": "splitFrame \"Goalies.hex\", [0.25], [\"Goalies_test\",\"Goalies_train\"], 123456"
     },
     {
       "type": "cs",

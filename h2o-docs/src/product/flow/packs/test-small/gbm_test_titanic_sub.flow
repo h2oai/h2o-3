@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"titanic_sub2.hex\", [0.2], [\"titanic_sub2_test.hex_0.20\",\"titanic_sub2_train.hex_0.80\"]"
+      "input": "splitFrame \"titanic_sub2.hex\", [0.2], [\"titanic_sub2_test.hex_0.20\",\"titanic_sub2_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

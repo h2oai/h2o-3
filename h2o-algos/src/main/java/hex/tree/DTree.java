@@ -7,7 +7,6 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
-import java.util.concurrent.ForkJoinTask;
 
 /** A Decision Tree, laid over a Frame of Vecs, and built distributed.
  *
@@ -28,10 +27,7 @@ import java.util.concurrent.ForkJoinTask;
 public class DTree extends Iced {
   final String[] _names; // Column names
   final int _ncols;      // Active training columns
-  final char _nbins;     // Numerical columns: Max number of bins to split over
-  final char _nbins_cats; // Categorical columns: Max number of bins to split over
   final char _nclass;    // #classes, or 1 for regression trees
-  public final double _min_rows;   // Fewest allowed (weighted) rows in any split
   final long _seed;      // RNG seed; drives sampling seeds if necessary
   private Node[] _ns;    // All the nodes in the tree.  Node 0 is the root.
   public int _len;       // Resizable array
@@ -41,22 +37,24 @@ public class DTree extends Iced {
   public final int _mtrys;           // Number of columns to choose amongst in splits (at every split)
   public final int _mtrys_per_tree;  // Number of columns to choose amongst in splits (once per tree)
   public final transient Random _rand; // RNG for split decisions & sampling
-  public final int[] _cols; // Per-tree selection of columns to consider for splits
-  final double _min_split_improvement;
+  public final transient int[] _cols; // Per-tree selection of columns to consider for splits
+  public transient SharedTreeModel.SharedTreeParameters _parms;
 
-  public DTree(Frame fr, int ncols, char nbins, char nbins_cats, char nclass, double min_rows, int mtrys, int mtrys_per_tree, long seed, double min_split_improvement) {
+  // compute the effective number of columns to sample
+  public int actual_mtries() {
+    return Math.min(Math.max(1,(int)((double)_mtrys * Math.pow(_parms._col_sample_rate_change_per_level, _depth))),_ncols);
+  }
+
+  public DTree(Frame fr, int ncols, char nclass, int mtrys, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
     _names = fr.names();
     _ncols = ncols;
-    _nbins=nbins;
-    _nbins_cats=nbins_cats;
+    _parms = parms;
     _nclass=nclass;
-    _min_rows = min_rows;
     _ns = new Node[1];
     _mtrys = mtrys;
     _mtrys_per_tree = mtrys_per_tree;
     _seed = seed;
     _rand = RandomUtils.getRNG(seed);
-    _min_split_improvement = min_split_improvement;
     int[] activeCols=new int[_ncols];
     for (int i=0;i<activeCols.length;++i)
       activeCols[i] = i;
@@ -189,9 +187,9 @@ public class DTree extends Iced {
     // has constant data, or was not being tracked by a prior DHistogram
     // (for being constant data from a prior split), then that column will be
     // null in the returned array.
-    public DHistogram[] split(int way, char nbins, char nbins_cats, double min_rows, DHistogram hs[], double splat, double minSplitImprovement) {
+    public DHistogram[] split(int way, char nbins, DHistogram hs[], double splat, SharedTreeModel.SharedTreeParameters parms) {
       double n = way==0 ? _n0 : _n1;
-      if( n < min_rows || n <= 1 ) return null; // Too few elements
+      if( n < parms._min_rows || n <= 1 ) return null; // Too few elements
       double se = way==0 ? _se0 : _se1;
       if( se <= 1e-30 ) return null; // No point in splitting a perfect prediction
 
@@ -242,7 +240,7 @@ public class DTree extends Iced {
         if( Double.isInfinite(adj_nbins/(maxEx-min)) ) continue;
         if( h._isInt > 0 && !(min+1 < maxEx ) ) continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name, adj_nbins, nbins_cats, h._isInt, min, maxEx, minSplitImprovement);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, parms);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
@@ -278,7 +276,7 @@ public class DTree extends Iced {
     // Can return null for 'all columns'.
     public int[] scoreCols() {
       DTree tree = _tree;
-      if (tree._mtrys == _hs.length && tree._mtrys_per_tree == _hs.length) return null;
+      if (tree.actual_mtries() == _hs.length && tree._mtrys_per_tree == _hs.length) return null;
 
       // per-tree pre-selected columns
       int[] activeCols = tree._cols;
@@ -301,12 +299,13 @@ public class DTree extends Iced {
 
       // This shortcut is correct, but would result in trivially reordering all columns
       // This reordering can change results due to tie-breaking, as different columns can get picked
-      // if (len == tree._mtrys) return Arrays.copyOfRange(cols, 0, len);
+      // if (len == tree.actual_mtries()) return Arrays.copyOfRange(cols, 0, len);
 
       // It can happen that we have no choices, because this node cannot be split any more (all active columns are constant, for example).
+      int mtries = tree.actual_mtries();
       if (choices > 0) {
         // Draw up to mtry columns at random without replacement.
-        for (int i = 0; i < tree._mtrys; i++) {
+        for (int i = 0; i < mtries; i++) {
           if (len == 0) break;   // Out of choices!
           int idx2 = tree._rand.nextInt(len);
           int col = cols[idx2];     // The chosen column
@@ -315,7 +314,7 @@ public class DTree extends Iced {
         }
         assert len < choices;
       }
-//      Log.info("Picking these (mtry=" + tree._mtrys + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
+//      Log.info("Picking these (mtry=" + mtries + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
       return Arrays.copyOfRange(cols, len, choices);
     }
 
@@ -466,7 +465,7 @@ public class DTree extends Iced {
       DTree.Split _s;
       final int _nid;
       @Override public void compute() {
-        _s = _hs[_col].scoreMSE(_col, _tree._min_rows, _nid);
+        _s = _hs[_col].scoreMSE(_col, _tree._parms._min_rows);
       }
     }
 
@@ -483,13 +482,10 @@ public class DTree extends Iced {
         return;
       }
       _splat = (_split._equal == 0 || _split._equal == 1) ? _split.splat(hs) : -1f; // Split-at value (-1 for group-wise splits)
-      final char nbins   = _tree._nbins;
-      final char nbins_cats = _tree._nbins_cats;
-      final double min_rows = _tree._min_rows;
-
+      final char nbins   = (char)_tree._parms._nbins; //can be different than _tree._parms._nbins as it changes with the level
       for( int b=0; b<2; b++ ) { // For all split-points
         // Setup for children splits
-        DHistogram nhists[] = _split.split(b,nbins, nbins_cats, min_rows, hs, _splat, _tree._min_split_improvement);
+        DHistogram nhists[] = _split.split(b,nbins, hs, _splat, _tree._parms);
         assert nhists==null || nhists.length==_tree._ncols;
         _nids[b] = nhists == null ? -1 : makeUndecidedNode(nhists)._nid;
       }

@@ -17,8 +17,7 @@ test.DRF.bigcat <- function() {
 
   # Train H2O DRF Model:
   Log.info("H2O DRF (Group Split) with parameters:\nclassification = TRUE, ntree = 1, depth = 1, nbins = 100\n")
-  drfmodel <- h2o.randomForest(x = "X", y = "y", training_frame = bigcat.hex,
-                               ntrees = 1, max_depth = 1, min_rows = 100)
+  drfmodel <- h2o.randomForest(x = "X", y = "y", training_frame = bigcat.hex, ntrees = 1, max_depth = 1, min_rows = 100)
   print(drfmodel)
 
   # Check AUC and overall prediction error at least as good with group split than without

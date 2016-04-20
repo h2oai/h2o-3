@@ -39,6 +39,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   @API(help="Number of rows in the Frame", direction=API.Direction.OUTPUT)
   public long rows;
 
+  @API(help="Number of columns in the Frame", direction=API.Direction.OUTPUT)
+  public long num_columns;
+
   @API(help="Default percentiles, from 0 to 1", direction=API.Direction.OUTPUT)
   public double[] default_percentiles;
 
@@ -220,6 +223,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
 
     this.row_offset = row_offset;
     this.rows = f.numRows();
+    this.num_columns = f.numCols();
     this.row_count = row_count;
 
     this.total_column_count = f.numCols();

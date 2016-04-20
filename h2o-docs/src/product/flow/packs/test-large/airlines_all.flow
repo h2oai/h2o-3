@@ -23,11 +23,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"airlines_all.hex\""
+      "input": "assist splitFrame, \"airlines_all.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"airlines_all.hex\", [0.2], [\"airlines_all.hex_0.20\",\"airlines_all.hex_0.80\"]"
+      "input": "splitFrame \"airlines_all.hex\", [0.2], [\"airlines_all.hex_0.20\",\"airlines_all.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

@@ -7,6 +7,7 @@ import water.DKV;
 import water.Futures;
 import water.TestUtil;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -37,9 +38,7 @@ public class NewChunkTest extends TestUtil {
   void post_write() {
     cc.close(0, new Futures()).blockForPending();
   }
-  void remove() {
-    vec.remove();
-  }
+  void remove() {if(vec != null)vec.remove();}
 
   @Test public void testSparseDoubles(){
     NewChunk nc = new NewChunk(new double[]{Math.PI});
@@ -52,17 +51,207 @@ public class NewChunkTest extends TestUtil {
       assertEquals(0,c.atd(i),1e-16);
     assertEquals(Math.PI,c.atd(N+1),1e-16);
   }
+
+  private static class NewChunkTestCpy extends NewChunk {
+    public NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
+    public NewChunkTestCpy(Vec vec, int cidx, boolean sparse) {super(vec, cidx, sparse);}
+    public NewChunkTestCpy(double[] ds) {super(ds);}
+    public NewChunkTestCpy(Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {super(vec, cidx, mantissa, exponent, indices, doubles);}
+    public NewChunkTestCpy(Chunk c) {super(c);}
+    public NewChunkTestCpy(Vec vec, int cidx, int len) {super(vec, cidx, len);}
+
+    public int mantissaSize() {return _ms._vals1 != null?1:_ms._vals4 != null?4:8;}
+    public int exponentSize() {return _xs._vals1 != null?1:_xs._vals4 != null?4:0;}
+    public int missingSize()  {return _missing == null?0:_missing.size();}
+
+  }
+
+  private void testIntegerChunk(long [] values, int mantissaSize) {
+    Vec v = Vec.makeCon(0,0);
+    // single bytes
+    Chunk c;
+
+    NewChunkTestCpy nc = new NewChunkTestCpy(v,4);
+    for(int i = 0; i < values.length; ++i)
+      nc.addNum(values[i], 0);
+    assertEquals(mantissaSize,nc.mantissaSize());
+    assertEquals(0,nc.exponentSize());
+    assertEquals(0,nc.missingSize());
+    for(int i = 0; i < values.length; ++i)
+      assertEquals(values[i],nc.at8_impl(i));
+    for(int i = 0; i < values.length; i += 5)
+      nc.setNA_impl(i);
+    c = nc.compress();
+    for(int i = 0; i < values.length; ++i) {
+      if(i % 5 == 0)
+        assertTrue(c.isNA(i));
+      else
+        assertEquals(values[i], c.at8_impl(i));
+    }
+
+    // test with exponent
+    nc = new NewChunkTestCpy(v,4);
+    for(int i = 0; i < values.length; ++i)
+      nc.addNum(values[i], -1);
+    for(int i = 0; i < values.length; i += 5)
+      nc.setNA_impl(i);
+    assertEquals(1,nc.exponentSize());
+    c = nc.compress();
+    for(int i = 0; i < values.length; ++i) {
+      if(i % 5 == 0)
+        assertTrue(c.isNA(i));
+      else
+        assertEquals(values[i]*0.1, c.atd(i),1e-10);
+    }
+    // test switch to doubles
+    nc = new NewChunkTestCpy(v,4);
+    for(int i = 0; i < values.length; ++i)
+      nc.addNum(values[i], 0);
+    for(int i = 0; i < values.length; i += 5)
+      nc.setNA_impl(i);
+    nc.addNum(Math.PI);
+    c = nc.compress();
+    for(int i = 0; i < values.length; ++i) {
+      if(i % 5 == 0)
+        assertTrue(c.isNA(i));
+      else
+        assertEquals(values[i], c.at8_impl(i));
+    }
+    assertEquals(Math.PI,c.atd(values.length),0);
+    // test switch to sparse zero
+    nc = new NewChunkTestCpy(v,4);
+    for(int i = 0; i < values.length; ++i)
+      nc.addNum(values[i], 0);
+    nc.addNA();
+    nc.setNA_impl(0);
+    int nzs = 0;
+    for(int i = 1; i < values.length; i++) {
+      if (i % 10 != 0) { nc.set_impl(i, 0); nzs++;}
+    }
+    int x = (nzs*8+1) - nc.len();
+    if(x > 0)nc.addZeros(x);
+    c = nc.compress();
+    assertTrue(c.isSparseZero());
+    assertTrue(c.isNA(0));
+    assertTrue(c.isNA(values.length));
+    for(int i = 10; i < values.length; i++)
+      if(i % 10 == 0)
+        assertEquals(values[i],c.atd(i),0);
+      else
+        assertEquals(0,c.atd(i),0);
+    // test switch to sparse NAs
+    nc = new NewChunkTestCpy(v,4);
+    for(int i = 0; i < values.length; ++i)
+      nc.addNum(values[i], 0);
+    nc.addNA();
+    nc.setNA_impl(0);
+    nzs = 0;
+    for(int i = 1; i < values.length; i++) {
+      if (i % 10 != 0) { nc.setNA_impl(i); nzs++;}
+    }
+    x = (nzs*8+1) - nc.len();
+    if(x > 0)nc.addNAs(x);
+    c = nc.compress();
+    assertTrue(c.isSparseNA());
+    assertTrue(c.isNA(0));
+    assertTrue(c.isNA(values.length));
+    for(int i = 10; i < values.length; i++)
+      if(i % 10 == 0)
+        assertEquals(values[i],c.atd(i),0);
+      else
+        assertTrue(c.isNA(i));
+    v.remove();
+
+    // Test dense -> sparse -> dense flip
+
+
+  }
+  long [] ms1 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127};
+  long [] ms4 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023};
+  long [] ms8 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023,Long.MAX_VALUE >> 16};
+
+  @Test public void testDenseMantissaSizes(){
+    testIntegerChunk(ms1,1);
+    testIntegerChunk(ms4,4);
+    testIntegerChunk(ms8,8);
+  }
+
+
   @Test public void testSparseDoubles2(){
-    NewChunk nc = new NewChunk(null, 0, true);
+    NewChunk nc = new NewChunk(null, 0, false);
     int N = 1000;
     nc.addZeros(N);
     nc.addNum(Math.PI);
     nc.addZeros(N);
+    nc.addNum(Math.E);
     Chunk c = nc.compress();
     int i=0;
     for(;i<N;)     assertEquals(0,c.atd(i++),1e-16);
+    assertEquals(i,c.nextNZ(-1));
     assertEquals(         Math.PI,c.atd(i++),1e-16);
     for(;i<2*N+1;) assertEquals(0,c.atd(i++),1e-16);
+    assertEquals(i,c.nextNZ(c.nextNZ(-1)));
+    assertEquals(         Math.E,c.atd(i++),1e-16);
+
+    nc = new NewChunk(null, 0, false);
+    nc.addNum(Math.PI);
+    nc.addNum(Double.MAX_VALUE);
+    nc.addNum(Double.MIN_VALUE);
+    nc.addZeros(5);
+    nc.addNum(Math.E);
+    nc.addZeros(1000000);
+    c = nc.compress();
+    assertEquals(0,c.nextNZ(-1));
+    assertEquals(1,c.nextNZ(0));
+    assertEquals(2,c.nextNZ(1));
+    assertEquals(8,c.nextNZ(2));
+    assertEquals(c.atd(0), Math.PI,1e-16);
+    assertEquals(c.atd(8), Math.E,1e-16);
+
+    // test flip from dense -> sparse0 -> desne
+    nc = new NewChunk(null, 0, false);
+    double [] rvals = new double[2*1024];
+    nc.addNum(rvals[0] = Math.PI);
+    nc.addNum(rvals[1] = Double.MAX_VALUE);
+    nc.addNum(rvals[2] = Double.MIN_VALUE);
+    nc.addZeros(5);
+    nc.addNum(rvals[2+1+5] = Math.E);
+    nc.addZeros(512);
+    int off = nc._len;
+    assertTrue(nc.isSparseZero());
+    Random rnd = new Random();
+    for(int j  = 0; j < 1024; ++j)
+      nc.addNum(rvals[off+j] = rnd.nextDouble());
+    assertTrue(!nc.isSparseZero());
+    nc.addNA();
+    c = nc.compress();
+    assertEquals(1546,c._len);
+    for(int j = 0; j < c._len-1; ++j)
+      assertEquals(rvals[j],c.atd(j),0);
+
+    // test flip from dense -> sparseNA -> desne
+    nc = new NewChunk(null, 0, false);
+    rvals = new double[2*1024];
+    Arrays.fill(rvals,Double.NaN);
+    nc.addNum(rvals[0] = Math.PI);
+    nc.addNum(rvals[1] = Double.MAX_VALUE);
+    nc.addNum(rvals[2] = Double.MIN_VALUE);
+    nc.addNAs(5);
+    nc.addNum(rvals[2+1+5] = Math.E);
+    nc.addNAs(512);
+    off = nc._len;
+    assertTrue(nc.isSparseNA());
+    for(int j  = 0; j < 1024; ++j)
+      nc.addNum(rvals[off+j] = rnd.nextDouble());
+    assertTrue(!nc.isSparseNA());
+    nc.addNA();
+    c = nc.compress();
+    assertEquals(1546,c._len);
+    for(int j = 0; j < c._len-1; ++j)
+      if(Double.isNaN(rvals[j]))
+        assertTrue(c.isNA(j));
+      else
+        assertEquals(rvals[j],c.atd(j),0);
   }
   /**
    * Constant Double Chunk - C0DChunk

@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"prostate_cat_replaced.hex\", [0.25], [\"prostate_cat_replaced_test\",\"prostate_cat_replaced_train\"]"
+      "input": "splitFrame \"prostate_cat_replaced.hex\", [0.25], [\"prostate_cat_replaced_test\",\"prostate_cat_replaced_train\"], 123456"
     },
     {
       "type": "cs",
