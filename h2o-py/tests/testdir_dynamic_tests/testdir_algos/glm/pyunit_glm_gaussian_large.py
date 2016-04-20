@@ -945,7 +945,6 @@ def test_glm_gaussian():
     test_glm_gaussian.test2_glm_lambda_search()
     test_glm_gaussian.test3_glm_grid_search()
     test_glm_gaussian.test4_glm_remove_collinear_columns()
-#    test_glm_gaussian.test_num += 1
     test_glm_gaussian.test5_missing_values()
     test_glm_gaussian.test6_enum_missing_values()
     test_glm_gaussian.test7_missing_enum_values_lambda_search()
