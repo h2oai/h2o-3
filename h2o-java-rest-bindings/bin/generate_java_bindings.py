@@ -16,7 +16,8 @@ parser.add_argument('--verbose', '-v', help='verbose output', action='store_true
 parser.add_argument('--usecloud', help='ip:port to attach to', default='')
 parser.add_argument('--host', help='hostname to attach to', default='localhost')
 parser.add_argument('--port', help='port to attach to', type=int, default=54321)
-parser.add_argument('--dest', help='destination directory', default=(here + '/../build/src-gen/main/java'))
+# Note: Output folder should be in build directory, however, Idea has problems to recognize them
+parser.add_argument('--dest', help='destination directory', default=(here + '/../src-gen/main/java'))
 args = parser.parse_args()
 
 h2o.H2O.verbose = True if args.verbose else False
@@ -123,7 +124,7 @@ def generate_pojo(schema, pojo_name, model_builders_map):
                 # note: we lose the ordering here
                 enums[enum_name].extend(field['values'])
                 enums[enum_name] = list(set(enums[enum_name]))
-            
+
         value = field['value']
         print("name: {name} value: {value}".format(name=name, value=value))
         if java_type == 'long':
@@ -148,7 +149,7 @@ def generate_pojo(schema, pojo_name, model_builders_map):
             value = enum_name + '.' + value
         elif type.endswith('[][]'):
             # raise Exception('Cannot yet handle multidimensional arrays.')
-            # TODO: 
+            # TODO:
             value = "null";
         elif type.endswith('[]'):
             if field['is_schema']:
@@ -170,7 +171,7 @@ def generate_pojo(schema, pojo_name, model_builders_map):
             # TODO:
             value = "null"
 
-            
+
         print("name: {name} value: {value}".format(name=name, value=value))
 
         if not first:
@@ -201,12 +202,12 @@ def generate_pojo(schema, pojo_name, model_builders_map):
         first = False
 
     pojo.append("")
-    
+
     for line in constructor:
         pojo.append(line)
     pojo.append("    }")
     pojo.append("")
-    
+
     pojo.append("    /** Return the contents of this object as a JSON String. */")
     pojo.append("    @Override")
 
@@ -301,7 +302,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             if path == "/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)" or \
                path == "/3/ModelMetrics/frames/(?<frame>.*)":
                 continue
-            
+
             path_parm_names = meta['path_params']
 
             # replace all the vars in the path with the actual field names from path_params
@@ -325,13 +326,13 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
             algo = None
             if (entity == 'Grid' or entity == 'ModelBuilders') and (method == 'train'):
                 # /99/Grid/glm or /3/ModelBuilders/glm
-                
+
                 pieces = path.split('/')
                 if len(pieces) != 4:
                     raise Exception("Expected 3 parts to this path (something like /99/Grid/glm): " + path)
                 algo = pieces[3]
                 method = method + '_' + algo  # train_glm()
-                
+
             elif (entity == 'ModelBuilders') and (method == 'validate_parameters'):
                 # /3/ModelBuilders/glm/parameters
                 pieces = path.split('/')
@@ -359,10 +360,10 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                 is_post = True
             else:
                 is_post = False
-            
+
             # calculate indent
             indent = ' ' * len('    Call<{output_schema_name}> {method}('.format(output_schema_name = output_schema_name, method = method))
-            
+
             # include path parms first, and then POST body parms
             first_parm = True
             for parm in path_parm_names:
@@ -382,7 +383,7 @@ def generate_retrofit_proxies(endpoints_meta, all_schemas_map):
                     parm_type = 'String'
                 if parm_type == 'ColSpecifierV3':
                     parm_type = 'String'
-                    
+
                 if not first_parm: parms += ',\n'; parms += indent
                 parms += '@Path("{parm}") '.format(parm = parm)
                 parms += parm_type
@@ -646,7 +647,7 @@ public class Example {
                 System.err.println("Caught exception: " + e);
             }
             if (! jobs_response.isSuccessful())
-                if (retries-- > 0) 
+                if (retries-- > 0)
                    continue;
                 else
                     throw new RuntimeException("/3/Jobs/{job_id} failed 3 times.");
@@ -687,8 +688,8 @@ public class Example {
 
             // STEP 2: parse setup
             ParseSetupV3 parseSetupBody = parseSetupService.guessSetup(importBody.destination_frames,
-                                                                  ParserParserType.GUESS, 
-                                                                  (byte)',', 
+                                                                  ParserParserType.GUESS,
+                                                                  (byte)',',
                                                                   false,
                                                                   -1,
                                                                   null,
@@ -758,8 +759,8 @@ public class Example {
             System.out.println("new GBM model: " + models.models[0]);
 
             // STEP 8: predict!
-            ModelMetricsListSchemaV3 predictions = predictionsService.predict(model_key.name, 
-                                                                              training_frame.name, 
+            ModelMetricsListSchemaV3 predictions = predictionsService.predict(model_key.name,
+                                                                              training_frame.name,
                                                                               "predictions",
                                                                               false, false, -1, false, false, false, false, null).execute().body();
             System.out.println("predictions: " + predictions);
