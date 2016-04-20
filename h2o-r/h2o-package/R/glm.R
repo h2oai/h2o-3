@@ -229,8 +229,21 @@ h2o.makeGLMModel <- function(model,beta) {
    res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
    m <- h2o.getModel(model_id=res$model_id$name)
    m@model$coefficients <- m@model$coefficients_table[,2]
-   names(m@model$coefficients) <- m@model$coefficients_table[,1]
+   col.names(m@model$coefficients) <- m@model$coefficients_table[,1]
    m
+}
+
+#' Extract full regularization path from glm model (assuming it was run with lambda search option)
+#'
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getGLMFullRegularizationPath <- function(model) {
+   res = .h2o.__remoteSend(method="GET", .h2o.__GLMRegPath, model=model@model_id)
+   colnames(res$coefficients) <- res$coefficient_names
+   if(!is.null(res$coefficients_std) && length(res$coefficients_std) > 0L) {
+     colnames(res$coefficients_std) <- res$coefficient_names
+   }
+   res
 }
 
 ##' Start an H2O Generalized Linear Model Job

@@ -3,6 +3,7 @@ package hex.glm;
 import hex.DataInfo;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
+import hex.GLMMetrics;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.api.MakeGLMModelHandler;
@@ -38,6 +39,43 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _nullDOF = nobs - (parms._intercept?1:0);
   }
 
+  public static class RegularizationPath extends Iced {
+    public double []   _lambdas;
+    public double []   _explained_deviance_train;
+    public double []   _explained_deviance_valid;
+    public double [][] _coefficients;
+    public double [][] _coefficients_std;
+    public String []   _coefficient_names;
+  }
+
+  public RegularizationPath getRegularizationPath() {
+    RegularizationPath rp = new RegularizationPath();
+    rp._coefficient_names = _output._coefficient_names;
+    int N = _output._submodels.length;
+    int P = _output._dinfo.fullN() + 1;
+    rp._lambdas = new double[N];
+    rp._coefficients = new double[N][];
+    rp._explained_deviance_train = new double[N];
+    if (_parms._valid != null)
+      rp._explained_deviance_valid = new double[N];
+    if (_parms._standardize)
+      rp._coefficients_std = new double[N][];
+    for (int i = 0; i < N; ++i) {
+      Submodel sm = _output._submodels[i];
+      rp._lambdas[i] = sm.lambda_value;
+      rp._coefficients[i] = sm.getBeta(MemoryManager.malloc8d(P));
+      if (_parms._standardize) {
+        rp._coefficients_std[i] = rp._coefficients[i];
+        rp._coefficients[i] = _output._dinfo.denormalizeBeta(rp._coefficients_std[i]);
+      }
+      rp._explained_deviance_train[i] = 1 - sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
+      if (rp._explained_deviance_valid != null)
+        rp._explained_deviance_valid[i] = 1 - sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
+    }
+    return rp;
+  }
+
+
   @Override
   protected boolean toJavaCheckTooBig() {
     if(beta() != null && beta().length > 10000) {
@@ -69,6 +107,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return _output._global_beta;
   }
   public double [] beta() { return _output._global_beta;}
+  public double [] beta(double lambda) {
+    for(int i = 0 ; i < _output._submodels.length; ++i)
+      if(_output._submodels[i].lambda_value == lambda)
+        return _output._dinfo.denormalizeBeta(_output._submodels[i].getBeta(MemoryManager.malloc8d(_output._dinfo.fullN()+1)));
+    throw new RuntimeException("no such lambda value, lambda = " + lambda);
+  }
+  public double [] beta_std(double lambda) {
+    for(int i = 0 ; i < _output._submodels.length; ++i)
+      if(_output._submodels[i].lambda_value == lambda)
+        return _output._submodels[i].getBeta(MemoryManager.malloc8d(_output._dinfo.fullN()+1));
+    throw new RuntimeException("no such lambda value, lambda = " + lambda);
+  }
   public String [] names(){ return _output._names;}
 
   @Override
