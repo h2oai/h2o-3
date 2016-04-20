@@ -33,6 +33,7 @@ public class Register extends water.api.AbstractRegister {
       H2O.registerPOST("/99/Grid/"+lbase, GridSearchHandler.class, "train", "Run grid search for "+base+" model.");
     }
     H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
+    H2O.registerGET("/3/GetGLMRegPath", MakeGLMModelHandler.class, "extractRegularizationPath", "get full regularization path");
     H2O.registerPOST("/3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "test only");
   }
 }
