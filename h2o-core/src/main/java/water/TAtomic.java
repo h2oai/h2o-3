@@ -13,7 +13,7 @@ public abstract class TAtomic<T extends Freezable> extends Atomic<TAtomic<T>> {
   protected abstract T atomic(T old);
 
   @Override protected Value atomic(Value val) {
-    T old = val == null ? null : (T)(val.getFreezable().clone());
+    T old = val == null || val.isNull() ? null : (T)(val.getFreezable().clone());
     T nnn = atomic(old);
     // Atomic operation changes the data, so it can not be performed over
     // values persisted on read-only data source as we would not be able to
