@@ -50,12 +50,11 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
       ", key_home="+_key.home_node()+", key_is_home="+_key.home()+", class="+getClass();
     Futures fs = new Futures(); // Must block on all invalidates eventually
     Value val1 = DKV.get(_key);
-    int cnt = 0;
     while( true ) {
       // Run users' function.  This is supposed to read-only from val1 and
       // return new val2 to atomically install.
       Value val2 = atomic(val1);
-      if( val2 == null || val2.isNullPlaceholder()) {      // ABORT: they gave up
+      if( val2 == null ) {      // ABORT: they gave up
         // Strongly order XTNs on same key, EVEN if aborting.  Generally abort
         // means some interesting condition is already met, but perhaps met by
         // the exactly proceeding XTN whose invalidates are still roaming about
@@ -68,15 +67,12 @@ abstract public class Atomic<T extends Atomic> extends DTask<T> {
       assert val1 != val2;      // No returning the same Value
       // Attempt atomic update
       Value res = DKV.DputIfMatch(_key,val2,val1,fs);
-      if(res != null && res.isNullPlaceholder()) res = null;
       if( res == val1 ) {       // Success?
         fs.blockForPending();   // Block for any pending invalidates on the atomic update
         onSuccess(val1);        // Call user's post-XTN function
         break;
       }
-      assert !_key.isVec() || res.rawMem() != null;
       val1 = res;               // Otherwise try again with the current value
-      cnt++;
     }                           // and retry
     _key = null;                // No need for key no more, don't send it back
     tryComplete();

@@ -569,7 +569,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       notifyAll();              // Wake up pending blocked PUTs
     }
   }
-  public boolean isNullPlaceholder(){return _mem == null && _type == 0;}
+
   // Construct a Value which behaves like a "null" or "deleted" Value, but
   // allows for counting pending invalidates on the delete operation... and can
   // thus stall future Puts overriding the deletion until the delete completes.

@@ -119,11 +119,9 @@ public abstract class DKV {
     // local update first, since this is a weak update
     if( val == null && key.home() ) val = Value.makeNull(key);
     Value res = H2O.putIfMatch(key,val,old);
-
-    if( res != old ) {          // Failed?
-      assert !key.isVec() || res.rawMem() != null;
+    if( res != old )            // Failed?
       return res;               // Return fail value
-    }
+
     // Check for trivial success: no need to invalidate remotes if the new
     // value equals the old.
     if( old != null && old == val ) {
@@ -137,8 +135,8 @@ public abstract class DKV {
 
     // Before we start doing distributed writes... block until the cloud
     // stabilizes.  After we start doing distributed writes, it is an error to
-    Paxos.lockCloud(key);
     // change cloud shape - the distributed writes will be in the wrong place.
+    Paxos.lockCloud(key);
 
     // The 'D' part of DputIfMatch: do Distribution.
     // If PUT is on     HOME, invalidate remote caches
