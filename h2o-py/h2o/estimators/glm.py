@@ -1,5 +1,5 @@
 from .estimator_base import H2OEstimator
-
+from h2o.connection import H2OConnection
 
 class H2OGeneralizedLinearEstimator(H2OEstimator):
   """Build a Generalized Linear Model
@@ -111,14 +111,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         A character string specifying how to handle missing value:
         "MeanImputation","Skip".
 
-<<<<<<< HEAD
       interactions : list, optional
         A list of column names to interact. All pairwise combinations of columns will be
         interacted.
-=======
       max_runtime_secs: int, optional
         Maximum allowed runtime, model will stop running after reaching the limit and return whatever result it has at the moment.
->>>>>>> e95576ae7d6e4928eb76beb6066e899f91123ca4
+
 
     Returns
     -------
@@ -370,3 +368,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   def missing_values_handling(self, value):
     self._parms["missing_values_handling"] = value
 
+  @staticmethod
+  def getGLMRegularizationPath(model):
+    x = H2OConnection.get_json("GetGLMRegPath",model=model._model_json['model_id']['name'])
+    ns = x.pop('coefficient_names')
+    res = {'lambdas':x['lambdas'],'explained_deviance_train':x['explained_deviance_train'],'explained_deviance_valid':x['explained_deviance_valid']}
+    res['coefficients'] = map(lambda x:dict(zip(ns,x)),x['coefficients'])
+    if 'coefficients_std' in x:
+      res['coefficients_std'] = map(lambda x:dict(zip(ns,x)),x['coefficients_std'])
+    return res
