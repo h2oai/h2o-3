@@ -1,4 +1,4 @@
-package water.parser.avro.avro;
+package water.parser.avro;
 
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
@@ -18,12 +18,13 @@ import java.util.List;
 import water.H2O;
 import water.Job;
 import water.Key;
+
 import water.parser.BufferedString;
 import water.parser.ParseReader;
 import water.parser.ParseSetup;
 import water.parser.ParseWriter;
 import water.parser.Parser;
-import water.parser.ParserType;
+
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -52,7 +53,7 @@ public class AvroParser extends Parser {
     try {
       // Reconstruct Avro header
       DataFileStream.Header
-          fakeHeader = new DataFileReader<GenericRecord>(new SeekableByteArrayInput(this.header), datumReader).getHeader();
+          fakeHeader = new DataFileReader<>(new SeekableByteArrayInput(this.header), datumReader).getHeader();
       dataFileReader = DataFileReader.openReader(sbai, datumReader, fakeHeader, true);
       Schema schema = dataFileReader.getSchema();
       GenericRecord gr = new GenericData.Record(schema);
@@ -71,7 +72,7 @@ public class AvroParser extends Parser {
       e.printStackTrace();
     }
 
-    System.out.println(String.format("Cidx: %d read %d records, start at %d off, block count: %d, block size: %d", cidx, cnt, din.getChunkDataStart(cidx), dataFileReader.getBlockCount(), dataFileReader.getBlockSize()));
+    Log.trace(String.format("Avro: ChunkIdx: %d read %d records, start at %d off, block count: %d, block size: %d", cidx, cnt, din.getChunkDataStart(cidx), dataFileReader.getBlockCount(), dataFileReader.getBlockSize()));
 
     return dout;
   }
@@ -104,7 +105,6 @@ public class AvroParser extends Parser {
 
       this.mark = din.getChunkDataStart(cidx) > 0 ? din.getChunkDataStart(cidx) : 0;
       this.pos = mark;
-      //System.err.println("Mark: " + mark);
     }
 
     @Override
@@ -186,7 +186,7 @@ public class AvroParser extends Parser {
       if (nextChunk != null && nextChunk.length > 0) {
         this.data = ArrayUtils.append(this.data, nextChunk);
         this.chunkCnt++;
-        System.err.println(String.format("StartCIdx: %d, chunkCnt: %d",  startCidx, chunkCnt));
+        Log.trace(String.format("Avro stream wrapper - loading another chunk: StartChunkIdx: %d, LoadedChunkCnt: %d",  startCidx, chunkCnt));
         return true;
       } else {
         return false;
@@ -243,20 +243,28 @@ public class AvroParser extends Parser {
   }
 
   public static class AvroParseSetup extends ParseSetup {
-    public byte[] header; //FIXME no public
-    long blockSize;
+    final byte[] header; //FIXME no public
+    final long blockSize;
 
     public AvroParseSetup(int ncols,
-                          String[] columnNames, byte[] ctypes,
+                          String[] columnNames,
+                          byte[] ctypes,
                           String[][] domains,
                           String[][] naStrings,
-                          String[][] data) {
-      super(ParserType.OTHER, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data);
+                          String[][] data,
+                          byte[] header,
+                          long blockSize) {
+      super(AvroParserProvider.AVRO_INFO, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data);
+      this.header = header;
+      this.blockSize = blockSize;
+      this.setChunkSize((int) blockSize);
     }
 
-    public AvroParseSetup(ParseSetup ps, byte[] header) {
+    public AvroParseSetup(ParseSetup ps, byte[] header, long blockSize) {
       super(ps);
       this.header = header;
+      this.blockSize = blockSize;
+      this.setChunkSize((int) blockSize);
     }
 
     @Override
@@ -266,35 +274,48 @@ public class AvroParser extends Parser {
   }
 
   public static ParseSetup guessSetup(byte[] bits) {
+    try {
+      return runOnPreview(bits, new AvroPreviewProcessor<ParseSetup>() {
+        @Override
+        public ParseSetup process(byte[] header, GenericRecord gr, long blockCount,
+                                  long blockSize) {
+          return deriveParseSetup(header, gr, blockCount, blockSize);
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException("Avro format was not recognized", e);
+    }
+  }
+
+  static AvroInfo extractAvroInfo(byte[] bits) throws IOException {
+    return runOnPreview(bits, new AvroPreviewProcessor<AvroInfo>() {
+      @Override
+      public AvroInfo process(byte[] header, GenericRecord gr, long blockCount,
+                              long blockSize) {
+        return new AvroInfo(header, blockCount, blockSize);
+      }
+    });
+  }
+
+  static <T> T runOnPreview(byte[] bits, AvroPreviewProcessor<T> processor) throws IOException {
     DatumReader<GenericRecord> datumReader = new GenericDatumReader<GenericRecord>();
     SeekableByteArrayInput sbai = new SeekableByteArrayInput(bits);
     DataFileReader<GenericRecord> dataFileReader = null;
 
     try {
       dataFileReader = new DataFileReader<>(sbai, datumReader);
-      // FIXME: first process schema then create preview
-      // Extract header bytes
       int headerLen = (int) dataFileReader.previousSync();
       byte[] header = Arrays.copyOf(bits, headerLen);
-      // Read an entry to create a preview
       if (dataFileReader.hasNext()) {
         GenericRecord gr = dataFileReader.next();
-        return deriveParseSetup(header, gr, dataFileReader.getBlockCount(), dataFileReader.getBlockSize());
+        return processor.process(header, gr, dataFileReader.getBlockCount(), dataFileReader.getBlockSize());
       } else {
-        throw new RuntimeException("FIXME: Empty file!");
+        throw new RuntimeException("Empty Avro file - cannot run preview! ");
       }
-    } catch (IOException e) {
-      if (dataFileReader != null)
-        try {
-          dataFileReader.close();
-        } catch (IOException ignored) {
-          /* ignore */
-        }
+    } finally {
+      try { dataFileReader.close(); } catch (IOException safeToIgnore) {}
     }
-
-    throw new RuntimeException("Cannot derive parser setup!");
   }
-
 
   private static ParseSetup deriveParseSetup(byte[] header, GenericRecord gr,
                                              long blockCount, long blockSize) {
@@ -325,12 +346,28 @@ public class AvroParser extends Parser {
         types,
         null,
         null,
-        new String[][] { dataPreview }
+        new String[][] { dataPreview },
+        header,
+        blockSize
     );
-    ps.header = header;
-    ps.blockSize = blockSize;
-    ps.setChunkSize((int) blockSize);
     return ps;
+  }
+
+  static class AvroInfo {
+
+    public AvroInfo(byte[] header, long firstBlockCount, long firstBlockSize) {
+      this.header = header;
+      this.firstBlockCount = firstBlockCount;
+      this.firstBlockSize = firstBlockSize;
+    }
+
+    byte[] header;
+    long firstBlockCount;
+    long firstBlockSize;
+  }
+
+  private interface AvroPreviewProcessor<R> {
+    R process(byte[] header, GenericRecord gr, long blockCount, long blockSize);
   }
 
 }

@@ -1,6 +1,10 @@
 package water.parser;
 
-/** Which parse flavor is being used, and does it support parallel parsing. */
+/** Which parse flavor is being used, and does it support parallel parsing.
+ *
+ * @deprecated only used to preserve compatibility with REST layer
+ */
+@Deprecated
 public enum ParserType {
   GUESS(false),
   ARFF(true),
@@ -8,7 +12,7 @@ public enum ParserType {
   XLSX(false),
   CSV(true),
   SVMLight(true),
-  OTHER(true);
+  AVRO(true);
 
   final boolean _parallelParseSupported;
 

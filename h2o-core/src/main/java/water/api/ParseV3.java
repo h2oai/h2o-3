@@ -15,6 +15,7 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   @API(help="Source frames",required=true)
   FrameKeyV3[] source_frames;
 
+  // FIXME: Replace by new ParserInfo or String
   @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight", "AVRO"})
   ParserType parse_type;
 

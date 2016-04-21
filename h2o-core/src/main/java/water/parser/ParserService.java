@@ -13,7 +13,6 @@ import java.util.ServiceLoader;
  */
 public final class ParserService {
   public static ParserService INSTANCE = new ParserService();
-  public static final String[] N = INSTANCE.getAllProviderNames(true);
 
   private final ServiceLoader<ParserProvider> loader;
 
@@ -54,6 +53,10 @@ public final class ParserService {
     return names;
   }
 
+  public ParserProvider getByInfo(ParserInfo info) {
+    return getByName(info.name());
+  }
+
   public ParserProvider getByName(String name) {
     Iterator<ParserProvider> it = loader.iterator();
     while (it.hasNext()) {
@@ -68,7 +71,7 @@ public final class ParserService {
   private static Comparator<ParserProvider> PARSER_PROVIDER_COMPARATOR = new Comparator<ParserProvider>() {
     @Override
     public int compare(ParserProvider o1, ParserProvider o2) {
-      return o2.info().prior - o1.info().prior;
+      return o1.info().prior - o2.info().prior;
     }
   };
 }

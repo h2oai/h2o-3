@@ -14,18 +14,17 @@ import water.fvec.Frame;
 public class ParseTestAvro extends TestUtil {
 
   @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(1); }
+  static public void setup() { TestUtil.stall_till_cloudsize(5); }
 
   @Test
   public void testParseSimple() {
     String[] files = TestUtil.ar("smalldata/parser/avro/sequence100k.avro",
-                                 "smalldata/parser/avro/episodes.avro",
-                                 "smalldata/parser/avro/airline.avro");
+                                 "smalldata/parser/avro/episodes.avro");
+                                 //"smalldata/parser/avro/airline.avro");
 
     int[][] dims = TestUtil.ar(TestUtil.ari(1, 100000),  // cols X rows
-                               TestUtil.ari(2, 3));
-    int limit = 1;
-    if (limit == 0)
+                               TestUtil.ari(3, 8));
+    int limit = files.length;
     assertEquals("Test configuration error - number of files has to match dimensions ",
                  files.length, dims.length);
 

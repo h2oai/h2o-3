@@ -1,9 +1,11 @@
 package water.parser;
 
+import water.Iced;
+
 /**
- * Created by michal on 4/15/16.
+ * A lightweight handle with basic information about parser.
  */
-public class ParserInfo {
+public class ParserInfo extends Iced<ParserInfo> {
   final String name;
   final int prior;
   final boolean isParallelParseSupported;
@@ -24,7 +26,34 @@ public class ParserInfo {
     return prior;
   }
 
+  /** Does the parser support parallel parse? */
   public boolean isParallelParseSupported() {
     return isParallelParseSupported;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ParserInfo that = (ParserInfo) o;
+    return name.equals(that.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return "ParserInfo{" +
+           "name='" + name + '\'' +
+           ", prior=" + prior +
+           ", isParallelParseSupported=" + isParallelParseSupported +
+           '}';
   }
 }

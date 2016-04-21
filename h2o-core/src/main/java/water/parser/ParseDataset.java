@@ -22,6 +22,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static water.parser.DefaultParserProviders.*;
+
 public final class ParseDataset {
   public Job<Frame> _job;
   private MultiFileParseTask _mfpt; // Access to partially built vectors for cleanup after parser crash
@@ -112,9 +114,8 @@ public final class ParseDataset {
    * @return a new parse job
    */
   public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup parseSetup, boolean deleteOnDone) {
-    // Note: get a parser specific setup
-    final ParseSetup setup = parseSetup.getFinalSetup(keys);
-    // ---- MM end of experiment ----
+    // Get a parser specific setup
+    final ParseSetup setup = parseSetup.getFinalSetup(keys, parseSetup);
 
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
     for( String x : conflictingNames )
@@ -305,7 +306,7 @@ public final class ParseDataset {
     if ( job.stop_requested() ) return pds;
 
     // SVMLight is sparse format, there may be missing chunks with all 0s, fill them in
-    if (setup._parse_type == ParserType.SVMLight)
+    if (setup._parse_type.equals(SVMLight_INFO))
       new SVFTask(fr).doAllNodes();
 
     // Check for job cancellation
@@ -666,7 +667,7 @@ public final class ParseDataset {
 
     MultiFileParseTask(VectorGroup vg,  ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; _parseSetup = setup;
-      _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type == ParserType.SVMLight ? 100000000 : setup._number_columns);
+      _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type.equals(SVMLight_INFO) ? 100000000 : setup._number_columns);
       _deleteOnDone = deleteOnDone;
       _jobKey = jobKey;
       // A mapping of Key+ByteVec to rolling total Chunk counts.
@@ -709,7 +710,7 @@ public final class ParseDataset {
       // wide SVMLight) we need to get more here.
       if( nCols > _reservedKeys ) throw H2O.unimpl();
       AppendableVec[] res = new AppendableVec[nCols];
-      if(_parseSetup._parse_type == ParserType.SVMLight) {
+      if(_parseSetup._parse_type.equals(SVMLight_INFO)) {
         _parseSetup._number_columns = res.length;
         _parseSetup._column_types = new byte[res.length];
         Arrays.fill(_parseSetup._column_types,Vec.T_NUM);
@@ -769,7 +770,7 @@ public final class ParseDataset {
       final byte[] ctypes = localSetup._column_types; // SVMLight only uses numeric types, sparsely represented as a null
       for(int i = 0; i < avs.length; ++i)
         avs[i] = new AppendableVec(_vg.vecKey(i + _vecIdStart), espc, ctypes==null ? /*SVMLight*/Vec.T_NUM : ctypes[i], chunkOff);
-      return localSetup._parse_type == ParserType.SVMLight
+      return localSetup._parse_type.equals(SVMLight_INFO)
         ? new SVMLightFVecParseWriter(_vg, _vecIdStart,chunkOff, _parseSetup._chunk_size, avs)
         : new FVecParseWriter(_vg, chunkOff, categoricals(_cKey, localSetup._number_columns), localSetup._column_types, _parseSetup._chunk_size, avs);
     }
@@ -793,7 +794,7 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          if( _parseSetup._parse_type._parallelParseSupported ) {
+          if (_parseSetup._parse_type.isParallelParseSupported) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).doAll(vec);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
@@ -874,8 +875,11 @@ public final class ParseDataset {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser(_jobKey);
       // assume 2x inflation rate
-      if( localSetup._parse_type._parallelParseSupported ) p.streamParseZip(is, dout, bvs);
-      else                                            p.streamParse   (is, dout);
+      if (localSetup._parse_type.isParallelParseSupported) {
+        p.streamParseZip(is, dout, bvs);
+      } else {
+        p.streamParse(is, dout);
+      }
       // Parse all internal "chunks", until we drain the zip-stream dry.  Not
       // real chunks, just flipping between 32K buffers.  Fills up the single
       // very large NewChunk.
@@ -928,23 +932,18 @@ public final class ParseDataset {
         FVecParseWriter dout;
         // Get a parser
         Parser p = _setup.parser(_jobKey);
-        switch(_setup._parse_type) {
-        case ARFF:
-        case CSV:
+        switch(_setup._parse_type.name()) {
+        case "ARFF":
+        case "CSV":
           Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
-          //p = new CsvParser(_setup, _jobKey);
           dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
           break;
-        case SVMLight:
-          //p = new SVMLightParser(_setup, _jobKey);
+        case "SVMLight":
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
           break;
-        case OTHER:
-          //p = _setup.parser(_jobKey);
+        default: // FIXME: should not be default!
           dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types, _setup._chunk_size, avs);
           break;
-        default:
-          throw H2O.unimpl();
         }
         p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);

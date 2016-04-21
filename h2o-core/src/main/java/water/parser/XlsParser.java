@@ -8,6 +8,8 @@ import water.Key;
 import water.H2O;
 import water.util.UnsafeUtils;
 
+import static water.parser.DefaultParserProviders.XLS_INFO;
+
 class XlsParser extends Parser {
   XlsParser( ParseSetup ps, Key jobKey ) { super(ps, jobKey); }
 
@@ -77,14 +79,14 @@ class XlsParser extends Parser {
 
   /** Try to parse the bytes as XLS format  */
   public static ParseSetup guessSetup( byte[] bytes ) {
-    XlsParser p = new XlsParser(new ParseSetup(ParserType.XLS, ParseSetup.GUESS_SEP, false,
+    XlsParser p = new XlsParser(new ParseSetup(XLS_INFO, ParseSetup.GUESS_SEP, false,
                                 ParseSetup.GUESS_HEADER, ParseSetup.GUESS_COL_CNT, null, null, null, null, null), null);
     p._buf = bytes;             // No need to copy already-unpacked data; just use it directly
     p._lim = bytes.length;
     PreviewParseWriter dout = new PreviewParseWriter();
     try{ p.streamParse(new ByteArrayInputStream(bytes), dout); } catch(IOException e) { throw new RuntimeException(e); }
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
-      return new ParseSetup(ParserType.XLS, ParseSetup.GUESS_SEP, false,
+      return new ParseSetup(XLS_INFO, ParseSetup.GUESS_SEP, false,
             dout.colNames()==null?ParseSetup.NO_HEADER:ParseSetup.HAS_HEADER,dout._ncols,
                                  dout.colNames(), dout.guessTypes(),null,null,dout._data);
     else throw new ParseDataset.H2OParseException("Could not parse file as an XLS file.");

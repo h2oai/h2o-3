@@ -1,0 +1,6 @@
+water.parser.DefaultParserProviders$ArffParserProvider
+water.parser.DefaultParserProviders$XlsParserProvider
+water.parser.DefaultParserProviders$SVMLightParserProvider
+water.parser.DefaultParserProviders$CsvParserProvider
+water.parser.DefaultParserProviders$GuessParserProvider
+
