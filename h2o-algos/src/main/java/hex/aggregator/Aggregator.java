@@ -213,7 +213,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         if (distanceToNearestExemplar < _delta) {
           // add remote exemplar counts/indices to one of my exemplars that are close enough
           _counts[closestExemplarIndex]+=counts[r];
-          _fr.vecs()[_fr.vecs().length-1].set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
+          Vec.Writer vw = _fr.vecs()[_fr.vecs().length-1].open();
+          vw.set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
         } else {
           // append this remote exemplar to my local exemplars, as a new exemplar
           Exemplar[] newExemplars = Arrays.copyOf(_exemplars, _exemplars.length+1);
