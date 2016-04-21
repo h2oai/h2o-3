@@ -13,41 +13,72 @@ import java.util.concurrent.ArrayBlockingQueue;
 import static water.fvec.Vec.makeCon;
 
 public class SQLManager {
-
-
+  
+  final static String TEMP_TABLE_NAME = "table_for_h2o_import";
+  //upper bound on number of connections to database
+  final static int MAX_CONNECTIONS = 100;
+  
   /**
    * @param connection_url (Input) 
    * @param table (Input)
+   * @param select_query (Input)
    * @param username (Input)
    * @param password (Input)
    * @param columns (Input)
    * @param optimize (Input)                
    */
-  public static Job<Frame> importSqlTable(final String connection_url, final String table, final String username, 
-                                          final String password, final String columns, boolean optimize) {
+  public static Job<Frame> importSqlTable(final String connection_url, String table, final String select_query,
+                                          final String username, final String password, final String columns,
+                                          boolean optimize) {
+    
     
     Connection conn = null;
     Statement stmt = null;
     ResultSet rs = null;
-
+    /** Pagination in following Databases:
+    SQL Server, Oracle 12c: OFFSET x ROWS FETCH NEXT y ROWS ONLY
+     SQL Server, Vertica may need ORDER BY
+    MySQL, PostgreSQL, MariaDB: LIMIT y OFFSET x 
+    ? Teradata (and possibly older Oracle): 
+     SELECT * FROM (
+        SELECT ROW_NUMBER() OVER () AS RowNum_, <table>.* FROM <table>
+     ) QUALIFY RowNum_ BETWEEN x and x+y;
+    */
+    String db_sys = connection_url.split(":",3)[1];
+    final boolean needFetchClause = db_sys.equals("oracle") || db_sys.equals("sqlserver");
     int catcols = 0, intcols = 0, bincols = 0, realcols = 0, timecols = 0, stringcols = 0; 
-    final int numCol, maxCon; 
-    long numRow;
+    final int numCol; 
+    long numRow = 0;
     final String[] columnNames;
     final byte[] columnH2OTypes;
     try {
       conn = DriverManager.getConnection(connection_url, username, password);
       stmt = conn.createStatement();
-      //get number of rows
-      rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
-      rs.next();
-      numRow = rs.getInt(1);
-      //get max allowed connections to database
-      rs = stmt.executeQuery("SELECT @@max_connections");
-      rs.next();
-      maxCon = rs.getInt(1);
+      //set fetch size for improved performance
+      stmt.setFetchSize(1);
+      //if select_query has been specified instead of table
+      if (table.equals("")) {
+        if (!select_query.toLowerCase().startsWith("select")) {
+          throw new IllegalArgumentException("The select_query must start with `SELECT`, but instead is: " + select_query);
+        }
+        table = SQLManager.TEMP_TABLE_NAME;
+        //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
+        numRow = stmt.executeUpdate("CREATE TABLE " + table + " AS " + select_query);
+      } else if (table.equals(SQLManager.TEMP_TABLE_NAME)) {
+        //tables with this name are assumed to be created here temporarily and are dropped
+        throw new IllegalArgumentException("The specified table cannot be named: " + SQLManager.TEMP_TABLE_NAME);
+      }
+      //get number of rows. check for negative row count
+      if (numRow <= 0) {
+        rs = stmt.executeQuery("SELECT COUNT(1) FROM " + table);
+        rs.next();
+        numRow = rs.getLong(1);
+      }
       //get H2O column names and types 
-      rs = stmt.executeQuery("SELECT " + columns + " FROM " + table + " LIMIT 0");
+      if (needFetchClause)
+        rs = stmt.executeQuery("SELECT " + columns + " FROM " + table + " FETCH NEXT 1 ROWS ONLY");
+      else
+        rs = stmt.executeQuery("SELECT " + columns + " FROM " + table + " LIMIT 1");
       ResultSetMetaData rsmd = rs.getMetaData();
       numCol = rsmd.getColumnCount();
 
@@ -146,14 +177,18 @@ public class SQLManager {
     final Key destination_key = Key.make(table + "_sql_to_hex");
     final Job<Frame> j = new Job(destination_key, Frame.class.getName(), "Import SQL Table");
 
+    final String finalTable = table;
     H2O.H2OCountedCompleter work = new H2O.H2OCountedCompleter() {
       @Override
       public void compute2() {
-        Frame fr = new SqlTableToH2OFrame(connection_url, table, username, password, columns, numCol, maxCon, _v.nChunks(), j).doAll(columnH2OTypes, _v)
+        Frame fr = new SqlTableToH2OFrame(connection_url, finalTable, needFetchClause, username, password, columns, 
+                numCol, _v.nChunks(), j).doAll(columnH2OTypes, _v)
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();
         ParseDataset.logParseResults(fr);
+        if (finalTable.equals(SQLManager.TEMP_TABLE_NAME)) 
+          dropTempTable(connection_url, username, password);
         tryComplete();
       }
     };
@@ -162,21 +197,23 @@ public class SQLManager {
     return j;
   }
 
-  public static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
+  private static class SqlTableToH2OFrame extends MRTask<SqlTableToH2OFrame> {
     final String _url, _table, _user, _password, _columns;
-    final int _numCol, _nChunks, _maxCon;
+    final int _numCol, _nChunks;
+    final boolean _needFetchClause;
     final Job _job;
 
     transient ArrayBlockingQueue<Connection> sqlConn;
 
-    public SqlTableToH2OFrame(String url, String table, String user, String password, String columns, int numCol, int maxCon, int nChunks, Job job) {
+    public SqlTableToH2OFrame(String url, String table, boolean needFetchClause, String user, String password, 
+                              String columns, int numCol, int nChunks, Job job) {
       _url = url;
       _table = table;
+      _needFetchClause = needFetchClause;
       _user = user;
       _password = password;
       _columns = columns;
       _numCol = numCol;
-      _maxCon = maxCon;
       _nChunks = nChunks;
       _job = job;
 
@@ -184,8 +221,8 @@ public class SQLManager {
 
     @Override
     protected void setupLocal() {
-      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks/ H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
-      conPerNode = Math.min(conPerNode, _maxCon / H2O.getCloudSize()); //upper bound on number of connections
+      int conPerNode = (int) Math.min(Math.ceil((double) _nChunks / H2O.getCloudSize()), Runtime.getRuntime().availableProcessors());
+      conPerNode = Math.min(conPerNode, SQLManager.MAX_CONNECTIONS / H2O.getCloudSize()); 
       Log.info("Database connections per node: " + conPerNode);
       sqlConn = new ArrayBlockingQueue<>(conPerNode);
       try {
@@ -206,10 +243,16 @@ public class SQLManager {
       Statement stmt = null;
       ResultSet rs = null;
       Chunk c0 = cs[0];
-      String sqlText = "SELECT " + _columns + " FROM " + _table + " LIMIT " + c0._len + " OFFSET " + c0.start();
+      String sqlText = "SELECT " + _columns + " FROM " + _table;
+      if (_needFetchClause)
+        sqlText += " OFFSET " + c0.start() + " ROWS FETCH NEXT " + c0._len + " ROWS ONLY";
+      else
+        sqlText += " LIMIT " + c0._len + " OFFSET " + c0.start();
       try {
         conn = sqlConn.take();
         stmt = conn.createStatement();
+        //set fetch size for best performance
+        stmt.setFetchSize(c0._len);
         rs = stmt.executeQuery(sqlText);
         while (rs.next()) {
           for (int i = 0; i < _numCol; i++) {
@@ -234,6 +277,7 @@ public class SQLManager {
                   break;
                 case "Byte":
                   ncs[i].addNum((long) (byte) res, 0);
+                  break;
                 case "BigDecimal":
                   ncs[i].addNum(((BigDecimal) res).doubleValue());
                   break;
@@ -300,6 +344,36 @@ public class SQLManager {
       } // ignore
     }
   }
+  
+  private static void dropTempTable(String connection_url, String username, String password) {
+    Connection conn = null;
+    Statement stmt = null;
+    
+    String drop_table_query = "DROP TABLE " + SQLManager.TEMP_TABLE_NAME;
+    try {
+      conn = DriverManager.getConnection(connection_url, username, password);
+      stmt = conn.createStatement();
+      stmt.executeUpdate(drop_table_query);
+    } catch (SQLException ex) {
+      throw new RuntimeException("SQLException: " + ex.getMessage() + "\nFailed to execute SQL query: " + drop_table_query);
+    } finally {
+      // release resources in a finally{} block in reverse-order of their creation
+      if (stmt != null) {
+        try {
+          stmt.close();
+        } catch (SQLException sqlEx) {
+        } // ignore
+        stmt = null;
+      }
 
+      if (conn != null) {
+        try {
+          conn.close();
+        } catch (SQLException sqlEx) {
+        } // ignore
+        conn = null;
+      }
+    }
+  }
 }
 
