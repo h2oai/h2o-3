@@ -93,6 +93,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Minimum relative improvement in squared error reduction for a split to happen
   random_split_points : boolean
     Whether to use random split points for histograms (to pick the best split from).
+  max_abs_leafnode_pred : float
+    Maximum absolute value of a leaf node prediction.
 
   Returns
   -------
@@ -108,7 +110,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                keep_cross_validation_fold_assignment=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
                score_each_iteration=None, score_tree_interval=None, checkpoint=None,
-               min_split_improvement=None, random_split_points=None):
+               min_split_improvement=None, random_split_points=None, max_abs_leafnode_pred=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -376,3 +378,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @random_split_points.setter
   def random_split_points(self, value):
     self._parms["random_split_points"] = value
+
+  @property
+  def max_abs_leafnode_pred(self):
+    return self._parms["max_abs_leafnode_pred"]
+
+  @max_abs_leafnode_pred.setter
+  def max_abs_leafnode_pred(self, value):
+    self._parms["max_abs_leafnode_pred"] = value

@@ -180,12 +180,18 @@ public class NewChunk extends Chunk {
     }
 
     public void move(int to, int from) {
-      if(_vals1 != null) {
-        _vals1[to] = _vals1[from];
-      } else if(_vals4 != null) {
-        _vals4[to] = _vals4[from];
-      } else
-        _vals8[to] = _vals8[from];
+      if(to != from) {
+        if (_vals1 != null) {
+          _vals1[to] = _vals1[from];
+          _vals1[from] = 0;
+        } else if (_vals4 != null) {
+          _vals4[to] = _vals4[from];
+          _vals4[from] = 0;
+        } else {
+          _vals8[to] = _vals8[from];
+          _vals8[from] = 0;
+        }
+      }
     }
 
     public int len() {
@@ -933,7 +939,7 @@ public class NewChunk extends Chunk {
         }
       }
     }
-    assert cs == (_sparseLen - num_noncompressibles) : "cs = " + cs + " != " + (_sparseLen - num_noncompressibles);
+    assert cs == (_sparseLen - num_noncompressibles) : "cs = " + cs + " != " + (_sparseLen - num_noncompressibles) + ", sparsity type = " + sparsity_type;
     assert (sparsity_type == Compress.NA) == _sparseNA;
     if(sparsity_type == Compress.NA && _missing != null)
       _missing.clear();
@@ -966,6 +972,7 @@ public class NewChunk extends Chunk {
           ms.set(_id[i], _ms.get(i));
           missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
         }
+        assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
         _xs = xs;
         _missing = missing;

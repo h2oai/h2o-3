@@ -529,11 +529,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       H2O.submitTask(sqt);
       sqt.join();
 
-      double annealing = Math.pow((double)_parms._learn_rate_annealing, (_model._output._ntrees-1));
+      double annealing = Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
       for (int i = 0; i < sqt._quantiles.length; i++) {
-        float val = (float) (_parms._learn_rate * annealing * sqt._quantiles[i]);
-        assert !Float.isNaN(val) && !Float.isInfinite(val);
-        ((LeafNode) ktrees[0].node(Math.max(0,(int)strata.min()) + i))._pred = val;
+        double val = _parms._learn_rate * annealing * sqt._quantiles[i];
+        assert !Double.isNaN(val) && !Double.isInfinite(val);
+        if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
+        if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
+        ((LeafNode) ktrees[0].node(Math.max(0,(int)strata.min()) + i))._pred = (float)val;
 //        Log.info("Leaf " + ((int)strata.min()+i) + " has quantile: " + sqt._quantiles[i]);
       }
     }
@@ -543,9 +545,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
-        double annealing = Math.pow((double)_parms._learn_rate_annealing, (_model._output._ntrees-1));
+        double annealing = Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          float gf = (float) (_parms._learn_rate * annealing * m1class * gp.gamma(k, i));
+          double gf = _parms._learn_rate * annealing * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -553,8 +555,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if (gf > 1e4) gf = 1e4f; // Cap prediction, will already overflow during Math.exp(gf)
             else if (gf < -1e4) gf = -1e4f;
           }
-          assert !Float.isNaN(gf) && !Float.isInfinite(gf);
-          ((LeafNode) tree.node(leafs[k] + i))._pred = gf;
+          assert !Double.isNaN(gf) && !Double.isInfinite(gf);
+          if (gf > _parms._max_abs_leafnode_pred) gf = _parms._max_abs_leafnode_pred;
+          if (gf < -_parms._max_abs_leafnode_pred) gf = -_parms._max_abs_leafnode_pred;
+          ((LeafNode) tree.node(leafs[k] + i))._pred = (float)gf;
         }
       }
     }

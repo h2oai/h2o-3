@@ -129,7 +129,8 @@ class TestGLMBinomial:
     total_test_number = 7   # total number of tests being run for GLM Binomial family
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed, only for Gaussian
-    allowed_diff = 2e-2   # tolerance of comparison for logloss/prediction accuracy
+    allowed_diff = 5e-2   # tolerance of comparison for logloss/prediction accuracy, okay to be loose.  Condition
+                          # to run the codes are different
 
     duplicate_col_counts = 5    # maximum number of times to duplicate a column
     duplicate_threshold = 0.2   # for each column, a coin is tossed to see if we duplicate that column or not
@@ -1444,7 +1445,6 @@ def test_glm_binomial():
     test_glm_binomial.test2_glm_lambda_search()
     test_glm_binomial.test3_glm_grid_search()
     test_glm_binomial.test4_glm_remove_collinear_columns()
-#    test_glm_binomial.test_num += 1
     test_glm_binomial.test5_missing_values()
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()

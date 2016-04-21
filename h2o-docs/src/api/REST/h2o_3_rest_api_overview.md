@@ -296,6 +296,19 @@ Remember, Flow and the R and Python bindings access H2O only through the REST AP
     Export given model.
 
 ## GBM_Example.flow
+This section reproduces the Flow example *GBM_Example.flow* using three languages:
+
+ * *Coffeescript* (Flow's control language), 
+ * *curl*, and 
+ * *Java* (making REST API calls from an external Java program).
+
+The Java code uses the bindings found in H2O's *h2o-java-rest-bindings.jar*, which use the *Retrofit* REST API library from Square: [http://square.github.io/retrofit/](http://square.github.io/retrofit/).  
+
+If you use Java / Retrofit you'll get the results back from the server as Java objects.  For brevity these are not shown here.  
+
+The source files for the payload schemas and for the endpoint proxies are documented with help text for the fields and Javadoc for the methods, and the default constructors set each field to its default value.  Each payload schema class includes a *toString()* method to ease debugging.
+
+If you have downloaded H2O as a zip file you'll find the Java Retrofit bindings in *bindings/java/h2o-java-rest-bindings-{version}.jar* and the sources in *bindings/java/h2o-java-rest-bindings-sources.jar*.  If you have built H2O from source you'll find them in *h2o-java-rest-bindings/build/libs/h2o-java-rest-bindings.jar* and the sources in *h2o-java-rest-bindings/build/src-gen/main/java/water/bindings/*.
 
 ### GBM_Example.flow, Step 1: Import
 In Flow:
@@ -308,6 +321,13 @@ In curl:
 
 ```bash
 curl -X GET http://127.0.0.1:54321/3/ImportFiles?path=http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz
+```
+
+In Java / Retrofit:
+
+```java
+ImportFilesV3 importBody = 
+importService.importFiles("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null).execute().body();
 ```
 
 Result JSON:
@@ -345,6 +365,13 @@ In curl:
 
 ```bash
 curl -X POST http://127.0.0.1:54321/3/ParseSetup --data 'source_frames=["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]'
+```
+
+In Java / Retrofit:
+
+```java
+ParseSetupV3 parseSetupBody = 
+parseSetupService.guessSetup(importBody.destination_frames, ParserParserType.GUESS, (byte)',', false, -1, null, null, null, null, 0, 0, 0, null).execute().body();
 ```
 
 
@@ -425,6 +452,31 @@ In curl:
 curl -X POST http://127.0.0.1:54321/3/Parse --data 'destination_frame=arrhythmia.hex&source_frames=["http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"]&parse_type=CSV&separator=44&number_columns=280&single_quotes=false&column_names=&column_types=["Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric","Numeric"]&check_header=-1&delete_on_done=true&chunk_size=4194304'
 
 ```
+
+In Java / Retrofit:
+
+```java
+List<String> source_frames = new ArrayList<>();
+for (FrameKeyV3 frame : parseSetupBody.source_frames)
+  source_frames.add(frame.name);
+
+ParseV3 parseBody = parseService.parse("arrhythmia.hex",
+   source_frames.toArray(new String[0]),
+   parseSetupBody.parse_type,
+   parseSetupBody.separator,
+   parseSetupBody.single_quotes,
+   parseSetupBody.check_header,
+   parseSetupBody.number_columns,
+   parseSetupBody.column_names,
+   parseSetupBody.column_types,
+   null, // domains
+   parseSetupBody.na_strings,
+   parseSetupBody.chunk_size,
+   true,
+   true,
+   null).execute().body();
+```
+
 
 
 ### GBM_Example.flow, Step 3 Result
@@ -607,6 +659,24 @@ In curl:
 curl -X POST http://127.0.0.1:54321/3/ModelBuilders/gbm --data 'model_id=gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1&training_frame=arrhythmia.hex&score_each_iteration=false&response_column=C1&ntrees=20&max_depth=5&min_rows=25&nbins=20&learn_rate=0.3&distribution=AUTO&balance_classes=false&max_confusion_matrix_size=20&max_hit_ratio_k=10&class_sampling_factors=&max_after_balance_size=5&seed=0'
 ```
 
+In Java / Retrofit:
+
+```java
+GBMParametersV3 gbm_parms = new GBMParametersV3();
+
+FrameKeyV3 training_frame = new FrameKeyV3();
+training_frame.name = "arrhythmia.hex";
+
+gbm_parms.training_frame = training_frame;
+
+ColSpecifierV3 response_column = new ColSpecifierV3();
+response_column.column_name = "C1";
+gbm_parms.response_column = response_column;
+
+GBMV3 gbmBody = (GBMV3)ModelBuilders.Helper.train_gbm(modelBuildersService, gbm_parms).execute().body();
+
+```
+
 ### GBM_Example.flow, Step 5: Result
 
 ```javascript
@@ -723,6 +793,14 @@ In curl:
 curl -X GET 'http://127.0.0.1:54321/3/Models/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1'
 ```
 
+In Java /Retrofit:
+
+```java
+KeyV3 model_key = job.dest;
+ModelsV3 models = modelsService.fetch(model_key.name).execute().body();
+System.out.println("new GBM model: " + models.models[0]);
+```
+
 ### GBM_Example.flow, Step 7: Result
 
 ```javascript
@@ -773,6 +851,15 @@ In curl:
 
 ```bash
 curl -X POST 'http://127.0.0.1:54321/3/Predictions/models/gbm-51b9780b-70d0-40d0-9b5a-c723a3f358c1/frames/arrhythmia.hex' --data 'predictions_frame=prediction-9d6f23f3-45c2-4e1f-a48e-393b1b7de6db'
+```
+
+In Java / Retrofit:
+
+```java
+ModelMetricsListSchemaV3 predictions = predictionsService.predict(model_key.name, 
+      training_frame.name, 
+      "predictions",
+      false, false, -1, false, false, false, false, null).execute().body();
 ```
 
 ### GBM_Example.flow, Step 8: Result

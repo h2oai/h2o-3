@@ -580,18 +580,22 @@ runGLMMetricStop <- function(predictor_names, response_name, train_data, family,
     metric_list = c(metric_list, metric_value)
 
     if (length(metric_list) > min_list_len) {   # start processing when you have enough models
-      stop_metric_list = evaluate_early_stopping(metric_list, stop_round, tolerance, is_decreasing)
-      stop_now = stop_metric_list[[1]]
-      metric_list = stop_metric_list[[2]]
+      stop_now = evaluate_early_stopping(metric_list, stop_round, tolerance, is_decreasing)
     }
 
     if (stop_now) {
       if (length(metric_list) < num_models_built) {
+        
+        Log.info("number of models built by gridsearch: ")
+        print(num_models_built)
+        Log.info("number of models built proposed by stopping metrics: ")
+        print(length(metric_list))
+        
         return(FALSE)
       } else {
         return(TRUE)
       }
-    }
+    } 
   }
 
   if (length(metric_list) == possible_model_number) {
@@ -613,40 +617,27 @@ runGLMMetricStop <- function(predictor_names, response_name, train_data, family,
 # Returns:    bool indicating if we should stop early and sorted metric_list
 #----------------------------------------------------------------------
 evaluate_early_stopping <- function(metric_list, stop_round, tolerance, is_decreasing) {
-  metric_list = sort(metric_list, decreasing=is_decreasing)
 
   metric_len = length(metric_list)
+  metric_list = sort(metric_list, decreasing=!(is_decreasing))
+  
+  start_len = 2*stop_round
+  
+  bestInLastK = mean(metric_list[1:stop_round])
+  lastBeforeK = mean(metric_list[(stop_round+1):start_len])
 
-  start_index = metric_len - 2*stop_round + 1   # start index for reference, start at 1
-  stop_length = stop_round - 1
-  all_moving_values = c()
-
-  for (index in 0:stop_round) {
-    index_start = start_index + index
-    all_moving_values = c(all_moving_values, sum(metric_list[index_start:(index_start+stop_length)]))
-  }
-
-  if (((min(all_moving_values) > 0) && (max(all_moving_values) > 0)) ||
-      ((min(all_moving_values) < 0) && (max(all_moving_values) < 0))) {
-
-    reference_value = all_moving_values[1]
-    last_value = all_moving_values[length(all_moving_values)]
-
-    if (((reference_value > 0) && (last_value > 0)) || ((reference_value < 0) && (last_value < 0))) {
-      ratio = last_value / reference_value
-
-      if (!(is_decreasing)) {
-        return (list(!(ratio > 1+tolerance), metric_list))
-      } else {
-        return(list(!(ratio < 1-tolerance), metric_list))
-      }
-
-    } else {   # zero in reference metric, or sign of metrics differ, marked as not yet converge
-      return(list(FALSE, metric_list))
-    }
-  } else {
-    return(list(FALSE, metric_list))
-  }
+  if (!(sign(bestInLastK)) == sign(lastBeforeK))
+    return(FALSE)
+  
+  ratio = bestInLastK/lastBeforeK
+  
+  if (is.nan(ratio))
+    return(FALSE)
+  
+  if (is_decreasing)
+    return(!(ratio < (1-tolerance)))
+  else
+    return(!(ratio > (1+tolerance)))
 }
 
 #----------------------------------------------------------------------
@@ -662,12 +653,14 @@ evaluate_early_stopping <- function(metric_list, stop_round, tolerance, is_decre
 sort_model_metrics_by_time <- function(model_ids, metric_name) {
   all_models = lapply(model_ids, function(id) {model = h2o.getModel(id)})
   sorted_metrics = rep(0, length(model_ids))
+  m_index = 1
 
   for (model_id in model_ids) {
     # find id of the model, starting from 0
     temp_list = strsplit(model_id, '_')[[1]]
     index = as.integer(temp_list[length(temp_list)])
-    the_model = all_models[index+1][[1]]
+    the_model = all_models[m_index][[1]]
+    m_index = m_index + 1
     # get the metric value and put it in right place
     sorted_metrics[index+1] = the_model@model$cross_validation_metrics@metrics[[metric_name]]
   }

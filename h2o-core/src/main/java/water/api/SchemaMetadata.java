@@ -157,9 +157,23 @@ public final class SchemaMetadata extends Iced {
             this.schema_name = schema_class.getSimpleName();
           }
         } else if (is_enum && !f.getType().isArray()) {
-          this.schema_name = f.getType().getSimpleName();
+          // We have enums of the same name defined in a few classes (e.g., Loss and Initialization)
+          this.schema_name = f.getType().getCanonicalName();
+          this.schema_name = this.schema_name.substring(this.schema_name.indexOf(".") + 1);
+          char[] array = this.schema_name.toCharArray();
+          array[0] = Character.toUpperCase(array[0]);
+          this.schema_name = new String(array);
+          this.schema_name = this.schema_name.replace(".", "");
+          this.schema_name = this.schema_name.replace("$", "");
         } else if (is_enum && f.getType().isArray()) {
-          this.schema_name = f.getType().getComponentType().getSimpleName();
+          // We have enums of the same name defined in a few classes (e.g., Loss and Initialization)
+          this.schema_name = f.getType().getComponentType().getCanonicalName();
+          this.schema_name = this.schema_name.substring(this.schema_name.indexOf(".") + 1);
+          char[] array = this.schema_name.toCharArray();
+          array[0] = Character.toUpperCase(array[0]);
+          this.schema_name = new String(array);
+          this.schema_name = this.schema_name.replace(".", "");
+          this.schema_name = this.schema_name.replace("$", "");
         }
 
         this.is_inherited = (superclassFields.contains(f));

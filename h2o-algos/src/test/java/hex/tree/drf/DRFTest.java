@@ -1599,7 +1599,7 @@ public class DRFTest extends TestUtil {
       parms._score_tree_interval = parms._ntrees;
       parms._max_depth = 15;
       parms._seed = 1234;
-      parms._sample_rate_per_class = new float[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
+      parms._sample_rate_per_class = new double[]{0.1f,0.1f,0.2f,0.4f,1f,0.3f,0.2f};
 
       DRF job = new DRF(parms);
       drf = job.trainModel().get();
