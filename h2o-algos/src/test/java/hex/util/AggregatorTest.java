@@ -1,6 +1,8 @@
 package hex.util;
 
 import hex.CreateFrame;
+import hex.aggregator.Aggregator;
+import hex.aggregator.AggregatorModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,19 +28,29 @@ public class AggregatorTest extends TestUtil {
     cf.seed = 1234;
     Frame frame = cf.execImpl().get();
 
-    Aggregator agg = new Aggregator(frame, null, 1.0, false).execImpl();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._keep_member_indices = false;
+    parms._radius_scale = 1.0;
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    Frame output = agg._output._output_frame.get();
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
+    output.remove();
     agg.remove();
   }
 
   @Test public void testCovtype() {
     Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
 
-    Key<Frame> output = Key.make();
-    Aggregator agg = new Aggregator(frame, output, 5.0, false).execImpl();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._keep_member_indices = false;
+    parms._radius_scale = 5.0;
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
     frame.delete();
-    Log.info("Exemplars: " + output.get().toString());
+    Frame output = agg._output._output_frame.get();
+    Log.info("Exemplars: " + output.toString());
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     agg.remove();
@@ -47,9 +59,12 @@ public class AggregatorTest extends TestUtil {
   @Test public void testChunks() {
     Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
 
-    double radiusScale = 3;
-    Key<Frame> output = Key.make();
-    Aggregator agg = new Aggregator(frame, output, radiusScale, false).execImpl();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._keep_member_indices = false;
+    parms._radius_scale = 3.0;
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    Frame output = agg._output._output_frame.get();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     output.remove();
     agg.remove();
@@ -61,10 +76,15 @@ public class AggregatorTest extends TestUtil {
       rb.join();
       Frame rebalanced = DKV.get(key).get();
 
-      Aggregator agg2 = new Aggregator(rebalanced, output, radiusScale, false).execImpl();
+      parms = new AggregatorModel.AggregatorParameters();
+      parms._train = frame._key;
+      parms._keep_member_indices = false;
+      parms._radius_scale = 3.0;
+      AggregatorModel agg2 = new Aggregator(parms).trainModel().get();
       Log.info("Number of exemplars for " + i + " chunks: " + agg2._exemplars.length);
       rebalanced.delete();
       Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) < agg._exemplars.length*0.2);
+      output = agg2._output._output_frame.get();
       output.remove();
       agg2.remove();
     }
@@ -74,13 +94,18 @@ public class AggregatorTest extends TestUtil {
   @Test public void testCovtypeMemberIndices() {
     Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
 
-    Key<Frame> output = Key.make();
-    Aggregator agg = new Aggregator(frame, output, 5.0, true).execImpl();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._keep_member_indices = true;
+    parms._radius_scale = 5.0;
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
+
     //Log.info("Exemplars: " + output.get().toString());
     Key<Frame> memberKey = Key.make();
     Frame members = agg.getMembersForExemplar(memberKey, 8);
     assert(members.numRows() == agg._counts[8]);
     Log.info(members);
+    Frame output = agg._output._output_frame.get();
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     frame.delete();
@@ -89,12 +114,16 @@ public class AggregatorTest extends TestUtil {
   }
 
   @Test public void testMNIST() {
-    Frame frame = parse_test_file("bigdata/laptop/mnist/train.csv");
+    Frame frame = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 
-    Key<Frame> output = Key.make();
-    Aggregator agg = new Aggregator(frame, output, 100, false).execImpl();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._keep_member_indices = false;
+    parms._radius_scale = 100.0;
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
     frame.delete();
-    Log.info("Exemplars: " + output.get().toString());
+    Frame output = agg._output._output_frame.get();
+    Log.info("Exemplars: " + output);
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     agg.remove();

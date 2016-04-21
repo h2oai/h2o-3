@@ -18,6 +18,7 @@ public class Register extends water.api.AbstractRegister {
       new hex.svd         .SVD         (true),
       new hex.tree.drf    .DRF         (true),
       new hex.tree.gbm    .GBM         (true),
+      new hex.aggregator  .Aggregator  (true),
     };
     // "Word2Vec", "Example", "Grep"
     for( ModelBuilder algo : algos ) {

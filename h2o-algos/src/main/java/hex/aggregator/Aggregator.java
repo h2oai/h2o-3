@@ -1,118 +1,86 @@
-package hex.util;
+package hex.aggregator;
 
 import hex.DataInfo;
+
+import hex.ModelBuilder;
+import hex.ModelCategory;
+
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
-public class Aggregator extends Keyed<Aggregator> {
-  // INPUT
-  public Frame _input_frame;
-  public double _radius_scale=1.0;
-  public Key<Frame> _output_frame_key;
-  public boolean _keep_member_indices;
+public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
+  // Number of columns in training set (p)
+  private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
+  @Override protected AggregatorDriver trainModelImpl() { return new AggregatorDriver(); }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
 
-  // OUTPUT
-  public Frame _output_frame;
-  public double[][] _exemplars;
-  public long[] _counts;
-
-  // STATE
-  private long[][] _member_indices;
-  private Key _diKey;
-
-  public Aggregator() {}
-
-  public Frame getMembersForExemplar(Key<Frame> frameKey, int exemplarId) {
-    return createFrameFromRawValues(frameKey, ((DataInfo)(_diKey.get()))._adaptedFrame.names(), this.collectMembers(exemplarId), null);
-  }
+  // Called from an http request
+  public Aggregator(AggregatorModel.AggregatorParameters parms) { super(parms); init(false); }
+  public Aggregator(boolean startup_once) { super(new AggregatorModel.AggregatorParameters(),startup_once); }
 
   @Override
-  protected Futures remove_impl(Futures fs) {
-    _diKey.remove();
-    return super.remove_impl(fs);
+  public void init(boolean expensive) {
+    super.init(expensive);
   }
 
-  public Aggregator(Frame input, Key<Frame> output, double radiusScale, boolean keepMemberIndices) {
-    _input_frame = input;
-    _output_frame_key = output;
-    _radius_scale = radiusScale;
-    _keep_member_indices = keepMemberIndices;
-  }
+  class AggregatorDriver extends Driver {
 
-  public static Frame createFrameFromRawValues(Key<Frame> outputFrameKey, String[] names, double[][] ex, long[] counts) {
-    int nrows = ex.length;
-    Vec[] vecs = new Vec[ex[0].length+(counts==null?0:1)];
-    int ncol = vecs.length;
-    for (int c=0; c<ncol; ++c) {
-      vecs[c] = Vec.makeZero(nrows);
-      Vec.Writer vw = vecs[c].open();
-      if (c==ncol-1 && counts!=null) {
-        for (int r = 0; r < nrows; ++r)
-          vw.set(r, counts[r]);
-      } else {
-        for (int r = 0; r < nrows; ++r)
-          vw.set(r, ex[r][c]);
+    // Main worker thread
+    @Override
+    public void compute2() {
+      AggregatorModel model = null;
+      DataInfo dinfo = null;
+
+      try {
+        Scope.enter();
+        init(true);   // Initialize parameters
+        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
+        if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
+
+        // The model to be built
+        model = new AggregatorModel(dest(), _parms, new AggregatorModel.AggregatorOutput(Aggregator.this));
+        model.delete_and_lock(_job);
+
+        //TODO -> replace all categoricals with k pca components in _train (create new FrameUtils)
+
+        _job.update(1, "Preprocessing data.");
+        DataInfo di = new DataInfo(_train, null, true, _parms._transform, false, false, false);
+        DKV.put(di);
+        model._diKey = di._key;
+        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(di._adaptedFrame.numRows()), 1.0 / di._adaptedFrame.numCols());
+        _job.update(1, "Starting aggregation.");
+        AggregateTask aggTask = new AggregateTask(di._key, radius, _parms._keep_member_indices).doAll(di._adaptedFrame);
+        model._exemplars = aggTask._exemplars;
+        model._counts = aggTask._counts;
+        model._member_indices = aggTask._memberIndices;
+
+        _job.update(1, "Creating output frame.");
+        model._output._output_frame = AggregatorModel.createFrameFromRawValues(
+                Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
+                di._adaptedFrame.names(), model._exemplars, model._counts)._key;
+        Key<Vec>[] keep = new Key[(model._output._output_frame.get()).vecs().length];
+        for (int i=0; i<keep.length; ++i)
+          keep[i] = model._output ._output_frame.get().vec(i)._key;
+        Scope.untrack(keep);
+
+        // At the end: validation scoring (no need to gather scoring history)
+        _job.update(1, "Done.");
+        model.update(_job);
+      } finally {
+        _parms.read_unlock_frames(_job);
+        if (model != null) model.unlock(_job);
+        if (dinfo != null) dinfo.remove();
+        Scope.exit();
       }
-      vw.close();
+      tryComplete();
     }
-    if (counts!=null) {
-      names = Arrays.copyOf(names, names.length + 1);
-      names[names.length - 1] = "counts";
-    }
-
-    Frame f = new Frame(outputFrameKey, names, vecs); //all numeric
-    DKV.put(f);
-    return f;
-  }
-
-  public double[][] collectMembers(int whichExemplar) {
-    long[] memberindices = _member_indices[whichExemplar];
-    Set<Key> chunksFetched = new TreeSet<>();
-    DataInfo di = DKV.getGet(_diKey);
-    DataInfo.Row row = di.newDenseRow();
-    int nrows = memberindices.length;
-    int ncols = row.numVals.length;
-    double[][] res = new double[nrows][ncols];
-    //TODO: multi-threading
-    int count=0;
-    for (long r : memberindices) {
-      row = di.extractDenseRow(di._adaptedFrame.vecs(), r, row);
-      res[count++] = Arrays.copyOf(row.numVals, row.numVals.length);
-
-      // for cache cleanup
-      int ckIdx = _input_frame.vecs()[0].elem2ChunkIdx(r);
-      chunksFetched.add(_input_frame.vecs()[0].chunkKey(ckIdx));
-    }
-    for (Key ck : chunksFetched) {
-      Value v = DKV.get(ck);
-      if (!ck.home()) {
-        v.freeMem();
-      }
-    }
-    return res;
-  }
-
-  public Aggregator execImpl() {
-    if (_input_frame == null)     throw new H2OIllegalArgumentException("Dataset not found");
-
-    //_dataset -> replace all categoricals with k pca components
-
-    DataInfo di = new DataInfo(_input_frame, null, true, DataInfo.TransformType.NORMALIZE, false, false, false);
-    DKV.put(di);
-    _diKey = di._key;
-    final double radius = _radius_scale * .1/Math.pow(Math.log(_input_frame.numRows()), 1.0 / _input_frame.numCols());
-    AggregateTask aggTask = new AggregateTask(di._key, radius, _keep_member_indices).doAll(di._adaptedFrame);
-    _exemplars = aggTask._exemplars;
-    _counts = aggTask._counts;
-    _member_indices = aggTask._memberIndices;
-    if (_output_frame_key!=null)
-      _output_frame = createFrameFromRawValues(_output_frame_key, di._adaptedFrame.names(), _exemplars, _counts);
-    return this;
   }
 
   private static class AggregateTask extends MRTask<AggregateTask> {
@@ -145,11 +113,6 @@ public class Aggregator extends Keyed<Aggregator> {
       for (int r=0; r<chks[0]._len; ++r) {
         row = _dataInfo.extractDenseRow(chks, r, row);
         double[] data = Arrays.copyOf(row.numVals, row.numVals.length);
-//        // fill a data row
-//        double[] data = new double[chks.length];
-//        for (int c = 0; c< nCols; ++c) {
-//          data[c] = chks[c].atd(r);
-//        }
         if (r==0) {
           exemplars.add(data);
           counts.add(1L);

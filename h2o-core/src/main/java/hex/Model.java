@@ -45,6 +45,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreLeafNodeAssignment(Frame frame, Key destination_key);
   }
 
+  public interface ExemplarMembers {
+    Frame scoreExemplarMembers(Key destination_key, int exemplarIdx);
+  }
+
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
