@@ -102,7 +102,7 @@ public class AggregatorTest extends TestUtil {
 
     //Log.info("Exemplars: " + output.get().toString());
     Key<Frame> memberKey = Key.make();
-    Frame members = agg.getMembersForExemplar(memberKey, 8);
+    Frame members = agg.scoreExemplarMembers(memberKey, 8);
     assert(members.numRows() == agg._counts[8]);
     Log.info(members);
     Frame output = agg._output._output_frame.get();

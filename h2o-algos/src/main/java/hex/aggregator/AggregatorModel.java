@@ -6,8 +6,12 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.pca.PCAModel;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.rapids.Exec;
+import water.rapids.Session;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -39,9 +43,10 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public Key<Frame> _output_frame;
   }
 
-  public double[][] _exemplars;
+
+  public Aggregator.Exemplar[] _exemplars;
   public long[] _counts;
-  public long[][] _member_indices;
+  public Vec _exemplar_assignment;
   public Key _diKey;
 
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
@@ -54,11 +59,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   @Override
   protected Futures remove_impl(Futures fs) {
     _diKey.remove();
+    _exemplar_assignment.remove();
     return super.remove_impl(fs);
-  }
-
-  public Frame getMembersForExemplar(Key<Frame> frameKey, int exemplarId) {
-    return createFrameFromRawValues(frameKey, ((DataInfo)(_diKey.get()))._adaptedFrame.names(), this.collectMembers(exemplarId), null);
   }
 
   @Override
@@ -71,9 +73,9 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     return preds;
   }
 
-  public static Frame createFrameFromRawValues(Key<Frame> outputFrameKey, String[] names, double[][] ex, long[] counts) {
+  public static Frame createFrameFromRawValues(Key<Frame> outputFrameKey, String[] names, Aggregator.Exemplar[] ex, long[] counts) {
     int nrows = ex.length;
-    Vec[] vecs = new Vec[ex[0].length+(counts==null?0:1)];
+    Vec[] vecs = new Vec[ex[0].data.length+(counts==null?0:1)];
     int ncol = vecs.length;
     for (int c=0; c<ncol; ++c) {
       vecs[c] = Vec.makeZero(nrows);
@@ -83,7 +85,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
           vw.set(r, counts[r]);
       } else {
         for (int r = 0; r < nrows; ++r)
-          vw.set(r, ex[r][c]);
+          vw.set(r, ex[r].data[c]);
       }
       vw.close();
     }
@@ -97,35 +99,44 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     return f;
   }
 
-  public double[][] collectMembers(int whichExemplar) {
-    long[] memberindices = _member_indices[whichExemplar];
-    Set<Key> chunksFetched = new TreeSet<>();
-    DataInfo di = DKV.getGet(_diKey);
-    DataInfo.Row row = di.newDenseRow();
-    int nrows = memberindices.length;
-    int ncols = row.numVals.length;
-    double[][] res = new double[nrows][ncols];
-    //TODO: multi-threading
-    int count=0;
-    for (long r : memberindices) {
-      row = di.extractDenseRow(di._adaptedFrame.vecs(), r, row);
-      res[count++] = Arrays.copyOf(row.numVals, row.numVals.length);
-
-      // for cache cleanup
-      Vec v = di._adaptedFrame.vecs()[0];
-      chunksFetched.add(v.chunkKey(v.elem2ChunkIdx(r)));
+  // Input: last column is and integer
+  static private class RowSelect extends MRTask<RowSelect> {
+    final int _which;
+    final Key _diKey;
+    DataInfo di; //shared per node
+    public RowSelect(int whichExemplar, Key diKey) {
+      _which = whichExemplar;
+      _diKey = diKey;
     }
-    for (Key ck : chunksFetched) {
-      Value v = DKV.get(ck);
-      if (!ck.home()) {
-        v.freeMem();
+
+    @Override
+    protected void setupLocal() {
+      DataInfo di = DKV.getGet(_diKey);
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] nc) {
+      assert(cs.length==nc.length+1); //1 extra col in input for exemplar assignment
+      DataInfo.Row row = di.newDenseRow();
+      Chunk assignment = cs[cs.length-1];
+      Chunk[] chks = Arrays.copyOf(cs, cs.length-1);
+      for (int i=0;i<cs[0]._len;++i) {
+        if (assignment.at8(i)==_which) {
+          row = di.extractDenseRow(chks, i, row);
+          assert(row.numVals.length == nc.length);
+          for (int c=0; c<nc.length; ++c) {
+            nc[c].addNum(row.numVals[c]);
+          }
+        }
       }
     }
-    return res;
   }
 
   @Override
   public Frame scoreExemplarMembers(Key destination_key, int exemplarIdx) {
-    return getMembersForExemplar(destination_key, exemplarIdx);
+    DataInfo di = DKV.getGet(_diKey);
+    Vec[] vecs = Arrays.copyOf(di._adaptedFrame.vecs(), di._adaptedFrame.numCols()+1);
+    vecs[vecs.length-1] = _exemplar_assignment;
+    return new RowSelect(exemplarIdx, _diKey).doAll(_output.nfeatures(), Vec.T_NUM, new Frame(vecs)).outputFrame(destination_key, di._adaptedFrame.names(), null);
   }
 }

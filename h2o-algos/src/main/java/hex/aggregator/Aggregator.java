@@ -16,8 +16,14 @@ import java.util.Iterator;
 import java.util.List;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
+
+  public static class Exemplar extends Iced<Exemplar> {
+    Exemplar(double[] d, long id) { data=d; gid=id; }
+    final double[] data;
+    final long gid;
+  }
+
   // Number of columns in training set (p)
-  private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
   @Override protected AggregatorDriver trainModelImpl() { return new AggregatorDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
 
@@ -55,12 +61,16 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         DKV.put(di);
         model._diKey = di._key;
         final double radius = _parms._radius_scale * .1/Math.pow(Math.log(di._adaptedFrame.numRows()), 1.0 / di._adaptedFrame.numCols());
+
+        // Add workspace vector for exemplar assignment
+        Vec[] vecs = Arrays.copyOf(di._adaptedFrame.vecs(), di._adaptedFrame.vecs().length+1);
+        vecs[vecs.length-1] = di._adaptedFrame.anyVec().makeZero();
+
         _job.update(1, "Starting aggregation.");
-        AggregateTask aggTask = new AggregateTask(di._key, radius, _parms._keep_member_indices).doAll(di._adaptedFrame);
+        AggregateTask aggTask = new AggregateTask(di._key, radius).doAll(vecs);
         model._exemplars = aggTask._exemplars;
         model._counts = aggTask._counts;
-        model._member_indices = aggTask._memberIndices;
-
+        model._exemplar_assignment = vecs[vecs.length-1];
         _job.update(1, "Creating output frame.");
         model._output._output_frame = AggregatorModel.createFrameFromRawValues(
                 Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
@@ -87,53 +97,54 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     //INPUT
     final double _delta;
     final DataInfo _dataInfo;
-    final boolean _keepMemberIndices;
 
     // OUTPUT
-    double[][] _exemplars;
+    Exemplar[] _exemplars;
     long[] _counts;
-    long[][] _memberIndices;
 
-    public AggregateTask(Key<DataInfo> dataInfoKey, double radius, boolean keepMemberIndices) {
+    public AggregateTask(Key<DataInfo> dataInfoKey, double radius) {
       _delta = radius*radius;
       _dataInfo = DKV.getGet(dataInfoKey);
-      _keepMemberIndices = keepMemberIndices;
     }
 
     @Override
     public void map(Chunk[] chks) {
-      List<double[]> exemplars = new ArrayList<>();
+      List<Exemplar> exemplars = new ArrayList<>();
       List<Long> counts = new ArrayList<>();
-      List<List<Long>> memberIndices = new ArrayList<>();
 
-      final int nCols = chks.length;
+      //TODO: store global row index for exemplars - to put into exemplar assignment col
+      //TODO: use delta in euclidean distance shortcut
+      Chunk[] dataChks = Arrays.copyOf(chks, chks.length-1);
+      Chunk assignmentChk = chks[chks.length-1];
+
+      final int nCols = dataChks.length;
 
       // loop over rows
-      DataInfo.Row row = _dataInfo.newDenseRow();
+      DataInfo.Row row = _dataInfo.newDenseRow(); //shared _dataInfo - faster, no writes
       for (int r=0; r<chks[0]._len; ++r) {
-        row = _dataInfo.extractDenseRow(chks, r, row);
+        long rowIndex = chks[0].start()+r;
+        row = _dataInfo.extractDenseRow(dataChks, r, row);
         double[] data = Arrays.copyOf(row.numVals, row.numVals.length);
         if (r==0) {
-          exemplars.add(data);
+          Exemplar ex = new Exemplar(data, rowIndex);
+          exemplars.add(ex);
           counts.add(1L);
-          if (_keepMemberIndices) {
-            memberIndices.add(new ArrayList<Long>());
-            memberIndices.get(0).add(0L);
-          }
+          assignmentChk.set(r, ex.gid); //assigned to self (0 -> 0)
         }
         else {
           /* find closest exemplar to this case */
-          Long rowIndex = chks[0].start()+r;
           double distanceToNearestExemplar = Double.POSITIVE_INFINITY;
-          Iterator<double[]> it = exemplars.iterator();
+          Iterator<Exemplar> it = exemplars.iterator();
           int closestExemplarIndex = 0;
           int index = 0;
+          long gid=-1;
           while (it.hasNext()) {
-            double[] e = it.next();
-            double d = squaredEuclideanDistance(e, data, nCols);
+            Exemplar e = it.next();
+            double d = squaredEuclideanDistance(e.data, data, nCols);
             if (d < distanceToNearestExemplar) {
               distanceToNearestExemplar = d;
               closestExemplarIndex = index;
+              gid = e.gid;
             }
             /* do not need to look further even if some other exemplar is closer */
             if (distanceToNearestExemplar < _delta)
@@ -144,51 +155,28 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           if (distanceToNearestExemplar < _delta) {
             Long count = counts.get(closestExemplarIndex);
             counts.set(closestExemplarIndex, count + 1);
-            if (_keepMemberIndices) {
-              memberIndices.get(closestExemplarIndex).add(rowIndex);
-            }
+            assignmentChk.set(r, gid);
           } else {
             /* otherwise, assign a new exemplar */
-            exemplars.add(data);
+            Exemplar ex = new Exemplar(data, rowIndex);
+            exemplars.add(ex);
             counts.add(1L);
-            if (_keepMemberIndices) {
-              ArrayList<Long> member = new ArrayList<>();
-              member.add(rowIndex);
-              memberIndices.add(member);
-            }
+            assignmentChk.set(r, r); //assign to self
           }
         }
-        // populate output primitive arrays
-        Object[] exemplarArray = exemplars.toArray();
-        _exemplars = new double[exemplars.size()][];
-        for (int i = 0; i < exemplars.size(); i++) {
-          _exemplars[i] = (double[]) exemplarArray[i];
-        }
-        Object[] countsArray = counts.toArray();
-        _counts = new long[counts.size()];
-        for (int i = 0; i < counts.size(); i++) {
-          _counts[i] = (Long) countsArray[i];
-        }
-        if (_keepMemberIndices) {
-          _memberIndices = new long[_exemplars.length][];
-          for (int i = 0; i < _exemplars.length; i++) {
-            _memberIndices[i] = new long[memberIndices.get(i).size()];
-            for (int j = 0; j < _memberIndices[i].length; ++j) {
-              _memberIndices[i][j] = memberIndices.get(i).get(j);
-            }
-          }
-        }
+      }
+      // populate output primitive arrays
+      _exemplars = exemplars.toArray(new Exemplar[0]);
+
+      Object[] countsArray = counts.toArray();
+      _counts = new long[counts.size()];
+      for (int i = 0; i < counts.size(); i++) {
+        _counts[i] = (Long) countsArray[i];
       }
       assert(_exemplars.length <= chks[0].len());
       assert(_counts.length == _exemplars.length);
-      if (_keepMemberIndices) {
-        assert (_memberIndices.length == _exemplars.length);
-      }
       long sum=0;
       for (int i=0; i<_counts.length;++i) {
-        if (_keepMemberIndices) {
-          assert (_counts[i] == _memberIndices[i].length);
-        }
         sum += _counts[i];
       }
       assert(sum <= chks[0].len());
@@ -197,11 +185,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     @Override
     public void reduce(AggregateTask mrt) {
       if (mrt == null  || mrt._exemplars == null) return;
-
       // reduce mrt into this
-      double[][] exemplars = mrt._exemplars;
+      Exemplar[] exemplars = mrt._exemplars;
       long[] counts = mrt._counts;
-      long[][] memberIndices = mrt._memberIndices;
       long localCounts = 0;
       for (long c : _counts) localCounts += c;
       long remoteCounts = 0;
@@ -209,12 +195,12 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
       // loop over other task's exemplars
       for (int r=0; r<exemplars.length; ++r) {
-        double[] data = exemplars[r];
+        double[] data = exemplars[r].data;
         double distanceToNearestExemplar = Double.POSITIVE_INFINITY;
         int closestExemplarIndex = 0;
         // loop over my exemplars (which might grow below)
         for (int it=0; it<_exemplars.length; ++it) {
-          double[] e = _exemplars[it];
+          double[] e = _exemplars[it].data;
           double d = squaredEuclideanDistance(e, data, data.length);
           if (d < distanceToNearestExemplar) {
             distanceToNearestExemplar = d;
@@ -227,17 +213,10 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         if (distanceToNearestExemplar < _delta) {
           // add remote exemplar counts/indices to one of my exemplars that are close enough
           _counts[closestExemplarIndex]+=counts[r];
-          if (_keepMemberIndices) {
-            long[] newIndices = new long[_memberIndices[closestExemplarIndex].length + memberIndices[r].length];
-            System.arraycopy(_memberIndices[closestExemplarIndex], 0, newIndices, 0, _memberIndices[closestExemplarIndex].length);
-            System.arraycopy(memberIndices[r], 0, newIndices, _memberIndices[closestExemplarIndex].length, memberIndices[r].length);
-            _memberIndices[closestExemplarIndex] = newIndices;
-          }
+          _fr.vecs()[_fr.vecs().length-1].set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
         } else {
-          // append remote AggregateTasks' exemplars to my exemplars
-          double[][] newExemplars = new double[_exemplars.length+1][_exemplars[0].length];
-          for (int i=0;i<_exemplars.length;++i)
-            newExemplars[i] = _exemplars[i];
+          // append this remote exemplar to my local exemplars, as a new exemplar
+          Exemplar[] newExemplars = Arrays.copyOf(_exemplars, _exemplars.length+1);
           newExemplars[_exemplars.length] = exemplars[r];
           _exemplars = newExemplars;
           exemplars[r] = null;
@@ -246,43 +225,20 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           System.arraycopy(_counts, 0, newCounts, 0, _counts.length);
           newCounts[newCounts.length-1] = counts[r];
           _counts = newCounts;
-
-          if (_keepMemberIndices) {
-            long[][] newMemberIndices = new long[_memberIndices.length + 1][];
-            for (int i = 0; i < _memberIndices.length; ++i)
-              newMemberIndices[i] = _memberIndices[i];
-            newMemberIndices[_memberIndices.length] = memberIndices[r];
-            _memberIndices = newMemberIndices;
-            memberIndices[r] = null;
-          }
         }
       }
       mrt._exemplars = null;
       mrt._counts = null;
-      mrt._memberIndices = null;
 
       assert(_exemplars.length <= localCounts + remoteCounts);
       assert(_counts.length == _exemplars.length);
-      if (_keepMemberIndices) {
-        assert (_memberIndices.length == _exemplars.length);
-      }
       long sum=0;
       for (int i=0; i<_counts.length;++i) {
-        if (_keepMemberIndices) {
-          assert (_counts[i] == _memberIndices[i].length);
-        }
         sum += _counts[i];
       }
       assert(sum == localCounts + remoteCounts);
-    }
-
-    @Override
-    protected void postGlobal() {
-      if (_keepMemberIndices) {
-        for (int i=0; i<_memberIndices.length;++i) {
-          Arrays.sort(_memberIndices[i]);
-        }
-      }
+      assert(_exemplars != null);
+      assert(_counts != null);
     }
 
     private static double squaredEuclideanDistance(double[] e1, double[] e2, int nCols) {
