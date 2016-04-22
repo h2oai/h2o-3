@@ -377,3 +377,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     if 'coefficients_std' in x:
       res['coefficients_std'] = map(lambda x:dict(zip(ns,x)),x['coefficients_std'])
     return res
+
+  @staticmethod
+  def makeGLMModel(model, coefs, threshold=.5):
+    model_json = H2OConnection.post_json("MakeGLMModel",model=model._model_json['model_id']['name'], names=coefs.keys(), beta = coefs.values(), threshold = threshold)
+    m = H2OGeneralizedLinearEstimator()
+    m._resolve_model(model_json['model_id']['name'], model_json)
+    return m
+
