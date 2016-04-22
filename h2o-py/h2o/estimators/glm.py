@@ -368,6 +368,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   def missing_values_handling(self, value):
     self._parms["missing_values_handling"] = value
 
+"""
+Extract full regularization path explored during lambda search from glm model.
+
+Parameters:
+
+model - source lambda search model
+
+"""
   @staticmethod
   def getGLMRegularizationPath(model):
     x = H2OConnection.get_json("GetGLMRegPath",model=model._model_json['model_id']['name'])
@@ -378,6 +386,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       res['coefficients_std'] = map(lambda x:dict(zip(ns,x)),x['coefficients_std'])
     return res
 
+"""
+Create a custom GLM model using the given coefficients.
+Needs to be passed source model trained on the dataset to extract the dataset information from.
+
+Parameters:
+  model - source model, used for extracting dataset information
+  coefs - dictionary containing model coefficients
+  threshold - (optional, only for binomial) decision threshold used for classification
+
+"""
   @staticmethod
   def makeGLMModel(model, coefs, threshold=.5):
     model_json = H2OConnection.post_json("MakeGLMModel",model=model._model_json['model_id']['name'], names=coefs.keys(), beta = coefs.values(), threshold = threshold)
