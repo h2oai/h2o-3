@@ -12,6 +12,7 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.util.Utf8;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -225,12 +226,17 @@ public class AvroParser extends Parser {
             dout.addNumCol(cIdx, ((Long) value), 0);
             break;
           case FLOAT:
+            dout.addNumCol(cIdx, (Float) value);
+            break;
           case DOUBLE:
             dout.addNumCol(cIdx, (Double) value);
             break;
           case ENUM:
             throw H2O.unimpl();
             //break;
+          case BYTES:
+            dout.addStrCol(cIdx, bs.set(((ByteBuffer) value).array()));
+            break;
           case STRING:
             dout.addStrCol(cIdx, bs.set(((Utf8) value).getBytes()));
             break;
@@ -243,7 +249,7 @@ public class AvroParser extends Parser {
   }
 
   public static class AvroParseSetup extends ParseSetup {
-    final byte[] header; //FIXME no public
+    final byte[] header;
     final long blockSize;
 
     public AvroParseSetup(int ncols,
@@ -353,6 +359,9 @@ public class AvroParser extends Parser {
     return ps;
   }
 
+  /** Helper to represent Avro header
+   * and size of 1st block of data.
+   */
   static class AvroInfo {
 
     public AvroInfo(byte[] header, long firstBlockCount, long firstBlockSize) {

@@ -126,6 +126,7 @@ public final class DefaultParserProviders {
       for (ParserProvider pp : pps) {
         // Do not do recursive call
         if (pp == this || pp.info().equals(GUESS_INFO)) continue;
+        // Else try to guess with given provider
         try {
           ParseSetup ps = pp.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
           if( ps != null) {

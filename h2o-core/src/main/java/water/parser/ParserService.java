@@ -14,6 +14,11 @@ import java.util.ServiceLoader;
 public final class ParserService {
   public static ParserService INSTANCE = new ParserService();
 
+  /** Service loader.
+   *
+   * Based on JavaDoc of SPI: "Instances of this class are not safe for use by multiple concurrent threads." - all usages of the loader
+   * are protected by synchronized block.
+   */
   private final ServiceLoader<ParserProvider> loader;
 
   public ParserService() {
@@ -21,7 +26,7 @@ public final class ParserService {
   }
 
   /** Return list of all parser providers sorted based on priority. */
-  public Collection<ParserProvider> getAllProviders() {
+  public List<ParserProvider> getAllProviders() {
     return getAllProviders(true);
   }
 
@@ -31,11 +36,10 @@ public final class ParserService {
    * @param sort
    * @return
    */
-  public List<ParserProvider> getAllProviders(boolean sort) {
+  synchronized public List<ParserProvider> getAllProviders(boolean sort) {
     List<ParserProvider> providers = new ArrayList<>();
-    Iterator<ParserProvider> it = loader.iterator();
-    while (it.hasNext()) {
-      providers.add(it.next());
+    for(ParserProvider pp : loader) {
+      providers.add(pp);
     }
     if (sort) {
       Collections.sort(providers, PARSER_PROVIDER_COMPARATOR);
@@ -43,7 +47,7 @@ public final class ParserService {
     return providers;
   }
 
-  public String[] getAllProviderNames(boolean sort) {
+  synchronized public String[] getAllProviderNames(boolean sort) {
     List<ParserProvider> providers = getAllProviders(sort);
     String[] names = new String[providers.size()];
     int i = 0;
@@ -57,10 +61,8 @@ public final class ParserService {
     return getByName(info.name());
   }
 
-  public ParserProvider getByName(String name) {
-    Iterator<ParserProvider> it = loader.iterator();
-    while (it.hasNext()) {
-      ParserProvider pp = it.next();
+  synchronized public ParserProvider getByName(String name) {
+    for (ParserProvider pp : loader) {
       if (pp.info().name().equals(name)) {
         return pp;
       }

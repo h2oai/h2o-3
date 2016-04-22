@@ -29,6 +29,7 @@ public final class AvroUtil {
       case ENUM:
       case STRING:
       case NULL:
+      case BYTES:
         return true;
       case UNION: // Flattenize the union
         List<Schema> unionSchemas = s.getTypes();
@@ -67,6 +68,8 @@ public final class AvroUtil {
         return Vec.T_STR;
       case NULL:
         return Vec.T_BAD;
+      case BYTES:
+        return Vec.T_STR;
       case UNION: // Flattenize the union
         List<Schema> unionSchemas = s.getTypes();
         if (unionSchemas.size() == 1) {
@@ -100,6 +103,7 @@ public final class AvroUtil {
       case ENUM:
       case STRING:
       case NULL:
+      case BYTES:
         return typ;
       case UNION:
         List<Schema> unionSchemas = s.getTypes();

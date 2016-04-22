@@ -5,7 +5,7 @@ import water.Job;
 import water.Key;
 
 /**
- * FIXME: remove freezable and self annotation
+ * Generic Parser provider.
  */
 public interface ParserProvider {
   /** Technical information for this parser */
