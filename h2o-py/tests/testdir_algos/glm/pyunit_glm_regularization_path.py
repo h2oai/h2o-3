@@ -18,7 +18,7 @@ def reg_path_glm():
     assert len(r['lambdas']) == 100
     for l in range(0,len(r['lambdas'])):
         m = glm(family='binomial',lambda_search=False,Lambda=r['lambdas'][l],solver='COORDINATE_DESCENT')
-        m.train(training_frame=d,x=range(2,9),y=1)
+        m.train(training_frame=d,x=[2,3,4,5,6,7,8,9],y=1)
         cs = r['coefficients'][l]
         cs_norm = r['coefficients_std'][l]
         print(cs)
