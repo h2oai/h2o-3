@@ -8,7 +8,7 @@ def reg_path_glm():
     # read in the dataset and construct training set (and validation set)
     d = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     m = glm(family='binomial',lambda_search=True,solver='COORDINATE_DESCENT')
-    m.train(training_frame=d,x=range(2,9),y=1)
+    m.train(training_frame=d,x=[2,3,4,5,6,7,8],y=1)
     r = glm.getGLMRegularizationPath(m)
     m2 = glm.makeGLMModel(model=m,coefs=r['coefficients'][10])
     dev1 = r['explained_deviance_train'][10]
