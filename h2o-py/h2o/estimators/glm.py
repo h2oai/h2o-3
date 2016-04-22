@@ -381,9 +381,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     x = H2OConnection.get_json("GetGLMRegPath",model=model._model_json['model_id']['name'])
     ns = x.pop('coefficient_names')
     res = {'lambdas':x['lambdas'],'explained_deviance_train':x['explained_deviance_train'],'explained_deviance_valid':x['explained_deviance_valid']}
-    res['coefficients'] = map(lambda x:dict(zip(ns,x)),x['coefficients'])
+    res['coefficients'] = [dict(zip(ns,y)) for y in x['coefficients']]
     if 'coefficients_std' in x:
-      res['coefficients_std'] = map(lambda x:dict(zip(ns,x)),x['coefficients_std'])
+      res['coefficients_std'] = [dict(zip(ns,y)) for y in x['coefficients_std']]
     return res
 
   """
