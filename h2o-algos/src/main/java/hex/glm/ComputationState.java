@@ -316,6 +316,7 @@ public final class ComputationState {
           newCols[n + i] = failedCols[i];
         Arrays.sort(newCols);
         _beta = ArrayUtils.select(beta, newCols);
+        if(_u != null) _u = ArrayUtils.select(_u,newCols);
         _ginfo = new GLMGradientInfo(ginfo._likelihood, ginfo._objVal, ArrayUtils.select(ginfo._gradient, newCols));
         _activeData = _dinfo.filterExpandedColumns(newCols);
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
