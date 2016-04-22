@@ -17,7 +17,7 @@ import water.util.FrameUtils;
 import water.util.Log;
 
 public class AggregatorTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testAggregator() {
     CreateFrame cf = new CreateFrame();

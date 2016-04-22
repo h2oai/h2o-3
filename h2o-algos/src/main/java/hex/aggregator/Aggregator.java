@@ -102,9 +102,13 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         }
 
         _job.update(1, "Creating output frame.");
-        model._output._output_frame = AggregatorModel.createFrameFromRawValues(
-                Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
-                di._adaptedFrame.names(), model._exemplars, model._counts)._key;
+//        model._output._output_frame = AggregatorModel.createFrameFromRawValues(
+//                Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
+//                Arrays.copyOfRange(di.coefNames(),di.numStart(),di.numStart()+di.numNums()), model._exemplars, model._counts)._key;
+
+        model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
+        model.createFrameOfExemplars(model._output._output_frame);
+
         Key<Vec>[] keep = new Key[(model._output._output_frame.get()).vecs().length];
         for (int i=0; i<keep.length; ++i)
           keep[i] = model._output ._output_frame.get().vec(i)._key;
@@ -126,7 +130,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
   private static class AggregateTask extends MRTask<AggregateTask> {
     //INPUT
     final double _delta;
-    final DataInfo _dataInfo;
+    final Key _dataInfoKey;
 
     // OUTPUT
     Exemplar[] _exemplars;
@@ -187,7 +191,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     public AggregateTask(Key<DataInfo> dataInfoKey, double radius) {
       _delta = radius*radius;
-      _dataInfo = DKV.getGet(dataInfoKey);
+      _dataInfoKey = dataInfoKey;
     }
 
     @Override
@@ -199,14 +203,15 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       Chunk[] dataChks = Arrays.copyOf(chks, chks.length-1);
       Chunk assignmentChk = chks[chks.length-1];
 
-      final int nCols = dataChks.length;
 
       // loop over rows
-      DataInfo.Row row = _dataInfo.newDenseRow(); //shared _dataInfo - faster, no writes
+      DataInfo di = ((DataInfo)_dataInfoKey.get());
+      DataInfo.Row row = di.newDenseRow(); //shared _dataInfo - faster, no writes
+      final int nCols = row.nNums;
       for (int r=0; r<chks[0]._len; ++r) {
         long rowIndex = chks[0].start()+r;
-        row = _dataInfo.extractDenseRow(dataChks, r, row);
-        double[] data = Arrays.copyOf(row.numVals, row.numVals.length);
+        row = di.extractDenseRow(dataChks, r, row);
+        double[] data = Arrays.copyOf(row.numVals, nCols);
         if (r==0) {
           Exemplar ex = new Exemplar(data, rowIndex);
           exemplars.add(ex);

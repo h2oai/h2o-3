@@ -1219,7 +1219,7 @@ public class Frame extends Lockable<Frame> {
   /**
    *  Last column is a bit vec indicating whether or not to take the row.
    */
-  private static class DeepSelect extends MRTask<DeepSelect> {
+  public static class DeepSelect extends MRTask<DeepSelect> {
 
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       Chunk pred = chks[chks.length - 1];

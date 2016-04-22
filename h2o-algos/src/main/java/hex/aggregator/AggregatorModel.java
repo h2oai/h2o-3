@@ -95,44 +95,61 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     return f;
   }
 
-  // Input: last column is and integer
-  static private class RowSelect extends MRTask<RowSelect> {
-    final long _exGID;
-    final Key _diKey;
-    DataInfo di; //shared per node
-    public RowSelect(long exemplarGID, Key diKey) {
-      _exGID = exemplarGID;
-      _diKey = diKey;
-    }
+  public Frame createFrameOfExemplars(Key destination_key) {
+    final long[] keep = new long[_exemplars.length];
+    for (int i=0;i<keep.length;++i)
+      keep[i]=_exemplars[i].gid;
 
-    @Override
-    protected void setupLocal() {
-      di = DKV.getGet(_diKey);
-    }
-
-    @Override
-    public void map(Chunk[] cs, NewChunk[] nc) {
-      assert(cs.length==nc.length+1); //1 extra col in input for exemplar assignment
-      DataInfo.Row row = di.newDenseRow();
-      Chunk assignment = cs[cs.length-1];
-      Chunk[] chks = Arrays.copyOf(cs, cs.length-1);
-      for (int i=0;i<cs[0]._len;++i) {
-        if (assignment.at8(i)==_exGID) {
-          row = di.extractDenseRow(chks, i, row);
-          assert(row.numVals.length == nc.length);
-          for (int c=0; c<nc.length; ++c) {
-            nc[c].addNum(row.numVals[c]);
-          }
+    // preserve the original row order
+    Vec booleanCol = new MRTask() {
+      @Override
+      public void map(Chunk c, Chunk c2) {
+        for (int i=0;i<keep.length;++i) {
+          if (keep[i] < c.start()) continue;
+          if (keep[i] >= c.start()+c._len) continue;
+          c2.set((int)(keep[i]-c.start()), 1);
         }
       }
-    }
+    }.doAll(new Frame(new Vec[]{(Vec)_exemplar_assignment_vec_key.get(), _parms.train().anyVec().makeZero()}))._fr.vec(1);
+
+    Frame orig = _parms.train();
+    Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
+    vecs[vecs.length-1] = booleanCol;
+
+    Frame ff = new Frame(orig.names(), orig.vecs());
+    ff.add("predicate", booleanCol);
+    Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    booleanCol.remove();
+    assert(res.numRows()==_exemplars.length);
+
+    Vec cnts = res.anyVec().makeZero();
+    Vec.Writer vw = cnts.open();
+    for (int i=0;i<_counts.length;++i)
+      vw.set(i, _counts[i]);
+    vw.close();
+    res.add("counts", cnts);
+    return res;
   }
 
   @Override
-  public Frame scoreExemplarMembers(Key destination_key, int exemplarIdx) {
-    DataInfo di = DKV.getGet(_diKey);
-    Vec[] vecs = Arrays.copyOf(di._adaptedFrame.vecs(), di._adaptedFrame.numCols()+1);
-    vecs[vecs.length-1] = (Vec)_exemplar_assignment_vec_key.get();
-    return new RowSelect(_exemplars[exemplarIdx].gid, _diKey).doAll(_output.nfeatures(), Vec.T_NUM, new Frame(vecs)).outputFrame(destination_key, di._adaptedFrame.names(), null);
+  public Frame scoreExemplarMembers(Key destination_key, final int exemplarIdx) {
+    Vec booleanCol = new MRTask() {
+      @Override
+      public void map(Chunk c, NewChunk nc) {
+        for (int i=0;i<c._len;++i)
+          nc.addNum(c.at8(i)==_exemplars[exemplarIdx].gid ? 1 : 0,0);
+      }
+    }.doAll(Vec.T_NUM, new Frame(new Vec[]{(Vec)_exemplar_assignment_vec_key.get()})).outputFrame().anyVec();
+
+    Frame orig = _parms.train();
+    Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
+    vecs[vecs.length-1] = booleanCol;
+
+    Frame ff = new Frame(orig.names(), orig.vecs());
+    ff.add("predicate", booleanCol);
+    Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    assert(res.numRows()==_counts[exemplarIdx]);
+    booleanCol.remove();
+    return res;
   }
 }
