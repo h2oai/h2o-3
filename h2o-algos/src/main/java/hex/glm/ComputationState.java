@@ -28,6 +28,8 @@ public final class ComputationState {
   private BetaConstraint _bc;
   final double _alpha;
   double[] _ymu;
+  double [] _u;
+  double [] _z;
   boolean _allIn;
   int _iter;
   private double _lambda;
@@ -135,9 +137,8 @@ public final class ComputationState {
 //        }
         cols[newlySelected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
         cols = Arrays.copyOf(cols, newlySelected);
-        double [] b = ArrayUtils.select(_beta, cols);
-        assert Arrays.equals(_beta,ArrayUtils.expandAndScatter(b,_dinfo.fullN()+1,cols));
-        _beta = b;
+        _beta = ArrayUtils.select(_beta, cols);
+        if(_u != null) _u = ArrayUtils.select(_u,cols);
         _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, newlySelected));
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
@@ -266,19 +267,34 @@ public final class ComputationState {
     if(_parms._family == Family.multinomial)
       return checkKKTsMultinomial();
     double [] beta = _beta;
-    if(_activeData._activeCols != null)
-      beta = ArrayUtils.expandAndScatter(beta,_dinfo.fullN() + 1,_activeData._activeCols);
+    double [] u = _u;
+    if(_activeData._activeCols != null) {
+      beta = ArrayUtils.expandAndScatter(beta, _dinfo.fullN() + 1, _activeData._activeCols);
+      if(_u != null)
+        u =  ArrayUtils.expandAndScatter(_u, _dinfo.fullN() + 1, _activeData._activeCols);
+    }
     int [] activeCols = _activeData.activeCols();
     _gslvr = new GLMGradientSolver(_job,_parms,_dinfo,(1-_alpha)*_lambda,_bc);
     GLMGradientInfo ginfo = _gslvr.getGradient(beta);
     double[] grad = ginfo._gradient.clone();
     double err = 1e-4;
+    if(u != null && u != _u){ // fill in u for missing variables
+      int k = 0;
+      for(int i = 0; i < u.length; ++i) {
+        if(_activeData._activeCols[k] == i){
+          ++k; continue;
+        }
+        assert u[i] == 0;
+        u[i] = -grad[i];
+      }
+    }
     ADMM.subgrad(_alpha * _lambda, beta, grad);
     for (int c : activeCols) // set the error tolerance to the highest error og included columns
       if (grad[c] > err) err = grad[c];
       else if (grad[c] < -err) err = -grad[c];
     _gradientErr = err;
     _beta = beta;
+    _u = u;
     _ginfo = ginfo;
     _activeBC = null;
     if(!_allIn) {

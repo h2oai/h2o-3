@@ -494,8 +494,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
+          if(_state._u == null) _state._u = MemoryManager.malloc8d(xy.length);
 //          if(_parms._solver == Solver.IRLSM)
-            (_lslvr = new ADMM.L1Solver(1e-4, 10000)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+            (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
 //          else if(_parms._solver == Solver.COORDINATE_DESCENT){
 
 //          } else throw new IllegalStateException("solver can only be IRLSM or COD at this point.");
@@ -653,7 +654,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           @Override
           public boolean progress(double[] betaDiff, GradientInfo ginfo) {return ++_state._iter < _parms._max_iterations;}
         });
-        new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol).solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+        if(_state._u == null) _state._u = MemoryManager.malloc8d(beta.length);
+        new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol, _state._u).solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _state.updateState(beta,gslvr.getGradient(beta));
       } else {
         Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
