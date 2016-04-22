@@ -19,6 +19,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
   public static class Exemplar extends Iced<Exemplar> {
     Exemplar(double[] d, long id) { data=d; gid=id; }
+    Exemplar deepClone() { return new AutoBuffer().put(this).flipForReading().get(); }
     final double[] data;
     final long gid;
   }
@@ -283,22 +284,29 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       long remoteCounts = 0;
       for (long c : counts) remoteCounts += c;
 
+      List<Exemplar> myExemplars = new ArrayList();
+      for (Exemplar e : _exemplars) myExemplars.add(e);
+
       // loop over other task's exemplars
       for (int r=0; r<exemplars.length; ++r) {
         double[] data = exemplars[r].data;
         double distanceToNearestExemplar = Double.POSITIVE_INFINITY;
         int closestExemplarIndex = 0;
         // loop over my exemplars (which might grow below)
-        for (int it=0; it<_exemplars.length; ++it) {
-          double[] e = _exemplars[it].data;
+        Iterator<Exemplar> it = myExemplars.iterator();
+        int itIdx=0;
+        while(it.hasNext()) {
+          Exemplar ex = it.next();
+          double[] e = ex.data;
           double d = squaredEuclideanDistance(e, data, data.length);
           if (d < distanceToNearestExemplar) {
             distanceToNearestExemplar = d;
-            closestExemplarIndex = it;
+            closestExemplarIndex = itIdx;
           }
            /* do not need to look further even if some other exemplar is closer */
           if (distanceToNearestExemplar < _delta)
             break;
+          itIdx++;
         }
         if (distanceToNearestExemplar < _delta) {
           // add remote exemplar counts/indices to one of my exemplars that are close enough
@@ -307,17 +315,14 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 //          Log.info("Reduce: Reassigning " + counts[r] + " rows from " + exemplars[r].gid + " to " + _exemplars[closestExemplarIndex].gid);
           _mapping.set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
         } else {
-          // append this remote exemplar to my local exemplars, as a new exemplar
-          Exemplar[] newExemplars = Arrays.copyOf(_exemplars, _exemplars.length+1);
-          newExemplars[_exemplars.length] = exemplars[r];
-          _exemplars = newExemplars;
-          exemplars[r] = null;
+          myExemplars.add(exemplars[r].deepClone());
 
           long[] newCounts = Arrays.copyOf(_counts, _counts.length+1);
           newCounts[_counts.length] = counts[r];
           _counts = newCounts;
         }
       }
+      _exemplars = myExemplars.toArray(new Exemplar[0]);
       mrt._exemplars = null;
       mrt._counts = null;
 
