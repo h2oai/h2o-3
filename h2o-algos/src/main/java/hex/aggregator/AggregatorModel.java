@@ -10,12 +10,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.rapids.Exec;
-import water.rapids.Session;
 
 import java.util.Arrays;
-import java.util.Set;
-import java.util.TreeSet;
 
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
 
@@ -46,7 +42,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   public Aggregator.Exemplar[] _exemplars;
   public long[] _counts;
-  public Vec _exemplar_assignment;
+  public Key _exemplar_assignment_vec_key;
   public Key _diKey;
 
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
@@ -59,7 +55,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   @Override
   protected Futures remove_impl(Futures fs) {
     _diKey.remove();
-    _exemplar_assignment.remove();
+    _exemplar_assignment_vec_key.remove();
     return super.remove_impl(fs);
   }
 
@@ -101,17 +97,17 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   // Input: last column is and integer
   static private class RowSelect extends MRTask<RowSelect> {
-    final int _which;
+    final long _exGID;
     final Key _diKey;
     DataInfo di; //shared per node
-    public RowSelect(int whichExemplar, Key diKey) {
-      _which = whichExemplar;
+    public RowSelect(long exemplarGID, Key diKey) {
+      _exGID = exemplarGID;
       _diKey = diKey;
     }
 
     @Override
     protected void setupLocal() {
-      DataInfo di = DKV.getGet(_diKey);
+      di = DKV.getGet(_diKey);
     }
 
     @Override
@@ -121,7 +117,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       Chunk assignment = cs[cs.length-1];
       Chunk[] chks = Arrays.copyOf(cs, cs.length-1);
       for (int i=0;i<cs[0]._len;++i) {
-        if (assignment.at8(i)==_which) {
+        if (assignment.at8(i)==_exGID) {
           row = di.extractDenseRow(chks, i, row);
           assert(row.numVals.length == nc.length);
           for (int c=0; c<nc.length; ++c) {
@@ -136,7 +132,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   public Frame scoreExemplarMembers(Key destination_key, int exemplarIdx) {
     DataInfo di = DKV.getGet(_diKey);
     Vec[] vecs = Arrays.copyOf(di._adaptedFrame.vecs(), di._adaptedFrame.numCols()+1);
-    vecs[vecs.length-1] = _exemplar_assignment;
-    return new RowSelect(exemplarIdx, _diKey).doAll(_output.nfeatures(), Vec.T_NUM, new Frame(vecs)).outputFrame(destination_key, di._adaptedFrame.names(), null);
+    vecs[vecs.length-1] = (Vec)_exemplar_assignment_vec_key.get();
+    return new RowSelect(_exemplars[exemplarIdx].gid, _diKey).doAll(_output.nfeatures(), Vec.T_NUM, new Frame(vecs)).outputFrame(destination_key, di._adaptedFrame.names(), null);
   }
 }

@@ -38,7 +38,7 @@ public class AggregatorV3 extends ModelBuilderSchema<Aggregator,AggregatorV3,Agg
     @API(help = "Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized", "GLRM" }, gridable = true, level= API.Level.expert)
     public PCAParameters.Method pca_method;
 
-    @API(help = "Rank of matrix approximation", required = true, direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
+    @API(help = "Rank of matrix approximation", direction = API.Direction.INOUT, gridable = true, level= API.Level.secondary)
     public int k;
 
     @API(help = "Maximum number of iterations for PCA", direction = API.Direction.INOUT, gridable = true, level= API.Level.expert)

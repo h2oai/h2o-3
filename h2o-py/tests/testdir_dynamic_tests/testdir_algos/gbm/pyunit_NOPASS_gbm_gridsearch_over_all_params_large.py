@@ -90,11 +90,11 @@ class Test_glm_grid_search:
 
     # following parameters are used to generate hyper-parameters
     max_int_val = 10            # maximum size of random integer values
-    min_int_val = -10           # minimum size of random integer values
+    min_int_val = 1           # minimum size of random integer values
     max_int_number = 5          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
-    min_real_val = -1           # minimum size of random float values
+    min_real_val = 0           # minimum size of random float values
     max_real_number = 5         # maximum number of real grid values to generate
 
     time_scale = 3              # maximum runtime scale
@@ -378,7 +378,7 @@ class Test_glm_grid_search:
         """
         test_gbm_grid_search_over_params: test for condition 1 and performs the following:
         a. grab all truely griddable parameters and randomly or manually set the parameter values.
-        b. Next, build H2O GLM models using grid search.  Count and make sure models
+        b. Next, build H2O GBM models using grid search.  Count and make sure models
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
@@ -390,7 +390,7 @@ class Test_glm_grid_search:
         """
 
         print("*******************************************************************************************")
-        print("test_gbm_grid_search_over_params for GLM " + self.family)
+        print("test_gbm_grid_search_over_params for GBM " + self.family)
         h2o.cluster_info()
 
         try:

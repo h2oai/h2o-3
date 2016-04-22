@@ -12,10 +12,12 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.Vec;
+import water.util.FrameUtils;
 import water.util.Log;
 
 public class AggregatorTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
 
   @Test public void testAggregator() {
     CreateFrame cf = new CreateFrame();
@@ -83,7 +85,7 @@ public class AggregatorTest extends TestUtil {
       AggregatorModel agg2 = new Aggregator(parms).trainModel().get();
       Log.info("Number of exemplars for " + i + " chunks: " + agg2._exemplars.length);
       rebalanced.delete();
-      Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) < agg._exemplars.length*0.2);
+      Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) == 0); //< agg._exemplars.length*0);
       output = agg2._output._output_frame.get();
       output.remove();
       agg2.remove();
@@ -100,17 +102,24 @@ public class AggregatorTest extends TestUtil {
     parms._radius_scale = 5.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
 
-    //Log.info("Exemplars: " + output.get().toString());
+//    Frame assignment = new Frame(new Vec[]{(Vec)agg._exemplar_assignment_vec_key.get()});
+//    Frame.export(assignment, "/tmp/assignment", "yada", true);
+//    Log.info("Exemplars: " + new Frame(new Vec[]{(Vec)agg._exemplar_assignment_vec_key.get()}).toString(0,20000));
+    Log.info("Number of exemplars: " + agg._exemplars.length);
+
     Key<Frame> memberKey = Key.make();
-    Frame members = agg.scoreExemplarMembers(memberKey, 8);
-    assert(members.numRows() == agg._counts[8]);
-    Log.info(members);
+    for (int i=0; i<agg._exemplars.length; ++i) {
+      Frame members = agg.scoreExemplarMembers(memberKey, i);
+      assert (members.numRows() == agg._counts[i]);
+//    Log.info(members);
+      members.delete();
+    }
+
     Frame output = agg._output._output_frame.get();
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     frame.delete();
     agg.remove();
-    members.delete();
   }
 
   @Test public void testMNIST() {
@@ -123,7 +132,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     frame.delete();
     Frame output = agg._output._output_frame.get();
-    Log.info("Exemplars: " + output);
+//    Log.info("Exemplars: " + output);
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     agg.remove();

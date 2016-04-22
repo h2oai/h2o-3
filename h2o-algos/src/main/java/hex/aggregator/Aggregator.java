@@ -9,11 +9,11 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.Log;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
 
@@ -64,13 +64,43 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
         // Add workspace vector for exemplar assignment
         Vec[] vecs = Arrays.copyOf(di._adaptedFrame.vecs(), di._adaptedFrame.vecs().length+1);
-        vecs[vecs.length-1] = di._adaptedFrame.anyVec().makeZero();
+        Vec assignment = vecs[vecs.length-1] = di._adaptedFrame.anyVec().makeZero();
 
         _job.update(1, "Starting aggregation.");
         AggregateTask aggTask = new AggregateTask(di._key, radius).doAll(vecs);
+        new RenumberTask(aggTask._mapping).doAll(assignment);
         model._exemplars = aggTask._exemplars;
         model._counts = aggTask._counts;
-        model._exemplar_assignment = vecs[vecs.length-1];
+        model._exemplar_assignment_vec_key = assignment._key;
+
+        if (false) {
+          // BEGIN DEBUGGING
+          long sum = 0;
+          for (long l : model._counts) sum += l;
+          assert (sum == di._adaptedFrame.numRows());
+          final long[] exemplarGIDs = new long[model._counts.length];
+          for (int i = 0; i < model._exemplars.length; ++i)
+            exemplarGIDs[i] = model._exemplars[i].gid;
+          long[] counts = new long[model._exemplars.length];
+          for (int i = 0; i < di._adaptedFrame.numRows(); ++i) {
+            long ass = assignment.at8(i);
+            for (int j = 0; j < exemplarGIDs.length; ++j) {
+              if (exemplarGIDs[j] == ass) {
+                counts[j]++;
+                break;
+              }
+            }
+          }
+          sum = 0;
+          for (long l : counts) sum += l;
+          assert (sum == di._adaptedFrame.numRows());
+
+          for (int i = 0; i < counts.length; ++i) {
+            assert (counts[i] == model._counts[i]);
+          }
+          // END DEBUGGING
+        }
+
         _job.update(1, "Creating output frame.");
         model._output._output_frame = AggregatorModel.createFrameFromRawValues(
                 Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
@@ -78,9 +108,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         Key<Vec>[] keep = new Key[(model._output._output_frame.get()).vecs().length];
         for (int i=0; i<keep.length; ++i)
           keep[i] = model._output ._output_frame.get().vec(i)._key;
-        Scope.untrack(keep);
+        Scope.untrack(keep); //keep aggregated output frame
+        Scope.untrack(new Key[]{model._exemplar_assignment_vec_key, model._diKey}); //keep this too
 
-        // At the end: validation scoring (no need to gather scoring history)
         _job.update(1, "Done.");
         model.update(_job);
       } finally {
@@ -102,6 +132,59 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     Exemplar[] _exemplars;
     long[] _counts;
 
+    static class MyPair extends Iced<MyPair> implements Comparable<MyPair> {
+      long first;
+      long second;
+      public MyPair(long f, long s) { first=f; second=s; }
+
+      @Override
+      public int compareTo(MyPair o) {
+        if (first < o.first) return -1;
+        if (first == o.first) return 0;
+        return 1;
+      }
+    }
+
+    // WORKSPACE
+    static class GIDMapping extends Iced<GIDMapping> {
+      MyPair[] pairSet;
+      int len;
+      int capacity;
+      GIDMapping() {
+        capacity=32;
+        len=0;
+        pairSet = new MyPair[capacity];
+      }
+
+      void set(long from, long to) {
+        for (int i=0;i<len;++i) {
+          MyPair p = pairSet[i];
+//          assert (p.first != from);
+          if (p.second == from) {
+            p.second = to;
+          }
+        }
+        MyPair p = new MyPair(from, to);
+        if (len==capacity) {
+          capacity*=2;
+          pairSet = Arrays.copyOf(pairSet, capacity);
+        }
+        pairSet[len++]=p;
+      }
+
+      long[][] unsortedList() {
+        long[][] li = new long[2][len];
+        MyPair[] pl = pairSet;
+        for (int i=0;i<len;++i) {
+          li[0][i] = pl[i].first;
+          li[1][i] = pl[i].second;
+        }
+        return li;
+      }
+    }
+
+    GIDMapping _mapping;
+
     public AggregateTask(Key<DataInfo> dataInfoKey, double radius) {
       _delta = radius*radius;
       _dataInfo = DKV.getGet(dataInfoKey);
@@ -109,11 +192,10 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     @Override
     public void map(Chunk[] chks) {
+      _mapping = new GIDMapping();
       List<Exemplar> exemplars = new ArrayList<>();
       List<Long> counts = new ArrayList<>();
 
-      //TODO: store global row index for exemplars - to put into exemplar assignment col
-      //TODO: use delta in euclidean distance shortcut
       Chunk[] dataChks = Arrays.copyOf(chks, chks.length-1);
       Chunk assignmentChk = chks[chks.length-1];
 
@@ -129,9 +211,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           Exemplar ex = new Exemplar(data, rowIndex);
           exemplars.add(ex);
           counts.add(1L);
-          assignmentChk.set(r, ex.gid); //assigned to self (0 -> 0)
-        }
-        else {
+          assignmentChk.set(r, ex.gid);
+        } else {
           /* find closest exemplar to this case */
           double distanceToNearestExemplar = Double.POSITIVE_INFINITY;
           Iterator<Exemplar> it = exemplars.iterator();
@@ -161,7 +242,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
             Exemplar ex = new Exemplar(data, rowIndex);
             exemplars.add(ex);
             counts.add(1L);
-            assignmentChk.set(r, r); //assign to self
+            assignmentChk.set(r, rowIndex); //assign to self
           }
         }
       }
@@ -180,11 +261,15 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         sum += _counts[i];
       }
       assert(sum <= chks[0].len());
+//      for (Exemplar ex : _exemplars) {
+//        Log.info("Exemplar in map: " + ex.gid);
+//      }
     }
 
     @Override
     public void reduce(AggregateTask mrt) {
-      if (mrt == null  || mrt._exemplars == null) return;
+      for (int i=0; i<mrt._mapping.len; ++i)
+        _mapping.set(mrt._mapping.pairSet[i].first, mrt._mapping.pairSet[i].second);
       // reduce mrt into this
       Exemplar[] exemplars = mrt._exemplars;
       long[] counts = mrt._counts;
@@ -213,8 +298,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         if (distanceToNearestExemplar < _delta) {
           // add remote exemplar counts/indices to one of my exemplars that are close enough
           _counts[closestExemplarIndex]+=counts[r];
-          Vec.Writer vw = _fr.vecs()[_fr.vecs().length-1].open();
-          vw.set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
+
+//          Log.info("Reduce: Reassigning " + counts[r] + " rows from " + exemplars[r].gid + " to " + _exemplars[closestExemplarIndex].gid);
+          _mapping.set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
         } else {
           // append this remote exemplar to my local exemplars, as a new exemplar
           Exemplar[] newExemplars = Arrays.copyOf(_exemplars, _exemplars.length+1);
@@ -222,9 +308,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           _exemplars = newExemplars;
           exemplars[r] = null;
 
-          long[] newCounts = new long[_counts.length+1];
-          System.arraycopy(_counts, 0, newCounts, 0, _counts.length);
-          newCounts[newCounts.length-1] = counts[r];
+          long[] newCounts = Arrays.copyOf(_counts, _counts.length+1);
+          newCounts[_counts.length] = counts[r];
           _counts = newCounts;
         }
       }
@@ -262,5 +347,23 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       return Double.isNaN(x);
     }
 
+  }
+
+  private static class RenumberTask extends MRTask<RenumberTask> {
+    final long[][] _map;
+    public RenumberTask(AggregateTask.GIDMapping mapping) { _map = mapping.unsortedList(); }
+    @Override
+    public void map(Chunk c) {
+      for (int i=0;i<c._len;++i) {
+        long old = c.at8(i);
+        //int pos=Arrays.binarySearch(_map[0], old);
+        int pos = ArrayUtils.find(_map[0], old);
+        if (pos>=0) {
+          long newVal =_map[1][pos];
+          c.set(i, newVal);
+        }
+      }
+
+    }
   }
 }
