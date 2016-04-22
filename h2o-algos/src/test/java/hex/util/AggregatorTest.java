@@ -5,6 +5,7 @@ import hex.aggregator.Aggregator;
 import hex.aggregator.AggregatorModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.H2O;
@@ -117,6 +118,7 @@ public class AggregatorTest extends TestUtil {
     agg.remove();
   }
 
+  @Ignore
   @Test public void testMNIST() {
     Frame frame = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 
