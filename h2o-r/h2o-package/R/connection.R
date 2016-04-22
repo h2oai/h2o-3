@@ -103,11 +103,6 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
          "for type.convert changes in R 3.1.0.)")
   }
 
-  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
-  doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
-  if (nchar(doc_ip)) ip <- doc_ip
-  if (nchar(doc_port)) port <- as.numeric(doc_port)
-
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
     username = username, password = password)
@@ -465,14 +460,12 @@ h2o.clusterStatus <- function() {
   if(enable_assertions) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)
-  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
-  doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
-  if (nchar(doc_ip)) { ip <- doc_ip
-  } else { ip <- "127.0.0.1" }
-  if (nchar(doc_port)) { port <- doc_port
-  } else { port <- "54321" }
-  args <- c(args, "-ip", ip)
-  args <- c(args, "-port", port)
+  if (!nchar(Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES"))) {
+    args <- c(args, "-ip", "127.0.0.1")
+    args <- c(args, "-port", "54321")
+  } else {
+    args <- c(args, "-name",  paste(sample(c(0:9, letters, LETTERS), 10, replace=TRUE),collapse=""))
+  }
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
