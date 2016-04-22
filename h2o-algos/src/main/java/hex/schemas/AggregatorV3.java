@@ -17,7 +17,6 @@ public class AggregatorV3 extends ModelBuilderSchema<Aggregator,AggregatorV3,Agg
             "ignored_columns",
             "ignore_const_cols",
             "radius_scale",
-            "keep_member_indices",
             "transform",
 //            "pca_method",
 //            "k",
@@ -28,9 +27,6 @@ public class AggregatorV3 extends ModelBuilderSchema<Aggregator,AggregatorV3,Agg
     };
     @API(help = "Radius scaling", gridable = true)
     public double radius_scale;
-
-    @API(help = "Whether to compute and store member indices")
-    public boolean keep_member_indices;
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true, level= API.Level.expert)  // TODO: pull out of categorical class
     public DataInfo.TransformType transform;

@@ -32,7 +32,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._keep_member_indices = false;
     parms._radius_scale = 1.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     Frame output = agg._output._output_frame.get();
@@ -47,7 +46,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._keep_member_indices = false;
     parms._radius_scale = 5.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     frame.delete();
@@ -63,7 +61,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._keep_member_indices = false;
     parms._radius_scale = 3.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     Frame output = agg._output._output_frame.get();
@@ -80,7 +77,6 @@ public class AggregatorTest extends TestUtil {
 
       parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;
-      parms._keep_member_indices = false;
       parms._radius_scale = 3.0;
       AggregatorModel agg2 = new Aggregator(parms).trainModel().get();
       Log.info("Number of exemplars for " + i + " chunks: " + agg2._exemplars.length);
@@ -98,7 +94,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._keep_member_indices = true;
     parms._radius_scale = 5.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
 
@@ -127,7 +122,6 @@ public class AggregatorTest extends TestUtil {
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
-    parms._keep_member_indices = false;
     parms._radius_scale = 100.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     frame.delete();

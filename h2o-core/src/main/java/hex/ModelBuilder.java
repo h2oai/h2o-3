@@ -246,6 +246,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 6: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
+      _job.setReadyForView(true);
+      DKV.put(_job);
 
     } finally {
       Scope.exit();
@@ -373,7 +375,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _start_time = System.currentTimeMillis();
     modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
     H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking: start the main
-    _job.setReadyForView(true);
     return mainMB;
   }
 

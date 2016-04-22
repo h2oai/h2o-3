@@ -19,10 +19,9 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public String algoName() { return "Aggregator"; }
     public String fullName() { return "Aggregator"; }
     public String javaName() { return AggregatorModel.class.getName(); }
-    @Override public long progressUnits() { return 3 + (_keep_member_indices ? 1 : 0); }
+    @Override public long progressUnits() { return 4; }
 
     public double _radius_scale=1.0;
-    public boolean _keep_member_indices;
     public DataInfo.TransformType _transform = DataInfo.TransformType.NORMALIZE; // Data transformation
     public PCAModel.PCAParameters.Method _pca_method = PCAModel.PCAParameters.Method.Power;   // Method for dimensionality reduction
     public int _k = 1;                     // Number of principal components
@@ -67,32 +66,6 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   @Override
   protected double[] score0(double[] data, double[] preds) {
     return preds;
-  }
-
-  public static Frame createFrameFromRawValues(Key<Frame> outputFrameKey, String[] names, Aggregator.Exemplar[] ex, long[] counts) {
-    int nrows = ex.length;
-    Vec[] vecs = new Vec[ex[0].data.length+(counts==null?0:1)];
-    int ncol = vecs.length;
-    for (int c=0; c<ncol; ++c) {
-      vecs[c] = Vec.makeZero(nrows);
-      Vec.Writer vw = vecs[c].open();
-      if (c==ncol-1 && counts!=null) {
-        for (int r = 0; r < nrows; ++r)
-          vw.set(r, counts[r]);
-      } else {
-        for (int r = 0; r < nrows; ++r)
-          vw.set(r, ex[r].data[c]);
-      }
-      vw.close();
-    }
-    if (counts!=null) {
-      names = Arrays.copyOf(names, names.length + 1);
-      names[names.length - 1] = "counts";
-    }
-
-    Frame f = new Frame(outputFrameKey, names, vecs); //all numeric
-    DKV.put(f);
-    return f;
   }
 
   public Frame createFrameOfExemplars(Key destination_key) {
