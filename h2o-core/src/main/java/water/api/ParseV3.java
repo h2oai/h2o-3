@@ -59,22 +59,4 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   // Zero if blocking==false; row-count if blocking==true
   @API(help="Rows", direction=API.Direction.OUTPUT)
   long rows;
-
-
-  //==========================
-
-  // Helper so ParseSetup can link to Parse
-  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames, String[] columnTypes, String[][] naStrings, int chunkSize) {
-    return "Parse?source_keys="+Arrays.toString(srcs)+
-      "&destination_key="+hexName+
-      "&parse_type="+pType+
-      "&separator="+sep+
-      "&number_columns="+ncols+
-      "&check_header="+checkHeader+
-      "&single_quotes="+singleQuotes+
-      "&column_names="+Arrays.toString(columnNames)+
-      "&column_types="+Arrays.toString(columnTypes)+
-      "&chunk_size="+chunkSize+
-      "";
-  }
 }

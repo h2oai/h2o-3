@@ -5,6 +5,7 @@ import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.ParseSetup;
 import water.parser.ParseWriter;
+import water.parser.ParserType;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -12,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static water.parser.DefaultParserProviders.GUESS_INFO;
 
 /** A class holding parser-setup flags: kind of parser, field separator, column
  *  header labels, whether or not to allow single-quotes to quote, number of
@@ -43,12 +46,11 @@ public class ParseSetupHandler extends Handler {
     // TODO: ParseSetup throws away the srcs list. . .
     if ((null == p.column_name_filter || "".equals(p.column_name_filter)) && (0 == p.column_offset) && (0 == p.column_count)) {
       // return the entire data preview
-      PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[]{"destination_key", "source_keys", "column_types"});
+      PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[]{"destination_key", "source_keys", "column_types", "parse_type"});
       p.total_filtered_column_count = p.number_columns;
-
     } else {
       // have to manually copy the desired parts of p.data to apply either column_name_filter or column pagination or both
-      PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[]{"destination_key", "source_keys", "column_types", "data"});
+      PojoUtils.copyProperties(p, ps, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[]{"destination_key", "source_keys", "column_types", "data", "parse_type"});
 
       String[] all_col_names = ps.getColumnNames();
       String[][] data = ps.getData();
@@ -89,6 +91,7 @@ public class ParseSetupHandler extends Handler {
     if( p.check_header==ParseSetup.HAS_HEADER && p.data != null && Arrays.equals(p.column_names, p.data[0])) p.data = Arrays.copyOfRange(p.data,1,p.data.length);
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
+    p.parse_type = ParserType.valueOf(ps.getParseType() != null ? ps.getParseType().name() : GUESS_INFO.name());
     return p;
   }
 }

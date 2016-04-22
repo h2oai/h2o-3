@@ -603,6 +603,10 @@ public class ParseSetup extends Iced {
     return -1;
   }
 
+  public ParserInfo getParseType() {
+    return _parse_type;
+  }
+
   public ParseSetup setParseType(ParserInfo parse_type) {
     this._parse_type = parse_type;
     return this;
