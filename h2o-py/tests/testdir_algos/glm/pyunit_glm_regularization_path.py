@@ -10,7 +10,11 @@ def reg_path_glm():
     m = glm(family='binomial',lambda_search=True,solver='COORDINATE_DESCENT')
     m.train(training_frame=d,x=range(2,9),y=1)
     r = glm.getGLMRegularizationPath(m)
-
+    m2 = glm.makeGLMModel(model=m,coefs=r['coefficients'][10])
+    dev1 = r['explained_deviance_train'][10]
+    p = m2.model_performance(d)
+    dev2 = 1-p.residual_deviance()/p.null_deviance()
+    assert abs(dev1 - dev2) < 1e-6
     assert len(r['lambdas']) == 100
     for l in range(0,len(r['lambdas'])):
         m = glm(family='binomial',lambda_search=False,Lambda=r['lambdas'][l],solver='COORDINATE_DESCENT')
@@ -28,6 +32,7 @@ def reg_path_glm():
         print(diff2)
         assert diff < 1e-3
         assert diff2 < 1e-3
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(reg_path_glm)
 else:
