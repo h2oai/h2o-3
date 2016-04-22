@@ -220,14 +220,14 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           assignmentChk.set(r, ex.gid);
         } else {
           /* find closest exemplar to this case */
-          double distanceToNearestExemplar = Double.POSITIVE_INFINITY;
+          double distanceToNearestExemplar = Double.MAX_VALUE;
           Iterator<Exemplar> it = exemplars.iterator();
           int closestExemplarIndex = 0;
           int index = 0;
           long gid=-1;
           while (it.hasNext()) {
             Exemplar e = it.next();
-            double d = squaredEuclideanDistance(e.data, data, nCols);
+            double d = squaredEuclideanDistance(e.data, data, nCols, distanceToNearestExemplar);
             if (d < distanceToNearestExemplar) {
               distanceToNearestExemplar = d;
               closestExemplarIndex = index;
@@ -290,7 +290,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       // loop over other task's exemplars
       for (int r=0; r<exemplars.length; ++r) {
         double[] data = exemplars[r].data;
-        double distanceToNearestExemplar = Double.POSITIVE_INFINITY;
+        double distanceToNearestExemplar = Double.MAX_VALUE;
         int closestExemplarIndex = 0;
         // loop over my exemplars (which might grow below)
         Iterator<Exemplar> it = myExemplars.iterator();
@@ -298,7 +298,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         while(it.hasNext()) {
           Exemplar ex = it.next();
           double[] e = ex.data;
-          double d = squaredEuclideanDistance(e, data, data.length);
+          double d = squaredEuclideanDistance(e, data, data.length, distanceToNearestExemplar);
           if (d < distanceToNearestExemplar) {
             distanceToNearestExemplar = d;
             closestExemplarIndex = itIdx;
@@ -337,17 +337,21 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       assert(_counts != null);
     }
 
-    private static double squaredEuclideanDistance(double[] e1, double[] e2, int nCols) {
+    private static double squaredEuclideanDistance(double[] e1, double[] e2, int nCols, double thresh) {
       double sum = 0;
       int n = 0;
-      // TODO: unroll into 4+ partial sums
+      boolean missing = false;
       for (int j = 0; j < nCols; j++) {
-        double d1 = e1[j];
-        double d2 = e2[j];
+        final double d1 = e1[j];
+        final double d2 = e2[j];
         if (!isMissing(d1) && !isMissing(d2)) {
-          sum += (d1 - d2) * (d1 - d2);
+          final double dist = (d1 - d2);
+          sum += dist*dist;
           n++;
+        } else {
+          missing=true;
         }
+        if (!missing && sum > thresh) break; //early cutout
       }
       sum *= (double) nCols / n;
       return sum;

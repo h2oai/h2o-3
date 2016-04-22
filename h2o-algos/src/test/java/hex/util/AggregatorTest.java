@@ -38,6 +38,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
+    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
     agg.remove();
   }
@@ -54,6 +55,7 @@ public class AggregatorTest extends TestUtil {
     Log.info("Exemplars: " + output.toString());
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
+    Assert.assertTrue(agg._exemplars.length==615);
     agg.remove();
   }
 
@@ -66,6 +68,7 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
     Frame output = agg._output._output_frame.get();
     Log.info("Number of exemplars: " + agg._exemplars.length);
+    Assert.assertTrue(agg._exemplars.length==1993);
     output.remove();
     agg.remove();
 
@@ -114,6 +117,7 @@ public class AggregatorTest extends TestUtil {
     Frame output = agg._output._output_frame.get();
     output.remove();
     Log.info("Number of exemplars: " + agg._exemplars.length);
+    Assert.assertTrue(agg._exemplars.length==615);
     frame.delete();
     agg.remove();
   }
