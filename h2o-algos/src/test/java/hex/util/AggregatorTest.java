@@ -35,6 +35,7 @@ public class AggregatorTest extends TestUtil {
     parms._train = frame._key;
     parms._radius_scale = 1.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
@@ -50,6 +51,7 @@ public class AggregatorTest extends TestUtil {
     parms._train = frame._key;
     parms._radius_scale = 5.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    agg.checkConsistency();
     frame.delete();
     Frame output = agg._output._output_frame.get();
     Log.info("Exemplars: " + output.toString());
@@ -66,6 +68,7 @@ public class AggregatorTest extends TestUtil {
     parms._train = frame._key;
     parms._radius_scale = 3.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
     Log.info("Number of exemplars: " + agg._exemplars.length);
     Assert.assertTrue(agg._exemplars.length==1993);
@@ -83,6 +86,7 @@ public class AggregatorTest extends TestUtil {
       parms._train = frame._key;
       parms._radius_scale = 3.0;
       AggregatorModel agg2 = new Aggregator(parms).trainModel().get();
+      agg2.checkConsistency();
       Log.info("Number of exemplars for " + i + " chunks: " + agg2._exemplars.length);
       rebalanced.delete();
       Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) == 0); //< agg._exemplars.length*0);
@@ -100,6 +104,7 @@ public class AggregatorTest extends TestUtil {
     parms._train = frame._key;
     parms._radius_scale = 5.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    agg.checkConsistency();
 
 //    Frame assignment = new Frame(new Vec[]{(Vec)agg._exemplar_assignment_vec_key.get()});
 //    Frame.export(assignment, "/tmp/assignment", "yada", true);
@@ -130,6 +135,7 @@ public class AggregatorTest extends TestUtil {
     parms._train = frame._key;
     parms._radius_scale = 100.0;
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    agg.checkConsistency();
     frame.delete();
     Frame output = agg._output._output_frame.get();
 //    Log.info("Exemplars: " + output);

@@ -126,4 +126,32 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     booleanCol.remove();
     return res;
   }
+
+  public void checkConsistency() {
+    DataInfo di = (DataInfo)_diKey.get();
+    long sum = 0;
+    for (long l : this._counts) sum += l;
+    assert (sum == di._adaptedFrame.numRows());
+    final long[] exemplarGIDs = new long[this._counts.length];
+    for (int i = 0; i < this._exemplars.length; ++i)
+      exemplarGIDs[i] = this._exemplars[i].gid;
+    long[] counts = new long[this._exemplars.length];
+    for (int i = 0; i < di._adaptedFrame.numRows(); ++i) {
+      long ass = ((Vec)_exemplar_assignment_vec_key.get()).at8(i);
+      for (int j = 0; j < exemplarGIDs.length; ++j) {
+        if (exemplarGIDs[j] == ass) {
+          counts[j]++;
+          break;
+        }
+      }
+    }
+    sum = 0;
+    for (long l : counts) sum += l;
+    assert (sum == di._adaptedFrame.numRows());
+
+    for (int i = 0; i < counts.length; ++i) {
+      assert (counts[i] == this._counts[i]);
+    }
+  }
+
 }

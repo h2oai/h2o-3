@@ -74,34 +74,6 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         model._counts = aggTask._counts;
         model._exemplar_assignment_vec_key = assignment._key;
 
-        if (false) {
-          // BEGIN DEBUGGING
-          long sum = 0;
-          for (long l : model._counts) sum += l;
-          assert (sum == di._adaptedFrame.numRows());
-          final long[] exemplarGIDs = new long[model._counts.length];
-          for (int i = 0; i < model._exemplars.length; ++i)
-            exemplarGIDs[i] = model._exemplars[i].gid;
-          long[] counts = new long[model._exemplars.length];
-          for (int i = 0; i < di._adaptedFrame.numRows(); ++i) {
-            long ass = assignment.at8(i);
-            for (int j = 0; j < exemplarGIDs.length; ++j) {
-              if (exemplarGIDs[j] == ass) {
-                counts[j]++;
-                break;
-              }
-            }
-          }
-          sum = 0;
-          for (long l : counts) sum += l;
-          assert (sum == di._adaptedFrame.numRows());
-
-          for (int i = 0; i < counts.length; ++i) {
-            assert (counts[i] == model._counts[i]);
-          }
-          // END DEBUGGING
-        }
-
         _job.update(1, "Creating output frame.");
 //        model._output._output_frame = AggregatorModel.createFrameFromRawValues(
 //                Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
