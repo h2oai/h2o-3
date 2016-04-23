@@ -138,7 +138,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
                compute_p_values=False, remove_collinear_columns=False,
-               missing_values_handling=None, interactions=None):
+               missing_values_handling=None, interactions=None, max_runtime_secs = 0):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.items() if k != "self"}
