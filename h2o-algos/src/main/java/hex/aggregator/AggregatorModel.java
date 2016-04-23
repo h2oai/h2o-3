@@ -19,7 +19,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public String algoName() { return "Aggregator"; }
     public String fullName() { return "Aggregator"; }
     public String javaName() { return AggregatorModel.class.getName(); }
-    @Override public long progressUnits() { return 4; }
+    @Override public long progressUnits() { return 5; }
 
     public double _radius_scale=1.0;
     public DataInfo.TransformType _transform = DataInfo.TransformType.NORMALIZE; // Data transformation
@@ -42,7 +42,6 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   public Aggregator.Exemplar[] _exemplars;
   public long[] _counts;
   public Key _exemplar_assignment_vec_key;
-  public Key _diKey;
 
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
 
@@ -53,7 +52,6 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   @Override
   protected Futures remove_impl(Futures fs) {
-    _diKey.remove();
     _exemplar_assignment_vec_key.remove();
     return super.remove_impl(fs);
   }
@@ -128,15 +126,14 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   }
 
   public void checkConsistency() {
-    DataInfo di = (DataInfo)_diKey.get();
     long sum = 0;
     for (long l : this._counts) sum += l;
-    assert (sum == di._adaptedFrame.numRows());
+    assert (sum == _parms.train().numRows());
     final long[] exemplarGIDs = new long[this._counts.length];
     for (int i = 0; i < this._exemplars.length; ++i)
       exemplarGIDs[i] = this._exemplars[i].gid;
     long[] counts = new long[this._exemplars.length];
-    for (int i = 0; i < di._adaptedFrame.numRows(); ++i) {
+    for (int i = 0; i < _parms.train().numRows(); ++i) {
       long ass = ((Vec)_exemplar_assignment_vec_key.get()).at8(i);
       for (int j = 0; j < exemplarGIDs.length; ++j) {
         if (exemplarGIDs[j] == ass) {
@@ -147,7 +144,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     }
     sum = 0;
     for (long l : counts) sum += l;
-    assert (sum == di._adaptedFrame.numRows());
+    assert (sum == _parms.train().numRows());
 
     for (int i = 0; i < counts.length; ++i) {
       assert (counts[i] == this._counts[i]);

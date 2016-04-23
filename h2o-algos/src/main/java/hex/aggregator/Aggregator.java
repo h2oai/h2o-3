@@ -43,10 +43,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     @Override
     public void compute2() {
       AggregatorModel model = null;
-      DataInfo dinfo = null;
 
+      DataInfo di = null;
       try {
-        Scope.enter();
         init(true);   // Initialize parameters
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
@@ -56,45 +55,38 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         model.delete_and_lock(_job);
 
         //TODO -> replace all categoricals with k pca components in _train (create new FrameUtils)
+        Frame orig = train(); //this has ignored columns removed etc.
 
         _job.update(1, "Preprocessing data.");
-        DataInfo di = new DataInfo(_train, null, true, _parms._transform, false, false, false);
+        di = new DataInfo(orig, null, true, _parms._transform, false, false, false);
         DKV.put(di);
-        model._diKey = di._key;
-        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(di._adaptedFrame.numRows()), 1.0 / di._adaptedFrame.numCols());
+        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols());
 
         // Add workspace vector for exemplar assignment
-        Vec[] vecs = Arrays.copyOf(di._adaptedFrame.vecs(), di._adaptedFrame.vecs().length+1);
-        Vec assignment = vecs[vecs.length-1] = di._adaptedFrame.anyVec().makeZero();
+        Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
+        Vec assignment = vecs[vecs.length-1] = orig.anyVec().makeZero();
 
         _job.update(1, "Starting aggregation.");
         AggregateTask aggTask = new AggregateTask(di._key, radius).doAll(vecs);
+
+        _job.update(1, "Aggregating exemplar assignments.");
         new RenumberTask(aggTask._mapping).doAll(assignment);
+
+        // Populate model output state
         model._exemplars = aggTask._exemplars;
         model._counts = aggTask._counts;
         model._exemplar_assignment_vec_key = assignment._key;
+        model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
 
         _job.update(1, "Creating output frame.");
-//        model._output._output_frame = AggregatorModel.createFrameFromRawValues(
-//                Key.<Frame>make("aggregated_" + _parms._train.toString() + "_by_" + model._key.toString()),
-//                Arrays.copyOfRange(di.coefNames(),di.numStart(),di.numStart()+di.numNums()), model._exemplars, model._counts)._key;
-
-        model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
         model.createFrameOfExemplars(model._output._output_frame);
-
-        Key<Vec>[] keep = new Key[(model._output._output_frame.get()).vecs().length];
-        for (int i=0; i<keep.length; ++i)
-          keep[i] = model._output ._output_frame.get().vec(i)._key;
-        Scope.untrack(keep); //keep aggregated output frame
-        Scope.untrack(new Key[]{model._exemplar_assignment_vec_key, model._diKey}); //keep this too
 
         _job.update(1, "Done.");
         model.update(_job);
       } finally {
         _parms.read_unlock_frames(_job);
         if (model != null) model.unlock(_job);
-        if (dinfo != null) dinfo.remove();
-        Scope.exit();
+        if (di!=null) di.remove();
       }
       tryComplete();
     }
@@ -113,6 +105,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       long first;
       long second;
       public MyPair(long f, long s) { first=f; second=s; }
+      public MyPair(){}
 
       @Override
       public int compareTo(MyPair o) {
@@ -123,11 +116,11 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     }
 
     // WORKSPACE
-    static class GIDMapping extends Iced<GIDMapping> {
+    static private class GIDMapping extends Iced<GIDMapping> {
       MyPair[] pairSet;
       int len;
       int capacity;
-      GIDMapping() {
+      public GIDMapping() {
         capacity=32;
         len=0;
         pairSet = new MyPair[capacity];
@@ -176,9 +169,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       Chunk[] dataChks = Arrays.copyOf(chks, chks.length-1);
       Chunk assignmentChk = chks[chks.length-1];
 
-
       // loop over rows
       DataInfo di = ((DataInfo)_dataInfoKey.get());
+      assert(di!=null);
       DataInfo.Row row = di.newDenseRow(); //shared _dataInfo - faster, no writes
       final int nCols = row.nNums;
       for (int r=0; r<chks[0]._len; ++r) {
@@ -235,9 +228,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       assert(_exemplars.length <= chks[0].len());
       assert(_counts.length == _exemplars.length);
       long sum=0;
-      for (int i=0; i<_counts.length;++i) {
-        sum += _counts[i];
-      }
+      for (long c:_counts) sum+=c;
       assert(sum <= chks[0].len());
 //      for (Exemplar ex : _exemplars) {
 //        Log.info("Exemplar in map: " + ex.gid);
@@ -256,8 +247,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       long remoteCounts = 0;
       for (long c : counts) remoteCounts += c;
 
-      List<Exemplar> myExemplars = new ArrayList();
-      for (Exemplar e : _exemplars) myExemplars.add(e);
+      ArrayList<Exemplar> myExemplars = new ArrayList();
+      myExemplars.addAll(Arrays.asList(_exemplars));
 
       // loop over other task's exemplars
       for (int r=0; r<exemplars.length; ++r) {
@@ -301,12 +292,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       assert(_exemplars.length <= localCounts + remoteCounts);
       assert(_counts.length == _exemplars.length);
       long sum=0;
-      for (int i=0; i<_counts.length;++i) {
-        sum += _counts[i];
-      }
+      for(long c:_counts) sum+=c;
       assert(sum == localCounts + remoteCounts);
-      assert(_exemplars != null);
-      assert(_counts != null);
     }
 
     private static double squaredEuclideanDistance(double[] e1, double[] e2, int nCols, double thresh) {
