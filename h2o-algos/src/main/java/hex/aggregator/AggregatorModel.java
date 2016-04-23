@@ -19,7 +19,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public String algoName() { return "Aggregator"; }
     public String fullName() { return "Aggregator"; }
     public String javaName() { return AggregatorModel.class.getName(); }
-    @Override public long progressUnits() { return 5; }
+    @Override public long progressUnits() { return 5 + 2*train().anyVec().nChunks() - 1; } // nChunks maps and nChunks-1 reduces, multiply by two for main job overhead
 
     public double _radius_scale=1.0;
     public DataInfo.TransformType _transform = DataInfo.TransformType.NORMALIZE; // Data transformation

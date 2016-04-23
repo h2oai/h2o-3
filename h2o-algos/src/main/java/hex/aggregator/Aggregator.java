@@ -57,7 +57,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         //TODO -> replace all categoricals with k pca components in _train (create new FrameUtils)
         Frame orig = train(); //this has ignored columns removed etc.
 
-        _job.update(1, "Preprocessing data.");
+        _job.update(1,"Preprocessing data.");
         di = new DataInfo(orig, null, true, _parms._transform, false, false, false);
         DKV.put(di);
         final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols());
@@ -66,8 +66,8 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
         Vec assignment = vecs[vecs.length-1] = orig.anyVec().makeZero();
 
-        _job.update(1, "Starting aggregation.");
-        AggregateTask aggTask = new AggregateTask(di._key, radius).doAll(vecs);
+        _job.update(1, "Aggregating.");
+        AggregateTask aggTask = new AggregateTask(di._key, radius, _job._key).doAll(vecs);
 
         _job.update(1, "Aggregating exemplar assignments.");
         new RenumberTask(aggTask._mapping).doAll(assignment);
@@ -96,6 +96,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     //INPUT
     final double _delta;
     final Key _dataInfoKey;
+    final Key _jobKey;
 
     // OUTPUT
     Exemplar[] _exemplars;
@@ -155,9 +156,10 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     GIDMapping _mapping;
 
-    public AggregateTask(Key<DataInfo> dataInfoKey, double radius) {
+    public AggregateTask(Key<DataInfo> dataInfoKey, double radius, Key<Job> jobKey) {
       _delta = radius*radius;
       _dataInfoKey = dataInfoKey;
+      _jobKey = jobKey;
     }
 
     @Override
@@ -230,9 +232,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       long sum=0;
       for (long c:_counts) sum+=c;
       assert(sum <= chks[0].len());
-//      for (Exemplar ex : _exemplars) {
-//        Log.info("Exemplar in map: " + ex.gid);
-//      }
+      ((Job)_jobKey.get()).update(1, "Aggregating.");
     }
 
     @Override
@@ -294,6 +294,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       long sum=0;
       for(long c:_counts) sum+=c;
       assert(sum == localCounts + remoteCounts);
+      ((Job)_jobKey.get()).update(1, "Aggregating.");
     }
 
     private static double squaredEuclideanDistance(double[] e1, double[] e2, int nCols, double thresh) {
