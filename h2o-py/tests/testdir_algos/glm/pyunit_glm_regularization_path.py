@@ -22,8 +22,6 @@ def reg_path_glm():
         m.train(training_frame=d,x=[2,3,4,5,6,7,8],y=1)
         cs = r['coefficients'][l]
         cs_norm = r['coefficients_std'][l]
-        print(cs)
-        print(m.coef())
         diff = 0
         diff2 = 0
         for n in cs.keys():
