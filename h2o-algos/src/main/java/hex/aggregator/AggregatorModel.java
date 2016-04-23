@@ -73,6 +73,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     for (int i=0;i<keep.length;++i)
       keep[i]=_exemplars[i].gid;
 
+    Vec exAssignment = (Vec)_exemplar_assignment_vec_key.get();
     // preserve the original row order
     Vec booleanCol = new MRTask() {
       @Override
@@ -83,7 +84,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
           c2.set((int)(keep[i]-c.start()), 1);
         }
       }
-    }.doAll(new Frame(new Vec[]{(Vec)_exemplar_assignment_vec_key.get(), _parms.train().anyVec().makeZero()}))._fr.vec(1);
+    }.doAll(new Frame(new Vec[]{exAssignment, exAssignment.makeZero()}))._fr.vec(1);
 
     Frame orig = _parms.train();
     Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
