@@ -7,7 +7,6 @@ import water.parser.ParseSetup;
 import water.parser.ParserInfo;
 import water.parser.ParserProvider;
 import water.parser.ParserService;
-import water.parser.ParserType;
 
 import static water.parser.DefaultParserProviders.GUESS_INFO;
 
@@ -17,8 +16,8 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
   @API(help="Source frames", required=true, direction=API.Direction.INOUT)
   public FrameKeyV3[] source_frames;
 
-  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight", "AVRO"}, direction=API.Direction.INOUT)
-  public ParserType parse_type = ParserType.GUESS;
+  @API(help="Parser type", valuesProvider = ParseTypeValuesProvider.class, direction=API.Direction.INOUT)
+  public String parse_type = GUESS_INFO.name();
 
   @API(help="Field separator", direction=API.Direction.INOUT)
   public byte separator = ParseSetup.GUESS_SEP;
@@ -75,7 +74,7 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
     // Transform the field parse_type
     ParserInfo pi = GUESS_INFO;
     if (this.parse_type != null) {
-      ParserProvider pp = ParserService.INSTANCE.getByName(this.parse_type.name());
+      ParserProvider pp = ParserService.INSTANCE.getByName(this.parse_type);
       if (pp != null) {
         pi = pp.info();
       } else throw new H2OIllegalValueException("Cannot find right parser for specified parser type!", this.parse_type);
@@ -88,7 +87,15 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
   @Override
   public ParseSetupV3 fillFromImpl(ParseSetup impl) {
     ParseSetupV3 parseSetupV3 = fillFromImpl(impl, new String[] {"parse_type"});
-    parseSetupV3.parse_type = ParserType.valueOf(impl.getParseType() != null ? impl.getParseType().name() : GUESS_INFO.name());
+    parseSetupV3.parse_type = impl.getParseType() != null ? impl.getParseType().name() : GUESS_INFO.name();
     return parseSetupV3;
+  }
+}
+
+class ParseTypeValuesProvider implements ValuesProvider {
+
+  @Override
+  public String[] values() {
+    return ParserService.INSTANCE.getAllProviderNames(true);
   }
 }

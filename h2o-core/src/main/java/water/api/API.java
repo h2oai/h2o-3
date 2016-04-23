@@ -51,6 +51,9 @@ public @interface API {
    */
   String[] values() default {};
 
+  /** Proovide values for enum-like types if it cannot be provided as a constant in annotation. */
+  Class<? extends ValuesProvider> valuesProvider() default ValuesProvider.class;
+
   /**
    * Should this field be rendered in the JSON representation?
    */

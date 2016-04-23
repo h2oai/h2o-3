@@ -80,7 +80,7 @@ public class ParseSetup extends Iced {
    * @param ps Parse setup settings from client
    */
   public ParseSetup(ParseSetupV3 ps) {
-    this(ps.parse_type != null ? ParserService.INSTANCE.getByName(ps.parse_type.name()).info() : GUESS_INFO,
+    this(ps.parse_type != null ? ParserService.INSTANCE.getByName(ps.parse_type).info() : GUESS_INFO,
          ps.separator != 0 ? ps.separator : GUESS_SEP,
          ps.single_quotes,
          ps.check_header,
@@ -429,7 +429,7 @@ public class ParseSetup extends Iced {
       else if (setupA._parse_type.equals(CSV_INFO) && setupB._parse_type.equals(ARFF_INFO)) {
         mergedSetup._parse_type = ARFF_INFO;
         mergedSetup._column_types = setupB._column_types;
-      } else if (setupA._parse_type == setupB._parse_type) {
+      } else if (setupA._parse_type.equals(setupB._parse_type)) {
         mergedSetup._column_previews = PreviewParseWriter.unifyColumnPreviews(setupA._column_previews, setupB._column_previews);
       } else
         throw new ParseDataset.H2OParseException("File type mismatch. Cannot parse files of type "

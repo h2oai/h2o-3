@@ -1,18 +1,15 @@
 package water.api;
 
-import water.DKV;
-import water.Key;
-import water.exceptions.H2OIllegalArgumentException;
-import water.parser.ParseSetup;
-import water.parser.ParseWriter;
-import water.parser.ParserType;
-import water.util.Log;
-import water.util.PojoUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import water.DKV;
+import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
+import water.parser.ParseSetup;
+import water.util.PojoUtils;
 
 import static water.parser.DefaultParserProviders.GUESS_INFO;
 
@@ -91,7 +88,7 @@ public class ParseSetupHandler extends Handler {
     if( p.check_header==ParseSetup.HAS_HEADER && p.data != null && Arrays.equals(p.column_names, p.data[0])) p.data = Arrays.copyOfRange(p.data,1,p.data.length);
     // Fill in data type names for each column.
     p.column_types = ps.getColumnTypeStrings();
-    p.parse_type = ParserType.valueOf(ps.getParseType() != null ? ps.getParseType().name() : GUESS_INFO.name());
+    p.parse_type = ps.getParseType() != null ? ps.getParseType().name() : GUESS_INFO.name();
     return p;
   }
 }

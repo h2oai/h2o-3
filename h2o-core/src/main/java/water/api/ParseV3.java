@@ -1,11 +1,7 @@
 package water.api;
 
-import water.api.KeyV3.FrameKeyV3;
 import water.Iced;
-import water.Key;
-import water.parser.ParserType;
-
-import java.util.Arrays;
+import water.api.KeyV3.FrameKeyV3;
 
 public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   // Input fields
@@ -15,9 +11,8 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   @API(help="Source frames",required=true)
   FrameKeyV3[] source_frames;
 
-  // FIXME: Replace by new ParserInfo or String
-  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight", "AVRO"})
-  ParserType parse_type;
+  @API(help="Parser type", valuesProvider = ParseTypeValuesProvider.class)
+  String parse_type;
 
   @API(help="Field separator")
   byte separator;

@@ -73,7 +73,11 @@ public final class ParserService {
   private static Comparator<ParserProvider> PARSER_PROVIDER_COMPARATOR = new Comparator<ParserProvider>() {
     @Override
     public int compare(ParserProvider o1, ParserProvider o2) {
-      return o1.info().prior - o2.info().prior;
+      int x = o1.info().prior;
+      int y = o2.info().prior;
+      // Cannot use Integer.compare(int, int) since it is available from Java7 and also cannot
+      // use `-` for comparison
+      return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
   };
 }

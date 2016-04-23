@@ -21,7 +21,7 @@ public final class DefaultParserProviders {
   public static final ParserInfo XLSX_INFO = new ParserInfo("XLSX", 102, false);
   public static final ParserInfo SVMLight_INFO = new ParserInfo("SVMLight", 1000, true);
   public static final ParserInfo CSV_INFO = new ParserInfo("CSV", Integer.MAX_VALUE, true);
-  public static final ParserInfo GUESS_INFO = new ParserInfo("GUESS", Integer.MIN_VALUE, false);
+  public static final ParserInfo GUESS_INFO = new ParserInfo("GUESS", -10000, false);
   /** Priority of non-core parsers shoudl begin here.*/
   public static final int MAX_CORE_PRIO = 10000;
 

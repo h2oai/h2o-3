@@ -65,6 +65,8 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
     f.setAccessible(true);
     try {
       this.name = f.getName();
+      API annotation = f.getAnnotation(API.class);
+
       boolean is_array = f.getType().isArray();
       Object o;
 
@@ -75,9 +77,7 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
       this.actual_value = FieldMetadata.consValue(o);
 
       boolean is_enum = Enum.class.isAssignableFrom(f.getType());
-      this.type = FieldMetadata.consType(schema, f.getType(), f.getName());
-
-      API annotation = f.getAnnotation(API.class);
+      this.type = FieldMetadata.consType(schema, f.getType(), f.getName(), annotation);
 
       if (null != annotation) {
         String l = annotation.label();
