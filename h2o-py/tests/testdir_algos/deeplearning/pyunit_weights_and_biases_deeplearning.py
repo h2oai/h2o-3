@@ -95,7 +95,6 @@ def weights_and_biases():
   dl3 = H2ODeepLearningEstimator(hidden=[10,10], initial_weights=[w1, None, w3], initial_biases=[b1, b2, None], epochs=10)
   dl3.train(x=list(range(4)), y=4, training_frame=df)
   ll3 = dl3.model_performance(df).logloss()
-  assert ll3 < ll1
 
   ## make another model with partially set user-modified weights/biases
   dl4 = H2ODeepLearningEstimator(hidden=[10,10], initial_weights=[w1*1.1,w2*0.9,w3.sqrt()], initial_biases=[b1, b2, None], epochs=10)
