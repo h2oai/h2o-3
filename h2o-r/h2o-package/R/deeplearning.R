@@ -43,7 +43,7 @@
 #'        (recommended).
 #' @param input_dropout_ratio A fraction of the features for each training row to be omitted from
 #'        training in order to improve generalization (dimension sampling).
-#' @param hidden_dropout_ratios Input layer dropout ratio (can improve generalization) specify one
+#' @param hidden_dropout_ratios Hidden layer dropout ratio (can improve generalization) specify one
 #'        value per hidden layer, defaults to 0.5.
 #' @param l1 L1 regularization (can add stability and improve generalization, causes many weights to
 #'        become 0).
