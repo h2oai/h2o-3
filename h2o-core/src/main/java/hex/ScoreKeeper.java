@@ -264,4 +264,18 @@ public class ScoreKeeper extends Iced {
         throw H2O.unimpl("Undefined stopping criterion.");
     } // switch
   } // comparator
+
+  @Override
+  public String toString() {
+    return "ScoreKeeper{" +
+        "_r2=" + _r2 +
+        ", _mean_residual_deviance=" + _mean_residual_deviance +
+        ", _mse=" + _mse +
+        ", _logloss=" + _logloss +
+        ", _AUC=" + _AUC +
+        ", _classError=" + _classError +
+        ", _hitratio=" + Arrays.toString(_hitratio) +
+        ", _lift=" + _lift +
+        '}';
+  }
 }
