@@ -15,6 +15,7 @@ public class Register extends water.api.AbstractRegister {
       new hex.kmeans      .KMeans      (true),
       new hex.naivebayes  .NaiveBayes  (true),
       new hex.pca         .PCA         (true),
+      new hex.pam         .PAM         (true),
       new hex.svd         .SVD         (true),
       new hex.tree.drf    .DRF         (true),
       new hex.tree.gbm    .GBM         (true),
@@ -26,7 +27,7 @@ public class Register extends water.api.AbstractRegister {
       String lbase = base.toLowerCase();
       Class bh_clz = water.api.ModelBuilderHandler.class;
       int version = 3;
-      if( base.equals("SVD") ) version = 99;  // SVD is experimental still
+      if( base.equals("SVD") || base.equals("PAM") ) version = 99;  // SVD and PAM is experimental still
 
       H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase              , bh_clz, "train"              , "Train a "          +base+" model.");
       H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters", "Validate a set of "+base+" model builder parameters.");
