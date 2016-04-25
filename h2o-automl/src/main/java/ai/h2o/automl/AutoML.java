@@ -7,12 +7,13 @@ import water.*;
 import water.api.KeyV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.IcedHashMap;
 
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 
 /**
  * Initial draft of AutoML
@@ -68,11 +69,13 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   public static AutoML makeAutoML(Key<AutoML> key, String datasetPath, String responseName, String loss, long maxTime,
                 double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
-    File f = new File(datasetPath);
-    assert f.exists():" file not found: " + datasetPath;
-    NFSFileVec nfs = NFSFileVec.make(f);
+    ArrayList<String> files = new ArrayList();
+    ArrayList<String> keys = new ArrayList();
+    ArrayList<String> fails = new ArrayList();
+    ArrayList<String> dels = new ArrayList();
+    H2O.getPM().importFiles(datasetPath,files,keys,fails,dels);
     String datasetName = datasetPath.split("\\.(?=[^\\.]+$)")[0];
-    Frame fr = ParseDataset.parse(Key.make("datasetName"), nfs._key);
+    Frame fr = ParseDataset.parse(Key.make(datasetName), Key.make(keys.get(0)));
     return new AutoML(key,datasetName,fr,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
   }
 
