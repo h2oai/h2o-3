@@ -100,7 +100,7 @@ public class ColMeta extends Iced {
     _idx = idx;
     _nameType=ColNameScanner.IGNORED;
     if( !_ignored || response ) {
-      _nameType = ColNameScanner.scan(_name);
+      _nameType = ColNameScanner.scan(_name,v);
       _response = response;
       _specialNAs = new SpecialNA(
               _v.isNumeric()
