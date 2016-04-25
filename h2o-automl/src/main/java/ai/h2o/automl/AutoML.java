@@ -17,9 +17,9 @@ import java.util.*;
 /**
  * Initial draft of AutoML
  *
- * AutoML is a node-local driver class that is responsible for managing multiple threads
- * of execution in an effort to discover an optimal supervised model for some given
- * (dataset, response, loss) combo.
+ * AutoML is a node-local driver class that is responsible for managing concurrent
+ * strategies of execution in an effort to discover an optimal supervised model for some
+ * given (dataset, response, loss) combo.
  */
 public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
@@ -30,7 +30,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private final long _maxTime;           // maximum amount of time allotted to automl
   private final double _minAcc;          // minimum accuracy to achieve
   private final boolean _ensemble;       // allow ensembles?
-  private final models[] _modelEx;    // model types to exclude; e.g. don't allow DL
+  private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
   FrameMeta _fm;                         // metadata for _fr
   private boolean _isClassification;
@@ -173,7 +173,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     if( val==null ) return null;
     ModelLeader ml = val.get();
     final Value leaderModelKey = DKV.get(ml._leader);
-    assert leaderModelKey!=null; // if the LEADER is in the DKV, then there better be a model!
+    assert null!=leaderModelKey; // if the LEADER is in the DKV, then there better be a model!
     return leaderModelKey.get();
   }
 
