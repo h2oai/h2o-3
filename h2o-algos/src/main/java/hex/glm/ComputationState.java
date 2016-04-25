@@ -213,11 +213,13 @@ public final class ComputationState {
   }
 
   public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
+    Arrays.fill(_u,0);
     fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),b,_beta);
     double objOld = objective();
     _ginfo = ginfo._fullInfo;
     _likelihood = ginfo._likelihood;
     _relImprovement = (objOld - objective())/objOld;
+
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.

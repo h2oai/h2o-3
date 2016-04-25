@@ -101,7 +101,6 @@ public class ADMM {
       for(int i = 0; i < beta_given.length-hasIcpt; ++i)
         beta_given[i] = z[i] - u[i];
       double [] kappa = MemoryManager.malloc8d(rho.length);
-
       if(l1pen > 0)
         for(int i = 0; i < N-hasIcpt; ++i)
           kappa[i] = rho[i] != 0?l1pen/rho[i]:0;
