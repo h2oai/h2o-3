@@ -180,7 +180,8 @@ public final class DHistogram extends Iced {
   public void init() {
     assert _bins == null;
     _bins = MemoryManager.malloc8d(_nbin);
-    init0();
+    _sums = MemoryManager.malloc8d(_nbin);
+    _ssqs = MemoryManager.malloc8d(_nbin);
     if (_randomSplitPoints) {
       // every node makes the same split points
       Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
@@ -240,10 +241,9 @@ public final class DHistogram extends Iced {
       Vec v = vecs[c];
       final double minIn = Math.max(v.min(),-Double.MAX_VALUE); // inclusive vector min
       final double maxIn = Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
-      final double maxEx = find_maxEx(maxIn,v.isInt()?1:0); // smallest exclusive max
+      final double maxEx = find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
-      hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null :
-        make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, parms);
+      hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null : make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, parms);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;
@@ -304,11 +304,6 @@ public final class DHistogram extends Iced {
     double n = _bins[b];
     if( n<=1 ) return 0;
     return Math.max(0, (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
-  }
-  // Big allocation of arrays
-  void init0() {
-    _sums = MemoryManager.malloc8d(_nbin);
-    _ssqs = MemoryManager.malloc8d(_nbin);
   }
 
   // Add one row to a bin found via simple linear interpolation.
