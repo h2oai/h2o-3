@@ -16,15 +16,19 @@
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2825'>PUBDEV-2825</a>] -         Create h2o.get_grid
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2834'>PUBDEV-2834</a>] -         Implement distributed Aggregator for visualization
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2835'>PUBDEV-2835</a>] -         Add col_sample_rate_change_per_level for GBM/DRF
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2836'>PUBDEV-2836</a>] -         Add learn_rate_annealing for GBM
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2837'>PUBDEV-2837</a>] -         Add random cut points for histograms in DRF/GBM (ExtraTreesClassifier)
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2851'>PUBDEV-2851</a>] -         Add limit on max. leaf node contribution for GBM
+</li>
 </ul>
 
-<h4>        Improvement
+<h4>        Task
 </h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2848'>PUBDEV-2848</a>] -         Add tests for early stopping logic (stopping_rounds &gt; 0)
