@@ -494,7 +494,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
-          if(_state._u == null) _state._u = MemoryManager.malloc8d(xy.length);
+          if(_state._u == null) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
 //          if(_parms._solver == Solver.IRLSM)
             (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
 //          else if(_parms._solver == Solver.COORDINATE_DESCENT){
