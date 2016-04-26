@@ -213,7 +213,7 @@ public final class ComputationState {
   }
 
   public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
-    Arrays.fill(_u,0);
+    if(_u != null) Arrays.fill(_u,0);
     fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),b,_beta);
     double objOld = objective();
     _ginfo = ginfo._fullInfo;
