@@ -19,7 +19,7 @@ import water.parser.ParserProvider;
 public class AvroParserProvider implements ParserProvider {
 
   /* Setup for this parser */
-  static ParserInfo AVRO_INFO = new ParserInfo("AVRO", DefaultParserProviders.MAX_CORE_PRIO + 10, true);
+  static ParserInfo AVRO_INFO = new ParserInfo("AVRO", DefaultParserProviders.MAX_CORE_PRIO + 10, true, true);
 
   @Override
   public ParserInfo info() {
@@ -52,8 +52,8 @@ public class AvroParserProvider implements ParserProvider {
     byte [] bits = bv.getFirstBytes();
 
     try {
-      AvroParser.AvroInfo avroInfo = AvroParser.extractAvroInfo(bits);
-      return new AvroParser.AvroParseSetup(requiredSetup, avroInfo.header, avroInfo.firstBlockSize);
+      AvroParser.AvroInfo avroInfo = AvroParser.extractAvroInfo(bits, requiredSetup);
+      return new AvroParser.AvroParseSetup(requiredSetup, avroInfo.header, avroInfo.firstBlockSize, avroInfo.domains);
     } catch (Throwable e) {
       throw new H2OIllegalArgumentException("Wrong data", "Cannot find Avro header in input file: " + firstInput, e);
     }

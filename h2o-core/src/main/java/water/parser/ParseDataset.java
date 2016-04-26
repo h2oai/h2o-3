@@ -115,6 +115,8 @@ public final class ParseDataset {
    */
   public static ParseDataset forkParseDataset(final Key<Frame> dest, final Key[] keys, final ParseSetup parseSetup, boolean deleteOnDone) {
     // Get a parser specific setup
+    // FIXME: ParseSetup should be separated into two classes - one for using via Rest API as user setup
+    //        and another as an internal parser setup to drive parsing.
     final ParseSetup setup = parseSetup.getFinalSetup(keys, parseSetup);
 
     HashSet<String> conflictingNames = setup.checkDupColumnNames();
@@ -254,49 +256,57 @@ public final class ParseDataset {
     final int[] ecols = Arrays.copyOf(ecols2, n);
     // If we have any, go gather unified categorical domains
     if( n > 0 ) {
-      job.update(0, "Collecting categorical domains across nodes.");
-      {
-        GatherCategoricalDomainsTask gcdt = new GatherCategoricalDomainsTask(mfpt._cKey, ecols).doAllNodes();
-        //Test domains for excessive length.
-        List<String> offendingColNames = new ArrayList<>();
-        for (int i = 0; i < ecols.length; i++) {
-          if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT) {
-            if( gcdt.getDomainLength(i)==0 ) avs[ecols[i]].setBad(); // The all-NA column
-            else avs[ecols[i]].setDomain(gcdt.getDomain(i));
-          } else
-            offendingColNames.add(setup._column_names[ecols[i]]);
+      if (!setup.getParseType().isDomainProvided) { // Domains are not provided via setup we need to collect them
+        job.update(0, "Collecting categorical domains across nodes.");
+        {
+          GatherCategoricalDomainsTask gcdt = new GatherCategoricalDomainsTask(mfpt._cKey, ecols).doAllNodes();
+          //Test domains for excessive length.
+          List<String> offendingColNames = new ArrayList<>();
+          for (int i = 0; i < ecols.length; i++) {
+            if (gcdt.getDomainLength(i) < Categorical.MAX_CATEGORICAL_COUNT) {
+              if( gcdt.getDomainLength(i)==0 ) avs[ecols[i]].setBad(); // The all-NA column
+              else avs[ecols[i]].setDomain(gcdt.getDomain(i));
+            } else
+              offendingColNames.add(setup._column_names[ecols[i]]);
+          }
+          if (offendingColNames.size() > 0)
+            throw new H2OParseException("Exceeded categorical limit on columns "+ offendingColNames+".   Consider reparsing these columns as a string.");
         }
-        if (offendingColNames.size() > 0)
-          throw new H2OParseException("Exceeded categorical limit on columns "+ offendingColNames+".   Consider reparsing these columns as a string.");
+        Log.trace("Done collecting categorical domains across nodes.");
+      } else {
+        // Ignore offending domains
+        for (int i = 0; i < ecols.length; i++) {
+          avs[ecols[i]].setDomain(setup._domains[ecols[i]]);
+        }
       }
-      Log.trace("Done collecting categorical domains across nodes.");
 
       job.update(0, "Compressing data.");
-      fr = new Frame(job._result, setup._column_names,AppendableVec.closeAll(avs));
+      fr = new Frame(job._result, setup._column_names, AppendableVec.closeAll(avs));
       fr.update(job);
-      // Update categoricals to the globally agreed numbering
-      Vec[] evecs = new Vec[ecols.length];
-      for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
       Log.trace("Done compressing data.");
+      if (!setup.getParseType().isDomainProvided) {
+        // Update categoricals to the globally agreed numbering
+        Vec[] evecs = new Vec[ecols.length];
+        for( int i = 0; i < evecs.length; ++i ) evecs[i] = fr.vecs()[ecols[i]];
+        job.update(0, "Unifying categorical domains across nodes.");
+        {
+          // new CreateParse2GlobalCategoricalMaps(mfpt._cKey).doAll(evecs);
+          // Using Dtask since it starts and returns faster than an MRTask
+          CreateParse2GlobalCategoricalMaps[] fcdt = new CreateParse2GlobalCategoricalMaps[H2O.CLOUD.size()];
+          RPC[] rpcs = new RPC[H2O.CLOUD.size()];
+          for (int i = 0; i < fcdt.length; i++){
+            H2ONode[] nodes = H2O.CLOUD.members();
+            fcdt[i] = new CreateParse2GlobalCategoricalMaps(mfpt._cKey, fr._key, ecols.length);
+            rpcs[i] = new RPC<>(nodes[i], fcdt[i]).call();
+          }
+          for (RPC rpc : rpcs)
+            rpc.get();
 
-      job.update(0, "Unifying categorical domains across nodes.");
-      {
-        // new CreateParse2GlobalCategoricalMaps(mfpt._cKey).doAll(evecs);
-        // Using Dtask since it starts and returns faster than an MRTask
-        CreateParse2GlobalCategoricalMaps[] fcdt = new CreateParse2GlobalCategoricalMaps[H2O.CLOUD.size()];
-        RPC[] rpcs = new RPC[H2O.CLOUD.size()];
-        for (int i = 0; i < fcdt.length; i++){
-          H2ONode[] nodes = H2O.CLOUD.members();
-          fcdt[i] = new CreateParse2GlobalCategoricalMaps(mfpt._cKey, fr._key, ecols.length);
-          rpcs[i] = new RPC<>(nodes[i], fcdt[i]).call();
+          new UpdateCategoricalChunksTask(mfpt._cKey, mfpt._chunk2ParseNodeMap).doAll(evecs);
+          MultiFileParseTask._categoricals.remove(mfpt._cKey);
         }
-        for (RPC rpc : rpcs)
-          rpc.get();
-
-        new UpdateCategoricalChunksTask(mfpt._cKey, mfpt._chunk2ParseNodeMap).doAll(evecs);
-        MultiFileParseTask._categoricals.remove(mfpt._cKey);
+        Log.trace("Done unifying categoricals across nodes.");
       }
-      Log.trace("Done unifying categoricals across nodes.");
     } else {                    // No categoricals case
       job.update(0,"Compressing data.");
       fr = new Frame(job._result, setup._column_names,AppendableVec.closeAll(avs));
@@ -941,7 +951,7 @@ public final class ParseDataset {
         case "SVMLight":
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
           break;
-        default: // FIXME: should not be default!
+        default: // FIXME: should not be default and creation strategy should be forwarded to ParserProvider
           dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types, _setup._chunk_size, avs);
           break;
         }

@@ -85,6 +85,23 @@ public final class AvroUtil {
     }
   }
 
+  static String[] getDomain(Schema fieldSchema) {
+    if (fieldSchema.getType() == Schema.Type.ENUM) {
+      return fieldSchema.getEnumSymbols().toArray(new String[] {});
+    } else if (fieldSchema.getType() == Schema.Type.UNION) {
+      List<Schema> unionSchemas = fieldSchema.getTypes();
+      if (unionSchemas.size() == 1) {
+        return getDomain(unionSchemas.get(0));
+      } else if (unionSchemas.size() == 2) {
+        Schema s1 = unionSchemas.get(0);
+        Schema s2 = unionSchemas.get(1);
+        if (s1.getType() == Schema.Type.NULL) return getDomain(s2);
+        else if (s2.getType() == Schema.Type.NULL) return getDomain(s1);
+      }
+    }
+    throw new IllegalArgumentException("Cannot get domain from field: " + fieldSchema);
+  }
+
   /**
    * Transform Avro schema into its primitive representation.
    *

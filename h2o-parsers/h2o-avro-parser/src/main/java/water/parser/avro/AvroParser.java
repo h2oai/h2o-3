@@ -20,6 +20,7 @@ import water.H2O;
 import water.Job;
 import water.Key;
 
+import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseReader;
 import water.parser.ParseSetup;
@@ -232,8 +233,11 @@ public class AvroParser extends Parser {
             dout.addNumCol(cIdx, (Double) value);
             break;
           case ENUM:
-            throw H2O.unimpl();
-            //break;
+            // Note: this code expects ordering of categoricals provided by Avro remain same
+            // as in H2O!!!
+            GenericData.EnumSymbol es = (GenericData.EnumSymbol) value;
+            dout.addNumCol(cIdx, es.getSchema().getEnumOrdinal(es.toString()));
+            break;
           case BYTES:
             dout.addStrCol(cIdx, bs.set(((ByteBuffer) value).array()));
             break;
@@ -266,10 +270,11 @@ public class AvroParser extends Parser {
       this.setChunkSize((int) blockSize);
     }
 
-    public AvroParseSetup(ParseSetup ps, byte[] header, long blockSize) {
+    public AvroParseSetup(ParseSetup ps, byte[] header, long blockSize, String[][] domains) {
       super(ps);
       this.header = header;
       this.blockSize = blockSize;
+      this.setDomains(domains);
       this.setChunkSize((int) blockSize);
     }
 
@@ -293,12 +298,29 @@ public class AvroParser extends Parser {
     }
   }
 
-  static AvroInfo extractAvroInfo(byte[] bits) throws IOException {
+  static AvroInfo extractAvroInfo(byte[] bits, final ParseSetup requiredSetup) throws IOException {
     return runOnPreview(bits, new AvroPreviewProcessor<AvroInfo>() {
       @Override
       public AvroInfo process(byte[] header, GenericRecord gr, long blockCount,
                               long blockSize) {
-        return new AvroInfo(header, blockCount, blockSize);
+        Schema recordSchema = gr.getSchema();
+        List<Schema.Field> fields = recordSchema.getFields();
+        int supportedFieldCnt = 0 ;
+        for (Schema.Field f : fields) if (isSupportedSchema(f.schema())) supportedFieldCnt++;
+        assert supportedFieldCnt == requiredSetup.getColumnNames().length : "User-driven changes are not not supported in Avro format";
+        String[][] domains = new String[supportedFieldCnt][];
+        int i = 0;
+        for (Schema.Field f : fields) {
+          Schema schema = f.schema();
+          if (isSupportedSchema(schema)) {
+            byte type = schemaToColumnType(schema);
+            if (type == Vec.T_CAT) {
+              domains[i] = getDomain(schema);
+            }
+            i++;
+          }
+        }
+        return new AvroInfo(header, blockCount, blockSize, domains);
       }
     });
   }
@@ -332,6 +354,7 @@ public class AvroParser extends Parser {
     for (Schema.Field f : fields) if (isSupportedSchema(f.schema())) supportedFieldCnt++;
     String[] names = new String[supportedFieldCnt];
     byte[] types = new byte[supportedFieldCnt];
+    String[][] domains = new String[supportedFieldCnt][];
     String[] dataPreview = new String[supportedFieldCnt];
     int i = 0;
     for (Schema.Field f : fields) {
@@ -339,6 +362,9 @@ public class AvroParser extends Parser {
       if (isSupportedSchema(schema)) {
         names[i] = f.name();
         types[i] = schemaToColumnType(schema);
+        if (types[i] == Vec.T_CAT) {
+          domains[i] = getDomain(schema);
+        }
         dataPreview[i] = gr.get(f.name()) != null ? gr.get(f.name()).toString() : "null";
         i++;
       } else {
@@ -350,7 +376,7 @@ public class AvroParser extends Parser {
         supportedFieldCnt,
         names,
         types,
-        null,
+        domains,
         null,
         new String[][] { dataPreview },
         header,
@@ -364,15 +390,17 @@ public class AvroParser extends Parser {
    */
   static class AvroInfo {
 
-    public AvroInfo(byte[] header, long firstBlockCount, long firstBlockSize) {
+    public AvroInfo(byte[] header, long firstBlockCount, long firstBlockSize, String[][] domains) {
       this.header = header;
       this.firstBlockCount = firstBlockCount;
       this.firstBlockSize = firstBlockSize;
+      this.domains = domains;
     }
 
     byte[] header;
     long firstBlockCount;
     long firstBlockSize;
+    String[][] domains;
   }
 
   private interface AvroPreviewProcessor<R> {
