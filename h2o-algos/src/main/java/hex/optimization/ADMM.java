@@ -32,7 +32,7 @@ public class ADMM {
 
     MathUtils.Norm _gradientNorm = Norm.L_Infinite;
 
-    double [] _u;
+    public double [] _u;
 
     public static double DEFAULT_RELTOL = 1e-2;
     public static double DEFAULT_ABSTOL = 1e-4;
@@ -95,11 +95,14 @@ public class ADMM {
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
-      double [] u = _u;//
       double [] x = z.clone();
       double [] beta_given = MemoryManager.malloc8d(N);
-      for(int i = 0; i < beta_given.length-hasIcpt; ++i)
-        beta_given[i] = z[i] - u[i];
+      double [] u;
+      if(_u != null) {
+        u = _u;
+        for (int i = 0; i < beta_given.length - hasIcpt; ++i)
+          beta_given[i] = z[i] - _u[i];
+      } else u = _u = MemoryManager.malloc8d(z.length);
       double [] kappa = MemoryManager.malloc8d(rho.length);
       if(l1pen > 0)
         for(int i = 0; i < N-hasIcpt; ++i)
