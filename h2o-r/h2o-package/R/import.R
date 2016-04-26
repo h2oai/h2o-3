@@ -155,6 +155,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
 #'
 #' Imports SQL table into an H2O cloud. Assumes that the SQL table is not being updated and is stable.
 #' Runs multiple SELECT SQL queries concurrently for parallel ingestion.
+#' Also see h2o.import_sql_select.
 #'
 #' @param connection_url URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
 #'        For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
@@ -174,6 +175,34 @@ h2o.import_sql_table <- function(connection_url, table, username, password, colu
     columns <- toString(columns)
     parms$columns <- columns
   }
+  if (!is.null(optimize)) parms$optimize <- optimize
+  res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}
+
+#'
+#' Import SQL table that is result of SELECT SQL query into H2O
+#'
+#' Creates a temporary SQL table from the specified sql_query.
+#' Runs multiple SELECT SQL queries on the temporary table concurrently for parallel ingestion, then drops the table.
+#' Also see h2o.import_sql_table.
+#'
+#' @param connection_url URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
+#'        For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+#' @param select_query SQL query starting with `SELECT` that returns rows from one or more database tables.
+#' @param username Username for SQL server
+#' @param password Password for SQL server
+#' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
+#' @export
+h2o.import_sql_select<- function(connection_url, select_query, username, password, optimize = NULL) {
+  parms <- list()
+  parms$connection_url <- connection_url
+  parms$select_query <- select_query
+  parms$username <- username
+  parms$password <- password
   if (!is.null(optimize)) parms$optimize <- optimize
   res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
   job_key <- res$key$name

@@ -22,6 +22,7 @@ class ModelMetricsHandler extends Handler {
     public boolean _project_archetypes;
     public boolean _reverse_transform;
     public boolean _leaf_node_assignment;
+    public int _exemplar_index = -1;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -107,6 +108,9 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Return the leaf node assignment (optional, only for DRF/GBM models)", json = false, required = false)
     public boolean leaf_node_assignment;
 
+    @API(help = "Retrieve all members for a given exemplar (optional, only for Aggregator models)", json = false, required = false)
+    public int exemplar_index;
+
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBase[] model_metrics;
@@ -123,6 +127,7 @@ class ModelMetricsHandler extends Handler {
       mml._project_archetypes = this.project_archetypes;
       mml._reverse_transform = this.reverse_transform;
       mml._leaf_node_assignment = this.leaf_node_assignment;
+      mml._exemplar_index = this.exemplar_index;
 
       if (null != model_metrics) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -147,6 +152,7 @@ class ModelMetricsHandler extends Handler {
       this.project_archetypes = mml._project_archetypes;
       this.reverse_transform = mml._reverse_transform;
       this.leaf_node_assignment = mml._leaf_node_assignment;
+      this.exemplar_index = mml._exemplar_index;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
@@ -244,8 +250,13 @@ class ModelMetricsHandler extends Handler {
       if (null == parms._predictions_name)
         parms._predictions_name = "deep_features" + Key.make().toString().substring(0, 5) + "_" +
                 parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-    } else if (null == parms._predictions_name)
-      parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+    } else if (null == parms._predictions_name) {
+      if (parms._exemplar_index >= 0) {
+        parms._predictions_name = "members_" + parms._model._key.toString() + "_for_exemplar_" + parms._exemplar_index;
+      } else {
+        parms._predictions_name = "predictions" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+      }
+    }
 
     final Job<Frame> j = new Job(Key.make(parms._predictions_name), Frame.class.getName(), "prediction");
 
@@ -276,14 +287,17 @@ class ModelMetricsHandler extends Handler {
     if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
     if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
 
-    if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
-    if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+    // Aggregator doesn't need a Frame to 'predict'
+    if (s.exemplar_index<0) {
+      if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
+      if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+    }
 
     ModelMetricsList parms = s.createAndFillImpl();
 
     Frame predictions;
     if (!s.reconstruction_error && !s.reconstruction_error_per_feature && s.deep_features_hidden_layer < 0 &&
-        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment) {
+        !s.project_archetypes && !s.reconstruct_train && !s.leaf_node_assignment && s.exemplar_index < 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "predictions" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
       predictions = parms._model.score(parms._frame, parms._predictions_name);
@@ -315,11 +329,16 @@ class ModelMetricsHandler extends Handler {
             parms._predictions_name = "reconstruction_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
           predictions = ((Model.GLRMArchetypes) parms._model).scoreReconstruction(parms._frame, Key.make(parms._predictions_name), s.reverse_transform);
         }
-      } else if(Model.LeafNodeAssignment.class.isAssignableFrom(parms._model.getClass())) {
-        assert(s.leaf_node_assignment);
+      } else if(s.leaf_node_assignment) {
+        assert(Model.LeafNodeAssignment.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
-          parms._predictions_name = "leaf_node_assignement" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
+          parms._predictions_name = "leaf_node_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
         predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, Key.make(parms._predictions_name));
+      } else if(s.exemplar_index >= 0) {
+        assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
+        if (null == parms._predictions_name)
+          parms._predictions_name = "members_" + parms._model._key.toString() + "_for_exemplar_" + parms._exemplar_index;
+        predictions = ((Model.ExemplarMembers) parms._model).scoreExemplarMembers(Key.make(parms._predictions_name), parms._exemplar_index);
       }
       else throw new H2OIllegalArgumentException("Requires a Deep Learning, GLRM, DRF or GBM model.", "Model must implement specific methods.");
     }

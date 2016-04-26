@@ -120,6 +120,33 @@ public final class DHistogram extends Iced {
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
 
+  private DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement) {
+    assert nbins > 1;
+    assert nbins_cats > 1;
+    assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
+    _seed= RandomUtils.getRNG(new Random().nextLong()).nextLong();
+    _isInt = isInt;
+    _name = name;
+    _min=min;
+    _maxEx=maxEx;               // Set Exclusive max
+    _min2 =  Double.MAX_VALUE;   // Set min/max to outer bounds
+    _maxIn= -Double.MAX_VALUE;
+    _minSplitImprovement = minSplitImprovement;
+    // See if we can show there are fewer unique elements than nbins.
+    // Common for e.g. boolean columns, or near leaves.
+    int xbins = isInt == 2 ? nbins_cats : nbins;
+    if( isInt>0 && maxEx-min <= xbins ) {
+      assert ((long)min)==min;                // No overflow
+      xbins = (char)((long)maxEx-(long)min);  // Shrink bins
+      _step = 1.0f;                           // Fixed stepsize
+    } else {
+      _step = xbins/(maxEx-min);              // Step size for linear interpolation, using mul instead of div
+      assert _step > 0 && !Double.isInfinite(_step) : "Histogram step size for column '"+ name + "' is invalid: " + _step + ".";
+    }
+    _nbin = (char)xbins;
+    // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
+  }
+
   // Interpolate d to find bin#
   public int bin( double col_data ) {
     if( Double.isNaN(col_data) ) return _bins.length-1; // NAs go right, and for numeric features, this is consistent
@@ -224,6 +251,10 @@ public final class DHistogram extends Iced {
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, SharedTreeModel.SharedTreeParameters parms) {
     return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._random_split_points, parms._seed);
+  }
+
+  public static DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double minIn, double maxEx, double minSplitImprovement) {
+    return new DHistogram(name,nbins,nbins_cats,isInt,minIn,maxEx,minSplitImprovement);
   }
 
   // Check for a constant response variable

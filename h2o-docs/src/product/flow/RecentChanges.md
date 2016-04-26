@@ -2,6 +2,39 @@
 
 ##H2O
 
+###Turchin (3.8.2.3) - 4/25/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2852'>PUBDEV-2852</a>] -         Incorrect sparse chunk getDoubles() extraction
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2825'>PUBDEV-2825</a>] -         Create h2o.get_grid
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2834'>PUBDEV-2834</a>] -         Implement distributed Aggregator for visualization
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2835'>PUBDEV-2835</a>] -         Add col_sample_rate_change_per_level for GBM/DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2836'>PUBDEV-2836</a>] -         Add learn_rate_annealing for GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2837'>PUBDEV-2837</a>] -         Add random cut points for histograms in DRF/GBM (ExtraTreesClassifier)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2851'>PUBDEV-2851</a>] -         Add limit on max. leaf node contribution for GBM
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2848'>PUBDEV-2848</a>] -         Add tests for early stopping logic (stopping_rounds &gt; 0)
+</li>
+</ul>
+
 ###Turchin (3.8.2.2) - 4/8/2016
 
 <h4>        Bug
@@ -4408,4 +4441,3 @@ The following changes are to resolve incorrect software behavior:
 - Added ip_port field in node json output for Cloud query [(github)](https://github.com/h2oai/h2o-dev/commit/641777855bc9f2c77d0d212eb3a8805452a01073)
 
 ---
-
