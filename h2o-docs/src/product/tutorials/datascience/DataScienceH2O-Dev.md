@@ -179,8 +179,7 @@ The GLM suite includes:
 
 - **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **nfolds**: Specify the number of folds for cross-validation. 
-	>**Note**: Lambda search is not supported when cross-validation is enabled. 
+- **nfolds**: Specify the number of folds for cross-validation.
 
 - **response_column**: (Required) Select the column to use as the independent variable.
 	
@@ -209,8 +208,7 @@ The GLM suite includes:
 
 - **lambda**:  Specify the regularization strength. 
 
-- **lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
-	>**Note**: Lambda search is not supported when cross-validation is enabled. 
+- **lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min.
 
 - **nlambdas**: (Applicable only if **lambda\_search** is enabled) Specify the number of lambdas to use in the search. The default is 100. 
 
@@ -275,6 +273,28 @@ By default, the following output displays:
 - Output (model category, model summary, scoring history, training metrics, validation metrics, best lambda, threshold, residual deviance, null deviance, residual degrees of freedom, null degrees of freedom, AIC, AUC, binomial, rank)
 - Coefficients
 - Coefficient magnitudes
+
+### Lambda Search and Full Regularzion Path
+If lambda_search option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper).
+Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step.
+The returned model will have coefficients corresponding to the "optimal" lambda value as decided during training.
+
+It can sometimes be useful to see the coefficients for all lambda values. Or to override default lambda selection.
+Full regularization path can be extracted from both R and python clients (currently not from Flow). It returns coefficients (and standardized coefficients)
+for all computed lambda values and also explained deviances on both train and validation.
+Subsequently, makeGLMModel call can be used to create h2o glm model with selected coefficients.
+
+To extract the regularization path from R or python:
+ - R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
+ - pyton: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an rgument
+
+### Modifying or Creating Custom GLM Model
+In R and python, makeGLMModel call can be used to create h2o model from given coefficients.
+It needs a source glm model trained on the same dataset to extract dataset information.
+To make custom GLM model from R or python:
+ - R: call h2o.makeGLMModel, takes a model and a vector of coefficients and (optional) decision threshold as parameters.
+ - pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method), takes a model, dictionary containing coefficients and (optional) decision threshold as parameters.
+
 
 ###FAQ
 

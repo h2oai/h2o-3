@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(1,"../../../")
 import h2o
+from builtins import range
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 
@@ -8,7 +9,7 @@ def reg_path_glm():
     # read in the dataset and construct training set (and validation set)
     d = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     m = glm(family='binomial',lambda_search=True,solver='COORDINATE_DESCENT')
-    m.train(training_frame=d,x=range(2,9),y=1)
+    m.train(training_frame=d,x=[2,3,4,5,6,7,8],y=1)
     r = glm.getGLMRegularizationPath(m)
     m2 = glm.makeGLMModel(model=m,coefs=r['coefficients'][10])
     dev1 = r['explained_deviance_train'][10]
@@ -18,11 +19,9 @@ def reg_path_glm():
     assert len(r['lambdas']) == 100
     for l in range(0,len(r['lambdas'])):
         m = glm(family='binomial',lambda_search=False,Lambda=r['lambdas'][l],solver='COORDINATE_DESCENT')
-        m.train(training_frame=d,x=[2,3,4,5,6,7,8,9],y=1)
+        m.train(training_frame=d,x=[2,3,4,5,6,7,8],y=1)
         cs = r['coefficients'][l]
         cs_norm = r['coefficients_std'][l]
-        print(cs)
-        print(m.coef())
         diff = 0
         diff2 = 0
         for n in cs.keys():

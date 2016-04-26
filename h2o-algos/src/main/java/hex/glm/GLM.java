@@ -494,12 +494,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
-//          if(_parms._solver == Solver.IRLSM)
-            (_lslvr = new ADMM.L1Solver(1e-4, 10000)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
-//          else if(_parms._solver == Solver.COORDINATE_DESCENT){
-
-//          } else throw new IllegalStateException("solver can only be IRLSM or COD at this point.");
-
+          if(_state._u == null && _parms._family != Family.multinomial) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
+            (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         }
       }
       return _parms._intercept?xy:Arrays.copyOf(xy,xy.length+1);
@@ -649,11 +645,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double reltol = L1Solver.DEFAULT_RELTOL;
         double abstol = L1Solver.DEFAULT_ABSTOL;
         double ADMM_gradEps = 1e-3;
-        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, new ProgressMonitor() {
+        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), new ProgressMonitor() {
           @Override
-          public boolean progress(double[] betaDiff, GradientInfo ginfo) {return ++_state._iter < _parms._max_iterations;}
+          public boolean progress(double[] betaDiff, GradientInfo ginfo) {
+            return ++_state._iter < _parms._max_iterations;
+          }
         });
-        new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol).solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+        ADMM.L1Solver l1Solver = new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol, _state._u);
+        l1Solver.solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+        _state._u = l1Solver._u;
         _state.updateState(beta,gslvr.getGradient(beta));
       } else {
         Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
@@ -957,6 +957,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } else
           _model.update(_state.beta(), -1, -1, _state._iter);
       }
+      if(_state._iter >= _parms._max_iterations)
+        _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
       _model._output.pickBestModel();
       scoreAndUpdateModel();
       if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
@@ -1311,7 +1313,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private final double _objEps;
     private final double _gradEps;
 
-    public ProximalGradientSolver(GradientSolver s, double[] betaStart, double[] rho, double objEps, double gradEps, ProgressMonitor pm) {
+    public ProximalGradientSolver(GradientSolver s, double[] betaStart, double[] rho, double objEps, double gradEps, GradientInfo ginfo,ProgressMonitor pm) {
       super();
       _solver = s;
       _rho = rho;
@@ -1320,6 +1322,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _pm = pm;
       _beta = betaStart;
       _betaGiven = MemoryManager.malloc8d(betaStart.length);
+//      _ginfo = new ProximalGradientInfo(ginfo,ginfo._objVal,ginfo._gradient);
     }
 
     public static double proximal_gradient(double[] grad, double obj, double[] beta, double[] beta_given, double[] rho) {
@@ -1333,12 +1336,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return obj;
     }
 
-    @Override
-    public ProximalGradientInfo getGradient(double[] beta) {
-      GradientInfo ginfo = _solver.getGradient(beta);
+    private ProximalGradientInfo computeProxGrad(GradientInfo ginfo, double [] beta) {
+      assert !(ginfo instanceof ProximalGradientInfo);
       double[] gradient = ginfo._gradient.clone();
       double obj = proximal_gradient(gradient, ginfo._objVal, beta, _betaGiven, _rho);
       return new ProximalGradientInfo(ginfo, obj, gradient);
+    }
+    @Override
+    public ProximalGradientInfo getGradient(double[] beta) {
+      return computeProxGrad(_solver.getGradient(beta),beta);
     }
 
     @Override
@@ -1357,17 +1363,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     public boolean solve(double[] beta_given, double[] beta) {
-      if (_ginfo == null || beta != _beta) {
-        _ginfo = getGradient(beta);
-        _beta = beta;
-      }
-      double[] gradient = _ginfo._gradient;
-      System.arraycopy(_ginfo._origGinfo._gradient, 0, gradient, 0, gradient.length);
-      double obj = proximal_gradient(gradient, _ginfo._origGinfo._objVal, beta, beta_given, _rho);
-      _ginfo = new ProximalGradientInfo(_ginfo._origGinfo, obj, gradient);
-      System.arraycopy(beta_given, 0, _betaGiven, 0, _betaGiven.length);
-      L_BFGS.Result r = new L_BFGS().setObjEps(_objEps).setGradEps(_gradEps).solve(this, beta, _ginfo, _pm);
+      GradientInfo origGinfo = (_ginfo == null || !Arrays.equals(_beta,beta))
+          ?_solver.getGradient(beta)
+          :_ginfo._origGinfo;
+      System.arraycopy(beta_given,0,_betaGiven,0,beta_given.length);
+      L_BFGS.Result r = new L_BFGS().setObjEps(_objEps).setGradEps(_gradEps).solve(this, beta, _ginfo = computeProxGrad(origGinfo,beta), _pm);
       System.arraycopy(r.coefs,0,beta,0,r.coefs.length);
+      _beta = r.coefs;
       _iter += r.iter;
       _ginfo = (ProximalGradientInfo) r.ginfo;
       return r.converged;
