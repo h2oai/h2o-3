@@ -117,8 +117,6 @@ perf <- h2o.ensemble_performance(fit, newdata = test)
 perf
 
 
-
-
 # Base learner performance, sorted by specified metric:
 #               learner       AUC
 # 14 h2o.deeplearning.2 0.6410442
@@ -143,3 +141,7 @@ perf
 # Family: binomial
 # 
 # Ensemble performance (AUC): 0.68690013373787
+
+# We see here that ensemble performance does increase 
+# by adding additional models to the ensemble. 
+# Test set AUC went from 0.686 to 0.687
