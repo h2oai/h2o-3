@@ -171,6 +171,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=None):
   """Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable.
   Runs multiple SELECT SQL queries concurrently for parallel ingestion. 
+  Also see h2o.import_sql_select.
   
   Parameters
   ----------
@@ -196,10 +197,44 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
   Returns
   -------
     H2OFrame containing data of specified SQL table
-"""
+  """
   if columns is not None: 
     if not isinstance(columns, list): raise ValueError("`columns` must be a list of column names")
     columns = ', '.join(columns)
+  p = {}
+  p.update({k:v for k,v in locals().items() if k is not "p"})
+  p["_rest_version"] = 99
+  j = H2OJob(H2OConnection.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+  return get_frame(j.dest_key)
+
+def import_sql_select(connection_url, select_query, username, password, optimize=None):
+  """Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory. 
+  Creates a temporary SQL table from the specified sql_query.
+  Runs multiple SELECT SQL queries on the temporary table concurrently for parallel ingestion, then drops the table. 
+  Also see h2o.import_sql_table.
+  
+  Parameters
+  ----------
+    connection_url : str
+      URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
+      For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+      
+    select_query : str
+      SQL query starting with `SELECT` that returns rows from one or more database tables.
+      
+    username : str
+      Username for SQL server
+      
+    password : str
+      Password for SQL server
+      
+    optimize : bool, optional, default is True
+      Optimize import of SQL table for faster imports. Experimental.  
+      
+  Returns
+  -------
+    H2OFrame containing data of specified SQL select query
+  """
   p = {}
   p.update({k:v for k,v in locals().items() if k is not "p"})
   p["_rest_version"] = 99

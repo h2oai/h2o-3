@@ -9,8 +9,11 @@ public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
   @API(help="connection_url", required = true)
   String connection_url;
   
-  @API(help="table", required = true)
-  String table;
+  @API(help="table")
+  String table = "";
+  
+  @API(help="select_query")
+  String select_query = "";
 
   @API(help="username", required = true)
   String username;

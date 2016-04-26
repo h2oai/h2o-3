@@ -929,6 +929,13 @@ public class DataInfo extends Keyed<DataInfo> {
     return val < 0?-1:val+_numOffsets[cid];
   }
 
+  public final Row extractDenseRow(Vec[] vecs, long rid, Row row) {
+    Chunk[] chunks = new Chunk[vecs.length];
+    for (int i=0;i<chunks.length;++i)
+      chunks[i] = vecs[i].chunkForRow(rid);
+    return extractDenseRow(chunks, (int)(rid-chunks[0].start()), row);
+  }
+
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.bad = false;
     row.rid = rid + chunks[0].start();
