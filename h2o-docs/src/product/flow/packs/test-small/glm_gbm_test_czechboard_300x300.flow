@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"czechboard_300x300.hex\", [0.25], [\"czechboard_300x300_test.hex_0.250\",\"czechboard_300x300_train.hex_0.750\"]"
+      "input": "splitFrame \"czechboard_300x300.hex\", [0.25], [\"czechboard_300x300_test.hex_0.250\",\"czechboard_300x300_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

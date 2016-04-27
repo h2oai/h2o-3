@@ -36,7 +36,8 @@ public class CNAXIChunkTest extends TestUtil {
       Assert.assertFalse(cc.isNA_abs(K));
       double[] sparsevals = new double[cc.sparseLenNA()];
       int[] sparseids = new int[cc.sparseLenNA()];
-      cc.asSparseDoubles(sparsevals, sparseids);
+      int N = cc.asSparseDoubles(sparsevals, sparseids);
+      assert(N==sparsevals.length);
       for (int i = 0; i < sparsevals.length; ++i) {
         if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
         else Assert.assertTrue(cc.at8(sparseids[i])==(int)sparsevals[i]);

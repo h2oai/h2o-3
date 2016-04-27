@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"ven_11.hex\", [0.25], [\"ven_11_test\",\"ven_11_train\"]"
+      "input": "splitFrame \"ven_11.hex\", [0.25], [\"ven_11_test\",\"ven_11_train\"], 123456"
     },
     {
       "type": "cs",

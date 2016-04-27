@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "cs",
+      "input": "createFrame {\"dest\":\"df.hex\",\"rows\":\"50000\",\"cols\":100,\"seed\":7595850248774472000,\"seed_for_column_types\":-1,\"randomize\":true,\"value\":0,\"real_range\":100,\"categorical_fraction\":0.2,\"factors\":5,\"integer_fraction\":0.2,\"binary_fraction\":0.16,\"binary_ones_fraction\":0.02,\"time_fraction\":0.02,\"string_fraction\":0,\"integer_range\":10000,\"missing_fraction\":0.01,\"response_factors\":2,\"has_response\":true}"
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"df.hex\", [0.25], [\"df.valid.hex\",\"df.train.hex\"], 123456"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'deeplearning', {\"model_id\":\"deeplearning-23a5d424-82d9-4173-a98c-ff87026a7551\",\"training_frame\":\"df.train.hex\",\"validation_frame\":\"df.valid.hex\",\"nfolds\":\"5\",\"response_column\":\"response\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"activation\":\"RectifierWithDropout\",\"hidden\":[200,200],\"epochs\":10,\"variable_importances\":true,\"fold_assignment\":\"AUTO\",\"score_each_iteration\":false,\"balance_classes\":false,\"checkpoint\":\"\",\"use_all_factor_levels\":true,\"standardize\":true,\"train_samples_per_iteration\":\"-1\",\"adaptive_rate\":true,\"input_dropout_ratio\":\"0.2\",\"hidden_dropout_ratios\":[],\"l1\":\"1e-5\",\"l2\":0,\"loss\":\"Automatic\",\"distribution\":\"AUTO\",\"score_interval\":5,\"score_training_samples\":10000,\"score_validation_samples\":0,\"score_duty_cycle\":0.1,\"stopping_rounds\":5,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0,\"max_runtime_secs\":0,\"autoencoder\":false,\"keep_cross_validation_predictions\":false,\"keep_cross_validation_fold_assignment\":false,\"pretrained_autoencoder\":\"\",\"target_ratio_comm_to_comp\":0.05,\"seed\":-5291798092143019000,\"rho\":0.99,\"epsilon\":1e-8,\"max_w2\":\"Infinity\",\"initial_weight_distribution\":\"UniformAdaptive\",\"classification_stop\":0,\"score_validation_sampling\":\"Uniform\",\"diagnostics\":true,\"fast_mode\":true,\"force_load_balance\":true,\"single_node_mode\":false,\"shuffle_training_data\":false,\"missing_values_handling\":\"MeanImputation\",\"quiet_mode\":false,\"sparse\":false,\"col_major\":false,\"average_activation\":0,\"sparsity_beta\":0,\"max_categorical_features\":2147483647,\"reproducible\":false,\"export_weights_and_biases\":false,\"mini_batch_size\":1,\"elastic_averaging\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'drf', {\"model_id\":\"drf-f77110fb-be12-4d06-9040-2c22eaa95f96\",\"training_frame\":\"df.train.hex\",\"validation_frame\":\"df.valid.hex\",\"nfolds\":\"5\",\"response_column\":\"response\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":50,\"max_depth\":20,\"min_rows\":1,\"nbins\":20,\"nbins_cats\":1024,\"seed\":-1,\"mtries\":-1,\"sample_rate\":0.632,\"col_sample_rate_per_tree\":\".8\",\"score_each_iteration\":false,\"score_tree_interval\":\"5\",\"fold_assignment\":\"AUTO\",\"balance_classes\":false,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"build_tree_one_node\":false,\"binomial_double_trees\":false,\"checkpoint\":\"\",\"min_split_improvement\":0,\"keep_cross_validation_predictions\":false,\"keep_cross_validation_fold_assignment\":false,\"nbins_top_level\":1024}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm-9aab926d-4c8c-4222-8493-be7d11f0972b\",\"training_frame\":\"df.train.hex\",\"validation_frame\":\"df.valid.hex\",\"nfolds\":\"5\",\"response_column\":\"response\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"nbins_cats\":1024,\"seed\":\"12345\",\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":\"0.8\",\"col_sample_rate\":\"0.8\",\"col_sample_rate_per_tree\":\"0.8\",\"score_each_iteration\":false,\"score_tree_interval\":\"5\",\"fold_assignment\":\"Random\",\"balance_classes\":false,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"build_tree_one_node\":false,\"checkpoint\":\"\",\"min_split_improvement\":0,\"keep_cross_validation_predictions\":false,\"keep_cross_validation_fold_assignment\":false,\"nbins_top_level\":1024}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-fd8d9345-329a-4c5d-b192-15d9a75fa294\",\"training_frame\":\"df.train.hex\",\"validation_frame\":\"df.valid.hex\",\"nfolds\":\"5\",\"response_column\":\"response\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"family\":\"binomial\",\"solver\":\"IRLSM\",\"alpha\":[],\"lambda\":[],\"lambda_search\":true,\"nlambdas\":-1,\"standardize\":true,\"non_negative\":false,\"fold_assignment\":\"AUTO\",\"score_each_iteration\":false,\"compute_p_values\":false,\"remove_collinear_columns\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"max_runtime_secs\":0,\"keep_cross_validation_predictions\":false,\"keep_cross_validation_fold_assignment\":false,\"missing_values_handling\":\"MeanImputation\",\"intercept\":true,\"objective_epsilon\":0.000001,\"beta_epsilon\":0.0001,\"gradient_epsilon\":0.0001,\"prior\":-1,\"lambda_min_ratio\":-1,\"max_active_predictors\":-1,\"interactions\":[]}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glrm', {\"model_id\":\"glrm-0ba3737d-4e6d-4592-9c3e-9225ebb9cfa8\",\"training_frame\":\"df.hex\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"loading_name\":\"\",\"transform\":\"STANDARDIZE\",\"k\":\"10\",\"loss\":\"Quadratic\",\"multi_loss\":\"Categorical\",\"period\":1,\"regularization_x\":\"None\",\"regularization_y\":\"None\",\"gamma_x\":0,\"gamma_y\":0,\"max_iterations\":1000,\"max_updates\":2000,\"init_step_size\":1,\"min_step_size\":0.0001,\"seed\":15249250747491,\"init\":\"PlusPlus\",\"svd_method\":\"Randomized\",\"expand_user_y\":true,\"impute_original\":false,\"recover_svd\":false,\"score_each_iteration\":false,\"max_runtime_secs\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'kmeans', {\"model_id\":\"kmeans-bdcc459f-0712-4fff-ba55-faa52a132749\",\"training_frame\":\"df.train.hex\",\"validation_frame\":\"df.valid.hex\",\"nfolds\":\"5\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"k\":\"10\",\"max_iterations\":1000,\"init\":\"Furthest\",\"fold_assignment\":\"AUTO\",\"score_each_iteration\":false,\"standardize\":true,\"max_runtime_secs\":0,\"keep_cross_validation_predictions\":false,\"keep_cross_validation_fold_assignment\":false,\"seed\":15249256947157}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'naivebayes', {\"model_id\":\"naivebayes-73a3b295-6d64-4a94-b0ab-71e9c97572a6\",\"nfolds\":\"5\",\"training_frame\":\"df.train.hex\",\"validation_frame\":\"df.valid.hex\",\"response_column\":\"response\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"laplace\":0,\"min_sdev\":0.001,\"eps_sdev\":0,\"min_prob\":0.001,\"eps_prob\":0,\"compute_metrics\":true,\"fold_assignment\":\"AUTO\",\"score_each_iteration\":false,\"max_runtime_secs\":0,\"seed\":0,\"keep_cross_validation_predictions\":false,\"keep_cross_validation_fold_assignment\":false}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'pca', {\"model_id\":\"pca-66ccb5bb-a896-45cb-ba4f-9208cc394ec0\",\"training_frame\":\"df.hex\",\"ignored_columns\":[\"response\"],\"ignore_const_cols\":true,\"transform\":\"NONE\",\"pca_method\":\"GramSVD\",\"k\":\"10\",\"max_iterations\":1000,\"use_all_factor_levels\":false,\"compute_metrics\":true,\"impute_missing\":false,\"seed\":15249262364738,\"score_each_iteration\":false,\"max_runtime_secs\":0}"
+    }
+  ]
+}

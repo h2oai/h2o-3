@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"chicagoAllWeather.hex\""
+      "input": "assist splitFrame, \"chicagoAllWeather.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"chicagoAllWeather.hex\", [0.2], [\"chicagoAllWeather_test.hex_0.20\",\"chicagoAllWeather_train.hex_0.80\"]"
+      "input": "splitFrame \"chicagoAllWeather.hex\", [0.2], [\"chicagoAllWeather_test.hex_0.20\",\"chicagoAllWeather_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

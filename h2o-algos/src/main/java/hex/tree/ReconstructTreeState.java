@@ -15,10 +15,10 @@ import water.fvec.Chunk;
  */
 /* package */ public class ReconstructTreeState extends DTreeScorer<ReconstructTreeState> {
 
-  /* @IN */ final protected float _rate;
+  /* @IN */ final protected double _rate;
   /* @IN */ final protected boolean _oob;
 
-  public ReconstructTreeState(int ncols, int nclass, int skip, float rate, Key[][] treeKeys, boolean oob) {
+  public ReconstructTreeState(int ncols, int nclass, int skip, double rate, Key[][] treeKeys, boolean oob) {
     super(ncols,nclass,skip,treeKeys);
     _rate = rate;
     _oob = oob;

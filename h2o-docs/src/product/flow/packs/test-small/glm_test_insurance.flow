@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"insurance.hex\", [0.25], [\"insurance_test\",\"insurance_train\"]"
+      "input": "splitFrame \"insurance.hex\", [0.25], [\"insurance_test\",\"insurance_train\"], 123456"
     },
     {
       "type": "cs",

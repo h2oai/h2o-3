@@ -5,11 +5,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 from builtins import zip
 from builtins import range
-from .. import H2OConnection, H2OJob, H2OFrame
-from ..estimators import H2OEstimator
-from ..two_dim_table import H2OTwoDimTable
-from ..display import H2ODisplay
 import h2o
+from h2o.connection import H2OConnection
+from h2o.job import H2OJob
+from h2o.frame import H2OFrame
+from h2o.estimators.estimator_base import H2OEstimator
+from h2o.two_dim_table import H2OTwoDimTable
+from h2o.display import H2ODisplay
 import itertools
 from .metrics import *
 
@@ -64,7 +66,6 @@ class H2OGridSearch(object):
     self.models = None # list of H2O Estimator instances
     self._parms = {} # internal, for object recycle #
     self.parms = {}    # external#
-    self._estimator_type = None#
     self._future = False  # used by __repr__/show to query job state#
     self._job = None      # used when _future is True#
 
@@ -210,13 +211,18 @@ class H2OGridSearch(object):
       grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
       for error_message in grid_json["failure_details"]:
         print(error_message)
-    else:                                grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
+    else:                              grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
-    #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-    first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=kwargs['_rest_version'])['models'][0]
 
-    self._resolve_grid(grid.dest_key, grid_json, first_model_json)
+    #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
+    # sometimes no model is returned due to bad parameter values provided by the user.
+    if len(grid_json['model_ids']) > 0:
+      first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'],
+                                                _rest_version=kwargs['_rest_version'])['models'][0]
+      self._resolve_grid(grid.dest_key, grid_json, first_model_json)
+    else:
+      raise ValueError("Gridsearch returns no model due to bad parameter values.")
 
   def _resolve_grid(self, grid_id, grid_json, first_model_json):
     model_class = H2OGridSearch._metrics_class(first_model_json)

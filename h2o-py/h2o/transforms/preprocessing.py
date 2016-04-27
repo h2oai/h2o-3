@@ -75,7 +75,7 @@ class H2OScaler(H2OTransformer):
     :param params: (Ignored)
     :return: An H2OFrame
     """
-    for i in X.ncol:
+    for i in range(X.ncol):
       X[i] = self.means[i] + self.stds[i] * X[i]
     return X
 

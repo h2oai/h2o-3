@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.tree.drf.DRF;
 import hex.tree.gbm.GBMModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
@@ -52,6 +53,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Random _rand;
 
   public boolean isSupervised(){return true;}
+
+  public boolean scoreZeroTrees(){return true;}
 
   @Override protected boolean computePriorClassDistribution(){ return true;}
 
@@ -108,10 +111,20 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
     if (_parms._score_tree_interval < 0 || _parms._score_tree_interval > _parms._ntrees) error ("_score_tree_interval", "_score_tree_interval must be >= 0 and <= _ntrees.");
+    if (_parms._sample_rate_per_class != null) {
+      warn("_sample_rate", "_sample_rate is ignored if _sample_rate_per_class is specified.");
+      if (_parms._sample_rate_per_class.length != nclasses()) error("_sample_rate_per_class", "_sample_rate_per_class must have " + nclasses() + " values (one per class).");
+      for (int i=0;i<_parms._sample_rate_per_class.length;++i) {
+        if (!(0.0 < _parms._sample_rate_per_class[i] && _parms._sample_rate_per_class[i] <= 1.0))
+          error("_sample_rate_per_class", "sample_rate_per_class for class " + response().domain()[i] + " should be in interval ]0,1] but it is " + _parms._sample_rate_per_class[i] + ".");
+      }
+    }
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
-      error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate);
+      error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate + ".");
     if (!(0.0 < _parms._col_sample_rate_per_tree && _parms._col_sample_rate_per_tree <= 1.0))
-      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree);
+      error("_col_sample_rate_per_tree", "col_sample_rate_per_tree should be in interval ]0,1] but it is " + _parms._col_sample_rate_per_tree + ".");
+    if( !(0. < _parms._col_sample_rate_change_per_level && _parms._col_sample_rate_change_per_level <= 2) )
+      error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be between 0 and 2");
     if (_train != null) {
       double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
@@ -189,6 +202,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           }
           Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
           Log.info("Model class distribution: " + Arrays.toString(_model._output._modelClassDist));
+          if (_parms._sample_rate_per_class != null) {
+            Log.info("Sample rates per tree (this affects the distribution of probabilities):");
+            for (int i = 0; i < nclasses(); ++i)
+              Log.info(" sample rate for class '" + response().domain()[i] + "' : " + _parms._sample_rate_per_class[i]);
+          }
         }
 
         // Also add to the basic working Frame these sets:
@@ -268,7 +286,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             return;             // Stop when approaching round-off error
           }
           if (!Double.isNaN(training_r2)  //HACK to detect whether we scored at all
-                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last")) {
+                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
             doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
             _job.update(_ntrees-_model._output._ntrees); //finish
             return;
@@ -291,7 +309,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
-  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean subset, boolean build_tree_one_node) {
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
     // Build up the next-generation tree splits from the current histograms.
@@ -313,7 +331,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (idx_weight() >= 0)
         fr2.add(fr._names[idx_weight()],vecs[idx_weight()]); //observation weights
       // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, subset, build_tree_one_node, _improvPerVar, _model._parms._distribution));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -336,13 +354,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final int _leafs[/*nclass*/];
     final DHistogram _hcs[/*nclass*/][][];
     final Frame _fr2;
-    final boolean _subset;      // True if working a subset of cols
     final boolean _build_tree_one_node;
     float[] _improvPerVar;      // Squared Error improvement per variable per split
     Distribution.Family _family;
 
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean subset, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -351,7 +368,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _leafs= leafs;
       _hcs  = hcs;
       _fr2  = fr2;
-      _subset = subset;
       _build_tree_one_node = build_tree_one_node;
       _improvPerVar = improvPerVar;
       _family = family;
@@ -511,7 +527,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         Score scv = new Score(this,false,false,vresponse()._key,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
-        out._scored_valid[out._ntrees].fillFrom(mmv);
+        if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
+          out._scored_valid[out._ntrees].fillFrom(mmv);
       }
       out._model_summary = createModelSummaryTable(out);
       out._scoring_history = createScoringHistoryTable(out);
@@ -588,7 +605,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     int rows = 0;
     for( int i = 0; i<_output._scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse) && (_output._scored_valid == null || Double.isNaN(_output._scored_valid[i]._mse))) continue;
       rows++;
     }
     TwoDimTable table = new TwoDimTable(
@@ -600,7 +617,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             "");
     int row = 0;
     for( int i = 0; i<_output._scored_train.length; i++ ) {
-      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse)) continue;
+      if (i != 0 && Double.isNaN(_output._scored_train[i]._mse) && (_output._scored_valid == null || Double.isNaN(_output._scored_valid[i]._mse))) continue;
       int col = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
       table.set(row, col++, fmt.print(_output._training_time_ms[i]));

@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"chicagoCensus.hex\""
+      "input": "assist splitFrame, \"chicagoCensus.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"chicagoCensus.hex\", [0.25], [\"chicagoCensus_test\",\"chicagoCensus_train\"]"
+      "input": "splitFrame \"chicagoCensus.hex\", [0.25], [\"chicagoCensus_test\",\"chicagoCensus_train\"], 123456"
     },
     {
       "type": "cs",

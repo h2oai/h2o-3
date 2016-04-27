@@ -18,6 +18,7 @@ public class Register extends water.api.AbstractRegister {
       new hex.svd         .SVD         (true),
       new hex.tree.drf    .DRF         (true),
       new hex.tree.gbm    .GBM         (true),
+      new hex.aggregator  .Aggregator  (true),
     };
     // "Word2Vec", "Example", "Grep"
     for( ModelBuilder algo : algos ) {
@@ -33,5 +34,6 @@ public class Register extends water.api.AbstractRegister {
       H2O.registerPOST("/99/Grid/"+lbase, GridSearchHandler.class, "train", "Run grid search for "+base+" model.");
     }
     H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
+    H2O.registerPOST("/3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "test only");
   }
 }

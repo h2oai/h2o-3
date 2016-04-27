@@ -169,6 +169,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+  public static double[] add(double[] a, double b) {
+    for(int i = 0; i < a.length; i++ ) a[i] += b;
+    return a;
+  }
 
   public static double[] wadd(double[] a, double[] b, double w) {
     if( a==null ) return b;
@@ -923,6 +927,16 @@ public class ArrayUtils {
     return c;
   }
 
+  static public byte[] append( byte[] a, byte[] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    byte[] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
+
   static public double[] append( double[] a, double[] b ) {
     if( a==null ) return b;
     if( b==null ) return a;
@@ -1178,6 +1192,16 @@ public class ArrayUtils {
     int len = 1 + (int)((end - start) / step); // Include both ends of interval
     Float[] result = new Float[len];
     Float value = start;
+    for(int i = 0; i < len; i++, value = start + i*step) {
+      result[i] = value;
+    }
+    return result;
+  }
+
+  public static Double[] interval(Double start, Double end, Double step) {
+    int len = 1 + (int)((end - start) / step); // Include both ends of interval
+    Double[] result = new Double[len];
+    Double value = start;
     for(int i = 0; i < len; i++, value = start + i*step) {
       result[i] = value;
     }

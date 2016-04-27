@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import water.Key;
 import water.fvec.Vec;
 
+import static water.parser.DefaultParserProviders.ARFF_INFO;
+
 class ARFFParser extends CsvParser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
 
@@ -95,7 +97,7 @@ class ARFFParser extends CsvParser {
     }
 
     // Return the final setup
-    return new ParseSetup(ParserType.ARFF, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
   }
 
   private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {

@@ -44,6 +44,9 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
   @API(help="stacktrace", direction=API.Direction.OUTPUT)
   public String stacktrace;
 
+  @API(help="ready for view", direction=API.Direction.OUTPUT)
+  public boolean ready_for_view;
+
   //==========================
   // Custom adapters go here
 
@@ -82,6 +85,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
       stacktrace = sw.toString();
     }
     msec = job.msec();
+    ready_for_view = job.readyForView();
 
     Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);
     dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(),job._result);

@@ -2,7 +2,7 @@ package water.fvec
 
 import org.junit.{Assert, Test, BeforeClass}
 import water.TestUtil
-import water.parser.{ParserType, ParseSetup}
+import water.parser.ParseSetup
 
 /**
  * Tests for exposed frame operations.

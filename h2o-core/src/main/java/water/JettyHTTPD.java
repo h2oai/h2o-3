@@ -13,24 +13,6 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-
-import java.io.EOFException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URLDecoder;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import water.UDPRebooted.ShutdownTsk;
@@ -43,6 +25,18 @@ import water.init.NodePersistentStorage;
 import water.util.FileUtils;
 import water.util.HttpResponseStatus;
 import water.util.Log;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URLDecoder;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Embedded Jetty instance inside H2O.
@@ -725,8 +719,20 @@ public class JettyHTTPD {
         for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
           String key = entry.getKey();
           String[] values = entry.getValue();
-          for (String value : values) {
-            parms.put(key, value);
+
+          if (values.length == 1) {
+            parms.put(key, values[0]);
+          } else if (values.length > 1) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            boolean first = true;
+            for (String value : values) {
+              if (!first) sb.append(",");
+              sb.append("\"").append(value).append("\"");
+              first = false;
+            }
+            sb.append("]");
+            parms.put(key, sb.toString());
           }
         }
 

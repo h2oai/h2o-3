@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"iris_weirdsep.hex\", [0.2], [\"iris_weirdsep_test\",\"iris_weirdsep_train\"]"
+      "input": "splitFrame \"iris_weirdsep.hex\", [0.2], [\"iris_weirdsep_test\",\"iris_weirdsep_train\"], 123456"
     },
     {
       "type": "cs",

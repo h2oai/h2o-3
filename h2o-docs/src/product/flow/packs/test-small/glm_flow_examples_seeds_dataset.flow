@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"seeds_dataset2.hex\", [0.25], [\"seeds_dataset2_test.hex_0.250\",\"seeds_dataset2_train.hex_0.750\"]"
+      "input": "splitFrame \"seeds_dataset2.hex\", [0.25], [\"seeds_dataset2_test.hex_0.250\",\"seeds_dataset2_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"marketing_naRemoved.hex\", [0.25], [\"marketing_naRemoved_test\",\"marketing_naRemoved_train\"]"
+      "input": "splitFrame \"marketing_naRemoved.hex\", [0.25], [\"marketing_naRemoved_test\",\"marketing_naRemoved_train\"], 123456"
     },
     {
       "type": "cs",

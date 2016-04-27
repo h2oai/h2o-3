@@ -25,6 +25,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** User description */
   public final String _description;
 
+  // whether the _result key is ready for view
+  private boolean _ready_for_view = true;
+
   private String [] _warns;
 
   public void setWarnings(final String [] warns){
@@ -82,6 +85,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( running() ) return System.currentTimeMillis() - _start_time;
     return _end_time - _start_time; // Stopped
   }
+
+  public boolean readyForView() { return _ready_for_view; }
+  public void setReadyForView(boolean ready) { _ready_for_view = ready; }
 
   /** Jobs may be requested to Stop.  Each individual job will respond to this
    *  on a best-effort basis, and make some time to stop.  Stop really means

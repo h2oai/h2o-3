@@ -45,12 +45,7 @@ class TestGLMBinomial:
     test2_glm_lambda_search(): test lambda search with alpha set to 0.5 per Tomas's
         suggestion.  Make sure logloss and prediction accuracy generated here is comparable in
         value to H2O GLM with no regularization.
-    test_glm_grid_search_over_params("IRLSM"): test grid search with solver set to IRLSM over
-        various alpha values while lambda is set to be the best value obtained
-        from test 2.  Cross validation with k=5 and random assignment is enabled
-        as well.  The best model performance hopefully will generate logloss and
-        prediction accuracies close to H2O with no regularization in test 1.
-    test_glm_grid_search_over_params("L_BFGS"): test grid search with solver set to L_BFGS over
+    test3_glm_grid_search_over_params(): test grid search over
         various alpha values while lambda is set to be the best value obtained
         from test 2.  Cross validation with k=5 and random assignment is enabled
         as well.  The best model performance hopefully will generate logloss and
@@ -131,10 +126,11 @@ class TestGLMBinomial:
     weight_filename = family+"_"+curr_time+"_weight.csv"
     weight_filename_enum = family+"_"+curr_time+"_weight_enum.csv"
 
-    total_test_number = 8   # total number of tests being run for GLM Binomial family
+    total_test_number = 7   # total number of tests being run for GLM Binomial family
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed, only for Gaussian
-    allowed_diff = 2e-2   # tolerance of comparison for logloss/prediction accuracy
+    allowed_diff = 5e-2   # tolerance of comparison for logloss/prediction accuracy, okay to be loose.  Condition
+                          # to run the codes are different
 
     duplicate_col_counts = 5    # maximum number of times to duplicate a column
     duplicate_threshold = 0.2   # for each column, a coin is tossed to see if we duplicate that column or not
@@ -203,7 +199,6 @@ class TestGLMBinomial:
     valid_data = []     # store validation data set
     training_data_grid = []     # store combined training and validation data set for cross validation
 
-    best_solver = ""    # store the best solver found
     best_alpha = -1     # store best alpha value found
     best_grid_logloss = -1   # store lowest MSE found from grid search
 
@@ -647,7 +642,7 @@ class TestGLMBinomial:
                                                                                 num_test_failed, self.test_failed)
         self.test_num += 1
 
-    def test3_glm_grid_search(self, solver_name):
+    def test3_glm_grid_search(self):
         """
         This test is used to test GridSearch with the following parameters:
         1. Lambda = best_lambda value from test2
@@ -656,14 +651,11 @@ class TestGLMBinomial:
 
         We will look at the best results from the grid search and compare it with H2O model built in test 1.
 
-        :param solver_name: string representing the solver method that we would like to use for our GLM model
-
         :return: None
         """
 
         print("*******************************************************************************************")
-        print("Test3: explores various parameter settings in training the GLM using GridSearch using solver " +
-              solver_name)
+        print("Test3: explores various parameter settings in training the GLM using GridSearch using solver ")
         h2o.cluster_info()
 
         hyper_parameters = {'alpha': [0, 0.5, 0.99]}  # set hyper_parameters for grid search
@@ -671,7 +663,7 @@ class TestGLMBinomial:
         # train H2O GLM model with grid search
         model_h2o_gridsearch = \
             H2OGridSearch(H2OGeneralizedLinearEstimator(family=self.family, Lambda=self.best_lambda, nfolds=5,
-                                                        fold_assignment='Random', solver=solver_name), hyper_parameters)
+                                                        fold_assignment='Random'), hyper_parameters)
         model_h2o_gridsearch.train(x=self.x_indices, y=self.y_index, training_frame=self.training_data_grid)
 
         # print out the model sequence ordered by the best validation logloss values, thanks Ludi!
@@ -679,21 +671,11 @@ class TestGLMBinomial:
 
         # obtain the model ID of best model (with smallest MSE) and use that for our evaluation
         best_model_id = temp_model['Model Id'][0]
-        best_xval_logloss = temp_model['logloss(xval=True)'][0]
+        self.best_grid_logloss = temp_model['logloss(xval=True)'][0]
+        self.best_alpha = model_h2o_gridsearch.get_hyperparams(best_model_id)
 
         best_model = h2o.get_model(best_model_id)
-
         best_model_test_metrics = best_model.model_performance(test_data=self.test_data)
-
-        # extract best grid MSE, solver, alpha values used in later tests
-        if self.best_grid_logloss < 0:
-            self.best_grid_logloss = best_xval_logloss
-            self.best_alpha = model_h2o_gridsearch.get_hyperparams(best_model_id)
-            self.best_solver = solver_name
-        elif best_xval_logloss < self.best_grid_logloss:
-            self.best_grid_logloss = best_xval_logloss
-            self.best_alpha = model_h2o_gridsearch.get_hyperparams(best_model_id)
-            self.best_solver = solver_name
 
         num_test_failed = self.test_failed
 
@@ -701,7 +683,7 @@ class TestGLMBinomial:
         self.test_failed = \
             pyunit_utils.extract_comparison_attributes_and_print_multinomial(best_model, best_model_test_metrics,
                                                                              self.family,
-                                                                             "\nTest3 " + solver_name + " Done!",
+                                                                             "\nTest3 " + " Done!",
                                                                              test_model=self.test1_model,
                                                                              test_model_metric=self.test1_model_metrics,
                                                                              compare_att_str=[
@@ -810,9 +792,11 @@ class TestGLMBinomial:
 
         # train H2O model with remove_collinear_columns=True
         model_h2o = H2OGeneralizedLinearEstimator(family=self.family, Lambda=self.best_lambda, alpha=self.best_alpha,
-                                                  solver=self.best_solver, remove_collinear_columns=True)
+                                                  remove_collinear_columns=True)
         model_h2o.train(x=x_indices, y=y_index, training_frame=training_data)
 
+        print("Best lambda is {0}, best alpha is {1}".format(self.best_lambda, self.best_alpha))
+              
         # evaluate model over test data set
         model_h2o_metrics = model_h2o.model_performance(test_data=test_data)
 
@@ -1459,10 +1443,8 @@ def test_glm_binomial():
     test_glm_binomial = TestGLMBinomial()
     test_glm_binomial.test1_glm_no_regularization()
     test_glm_binomial.test2_glm_lambda_search()
-    test_glm_binomial.test3_glm_grid_search("IRLSM")
-    test_glm_binomial.test3_glm_grid_search("L_BFGS")
- #   test_glm_binomial.test4_glm_remove_collinear_columns()
-    test_glm_binomial.test_num += 1
+    test_glm_binomial.test3_glm_grid_search()
+    test_glm_binomial.test4_glm_remove_collinear_columns()
     test_glm_binomial.test5_missing_values()
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()

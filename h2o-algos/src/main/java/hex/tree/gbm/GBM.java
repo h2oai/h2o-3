@@ -130,6 +130,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     if( !(0. < _parms._learn_rate && _parms._learn_rate <= 1.0) )
       error("_learn_rate", "learn_rate must be between 0 and 1");
+    if( !(0. < _parms._learn_rate_annealing && _parms._learn_rate_annealing <= 1.0) )
+      error("_learn_rate_annealing", "learn_rate_annealing must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
   }
@@ -415,9 +417,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // into the tree leaves.  Includes learn_rate.
       GammaPass gp = new GammaPass(ktrees, leafs, _parms._distribution).doAll(_train);
       if (_parms._distribution == Distribution.Family.laplace) {
-        fitBestConstantsQuantile(ktrees, leafs, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
+        fitBestConstantsQuantile(ktrees, 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
       } else if (_parms._distribution == Distribution.Family.quantile) {
-        fitBestConstantsQuantile(ktrees, leafs, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
+        fitBestConstantsQuantile(ktrees, _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
         fitBestConstants(ktrees, leafs, gp);
       }
@@ -454,17 +456,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Initially setup as-if an empty-split had just happened
         if (_model._output._distribution[k] != 0) {
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
-          ktrees[k] = new DTree(_train, _ncols, (char)_parms._nbins, (char)_parms._nbins_cats, (char)_nclass, _parms._min_rows, _mtry, _mtry_per_tree, rseed);
-          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, _parms._nbins_cats, hcs[k][0])); // The "root" node
+          ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
+          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], _parms);
+          new UndecidedNode(ktrees[k], -1, hist); // The "root" node
         }
       }
 
       // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
-      if (_parms._sample_rate < 1) {
+      if (_parms._sample_rate < 1 || _parms._sample_rate_per_class != null) {
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)
-            ss[k] = new Sample(ktrees[k], _parms._sample_rate).dfork(null, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null, new Frame(vec_nids(_train, k), vec_resp(_train)), _parms._build_tree_one_node);
         for (int k = 0; k < _nclass; k++)
           if (ss[k] != null) ss[k].getResult();
       }
@@ -475,7 +478,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Adds a layer to the trees each pass.
       int depth = 0;
       for (; depth < _parms._max_depth; depth++) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _mtry < _model._output.nfeatures(), _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if (hcs == null) break;
       }
@@ -507,7 +510,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } // -- k-trees are done
     }
 
-    private void fitBestConstantsQuantile(DTree[] ktrees, int[] leafs, double quantile) {
+    private void fitBestConstantsQuantile(DTree[] ktrees, double quantile) {
       assert(_nclass==1);
       Vec response = new MRTask() {
         @Override
@@ -527,10 +530,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       H2O.submitTask(sqt);
       sqt.join();
 
+      double annealing = Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
       for (int i = 0; i < sqt._quantiles.length; i++) {
-        float val = (float) (_parms._learn_rate * sqt._quantiles[i]);
-        assert !Float.isNaN(val) && !Float.isInfinite(val);
-        ((LeafNode) ktrees[0].node(Math.max(0,(int)strata.min()) + i))._pred = val;
+        double val = _parms._learn_rate * annealing * sqt._quantiles[i];
+        assert !Double.isNaN(val) && !Double.isInfinite(val);
+        if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
+        if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
+        ((LeafNode) ktrees[0].node(Math.max(0,(int)strata.min()) + i))._pred = (float)val;
 //        Log.info("Leaf " + ((int)strata.min()+i) + " has quantile: " + sqt._quantiles[i]);
       }
     }
@@ -540,8 +546,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
+        double annealing = Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          float gf = (float) (_parms._learn_rate * m1class * gp.gamma(k, i));
+          double gf = _parms._learn_rate * annealing * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -549,8 +556,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if (gf > 1e4) gf = 1e4f; // Cap prediction, will already overflow during Math.exp(gf)
             else if (gf < -1e4) gf = -1e4f;
           }
-          assert !Float.isNaN(gf) && !Float.isInfinite(gf);
-          ((LeafNode) tree.node(leafs[k] + i))._pred = gf;
+          assert !Double.isNaN(gf) && !Double.isInfinite(gf);
+          if (gf > _parms._max_abs_leafnode_pred) gf = _parms._max_abs_leafnode_pred;
+          if (gf < -_parms._max_abs_leafnode_pred) gf = -_parms._max_abs_leafnode_pred;
+          ((LeafNode) tree.node(leafs[k] + i))._pred = (float)gf;
         }
       }
     }

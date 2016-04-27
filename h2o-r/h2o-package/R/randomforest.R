@@ -18,7 +18,9 @@
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
 #'        where p is the number of predictors.
-#' @param sample_rate Sample rate, from 0 to 1.0.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0)
+#' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
+#' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
 #' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param build_tree_one_node Run on one node only; no network overhead but
 #'        fewer cpus used.  Suitable for small datasets.
@@ -34,6 +36,9 @@
 #' @param binomial_double_trees For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
 #' @param balance_classes logical, indicates whether or not to balance training
 #'        data class counts via over/under-sampling (for imbalanced data)
+#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic
+#'        order). If not specified, sampling factors will be automatically computed to obtain class
+#'        balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
 #'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
 #' @param seed Seed for random numbers (affects sampling) - Note: only
@@ -57,6 +62,8 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
+#' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
+#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -67,7 +74,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              ignore_const_cols = TRUE,
                              checkpoint,
                              mtries = -1,
+                             col_sample_rate_change_per_level = 1.0,
                              sample_rate = 0.632,
+                             sample_rate_per_class,
                              col_sample_rate_per_tree = 1.0,
                              build_tree_one_node = FALSE,
                              ntrees = 50,
@@ -78,6 +87,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              nbins_cats = 1024,
                              binomial_double_trees = FALSE,
                              balance_classes = FALSE,
+                             class_sampling_factors,
                              max_after_balance_size = 5,
                              seed,
                              offset_column = NULL,
@@ -92,7 +102,9 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_rounds=0,
                              stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
                              stopping_tolerance=1e-3,
-                             max_runtime_secs=0
+                             max_runtime_secs=0,
+                             min_split_improvement,
+                             random_split_points=FALSE
                              )
 {
   # Training_frame and validation_frame may be a key or an H2OFrame object
@@ -128,8 +140,12 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$checkpoint <- checkpoint
   if(!missing(mtries))
     parms$mtries <- mtries
+  if(!missing(col_sample_rate_change_per_level))
+    parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if(!missing(sample_rate))
     parms$sample_rate <- sample_rate
+  if (!missing(sample_rate_per_class))
+    parms$sample_rate_per_class <- sample_rate_per_class
   if(!missing(col_sample_rate_per_tree))
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if(!missing(build_tree_one_node))
@@ -150,6 +166,8 @@ h2o.randomForest <- function(x, y, training_frame,
     parms$nbins_cats <- nbins_cats
   if(!missing(balance_classes))
     parms$balance_classes <- balance_classes
+  if(!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
   if(!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
   if(!missing(seed))
@@ -168,6 +186,8 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(stopping_metric)) parms$stopping_metric <- stopping_metric
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
+  if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
+  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
 
   .h2o.modelJob('drf', parms)
 }

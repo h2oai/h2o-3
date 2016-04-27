@@ -28,10 +28,16 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Minimum number of rows to assign to terminal nodes.
   learn_rate : float
     Learning rate (from 0.0 to 1.0)
+  learn_rate_annealing : float
+    Multiply the learning rate by this factor after every tree
   sample_rate : float
-    Row sample rate (from 0.0 to 1.0)
+    Row sample rate per tree (from 0.0 to 1.0)
+  sample_rate_per_class : list
+    Row sample rate per tree per class (one per class, from 0.0 to 1.0)
   col_sample_rate : float
-    Column sample rate (from 0.0 to 1.0)
+    Column sample rate per split (from 0.0 to 1.0)
+  col_sample_rate_change_per_level : float
+    Relative change of the column sampling rate for every level (from 0.0 to 2.0)
   col_sample_rate_per_tree : float
     Column sample rate per tree (from 0.0 to 1.0)
   nbins : int
@@ -46,6 +52,10 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   balance_classes : bool
     logical, indicates whether or not to balance training data class counts via
     over/under-sampling (for imbalanced data)
+  class_sampling_factors : list
+    Desired over/under-sampling ratios per class (in lexicographic
+    order). If not specified, sampling factors will be automatically computed to obtain class
+    balance during training. Requires balance_classes.
   max_after_balance_size : float
     Maximum relative size of the training data after balancing class counts
     (can be less than 1.0). Ignored if balance_classes is False, which is the
@@ -79,6 +89,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
   stopping_tolerance : float
     Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+  min_split_improvement : float
+    Minimum relative improvement in squared error reduction for a split to happen
+  random_split_points : boolean
+    Whether to use random split points for histograms (to pick the best split from).
+  max_abs_leafnode_pred : float
+    Maximum absolute value of a leaf node prediction.
 
   Returns
   -------
@@ -86,13 +102,15 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   """
   def __init__(self, model_id=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, nbins=None,
-               sample_rate=None, col_sample_rate=None, col_sample_rate_per_tree=None,
-               nbins_top_level=None, nbins_cats=None, balance_classes=None,
+               sample_rate=None, sample_rate_per_class=None, col_sample_rate=None,
+               col_sample_rate_change_per_level=None, col_sample_rate_per_tree=None,
+               nbins_top_level=None, nbins_cats=None, balance_classes=None, class_sampling_factors=None,
                max_after_balance_size=None, seed=None, build_tree_one_node=None,
                nfolds=None, fold_assignment=None, keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
-               score_each_iteration=None, score_tree_interval=None, checkpoint=None):
+               score_each_iteration=None, score_tree_interval=None, checkpoint=None,
+               min_split_improvement=None, random_split_points=None, max_abs_leafnode_pred=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -154,6 +172,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     self._parms["learn_rate"] = value
 
   @property
+  def learn_rate_annealing(self):
+    return self._parms["learn_rate_annealing"]
+
+  @learn_rate_annealing.setter
+  def learn_rate_annealing(self, value):
+    self._parms["learn_rate_annealing"] = value
+
+  @property
   def sample_rate(self):
     return self._parms["sample_rate"]
 
@@ -162,12 +188,28 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     self._parms["sample_rate"] = value
 
   @property
+  def sample_rate_per_class(self):
+    return self._parms["sample_rate_per_class"]
+
+  @sample_rate_per_class.setter
+  def sample_rate_per_class(self, value):
+    self._parms["sample_rate_per_class"] = value
+
+  @property
   def col_sample_rate(self):
     return self._parms["col_sample_rate"]
 
   @col_sample_rate.setter
   def col_sample_rate(self, value):
     self._parms["col_sample_rate"] = value
+
+  @property
+  def col_sample_rate_change_per_tree(self):
+    return self._parms["col_sample_rate_change_per_tree"]
+
+  @col_sample_rate_change_per_tree.setter
+  def col_sample_rate_change_per_tree(self, value):
+    self._parms["col_sample_rate_change_per_tree"] = value
 
   @property
   def col_sample_rate_per_tree(self):
@@ -208,6 +250,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @balance_classes.setter
   def balance_classes(self, value):
     self._parms["balance_classes"] = value
+
+  @property
+  def class_sampling_factors(self):
+    return self._parms["class_sampling_factors"]
+
+  @class_sampling_factors.setter
+  def class_sampling_factors(self, value):
+    self._parms["class_sampling_factors"] = value
 
   @property
   def max_after_balance_size(self):
@@ -313,3 +363,26 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   def checkpoint(self, value):
     self._parms["checkpoint"] = value
 
+  @property
+  def min_split_improvement(self):
+      return self._parms["min_split_improvement"]
+
+  @min_split_improvement.setter
+  def min_split_improvement(self, value):
+      self._parms["min_split_improvement"] = value
+
+  @property
+  def random_split_points(self):
+    return self._parms["random_split_points"]
+
+  @random_split_points.setter
+  def random_split_points(self, value):
+    self._parms["random_split_points"] = value
+
+  @property
+  def max_abs_leafnode_pred(self):
+    return self._parms["max_abs_leafnode_pred"]
+
+  @max_abs_leafnode_pred.setter
+  def max_abs_leafnode_pred(self, value):
+    self._parms["max_abs_leafnode_pred"] = value

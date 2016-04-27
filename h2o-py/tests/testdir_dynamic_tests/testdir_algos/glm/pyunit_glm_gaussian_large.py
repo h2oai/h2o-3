@@ -41,14 +41,9 @@ class TestGLMGaussian:
     test2_glm_lambda_search(): test lambda search with alpha set to 0.5 per Tomas's
         suggestion.  Make sure MSEs generated here is comparable in value to H2O
         GLM model with no regularization.
-    test_glm_grid_search_over_params("IRLSM"): test grid search with solver set to IRLSM over
+    test3_glm_grid_search_over_params(): test grid search with over
         various alpha values while lambda is set to be the best value obtained
         from test 2.  The best model performance hopefully will generate MSEs
-        close to H2O with no regularization in test 1.
-    test_glm_grid_search_over_params("L_BFGS"): test grid search with solver set to L_BFGS over
-        various alpha values while lambda is set to be the best value obtained
-        from test 2.  Cross validation with k=5 and random assignment is enabled
-        as well.  The best model performance hopefully will generate MSEs
         close to H2O with no regularization in test 1.
     test4_glm_remove_collinear_columns(): test parameter remove_collinear_columns=True
         with lambda set to best lambda from test 2, alpha set to best alpha from Gridsearch
@@ -123,7 +118,7 @@ class TestGLMGaussian:
     weight_filename = family+"_"+curr_time+"_weight.csv"
     weight_filename_enum = family+"_"+curr_time+"_weight_enum.csv"
 
-    total_test_number = 8   # total number of tests being run for GLM Gaussian family
+    total_test_number = 7   # total number of tests being run for GLM Gaussian family
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed
     allowed_diff = 1e-5   # value of p-values difference allowed between theoretical and h2o p-values
@@ -210,7 +205,6 @@ class TestGLMGaussian:
     valid_data = []     # store validation data set
     training_data_grid = []     # store combined training and validation data set for cross validation for grid search
 
-    best_solver = ""    # store the best solver found
     best_alpha = -1     # store best alpha value found
     best_grid_mse = -1   # store lowest MSE found from grid search
 
@@ -404,9 +398,14 @@ class TestGLMGaussian:
         print("*******************************************************************************************")
         print("Test1: compares the linear regression weights/p-values computed from theory and H2O GLM.")
 
-        # get theoretical weights, p-values and mse
-        (self.test1_weight_theory, self.test1_p_values_theory, self.test1_mse_train_theory,
-         self.test1_mse_test_theory) = self.theoretical_glm(self.training_data_file, self.test_data_file, False, False)
+        try:
+            # get theoretical weights, p-values and mse
+            (self.test1_weight_theory, self.test1_p_values_theory, self.test1_mse_train_theory,
+            self.test1_mse_test_theory) = self.theoretical_glm(self.training_data_file, self.test_data_file,
+                                                               False, False)
+        except:
+            print("problems with lin-alg.  Got bad data set.")
+            sys.exit(0)
 
         # get H2O model
         model_h2o = H2OGeneralizedLinearEstimator(family=self.family, Lambda=0, compute_p_values=True,
@@ -502,7 +501,7 @@ class TestGLMGaussian:
                                                                                 num_test_failed, self.test_failed)
         self.test_num += 1
 
-    def test3_glm_grid_search(self, solver_name):
+    def test3_glm_grid_search(self):
         """
         This test is used to test GridSearch with the following parameters:
 
@@ -513,20 +512,17 @@ class TestGLMGaussian:
         We will look at the best results from the grid search and compare it with test 1
         results.
 
-        :param solver_name: string specify name of solver we want to choose for our GLM model
-
         :return: None
         """
         print("*******************************************************************************************")
-        print("Test3: explores various parameter settings in training the GLM using GridSearch using solver " +
-              solver_name)
+        print("Test3: explores various parameter settings in training the GLM using GridSearch using solver ")
 
         hyper_parameters = {'alpha': [0, 0.5, 0.99]}    # set hyper_parameters for grid search
 
         # train H2O GLM model with grid search
         model_h2o_grid_search = H2OGridSearch(H2OGeneralizedLinearEstimator(family=self.family, Lambda=self.best_lambda,
-                                                                            nfolds=5, fold_assignment='Random',
-                                                                            solver=solver_name), hyper_parameters)
+                                                                            nfolds=5, fold_assignment='Random'),
+                                              hyper_parameters)
         model_h2o_grid_search.train(x=self.x_indices, y=self.y_index, training_frame=self.training_data_grid)
 
         # print out the model sequence ordered by the best MSE values, thanks Ludi!
@@ -534,21 +530,11 @@ class TestGLMGaussian:
 
         # obtain the model ID of best model (with smallest MSE) and use that for our evaluation
         best_model_id = temp_model['Model Id'][0]
-        best_xval_mse = temp_model['mse(xval=True)'][0]
+        self.best_grid_mse = temp_model['mse(xval=True)'][0]
+        self.best_alpha = model_h2o_grid_search.get_hyperparams(best_model_id)
 
         best_model = h2o.get_model(best_model_id)
-
         best_model_test_metrics = best_model.model_performance(test_data=self.test_data)
-
-        # extract best grid MSE, solver, alpha values used in later tests
-        if self.best_grid_mse < 0:
-            self.best_grid_mse = best_xval_mse
-            self.best_alpha = model_h2o_grid_search.get_hyperparams(best_model_id)
-            self.best_solver = solver_name
-        elif best_xval_mse < self.best_grid_mse:
-            self.best_grid_mse = best_xval_mse
-            self.best_alpha = model_h2o_grid_search.get_hyperparams(best_model_id)
-            self.best_solver = solver_name
 
         num_test_failed = self.test_failed
 
@@ -597,9 +583,10 @@ class TestGLMGaussian:
         y_index = training_data.ncol-1
         x_indices = list(range(y_index))
 
+        print("Best lambda is {0}, best alpha is {1}".format(self.best_lambda, self.best_alpha))
         # train H2O model with remove_collinear_columns=True
         model_h2o = H2OGeneralizedLinearEstimator(family=self.family, Lambda=self.best_lambda, alpha=self.best_alpha,
-                                                  solver=self.best_solver, remove_collinear_columns=True)
+                                                  remove_collinear_columns=True)
         model_h2o.train(x=x_indices, y=y_index, training_frame=training_data)
 
         # evaluate model over test data set
@@ -647,8 +634,12 @@ class TestGLMGaussian:
         print("Test5: test the GLM with imputation of missing values with column averages.")
 
         # get theoretical weights, p-values and mse
-        (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) = \
-            self.theoretical_glm(self.training_data_file_nans, self.test_data_file_nans, False, False)
+        try:
+            (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) = \
+                self.theoretical_glm(self.training_data_file_nans, self.test_data_file_nans, False, False)
+        except:
+            print("Bad dataset, lin-alg package problem.")
+            sys.exit(0)
 
         # import training set and test set
         training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file_nans))
@@ -709,9 +700,13 @@ class TestGLMGaussian:
         print("*******************************************************************************************")
         print("Test6: test the GLM with enum/real values.")
 
-        # get theoretical weights, p-values and mse
-        (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) =\
-            self.theoretical_glm(self.training_data_file_enum_nans, self.test_data_file_enum_nans, True, False)
+        try:
+            # get theoretical weights, p-values and mse
+            (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) =\
+                self.theoretical_glm(self.training_data_file_enum_nans, self.test_data_file_enum_nans, True, False)
+        except:
+            print("Bad data set.  Problem with lin-alg.")
+            sys.exit(0)
 
         # import training set and test set with missing values
         training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file_enum_nans))
@@ -785,11 +780,15 @@ class TestGLMGaussian:
         print("*******************************************************************************************")
         print("Test7: test the GLM with imputation of missing enum/real values under lambda search.")
 
-        # get theoretical weights, p-values and mse
-        (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) =\
-            self.theoretical_glm(self.training_data_file_enum_nans_true_one_hot,
-                                 self.test_data_file_enum_nans_true_one_hot, True, True,
-                                 validation_data_file=self.validation_data_file_enum_nans_true_one_hot)
+        try:
+            # get theoretical weights, p-values and mse
+            (weight_theory, p_values_theory, mse_train_theory, mse_test_theory) =\
+                self.theoretical_glm(self.training_data_file_enum_nans_true_one_hot,
+                                     self.test_data_file_enum_nans_true_one_hot, True, True,
+                                     validation_data_file=self.validation_data_file_enum_nans_true_one_hot)
+        except:
+            print("Bad data set.  Problem with lin-alg.")
+            sys.exit(0)
 
         # import training set and test set with missing values and true one hot encoding
         training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file_enum_nans_true_one_hot))
@@ -944,10 +943,8 @@ def test_glm_gaussian():
     test_glm_gaussian = TestGLMGaussian()
     test_glm_gaussian.test1_glm_and_theory()
     test_glm_gaussian.test2_glm_lambda_search()
-    test_glm_gaussian.test3_glm_grid_search("IRLSM")
-    test_glm_gaussian.test3_glm_grid_search("L_BFGS")
- #   test_glm_gaussian.test4_glm_remove_collinear_columns()
-    test_glm_gaussian.test_num += 1
+    test_glm_gaussian.test3_glm_grid_search()
+    test_glm_gaussian.test4_glm_remove_collinear_columns()
     test_glm_gaussian.test5_missing_values()
     test_glm_gaussian.test6_enum_missing_values()
     test_glm_gaussian.test7_missing_enum_values_lambda_search()

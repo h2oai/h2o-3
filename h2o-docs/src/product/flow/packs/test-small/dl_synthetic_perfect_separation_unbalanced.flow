@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"unbalanced.hex\", [0.2], [\"unbalanced_test\",\"unbalanced_train\"]"
+      "input": "splitFrame \"unbalanced.hex\", [0.2], [\"unbalanced_test\",\"unbalanced_train\"], 123456"
     },
     {
       "type": "cs",

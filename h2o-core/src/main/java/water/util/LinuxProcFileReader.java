@@ -1,6 +1,7 @@
 package water.util;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,108 +16,50 @@ import java.util.regex.Pattern;
  * Find definitions of /proc file info here.
  * http://man7.org/linux/man-pages/man5/proc.5.html
  */
-public abstract class LinuxProcFileReader {
-  private static final char[] buffer = new char[8 * 1024]; // MUST be first in file, or else clinit ordering problems
-  // Read all of a file, throwing IOE on buffer-full or returning a String
-  private static String readFile(File f) throws IOException {
-    int bytesRead = 0;
-    try(FileReader fr = new FileReader(f)) {
-        synchronized(buffer) {
-          while (true) {
-            int n = fr.read(buffer, bytesRead, buffer.length - bytesRead);
-            if( n < 0 ) return new String(buffer, 0, bytesRead);
-            bytesRead += n;
-            if( bytesRead >= buffer.length ) throw new IOException("LinuxProcFileReader readFile unexpected buffer full");
-          }
-        }
-    }
+public class LinuxProcFileReader {
+  private String _systemData;
+  private String _processData;
+  private String _processStatus;
+  private String _pid;
+
+  private long _systemIdleTicks = -1;
+  private long _systemTotalTicks = -1;
+  private long _processTotalTicks = -1;
+
+  private long _processRss = -1;
+  private int _processCpusAllowed = -1;
+
+  private int _processNumOpenFds = -1;
+
+  private ArrayList<long[]> _cpuTicks = null;
+
+  /**
+   * Constructor.
+   */
+  public LinuxProcFileReader() {
   }
 
-  // --------- Process ID --------------
-  /** @return process id for this node  */
-  public static int getProcessID() { return PID; }
-  private static final int PID;
-  static { PID = getProcessIdFromJMX(); }
-  private static int getProcessIdFromJMX() {
-    // Note: may fail in some JVM implementations therefore fallback has to be provided.
-    // Something like '<pid>@<hostname>', at least in SUN / Oracle JVMs
-    final String jvmName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-    final int index = jvmName.indexOf('@');
-    return index < 1 ? -1 // part before '@' empty (index = 0) / '@' not found (index = -1)
-      : Integer.parseInt(jvmName.substring(0, index));
-  }
+  /**
+   * @return ticks the system was idle.  in general:  idle + busy == 100%
+   */
+  public long getSystemIdleTicks()   { assert _systemIdleTicks > 0;    return _systemIdleTicks; }
 
-  // --------- /proc/pid/status --- Number of available processors
-  /** @return number of CPUs allowed by this process. */
-  public static char getProcessCpusAllowed() { return PROCESS_CPUS_ALLOWED; }
-  private static final char PROCESS_CPUS_ALLOWED;
-  static { PROCESS_CPUS_ALLOWED = parseProcessStatusFile(readProcessStatusFile(PID)); }
-  private static String readProcessStatusFile(int pid) {
-    try { return pid== -1 ? null : readFile(new File("/proc/"+pid+"/status")); }
-    catch( IOException ignore ) { return null; }
-  }
-  private static char parseProcessStatusFile(String s) {
-    char cpus = (char) Runtime.getRuntime().availableProcessors();
-    if(s == null) return cpus;
-    try {
-      Matcher m = Pattern.compile("Cpus_allowed:\\s+([A-Fa-f0-9,]+)").matcher(s);
-      return m.find() ? numSetBitsHex(m.group(1)) : cpus;
-    }
-    catch( Exception ignore ) { return cpus; }
-  }
-  /** @return number of set bits in hexadecimal string (chars must be 0-F) */
-  private static char numSetBitsHex(String s) {
-    // Look-up table for num set bits in 4-bit char
-    final int[] bits_set = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
-    char nset = 0;
-    for(int i = 0; i < s.length(); i++) {
-      Character ch = s.charAt(i);
-      if (ch == ',') continue;
-      int x = Integer.parseInt(ch.toString(), 16);
-      nset += bits_set[x];
-    }
-    return nset;
-  }
+  /**
+   * @return ticks the system was up.
+   */
+  public long getSystemTotalTicks()  { assert _systemTotalTicks > 0;   return _systemTotalTicks; }
 
+  /**
+   * @return ticks this process was running.
+   */
+  public long getProcessTotalTicks() { assert _processTotalTicks > 0;  return _processTotalTicks; }
 
-  // --------- /proc/pid/proc --- process RSS and TotalTicks ----
-  /** @return ticks this process was running. */
-  public static long getProcessTotalTicks() { return _processTotalTicks; }
-  private static long _processTotalTicks = -1;
-
-  /** @return resident set size (RSS) of this process. */
-  public static long getProcessRss() { return _processRss; }
-  private static long _processRss = -1;
-
-  private static String readProcessProcFile(int pid) {
-    try { return pid == -1 ? null : readFile(new File("/proc/"+pid+"/stat")); }
-    catch( IOException ignore ) { return null; }
-  }
-  private static final Pattern procPattern = Pattern.compile(
-    "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
-    "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
-    "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
-    "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
-    "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + ".*");
-  private static void parseProcessProcFile(String s) {
-    if (s == null) return;
-    try {
-      BufferedReader reader = new BufferedReader(new StringReader(s));
-      Matcher m = procPattern.matcher(reader.readLine());
-      if(!m.matches() ) return;
-      long processUserTicks   = Long.parseLong(m.group(14));
-      long processSystemTicks = Long.parseLong(m.group(15));
-      _processTotalTicks = processUserTicks + processSystemTicks;
-      _processRss = Long.parseLong(m.group(24));
-    }
-    catch (Exception ignore) {}
-  }
-
-
-  // --------- /proc/pid/stat --- System and Process cpu ticks -----------
-  /**  Array of ticks:  [cpu number][tick type]
+  /**
+   * Array of ticks.
+   * [cpu number][tick type]
    *
    * tick types are:
+   *
    * [0] user ticks
    * [1] system ticks
    * [2] other ticks (i/o)
@@ -124,100 +67,289 @@ public abstract class LinuxProcFileReader {
    *
    * @return ticks array for each cpu of the system.
    */
-  public static long[][] getCpuTicks() { return CPUTICKS; }
-  private static final long[][] CPUTICKS = new long[PROCESS_CPUS_ALLOWED][4/*{user,sys,io,idle}*/];
-  /** @return ticks the system was idle.  in general:  idle + busy == 100% */
-  public static long getSystemIdleTicks() { return _systemIdleTicks; }
-  private static long _systemIdleTicks = -1;
-  /** @return ticks the system was up. */
-  public static long getSystemTotalTicks() { return _systemTotalTicks; }
-  private static long _systemTotalTicks = -1;
-  // Read from various /proc files, returning a String or null if not available
-  private static String readSystemProcFile() {
-    try { return readFile(new File("/proc/stat")); }
-    catch( IOException ignore ) { return null; }
+  public long[][] getCpuTicks()      { assert _cpuTicks != null;       return _cpuTicks.toArray(new long[0][0]); }
+
+  /**
+   * @return resident set size (RSS) of this process.
+   */
+  public long getProcessRss()        { assert _processRss > 0;         return _processRss; }
+
+  static private boolean isOSNameMatch(final String osName, final String osNamePrefix) {
+    if (osName == null) {
+      return false;
+    }
+
+    return osName.startsWith(osNamePrefix);
   }
-  private static final Pattern sysTicksPattern = Pattern.compile("cpu\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
-  private static final Pattern cpuTicksPattern = Pattern.compile("cpu(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
-  /** @param s String containing contents of proc file. */
-  private static void parseSystemProcFile(String s) {
+
+  private static boolean getOSMatchesName(final String osNamePrefix) {
+    String osName = System.getProperty("os.name");
+    return isOSNameMatch(osName, osNamePrefix);
+  }
+
+  private static boolean IS_OS_LINUX() {
+    return getOSMatchesName("Linux") || getOSMatchesName("LINUX");
+  }
+
+  /**
+   * @return number of CPUs allowed by this process.
+   */
+  public int getProcessCpusAllowed() {
+    if (! IS_OS_LINUX()) {
+      return Runtime.getRuntime().availableProcessors();
+    }
+
+    // _processCpusAllowed is not available on CentOS 5 and earlier.
+    // In this case, just return availableProcessors.
+    if (_processCpusAllowed < 0) {
+      return Runtime.getRuntime().availableProcessors();
+    }
+
+    return _processCpusAllowed;
+  }
+
+  /**
+   * @return number of currently open fds of this process.
+   */
+  public int getProcessNumOpenFds() { assert _processNumOpenFds > 0;  return _processNumOpenFds; }
+
+
+  /**
+   * @return process id for this node as a String.
+   */
+  public String getProcessID() { return _pid; }
+  /**
+   * Read and parse data from /proc/stat and /proc/&lt;pid&gt;/stat.
+   * If this doesn't work for some reason, the values will be -1.
+   */
+  public void read() {
+    String pid = "-1";
+    try {
+      pid = getProcessId();
+      _pid = pid;
+    }
+    catch (Exception ignore) {}
+
+    File f = new File ("/proc/stat");
+    if (! f.exists()) {
+      return;
+    }
+
+    try {
+      readSystemProcFile();
+      readProcessProcFile(pid);
+      readProcessNumOpenFds(pid);
+      readProcessStatusFile(pid);
+      parseSystemProcFile(_systemData);
+      parseProcessProcFile(_processData);
+      parseProcessStatusFile(_processStatus);
+    }
+    catch (Exception ignore) {}
+  }
+
+  /**
+   * @return true if all the values are ok to use; false otherwise.
+   */
+  public boolean valid() {
+    return ((_systemIdleTicks >= 0) && (_systemTotalTicks >= 0) && (_processTotalTicks >= 0) &&
+            (_processNumOpenFds >= 0));
+  }
+
+  /**
+   * @return number of set bits in hexadecimal string (chars must be 0-F)
+   */
+  public static int numSetBitsHex(String s) {
+    // Look-up table for num set bits in 4-bit char
+    final int[] bits_set = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+
+    int nset = 0;
+    for(int i = 0; i < s.length(); i++) {
+      Character ch = s.charAt(i);
+      if (ch == ',') {
+        continue;
+      }
+      int x = Integer.parseInt(ch.toString(), 16);
+      nset += bits_set[x];
+    }
+    return nset;
+  }
+
+  private static String getProcessId() throws Exception {
+    // Note: may fail in some JVM implementations
+    // therefore fallback has to be provided
+
+    // something like '<pid>@<hostname>', at least in SUN / Oracle JVMs
+    final String jvmName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+    final int index = jvmName.indexOf('@');
+
+    if (index < 1) {
+      // part before '@' empty (index = 0) / '@' not found (index = -1)
+      throw new Exception ("Can't get process Id");
+    }
+
+    return Long.toString(Long.parseLong(jvmName.substring(0, index)));
+  }
+
+  private String readFile(File f) throws Exception {
+    char[] buffer = new char[16 * 1024];
+    FileReader fr = new FileReader(f);
+    int bytesRead = 0;
+    while (true) {
+      int n = fr.read(buffer, bytesRead, buffer.length - bytesRead);
+      if (n < 0) {
+        fr.close();
+        return new String (buffer, 0, bytesRead);
+      }
+      else if (n == 0) {
+        // This is weird.
+        fr.close();
+        throw new Exception("LinuxProcFileReader readFile read 0 bytes");
+      }
+
+      bytesRead += n;
+
+      if (bytesRead >= buffer.length) {
+        fr.close();
+        throw new Exception("LinuxProcFileReader readFile unexpected buffer full");
+      }
+    }
+  }
+
+  private void readSystemProcFile() {
+    try {
+      _systemData = readFile(new File("/proc/stat"));
+    }
+    catch (Exception ignore) {}
+  }
+
+  /**
+   * @param s String containing contents of proc file.
+   */
+  private void parseSystemProcFile(String s) {
     if (s == null) return;
-    BufferedReader reader = new BufferedReader(new StringReader(s));
-    try { 
-      // Read aggregate cpu values
+
+    try {
+      BufferedReader reader = new BufferedReader(new StringReader(s));
       String line = reader.readLine();
-      Matcher m = sysTicksPattern.matcher(line);
-      if( !m.matches() ) return;
-  
-      int matchGroupBase = 0;
-      long systemUserTicks = 0;
-      long systemSystemTicks = 0;
-      long systemOtherTicks = 0;
-      systemUserTicks    += Long.parseLong(m.group(1 + matchGroupBase));
-      systemOtherTicks   += Long.parseLong(m.group(2 + matchGroupBase));
-      systemSystemTicks  += Long.parseLong(m.group(3 + matchGroupBase));
-      _systemIdleTicks    = Long.parseLong(m.group(4 + matchGroupBase));
-      systemOtherTicks   += Long.parseLong(m.group(5 + matchGroupBase));
-      systemSystemTicks  += Long.parseLong(m.group(6 + matchGroupBase));
-      systemSystemTicks  += Long.parseLong(m.group(7 + matchGroupBase));
-      _systemTotalTicks   = systemUserTicks + systemOtherTicks + systemSystemTicks + _systemIdleTicks;
-  
+
+      // Read aggregate cpu values
+      {
+        Pattern p = Pattern.compile("cpu\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
+        Matcher m = p.matcher(line);
+        boolean b = m.matches();
+        if (!b) {
+          return;
+        }
+
+        long systemUserTicks = Long.parseLong(m.group(1));
+        long systemNiceTicks = Long.parseLong(m.group(2));
+        long systemSystemTicks = Long.parseLong(m.group(3));
+        _systemIdleTicks = Long.parseLong(m.group(4));
+        _systemTotalTicks = systemUserTicks + systemNiceTicks + systemSystemTicks + _systemIdleTicks;
+      }
+
       // Read individual cpu values
-      int cpu = 0;
+      _cpuTicks = new ArrayList<long[]>();
       line = reader.readLine();
       while (line != null) {
-        m = cpuTicksPattern.matcher(line);
-        if( !m.matches() ) break;
+        Pattern p = Pattern.compile("cpu(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+).*");
+        Matcher m = p.matcher(line);
+        boolean b = m.matches();
+        if (! b) {
+          break;
+        }
+
         // Copying algorithm from http://gee.cs.oswego.edu/dl/code/
         // See perfbar.c in gtk_perfbar package.
         // int cpuNum = Integer.parseInt(m.group(1));
-        matchGroupBase = 1;
         long cpuUserTicks = 0;
         long cpuSystemTicks = 0;
         long cpuOtherTicks = 0;
         long cpuIdleTicks = 0;
-        cpuUserTicks    += Long.parseLong(m.group(1 + matchGroupBase));
-        cpuOtherTicks   += Long.parseLong(m.group(2 + matchGroupBase));
-        cpuSystemTicks  += Long.parseLong(m.group(3 + matchGroupBase));
-        cpuIdleTicks    += Long.parseLong(m.group(4 + matchGroupBase));
-        cpuOtherTicks   += Long.parseLong(m.group(5 + matchGroupBase));
-        cpuSystemTicks  += Long.parseLong(m.group(6 + matchGroupBase));
-        cpuSystemTicks  += Long.parseLong(m.group(7 + matchGroupBase));
-        CPUTICKS[cpu][0] = cpuUserTicks;
-        CPUTICKS[cpu][1] = cpuSystemTicks;
-        CPUTICKS[cpu][2] = cpuOtherTicks;
-        CPUTICKS[cpu][3] = cpuIdleTicks;
-        cpu++;
+        cpuUserTicks    += Long.parseLong(m.group(2));
+        cpuOtherTicks   += Long.parseLong(m.group(3));
+        cpuSystemTicks  += Long.parseLong(m.group(4));
+        cpuIdleTicks    += Long.parseLong(m.group(5));
+        cpuOtherTicks   += Long.parseLong(m.group(6));
+        cpuSystemTicks  += Long.parseLong(m.group(7));
+        cpuSystemTicks  += Long.parseLong(m.group(8));
+        long[] oneCpuTicks = {cpuUserTicks, cpuSystemTicks, cpuOtherTicks, cpuIdleTicks};
+        _cpuTicks.add(oneCpuTicks);
+
         line = reader.readLine();
       }
-    } catch( IOException ignore ) {/**/}
+    }
+    catch (Exception ignore) {}
   }
 
-  // --------- /proc/pid/stat --- System and Process cpu ticks -----------
-  /** @return number of currently open fds of this process.  */
-  public static int getProcessNumOpenFds() { return _processNumOpenFds; }
-  private static int _processNumOpenFds = -1;
-  private static void readProcessNumOpenFds(int pid) {
-    if( pid == -1 ) return;
-    String[] arr = new File("/proc/" + pid + "/fd").list();
-    _processNumOpenFds = arr == null ? 0 : arr.length;
+  private void readProcessProcFile(String pid) {
+    try {
+      String s = "/proc/" + pid + "/stat";
+      _processData = readFile(new File(s));
+    }
+    catch (Exception ignore) {}
   }
 
+  private void parseProcessProcFile(String s) {
+    if (s == null) return;
 
-  /** Read and parse data from /proc/stat and /proc/pid/stat.
-   *  If this doesn't work for some reason, the values will be -1.  */
-  public static boolean refresh() {
-    parseSystemProcFile(readSystemProcFile());
-    parseProcessProcFile(readProcessProcFile(PID));
-    readProcessNumOpenFds(PID);
-    return valid();
+    try {
+      BufferedReader reader = new BufferedReader(new StringReader(s));
+      String line = reader.readLine();
+
+      Pattern p = Pattern.compile(
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + "\\s+" +
+              "(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)" + ".*");
+      Matcher m = p.matcher(line);
+      boolean b = m.matches();
+      if (! b) {
+        return;
+      }
+
+      long processUserTicks   = Long.parseLong(m.group(14));
+      long processSystemTicks   = Long.parseLong(m.group(15));
+      _processTotalTicks = processUserTicks + processSystemTicks;
+      _processRss = Long.parseLong(m.group(24));
+    }
+    catch (Exception ignore) {}
   }
 
-  /** @return true if all the values are ok to use; false otherwise. */
-  private static boolean valid() {
-    return _systemIdleTicks >= 0 && _systemTotalTicks >= 0 && _processTotalTicks >= 0 && _processNumOpenFds >= 0;
+  private void readProcessNumOpenFds(String pid) {
+    try {
+      String s = "/proc/" + pid + "/fd";
+      File f = new File(s);
+      String[] arr = f.list();
+      if (arr != null) {
+        _processNumOpenFds = arr.length;
+      }
+    }
+    catch (Exception ignore) {}
   }
 
+  private void readProcessStatusFile(String pid) {
+    try {
+      String s = "/proc/" + pid + "/status";
+      _processStatus = readFile(new File(s));
+    }
+    catch (Exception ignore) {}
+  }
+
+  private void parseProcessStatusFile(String s) {
+    if(s == null) return;
+    try {
+      Pattern p = Pattern.compile("Cpus_allowed:\\s+([A-Fa-f0-9,]+)");
+      Matcher m = p.matcher(s);
+      boolean b = m.find();
+      if (! b) {
+        return;
+      }
+      _processCpusAllowed = numSetBitsHex(m.group(1));
+    }
+    catch (Exception ignore) {}
+  }
 
   /**
    * Main is purely for command-line testing.
@@ -267,12 +399,13 @@ public abstract class LinuxProcFileReader {
 
     final String procTestData = "16790 (java) S 1 16789 16789 0 -1 4202496 6714145 0 0 0 4773058 5391 0 0 20 0 110 0 33573283 64362651648 6467228 18446744073709551615 1073741824 1073778376 140734614041280 140734614032416 140242897981768 0 0 3 16800972 18446744073709551615 0 0 17 27 0 0 0 0 0\n";
 
-    parseSystemProcFile(sysTestData);
-    parseProcessProcFile(procTestData);
-    System.out.println("System idle ticks: " + getSystemIdleTicks());
-    System.out.println("System total ticks: " + getSystemTotalTicks());
-    System.out.println("Process total ticks: " + getProcessTotalTicks());
-    System.out.println("Process RSS: " + getProcessRss());
-    System.out.println("Number of cpus: " + getCpuTicks().length);
+    LinuxProcFileReader lpfr = new LinuxProcFileReader();
+    lpfr.parseSystemProcFile(sysTestData);
+    lpfr.parseProcessProcFile(procTestData);
+    System.out.println("System idle ticks: " + lpfr.getSystemIdleTicks());
+    System.out.println("System total ticks: " + lpfr.getSystemTotalTicks());
+    System.out.println("Process total ticks: " + lpfr.getProcessTotalTicks());
+    System.out.println("Process RSS: " + lpfr.getProcessRss());
+    System.out.println("Number of cpus: " + lpfr.getCpuTicks().length);
   }
 }

@@ -1,12 +1,12 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-test.glm.bin.accessors <- function() {
+test.glm.interactions <- function() {
   d <- data.frame(iris[,1:3],
                   # the interactions
-                  Sepal.Length_Sepal.Width  = iris[,"Sepal.Length"]* iris[,"Sepal.Width"],
-                  Sepal.Length_Petal.Length = iris[,"Sepal.Length"]* iris[,"Petal.Length"],
-                  Sepal.Width_Petal.Length  = iris[,"Sepal.Width"] * iris[,"Petal.Length"],
+                  Sepal.Length_Sepal.Width  = iris[,"Sepal.Length"] * iris[,"Sepal.Width" ],
+                  Sepal.Length_Petal.Length = iris[,"Sepal.Length"] * iris[,"Petal.Length"],
+                  Sepal.Width_Petal.Length  = iris[,"Sepal.Width" ] * iris[,"Petal.Length"],
                   # response
                   Petal.Width = iris[,"Petal.Width"])
 
@@ -40,4 +40,4 @@ test.glm.bin.accessors <- function() {
     }
 }
 
-doTest("Testing model accessors for GLM", test.glm.bin.accessors)
+doTest("Testing model accessors for GLM", test.glm.interactions)

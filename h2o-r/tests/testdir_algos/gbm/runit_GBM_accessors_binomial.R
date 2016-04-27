@@ -11,7 +11,7 @@ test.gbm.bin.accessors <- function() {
 #  pros.hex[,5] <- as.factor(pros.hex[,5])
 #  pros.hex[,6] <- as.factor(pros.hex[,6])
 #  pros.hex[,9] <- as.factor(pros.hex[,9])
-  p.sid <- h2o.runif(pros.hex)
+  p.sid <- h2o.runif(pros.hex, seed=1234)
   pros.train <- h2o.assign(pros.hex[p.sid > .2, ], "pros.train")
   pros.test <- h2o.assign(pros.hex[p.sid <= .2, ], "pros.test")
   pros.gbm <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train)

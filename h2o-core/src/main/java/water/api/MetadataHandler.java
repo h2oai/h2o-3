@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.ModelBuilder;
+import water.Iced;
 import water.TypeMap;
 import water.util.MarkdownBuilder;
 
@@ -26,7 +27,18 @@ public class MetadataHandler extends Handler {
     docs.routes = new RouteBase[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
-      docs.routes[i++] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
+      docs.routes[i] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
+
+      // ModelBuilder input / output schema hackery
+      MetadataV3 look = new MetadataV3();
+      look.routes = new RouteBase[1];
+      look.routes[0] = docs.routes[i];
+      look.path = route._url_pattern.toString();
+      look.http_method = route._http_method;
+      look = fetchRoute(version, look);
+
+      docs.routes[i].input_schema = look.routes[0].input_schema;
+      docs.routes[i].output_schema = look.routes[0].output_schema;
 
       builder.tableRow(
               route._http_method,
@@ -34,6 +46,7 @@ public class MetadataHandler extends Handler {
               Handler.getHandlerMethodInputSchema(route._handler_method).getSimpleName(),
               Handler.getHandlerMethodOutputSchema(route._handler_method).getSimpleName(),
               route._summary);
+      i++;
     }
 
     docs.markdown = builder.toString();
@@ -67,14 +80,13 @@ public class MetadataHandler extends Handler {
       String inputSchemaName = schemaDir+algoName+"V"+version2;  // hex.schemas.GBMV3
       sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
       sinput.init_meta();
-      // hex.schemas.GBMModelV3$GBMModelOutputV3
-      String outputSchemaName = schemaDir+algoName+"ModelV"+version2+"$"+algoName+"ModelOutputV"+version2;
-      soutput= (Schema)TypeMap.theFreezable(TypeMap.onIce(outputSchemaName));
-      soutput.init_meta();
+      soutput = sinput;
     } else {
       sinput  = Schema.newInstance(Handler.getHandlerMethodInputSchema (route._handler_method));
       soutput = Schema.newInstance(Handler.getHandlerMethodOutputSchema(route._handler_method));
     }
+    docs.routes[0].input_schema = sinput.getClass().getSimpleName();
+    docs.routes[0].output_schema = soutput.getClass().getSimpleName();
     docs.routes[0].markdown = route.markdown(sinput,soutput).toString();
     return docs;
   }
@@ -100,7 +112,16 @@ public class MetadataHandler extends Handler {
 
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(docs.schemaname)));
+    Schema schema = Schema.newInstance(docs.schemaname);
+    // get defaults
+    try {
+      Iced impl = (Iced) schema.getImplClass().newInstance();
+      schema.fillFromImpl(impl);
+    }
+    catch (Exception e) {
+      // ignore if create fails; this can happen for abstract classes
+    }
+    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -115,7 +136,18 @@ public class MetadataHandler extends Handler {
     int i = 0;
     for (Class<? extends Schema> schema_class : ss.values()) {
       // No hardwired version! YAY!  FINALLY!
-      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(Schema.newInstance(schema_class)));
+
+      Schema schema = Schema.newInstance(schema_class);
+      // get defaults
+      try {
+        Iced impl = (Iced) schema.getImplClass().newInstance();
+        schema.fillFromImpl(impl);
+      }
+      catch (Exception e) {
+        // ignore if create fails; this can happen for abstract classes
+      }
+
+      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
     }
     return docs;
   }

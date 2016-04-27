@@ -1,6 +1,8 @@
 package water.parser;
 
 import static org.junit.Assert.*;
+import static water.parser.DefaultParserProviders.XLS_INFO;
+
 import org.junit.*;
 import java.io.File;
 
@@ -52,7 +54,7 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       NFSFileVec nfs = NFSFileVec.make(f);
       byte[] ctypes = new byte[12];
       for(int i=0; i < 12; i++) ctypes[i] = Vec.T_NUM;
-      ParseSetup setup = new ParseSetup(ParserType.XLS,
+      ParseSetup setup = new ParseSetup(XLS_INFO,
                 (byte) 52, // sep; ascii '4'
                 true,     // singleQuotes
                 ParseSetup.NO_HEADER, // check header

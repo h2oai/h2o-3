@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"cancar_logIn.hex\", [0.25], [\"cancar_logIn_test\",\"cancar_logIn_train\"]"
+      "input": "splitFrame \"cancar_logIn.hex\", [0.25], [\"cancar_logIn_test\",\"cancar_logIn_train\"], 123456"
     },
     {
       "type": "cs",

@@ -179,7 +179,7 @@ public class Vec extends Keyed<Vec> {
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
    *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
-  public final String[] domain() { return _domain; }
+  public String[] domain() { return _domain; }   // made no longer final so that InteractionWrappedVec which are _type==T_NUM but have a categorical interaction
   /** Returns the {@code i}th factor for this categorical column.
    *  @return The {@code i}th factor */
   public final String factor( long i ) { return _domain[(int)i]; }
@@ -205,7 +205,7 @@ public class Vec extends Keyed<Vec> {
    *  {@link #isInt}, but not vice-versa.
    *  @return true if this is an categorical column.  */
   public final boolean isCategorical() {
-    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null);
+    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null) || (_type==T_NUM && this instanceof InteractionWrappedVec && _domain!=null);
     return _type==T_CAT;
   }
 
@@ -310,7 +310,7 @@ public class Vec extends Keyed<Vec> {
   }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeCon(0L,len); }
+  public static Vec makeZero( long len ) { return makeCon(0d,len); }
 
   /** Make a new constant vector with the given row count, and redistribute the data
    * evenly around the cluster.
@@ -334,6 +334,21 @@ public class Vec extends Keyed<Vec> {
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
     return makeCon(x,len,log_rows_per_chunk,true);
+  }
+
+  /**
+   * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(long totSize, long len) {
+    int safetyInflationFactor = 8;
+    int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
+    long[] espc = new long[nchunks+1];
+    espc[0] = 0;
+    for( int i=1; i<nchunks; i++ )
+      espc[i] = espc[i-1]+len/nchunks;
+    espc[nchunks] = len;
+    VectorGroup vg = VectorGroup.VG_LEN1;
+    return makeCon(0,vg,ESPC.rowLayout(vg._key,espc));
   }
 
   /** Make a new constant vector with the given row count.
