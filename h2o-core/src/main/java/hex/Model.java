@@ -1386,11 +1386,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return new Frame(interactionNames, interactionVecs);
   }
 
+  public static InteractionWrappedVec[] makeInteractions(Frame fr, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+    Vec anyTrainVec = fr.anyVec();
+    InteractionWrappedVec[] interactionVecs = new InteractionWrappedVec[interactions.length];
+    int idx = 0;
+    for (InteractionPair ip : interactions)
+      interactionVecs[idx++] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+    return interactionVecs;
+  }
+
   public static InteractionWrappedVec makeInteraction(Frame fr, InteractionPair ip, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyVec = fr.anyVec();
     return new InteractionWrappedVec(anyVec.group().addVec(), anyVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
   }
-
 
   /**
    * This class represents a pair of interacting columns plus some additional data
