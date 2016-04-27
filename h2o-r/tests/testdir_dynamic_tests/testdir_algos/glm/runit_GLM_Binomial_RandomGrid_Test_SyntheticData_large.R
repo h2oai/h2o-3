@@ -123,6 +123,7 @@ test.GLM.Binomial.RandomGrid.Test.SyntheticData <- function() {
   print(search_criteria)  # print out search criteria used
   
   grid_name = paste("myGLMBinomialGrid", as.integer(Sys.time()), sep="_")
+  
   # start grid search 
   glm_grid1 = h2o.grid("glm", grid_id=grid_name, x=predictor_names, y=response_name, training_frame=train_data,
                        family=family, nfolds=nfolds, hyper_params=hyper_parameters, search_criteria=search_criteria)
@@ -233,6 +234,8 @@ test.GLM.Binomial.RandomGrid.Test.SyntheticData <- function() {
   search_criteria$stopping_metric = "logloss"
   Log.info("************* Test4: Test decreasing stopping metrics logloss:")
   print(search_criteria)  # print out search criteria used
+  
+  hyper_parameters$max_runtime_secs = c(0.1)   # add max_runtime_secs to restrict model run time
   
   grid_name = paste("myGLMBinomialGrid", as.integer(Sys.time()), sep="_")
   if (runGLMMetricStop(predictor_names, response_name, train_data, family, nfolds, hyper_parameters, search_criteria,

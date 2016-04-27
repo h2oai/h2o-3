@@ -134,6 +134,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_learn_rate_annealing", "learn_rate_annealing must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
+    if (_parms._max_abs_leafnode_pred <= 0)
+      error("_max_abs_leafnode_pred", "max_abs_leafnode_pred must be larger than 0.");
   }
 
   // ----------------------

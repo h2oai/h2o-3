@@ -223,6 +223,8 @@ test.GLM.Gaussian.RandomGrid.Test.SyntheticData <- function() {
   search_criteria$max_runtime_secs = NULL
   search_criteria$stopping_rounds = round(runif(1, 1, max_stopping_rounds))
   search_criteria$stopping_tolerance = runif(1, 1e-8, max_tolerance)
+
+  hyper_parameters$max_runtime_secs = c(0.1)
   
   # use decreasing metric first
   search_criteria$stopping_metric = "MSE"
