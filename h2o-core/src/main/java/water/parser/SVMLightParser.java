@@ -7,6 +7,8 @@ import water.Key;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
 
+import static water.parser.DefaultParserProviders.SVMLight_INFO;
+
 class SVMLightParser extends Parser {
   private static final byte SKIP_TOKEN = 21;
   private static final byte INVALID_NUMBER = 22;
@@ -29,14 +31,14 @@ class SVMLightParser extends Parser {
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParseSetup(ParserType.SVMLight,
+    SVMLightParser p = new SVMLightParser(new ParseSetup(SVMLight_INFO,
             ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
             null,null,null,null,null), null);
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
     try{ p.streamParse(is, dout);
     } catch(IOException e) { throw new RuntimeException(e); }
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
-      return new ParseSetup(ParserType.SVMLight, ParseSetup.GUESS_SEP,
+      return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
             false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data, dout.removeErrors());
     else throw new ParseDataset.H2OParseException("Could not parse file as an SVMLight file.");
   }

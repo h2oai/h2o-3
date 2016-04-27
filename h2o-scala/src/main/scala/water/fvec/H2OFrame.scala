@@ -5,8 +5,9 @@ import java.net.URI
 
 import water._
 import water.parser.ParseSetup._
-import water.parser.{ParseSetup, ParserType}
+import water.parser.ParseSetup
 import water.util.FrameUtils
+import water.parser.DefaultParserProviders.GUESS_INFO
 
 /**
  * Wrapper around Java H2O Frame to provide more Scala-like API.
@@ -118,7 +119,7 @@ object H2OFrame {
 
   /** Return default parser setup */
   def defaultParserSetup(singleQuotes: Boolean = true) =
-    new ParseSetup(ParserType.GUESS, GUESS_SEP, singleQuotes, GUESS_HEADER, GUESS_COL_CNT,
+    new ParseSetup(GUESS_INFO, GUESS_SEP, singleQuotes, GUESS_HEADER, GUESS_COL_CNT,
                    null, null, null, null, null)
 
   /** Return guessed parser setup for given file.

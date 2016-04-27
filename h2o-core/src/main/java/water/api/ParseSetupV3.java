@@ -1,11 +1,14 @@
 package water.api;
 
 import water.api.KeyV3.FrameKeyV3;
+import water.exceptions.H2OIllegalValueException;
 import water.fvec.FileVec;
 import water.parser.ParseSetup;
-import water.parser.ParserType;
+import water.parser.ParserInfo;
+import water.parser.ParserProvider;
+import water.parser.ParserService;
 
-import java.util.Arrays;
+import static water.parser.DefaultParserProviders.GUESS_INFO;
 
 public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
 
@@ -13,8 +16,8 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
   @API(help="Source frames", required=true, direction=API.Direction.INOUT)
   public FrameKeyV3[] source_frames;
 
-  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"}, direction=API.Direction.INOUT)
-  public ParserType parse_type = ParserType.GUESS;
+  @API(help="Parser type", valuesProvider = ParseTypeValuesProvider.class, direction=API.Direction.INOUT)
+  public String parse_type = GUESS_INFO.name();
 
   @API(help="Field separator", direction=API.Direction.INOUT)
   public byte separator = ParseSetup.GUESS_SEP;
@@ -59,17 +62,40 @@ public class ParseSetupV3 extends RequestSchema<ParseSetup,ParseSetupV3> {
   @API(help="Warnings", direction=API.Direction.OUTPUT)
   public String[] warnings;
 
-
   @API(help="Size of individual parse tasks", direction=API.Direction.OUTPUT)
   public int chunk_size = FileVec.DFLT_CHUNK_SIZE;
 
   @API(help="Total number of columns we would return with no column pagination", direction=API.Direction.INOUT)
   public int total_filtered_column_count;
 
-  //==========================
-  // Helper so ImportV1 can link to ParseSetupV2
-  static public String link(String[] keys) {
-    return "ParseSetup?source_keys="+Arrays.toString(keys);
+  @Override
+  public ParseSetup fillImpl(ParseSetup impl) {
+    ParseSetup parseSetup = fillImpl(impl, new String[] {"parse_type"});
+    // Transform the field parse_type
+    ParserInfo pi = GUESS_INFO;
+    if (this.parse_type != null) {
+      ParserProvider pp = ParserService.INSTANCE.getByName(this.parse_type);
+      if (pp != null) {
+        pi = pp.info();
+      } else throw new H2OIllegalValueException("Cannot find right parser for specified parser type!", this.parse_type);
+    }
+    parseSetup.setParseType(pi);
+
+    return parseSetup;
   }
 
+  @Override
+  public ParseSetupV3 fillFromImpl(ParseSetup impl) {
+    ParseSetupV3 parseSetupV3 = fillFromImpl(impl, new String[] {"parse_type"});
+    parseSetupV3.parse_type = impl.getParseType() != null ? impl.getParseType().name() : GUESS_INFO.name();
+    return parseSetupV3;
+  }
+}
+
+class ParseTypeValuesProvider implements ValuesProvider {
+
+  @Override
+  public String[] values() {
+    return ParserService.INSTANCE.getAllProviderNames(true);
+  }
 }

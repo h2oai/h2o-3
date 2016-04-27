@@ -40,7 +40,7 @@ sourceSets {
 
 jar {
   manifest {
-    attributes 'Main-Class': 'water.bindings.proxies.retrofit.Example'
+    attributes 'Main-Class': 'water.bindings.examples.Example'
   }
 }
 
@@ -71,5 +71,5 @@ clean.dependsOn cleanGenerateRESTAPIBindings
 // Setup Gradle application runner
 //
 apply plugin: 'application'
-mainClassName = 'water.bindings.proxies.retrofit.Example'
+mainClassName = 'water.bindings.examples.Example'
 
