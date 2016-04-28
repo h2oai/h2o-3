@@ -804,7 +804,7 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          if( _parseSetup._parse_type._parallelParseSupported ) {
+          if( _parseSetup._parse_type.isParallelParseSupported()) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();

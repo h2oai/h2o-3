@@ -31,7 +31,6 @@ def reg_path_glm():
         print(diff2)
         assert diff < 1e-3
         assert diff2 < 1e-3
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(reg_path_glm)
 else:
