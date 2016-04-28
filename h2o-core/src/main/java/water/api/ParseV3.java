@@ -1,11 +1,7 @@
 package water.api;
 
-import water.api.KeyV3.FrameKeyV3;
 import water.Iced;
-import water.Key;
-import water.parser.ParserType;
-
-import java.util.Arrays;
+import water.api.KeyV3.FrameKeyV3;
 
 public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   // Input fields
@@ -15,8 +11,8 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   @API(help="Source frames",required=true)
   FrameKeyV3[] source_frames;
 
-  @API(help="Parser type", values = {"GUESS", "ARFF", "XLS", "XLSX", "CSV", "SVMLight"})
-  ParserType parse_type;
+  @API(help="Parser type", valuesProvider = ParseTypeValuesProvider.class)
+  String parse_type;
 
   @API(help="Field separator")
   byte separator;
@@ -58,22 +54,4 @@ public class ParseV3 extends RequestSchema<Iced, ParseV3> {
   // Zero if blocking==false; row-count if blocking==true
   @API(help="Rows", direction=API.Direction.OUTPUT)
   long rows;
-
-
-  //==========================
-
-  // Helper so ParseSetup can link to Parse
-  public static String link(Key[] srcs, String hexName, ParserType pType, byte sep, int ncols, int checkHeader, boolean singleQuotes, String[] columnNames, String[] columnTypes, String[][] naStrings, int chunkSize) {
-    return "Parse?source_keys="+Arrays.toString(srcs)+
-      "&destination_key="+hexName+
-      "&parse_type="+pType+
-      "&separator="+sep+
-      "&number_columns="+ncols+
-      "&check_header="+checkHeader+
-      "&single_quotes="+singleQuotes+
-      "&column_names="+Arrays.toString(columnNames)+
-      "&column_types="+Arrays.toString(columnTypes)+
-      "&chunk_size="+chunkSize+
-      "";
-  }
 }

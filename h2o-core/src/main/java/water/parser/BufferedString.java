@@ -110,6 +110,10 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
     return res;
   }
 
+  public BufferedString set(byte[] buf) {
+    return set(buf, 0, buf.length);
+  }
+
   public BufferedString set(byte[] buf, int off, int len) {
     _buf = buf;
     _off = off;

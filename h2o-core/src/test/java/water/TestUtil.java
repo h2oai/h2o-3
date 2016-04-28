@@ -234,6 +234,7 @@ public class TestUtil extends Iced {
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
   public static String[][] ar (String[] ...a) { return a; }
+  public static byte  []   ar (byte   ...a)   { return a; }
   public static long  []   ar (long   ...a)   { return a; }
   public static long[][]   ar (long[] ...a)   { return a; }
   public static int   []   ari(int    ...a)   { return a; }

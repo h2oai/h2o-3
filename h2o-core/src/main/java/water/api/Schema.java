@@ -403,13 +403,17 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     catch (Exception e) { throw H2O.fail("Exception making a newInstance",e); }
   }
 
+  protected I fillImpl(I impl, String[] fieldsToSkip) {
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip); // TODO: make field names in the impl classes consistent and remove
+    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, fieldsToSkip);
+    return impl;
+  }
+
   /** Fill an impl object and any children from this schema and its children.
    *  If a schema doesn't need to adapt any fields if does not need to override
    *  this method. */
   public I fillImpl(I impl) {
-    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.CONSISTENT); // TODO: make field names in the impl classes consistent and remove
-    PojoUtils.copyProperties(impl, this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-    return impl;
+    return fillImpl(impl, null);
   }
 
   /** Convenience helper which creates and fills an impl object from this schema. */
@@ -419,8 +423,12 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Fill this Schema from the given implementation object. If a schema doesn't need to adapt any fields if does not need to override this method. */
   public S fillFromImpl(I impl) {
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
-    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT);  // TODO: make field names in the impl classes consistent and remove
+    return fillFromImpl(impl, null);
+  }
+
+  protected S fillFromImpl(I impl, String[] fieldsToSkip) {
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, fieldsToSkip);
+    PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip);  // TODO: make field names in the impl classes consistent and remove
     return (S)this;
   }
 

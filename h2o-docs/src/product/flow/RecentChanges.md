@@ -35,6 +35,13 @@
 </li>
 </ul>
 
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2877'>PUBDEV-2877</a>] -         Make NA split decisions internally more consistent
+</li>
+</ul>
+
 ###Turchin (3.8.2.2) - 4/8/2016
 
 <h4>        Bug

@@ -134,6 +134,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_learn_rate_annealing", "learn_rate_annealing must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
+    if (_parms._max_abs_leafnode_pred <= 0)
+      error("_max_abs_leafnode_pred", "max_abs_leafnode_pred must be larger than 0.");
   }
 
   // ----------------------
@@ -457,7 +459,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_model._output._distribution[k] != 0) {
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
           ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
-          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins,hcs[k][0], _parms)); // The "root" node
+          DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], _parms);
+          new UndecidedNode(ktrees[k], -1, hist); // The "root" node
         }
       }
 

@@ -658,11 +658,49 @@ class H2OGridSearch(object):
     """
     idx = id if isinstance(id, int) else self.model_ids.index(id)
     model = self[idx]
+
+    # if cross-validation is turned on, parameters in one of the fold model actuall contains the max_runtime_secs
+    # parameter and not the main model that is returned.
+    if model._is_xvalidated:
+      model = h2o.get_model(model._xval_keys[0])
+
     res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'],list)
            else model.params[h]['actual']
            for h in self.hyper_params]
     if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']')
     return res
+
+  def get_hyperparams_dict(self, id, display=True):
+    """
+    Derived and returned the model parameters used to train the particular grid search model.
+
+    Parameters
+    ----------
+    id: str
+      The model id of the model with hyperparameters of interest.
+    display: boolean
+      Flag to indicate whether to display the hyperparameter names.
+
+    Returns
+    -------
+      A dict of model pararmeters derived from the hyper-parameters used to train this particular model.
+    """
+    idx = id if isinstance(id, int) else self.model_ids.index(id)
+    model = self[idx]
+
+    model_params = dict()
+
+    # if cross-validation is turned on, parameters in one of the fold model actual contains the max_runtime_secs
+    # parameter and not the main model that is returned.
+    if model._is_xvalidated:
+      model = h2o.get_model(model._xval_keys[0])
+
+    for param_name in self.hyper_names:
+      model_params[param_name] = model.params[param_name]['actual'][0] if \
+        isinstance(model.params[param_name]['actual'], list) else model.params[param_name]['actual']
+
+    if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys()))+']')
+    return model_params
 
   def sorted_metric_table(self):
     """
