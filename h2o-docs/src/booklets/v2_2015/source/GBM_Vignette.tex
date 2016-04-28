@@ -473,15 +473,21 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{ntrees}}: A non-negative integer that defines the number of trees. The default is 50.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
+\item {\texttt{max\_abs\_leafnode\_pred}}: Limits the maximum absolute value of a leaf node prediction. The default is Double.MAX\_VALUE.
 \item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
 \item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
 \item {\texttt{seed}}: Seed containing random numbers that affects sampling.
-\item{\texttt{mtries}}: Number of variables randomly sampled as candidates at each split. If {\texttt{-1}}, the square root of $p$ is used for classification,or $p/3$ for regression (where $p$ is the number of predictors). 
-\item{\texttt{sample\_rate}}: Row sample rate (from 0.0 to 1.0). 
-\item{\texttt{col\_sample\_rate}}: Column sample rate (per split) (from 0.0 to 1.0). 
-\item{\texttt{col\_sample\_rate\_per\_tree}}: Column sample rate per tree (from 0.0 to 1.0). 
+\item {\texttt{mtries}}: Number of variables randomly sampled as candidates at each split. If {\texttt{-1}}, the square root of $p$ is used for classification,or $p/3$ for regression (where $p$ is the number of predictors). 
+\item {\texttt{sample\_rate}}: Row sample rate (from 0.0 to 1.0). 
+\item {\texttt{sample\_rate\_per\_class}}: Specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with {\texttt{sample\_rate}}. (from 0.0 to 1.0). 
+\item {\texttt{col\_sample\_rate}}: Column sample rate (per split) (from 0.0 to 1.0). 
+\item {\texttt{col\_sample\_rate\_change\_per\_level}}: Specifies to change the column sampling rate as a function of the depth in the tree.
+\item {\texttt{min\_split\_improvement}}: The minimum relative improvement in squared error reduction in order for a split to happen. 
+\item {\texttt{random\_split\_points}}: When enabled, sample N-1 points from min...max and use the sorted list of those for split finding. 
+\item {\texttt{col\_sample\_rate\_per\_tree}}: Column sample rate per tree (from 0.0 to 1.0). 
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
+\item {\texttt{learn\_rate\_annealing}}: Reduces the {\texttt{learn\_rate}} by this factor after every tree. 
 \item {\texttt{distribution}}: The distribution function options: \texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace,} \\\texttt{quantile} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
 \item {\texttt{score\_tree\_interval}}: Score the model after every so many trees. Disabled if set to 0.
