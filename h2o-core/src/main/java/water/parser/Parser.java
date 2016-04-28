@@ -59,14 +59,14 @@ public abstract class Parser extends Iced {
 
   protected final ParseSetup _setup;
   protected final Key<Job> _jobKey;
-  Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
+  protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
-  abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
+  protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
   ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
-    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
+    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
@@ -82,7 +82,7 @@ public abstract class Parser extends Iced {
   // parse local chunks; distribute chunks later.
   ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
-    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
+    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     StreamParseWriter nextChunk = dout;

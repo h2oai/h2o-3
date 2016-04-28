@@ -10,6 +10,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static water.parser.DefaultParserProviders.*;
+import static water.parser.DefaultParserProviders.CSV_INFO;
+
 class CsvParser extends Parser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
   private static final int NO_HEADER = ParseSetup.NO_HEADER;
@@ -42,7 +45,7 @@ class CsvParser extends Parser {
     }
 
     // For parsing ARFF
-    if (_setup._parse_type == ParserType.ARFF && _setup._check_header == ParseSetup.HAS_HEADER) state = WHITESPACE_BEFORE_TOKEN;
+    if (_setup._parse_type.equals(ARFF_INFO) && _setup._check_header == ParseSetup.HAS_HEADER) state = WHITESPACE_BEFORE_TOKEN;
 
     int quotes = 0;
     long number = 0;
@@ -653,7 +656,7 @@ MAIN_LOOP:
             }
           }
           //FIXME should set warning message and let fall through
-          return new ParseSetup(ParserType.CSV, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, new ParseWriter.ParseErr[0],FileVec.DFLT_CHUNK_SIZE);
+          return new ParseSetup(CSV_INFO, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, new ParseWriter.ParseErr[0],FileVec.DFLT_CHUNK_SIZE);
         }
       }
       data[0] = determineTokens(lines[0], sep, singleQuotes);
@@ -712,7 +715,7 @@ MAIN_LOOP:
     }
 
     // Assemble the setup understood so far
-    ParseSetup resSetup = new ParseSetup(ParserType.CSV, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
+    ParseSetup resSetup = new ParseSetup(CSV_INFO, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data);
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {

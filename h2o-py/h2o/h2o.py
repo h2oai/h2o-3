@@ -171,7 +171,11 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=None):
   """Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable.
   Runs multiple SELECT SQL queries concurrently for parallel ingestion. 
+  Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath: 
+    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
   Also see h2o.import_sql_select.
+  Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
+  is forthcoming.
   
   Parameters
   ----------
@@ -197,6 +201,14 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
   Returns
   -------
     H2OFrame containing data of specified SQL table
+  
+  Examples
+  --------
+    >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+    >>> table = "citibike20k"
+    >>> username = "root"
+    >>> password = "abc123"
+    >>> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
   """
   if columns is not None: 
     if not isinstance(columns, list): raise ValueError("`columns` must be a list of column names")
@@ -211,7 +223,11 @@ def import_sql_select(connection_url, select_query, username, password, optimize
   """Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory. 
   Creates a temporary SQL table from the specified sql_query.
   Runs multiple SELECT SQL queries on the temporary table concurrently for parallel ingestion, then drops the table. 
+  Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath: 
+    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
   Also see h2o.import_sql_table.
+  Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
+  is forthcoming.
   
   Parameters
   ----------
@@ -234,6 +250,14 @@ def import_sql_select(connection_url, select_query, username, password, optimize
   Returns
   -------
     H2OFrame containing data of specified SQL select query
+    
+  Examples
+  --------
+    >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+    >>> select_query = "SELECT bikeid from citibike20k"
+    >>> username = "root"
+    >>> password = "abc123"
+    >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
   """
   p = {}
   p.update({k:v for k,v in locals().items() if k is not "p"})

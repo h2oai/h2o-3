@@ -17,7 +17,7 @@ def calcArtifactId() {
 }
 
 // Default task to bundle javadoc as jar
-task javadocJar(type: Jar) {
+task javadocJar(type: Jar, group: "documentation") {
     classifier = 'javadoc'
     from javadoc
 }

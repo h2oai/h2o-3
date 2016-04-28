@@ -1,5 +1,11 @@
 package water.api;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
@@ -9,12 +15,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
 import water.util.Log;
 import water.util.ReflectionUtils;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The metadata info on all the fields in a Schema.  This is used to help Schema be self-documenting,
@@ -132,15 +132,21 @@ public final class SchemaMetadata extends Iced {
       super();
       try {
         f.setAccessible(true); // handle private and protected fields
+        // Get annotation directly
+        API annotation = f.getAnnotation(API.class);
 
         this.name = f.getName();
         Object o = f.get(schema);
         this.value = consValue(o);
 
-        boolean is_enum = Enum.class.isAssignableFrom(f.getType()) || (f.getType().isArray() && Enum.class.isAssignableFrom(f.getType().getComponentType()));
-        this.is_schema = Schema.class.isAssignableFrom(f.getType()) || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
+        // Enum is a field of enum type or of String type with defined and fixed set of values!
+        boolean is_enum = isEnum(f.getType(), annotation) || (f.getType().isArray() && isEnum(f.getType().getComponentType(), annotation));
+        boolean is_fake_enum = isFakeEnum(f.getType(), annotation) || (f.getType().isArray() && isFakeEnum(f.getType().getComponentType(), annotation));
 
-        this.type = consType(schema, ReflectionUtils.findActualFieldClass(schema.getClass(), f), f.getName());
+        this.is_schema = Schema.class.isAssignableFrom(f.getType())
+                         || (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType()));
+
+        this.type = consType(schema, ReflectionUtils.findActualFieldClass(schema.getClass(), f), f.getName(), annotation);
 
         // Note, this has to work when the field is null.  In addition, if the field's type is a base class we want to see if we have a versioned schema for its Iced type and, if so, use it.
         if (this.is_schema) {
@@ -156,29 +162,15 @@ public final class SchemaMetadata extends Iced {
           } else {
             this.schema_name = schema_class.getSimpleName();
           }
-        } else if (is_enum && !f.getType().isArray()) {
+        } else if ((is_enum || is_fake_enum) && !f.getType().isArray()) {
           // We have enums of the same name defined in a few classes (e.g., Loss and Initialization)
-          this.schema_name = f.getType().getCanonicalName();
-          this.schema_name = this.schema_name.substring(this.schema_name.indexOf(".") + 1);
-          char[] array = this.schema_name.toCharArray();
-          array[0] = Character.toUpperCase(array[0]);
-          this.schema_name = new String(array);
-          this.schema_name = this.schema_name.replace(".", "");
-          this.schema_name = this.schema_name.replace("$", "");
-        } else if (is_enum && f.getType().isArray()) {
+          this.schema_name = getEnumSchemaName(is_enum ? f.getType() : annotation.valuesProvider());
+        } else if ((is_enum || is_fake_enum) && f.getType().isArray()) {
           // We have enums of the same name defined in a few classes (e.g., Loss and Initialization)
-          this.schema_name = f.getType().getComponentType().getCanonicalName();
-          this.schema_name = this.schema_name.substring(this.schema_name.indexOf(".") + 1);
-          char[] array = this.schema_name.toCharArray();
-          array[0] = Character.toUpperCase(array[0]);
-          this.schema_name = new String(array);
-          this.schema_name = this.schema_name.replace(".", "");
-          this.schema_name = this.schema_name.replace("$", "");
+          this.schema_name = getEnumSchemaName(is_enum ? f.getType().getComponentType() : annotation.valuesProvider());
         }
 
         this.is_inherited = (superclassFields.contains(f));
-
-        API annotation = f.getAnnotation(API.class);
 
         if (null != annotation) {
           String l = annotation.label();
@@ -188,7 +180,7 @@ public final class SchemaMetadata extends Iced {
           this.level = annotation.level();
           this.direction = annotation.direction();
           this.is_gridable = annotation.gridable();
-          this.values = annotation.values();
+          this.values = annotation.valuesProvider() == ValuesProvider.NULL ? annotation.values() : getValues(annotation.valuesProvider());
           this.json = annotation.json();
           this.is_member_of_frames = annotation.is_member_of_frames();
           this.is_mutually_exclusive_with = annotation.is_mutually_exclusive_with(); // TODO: need to form the transitive closure
@@ -221,8 +213,8 @@ public final class SchemaMetadata extends Iced {
     }
 
     /** For a given Class generate a client-friendly type name (e.g., int[][] or Frame). */
-    public static String consType(Schema schema, Class clz, String field_name) {
-      boolean is_enum = Enum.class.isAssignableFrom(clz);
+    public static String consType(Schema schema, Class clz, String field_name, API annotation) {
+      boolean is_enum = isEnum(clz, null) || isFakeEnum(clz, annotation);
       boolean is_array = clz.isArray();
 
       // built-in Java types:
@@ -236,7 +228,7 @@ public final class SchemaMetadata extends Iced {
         return clz.toString();
 
       if (is_array)
-        return consType(schema, clz.getComponentType(), field_name) + "[]";
+        return consType(schema, clz.getComponentType(), field_name, annotation) + "[]";
 
       if (Map.class.isAssignableFrom(clz)) {
         if (IcedHashMapBase.class.isAssignableFrom(clz)) {
@@ -404,5 +396,34 @@ public final class SchemaMetadata extends Iced {
       Log.warn(msg);
       throw new IllegalArgumentException(msg);
     }
+  }
+
+  private static String[] getValues(Class<? extends ValuesProvider> valuesProvider) {
+    String[] values;
+    try {
+      ValuesProvider vp = valuesProvider.newInstance();
+      values = vp.values();
+    } catch (Throwable e) {
+      values = null;
+    }
+    return values;
+  }
+
+  // Enum is a field of enum type or of String type with defined and fixed set of values!
+  private static boolean isEnum(Class<?> type, API annotation) {
+    return Enum.class.isAssignableFrom(type);
+  }
+
+  private static boolean isFakeEnum(Class<?> type, API annotation) {
+    return (annotation != null
+            && annotation.valuesProvider() != ValuesProvider.NULL
+            && String.class.isAssignableFrom(type));
+  }
+
+  private static String getEnumSchemaName(Class<?> type) {
+    StringBuffer sb = new StringBuffer(type.getCanonicalName());
+    sb.delete(0, sb.indexOf(".")+1);
+    sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
+    return sb.toString().replace(".", "").replace("$", "");
   }
 }

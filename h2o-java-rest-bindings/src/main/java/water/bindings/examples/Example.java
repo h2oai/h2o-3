@@ -95,7 +95,7 @@ public class Example {
 
             // STEP 2: parse setup
             ParseSetupV3 parseSetupBody = parseSetupService.guessSetup(importBody.destination_frames,
-                                                                  ParserParserType.GUESS,
+                                                                  ApiParseTypeValuesProvider.GUESS,
                                                                   (byte)',',
                                                                   false,
                                                                   -1,

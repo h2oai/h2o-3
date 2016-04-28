@@ -54,7 +54,7 @@ else
 fi
 # Command to invoke test.  Note the explicit 3g sizes; if the JVM runs out of
 # memory on these tests, we need to diagnose the extra memory requirements
-JVM="nice $JAVA_CMD -Xmx3g -Xms3g -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD -Xmx3g -Xms3g -ea -cp build/resources/main${SEP}build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

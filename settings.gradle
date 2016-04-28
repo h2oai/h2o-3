@@ -14,7 +14,21 @@ include 'h2o-hadoop:h2o-mapreduce-generic'
 include 'h2o-hadoop:h2o-yarn-generic'
 include 'h2o-genmodel'
 include 'h2o-java-rest-bindings'
+include 'h2o-test-integ'
+include 'h2o-test-accuracy'
+include 'h2o-avro-parser'
 
+// Make structure flat and avoid annoying dummy modules
+rootProject.children.each { project ->
+  if (project.name.equals("h2o-avro-parser")) {
+    String projectDirName = "h2o-parsers/${project.name}"
+    project.projectDir = new File(settingsDir, projectDirName)
+  }
+}
+
+//
+// Include Hadoop builds only if requested
+//
 if (System.getProperty("user.name").equals("jenkins") 
     || System.getenv("BUILD_HADOOP") != null
     || System.getenv("H2O_TARGET") != null) {
@@ -36,7 +50,4 @@ if (System.getProperty("user.name").equals("jenkins")
     }
   }
 }
-
-include 'h2o-test-integ'
-include 'h2o-test-accuracy'
 

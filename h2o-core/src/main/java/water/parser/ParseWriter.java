@@ -50,6 +50,6 @@ public interface ParseWriter extends Freezable {
   void setIsAllASCII(int colIdx, boolean b);
   boolean hasErrors();
   ParseErr [] removeErrors();
-  public long lineNum();
+  long lineNum();
 
 }
