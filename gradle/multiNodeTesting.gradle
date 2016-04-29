@@ -4,5 +4,9 @@ task testMultiNode(type: Exec) {
     if (project.hasProperty("java6Convert")) {
       environment "TEST_JAVA_HOME", System.getenv("JAVA_6_HOME")
     }
-    commandLine 'bash', './testMultiNode.sh'
+    def args = ['bash', './testMultiNode.sh']
+    if (project.hasProperty("jacocoCoverage")) {
+        args << 'jacoco'
+    }
+    commandLine args
 }

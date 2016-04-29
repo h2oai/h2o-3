@@ -95,7 +95,6 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`password` must be a character string or NA_character_")
   if (is.na(username) != is.na(password))
     stop("Must provide both `username` and `password`")
-
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
          "Please change to a newer or older version of R.\n",
