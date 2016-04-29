@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import water.api.Schema;
+import hex.schemas.HyperSpaceSearchCriteriaV99;
 
 public class TestCase {
 
@@ -205,7 +206,9 @@ public class TestCase {
             break;
         }
         startTime = System.currentTimeMillis();
-        Job<Grid> gs = GridSearch.startGridSearch(null,params,hyperParms/*,new SimpleParametersBuilderFactory<MP>(),searchCriteria*/);
+        // TODO: ModelParametersBuilderFactory parameter must be instantiated properly
+        Job<Grid> gs = GridSearch.startGridSearch(null,params,hyperParms,
+                new GridSearch.SimpleParametersBuilderFactory<>(),searchCriteria);
         grid = gs.get();
         stopTime = System.currentTimeMillis();
 
@@ -294,11 +297,28 @@ public class TestCase {
   }
 
   private void makeSearchCriteria() throws Exception {
-    // TODO: don't hard-code this
-    RandomDiscreteValueSearchCriteriaV99 sc = new RandomDiscreteValueSearchCriteriaV99(1234567,100,15);
-    sc.stopping_rounds = 5;
-    sc.stopping_tolerance = 1e-4;
-    searchCriteria = sc.createAndFillImpl();
+    AccuracyTestingSuite.summaryLog.println("Making Grid Search Criteria.");
+    String[] tokens = searchParameters.trim().split(";", -1);
+    HashMap<String, String> tokenMap = new HashMap<>();
+    for (int i = 0; i < tokens.length; i++)
+      tokenMap.put(tokens[i].split("=", -1)[0], tokens[i].split("=", -1)[1]);
+
+    if (tokenMap.containsKey("strategy") && tokenMap.get("strategy").equals("RandomDiscrete")) {
+      RandomDiscreteValueSearchCriteriaV99 sc = new RandomDiscreteValueSearchCriteriaV99();
+      if (tokenMap.containsKey("seed"))
+        sc.seed = Integer.parseInt(tokenMap.get("seed"));
+      if (tokenMap.containsKey("stopping_rounds"))
+        sc.stopping_rounds = Integer.parseInt(tokenMap.get("stopping_rounds"));
+      if (tokenMap.containsKey("stopping_tolerance"))
+        sc.stopping_tolerance = Double.parseDouble(tokenMap.get("stopping_tolerance"));
+      if (tokenMap.containsKey("max_runtime_secs"))
+        sc.max_runtime_secs = Double.parseDouble(tokenMap.get("max_runtime_secs"));
+      if (tokenMap.containsKey("max_models"))
+        sc.max_models = Integer.parseInt(tokenMap.get("max_models"));
+      searchCriteria = sc.createAndFillImpl();
+    } else {
+      throw new Exception(tokenMap.get("strategy") + " search strategy is not supported for grid search test cases");
+    }
   }
 
   private HashMap<String, Double> getMetrics(ModelMetrics mm) {
