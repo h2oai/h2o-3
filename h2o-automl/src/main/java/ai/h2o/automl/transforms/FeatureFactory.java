@@ -2,8 +2,6 @@ package ai.h2o.automl.transforms;
 
 import ai.h2o.automl.FrameMeta;
 import hex.Model;
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
 import water.DKV;
 import water.H2O;
 import water.Key;
@@ -154,7 +152,7 @@ public class FeatureFactory {
         _basicTransforms.put(name, Expr.unOp(op,_fm._cols[_fm._numFeats[i]]._v));
         cnt++;
       }
-      cnt += tryRates(nBasicFeats-cnt);
+      cnt += tryRatesAndReciprocals(nBasicFeats - cnt);
       cnt += tryCombos(nBasicFeats-cnt);
       // cnt += tryTime(nBasicFeats-cnt);
       cnt += tryCatInteractions(nBasicFeats-cnt);
@@ -189,16 +187,6 @@ public class FeatureFactory {
    * @return
    */
   public void synthesizeAggFeatures() {
-    // choose group-by keys:
-    //  1. must be categorical
-    //  2. must have combined total-cardinality < 1M
-    //  3. at most 5 cols per key
-    //     => and then all combinations therein
-    // AGG fcns:
-    ASTGroup.FCN[] fcns = new ASTGroup.FCN[]{ASTGroup.FCN.mean, ASTGroup.FCN.var, ASTGroup.FCN.sum, ASTGroup.FCN.nrow};
-    ArrayList<ASTGroup.AGG[]> agg = new ArrayList<>();
-    ArrayList<Integer[]> gbCols = new ArrayList<>();
-
     HashSet<String> preds = new HashSet<>();
     Collections.addAll(preds,_predictors);
     Frame fullFrame = new Frame(_fm._fr.names().clone(), _fm._fr.vecs().clone());
@@ -210,55 +198,73 @@ public class FeatureFactory {
       Collections.addAll(preds, _catInteractions.names());
       fullFrame.add(_catInteractions);
     }
-
     FrameMeta fullFrameMeta = new FrameMeta(fullFrame,fullFrame.find(_response),preds.toArray(new String[preds.size()]), "synthesized_fullFrame",_isClassification);
-    fullFrameMeta.numberOfCategoricalFeatures();
-    int[] catFeats = fullFrameMeta._catFeats;
-    for(int i=0;i<catFeats.length;++i) {
-      gbCols.add(new Integer[]{catFeats[i]});
-      agg.add(makeAggs(new int[]{catFeats[i]}, fullFrameMeta));
-      for(int j=i+1;j<catFeats.length; ++j) {
-        gbCols.add(new Integer[]{catFeats[i],catFeats[j]});
-        agg.add(makeAggs(new int[]{catFeats[i],catFeats[j]},fullFrameMeta));
-//        for(int k=j+1;k<fullFrameMeta._catFeats.length;++k) {
-//          gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k]});
-//          agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k]},fullFrameMeta));
-//          for(int l=k+1;l<fullFrameMeta._catFeats.length;++l) {
-//            gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]});
-//            agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]},fullFrameMeta));
-//          }
-//        }
-      }
-    }
-    int[][] groupByCols = new int[gbCols.size()][];
-    ASTGroup.AGG[][] aggs = new ASTGroup.AGG[agg.size()][];
-
-    // could launch all group-by tasks in parallel => BIG memory overhead EEKS!
-    for(int i=0;i<groupByCols.length;++i) {
-      groupByCols[i] = new int[gbCols.get(i).length];
-      for(int j=0;j<groupByCols[i].length;++j)
-        groupByCols[i][j] = gbCols.get(i)[j];
-      aggs[i] = agg.get(i);
-    }
-    GBTasks gbs = new GBTasks(groupByCols,aggs);
+    AggFeatureBuilder afb = AggFeatureBuilder.buildAggFeatures(fullFrameMeta);
+    GBTasks gbs = new GBTasks(afb._gbCols,afb._aggs);
     gbs.doAll(fullFrame);
     System.out.println();
   }
 
-  private ASTGroup.AGG[] makeAggs(int[] gbCols, FrameMeta fm) {
-    // categorical columns get counted
+  /**
+   * A dummy class to hold all group-by combos plus any desired aggregates
+   */
+  public static class AggFeatureBuilder {
+    public final int[][] _gbCols;
+    public final ASTGroup.AGG[][] _aggs;
+    public AggFeatureBuilder(int[][] gbCols, ASTGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; }
+
+    public static AggFeatureBuilder buildAggFeatures(FrameMeta fullFrameMeta) {
+      // choose group-by keys:
+      //  1. must be categorical
+      //  2. must have combined total-cardinality < 1M
+      //  3. at most 5 cols per key
+      //     => and then all combinations therein
+      // AGG fcns:
+      ArrayList<ASTGroup.AGG[]> agg = new ArrayList<>();
+      ArrayList<Integer[]> gbCols = new ArrayList<>();
+
+      fullFrameMeta.numberOfCategoricalFeatures();
+      int[] catFeats = fullFrameMeta._catFeats;
+      for(int i=0;i<catFeats.length;++i) {                                                  //        1 key group
+        gbCols.add(new Integer[]{catFeats[i]});
+        agg.add(makeAggs(new int[]{catFeats[i]}, fullFrameMeta));
+        for(int j=i+1;j<catFeats.length; ++j) {                                             //        2 key group
+          gbCols.add(new Integer[]{catFeats[i],catFeats[j]});
+          agg.add(makeAggs(new int[]{catFeats[i],catFeats[j]},fullFrameMeta));
+          for(int k=j+1;k<fullFrameMeta._catFeats.length;++k) {                             //        3 key group
+            gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k]});
+            agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k]},fullFrameMeta));
+            for(int l=k+1;l<fullFrameMeta._catFeats.length;++l) {                           //        4 key group
+              gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]});
+              agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]},fullFrameMeta));
+            }
+          }
+        }
+      }
+      int[][] groupByCols = new int[gbCols.size()][];
+      ASTGroup.AGG[][] aggs = new ASTGroup.AGG[agg.size()][];
+
+      // could launch all group-by tasks in parallel => BIG memory overhead EEKS!
+      for(int i=0;i<groupByCols.length;++i) {
+        groupByCols[i] = new int[gbCols.get(i).length];
+        for(int j=0;j<groupByCols[i].length;++j)
+          groupByCols[i][j] = gbCols.get(i)[j];
+        aggs[i] = agg.get(i);
+      }
+      return new AggFeatureBuilder(groupByCols,aggs);
+    }
+  }
+
+  private static ASTGroup.AGG[] makeAggs(int[] gbCols, FrameMeta fm) {
     // numerical columns get sum, mean, var
     ArrayList<ASTGroup.AGG> aggs = new ArrayList<>();
     int[] cols = fm.diffCols(gbCols);
-    for(int i=0; i<cols.length;++i) {
-      if( fm._fr.vec(cols[i]).isCategorical() )
-        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.nrow,cols[i], ASTGroup.NAHandling.IGNORE,-1));
-      else if( fm._fr.vec(cols[i]).isNumeric()) {
-        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.mean,cols[i], ASTGroup.NAHandling.IGNORE,-1));
-//        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.var,cols[i], ASTGroup.NAHandling.IGNORE,-1));
-//        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.sum,cols[i], ASTGroup.NAHandling.IGNORE,-1));
+    for (int col : cols)
+      if (fm._fr.vec(col).isNumeric()) {
+        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.mean, col, ASTGroup.NAHandling.IGNORE, -1));
+        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.var,  col, ASTGroup.NAHandling.IGNORE, -1));
+        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.sum,  col, ASTGroup.NAHandling.IGNORE, -1));
       }
-    }
     return aggs.toArray(new ASTGroup.AGG[aggs.size()]);
   }
 
@@ -273,14 +279,16 @@ public class FeatureFactory {
    *
    * TODO: misses the case where we want to find rates of integer cols
    */
-  private int tryRates(int maxFeats) {
+  private int tryRatesAndReciprocals(int maxFeats) {
     int cnt=0;
     for(int i: _fm._dblCols) {
       for(int j: _fm._intNotBinaryCols) {
+        if( cnt >= maxFeats ) return cnt;
         String name = _fm._cols[i]._name + "_rate_" + _fm._cols[j]._name;
         _basicTransforms.put(name, Expr.binOp("/", _fm._cols[i]._v, _fm._cols[j]._v));
-        cnt+=1;
-        if( cnt >= maxFeats ) return cnt;
+        name = _fm._cols[i]._name + "_recip_" + _fm._cols[j]._name;
+        _basicTransforms.put(name, Expr.binOp("/",1,Expr.binOp("/", _fm._cols[i]._v, _fm._cols[j]._v)));
+        cnt+=2;
       }
     }
 
@@ -291,7 +299,9 @@ public class FeatureFactory {
           if( cnt >= maxFeats ) return cnt;
           String name = _fm._cols[i]._name + "_plus_" + _fm._cols[j]._name + "_rate_" + _fm._cols[k]._v;
           _basicTransforms.put(name, Expr.binOp("+",_fm._cols[i]._v,_fm._cols[j]._v).bop("/",_fm._cols[k]._v));
-          cnt++;
+          name = _fm._cols[i]._name + "_plus_" + _fm._cols[j]._name + "_recip" + _fm._cols[k]._v;
+          _basicTransforms.put(name, Expr.binOp("/",1,Expr.binOp("+",_fm._cols[i]._v,_fm._cols[j]._v).bop("/", _fm._cols[k]._v)));
+          cnt+=2;
         }
 
     // now with all combinations of three double vecs
@@ -302,8 +312,20 @@ public class FeatureFactory {
             if( cnt >= maxFeats ) return cnt;
             String name = _fm._cols[i]._name + "_plus_" + _fm._cols[j]._name + _fm._cols[k]._name + "_rate_" + _fm._cols[l]._v;
             _basicTransforms.put(name, Expr.binOp("+",_fm._cols[i]._v,_fm._cols[j]._v).bop("+",_fm._cols[k]._v).bop("/",_fm._cols[l]._v));
-            cnt++;
+            name = _fm._cols[i]._name + "_plus_" + _fm._cols[j]._name + _fm._cols[k]._name + "_recip_" + _fm._cols[l]._v;
+            _basicTransforms.put(name, Expr.binOp("/",1,Expr.binOp("+",_fm._cols[i]._v,_fm._cols[j]._v).bop("+",_fm._cols[k]._v).bop("/",_fm._cols[l]._v)));
+            cnt+=2;
           }
+
+    // now all the integer (non binary) columns with each other:
+    for(int i=0;i<_fm._intNotBinaryCols.length;++i)
+      for(int j=i+1;j<_fm._intNotBinaryCols.length;++j) {
+        String name = _fm._cols[i]._name + "_rate_" + _fm._cols[j]._name;
+        _basicTransforms.put(name, Expr.binOp("/", _fm._cols[i]._v, _fm._cols[j]._v));
+        name = _fm._cols[i]._name + "_recip_" + _fm._cols[j]._name;
+        _basicTransforms.put(name, Expr.binOp("/",1,Expr.binOp("/", _fm._cols[i]._v, _fm._cols[j]._v)));
+        cnt+=2;
+      }
     return cnt;
   }
 
@@ -329,62 +351,6 @@ public class FeatureFactory {
     _catInteractions = Model.makeInteractions(_fm._fr, false, ips, true,false,false);
     cnt += _catInteractions.numCols();
     return cnt;
-  }
-
-
-  // launch a model and monitor performance on some holdout set
-  // for sake of getting something done, the model is GBM and we monitor first
-  // 5 trees, if the MSE/AUC/CLASSERR is worse than "base" values, then we cut and run...
-  // on the other hand, if perf metrics are better than "base" values, then this task will
-  // preserve those transformations.
-  //
-  // open question: at what point should the holdout set be generated?
-  private static class LaunchAndMonitor extends H2O.H2OCountedCompleter<LaunchAndMonitor> {
-
-    Frame _taskTrain;
-    Frame _taskValid;
-    String _response;
-    String[] _ignored;
-
-
-    // base values
-    double _s; // perf << _s ? kill_task : save_task   NaN => _l!=NaN
-    double _l; // perf >> _l ? kill_task : save_task   NaN => _s!=NaN
-
-    LaunchAndMonitor(Frame frame, double s, double l, String response, String[] ignored, Vec weight) {
-      assert Double.isNaN(s) || Double.isNaN(l) : "expected one of the base perf values to not be NaN!";
-      Vec[] vecs = new Vec[frame.numCols()+1];
-      String[] names = new String[frame.numCols()+1];
-      System.arraycopy(frame.names(),0,names,0,frame.numCols());
-      names[names.length-1] = "weight";
-      for(int i=0;i<vecs.length;++i)
-        vecs[i] = frame.vec(i).clone(); // clone vec headers now b4 launch
-      vecs[vecs.length-1] = weight;
-      _taskTrain = new Frame(names,vecs.clone());
-//      vecs[vecs.length-1]
-//      _taskValid = new Frame(names,)
-      _s=s;
-      _l=l;
-      _response=response;
-      _ignored=ignored;
-    }
-
-    @Override public void compute2() {
-//      ModelBuilder mb = makeModelBuilder(genParms());
-//      mb._parms._train=fs==null?fr._key:fs[0]._key;
-//      mb._parms._valid=fs==null?test._key:fs[1]._key;
-//      mb._parms._ignored_columns = ignored;
-//      mb._parms._response_column = y;
-//      mb.trainModel();
-    }
-
-    protected GBMModel.GBMParameters genParms() {
-      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
-      p._ntrees = 5;
-      p._max_depth = 5;
-      return p;
-    }
-    protected GBM makeModelBuilder(Model.Parameters p) { return new GBM((GBMModel.GBMParameters)p); }
   }
 
 
@@ -430,6 +396,35 @@ public class FeatureFactory {
           for( int i=0; i<_aggs[gID].length; i++ )
             _aggs[gID][i].atomic_op(lg._dss,lg._ns,i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
         }
+    }
+  }
+}
+
+
+/**
+ * FeatureBuilder expects to flatten a table of predictors against a single column.
+ *
+ *
+ */
+class AggFeatureBuilder {
+  String _primaryAgg;
+  FrameMeta _fm;
+  String[] _predictors;
+  AggFeatureBuilder(Frame fr, String primaryAgg, String[] predictors) {
+    _primaryAgg=primaryAgg;
+    _predictors=predictors;
+    _fm = new FrameMeta(fr,-1,fr._key.toString());
+  }
+
+
+  private void buildAggs() {
+    ArrayList<ASTGroup.AGG[]> agg = new ArrayList<>();
+    ArrayList<Integer[]> gbCols = new ArrayList<>();
+
+    int primaryAgg = _fm._fr.find(_primaryAgg);
+    int ncatfeats= _fm.numberOfCategoricalFeatures();
+    for(int i=0;i<ncatfeats;++i) {
+
     }
   }
 }

@@ -89,7 +89,7 @@ public class FrameMeta extends Iced {
    * @param filterThese remove these columns
    * @return an int[] of the non-ignored column indexes
    */
-  public int[] diffCols(int[] filterThese){
+  public int[] diffCols(int[] filterThese) {
     HashSet<Integer> filter = new HashSet<>();
     for(int i:filterThese)filter.add(i);
     ArrayList<Integer> res = new ArrayList<>();

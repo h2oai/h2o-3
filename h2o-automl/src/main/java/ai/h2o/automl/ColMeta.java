@@ -3,7 +3,6 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.autocollect.AutoCollect;
 import ai.h2o.automl.guessers.ColNameScanner;
-import ai.h2o.automl.transforms.Transform;
 import hex.tree.DHistogram;
 import water.Iced;
 import water.fvec.InteractionWrappedVec;
@@ -12,7 +11,6 @@ import water.fvec.Vec;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Random;
 
 /** Column Meta Data
  *
@@ -128,12 +126,13 @@ public class ColMeta extends Iced {
   }
 
   public String selectBasicTransform() {
-    if( _ignored ) return "ignored";
-    if( _v.isBinary() ) return "none";
-    if( _v.isTime() || _isDate ) return "time";  // actually we have a time/date column, so apply some time transforms
-    if( _v.max() - _v.min() > 2e10) return "log";  // take a log if spans more than 2 orders
-//    if( _v.isInt() && (_v.b))
-    return Transform.basicOps[new Random().nextInt(Transform.basicOps.length)];  // choose a random log to just try
+    if( _ignored )                 return "ignored";
+    if( _v.isBinary() )            return "none";
+    if( _v.isTime() || _isDate )   return "time";  // actually we have a time/date column, so apply some time transforms
+    if( _v.max() - _v.min() > 1e4) return "log";   // take a log if spans more than 2 orders
+    if( _v.isNumeric() && !_v.isInt() ) return "recip"; // try the reciprocal!
+    return "none";                                 // no transform if not interesting
+    //Transform.basicOps[new Random().nextInt(Transform.basicOps.length)];  // choose a random log to just try
   }
 
   public void fillColMeta(HashMap<String, Object> cm, int idFrame) {
