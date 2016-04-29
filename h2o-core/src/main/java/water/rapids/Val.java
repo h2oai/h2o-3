@@ -35,12 +35,13 @@ abstract public class Val extends Iced {
 }
 
 class ValNum extends Val {
-  final double _d;
+  double _d;
   ValNum(double d) { _d = d; }
   @Override public String toString() { return ""+_d; }
   @Override public int type () { return NUM; }
   @Override boolean isNum() { return true; }
   @Override public double getNum() { return _d; }
+  public void setNum(double d) { _d=d; }
 }
 
 class ValNums extends Val {
