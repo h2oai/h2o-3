@@ -722,6 +722,15 @@ public class Vec extends Keyed<Vec> {
    *  @return Checksum of the Vec's content  */
   @Override protected long checksum_impl() { return rollupStats()._checksum;}
 
+  public static int getChunkId(Key key) {
+    if(!key.isChunkKey()) throw new IllegalArgumentException();
+    return UnsafeUtils.get4(key._kb,6);
+  }
+
+  public static int getVecId(Key key) {
+    if(!(key.isChunkKey() ||  key.isVec())) throw new IllegalArgumentException();
+    return UnsafeUtils.get4(key._kb,2);
+  }
 
   private static class SetMutating extends TAtomic<RollupStats> {
     @Override protected RollupStats atomic(RollupStats rs) {
@@ -782,6 +791,20 @@ public class Vec extends Keyed<Vec> {
     return lo;
   }
 
+  public static Key getGroupKey(Key k) {
+    byte [] bits = k._kb.clone();
+    bits[0] = Key.GRP;
+    UnsafeUtils.set4(bits, 2, -1);
+    UnsafeUtils.set4(bits, 6, -1);
+    return Key.make(bits);
+  }
+  public static Key getGroupStoreKey(Key k) {
+    byte [] bits = k._kb.clone();
+    bits[0] = Key.GRP;
+    UnsafeUtils.set4(bits, 2, -2);
+    UnsafeUtils.set4(bits, 6, -2);
+    return new Key(bits);
+  }
   /** Get a Vec Key from Chunk Key, without loading the Chunk.
    *  @return the Vec Key for the Chunk Key */
   public static Key getVecKey( Key chk_key ) {

@@ -1,5 +1,8 @@
 package water;
 
+import water.fvec.Vec;
+import water.fvec.VgChunk;
+
 /** A Distributed Key/Value Store.
  *  <p>
  *  Functions to Get and Put Values into the K/V store by Key.

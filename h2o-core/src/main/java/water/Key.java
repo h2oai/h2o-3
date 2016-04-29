@@ -41,9 +41,14 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @version 1.0
  */
 final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparable {
+
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
+  // key bytes
+  // 1B for key type
+  // 1B for explicit node placement
+  // 8B for system key or n-bytes for user-key string
   public final byte[] _kb;      // Key bytes, wire-line protocol
   transient final int _hash;    // Hash on key alone (and not value)
 
@@ -241,7 +246,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 1;
 
   // Construct a new Key.
-  private Key(byte[] kb) {
+  public Key(byte[] kb) {
     if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
     _kb = kb;
     // Quicky hash: http://en.wikipedia.org/wiki/Jenkins_hash_function
@@ -367,10 +372,18 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    * @return True if a {@link #USER_KEY} and not a system key */
   public boolean user_allowed() { return type()==USER_KEY; }
 
+
+
   /** System type/byte of a Key, or the constant {@link #USER_KEY}
    *  @return Key type */
   // Returns the type of the key.
   public int type() { return ((_kb[0]&0xff)>=32) ? USER_KEY : (_kb[0]&0xff); }
+
+  public long systemKey(){
+    if(user_allowed()) throw new IllegalArgumentException("extracting system key from user key");
+    assert isChunkKey() || isVec():"invalid key " + toString();
+    return UnsafeUtils.get8(_kb,2);
+  }
 
   /** Return the classname for the Value that this Key points to, if any (e.g., "water.fvec.Frame"). */
   public String valueClass() {

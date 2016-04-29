@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import jsr166y.ForkJoinPool;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VgChunk;
 import water.util.Log;
 
 /** The core Value stored in the distributed K/V store, used to cache Plain Old
@@ -310,13 +311,16 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
   Value(Key k, String s ) { this(k, s.getBytes()); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
-  Value(Key k, Iced pojo, byte be ) {
+  Value(Key k, Iced pojo, byte be ) {this(k,pojo,be,true);}
+  Value(Key k, Iced pojo, byte be, boolean generateMem) {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.asBytes();
-    _max = _mem.length;
-    assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
+    if(generateMem) {
+      _mem = pojo.asBytes();
+      _max = _mem.length;
+      assert _max < MAX : "Value size = " + _max + " (0x" + Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
+    }
     // For the ICE backend, assume new values are not-yet-written.
     // For HDFS & NFS backends, assume we from global data and preserve the
     // passed-in persist bits
@@ -580,7 +584,22 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // are pending invalidates on it), upgrade it in-place to a true null.
   // Return the not-Null value, or the true null.
   public static Value STORE_get( Key key ) {
-    Value val = H2O.STORE.get(key);
+    Value val;
+    if(key.isChunkKey() || key.isVec()) {
+      Key gKey = Vec.getGroupStoreKey(key);
+      Value v = STORE_get(gKey);
+      if(v == null) return null;
+      VgChunk.VgStore store = v.get();
+      // extract row by chunkIdx
+//      val = store._store.get(Vec.getChunkId(key));
+//      // extract chunk by vecId
+//      if(!val.isNull() && key.isChunkKey()){
+//        VgChunk c = val.get();
+//        val = new Value(key,c.getChunk(Vec.getVecId(key)),Value.ICE, false);
+//      }
+      val = store._store.get(key.systemKey());
+    } else
+      val = key.user_allowed()?H2O.STORE.get(key):H2O.SYSTEM_STORE.get(key);
     if( val == null ) return null; // A true null
     if( !val.isNull() ) return val; // Not a special Null
     // One-shot throwaway attempt at upgrading the special Null to a true null

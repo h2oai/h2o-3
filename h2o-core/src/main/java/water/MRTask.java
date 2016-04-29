@@ -139,6 +139,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private byte _output_types[];
 
   /** First reserved VectorGroup key index for all output Vecs */
+  private VectorGroup _outputVectorGroup;
   private int _vid;
 
   /** New Output vectors; may be null.
@@ -447,8 +448,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public final T dfork( byte[] types, Frame fr, boolean run_local) {
     _topGlobal = true;
     _output_types = types;
-    if( types != null && types.length > 0 )
-      _vid = fr.anyVec().group().reserveKeys(types.length);
+
+    if( types != null && types.length > 0 ) {
+      _outputVectorGroup = new VectorGroup();
+      DKV.put(_outputVectorGroup._key,_outputVectorGroup);
+      _vid = _outputVectorGroup.reserveKeys(types.length);
+    }
     _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?
@@ -613,7 +618,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           }
 
         if(_output_types != null) {
-          final VectorGroup vg = vecs[0].group();
+          final VectorGroup vg = _outputVectorGroup;
           _appendables = new AppendableVec[_output_types.length];
           appendableChunks = new NewChunk[_output_types.length];
           for(int i = 0; i < _appendables.length; ++i) {

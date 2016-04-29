@@ -37,12 +37,15 @@ import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Vec;
+import water.fvec.VgChunk;
 import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
 import water.init.NetworkInit;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
+import water.nbhm.NonBlockingHashMapLong;
 import water.persist.PersistManager;
 import water.util.GAUtils;
 import water.util.Log;
@@ -1577,9 +1580,12 @@ final public class H2O {
     }
   }
 
+
   // --------------------------------------------------------------------------
   // The (local) set of Key/Value mappings.
   public static final NonBlockingHashMap<Key,Value> STORE = new NonBlockingHashMap<>();
+  // The (local) set of Key/Value mappings.
+  public static final NonBlockingHashMap<Key,Value> SYSTEM_STORE = new NonBlockingHashMap<>();
 
   // PutIfMatch
   // - Atomically update the STORE, returning the old Value on success
@@ -1609,9 +1615,21 @@ final public class H2O {
       assert val._key.equals(key);
       if( val._key != key ) val._key = key; // Attempt to uniquify keys
     }
-
+    Value res;
     // Insert into the K/V store
-    Value res = STORE.putIfMatchUnlocked(key,val,old);
+    if(key.isChunkKey() || key.isVec()) {
+      Key gk = Vec.getGroupStoreKey(key);
+      Value vg = SYSTEM_STORE.get(gk);
+      VgChunk.VgStore vgs;
+      if(vg == null) {
+        vgs = new VgChunk.VgStore();
+        Value v = SYSTEM_STORE.putIfAbsent(gk,new Value(gk,vgs,Value.ICE,false));
+        if(v != null && !v.isNull()) vgs = v.get();
+      } else
+        vgs = vg.get();
+      res = vgs._store.putIfMatchUnlocked(key.systemKey(),val,old);
+    } else
+      res = key.user_allowed()?STORE.putIfMatchUnlocked(key,val,old):SYSTEM_STORE.putIfMatchUnlocked(key,val,old);
     if( res != old ) return res; // Return the failure cause
     // Persistence-tickle.
     // If the K/V mapping is going away, remove the old guy.
@@ -1627,15 +1645,39 @@ final public class H2O {
 
   // Get the value from the store
   public static void raw_remove(Key key) {
-    Value v = STORE.remove(key);
+    Value v = null;
+    if (key.isChunkKey() || key.isVec()) {
+      Key gk = Vec.getGroupStoreKey(key);
+      Value vg = SYSTEM_STORE.get(gk);
+      VgChunk.VgStore vgs;
+      if (vg != null) {
+        vgs = vg.get();
+        v = vgs._store.remove(key.systemKey());
+      }
+    } else
+      v = key.user_allowed() ? STORE.remove(key) : SYSTEM_STORE.remove(key.systemKey());
     if( v != null ) v.removePersist();
   }
-  public static void raw_clear() { STORE.clear(); }
-  public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
-  static Key getk( Key key ) { return STORE.getk(key); }
+  public static void raw_clear() { SYSTEM_STORE.clear(); STORE.clear();}
+  public static boolean containsKey( Key key ) {
+    return key.user_allowed()?STORE.get(key) != null:SYSTEM_STORE.get(key) != null;
+  }
+
+  static Key getk( Key key ) {
+    if(key.isChunkKey() || key.isVec()) {
+      Key gk = Vec.getGroupStoreKey(key);
+      Value vg = SYSTEM_STORE.get(gk);
+      VgChunk.VgStore vgs;
+      if (vg != null) {
+        vgs = vg.get();
+        Value v = vgs._store.get(key.systemKey());
+        return v == null?null:v._key;
+      }
+    }
+    return key.user_allowed()?STORE.getk(key):SYSTEM_STORE.getk(key);
+  }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
-  static Collection<Value> values( ) { return STORE.values(); }
-  static public int store_size() { return STORE.size(); }
+  static public int store_size() { return SYSTEM_STORE.size() + STORE.size(); }
 
   // Nice local-STORE only debugging summary
   public static String STOREtoString() {
