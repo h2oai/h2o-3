@@ -77,6 +77,8 @@ def run_commands(command, number_to_run, temp_file):
                         test_time = temp_string[2]
                         try:
                             runtime = float(test_time[:-1])
+
+                            print("Unit test run time is {0}".format(runtime))
                             if runtime > g_max_runtime_secs:
                                 g_finished_this_unit_test = True
 

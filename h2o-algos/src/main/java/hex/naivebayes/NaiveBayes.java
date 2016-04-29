@@ -59,7 +59,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       if (!_response.isCategorical()) error("_response", "Response must be a categorical column");
       else if (_response.isConst()) error("_response", "Response must have at least two unique categorical levels");
     }
-    if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0");
+    if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be a number >= 0");
     if (_parms._min_sdev < 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10");
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
     if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
