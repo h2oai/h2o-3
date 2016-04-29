@@ -189,7 +189,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           {
                                             Log.info("Using seed: " + myseed);
                                             p._train = frame._key;
-                                            p._response_column = frame._names[resp];
+                                            p._response_column = frame.name(resp);
                                             p._valid = valid==null ? null : valid._key;
 
                                             p._hidden = hidden;
@@ -280,7 +280,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._l1 = 1e-3;
                                             p2._l2 = 1e-3;
                                             p2._reproducible = reproducible;
-                                            p2._response_column = frame._names[resp];
+                                            p2._response_column = frame.name(resp);
                                             p2._overwrite_with_best_model = overwrite_with_best_model;
                                             p2._quiet_mode = true;
                                             p2._epochs = 2*epochs; //final amount of training epochs

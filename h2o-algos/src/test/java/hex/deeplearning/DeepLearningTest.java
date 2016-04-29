@@ -416,7 +416,7 @@ public class DeepLearningTest extends TestUtil {
   static Vec unifyFrame(DeepLearningParameters drf, Frame fr, PrepData prep, boolean classification) {
     int idx = prep.prep(fr);
     if( idx < 0 ) { idx = ~idx; }
-    String rname = fr._names[idx];
+    String rname = fr.name(idx);
     drf._response_column = fr.names()[idx];
 
     Vec resp = fr.vecs()[idx];

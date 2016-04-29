@@ -43,7 +43,7 @@ class ASTRectangleAssign extends ASTPrim {
     // defensive copy.  Any update-in-place path updates Chunks instead of
     // dst._vecs, and does not need a defensive copy.  To make life easier,
     // just make the copy now.
-    dst = new Frame(dst._names,dst.vecs().clone());
+    dst = new Frame(dst.names(),dst.vecs().clone());
 
     // Assign over the column slice
     if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
@@ -91,7 +91,7 @@ class ASTRectangleAssign extends ASTPrim {
     Vec[] svecs = src.vecs();
     for( int col=0; col<cols.length; col++ )
       if( dvecs[cols[col]].get_type() != svecs[col].get_type() )
-        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[cols[col]]+"\', is of type "+dvecs[cols[col]].get_type_str()+" and the source is "+svecs[col].get_type_str());
+        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst.name(cols[col])+"\', is of type "+dvecs[cols[col]].get_type_str()+" and the source is "+svecs[col].get_type_str());
 
     // Frame fill
     // Handle fast small case
@@ -244,7 +244,7 @@ class ASTAppend extends ASTPrim {
       break;
     default:  throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
     }
-    dst = new Frame(dst._names.clone(),dst.vecs().clone());
+    dst = new Frame(dst.names().clone(),dst.vecs().clone());
     dst.add(newColName, vec);
     return new ValFrame(dst);
   }
@@ -262,7 +262,7 @@ class ASTTmpAssign extends ASTPrim {
     Key id = Key.make( asts[1].str() );
     if( DKV.get(id) != null ) throw new IllegalArgumentException("Temp ID "+id+" already exists");
     Frame src = stk.track(asts[2].exec(env)).getFrame();
-    Frame dst = new Frame(id,src._names,src.vecs());
+    Frame dst = new Frame(id,src.names(),src.vecs());
     return new ValFrame(env._ses.track_tmp(dst)); // Track new session-wide ID
   }
 }
@@ -293,7 +293,7 @@ class ASTRename extends ASTPrim {
     Key oldKey = Key.make(asts[1].exec(env).getStr());
     Key newKey = Key.make(asts[2].exec(env).getStr());
     Iced o = DKV.remove(oldKey).get();
-    if( o instanceof Frame )     DKV.put(newKey, new Frame(newKey, ((Frame)o)._names, ((Frame)o).vecs()));
+    if( o instanceof Frame )     DKV.put(newKey, new Frame(newKey, ((Frame)o).names(), ((Frame)o).vecs()));
     else if( o instanceof Model) {
       ((Model) o)._key = newKey;
       DKV.put(newKey, o);

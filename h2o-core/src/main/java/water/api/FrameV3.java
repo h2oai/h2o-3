@@ -237,8 +237,9 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     // them when filling in the ColV3 Schemas
     for( int i = 0; i < column_count; i++ )
       vecs[column_offset + i].startRollupStats(fs);
+    String [] names = f.names();
     for( int i = 0; i < column_count; i++ )
-      columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+      columns[i] = new ColV3(names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
     fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;

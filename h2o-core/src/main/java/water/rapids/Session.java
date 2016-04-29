@@ -218,7 +218,7 @@ public class Session {
       if( GLOBALS.contains(svecs[i]) )
         svecs[i] = svecs[i].makeCopy();
     // Make and install new global Frame
-    Frame fr2 = new Frame(id,src._names.clone(),svecs);
+    Frame fr2 = new Frame(id,src.names().clone(),svecs);
     DKV.put(fr2,fs);
     addGlobals(fr2);
     fs.blockForPending();

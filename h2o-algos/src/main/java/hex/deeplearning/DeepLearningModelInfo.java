@@ -208,9 +208,9 @@ final public class DeepLearningModelInfo extends Iced {
         for (int i = 0; i < dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
           if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
             if (warn) {
-              Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              Log.warn("Categorical feature '" + dinfo._adaptedFrame.name(i) + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
             } else {
-              Log.info("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              Log.info("Categorical feature '" + dinfo._adaptedFrame.name(i) + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
             }
           }
           count++;

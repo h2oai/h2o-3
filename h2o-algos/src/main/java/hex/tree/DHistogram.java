@@ -243,7 +243,7 @@ public final class DHistogram extends Iced {
       final double maxIn = Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
       final double maxEx = find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
-      hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null : make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, parms);
+      hs[c] = v.naCnt()==vlen || v.min()==v.max() ? null : make(fr.name(c),nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, parms);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;

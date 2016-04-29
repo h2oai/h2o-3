@@ -48,7 +48,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr.name(1);
       params._lambda = new double[]{0};
 //      params._standardize= false;
       model = new GLM(params, modelKey).trainModel().get();
@@ -87,7 +87,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.poisson);
       params._train = fr._key;
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr.name(1);
       params._lambda = new double[]{0};
       params._standardize = false;
       model = new GLM(params, modelKey).trainModel().get();
@@ -102,7 +102,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
       // params2._response = 1;
-      params2._response_column = fr._names[1];
+      params2._response_column = fr.name(1);
       params2._lambda = new double[]{0};
       params2._standardize = true;
       params2._beta_epsilon = 1e-5;
@@ -144,7 +144,7 @@ public class GLMTest  extends TestUtil {
       //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
       GLMParameters params = new GLMParameters(Family.gamma);
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr.name(1);
       params._train = parsed;
       params._lambda = new double[]{0};
       model = new GLM(params,glmkey("gamma_test")).trainModel().get();
@@ -203,7 +203,7 @@ public class GLMTest  extends TestUtil {
     try {
       GLMParameters params = new GLMParameters(Family.poisson);
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr.name(1);
       params._train = parsed;
       params._lambda = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
@@ -1582,7 +1582,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
-      params._response_column = fr._names[0];
+      params._response_column = fr.name(0);
       params._train = parsed;
       params._lambda_search = true;
       params._nlambdas = 35;
@@ -1605,7 +1605,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
-      params._response_column = fr._names[0];
+      params._response_column = fr.name(0);
       params._train = parsed;
       params._lambda_search = true;
       params._nlambdas = 35;
@@ -1636,7 +1636,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
-      params._response_column = fr._names[0];
+      params._response_column = fr.name(0);
       params._train = fr._key;
       params._max_active_predictors = 100000;
       params._alpha = new double[]{0};
@@ -1663,7 +1663,7 @@ public class GLMTest  extends TestUtil {
       Scope.track(fr);
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
-      params._response_column = fr._names[8];
+      params._response_column = fr.name(8);
       params._alpha = new double[]{1.0};
       params._lambda_search = true;
       GLM glm = new GLM(params);

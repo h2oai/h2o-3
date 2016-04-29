@@ -356,7 +356,7 @@ public final class ParseDataset {
     // Release the frame for overwriting
     fr.update(job);
     Frame fr2 = DKV.getGet(fr._key);
-    assert fr2._names.length == fr2.numCols();
+    assert fr2.names().length == fr2.numCols();
     fr.unlock(job);
     // Remove CSV files from H2O memory
     if( deleteOnDone )

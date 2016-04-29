@@ -134,7 +134,7 @@ class ASTVariance extends ASTPrim {
         for (int y = 0; y < ncoly; y++) {
           res[y] = Vec.makeVec(res_array[y], keys[y]);
         }
-        return new ValFrame(new Frame(fry._names, res));
+        return new ValFrame(new Frame(fry.names(), res));
       }
 
       // Launch tasks; each does all Xs vs one Y
@@ -152,7 +152,7 @@ class ASTVariance extends ASTPrim {
       for (int y = 0; y < ncoly; y++)
         res[y] = Vec.makeVec(ArrayUtils.div(cvs[y].getResult()._covs, (fry.numRows() - 1)), keys[y]);
       
-      return new ValFrame(new Frame(fry._names, res));
+      return new ValFrame(new Frame(fry.names(), res));
     }
     
     else { //if (mode.equals(Mode.CompleteObs)) {
@@ -186,7 +186,7 @@ class ASTVariance extends ASTPrim {
         for (int y = 0; y < ncoly; y++) {
           res[y] = Vec.makeVec(res_array[y], keys[y]);
         }
-        return new ValFrame(new Frame(fry._names, res));
+        return new ValFrame(new Frame(fry.names(), res));
       }
       
       CoVarTaskCompleteObsMean taskCompleteObsMean = new CoVarTaskCompleteObsMean(ncoly, ncolx).doAll(new Frame(fry).add(frx));
@@ -208,7 +208,7 @@ class ASTVariance extends ASTPrim {
       for (int y = 0; y < ncoly; y++)
         res[y] = Vec.makeVec(ArrayUtils.div(cvs._covs[y], (fry.numRows() - 1 - NACount)), keys[y]);
 
-      return new ValFrame(new Frame(fry._names, res));    
+      return new ValFrame(new Frame(fry.names(), res));
     }
   }
 

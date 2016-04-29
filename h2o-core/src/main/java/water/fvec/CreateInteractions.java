@@ -150,15 +150,16 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
       Vec tmp = null;
       int start = factors.length == 1 ? 0 : 1;
       Frame _out = null;
+
       for (int i = start; i < factors.length; ++i) {
         String name;
         int idx2 = factors[i];
         if (i > 1) {
           idx1 = _out.find(tmp);
           assert idx1 >= 0;
-          name = _out._names[idx1] + "_" + source_frame._names[idx2];
+          name = _out.names()[idx1] + "_" + source_frame.names()[idx2];
         } else {
-          name = source_frame._names[idx1] + "_" + source_frame._names[idx2];
+          name = source_frame.names()[idx1] + "_" + source_frame.names()[idx2];
         }
 //      Log.info("Combining columns " + idx1 + " and " + idx2);
         final Vec A = i > 1 ? _out.vecs()[idx1] : source_frame.vecs()[idx1];

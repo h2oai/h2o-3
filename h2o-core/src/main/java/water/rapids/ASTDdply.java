@@ -163,7 +163,7 @@ class ASTDdply extends ASTPrim {
             }
         }
       }.doAllNodes();
-      Frame groupFrame = new Frame(_data._names,groupVecs);
+      Frame groupFrame = new Frame(_data.names(),groupVecs);
 
       // Now run the function on the group frame
       Session ses = new Session();

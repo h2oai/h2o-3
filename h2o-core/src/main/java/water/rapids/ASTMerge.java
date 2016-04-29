@@ -50,15 +50,16 @@ public class ASTMerge extends ASTPrim {
     // leading prefix of column names match.  Bail out if we find any weird
     // column types.
     int ncols=0;                // Number of columns in common
-    for( int i=0; i<l._names.length; i++ ) {
-      int idx = r.find(l._names[i]);
+
+    for( int i=0; i<l.numCols(); i++ ) {
+      int idx = r.find(l.name(i));
       if( idx != -1 ) {
         l.swap(i  ,ncols);
         r.swap(idx,ncols);
         Vec lv = l.vecs()[ncols];
         Vec rv = r.vecs()[ncols];
         if( lv.get_type() != rv.get_type() )
-          throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
+          throw new IllegalArgumentException("Merging columns must be the same type, column "+l.name(ncols)+
                                              " found types "+lv.get_type_str()+" and "+rv.get_type_str());
         if( lv.isString() )
           throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
@@ -142,9 +143,9 @@ public class ASTMerge extends ASTPrim {
 
       // run a global parallel work: lookup non-hashed rows in hashSet; find
       // matching row; append matching column data
-      String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
+      String[]   names  = Arrays.copyOfRange(hashed.names()  ,ncols,hashed.names()  .length);
       String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      byte[] types = Arrays.copyOfRange(hashed.types(),ncols,hashed.numCols());
+      byte[] types = Arrays.copyOfRange(hashed.types(),ncols ,hashed.numCols());
       Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walked).outputFrame(names,domains);
       return new ValFrame(walked.add(res));
     }

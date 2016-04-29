@@ -102,7 +102,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       Map<Model, Set<String>> all_models_cols = Frames.fetchModelCols(all_models);
       List<Model> compatible_models = new ArrayList<>();
 
-      HashSet<String> frame_column_names = new HashSet<>(Arrays.asList(frame._names));
+      HashSet<String> frame_column_names = new HashSet<>(Arrays.asList(frame.names()));
 
       for (Map.Entry<Model, Set<String>> entry : all_models_cols.entrySet()) {
         Model model = entry.getKey();

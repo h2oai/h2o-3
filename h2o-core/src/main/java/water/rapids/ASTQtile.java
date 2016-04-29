@@ -51,10 +51,10 @@ class ASTQtile extends ASTPrim {
     names[0] = "Probs";
     int w=0;
     for( int i=0; i<vecs.length-1; ++i ) {
-      if (fr._names[i].equals(parms._weights_column)) w=1;
+      if (fr.name(i).equals(parms._weights_column)) w=1;
       assert(w==0 || w==1);
       vecs [i+1] = Vec.makeCon(null,q._output._quantiles[i]);
-      names[i+1] = fr._names[w+i]+"Quantiles";
+      names[i+1] = fr.name(w+i)+"Quantiles";
     }
     q.delete();
 

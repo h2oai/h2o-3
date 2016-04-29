@@ -36,14 +36,14 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._distribution = Distribution.Family.gaussian;
-      parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
+      parms._response_column = fr.name(1); // Row in col 0, dependent in col 1, predictor in col 2
       parms._ntrees = 1;
       parms._max_depth = 1;
       parms._min_rows = 1;
       parms._nbins = 20;
       // Drop ColV2 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
       String[] xcols = parms._ignored_columns = new String[fr.numCols()-2];
-      xcols[0] = fr._names[0];
+      xcols[0] = fr.name(0);
       System.arraycopy(fr._names,3,xcols,1,fr.numCols()-3);
       parms._learn_rate = 1.0f;
       parms._score_each_iteration=true;
@@ -166,7 +166,7 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) idx = ~idx;
       parms._train = fr._key;
-      parms._response_column = fr._names[idx];
+      parms._response_column = fr.name(idx);
       parms._ntrees = 4;
       parms._distribution = family;
       parms._max_depth = 4;

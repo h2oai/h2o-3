@@ -26,7 +26,7 @@ class ASTColSlice extends ASTPrim {
     int[] cols = col_select(src.names(),asts[2]);
     Frame dst = new Frame();
     Vec[] vecs = src.vecs();
-    for( int col : cols )  dst.add(src._names[col],vecs[col]);
+    for( int col : cols )  dst.add(src.name(col),vecs[col]);
     return new ValFrame(dst);
   }
 
@@ -296,13 +296,13 @@ class ASTRBind extends ASTPrim {
       Val val = vals[i];        // Save values computed for pass 2
       Frame fr0 = val.isFrame() ? val.getFrame() 
         // Scalar: auto-expand into a 1-row frame
-        : (tmp_frs[i] = new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
+        : (tmp_frs[i] = new Frame(fr.names(),Vec.makeCons(val.getNum(),1L,fr.numCols())));
 
       // Check that all frames are compatible
       if( fr.numCols() != fr0.numCols() ) 
         throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
-      if( !Arrays.deepEquals(fr._names,fr0._names) )
-        throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
+      if( !Arrays.deepEquals(fr.names(),fr0.names()) )
+        throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr.names())+" and "+Arrays.toString(fr0.names()));
       if( !Arrays.equals(types,fr0.types()) )
         throw new IllegalArgumentException("rbind frames must have all the same column types, found "+Arrays.toString(types)+" and "+Arrays.toString(fr0.types()));
 

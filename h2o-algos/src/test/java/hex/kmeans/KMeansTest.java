@@ -414,7 +414,7 @@ public class KMeansTest extends TestUtil {
             parms._train = train._key;
             parms._valid = valid._key;
             if (!categorical) {
-              parms._ignored_columns = new String[]{fr._names[4]};
+              parms._ignored_columns = new String[]{fr.name(4)};
             }
             parms._k = 3;
             parms._standardize = standardize;

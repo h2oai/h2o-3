@@ -683,10 +683,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
-    if( names == test._names && domains == tdomains )
+    if( names == test.names() && domains == tdomains )
       return new String[0];
     // Fast path cutout: already compatible but needs work to test
-    if( Arrays.equals(names,test._names) && Arrays.deepEquals(domains,tdomains) )
+    if( Arrays.equals(names,test.names()) && Arrays.deepEquals(domains,tdomains) )
       return new String[0];
 
     // create the interactions now and bolt them on to the front of the test Frame
@@ -721,7 +721,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
-
       // If a training set column is missing in the validation set, complain and fill in with NAs.
       if( vec == null ) {
         String str = null;
@@ -1290,7 +1289,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
           if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
             if (miss++ < 10)
-              System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+              System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions.names()[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
           }
         }
         totalMiss = miss;
@@ -1328,7 +1327,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
             if (miss < 20) {
-              System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict POJO prediction=" + d2);
+              System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions.names()[col] + ", internal prediction=" + d + ", EasyPredict POJO prediction=" + d2);
               System.err.println("Row: " + rowData.toString());
             }
           }

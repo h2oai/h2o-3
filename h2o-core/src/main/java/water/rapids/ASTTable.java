@@ -33,18 +33,18 @@ class ASTTable extends ASTPrim {
     int ncols = fr1.numCols() + (fr2==null ? 0 : fr2.numCols());
     Vec vec1 = fr1.vec(0);
 
-    Val res = fast_table(vec1,ncols,fr1._names[0]);
+    Val res = fast_table(vec1,ncols,fr1.name(0));
     if( res != null ) return res;
 
     if( !(asts.length == 3 || asts.length == 4) || ncols > 2 )
       throw new IllegalArgumentException("table expects one or two columns");
 
     Vec vec2 = fr1.numCols()==2 ? fr1.vec(1) : fr2 != null ? fr2.vec(0) : null;
-    int sz = fr1._names.length + (fr2 != null ? fr2._names.length : 0);
+    int sz = fr1.names().length + (fr2 != null ? fr2.names().length : 0);
     String[] colnames = new String[sz];
     int i = 0;
-    for( String name : fr1._names ) colnames[i++] = name;
-    if( fr2 != null ) for( String name : fr2._names ) colnames[i++] = name;
+    for( String name : fr1.names() ) colnames[i++] = name;
+    if( fr2 != null ) for( String name : fr2.names() ) colnames[i++] = name;
     
     
     return slow_table(vec1,vec2,colnames,dense);

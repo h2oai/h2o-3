@@ -62,11 +62,110 @@ import java.util.HashMap;
  */
 public class Frame extends Lockable<Frame> {
   /** Vec names */
-  public String[] _names;
+
+  private transient HashMap<String,Integer> _namesMap;
+
+  public int find(String name) {return _names.find(name);}
+
+  private static class ColumnNames extends Iced {
+    private String [] _names;
+    private int _len;
+    public ColumnNames(int length) {_names = new String[length]; _len = length;}
+    public ColumnNames(String [] names) {_names = names; if(names != null)_len = names.length;}
+
+    private transient HashMap<String,Integer> _map;
+    @Override public int hashCode(){return Arrays.hashCode(_names);}
+    public int find(String colname) {
+      if(_map == null) {
+        _map = new HashMap<>();
+        for(int i = 0; i < _names.length; ++i)
+          _map.put(_names[i],i);
+      }
+      return _map.containsKey(colname)?_map.get(colname):-1;
+    }
+
+    /** Bulk {@link #find(String)} api
+     *  @return An array of column indices matching the {@code names} array */
+    public int[] find(String[] names) {
+      if( names == null ) return null;
+      int[] res = new int[names.length];
+      for(int i = 0; i < names.length; ++i)
+        res[i] = find(names[i]);
+      return res;
+    }
+
+    public void set(int i, String name){
+      if(_map != null) {
+        if(_names[i] != null)_map.remove(_names[i]);
+        _map.put(name,i);
+      }
+      _names[i] = name;
+    }
+
+    public int size(){return _len;}
+    public String get(int i) {
+      return _names[i];
+    }
+    @Override public ColumnNames clone(){return new ColumnNames(_names);}
+
+    public String[] names() {
+      if(_len != _names.length) _names = Arrays.copyOf(_names,_len);
+      return _names;
+    }
+
+    public String last() {
+      if(_names.length == 0) return null;
+      return _names[_names.length-1];}
+
+    public void insert(int i, String name) {
+      int n = _names.length;
+      if(_names.length == _len)
+        _names = Arrays.copyOf(_names,_names.length+1);
+      for(int j = n; j > i; --j)
+        _names[j] = _names[j-1];
+      _names[i] = name;
+      _map = null;
+      ++_len;
+    }
+
+    public void swap(int lo, int hi) {
+      if(_map != null){
+        _map.put(_names[lo],hi);
+        _map.put(_names[hi],lo);
+      }
+      String n = _names[lo];
+      _names[lo] = _names[hi];
+      _names[hi] = n;
+    }
+
+    public void append(String... names) {
+      int newlen = _len + names.length;
+      if(newlen > _names.length)
+        _names = Arrays.copyOf(_names,_len + names.length);
+      System.arraycopy(names,0,_names,_len,names.length);
+      if(_map != null){
+        for(int i = _len; i < _names.length; ++i)
+          _map.put(_names[i],i);
+      }
+      _len = newlen;
+    }
+
+    public void remove(int idx) {
+      for(int i = idx; i < _names.length-1; ++i)
+        _names[i] = _names[i+1];
+      --_len;
+      _map = null;
+    }
+  }
+
+  public ColumnNames _names;
+
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
   private Key<Vec>[] _keys;     // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
   private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
+
+
 
   public boolean hasNAs(){
     for(Vec v:_vecs)
@@ -93,10 +192,10 @@ public class Frame extends Lockable<Frame> {
     super(key);
     assert noChecks;
     _vecs = vecs;
-    _names = new String[vecs.length];
+    _names = new ColumnNames(vecs.length);
     _keys = new Key[vecs.length];
     for (int i = 0; i < vecs.length; i++) {
-      _names[i] = defaultColName(i);
+      _names.set(i,defaultColName(i));
       _keys[i] = vecs[i]._key;
     }
   }
@@ -111,29 +210,31 @@ public class Frame extends Lockable<Frame> {
 
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
-      _names = new String[vecs.length];
+      _names = new ColumnNames(vecs.length);
       _keys  = new Key   [vecs.length];
       _vecs  = vecs;
-      for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
+      for( int i=0; i<vecs.length; i++ ) _names.set(i,defaultColName(i));
       for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
-      for( int i=0; i<vecs.length; i++ ) checkCompatible(_names[i],vecs[i]);
+      for( int i=0; i<vecs.length; i++ ) checkCompatible(_names.get(i),vecs[i]);
       _lastNameBig = true;
     } else {
       // Make empty to dodge asserts, then "add()" them all which will check
       // for compatible Vecs & names.
-      _names = new String[0];
+      _names = new ColumnNames(0);
       _keys  = new Key   [0];
       _vecs  = new Vec   [0];
       add(names,vecs);
     }
-    assert _names.length == vecs.length;
+    assert _names.size() == vecs.length;
   }
 
   public void setNames(String[] columns){
     if(columns.length!= _vecs.length){
       throw new IllegalArgumentException("Size of array containing column names does not correspond to the number of vecs!");
     }
-    _names = columns;
+    _names = new ColumnNames(columns.length);
+    for(int i = 0; i < columns.length; ++i)
+      _names.set(i,columns[i]);
   }
   /** Deep copy of Vecs and Keys and Names (but not data!) to a new random Key.
    *  The resulting Frame does not share with the original, so the set of Vecs
@@ -158,27 +259,12 @@ public class Frame extends Lockable<Frame> {
     return 0;
   }
   public String uniquify( String name ) {
-    String n = name;
-    int lastName = 0;
-    if( name.length() > 0 && name.charAt(0)=='C' )
-      lastName = pint(name);
-    if( _lastNameBig && _names.length > 0 ) {
-      String last = _names[_names.length-1];
-      if( !last.equals("") && last.charAt(0)=='C' && lastName == pint(last)+1 )
-        return name;
+    if(_names.find(name) != -1) {
+      int cnt = 0;
+      while(_names.find(name+cnt) != -1)++cnt;
+      return name + cnt;
     }
-    int cnt=0, again, max=0;
-    do {
-      again = cnt;
-      for( String s : _names ) {
-        if( lastName > 0 && s.charAt(0)=='C' )
-          max = Math.max(max,pint(s));
-        if( n.equals(s) )
-          n = name+(cnt++);
-      }
-    } while( again != cnt );
-    if( lastName == max+1 ) _lastNameBig = true;
-    return n;
+    return name;
   }
 
   /** Check that the vectors are all compatible.  All Vecs have their content
@@ -229,11 +315,11 @@ public class Frame extends Lockable<Frame> {
 
   /** The array of column names.
    *  @return the array of column names */
-  public String[] names() { return _names; }
+  public String[] names() { return _names.names(); }
 
   /** A single column name.
    *  @return the column name */
-  public String name(int i) { return _names[i]; } // TODO: saw a non-reproducible NPE here
+  public String name(int i) { return _names.get(i); } // TODO: saw a non-reproducible NPE here
 
   /** The array of keys.
    * @return the array of keys for each vec in the frame.
@@ -276,7 +362,7 @@ public class Frame extends Lockable<Frame> {
   public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
   /** Convenience to accessor for last Vec name
    *  @return last Vec name */
-  public String lastVecName() {  return _names[_names.length-1]; }
+  public String lastVecName() {  return _names.last(); }
 
   /** Force a cache-flush and reload, assuming vec mappings were altered
    *  remotely, or that the _vecs array was shared and now needs to be a
@@ -291,18 +377,9 @@ public class Frame extends Lockable<Frame> {
 
   /**  Return a Vec by name, or null if missing
    *  @return a Vec by name, or null if missing */
-  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : vecs()[idx]; }
+  public Vec vec(String name) { int idx = _names.find(name); return idx==-1 ? null : vecs()[idx]; }
 
-  /**   Finds the column index with a matching name, or -1 if missing
-   *  @return the column index with a matching name, or -1 if missing */
-  public int find( String name ) {
-    if( name == null ) return -1;
-    assert _names != null;
-    for( int i=0; i<_names.length; i++ )
-      if( name.equals(_names[i]) )
-        return i;
-    return -1;
-  }
+
 
   /**   Finds the matching column index, or -1 if missing
    *  @return the matching column index, or -1 if missing */
@@ -324,30 +401,17 @@ public class Frame extends Lockable<Frame> {
     return -1;
   }
 
-  /** Bulk {@link #find(String)} api
-   *  @return An array of column indices matching the {@code names} array */
-  public int[] find(String[] names) {
-    if( names == null ) return null;
-    int[] res = new int[names.length];
-    for(int i = 0; i < names.length; ++i)
-      res[i] = find(names[i]);
-    return res;
-  }
 
   public void insertVec(int i, String name, Vec vec) {
-    String [] names = new String[_names.length+1];
+    _names.insert(i,name);
     Vec [] vecs = new Vec[_vecs.length+1];
     Key [] keys = new Key[_keys.length+1];
-    System.arraycopy(_names,0,names,0,i);
     System.arraycopy(_vecs,0,vecs,0,i);
     System.arraycopy(_keys,0,keys,0,i);
-    names[i] = name;
     vecs[i] = vec;
     keys[i] = vec._key;
-    System.arraycopy(_names,i,names,i+1,_names.length-i);
     System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
     System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
-    _names = names;
     _vecs = vecs;
     _keys = keys;
   }
@@ -466,14 +530,15 @@ public class Frame extends Lockable<Frame> {
    *  @return 64-bit Frame checksum */
   @Override protected long checksum_impl() {
     Vec[] vecs = vecs();
+    bulkRollups();
     long _checksum = 0;
-    for( int i = 0; i < _names.length; ++i ) {
+    for( int i = 0; i < _names.size(); ++i ) {
       long vec_checksum = vecs[i].checksum();
       _checksum ^= vec_checksum;
       long tmp = (2147483647L * i);
       _checksum ^= tmp;
     }
-    _checksum *= (0xBABE + Arrays.hashCode(_names));
+    _checksum *= (0xBABE + _names.hashCode());
 
     // TODO: include column types?  Vec.checksum() should include type?
     return _checksum;
@@ -506,11 +571,10 @@ public class Frame extends Lockable<Frame> {
     }
 
     int ncols = _keys.length;
-    _names = Arrays.copyOf(_names, ncols+N);
+    _names.append(names);
     _keys = Arrays.copyOf(_keys, ncols+N);
     _vecs = Arrays.copyOf(_vecs, ncols+N);
     for (int i=0; i<N; ++i) {
-      _names[ncols+i] = tmpnames[i];
       _keys[ncols+i] = vecs[i]._key;
       _vecs[ncols+i] = vecs[i];
     }
@@ -523,7 +587,7 @@ public class Frame extends Lockable<Frame> {
     vec = makeCompatible(new Frame(vec))[0];
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
-    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
+    _names.append(name);
     _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
     _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
     return vec;
@@ -532,28 +596,25 @@ public class Frame extends Lockable<Frame> {
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
+  public Frame add( Frame fr ) { add(fr._names.names(),fr.vecs().clone(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
-    if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
+    if( _names.find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
     if( _vecs.length != 0 ) {
       if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec().espc(),vec.espc()) )
-        throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+        throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + _names);
       if( numRows() != vec.length() )
-        throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
+        throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + _names);
     }
-    final int len = _names != null ? _names.length : 0;
-    String[] _names2 = new String[len+1];
+    final int len = _names != null ? _names.size() : 0;
+    _names.insert(0,name);
     Vec[]    _vecs2  = new Vec   [len+1];
     Key[]    _keys2  = new Key   [len+1];
-    _names2[0] = name;
     _vecs2 [0] = vec ;
     _keys2 [0] = vec._key;
-    System.arraycopy(_names, 0, _names2, 1, len);
     System.arraycopy(_vecs,  0, _vecs2,  1, len);
     System.arraycopy(_keys,  0, _keys2,  1, len);
-    _names = _names2;
     _vecs  = _vecs2;
     _keys  = _keys2;
     return this;
@@ -567,7 +628,7 @@ public class Frame extends Lockable<Frame> {
     Vec vecs[] = vecs();
     Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
     Key k   = _keys[lo]; _keys [lo] = _keys [hi]; _keys [hi] = k;
-    String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
+    _names.swap(lo,hi);
   }
 
   /** Returns a subframe of this frame containing only vectors with desired names.
@@ -594,16 +655,16 @@ public class Frame extends Lockable<Frame> {
     String[] cnames = replaceBy ? new String[names.length] : null;
     int ccv = 0; // counter of constant columns
     vecs();                     // Preload the vecs
-    HashMap<String, Integer> map = new HashMap<>((int) ((names.length/0.75f)+1)); // avoid rehashing by set up initial capacity
-    for(int i = 0; i < _names.length; ++i) map.put(_names[i], i);
-    for(int i = 0; i < names.length; ++i)
-      if(map.containsKey(names[i])) vecs[i] = _vecs[map.get(names[i])];
+    for(int i = 0; i < names.length; ++i) {
+      int j = _names.find(names[i]);
+      if (j != -1) vecs[i] = _vecs[j];
       else if (replaceBy) {
         Log.warn("Column " + names[i] + " is missing, filling it in with " + c);
         assert cnames != null;
         cnames[ccv] = names[i];
         vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
+    }
     return new Frame[] { new Frame(Key.make("subframe"+Key.make().toString()), names,vecs), ccv>0 ?  new Frame(Key.make("subframe"+Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
   }
 
@@ -639,7 +700,7 @@ public class Frame extends Lockable<Frame> {
     if( v == null ) return fs;
 
     final int ncs = v.nChunks();
-    _names = new String[0];
+    _names = new ColumnNames(new String[0]);
     _vecs = new Vec[0];
     _keys = new Key[0];
     // Bulk dumb local remove - no JMM, no ordering, no safety.
@@ -683,7 +744,7 @@ public class Frame extends Lockable<Frame> {
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns  */
   public Frame subframe(int startIdx, int endIdx) {
-    return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
+    return new Frame(Arrays.copyOfRange(_names.names(),startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
   }
 
   /** Split this Frame; return a subframe created from the given column interval, and
@@ -699,11 +760,11 @@ public class Frame extends Lockable<Frame> {
 
   /** Removes the column with a matching name.  
    *  @return The removed column */
-  public Vec remove( String name ) { return remove(find(name)); }
+  public Vec remove( String name ) { return remove(_names.find(name)); }
 
   public Frame remove( String[] names ) { 
     for( String name : names )
-      remove(find(name));
+      remove(_names.find(name));
     return this;
   }
 
@@ -727,13 +788,13 @@ public class Frame extends Lockable<Frame> {
         res[k++] = _vecs[i];
       } else {
         rem  [l] = _vecs [i];
-        names[l] = _names[i];
+        names[l] = _names.get(i);
         keys [l] = _keys [i];
         ++l;
       }
     }
     _vecs = rem;
-    _names= names;
+    _names= new ColumnNames(names);
     _keys = keys;
     assert l == rem.length && k == idxs.length;
     return res;
@@ -742,13 +803,12 @@ public class Frame extends Lockable<Frame> {
   /**  Removes a numbered column. 
    *  @return the removed column */
   public final Vec remove( int idx ) {
-    int len = _names.length;
+    int len = _names.size();
     if( idx < 0 || idx >= len ) return null;
     Vec v = vecs()[idx];
-    System.arraycopy(_names,idx+1,_names,idx,len-idx-1);
     System.arraycopy(_vecs ,idx+1,_vecs ,idx,len-idx-1);
     System.arraycopy(_keys ,idx+1,_keys ,idx,len-idx-1);
-    _names = Arrays.copyOf(_names,len-1);
+    _names.remove(idx);
     _vecs  = Arrays.copyOf(_vecs ,len-1);
     _keys  = Arrays.copyOf(_keys ,len-1);
     if( v == _col0 ) _col0 = null;
@@ -760,26 +820,25 @@ public class Frame extends Lockable<Frame> {
    *  @param endIdx - end index of column (exclusive)
    *  @return array of removed columns  */
   Vec[] remove(int startIdx, int endIdx) {
-    int len = _names.length;
+    int len = _names.size();
     int nlen = len - (endIdx-startIdx);
     String[] names = new String[nlen];
     Key[] keys = new Key[nlen];
     Vec[] vecs = new Vec[nlen];
     vecs();
     if (startIdx > 0) {
-      System.arraycopy(_names, 0, names, 0, startIdx);
+      System.arraycopy(_names.names(), 0, names, 0, startIdx);
       System.arraycopy(_vecs,  0, vecs,  0, startIdx);
       System.arraycopy(_keys,  0, keys,  0, startIdx);
     }
     nlen -= startIdx;
-    if (endIdx < _names.length+1) {
-      System.arraycopy(_names, endIdx, names, startIdx, nlen);
+    if (endIdx < _names.size()+1) {
+      System.arraycopy(_names.names(), endIdx, names, startIdx, nlen);
       System.arraycopy(_vecs,  endIdx, vecs,  startIdx, nlen);
       System.arraycopy(_keys,  endIdx, keys,  startIdx, nlen);
     }
-
     Vec[] vecX = Arrays.copyOfRange(_vecs,startIdx,endIdx);
-    _names = names;
+    _names = new ColumnNames(names);
     _vecs = vecs;
     _keys = keys;
     _col0 = null;
@@ -795,7 +854,7 @@ public class Frame extends Lockable<Frame> {
   public void restructure( String[] names, Vec[] vecs, int cols) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
-    _names = new String[0];
+    _names = new ColumnNames(new String[0]);
     _keys  = new Key   [0];
     _vecs  = new Vec   [0];
     add(names,vecs,cols);
@@ -809,7 +868,7 @@ public class Frame extends Lockable<Frame> {
     // Nuke any prior frame (including freeing storage) & lock this one
     if( _keys != null ) delete_and_lock();
     else write_lock();
-    _names = names;
+    _names = new ColumnNames(names);
     _keys = new Vec.VectorGroup().addVecs(names.length);
     // No Vectors tho!!! These will be added *after* the import
   }
@@ -994,7 +1053,7 @@ public class Frame extends Lockable<Frame> {
     String [] names = new String[c2.length];
     for(int i = 0; i < c2.length; ++i){
       vecs[i] = _vecs[c2[i]];
-      names[i] = _names[c2[i]];
+      names[i] = _names.get(c2[i]);
     }
     Frame ff = new Frame(names, vecs);
     ff.add("predicate", frows.anyVec());
@@ -1109,7 +1168,7 @@ public class Frame extends Lockable<Frame> {
         throw H2O.fail();
       }
     }
-    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells).toString();
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.names().clone(),coltypes,null, "", strCells, dblCells).toString();
   }
 
 
@@ -1238,8 +1297,9 @@ public class Frame extends Lockable<Frame> {
         Chunk c = chks[i]; // do not need to inflate cause sparse does not compress doubles
         NewChunk nc = nchks[i];
         if (c.isSparseZero() || c.isSparseNA()) {
-          nc.alloc_indices(selectedIds.length);
-          nc.alloc_doubles(selectedIds.length);
+          int slen = c.isSparseNA()?c.sparseLenNA():c.sparseLenZero();
+          nc.alloc_doubles(slen);
+          nc.alloc_indices(slen);
           nc._sparseNA = c.isSparseNA();
           int n = c.asSparseDoubles(vals, ids);
           int k = 0;
@@ -1287,7 +1347,7 @@ public class Frame extends Lockable<Frame> {
     if(_names == null)return null;
     String [] res = new String[cols.length];
     for(int i = 0; i < cols.length; ++i)
-      res[i] = _names[cols[i]];
+      res[i] = _names.get(cols[i]);
     return res;
   }
 
@@ -1367,9 +1427,9 @@ public class Frame extends Lockable<Frame> {
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
       if( headers ) {
-        sb.append('"').append(_names[0]).append('"');
+        sb.append('"').append(_names.get(0)).append('"');
         for(int i = 1; i < vs.length; i++)
-          sb.append(',').append('"').append(_names[i]).append('"');
+          sb.append(',').append('"').append(_names.get(i)).append('"');
         sb.append('\n');
       }
       _line = sb.toString().getBytes();

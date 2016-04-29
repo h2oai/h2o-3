@@ -73,8 +73,8 @@ public class DeepLearningMissingTest extends TestUtil {
           p = new DeepLearningParameters();
           p._train = train._key;
           p._valid = test._key;
-          p._response_column = train._names[train.numCols()-1];
-          p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
+          p._response_column = train.name(train.numCols()-1);
+          p._ignored_columns = new String[]{train.name(1),train.name(22)}; //only for weather data
           p._missing_values_handling = mvh;
           p._loss = DeepLearningParameters.Loss.Huber;
           p._activation = DeepLearningParameters.Activation.Rectifier;

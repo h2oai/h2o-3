@@ -59,12 +59,12 @@ class ASTColNames extends ASTPrim {
       if( d.length != nams._strs.length ) 
         throw new IllegalArgumentException("Must have the same number of column choices as names");
       for( int i=0; i<d.length; i++ )
-        fr._names[d[i]] = nams._strs[i];
+        fr.names()[i] = nams._strs[i];
 
     } else if( (asts[2] instanceof ASTNum) ) {
       int col = (int)(asts[2].exec(env).getNum());
       String name =   asts[3].exec(env).getStr() ;
-      fr._names[col] = name;
+      fr.names()[col] = name;
     } else
       throw new IllegalArgumentException("Column naming requires a number-list, but found a "+asts[2].getClass());
     if( fr._key != null ) DKV.put(fr); // Update names in DKV
@@ -93,7 +93,7 @@ class ASTAsCharacter extends ASTPrim {
         throw e;
       }
     }
-    return new ValFrame(new Frame(ary._names, nvecs));
+    return new ValFrame(new Frame(ary.names(), nvecs));
   }
 }
 
@@ -123,7 +123,7 @@ class ASTAsFactor extends ASTPrim {
         throw e;
       }
     }
-    return new ValFrame(new Frame(ary._names, nvecs));
+    return new ValFrame(new Frame(ary.names(), nvecs));
   }
 }
 
@@ -148,7 +148,7 @@ class ASTAsNumeric extends ASTPrim {
         throw e;
       }
     }
-    return new ValFrame(new Frame(fr._names, nvecs));
+    return new ValFrame(new Frame(fr.names(), nvecs));
   }
 }
 

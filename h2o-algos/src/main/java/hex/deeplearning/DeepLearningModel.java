@@ -227,7 +227,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
-    _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
+    _output._names  = train.names()   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     _output._domains= train.domains();
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();

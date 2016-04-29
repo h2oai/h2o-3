@@ -707,7 +707,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
-    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    _train = new Frame(null /* not putting this into KV */, tr.names().clone(), tr.vecs().clone());
     if (_parms._nfolds < 0 || _parms._nfolds == 1) {
       error("_nfolds", "nfolds must be either 0 or >1.");
     }
@@ -839,9 +839,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
-      _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+      _valid = new Frame(null /* not putting this into KV */, va.names().clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true, null);
+        String[] msgs = Model.adaptTestForTrain(_train.names(), _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true, null);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
@@ -851,7 +851,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             warn("_valid", s);
           }
         }
-        assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));
+        assert !expensive || (_valid == null || Arrays.equals(_train.names(), _valid.names()));
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
       }
@@ -965,9 +965,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
+        String [] names = f.names();
         for (int i=0;i<rmcols.length;++i) {
           rmcols[i]=rmcolsList.get(i);
-          _removedCols.add(f._names[rmcols[i]]);
+          _removedCols.add(names[rmcols[i]]);
         }
         f.remove(rmcols); //bulk-remove
         msg += _removedCols.toString();

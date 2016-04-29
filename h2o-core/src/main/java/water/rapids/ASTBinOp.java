@@ -122,7 +122,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(d,chk.atd(i)));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(),null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
@@ -137,7 +137,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(),null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
@@ -185,7 +185,7 @@ abstract class ASTBinOp extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(),null);
     return new ValFrame(res);
   }
 
@@ -220,7 +220,7 @@ abstract class ASTBinOp extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(),null);
     return new ValFrame(res);
   }
 
@@ -262,7 +262,7 @@ abstract class ASTBinOp extends ASTPrim {
                 cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf._names,null);
+      }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf.names(),null);
     return cleanCategorical(lf, res); // Cleanup categorical misuse
   }
 
@@ -283,7 +283,7 @@ abstract class ASTBinOp extends ASTPrim {
           }
         }
       }
-    }.doAll(lf.numCols(), Vec.T_NUM, lf).outputFrame(lf._names, null);
+    }.doAll(lf.numCols(), Vec.T_NUM, lf).outputFrame(lf.names(), null);
     return cleanCategorical(lf, res);
   }
 
@@ -309,7 +309,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, rt).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, rt).outputFrame(fr.names(),null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
   private ValFrame frame_op_vec( Frame fr, Vec vec ) {
@@ -327,7 +327,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, lf).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, lf).outputFrame(fr.names(),null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 

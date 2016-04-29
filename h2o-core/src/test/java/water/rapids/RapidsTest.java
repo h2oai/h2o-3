@@ -364,7 +364,7 @@ public class RapidsTest extends TestUtil {
         for( int i=0; i<vecs.length; i++ ) {
           Vec v = vecs[i];
           if( DKV.get(v._key) == null ) {
-            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key+", name="+fr._names[i]);
+            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key+", name="+fr.name(i));
             return false;
           }
         }

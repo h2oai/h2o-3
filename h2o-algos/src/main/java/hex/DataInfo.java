@@ -255,7 +255,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     for(int i = 0; i < ncats; ++i) {
-      names[i] = train._names[cats[i]];
+      names[i] = train.name(cats[i]);
       Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
       if( v instanceof InteractionWrappedVec ) {
@@ -272,7 +272,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _numOffsets[0]=len;
     boolean isIWV; // is InteractionWrappedVec?
     for(int i = 0; i < nnums; ++i) {
-      names[i+ncats] = train._names[nums[i]];
+      names[i+ncats] = train.name(nums[i]);
       Vec v = train.vec(nums[i]);
       tvecs2[i+ncats] = v;
       isIWV = v instanceof InteractionWrappedVec;
@@ -299,7 +299,7 @@ public class DataInfo extends Keyed<DataInfo> {
         _numMeans[meanIdx++]=v.mean();
     }
     for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
-      names[i] = train._names[i];
+      names[i] = train.name(i);
       tvecs2[i] = train.vec(i);
     }
     _adaptedFrame = new Frame(names,tvecs2);
@@ -708,10 +708,10 @@ public class DataInfo extends Keyed<DataInfo> {
         int jj = getCategoricalId(i, j);
         if(jj < 0)
           continue;
-        res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
+        res[k++] = _adaptedFrame.name(i) + "." + vecs[i].domain()[j];
       }
       if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0)
-        res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
+        res[k++] = _adaptedFrame.name(i) + ".missing(NA)";
       if( vecs[i] instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
         if( null!=iwv.missingDomains() ) {
@@ -723,7 +723,7 @@ public class DataInfo extends Keyed<DataInfo> {
     // now loop over the numerical columns, collecting up any expanded InteractionVec names
     if( _interactions==null ) {
       final int nums = n-k;
-      System.arraycopy(_adaptedFrame._names, _cats, res, k, nums);
+      System.arraycopy(_adaptedFrame.names(), _cats, res, k, nums);
     } else {
       for (int i = 0; i <= _nums; i++) {
         InteractionWrappedVec v;
@@ -732,10 +732,10 @@ public class DataInfo extends Keyed<DataInfo> {
           for (int j = _useAllFactorLevels?0:1; j < v.domain().length; ++j) {
             if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
               continue;
-            res[k++] = _adaptedFrame._names[i+_cats] + "." + v.domain()[j];
+            res[k++] = _adaptedFrame.name(i+_cats) + "." + v.domain()[j];
           }
         } else
-          res[k++] = _adaptedFrame._names[i+_cats];
+          res[k++] = _adaptedFrame.name(i+_cats);
       }
     }
     _coefNames = res;
@@ -744,11 +744,11 @@ public class DataInfo extends Keyed<DataInfo> {
 
   // Return permutation matrix mapping input names to adaptedFrame colnames
   public int[] mapNames(String[] names) {
-    assert names.length == _adaptedFrame._names.length : "Names must be the same length!";
+    assert names.length == _adaptedFrame.numCols() : "Names must be the same length!";
     int[] idx = new int[names.length];
     Arrays.fill(idx, -1);
 
-    for(int i = 0; i < _adaptedFrame._names.length; i++) {
+    for(int i = 0; i < _adaptedFrame.numCols(); i++) {
       for(int j = 0; j < names.length; j++) {
         if( names[j].equals(_adaptedFrame.name(i)) ) {
           idx[i] = j; break;

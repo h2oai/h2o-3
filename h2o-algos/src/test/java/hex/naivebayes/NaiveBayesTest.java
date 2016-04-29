@@ -24,7 +24,7 @@ public class NaiveBayesTest extends TestUtil {
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
-      parms._response_column = train._names[4];
+      parms._response_column = train.name(4);
       parms._compute_metrics = false;
 
       model = new NaiveBayes(parms).trainModel().get();
@@ -58,7 +58,7 @@ public class NaiveBayesTest extends TestUtil {
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._laplace = 0.01;    // Need Laplace smoothing
-      parms._response_column = fr._names[4];
+      parms._response_column = fr.name(4);
       parms._compute_metrics = true;
 
       model = new NaiveBayes(parms).trainModel().get();
@@ -91,7 +91,7 @@ public class NaiveBayesTest extends TestUtil {
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
-      parms._response_column = train._names[0];
+      parms._response_column = train.name(0);
       parms._compute_metrics = true;
 
       model = new NaiveBayes(parms).trainModel().get();
@@ -120,7 +120,7 @@ public class NaiveBayesTest extends TestUtil {
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
-      parms._response_column = train._names[54];
+      parms._response_column = train.name(54);
       parms._compute_metrics = false;
 
       model = new NaiveBayes(parms).trainModel().get();

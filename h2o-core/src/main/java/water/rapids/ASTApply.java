@@ -38,7 +38,7 @@ class ASTApply extends ASTPrim {
     Val vals[] = new Val[vecs.length];
     AST[] asts = new AST[]{fun,null};
     for( int i=0; i<vecs.length; i++ ) {
-      asts[1] = new ASTFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
+      asts[1] = new ASTFrame(new Frame(new String[]{fr.name(i)}, new Vec[]{vecs[i]}));
       try (Env.StackHelp stk_inner = env.stk()) {
           vals[i] = fun.apply(env,stk_inner,asts);
         }
@@ -74,14 +74,14 @@ class ASTApply extends ASTPrim {
     case Val.STR:  throw water.H2O.unimpl();
     default:       throw water.H2O.unimpl();
     }
-    return new ValFrame(new Frame(fr._names,ovecs));
+    return new ValFrame(new Frame(fr.names(),ovecs));
   }
 
   // --------------------------------------------------------------------------
   // Break each row into it's own Row, then execute the function passing the
   // 1 argument.  All rows are independent, and run in parallel
   private Val rowwise( Env env, Frame fr, final AST fun ) {
-    final String[] names = fr._names;
+    final String[] names = fr.names();
 
     final ASTFun scope = env._scope;  // Current execution scope; needed to lookup variables
 

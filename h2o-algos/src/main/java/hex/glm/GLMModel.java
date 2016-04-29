@@ -840,7 +840,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _dinfo.dropWeights();
       }
       String[] cnames = glm._dinfo.coefNames();
-      String [] names = _dinfo._adaptedFrame._names;
+      String [] names = _dinfo._adaptedFrame.names();
       String [][] domains = _dinfo._adaptedFrame.domains();
       int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
       if(id >= 0) {

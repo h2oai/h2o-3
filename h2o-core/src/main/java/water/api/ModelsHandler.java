@@ -46,7 +46,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
       Frame[] all_frames = Frames.fetchAll();
       Map<Frame, Set<String>> all_frames_cols = new HashMap<>();
       for (Frame f : all_frames)
-        all_frames_cols.put(f, new HashSet<>(Arrays.asList(f._names)));
+        all_frames_cols.put(f, new HashSet<>(Arrays.asList(f.names())));
       return all_frames_cols;
     }
 
