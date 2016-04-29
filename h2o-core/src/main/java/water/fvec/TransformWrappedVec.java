@@ -3,7 +3,9 @@ package water.fvec;
 import water.DKV;
 import water.H2O;
 import water.Key;
+import water.MRTask;
 import water.rapids.AST;
+import water.rapids.ASTParameter;
 import water.rapids.Env;
 
 import static water.rapids.ASTParameter.makeNum;
@@ -48,6 +50,17 @@ public class TransformWrappedVec extends WrappedVec {
     this(v.group().addVec(), v._rowLayout, fun, v._key);
   }
 
+  public Vec makeVec() {
+    Vec v  = new MRTask() {
+      @Override public void map(Chunk c, NewChunk nc) {
+        for(int i=0;i<c._len;++i)
+          nc.addNum(c.atd(i));
+      }
+    }.doAll(Vec.T_NUM,this).outputFrame().anyVec();
+    remove();
+    return v;
+  }
+
 
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
@@ -81,15 +94,18 @@ public class TransformWrappedVec extends WrappedVec {
       _fun=fun;
       _asts = new AST[1+_c.length];
       _asts[0]=_fun;
+      for(int i=1;i<_asts.length;++i)
+        _asts[i] = makeNum(0);
       _env = new Env(null);
     }
 
 
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
+      if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
       for(int i=1;i<_asts.length;++i)
-        _asts[i] = makeNum(_c[i-1].atd(idx));
-      return _fun.apply(_env,_env.stk(),_asts).getNum(); // Make the call per-row
+        ((ASTParameter)_asts[i]).setNum(_c[i-1].atd(idx)); // = makeNum(_c[i-1].atd(idx));
+      return _fun.apply(_env,_env.stk(),_asts).getNum();   // Make the call per-row
     }
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
