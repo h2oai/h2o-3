@@ -109,9 +109,65 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
  */
 
 public abstract class Chunk extends Iced<Chunk> {
+
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
+  /**
+   * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
+   * @param vals holds extracted values, length must be >= this.sparseLen()
+   * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
+   * @return number of extracted (non-zero) elements, equal to sparseLen()
+   */
+  public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
+  public int asSparseDoubles(double [] vals, int [] ids, double NA) {
+    if(vals.length < sparseLenZero())
+      throw new IllegalArgumentException();
+    getDoubles(vals,0,_len);
+    for(int i = 0; i < _len; ++i) ids[i] = i;
+    return len();
+  }
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; ++i) {
+      vals[i - from] = atd(i);
+      if(Double.isNaN(vals[i-from]))
+        vals[i - from] = NA;
+    }
+    return vals;
+  }
+
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    for(int i = from; i < to; ++i) {
+      double d = atd(i);
+      if(Double.isNaN(d))
+        vals[i] = NA;
+      else {
+        vals[i] = (int)d;
+        if(vals[i] != d) throw new IllegalArgumentException("Calling getIntegers on non-integer column");
+      }
+    }
+    return vals;
+  }
+
+
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  public double[] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids) vals[j++] = atd(i);
+    return vals;
+  }
   /** Global starting row for this local Chunk; a read-only field. */
   transient long _start = -1;
   /** Global starting row for this local Chunk */
@@ -332,14 +388,6 @@ public abstract class Chunk extends Iced<Chunk> {
    *  objects). */
   final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
-
-  public double[] toDoubleArray(double[] res){
-    if (res==null) res = new double[_len];
-    for(int i = 0; i < _len; ++i)
-      res[i] = atd(i);
-    return res;
-  }
-
   /** Set the element as missing, using absolute row numbers.
    *
    *  <p>As with all the {@code set} calls, if the value written does not fit
@@ -541,14 +589,17 @@ public abstract class Chunk extends Iced<Chunk> {
 
   public int nextNZ(int rid){ return rid + 1;}
 
-  /** Get chunk-relative indices of values (nonzeros for sparse, all for dense)
-   *  stored in this chunk.  For dense chunks, this will contain indices of all
-   *  the rows in this chunk.
+  /**
+   *  Get indeces of non-zero values stored in this chunk
    *  @return array of chunk-relative indices of values stored in this chunk. */
   public int nonzeros(int [] res) {
-    for( int i = 0; i < _len; ++i) res[i] = i;
-    return _len;
+    int k = 0;
+    for( int i = 0; i < _len; ++i)
+      if(atd(i) != 0)
+        res[k++] = i;
+    return k;
   }
+  
   //NA sparse methods:
   
   /** Sparse Chunks have a significant number of NAs, and support for
@@ -588,7 +639,7 @@ public abstract class Chunk extends Iced<Chunk> {
   }
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
-   *  Bulk copy from the compressed form into the nc._ls array.   */
+   *  Bulk copy from the compressed form into the nc._ls8 array.   */
   public abstract NewChunk inflate_impl(NewChunk nc);
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or

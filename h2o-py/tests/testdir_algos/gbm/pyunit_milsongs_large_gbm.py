@@ -15,9 +15,9 @@ def milsong_checkpoint():
   distribution = "gaussian"
 
   # build first model
-  ntrees1 = random.sample(list(range(50,100)),1)[0]
-  max_depth1 = random.sample(list(range(2,6)),1)[0]
-  min_rows1 = random.sample(list(range(10,16)),1)[0]
+  ntrees1 = 2
+  max_depth1 = 2
+  min_rows1 = 10
   print("ntrees model 1: {0}".format(ntrees1))
   print("max_depth model 1: {0}".format(max_depth1))
   print("min_rows model 1: {0}".format(min_rows1))
@@ -42,7 +42,7 @@ def milsong_checkpoint():
   restored_model = h2o.load_model(model_path)
 
   # continue building the model
-  ntrees2 = ntrees1 + 50
+  ntrees2 = ntrees1 + 1
   max_depth2 = max_depth1
   min_rows2 = min_rows1
   print("ntrees model 2: {0}".format(ntrees2))

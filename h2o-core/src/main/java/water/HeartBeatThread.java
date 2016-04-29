@@ -111,15 +111,30 @@ public class HeartBeatThread extends Thread {
       hb.set_max_disk (H2O.getPM().getIce().getTotalSpace() );
 
       // get cpu utilization for the system and for this process.  (linux only.)
-      LinuxProcFileReader.refresh();
-      hb._pid = LinuxProcFileReader.getProcessID();
-      hb._system_idle_ticks = LinuxProcFileReader.getSystemIdleTicks();
-      hb._system_total_ticks = LinuxProcFileReader.getSystemTotalTicks();
-      hb._process_total_ticks = LinuxProcFileReader.getProcessTotalTicks();
-      hb._process_num_open_fds = LinuxProcFileReader.getProcessNumOpenFds();
-      hb._num_cpus = LinuxProcFileReader.getProcessCpusAllowed();
+      LinuxProcFileReader lpfr = new LinuxProcFileReader();
+      lpfr.read();
+      if (lpfr.valid()) {
+        hb._system_idle_ticks = lpfr.getSystemIdleTicks();
+        hb._system_total_ticks = lpfr.getSystemTotalTicks();
+        hb._process_total_ticks = lpfr.getProcessTotalTicks();
+        hb._process_num_open_fds = lpfr.getProcessNumOpenFds();
+      }
+      else {
+        hb._system_idle_ticks = -1;
+        hb._system_total_ticks = -1;
+        hb._process_total_ticks = -1;
+        hb._process_num_open_fds = -1;
+      }
+      hb._num_cpus = (char)Runtime.getRuntime().availableProcessors();
+      hb._cpus_allowed = (char) lpfr.getProcessCpusAllowed();
+      if (H2O.ARGS.nthreads < hb._cpus_allowed) {
+        hb._cpus_allowed = H2O.ARGS.nthreads;
+      }
       hb._nthreads = H2O.ARGS.nthreads;
-      hb._cpus_allowed = (char)Math.min(LinuxProcFileReader.getProcessCpusAllowed(),H2O.ARGS.nthreads);
+      try {
+        hb._pid = Integer.parseInt(lpfr.getProcessID());
+      }
+      catch (Exception ignore) {}
 
       // Announce what Cloud we think we are in.
       // Publish our health as well.

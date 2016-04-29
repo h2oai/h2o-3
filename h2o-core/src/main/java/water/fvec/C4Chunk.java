@@ -44,4 +44,44 @@ public class C4Chunk extends Chunk {
     assert _mem.length == _len <<2;
   }
   @Override public boolean hasFloat() {return false;}
+
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; ++i) {
+      long res = UnsafeUtils.get4(_mem, i << 2);
+      vals[i - from] = res != _NA?res:NA;
+    }
+    return vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids){
+      long res = UnsafeUtils.get4(_mem,i<<2);
+      vals[j++] = res != _NA?res:Double.NaN;
+    }
+    return vals;
+  }
+
+  @Override
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    for(int i = from; i < to; ++i) {
+      int res = UnsafeUtils.get4(_mem, i << 2);
+      vals[i - from] = res != _NA?res:NA;
+    }
+    return vals;
+  }
+
 }

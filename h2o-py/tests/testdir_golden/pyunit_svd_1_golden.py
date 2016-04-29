@@ -16,7 +16,9 @@ def svd_1_golden():
     arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
 
     print("Compare with SVD")
-    fitH2O = h2o.svd(x=arrestsH2O[0:4], nv=4, transform="NONE", max_iterations=2000)
+    from h2o.transforms.decomposition import H2OSVD
+    fitH2O = H2OSVD(nv=4, transform="NONE", max_iterations=2000)
+    fitH2O.train(x=list(range(4)), training_frame=arrestsH2O)
 
     print("Compare singular values (D)")
     h2o_d = fitH2O._model_json['output']['d']

@@ -220,15 +220,16 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #` Fetch the first N rows on demand, caching them in x$data; also cache x$types.
 #` nrow and ncol are usually already set, but for getFrame they are set to -1
 #` and immediately set here.
-.fetch.data <- function(x,N) {
-  stopifnot(!missing(N))
-  N <- max(N,10L)  # At least as many as the default head/tail use
+.fetch.data <- function(x,M, N) {
+  stopifnot(!missing(M))
+  M <- max(M,10L)
   data = attr(chk.H2OFrame(x), "data")
-  if( is.null(data) || (is.data.frame(data) && nrow(data) < N) ) {
-    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",N))$frames[[1]]
+  nstr = ifelse(missing(N),"",paste0("&column_count=",N))
+  if( is.null(data) || (is.data.frame(data) && nrow(data) < M) ) {
+    res <- .h2o.__remoteSend(paste0(.h2o.__FRAMES, "/", h2o.getId(x), "?row_count=",M,nstr))$frames[[1]]
     .set(x,"types",lapply(res$columns, function(c) c$type))
     nrow <- .set.nlen(x,"nrow",res$rows)
-    ncol <- .set.nlen(x,"ncol",length(res$columns))
+    ncol <- .set.nlen(x,"ncol",res$num_columns)
     if( res$row_count==0 ) {
       data <- as.data.frame(matrix(NA,ncol=ncol,nrow=0L))
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
@@ -244,7 +245,7 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
       colnames(data) <- unlist(lapply(res$columns, function(c) c$label))
       for( i in 1:length(data) ) {  # Set factor levels
         dom <- res$columns[[i]]$domain
-        if( !is.null(dom) ) # H2O has a domain; force R to do so also
+        if( !is.null(dom) && length(dom)>0 ) # H2O has a domain; force R to do so also
           data[,i] <- factor(data[,i],levels=seq(0,length(dom)-1),labels=dom)
         else if( is.factor(data[,i]) ) # R has a domain, but H2O does not
           data[,i] <- as.character(data[,i]) # Force to string type
@@ -306,10 +307,13 @@ h2o.assign <- function(data, key) {
 #' @param integer_range The range of randomly generated integer values.
 #' @param binary_fraction The fraction of total columns that are binary-valued.
 #' @param binary_ones_fraction The fraction of values in a binary column that are set to 1.
+#' @param time_fraction The fraction of randomly created date/time columns.
+#' @param string_fraction The fraction of randomly created string columns.
 #' @param missing_fraction The fraction of total entries in the data frame that are set to NA.
 #' @param response_factors If \code{has_response = TRUE}, then this is the number of factor levels in the response column.
 #' @param has_response A logical value indicating whether an additional response column should be pre-pended to the final H2O data frame. If set to TRUE, the total number of columns will be \code{cols+1}.
 #' @param seed A seed used to generate random values when \code{randomize = TRUE}.
+#' @param seed_for_column_types A seed used to generate random column types when \code{randomize = TRUE}.
 #' @return Returns an H2OFrame object.
 #' @examples
 #' \donttest{
@@ -329,11 +333,13 @@ h2o.assign <- function(data, key) {
 h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
                             value = 0, real_range = 100, categorical_fraction = 0.2, factors = 100,
                             integer_fraction = 0.2, integer_range = 100, binary_fraction = 0.1,
-                            binary_ones_fraction = 0.02, missing_fraction = 0.01, response_factors = 2,
-                            has_response = FALSE, seed) {
+                            binary_ones_fraction = 0.02, time_fraction = 0, string_fraction = 0,
+                            missing_fraction = 0.01, response_factors = 2,
+                            has_response = FALSE, seed, seed_for_column_types) {
   if(!is.numeric(rows)) stop("`rows` must be a positive number")
   if(!is.numeric(cols)) stop("`cols` must be a positive number")
   if(!missing(seed) && !is.numeric(seed)) stop("`seed` must be a numeric value")
+  if(!missing(seed_for_column_types) && !is.numeric(seed_for_column_types)) stop("`seed_for_column_types` must be a numeric value")
   if(!is.logical(randomize)) stop("`randomize` must be TRUE or FALSE")
   if(!is.numeric(value)) stop("`value` must be a numeric value")
   if(!is.numeric(real_range)) stop("`real_range` must be a numeric value")
@@ -343,6 +349,8 @@ h2o.createFrame <- function(rows = 10000, cols = 10, randomize = TRUE,
   if(!is.numeric(integer_range)) stop("`integer_range` must be a numeric value")
   if(!is.numeric(binary_fraction)) stop("`binary_fraction` must be a numeric value")
   if(!is.numeric(binary_ones_fraction)) stop("`binary_ones_fraction` must be a numeric value")
+  if(!is.numeric(time_fraction)) stop("`time_fraction` must be a numeric value")
+  if(!is.numeric(string_fraction)) stop("`string_fraction` must be a numeric value")
   if(!is.numeric(missing_fraction)) stop("`missing_fraction` must be a numeric value")
   if(!is.numeric(response_factors)) stop("`response_factors` must be a numeric value")
   if(!is.logical(has_response)) stop("`has_response` must be a logical value")
@@ -993,6 +1001,15 @@ h2o.runif <- function(x, seed = -1) {
   .newExpr("h2o.runif", chk.H2OFrame(x), seed)
 }
 
+#' Produce a k-fold column vector.
+#'
+#' Create a k-fold vector useful for H2O algorithms that take a fold_assignments argument.
+#'
+#' @param data A dataframe against which to create the fold column.
+#' @param nfolds The number of desired folds.
+#' @param seed A random seed, -1 indicates that H2O will choose one.
+h2o.kfold_column <- function(data,nfolds,seed=-1) .eval.frame(.newExpr("kfold_column",data,nfolds,seed))
+
 #' Check H2OFrame columns for factors
 #'
 #' Determines if any column of an H2OFrame object contains categorical data.
@@ -1010,6 +1027,15 @@ h2o.runif <- function(x, seed = -1) {
 #' }
 #' @export
 h2o.anyFactor <- function(x) as.logical(.eval.scalar(.newExpr("any.factor", x)))
+
+
+
+.getExpanded <- function(data,interactions=NULL,useAll=FALSE,standardize=FALSE,interactionsOnly=FALSE) {
+  interactions <- .collapse.char(interactions)
+  if( interactions=="") interactions <- NULL
+  res <- .h2o.__remoteSend("DataInfoFrame", method = "POST", frame=h2o.getId(data), interactions=interactions, use_all=useAll,standardize=standardize,interactions_only=interactionsOnly)
+  h2o.getFrame(res$result$name)
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Overloaded Base R Methods
@@ -1140,10 +1166,13 @@ NULL
 #' @param e1 object
 #' @param e2 object
 #' @export
-Ops.H2OFrame <- function(e1,e2)
+Ops.H2OFrame <- function(e1,e2) {
+
+  if( missing(e2) && .Generic=="-" ) return(1-e1)
   .newExpr(.Generic,
            if( base::is.character(e1) ) .quote(e1) else e1,
            if( base::is.character(e2) ) .quote(e2) else e2)
+}
 
 #' @rdname H2OFrame
 #' @param x object
@@ -1909,7 +1938,7 @@ mean.H2OFrame <- h2o.mean
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.
-# TODO: figure out funcionality/use for documentation
+# TODO: figure out functionality/use for documentation
 # h2o.mode <-
 # function(x) {
 #  if(!is(x, "H2OFrame")) || nrow(x) > 1L) stop('`x` must be an H2OFrame object')
@@ -1931,7 +1960,6 @@ mean.H2OFrame <- h2o.mean
 #   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #   "all.obs"               - presence of missing observations will throw an error
 #   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
-#   "pairwise.complete.obs" - uses all complete pairs of observations
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \donttest{
@@ -1945,12 +1973,9 @@ h2o.var <- function(x, y = NULL, na.rm = FALSE, use) {
   symmetric <- FALSE
   if( is.null(y) ) {
     y <- x
-    if( ncol(x) > 1 && nrow(x) > 1) symmetric <- TRUE
+    symmetric <- TRUE
   }
-  if(!missing(use)) {
-    if (use == "na.or.complete")
-      stop("Unimplemented : `use` may be either \"everything\", \"all.obs\", \"complete.obs\", or \"pairwise.complete.obs\"")
-  } else {
+  if(missing(use)) {
     if (na.rm) use <- "complete.obs" else use <- "everything"
   }
   # Eager, mostly to match prior semantics but no real reason it need to be
@@ -2279,9 +2304,8 @@ h2o.removeVecs <- function(data, cols) {
 #' Applies conditional statements to numeric vectors in H2O parsed data objects when the data are
 #' numeric.
 #'
-#' Only numeric values can be tested, and only numeric results can be returned for either condition.
-#' Categorical data is not currently supported for this funciton and returned values cannot be
-#' categorical in nature.
+#' Both numeric and categorical values can be tested. However when returning a yes and no condition
+#' both conditions must be either both categorical or numeric.
 #'
 #' @name h2o.ifelse
 #' @param test A logical description of the condition to be met (>, <, =, etc...)
@@ -2363,7 +2387,7 @@ h2o.cbind <- function(...) {
 #'
 #' @name h2o.rbind
 #' @param \dots A sequence of H2OFrame arguments. All datasets must exist on the same H2O instance
-#'        (IP and port) and contain the same number of rows.
+#'        (IP and port) and contain the same number and types of columns.
 #' @return An H2OFrame object containing the combined \dots arguments row-wise.
 #' @seealso \code{\link[base]{rbind}} for the base \code{R} method.
 #' @examples
@@ -2534,18 +2558,18 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'
 #' Basic Imputation of H2O Vectors
 #'
-#'  Perform simple imputation on a single vector by filling missing values with aggregates
+#'  Perform inplace imputation by filling missing values with aggregates
 #'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
 #'  based on groupings of columns from within data; these columns can be passed by index or
-#'  name to the by parameter. If a factor column is supplied, then the method must be one
-#'  "mode". Anything else results in a full stop.
+#'  name to the by parameter. If a factor column is supplied, then the method must be
+#'  "mode".
 #'
 #'  The default method is selected based on the type of the column to impute. If the column
-#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Otherwise
+#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
 #'  column types (e.g. String, Time, UUID) are not supported.
 #'
 #'  @param data The dataset containing the column to impute.
-#'  @param column The column to impute.
+#'  @param column A specific column to impute, default of 0 means impute the whole frame.
 #'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
 #'                "mode" replaces with the most common factor (for factor columns only);
 #'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
@@ -2883,7 +2907,7 @@ h2o.trim <- function(x) .newExpr("trim", x)
 #'
 #' @param x The column whose string lengths will be returned.
 #' @export
-h2o.nchar <- function(x) .newExpr("length", x)
+h2o.nchar <- function(x) .newExpr("strlen", x)
 
 #'
 #' Substring
@@ -2939,12 +2963,11 @@ h2o.rstrip <- function(x, set = " ") .newExpr("rstrip", x, .quote(set))
 h2o.entropy <- function(x) .newExpr("entropy", x)
 
 #'
-#' Proportion of substrings >= 2 chars that are contained in file
+#' Count of substrings >= 2 chars that are contained in file
 #'
-#' Find the proportion of all possible substrings >= 2 chars that are contained in the specified line-separated text file. 
-#  If the number of characters in the string is less than two, 0 is returned.
+#' Find the count of all possible substrings >= 2 chars that are contained in the specified line-separated text file. 
 #'
-#' @param x     The column on which to calculate the proportion of valid substrings.
+#' @param x     The column on which to calculate the number of valid substrings.
 #' @param path  Path to text file containing line-separated strings to be referenced. 
 #' @export
-h2o.pro_substrings_words <- function(x, path) .newExpr("pro_substrings_words", x, .quote(path))
+h2o.num_valid_substrings <- function(x, path) .newExpr("num_valid_substrings", x, .quote(path))

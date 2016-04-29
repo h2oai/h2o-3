@@ -30,6 +30,7 @@ check.rf.grid.cars <- function() {
   Log.info(paste0("Response: ", response_col))
 
   grid_space = makeRandomGridSpace(algo="randomForest", ncols=length(predictors))
+  grid_space$ntrees = c(1)
   Log.info(lapply(names(grid_space), function(n) paste0("The ",n," search space: ", grid_space[n])))
 
   if ( problem == 1 || problem == 2 ) {

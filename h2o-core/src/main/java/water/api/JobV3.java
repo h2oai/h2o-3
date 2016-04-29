@@ -37,10 +37,15 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
   public KeyV3 dest;
 
   @API(help="exception", direction=API.Direction.OUTPUT)
+  public String [] warnings;
+  @API(help="exception", direction=API.Direction.OUTPUT)
   public String exception;
 
   @API(help="stacktrace", direction=API.Direction.OUTPUT)
   public String stacktrace;
+
+  @API(help="ready for view", direction=API.Direction.OUTPUT)
+  public boolean ready_for_view;
 
   //==========================
   // Custom adapters go here
@@ -58,6 +63,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
 
     key = new JobKeyV3(job._key);
     description = job._description;
+    warnings = job.warns();
     progress = job.progress();
     progress_msg = job.progress_msg();
     // Bogus status; Job no longer has these states, but we fake it for /3/Job poller's.
@@ -79,6 +85,7 @@ public class JobV3 extends RequestSchema<Job, JobV3> {
       stacktrace = sw.toString();
     }
     msec = job.msec();
+    ready_for_view = job.readyForView();
 
     Keyed dest_type = (Keyed)TypeMap.theFreezable(job._typeid);
     dest = job._result == null ? null : KeyV3.make(dest_type.makeSchema(),job._result);

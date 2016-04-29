@@ -94,7 +94,7 @@ public class ScoreKeeper extends Iced {
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
-  public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement, String what) {
+  public static boolean stopEarly(ScoreKeeper[] sk, int k, boolean classification, StoppingMetric criterion, double rel_improvement, String what, boolean verbose) {
     if (k == 0) return false;
     int len = sk.length - 1; //how many "full"/"conservative" scoring events we have (skip the first)
     if (len < 2*k) return false; //need at least k for SMA and another k to tell whether the model got better or not
@@ -124,6 +124,11 @@ public class ScoreKeeper extends Iced {
       // movingAvg[0] is based on scoring events indices 14,15 <- reference
       // movingAvg[1] is based on scoring events indices 15,16 <- first "new" smooth score
       // movingAvg[2] is based on scoring events indices 16,17 <- second "new" smooth score
+
+      // Example: 18 scoring events, k=1
+      // need to go back from idx 17 to idx 16
+      // movingAvg[0] is based on scoring event index 16 <- reference
+      // movingAvg[1] is based on scoring event index 17 <- first "new" score
 
       int startIdx = sk.length-2*k+i;
       for (int j = 0; j < k; ++j) {
@@ -168,12 +173,15 @@ public class ScoreKeeper extends Iced {
     if (Math.signum(bestInLastK) != Math.signum(lastBeforeK)) return false;
     assert(lastBeforeK != Double.MAX_VALUE);
     assert(bestInLastK != Double.MAX_VALUE);
-    Log.info("Windowed averages (window size " + k + ") of " + what + " " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
+    if (verbose)
+      Log.info("Windowed averages (window size " + k + ") of " + what + " " + (k+1) + " " + criterion.toString() + " metrics: " + Arrays.toString(movingAvg));
 
     double ratio = bestInLastK / lastBeforeK;
     if (Double.isNaN(ratio)) return false;
     boolean improved = moreIsBetter ? ratio > 1+rel_improvement : ratio < 1-rel_improvement;
-    Log.info("Checking convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
+
+    if (verbose)
+      Log.info("Checking convergence with " + criterion.toString() + " metric: " + lastBeforeK + " --> " + bestInLastK + (improved ? " (still improving)." : " (converged)."));
     return !improved;
   } // stopEarly
 
@@ -214,21 +222,21 @@ public class ScoreKeeper extends Iced {
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._mse - o2._mse); // moreIsBetter
+            return (int)Math.signum(o1._mse - o2._mse); // lessIsBetter
           }
         };
       case deviance:
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._mean_residual_deviance - o2._mean_residual_deviance); // moreIsBetter
+            return (int)Math.signum(o1._mean_residual_deviance - o2._mean_residual_deviance); // lessIsBetter
           }
         };
       case logloss:
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._logloss - o2._logloss); // moreIsBetter
+            return (int)Math.signum(o1._logloss - o2._logloss); // lessIsBetter
           }
         };
       case r2:
@@ -242,7 +250,7 @@ public class ScoreKeeper extends Iced {
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._classError - o2._classError); // moreIsBetter
+            return (int)Math.signum(o1._classError - o2._classError); // lessIsBetter
           }
         };
       case lift_top_group:
@@ -256,4 +264,18 @@ public class ScoreKeeper extends Iced {
         throw H2O.unimpl("Undefined stopping criterion.");
     } // switch
   } // comparator
+
+  @Override
+  public String toString() {
+    return "ScoreKeeper{" +
+        "_r2=" + _r2 +
+        ", _mean_residual_deviance=" + _mean_residual_deviance +
+        ", _mse=" + _mse +
+        ", _logloss=" + _logloss +
+        ", _AUC=" + _AUC +
+        ", _classError=" + _classError +
+        ", _hitratio=" + Arrays.toString(_hitratio) +
+        ", _lift=" + _lift +
+        '}';
+  }
 }

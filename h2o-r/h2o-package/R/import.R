@@ -151,6 +151,90 @@ h2o.uploadFile <- function(path, destination_frame = "",
 }
 
 #'
+#' Import SQL Table into H2O
+#'
+#' Imports SQL table into an H2O cloud. Assumes that the SQL table is not being updated and is stable.
+#' Runs multiple SELECT SQL queries concurrently for parallel ingestion.
+#' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
+#'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
+#' Also see h2o.import_sql_select.
+#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
+#  is forthcoming.
+#'
+#' For example, 
+#'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+#'    table <- "citibike20k"
+#'    username <- "root"
+#'    password <- "abc123"
+#'    my_citibike_data <- h2o.import_sql_table(my_sql_conn_url, table, username, password)
+#'
+#' @param connection_url URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
+#'        For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+#' @param table Name of SQL table
+#' @param username Username for SQL server
+#' @param password Password for SQL server
+#' @param columns (Optional) Character vector of column names to import from SQL table. Default is to import all columns. 
+#' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
+#' @export
+h2o.import_sql_table <- function(connection_url, table, username, password, columns = NULL, optimize = NULL) {
+  parms <- list()
+  parms$connection_url <- connection_url
+  parms$table <- table
+  parms$username <- username
+  parms$password <- password
+  if (!is.null(columns)) {
+    columns <- toString(columns)
+    parms$columns <- columns
+  }
+  if (!is.null(optimize)) parms$optimize <- optimize
+  res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}
+
+#'
+#' Import SQL table that is result of SELECT SQL query into H2O
+#'
+#' Creates a temporary SQL table from the specified sql_query.
+#' Runs multiple SELECT SQL queries on the temporary table concurrently for parallel ingestion, then drops the table.
+#' Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
+#'    `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
+#' Also see h2o.import_sql_table.
+#' Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server 
+#  is forthcoming.   
+#'
+#' For example, 
+#'    my_sql_conn_url <- "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+#'    select_query <- "SELECT bikeid from citibike20k"
+#'    username <- "root"
+#'    password <- "abc123"
+#'    my_citibike_data <- h2o.import_sql_select(my_sql_conn_url, select_query, username, password)
+#'
+#' @param connection_url URL of the SQL database connection as specified by the Java Database Connectivity (JDBC) Driver.
+#'        For example, "jdbc:mysql://localhost:3306/menagerie?&useSSL=false"
+#' @param select_query SQL query starting with `SELECT` that returns rows from one or more database tables.
+#' @param username Username for SQL server
+#' @param password Password for SQL server
+#' @param optimize (Optional) Optimize import of SQL table for faster imports. Experimental. Default is true. 
+#' @export
+h2o.import_sql_select<- function(connection_url, select_query, username, password, optimize = NULL) {
+  parms <- list()
+  parms$connection_url <- connection_url
+  parms$select_query <- select_query
+  parms$username <- username
+  parms$password <- password
+  if (!is.null(optimize)) parms$optimize <- optimize
+  res <- .h2o.__remoteSend('ImportSQLTable', method = "POST", .params = parms, h2oRestApiVersion = 99)
+  job_key <- res$key$name
+  dest_key <- res$dest$name
+  .h2o.__waitOnJob(job_key)
+  h2o.getFrame(dest_key)
+}
+
+
+#'
 #' Load H2O Model from HDFS or Local Disk
 #'
 #' Load a saved H2O model from disk.

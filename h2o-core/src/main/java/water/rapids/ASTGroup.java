@@ -25,80 +25,80 @@ import java.util.Arrays;
  *  The returned column(s).
  *  
  */
-class ASTGroup extends ASTPrim {
-  enum NAHandling { ALL, RM, IGNORE }
+public class ASTGroup extends ASTPrim {
+  public enum NAHandling { ALL, RM, IGNORE }
 
   // Functions handled by GroupBy
-  enum FCN {
+  public enum FCN {
     nrow() { 
-      @Override void op( double[] d0s, double d1 ) { d0s[0]++; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
-      @Override double postPass( double ds[], long n ) { return ds[0]; }
+      @Override public void op(double[] d0s, double d1) { d0s[0]++; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { d0s[0] += d1s[0]; }
+      @Override public double postPass(double ds[], long n) { return ds[0]; }
     },
     mean() { 
-      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
-      @Override double postPass( double ds[], long n ) { return ds[0]/n; }
+      @Override public void op(double[] d0s, double d1) { d0s[0]+=d1; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { d0s[0] += d1s[0]; }
+      @Override public double postPass(double ds[], long n) { return ds[0]/n; }
     },
     sum() { 
-      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
-      @Override double postPass( double ds[], long n ) { return ds[0]; }
+      @Override public void op(double[] d0s, double d1) { d0s[0]+=d1; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { d0s[0] += d1s[0]; }
+      @Override public double postPass(double ds[], long n) { return ds[0]; }
     },
     sumSquares() {
-      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { d0s[0] += d1s[0]; }
-      @Override double postPass( double ds[], long n) { return ds[0]; }
+      @Override public void op(double[] d0s, double d1) { d0s[0]+=d1*d1; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { d0s[0] += d1s[0]; }
+      @Override public double postPass(double ds[], long n) { return ds[0]; }
     },
     var() {
-      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n) { 
+      @Override public void op(double[] d0s, double d1) { d0s[0]+=d1*d1; d0s[1]+=d1; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { ArrayUtils.add(d0s,d1s); }
+      @Override public double postPass(double ds[], long n) {
         double numerator = ds[0] - ds[1]*ds[1]/n;
         if (Math.abs(numerator) < 1e-5) numerator = 0;
         return numerator/(n-1); 
       }
-      @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
+      @Override public double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     sdev() {
-      @Override void op( double[] d0s, double d1 ) { d0s[0]+=d1*d1; d0s[1]+=d1; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n) { 
+      @Override public void op(double[] d0s, double d1) { d0s[0]+=d1*d1; d0s[1]+=d1; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { ArrayUtils.add(d0s,d1s); }
+      @Override public double postPass(double ds[], long n) {
         double numerator = ds[0] - ds[1]*ds[1]/n;
         if (Math.abs(numerator) < 1e-5) numerator = 0;
         return Math.sqrt(numerator/(n-1)); 
       }
-      @Override double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
+      @Override public double[] initVal(int ignored) { return new double[2]; /* 0 -> sum_squares; 1 -> sum*/}
     },
     min() { 
-      @Override void op( double[] d0s, double d1 ) { d0s[0]= Math.min(d0s[0],d1); }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { op(d0s,d1s[0]); }
-      @Override double postPass( double ds[], long n ) { return ds[0]; }
-      @Override double[] initVal(int maxx) { return new double[]{ Double.MAX_VALUE}; }
+      @Override public void op(double[] d0s, double d1) { d0s[0]= Math.min(d0s[0],d1); }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { op(d0s,d1s[0]); }
+      @Override public double postPass(double ds[], long n) { return ds[0]; }
+      @Override public double[] initVal(int maxx) { return new double[]{ Double.MAX_VALUE}; }
     },
     max() { 
-      @Override void op( double[] d0s, double d1 ) { d0s[0]= Math.max(d0s[0],d1); }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { op(d0s,d1s[0]); }
-      @Override double postPass( double ds[], long n ) { return ds[0]; }
-      @Override double[] initVal(int maxx) { return new double[]{-Double.MAX_VALUE}; }
+      @Override public void op(double[] d0s, double d1) { d0s[0]= Math.max(d0s[0],d1); }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { op(d0s,d1s[0]); }
+      @Override public double postPass(double ds[], long n) { return ds[0]; }
+      @Override public double[] initVal(int maxx) { return new double[]{-Double.MAX_VALUE}; }
     },
     mode() { 
-      @Override void op( double[] d0s, double d1 ) { d0s[(int)d1]++; }
-      @Override void atomic_op( double[] d0s, double[] d1s ) { ArrayUtils.add(d0s,d1s); }
-      @Override double postPass( double ds[], long n ) { return ArrayUtils.maxIndex(ds); }
-      @Override double[] initVal(int maxx) { return new double[maxx]; }
+      @Override public void op(double[] d0s, double d1) { d0s[(int)d1]++; }
+      @Override public void atomic_op(double[] d0s, double[] d1s) { ArrayUtils.add(d0s,d1s); }
+      @Override public double postPass(double ds[], long n) { return ArrayUtils.maxIndex(ds); }
+      @Override public double[] initVal(int maxx) { return new double[maxx]; }
     },
     ;
-    abstract void op( double[] d0, double d1 );
-    abstract void atomic_op( double[] d0, double[] d1 );
-    abstract double postPass( double ds[], long n );
-    double[] initVal(int maxx) { return new double[]{0}; }
+    public abstract void op(double[] d0, double d1);
+    public abstract void atomic_op(double[] d0, double[] d1);
+    public abstract double postPass(double ds[], long n);
+    public double[] initVal(int maxx) { return new double[]{0}; }
   }
 
   @Override int nargs() { return -1; } // (GB data [group-by-cols] {fcn col "na"}...)
   @Override public String[] args() { return new String[]{"..."}; }
   @Override public String str() { return "GB"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
@@ -220,16 +220,16 @@ class ASTGroup extends ASTPrim {
 
   // Description of a single aggregate, including the reduction function, the
   // column and specified NA handling
-  static class AGG extends Iced {
+  public static class AGG extends Iced {
     final FCN _fcn;
-    final int _col;
+    public final int _col;
     final NAHandling _na;
     final int _maxx;            // Largest integer this column
-    AGG( FCN fcn, int col, NAHandling na, int maxx ) { _fcn = fcn; _col = col; _na = na; _maxx = maxx; }
+    public AGG( FCN fcn, int col, NAHandling na, int maxx ) { _fcn = fcn; _col = col; _na = na; _maxx = maxx; }
     // Update the array pair {ds[i],ns[i]} with d1.
     // ds is the reduction array
     // ns is the element count
-    void op( double[][] d0ss, long[] n0s, int i, double d1 ) {
+    public void op( double[][] d0ss, long[] n0s, int i, double d1 ) {
       // Normal number or ALL   : call op()
       if( !Double.isNaN(d1) || _na==NAHandling.ALL    ) _fcn.op(d0ss[i],d1);
       // Normal number or IGNORE: bump count; RM: do not bump count
@@ -237,19 +237,19 @@ class ASTGroup extends ASTPrim {
     }
     // Atomically update the array pair {dss[i],ns[i]} with the pair {d1,n1}.
     // Same as op() above, but called racily and updates atomically.
-    void atomic_op( double[][] d0ss, long[] n0s, int i, double[] d1s, long n1 ) {
+    public void atomic_op( double[][] d0ss, long[] n0s, int i, double[] d1s, long n1 ) {
       synchronized(d0ss[i]) { 
         _fcn.atomic_op(d0ss[i],d1s); 
         n0s[i] += n1;
       }
     }
-    double[] initVal() { return _fcn.initVal(_maxx); }
+    public double[] initVal() { return _fcn.initVal(_maxx); }
   }
 
   // --------------------------------------------------------------------------
   // Main worker MRTask.  Makes 1 pass over the data, and accumulates both all
   // groups and all aggregates
-  static class GBTask extends MRTask<GBTask> {
+  public static class GBTask extends MRTask<GBTask> {
     final IcedHashMap<G,String> _gss; // Shared per-node, common, racy
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
@@ -291,21 +291,21 @@ class ASTGroup extends ASTPrim {
   // Groups!  Contains a Group Key - an array of doubles (often just 1 entry
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
-  static class G extends Iced {
+  public static class G extends Iced {
     final double _gs[];  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
-    final double _dss[][];      // Aggregates: usually sum or sum*2
-    final long   _ns[];         // row counts per aggregate, varies by NA handling and column
+    public final double _dss[][];      // Aggregates: usually sum or sum*2
+    public final long   _ns[];         // row counts per aggregate, varies by NA handling and column
 
-    G( int ncols, AGG[] aggs ) { 
+    public G( int ncols, AGG[] aggs ) {
       _gs = new double[ncols]; 
       int len = aggs==null ? 0 : aggs.length;
       _dss= new double[len][];
       _ns = new long  [len]; 
       for( int i=0; i<len; i++ ) _dss[i] = aggs[i].initVal();
     }
-    G fill(int row, Chunk chks[], int cols[]) {
+    public G fill(int row, Chunk chks[], int cols[]) {
       for( int c=0; c<cols.length; c++ ) // For all selection cols
         _gs[c] = chks[cols[c]].atd(row); // Load into working array
       _hash = hash();

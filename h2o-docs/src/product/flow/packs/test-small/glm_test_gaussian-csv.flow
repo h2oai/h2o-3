@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"gaussian.hex\", [0.25], [\"gaussian_test\",\"gaussian_train\"]"
+      "input": "splitFrame \"gaussian.hex\", [0.25], [\"gaussian_test\",\"gaussian_train\"], 123456"
     },
     {
       "type": "cs",

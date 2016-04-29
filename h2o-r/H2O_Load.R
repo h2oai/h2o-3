@@ -1,5 +1,4 @@
 # Change this global variable to match your own system's path
-CLIFF.ROOT.PATH <- "C:/Users/cliffc/Desktop/"
 SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 LUDI.ROOT.PATH <- "/Users/ludirehak/"
 ROOT.PATH <- LUDI.ROOT.PATH

@@ -61,11 +61,26 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   public void compute2() {
     _timings = new double[20];
     long t0 = System.nanoTime();
+
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
     SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, _leftMSB));
     if (leftSortedOXHeader == null) {
       if (_allRight) throw H2O.unimpl();  // TODO pass through _allRight and implement
       tryComplete(); return;
     }
+
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
+
     SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/false, _rightMSB));
     if (rightSortedOXHeader == null) {
       if (_allLeft == false) { tryComplete(); return; }
@@ -83,7 +98,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _retFirst = new long[leftSortedOXHeader._nBatch][];
     _retLen = new long[leftSortedOXHeader._nBatch][];
     for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
-      SplitByMSBLocal.OXbatch oxLeft = DKV.getGet(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/true, _leftMSB, b));
+      Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/true, _leftMSB, b));
+      SplitByMSBLocal.OXbatch oxLeft = v.get(); //mem version (obtained from remote) of the Values gets turned into POJO version
+      v.freeMem(); //only keep the POJO version of the Value
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
       _retFirst[b] = new long[oxLeft._o.length];
@@ -95,7 +112,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
     _rightOrder = new long[rightSortedOXHeader._nBatch][];
     for (int b=0; b<rightSortedOXHeader._nBatch; ++b) {
-      SplitByMSBLocal.OXbatch oxRight = DKV.getGet(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/false, _rightMSB, b));
+      Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/false, _rightMSB, b));
+      SplitByMSBLocal.OXbatch oxRight = v.get();
+      v.freeMem();
       _rightKey[b] = oxRight._x;
       _rightOrder[b] = oxRight._o;
     }
@@ -123,6 +142,13 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightVec = _rightFrame.anyVec();
 
     _timings[0] += (System.nanoTime() - t0) / 1e9;
+
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
 
     if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
 
@@ -306,6 +332,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     //long perNodeLeftRowsRepeat[][][] = new long[H2O.CLOUD.size()][][];
     long perNodeLeftLoc[] = new long[H2O.CLOUD.size()];
 
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }
+    */
+
+
     // Allocate memory to split this MSB combn's left and right matching rows into contiguous batches sent to the nodes they reside on
     int batchSize = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
     int thisNode = H2O.SELF.index();
@@ -348,6 +382,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     _timings[2] += (System.nanoTime() - t0) / 1e9;
     t0 = System.nanoTime();
+
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
+
 
     // Loop over _retFirst and _retLen and populate the batched requests for each node helper
     // _retFirst and _retLen are the same shape
@@ -424,6 +466,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _timings[4] += (System.nanoTime() - t0) / 1e9;
     t0 = System.nanoTime();
 
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
+
+
     RPC<GetRawRemoteRows> grrrsRiteRPC[][] = new RPC[H2O.CLOUD.size()][];
     RPC<GetRawRemoteRows> grrrsLeftRPC[][] = new RPC[H2O.CLOUD.size()][];
     GetRawRemoteRows grrrsLeft[][] = new GetRawRemoteRows[H2O.CLOUD.size()][];
@@ -459,6 +509,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     _timings[6] += (System.nanoTime() - t0) / 1e9;   // all this time is expected to be in [5]
     t0 = System.nanoTime();
+    grrrsRiteRPC = null;
+    grrrsLeftRPC = null;
 
     // Now loop through _retFirst and _retLen and populate
     resultLoc=0;  // sweep upwards through the final result, filling it in
@@ -530,6 +582,16 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     _timings[10] += (System.nanoTime() - t0) / 1e9;
     t0 = System.nanoTime();
+    grrrsLeft = null;  // remove now to free memory. We moved all these into frameLikeChunks now.
+    grrrsRite = null;
+
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
+
 
     // compress all chunks and store them
     Futures fs = new Futures();
@@ -542,6 +604,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     fs.blockForPending();
     _timings[11] += (System.nanoTime() - t0) / 1e9;
+
+    /*for (int s=0; s<1; s++) {
+      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
+      System.gc();
+    }*/
+
 
   }
 

@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"balanced.hex\", [0.2], [\"balanced_test\",\"balanced_train\"]"
+      "input": "splitFrame \"balanced.hex\", [0.2], [\"balanced_test\",\"balanced_train\"], 123456"
     },
     {
       "type": "cs",

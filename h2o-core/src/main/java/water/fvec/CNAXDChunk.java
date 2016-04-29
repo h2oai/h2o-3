@@ -54,4 +54,23 @@ public class CNAXDChunk extends CNAXIChunk {
   public boolean hasFloat() {return true;}
 
 
+  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
+    if(vals.length < _sparseLen) throw new IllegalArgumentException();
+    int off = _OFF;
+    final int inc = 8 + _ridsz;
+    if(_ridsz == 2){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get2(_mem,off)  & 0xFFFF;
+        ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
+        vals[i] = UnsafeUtils.get8d(_mem,off+2);
+      }
+    } else if(_ridsz == 4){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get4(_mem,off);
+        vals[i] = UnsafeUtils.get8d(_mem,off+4);
+      }
+    } else throw H2O.unimpl();
+    return _sparseLen;
+  }
+
 }

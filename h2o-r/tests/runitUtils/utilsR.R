@@ -420,3 +420,280 @@ h2o_and_R_equal <- function(h2o_obj, r_obj, tolerance = 1e-6) {
     expect_true(all(abs(df_h2o_obj_free - df_r_na_free) < tolerance))
   
 }
+
+#----------------------------------------------------------------------
+# genRegressionData generate a random data set according to the following formula
+# y = W * X + e where e is random Gaussian noise, W is randomly generated and
+# X is the randomly generated predictors
+#
+# Parameters:  col_number -- Integer, number of predictors
+#              row_number -- Integer, number of training data samples
+#              max_w_value -- maximum weight/bias value allowed
+#              min_w_value -- minimum weight/bias value allowed
+#              max_p_value -- maximum predictor value allowed
+#              min_p_value -- minimum predictor value allowed
+#              noise_std -- noise standard deviation that is used to generate random noise
+#
+# Returns:     data frame containing the predictors and response as the last column
+#----------------------------------------------------------------------
+genRegressionData <- function(col_number, row_number, max_w_value, min_w_value, max_p_value, min_p_value, noise_std) {
+
+  # generate random predictor
+  data = matrix(runif(col_number*row_number, min_p_value, max_p_value), row_number, col_number)
+  weight = matrix(runif(col_number, min_w_value, max_w_value), col_number, 1)  # generate random weight
+  noise = matrix(rnorm(row_number, mean=0, sd=noise_std), row_number, 1)        # generate random noise
+  bias = matrix(rep(runif(1, min_w_value, max_w_value), row_number), row_number, 1)   # random bias
+
+  response = data %*% weight + bias + noise   # form the response
+
+  training_data = as.data.frame(cbind(data, response))  # generate data frame from predictor and response
+
+  return(training_data)
+}
+
+
+#----------------------------------------------------------------------
+# genBinaryData generates training data set for Binomial
+# classification for GLM algo.  For the Binomial family, the relationship between
+# the response Y and predictor vector X is assumed to be
+# Prob(Y = 1|X) = exp(W^T * X + e)/(1+exp(W^T * X + e))
+# where e is the random Gaussian noise added to the response.
+#
+# Parameters:  col_number -- Integer, number of predictors
+#              row_number -- Integer, number of training data samples
+#              max_w_value -- maximum weight/bias value allowed
+#              min_w_value -- minimum weight/bias value allowed
+#              max_p_value -- maximum predictor value allowed
+#              min_p_value -- minimum predictor value allowed
+#              noise_std -- noise standard deviation that is used to generate random noise
+#
+# Returns:     data frame containing the predictors and response as the last column.  The
+#              response in this case is integer starting from 0 to class_number-1
+#----------------------------------------------------------------------
+genBinaryData <- function(col_number, row_number, max_w_value, min_w_value, max_p_value, min_p_value, noise_std) {
+  data = matrix(runif(col_number*row_number, min_p_value, max_p_value), row_number, col_number)
+  weight = matrix(runif(col_number, min_w_value, max_w_value), col_number, 1)  # generate random weight
+  noise = matrix(rnorm(row_number, mean=0, sd=noise_std), row_number, 1)        # generate random noise
+  bias = matrix(rep(runif(1, min_w_value, max_w_value), row_number), row_number, 1)   # random bias
+
+  temp = exp(data %*% weight + bias + noise)   # form the response
+  prob1 = temp / (1+temp)   # form probability of y=1
+
+  # calculate response as class with maximum probability
+  response = matrix(0, row_number, 1)
+  response[prob1>0.5] = 1
+
+  training_data = as.data.frame(cbind(data, response))  # generate data frame from predictor and response
+
+  return(training_data)
+}
+
+#----------------------------------------------------------------------
+# hyperSpaceDimension calculate the possible number of gridsearch model
+# that should be built based on the current hyper-space parameters specified.
+# However, if your model contains bad parameter values, the actual number of
+# models that can be built will be less.  You should take care of that yourself.
+# Hence, this function will give you an upper bound of the actual model number.
+#
+# Parameters:  hyper_parameters -- Integer, number of .
+#
+# Returns:     integer representing the upper bound on number of grid search
+# models that can be generated
+#----------------------------------------------------------------------
+hyperSpaceDimension <- function(hyper_parameters) {
+  num_param = length(hyper_parameters)
+  total_dim = 1
+
+  for (index in 1:num_param) {
+    total_dim = total_dim * length(hyper_parameters[[index]])
+  }
+
+  return(total_dim)
+}
+
+#----------------------------------------------------------------------
+# This function given a grid_id list built by gridsearch will grab the model and
+# go into the model and calculate the total amount of
+# time it took to actually build all the models in second
+#
+# :param model_list: list of model built by gridsearch, cartesian or randomized
+# :return: total_time_sec: total number of time in seconds in building all the models
+#
+# Parameters:  model_ids: list of model ids from which we can grab the actual model info
+#
+# Returns:     total_time_sec: total number of time in seconds in building all the models
+#----------------------------------------------------------------------
+find_grid_runtime <- function(model_ids) {
+  total_run_time = 0
+
+  all_models = lapply(model_ids, function(id) {model = h2o.getModel(id)})
+
+  for (model in all_models) {   # run_time is in ms
+    total_run_time = total_run_time + model@model$run_time
+
+    # get run time of cross-validation
+    for (xv_model in model@model$cross_validation_models) {
+      temp_model = h2o.getModel(xv_model$name)
+      total_run_time = total_run_time + temp_model@model$run_time
+    }
+  }
+
+  return(total_run_time/1000.0)
+}
+
+#----------------------------------------------------------------------
+# runMetricStop run the randomized gridsearch with values specified in the function argument lists and
+# return true if the test passed or false if the test failed.  The metric stopping condition will be manually
+# calculated and compare to the results returned by Java.
+#
+# Parameters:  predictor_names -- list of structures that contains all hyper-parameter specifications
+#              response_name -- Integer, denoting how to generate model parameter value
+#              train_data
+#              family -- string, denoting family for GLM algo 'binomial' or 'gaussian'
+#              nfolds -- integer, number of folds for CV
+#              hyper_parameters -- equivalent to Python dict containing hyper-parameters for gridsearch
+#              search_criteria -- equivalent to Python dict representing parameters passed to randomized gridsearch
+#              is_decreasing -- boolean: true if metric is optimized by decreasing and vice versa
+#              possible_model_number -- integer, possible number of grid search model built with currenty hyper-parameter
+#
+# Returns:     boolean representing test success/failure
+#----------------------------------------------------------------------
+runGLMMetricStop <- function(predictor_names, response_name, train_data, family, nfolds, hyper_parameters,
+                             search_criteria, is_decreasing, possible_model_number, grid_name) {
+
+  # start grid search
+  glm_grid1 = h2o.grid("glm", grid_id=grid_name, x=predictor_names, y=response_name, training_frame=train_data,
+                       family=family, nfolds=nfolds, hyper_params=hyper_parameters, search_criteria=search_criteria)
+
+  tolerance = search_criteria[["stopping_tolerance"]]
+  stop_round = search_criteria[["stopping_rounds"]]
+  num_models_built = length(glm_grid1@model_ids)
+
+  min_list_len = 2*stop_round
+  metric_list = c()
+  stop_now = FALSE
+
+  # sort model_ids built by time, oldest one first
+  sorted_model_metrics = sort_model_metrics_by_time(glm_grid1@model_ids, search_criteria[["stopping_metric"]])
+
+  for (metric_value in sorted_model_metrics) {
+    metric_list = c(metric_list, metric_value)
+
+    if (length(metric_list) > min_list_len) {   # start processing when you have enough models
+      stop_now = evaluate_early_stopping(metric_list, stop_round, tolerance, is_decreasing)
+    }
+
+    if (stop_now) {
+      if (length(metric_list) < num_models_built) {
+        
+        Log.info("number of models built by gridsearch: ")
+        print(num_models_built)
+        Log.info("number of models built proposed by stopping metrics: ")
+        print(length(metric_list))
+        
+        return(FALSE)
+      } else {
+        return(TRUE)
+      }
+    } 
+  }
+
+  if (length(metric_list) == possible_model_number) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
+#----------------------------------------------------------------------
+# evaluate_early_stopping mimics the early stopping function as implemented in ScoreKeeper.java.
+# Please see the Java file comment to see the explanation of how the early stopping works.
+#
+# Parameters: metric_list: list containing the optimization metric under consideration for gridsearch model
+#             stop_round:  integer, determine averaging length
+#             tolerance:   real, tolerance to see if the grid search model has improved enough to stop
+#             is_decreasing:    bool: True if metric is optimized as it gets smaller and vice versa
+#
+# Returns:    bool indicating if we should stop early and sorted metric_list
+#----------------------------------------------------------------------
+evaluate_early_stopping <- function(metric_list, stop_round, tolerance, is_decreasing) {
+
+  metric_len = length(metric_list)
+  metric_list = sort(metric_list, decreasing=!(is_decreasing))
+  
+  start_len = 2*stop_round
+  
+  bestInLastK = mean(metric_list[1:stop_round])
+  lastBeforeK = mean(metric_list[(stop_round+1):start_len])
+
+  if (!(sign(bestInLastK)) == sign(lastBeforeK))
+    return(FALSE)
+  
+  ratio = bestInLastK/lastBeforeK
+  
+  if (is.nan(ratio))
+    return(FALSE)
+  
+  if (is_decreasing)
+    return(!(ratio < (1-tolerance)))
+  else
+    return(!(ratio > (1+tolerance)))
+}
+
+#----------------------------------------------------------------------
+# sort_model_metrics_by_time will sort the model by time.  The oldest model will come first.
+# Next, it will build a list containing the metrics of the oldest model first followed by
+# later model metrics.
+#
+# Parameters:  model_ids -- list of string containing model id which we can get a model out of
+#              metric_name -- string, denoting the metric's name that we are optimizing over.
+#
+# Returns:     metric_list : list of metrics value sorted by time, oldest metric will come first
+#----------------------------------------------------------------------
+sort_model_metrics_by_time <- function(model_ids, metric_name) {
+  all_models = lapply(model_ids, function(id) {model = h2o.getModel(id)})
+  sorted_metrics = rep(0, length(model_ids))
+  m_index = 1
+
+  for (model_id in model_ids) {
+    # find id of the model, starting from 0
+    temp_list = strsplit(model_id, '_')[[1]]
+    index = as.integer(temp_list[length(temp_list)])
+    the_model = all_models[m_index][[1]]
+    m_index = m_index + 1
+    # get the metric value and put it in right place
+    sorted_metrics[index+1] = the_model@model$cross_validation_metrics@metrics[[metric_name]]
+  }
+
+  return(sorted_metrics)
+}
+
+#----------------------------------------------------------------------
+# summarize_failures will generate a failure message describing what tests for the
+# randomized grid search has failed.  There are four tests conducted for randomized
+# grid search.  A test_failed_array is passed as argument.  A failed test will have
+# a value of 1.
+#
+# Parameters:  test_failed_array -- list of integer denoting if a test fail or pass.
+#
+# Returns:     failure_message : text describing failure messages
+#----------------------------------------------------------------------
+summarize_failures <- function(test_failed_array) {
+  failure_message = ""
+  if (test_failed_array[1] == 1)
+    failure_message = "test 1 failed"
+
+  if (test_failed_array[2] == 1)
+    failure_message = paste(failure_message, "test 2 test max_models stopping condition failed", sep = ", ")
+
+  if (test_failed_array[3] == 1)
+    failure_message = paste(failure_message, "test 3 test max_runtime_secs stopping condition failed", sep = ", ")
+
+  if (test_failed_array[4] == 1)
+    failure_message = paste(failure_message, "test 4 test decreasing stopping metric failed", sep = ", ")
+
+  if (test_failed_array[5] == 1)
+    failure_message = paste(failure_message, "test 5 test increasing stopping metric failed", sep = ", ")
+
+  return(failure_message)
+}

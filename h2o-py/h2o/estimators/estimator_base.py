@@ -6,8 +6,10 @@ from ..model.dim_reduction import H2ODimReductionModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
-from ..h2o import H2OConnection, H2OJob, H2OFrame
 import h2o
+from h2o.connection import H2OConnection
+from h2o.job import H2OJob
+from h2o.frame import H2OFrame
 import inspect
 import warnings
 import types
@@ -41,18 +43,24 @@ class H2OEstimator(ModelBase):
     ----------
       x : list
         A list of column names or indices indicating the predictor columns.
+
       y : str
         An index or a column name indicating the response column.
+
       training_frame : H2OFrame
         The H2OFrame having the columns indicated by x and y (as well as any
         additional columns specified by fold, offset, and weights).
+
       offset_column : str, optional
         The name or index of the column in training_frame that holds the offsets.
+
       fold_column : str, optional
         The name or index of the column in training_frame that holds the per-row fold
         assignments.
+
       weights_column : str, optional
         The name or index of the column in training_frame that holds the per-row weights.
+
       validation_frame : H2OFrame, optional
         H2OFrame with validation data to be scored on while training.
     """
@@ -77,25 +85,31 @@ class H2OEstimator(ModelBase):
 
     Parameters
     ----------
+      x : list
+        A list of column names or indices indicating the predictor columns.
 
-    x : list
-      A list of column names or indices indicating the predictor columns.
-    y : str
-      An index or a column name indicating the response column.
-    training_frame : H2OFrame
-      The H2OFrame having the columns indicated by x and y (as well as any
-      additional columns specified by fold, offset, and weights).
-    offset_column : str, optional
-      The name or index of the column in training_frame that holds the offsets.
-    fold_column : str, optional
-      The name or index of the column in training_frame that holds the per-row fold
-      assignments.
-    weights_column : str, optional
-      The name or index of the column in training_frame that holds the per-row weights.
-    validation_frame : H2OFrame, optional
-      H2OFrame with validation data to be scored on while training.
-    max_runtime_secs : float
-      Maximum allowed runtime in seconds for model training. Use 0 to disable.
+      y : str
+        An index or a column name indicating the response column.
+
+      training_frame : H2OFrame
+        The H2OFrame having the columns indicated by x and y (as well as any
+        additional columns specified by fold, offset, and weights).
+
+      offset_column : str, optional
+        The name or index of the column in training_frame that holds the offsets.
+
+      fold_column : str, optional
+        The name or index of the column in training_frame that holds the per-row fold
+        assignments.
+
+      weights_column : str, optional
+        The name or index of the column in training_frame that holds the per-row weights.
+
+      validation_frame : H2OFrame, optional
+        H2OFrame with validation data to be scored on while training.
+
+      max_runtime_secs : float
+        Maximum allowed runtime in seconds for model training. Use 0 to disable.
     """
     algo_params = locals()
     parms = self._parms.copy()
@@ -138,7 +152,8 @@ class H2OEstimator(ModelBase):
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
-    kwargs = dict([(k, (kwargs[k]).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
+    kwargs["interactions"] = None if ("interactions" not in kwargs or kwargs["interactions"] is None) else [h2o.h2o._quoted(col) for col in kwargs["interactions"]]
+    kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs])  # gruesome one-liner
     algo = self._compute_algo()
 
     model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))
@@ -151,6 +166,15 @@ class H2OEstimator(ModelBase):
     if '_rest_version' in list(kwargs.keys()): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
     else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
     self._resolve_model(model.dest_key,model_json)
+
+  @staticmethod
+  def _keyify_if_H2OFrame(item):
+    if isinstance(item, H2OFrame):
+      return item.frame_id
+    elif isinstance(item, list) and all(i is None or isinstance(i, H2OFrame) for i in item):
+      return [h2o.h2o._quoted(i) if i is None else h2o.h2o._quoted(i.frame_id) for i in item]
+    else:
+      return item
 
   def _resolve_model(self, model_id, model_json):
     metrics_class, model_class = H2OEstimator._metrics_class(model_json)
@@ -207,8 +231,10 @@ class H2OEstimator(ModelBase):
     ----------
       X : H2OFrame
         An H2OFrame consisting of the predictor variables.
+
       y : H2OFrame, optional
         An H2OFrame consisting of the response variable.
+
       params : optional
         Extra arguments.
 

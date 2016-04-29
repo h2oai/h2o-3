@@ -62,6 +62,45 @@ def weights_and_biases():
   assert b3c == 1, "wrong dimensionality! expected {0}, but got {1}.".format(1, b3c)
   assert b3r == 7, "wrong dimensionality! expected {0}, but got {1}.".format(7, b3r)
 
+
+  df = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
+  dl1 = H2ODeepLearningEstimator(hidden=[10,10], export_weights_and_biases=True)
+  dl1.train(x=list(range(4)), y=4, training_frame=df)
+  p1 = dl1.predict(df)
+  ll1 = dl1.model_performance(df).logloss()
+  print(ll1)
+
+  ## get weights and biases
+  w1 = dl1.weights(0)
+  w2 = dl1.weights(1)
+  w3 = dl1.weights(2)
+  b1 = dl1.biases(0)
+  b2 = dl1.biases(1)
+  b3 = dl1.biases(2)
+
+  ## make a model from given weights/biases
+  dl2 = H2ODeepLearningEstimator(hidden=[10,10], initial_weights=[w1, w2, w3], initial_biases=[b1, b2, b3], epochs=0)
+  dl2.train(x=list(range(4)), y=4, training_frame=df)
+  p2 = dl2.predict(df)
+  ll2 = dl2.model_performance(df).logloss()
+  print(ll2)
+
+  # h2o.download_pojo(dl2) ## fully functional pojo
+
+  ## check consistency
+  assert abs(p1[:,1:4]-p2[:,1:4]).max() < 1e-6
+  assert abs(ll2 - ll1) < 1e-6
+
+  ## make another model with partially set weights/biases
+  dl3 = H2ODeepLearningEstimator(hidden=[10,10], initial_weights=[w1, None, w3], initial_biases=[b1, b2, None], epochs=10)
+  dl3.train(x=list(range(4)), y=4, training_frame=df)
+  ll3 = dl3.model_performance(df).logloss()
+
+  ## make another model with partially set user-modified weights/biases
+  dl4 = H2ODeepLearningEstimator(hidden=[10,10], initial_weights=[w1*1.1,w2*0.9,w3.sqrt()], initial_biases=[b1, b2, None], epochs=10)
+  dl4.train(x=list(range(4)), y=4, training_frame=df)
+  ll4 = dl4.model_performance(df).logloss()
+
 if __name__ == "__main__":
   pyunit_utils.standalone_test(weights_and_biases)
 else:

@@ -77,4 +77,40 @@ public class C0DChunk extends Chunk {
     for (int i = 0; i < _len; ++i) arr[i] = i;
     return _len;
   }
+  @Override public int asSparseDoubles(double [] vals, int [] ids, double NA){
+    if(_con == 0) return 0;
+    double con = Double.isNaN(_con)?NA:_con;
+    for(int i = 0; i < _len; ++i) {
+      vals[i] = con;
+      ids[i] = i;
+    }
+    return _len;
+  }
+
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
+    double con = Double.isNaN(_con)?NA:_con;
+    for(int i = from; i < to; ++i)
+      vals[i-from] = con;
+    return vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids) vals[j++] = _con;
+    return vals;
+  }
+
 }

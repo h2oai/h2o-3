@@ -23,6 +23,8 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
   private int[] _int_cols;
   private int[] _real_cols;
   private int[] _bin_cols;
+  private int[] _time_cols;
+  private int[] _string_cols;
   private String[][] _domain;
   private Frame _out;
 
@@ -31,22 +33,28 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
     int[] idx = _createFrame.has_response ? ArrayUtils.seq(1, _createFrame.cols + 1) : ArrayUtils.seq(0, _createFrame.cols);
     int[] shuffled_idx = new int[idx.length];
-    ArrayUtils.shuffleArray(idx, idx.length, shuffled_idx, _createFrame.seed, 0);
+    ArrayUtils.shuffleArray(idx, idx.length, shuffled_idx, _createFrame.seed_for_column_types, 0);
 
     int catcols = (int)(_createFrame.categorical_fraction * _createFrame.cols);
     int intcols = (int)(_createFrame.integer_fraction * _createFrame.cols);
     int bincols = (int)(_createFrame.binary_fraction * _createFrame.cols);
-    int realcols = _createFrame.cols - catcols - intcols - bincols;
+    int timecols = (int)(_createFrame.time_fraction * _createFrame.cols);
+    int stringcols = (int)(_createFrame.string_fraction * _createFrame.cols);
+    int realcols = _createFrame.cols - catcols - intcols - bincols - timecols - stringcols;
 
     assert(catcols >= 0);
     assert(intcols >= 0);
     assert(bincols >= 0);
     assert(realcols >= 0);
+    assert(timecols >= 0);
+    assert(stringcols >= 0);
 
-    _cat_cols  = Arrays.copyOfRange(shuffled_idx, 0,                        catcols);
-    _int_cols  = Arrays.copyOfRange(shuffled_idx, catcols,                  catcols+intcols);
-    _real_cols = Arrays.copyOfRange(shuffled_idx, catcols+intcols,          catcols+intcols+realcols);
-    _bin_cols  = Arrays.copyOfRange(shuffled_idx, catcols+intcols+realcols, catcols+intcols+realcols+bincols);
+    _cat_cols  = Arrays.copyOfRange(shuffled_idx, 0,                                 catcols);
+    _int_cols  = Arrays.copyOfRange(shuffled_idx, catcols,                           catcols+intcols);
+    _real_cols = Arrays.copyOfRange(shuffled_idx, catcols+intcols,                   catcols+intcols+realcols);
+    _bin_cols  = Arrays.copyOfRange(shuffled_idx, catcols+intcols+realcols,          catcols+intcols+realcols+bincols);
+    _time_cols  = Arrays.copyOfRange(shuffled_idx, catcols+intcols+realcols+bincols, catcols+intcols+realcols+bincols+timecols);
+    _string_cols = Arrays.copyOfRange(shuffled_idx, catcols+intcols+realcols+bincols+timecols, catcols+intcols+realcols+bincols+timecols+stringcols);
 
     // create domains for categorical variables
     _domain = new String[_createFrame.cols + (_createFrame.has_response ? 1 : 0)][];
@@ -76,8 +84,8 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     final int rows_per_chunk = FileVec.calcOptimalChunkSize(
             (int)((float)(catcols+intcols)*_createFrame.rows*4 //4 bytes for categoricals and integers
                  +(float)bincols          *_createFrame.rows*1*_createFrame.binary_ones_fraction //sparse uses a fraction of one byte (or even less)
-                 +(float)realcols         *_createFrame.rows*8), //8 bytes for real values
-            _createFrame.cols, _createFrame.cols*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false);
+                 +(float)(realcols+timecols+stringcols) *_createFrame.rows*8), //8 bytes for real and time (long) values
+            _createFrame.cols, _createFrame.cols*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false, true);
     _v = makeCon(_createFrame.value, _createFrame.rows, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
   }
 
@@ -87,8 +95,17 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     int totcols = _createFrame.cols + (_createFrame.has_response ? 1 : 0);
     Vec[] vecs = new Vec[totcols];
     if(_createFrame.randomize) {
-      for (int i = 0; i < vecs.length; ++i)
-        vecs[i] = _v.makeZero(_domain[i]);
+      byte[] types = new byte[vecs.length];
+      for (int i : _cat_cols) types[i] = Vec.T_CAT;
+      for (int i : _bin_cols) types[i] = Vec.T_NUM;
+      for (int i : _int_cols) types[i] = Vec.T_NUM;
+      for (int i : _real_cols) types[i] = Vec.T_NUM;
+      for (int i : _time_cols) types[i] = Vec.T_TIME;
+      for (int i : _string_cols) types[i] = Vec.T_STR;
+      if (_createFrame.has_response) {
+        types[0] = _createFrame.response_factors == 1 ? Vec.T_NUM : Vec.T_CAT;
+      }
+      vecs = _v.makeZeros(totcols, _domain, types);
     } else {
       for (int i = 0; i < vecs.length; ++i)
         vecs[i] = _v.makeCon(_createFrame.value);
@@ -109,7 +126,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     _out.delete_and_lock(_createFrame._job._key);
 
     // fill with random values
-    new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols).doAll(_out);
+    new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols, _time_cols, _string_cols).doAll(_out);
 
     //overwrite a fraction with N/A
     FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_createFrame._job._result, _createFrame.seed, _createFrame.missing_fraction);
@@ -128,13 +145,17 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     final private int[] _int_cols;
     final private int[] _real_cols;
     final private int[] _bin_cols;
+    final private int[] _time_cols;
+    final private int[] _string_cols;
 
-    public FrameRandomizer(CreateFrame createFrame, int[] cat_cols, int[] int_cols, int[] real_cols, int[] bin_cols){
+    public FrameRandomizer(CreateFrame createFrame, int[] cat_cols, int[] int_cols, int[] real_cols, int[] bin_cols, int[] time_cols, int[] string_cols){
       _createFrame = createFrame;
       _cat_cols = cat_cols;
       _int_cols = int_cols;
       _real_cols = real_cols;
       _bin_cols = bin_cols;
+      _time_cols = time_cols;
+      _string_cols = string_cols;
     }
 
     //row+col-dependent RNG for reproducibility with different number of VMs, chunks, etc.
@@ -187,6 +208,23 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
         for (int r = 0; r < cs[c]._len; r++) {
           setSeed(rng, c, cs[c]._start + r);
           cs[c].set(r, rng.nextFloat() > _createFrame.binary_ones_fraction ? 0 : 1);
+        }
+      }
+      job.update(1);
+      for (int c : _time_cols) {
+        for (int r = 0; r < cs[c]._len; r++) {
+          setSeed(rng, c, cs[c]._start + r);
+          cs[c].set(r, Math.abs(rng.nextLong() % (50L*365*24*3600*1000))); //make a random moment in time between 1970 and 2020
+        }
+      }
+      job.update(1);
+      byte[] by = new byte[8];
+      for (int c : _string_cols) {
+        for (int r = 0; r < cs[c]._len; r++) {
+          setSeed(rng, c, cs[c]._start + r);
+          for (int i=0;i<by.length;++i)
+            by[i] = (byte)(65+rng.nextInt(25));
+          cs[c].set(r, new String(by));
         }
       }
       job.update(1);

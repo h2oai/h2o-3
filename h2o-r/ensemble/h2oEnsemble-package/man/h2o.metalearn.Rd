@@ -97,8 +97,7 @@ Erin LeDell \email{erin@h2o.ai}
     
 # An example of binary classification on a local machine using h2o.ensemble
 
-library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
+library(h2oEnsemble)  # Requires version >=0.1.7 of h2oEnsemble
 localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
@@ -131,33 +130,101 @@ fit <- h2o.ensemble(x = x, y = y,
                     metalearner = metalearner,
                     cvControl = list(V = 10, shuffle = TRUE))
 
+# Compute test set performance:
+perf <- h2o.ensemble_performance(fit, newdata = test)
+print(perf, metric = "AUC")
 
-# Generate predictions on the test set
-pp <- predict(fit, test)
-predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(test[,y])[,1]
-
-# Ensemble test AUC 
-cvAUC::AUC(predictions = predictions, labels = labels)
-# 0.787226
+# Base learner performance, sorted by specified metric:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786960998427388
 
 
 # Now let's re-train the metalearner fit to see if we get better performance.
-# Previously, we used a GLM metalearner, and now we will try a GBM.
+# Previously, we used a GLM metalearner, and now we will try a non-negative GLM.
+
+h2o.glm_nn <- function(..., non_negative = TRUE) h2o.glm.wrapper(..., non_negative = non_negative)
+newfit <- h2o.metalearn(fit, metalearner = "h2o.glm_nn")
+
+# Compute test set performance:
+newperf <- h2o.ensemble_performance(newfit, newdata = test)
+print(newperf, metric = "AUC") 
+
+# Base learner performance, sorted by specified metric:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786998403256231
+
+# Ok, so the non-negative restriction improved the results, but not by much in this case.
+
+
+# Next we will try a GBM (defined above) for a metalearner.
 newfit <- h2o.metalearn(fit, metalearner = "h2o.gbm.1")
 
-# Generate predictions on the test set
-pp <- predict(newfit, test)
-predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(test[,y])[,1]
+# Compute test set performance:
+newperf <- h2o.ensemble_performance(newfit, newdata = test)
+print(newperf, metric = "AUC") 
 
-# Ensemble test AUC 
-cvAUC::AUC(predictions = predictions, labels = labels)
-# 0.7777479  
+# Base learner performance, sorted by specified metric:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.780514980030648
+
 
 # We see that on this dataset & base learner combination,
-# that an ensemble with a GLM metalearner performs better, 
+# that an ensemble with a GLM metalearner actually performs better, 
 # in terms of test set AUC, than an ensemble with a GBM metalearner.
+# Typically tree-based methods don't work as well as metalearners.
+
+
+# Now let's re-train the metalearner again a Deep Neural Net.
+newfit <- h2o.metalearn(fit, metalearner = "h2o.deeplearning.wrapper")
+
+# Compute test set performance:
+newperf <- h2o.ensemble_performance(newfit, newdata = test)
+print(newperf, metric = "AUC") 
+
+
+# Base learner performance, sorted by specified metric:
+#              learner       AUC
+# 1    h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.1 0.7785505
+# 3          h2o.gbm.1 0.7803885
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.786774296045143
+
+# Here we have performance similar to a GLM.  
+# It's a good idea to always try at least a GLM and DNN.
+
 
 }
 }

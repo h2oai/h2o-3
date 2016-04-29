@@ -399,7 +399,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                         } catch (H2OModelBuilderIllegalArgumentException | IllegalArgumentException ex) {
                                           throw H2O.fail("should not get here");
                                         } catch (RuntimeException t) {
-                                          Assert.assertTrue(t.getMessage().contains("unstable"));
+                                          Assert.assertTrue(t.getMessage().contains("unstable") || (t.getCause() != null && t.getCause().getMessage().contains("unstable")));
                                         } catch (Throwable t) {
                                           t.printStackTrace();
                                           throw new RuntimeException(t);

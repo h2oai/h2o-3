@@ -25,6 +25,18 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   /** User description */
   public final String _description;
 
+  // whether the _result key is ready for view
+  private boolean _ready_for_view = true;
+
+  private String [] _warns;
+
+  public void setWarnings(final String [] warns){
+    new JAtomic() {
+      @Override boolean abort(Job job) { return job._stop_requested; }
+      @Override void update(Job job) { job._warns = warns; }
+    }.apply(this);
+  }
+
   /** Create a Job
    *  @param key  Key of the final result
    *  @param clz_of_T String class of the Keyed result
@@ -73,6 +85,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if( running() ) return System.currentTimeMillis() - _start_time;
     return _end_time - _start_time; // Stopped
   }
+
+  public boolean readyForView() { return _ready_for_view; }
+  public void setReadyForView(boolean ready) { _ready_for_view = ready; }
 
   /** Jobs may be requested to Stop.  Each individual job will respond to this
    *  on a best-effort basis, and make some time to stop.  Stop really means
@@ -127,6 +142,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   // --------------
   /** A system key for global list of Job keys. */
   public static final Key<Job> LIST = Key.make(" JobList", (byte) 0, Key.BUILT_IN_KEY, false);
+
+  public String[] warns() {return _warns;}
+
   private static class JobList extends Keyed {
     Key<Job>[] _jobs;
     JobList() { super(LIST); _jobs = new Key[0]; }
@@ -263,7 +281,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
 
   static public boolean isCancelledException(Throwable ex) {
-    return false; // return ex instanceof JobCancelledException || ex.getCause() != null && ex.getCause() instanceof JobCancelledException;
+    return ex instanceof JobCancelledException || ex.getCause() != null && ex.getCause() instanceof JobCancelledException;
   }
 
   private static class Barrier1OnCom extends JAtomic {

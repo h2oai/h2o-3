@@ -121,15 +121,14 @@ Erin LeDell \email{erin@h2o.ai}
 
 
 \seealso{
-\code{\link[SuperLearner:SuperLearner]{SuperLearner}}, \code{\link[subsemble:subsemble]{subsemble}}
+\code{\link[h2oEnsemble:h2o.ensemble_performance]{h2o.ensemble_performance}}, \code{\link[SuperLearner:SuperLearner]{SuperLearner}}, \code{\link[subsemble:subsemble]{subsemble}}
 }
 \examples{
 \dontrun{
     
 # An example of binary classification on a local machine using h2o.ensemble
 
-library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
+library(h2oEnsemble)  # Requires version >=0.1.7 of h2oEnsemble
 localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
 
 
@@ -161,33 +160,74 @@ fit <- h2o.ensemble(x = x, y = y,
                     cvControl = list(V = 5, shuffle = TRUE))
 
 
-# Generate predictions on the test set
-pp <- predict(fit, test)
-predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
-labels <- as.data.frame(test[,y])[,1]
+# Compute test set performance:
+perf <- h2o.ensemble_performance(fit, newdata = test)
 
+# The "perf" object has a print method, so we can print results (for the default metric) by simply typing: perf
+perf  #prints the following
+# Base learner performance, sorted by specified metric:
+#                   learner       AUC
+# 1          h2o.glm.wrapper 0.6871334
+# 4 h2o.deeplearning.wrapper 0.7261466
+# 2 h2o.randomForest.wrapper 0.7655972
+# 3          h2o.gbm.wrapper 0.7817096
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (AUC): 0.784785565758091
 
-# Ensemble test AUC 
-cvAUC::AUC(predictions = predictions, labels = labels)
-# 0.7888723
+# To print the results for a particular metric, like MSE, do the following:
+print(perf, metric = "MSE")
 
+# Base learner performance, sorted by specified metric:
+#                    learner       MSE
+# 1          h2o.glm.wrapper 0.2216862
+# 4 h2o.deeplearning.wrapper 0.2182509
+# 2 h2o.randomForest.wrapper 0.1981485
+# 3          h2o.gbm.wrapper 0.1900497
+# 
+# 
+# H2O Ensemble Performance on <newdata>:
+# ----------------
+# Family: binomial
+# 
+# Ensemble performance (MSE): 0.189215219642971
 
-# Base learner test AUC (for comparison)
-L <- length(learner)
-auc <- sapply(seq(L), function(l) cvAUC::AUC(predictions = as.data.frame(pp$basepred)[,l], labels = labels)) 
-data.frame(learner, auc)
-#                   learner       auc
-#1          h2o.glm.wrapper 0.6871288
-#2 h2o.randomForest.wrapper 0.7711654
-#3          h2o.gbm.wrapper 0.7817075
-#4 h2o.deeplearning.wrapper 0.7425813
+# By calculating the base learner test set metrics, we can compare the performance
+# of the ensemble to the top base learner - GBM is the top base learner, both by AUC and MSE.
 
 # Note that the ensemble results above are not reproducible since 
 # h2o.deeplearning is not reproducible when using multiple cores,
 # and we did not set a seed for h2o.randomForest.wrapper or h2o.gbm.wrapper.
 
-# Additional note: In a future version, performance metrics such as AUC
-# will be computed automatically, as in the other H2O algos.
+
+# To access results directly: 
+
+# Ensemble test set AUC
+perf$ensemble@metrics$AUC
+# [1] 0.7847856
+
+# Base learner test set AUC (for comparison)
+L <- length(learner)
+auc <- sapply(seq(L), function(l) perf$base[[l]]@metrics$AUC)
+data.frame(learner, auc)
+#                    learner       auc
+# 1          h2o.glm.wrapper 0.6871334
+# 2 h2o.randomForest.wrapper 0.7655972
+# 3          h2o.gbm.wrapper 0.7817096
+# 4 h2o.deeplearning.wrapper 0.7261466
+
+
+
+# If desired, you can generate predictions on the test set
+# This is useful if you need to calculate custom performance metrics in R (not provided by H2O)
+pp <- predict(fit, test)
+predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
+labels <- as.data.frame(test[,y])[,1]
+
 
 # Here is an example of how to generate a base learner library using custom base learners:
 h2o.randomForest.1 <- function(..., ntrees = 1000, nbins = 100, seed = 1) {

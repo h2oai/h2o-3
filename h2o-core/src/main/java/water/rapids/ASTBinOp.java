@@ -19,7 +19,8 @@ abstract class ASTBinOp extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"leftArg", "rightArg"}; }
   @Override int nargs() { return 1+2; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left,rite);
@@ -33,9 +34,13 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.NUM:  return new ValNum( op (dlf,rite.getNum()));
       case Val.NUMS: return new ValNum(op(dlf,rite.getNums()[0]));
       case Val.FRM:  return scalar_op_frame(dlf,rite.getFrame());
+      case Val.ROW:
+        double[] lft = new double[rite.getRow().length];
+        Arrays.fill(lft,dlf);
+        return row_op_row(lft,rite.getRow(),((ValRow)rite).getNames());
       case Val.STR:  throw H2O.unimpl();
       case Val.STRS: throw H2O.unimpl();
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
     case Val.NUMS:
@@ -44,9 +49,13 @@ abstract class ASTBinOp extends ASTPrim {
         case Val.NUM:  return new ValNum( op (ddlf,rite.getNum()));
         case Val.NUMS: return new ValNum(op(ddlf,rite.getNums()[0]));
         case Val.FRM:  return scalar_op_frame(ddlf,rite.getFrame());
+        case Val.ROW:
+          double[] lft = new double[rite.getRow().length];
+          Arrays.fill(lft,ddlf);
+          return row_op_row(lft,rite.getRow(),((ValRow)rite).getNames());
         case Val.STR:  throw H2O.unimpl();
         case Val.STRS: throw H2O.unimpl();
-        default: throw H2O.fail();
+        default: throw H2O.unimpl();
       }
 
     case Val.FRM:
@@ -57,7 +66,7 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.STR:  return frame_op_scalar(flf, rite.getStr());
       case Val.STRS: return frame_op_scalar(flf,rite.getStrs()[0]);
       case Val.FRM:  return frame_op_frame (flf,rite.getFrame());
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
     case Val.STR:
@@ -68,7 +77,7 @@ abstract class ASTBinOp extends ASTPrim {
       case Val.STR:  throw H2O.unimpl();
       case Val.STRS: throw H2O.unimpl();
       case Val.FRM:  return scalar_op_frame(slf, rite.getFrame());
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
     case Val.STRS:
@@ -79,7 +88,7 @@ abstract class ASTBinOp extends ASTPrim {
         case Val.STR:  throw H2O.unimpl();
         case Val.STRS: throw H2O.unimpl();
         case Val.FRM:  return scalar_op_frame(sslf,rite.getFrame());
-        default: throw H2O.fail();
+        default: throw H2O.unimpl();
       }
 
     case Val.ROW:
@@ -91,10 +100,10 @@ abstract class ASTBinOp extends ASTPrim {
         return row_op_row(dslf,right,((ValRow)left).getNames());
       case Val.ROW:  return row_op_row(dslf,rite.getRow(),((ValRow)rite).getNames());
       case Val.FRM:  return row_op_row(dslf,rite.getRow(),rite.getFrame().names());
-      default: throw H2O.fail();
+      default: throw H2O.unimpl();
       }
 
-    default: throw H2O.fail();
+    default: throw H2O.unimpl();
     }
   }
 
@@ -426,7 +435,8 @@ class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op(
 // Logical-AND.  If the first arg is false, do not execute the 2nd arg.
 class ASTLAnd extends ASTBinOp {
   public String str() { return "&&"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is zero, just return the left
     if( left.isNum() ) {
@@ -446,7 +456,8 @@ class ASTLAnd extends ASTBinOp {
 // Logical-OR.  If the first arg is true, do not execute the 2nd arg.
 class ASTLOr extends ASTBinOp {
   public String str() { return "||"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is 1, just return the left
     if( left.isNum() ) {
@@ -483,7 +494,8 @@ class ASTIfElse extends ASTPrim {
   public String[] args() { return new String[]{"test","true","false"}; }
   @Override int nargs() { return 1+3; } // (ifelse test true false)
   public String str() { return "ifelse"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
 
     if( val.isNum() ) {         // Scalar test, scalar result
@@ -667,7 +679,8 @@ class ASTScale extends ASTPrim {
   @Override int nargs() { return 1+3; } // (scale x center scale)
   @Override
   public String str() { return "scale"; }
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 

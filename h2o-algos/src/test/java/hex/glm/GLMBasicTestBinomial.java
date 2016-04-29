@@ -569,6 +569,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           params._missing_values_handling = MissingValuesHandling.Skip;
           System.out.println("SOLVER = " + s);
           model = new GLM(params).trainModel().get();
+          params = (GLMParameters) params.clone();
           params._train = _prostateTrainUpsampled._key;
           params._weights_column = null;
           modelUpsampled = new GLM(params).trainModel().get();

@@ -33,6 +33,20 @@ public class CNAXDChunkTest extends TestUtil {
     Assert.assertEquals(extra, cc.at_abs(K), 0);
     Assert.assertFalse(cc.isNA(K));
     Assert.assertFalse(cc.isNA_abs(K));
+    double[] sparsevals = new double[cc.sparseLenNA()];
+    int[] sparseids = new int[cc.sparseLenNA()];
+    int N=cc.asSparseDoubles(sparsevals, sparseids);
+    assert(N==sparsevals.length);
+    for (int i = 0; i < sparsevals.length; ++i) {
+      if (cc.isNA(sparseids[i])) Assert.assertTrue(Double.isNaN(sparsevals[i]));
+      else Assert.assertTrue(cc.atd(sparseids[i])==sparsevals[i]);
+    }
+    double[] densevals = new double[cc.len()];
+    cc.getDoubles(densevals,0,cc.len());
+    for (int i = 0; i < densevals.length; ++i) {
+      if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
+      else Assert.assertTrue(cc.atd(i)==densevals[i]);
+    }
     
     nc = new NewChunk(null, 0);
     cc.inflate_impl(nc);

@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"iris.hex\", [0.2], [\"iris.hex_test\",\"iris.hex_0.80\"]"
+      "input": "splitFrame \"iris.hex\", [0.2], [\"iris.hex_test\",\"iris.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

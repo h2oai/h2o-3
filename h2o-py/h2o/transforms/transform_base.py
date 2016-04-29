@@ -1,8 +1,12 @@
 from future import standard_library
-standard_library.install_aliases()
+import os, sys
+try:
+  standard_library.install_aliases()
+except AttributeError:
+  if os.path.exists(os.path.join(sys.path[0], "test.py")):
+    print("File named `test` is conflicting with python module `test` used by the future library.")
 from builtins import object
 from ..frame import H2OFrame
-import urllib.request, urllib.parse, urllib.error
 from h2o import expr
 
 class TransformAttributeError(AttributeError):

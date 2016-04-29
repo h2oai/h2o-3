@@ -79,7 +79,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
       for(int col = 0; col < _output._ncats; col++) {
         if(Double.isNaN(data[col])) continue;   // Skip predictor in joint x_1,...,x_m if NA
         int plevel = (int)data[col];
-        double prob = plevel < _output._pcond_raw.length ? _output._pcond_raw[col][rlevel][plevel] :
+        double prob = plevel < _output._pcond_raw[col][rlevel].length ? _output._pcond_raw[col][rlevel][plevel] :
                 _parms._laplace / ((double)_output._rescnt[rlevel] + _parms._laplace * _output._domains[col].length);   // Laplace smoothing if predictor level unobserved in training set
         nums[rlevel] += Math.log(prob <= _parms._eps_prob ? _parms._min_prob : prob);   // log(p(x|y)) = \sum_{j = 1}^m p(x_j|y)
       }

@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"arrhythmia.hex\""
+      "input": "assist splitFrame, \"arrhythmia.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"arrhythmia.hex\", [0.3], [\"arrhythmia_test.hex_0.30\",\"arrhythmia_train.hex_0.70\"]"
+      "input": "splitFrame \"arrhythmia.hex\", [0.3], [\"arrhythmia_test.hex_0.30\",\"arrhythmia_train.hex_0.70\"], 123456"
     },
     {
       "type": "cs",

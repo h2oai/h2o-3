@@ -1130,7 +1130,7 @@ public class DeepLearningTest extends TestUtil {
         parms._autoencoder = ae;
         parms._reproducible = true;
         parms._train_samples_per_iteration = 10;
-        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10};
+        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
         parms._initial_weight_distribution = DeepLearningParameters.InitialWeightDistribution.Uniform;
         parms._initial_weight_scale = 1e20;
         parms._seed = 0xdecaf;
@@ -1601,6 +1601,114 @@ public class DeepLearningTest extends TestUtil {
       if (ae != null) ae.delete();
       if (dl1 != null) dl1.delete();
       if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test
+  public void testInitialWeightsAndBiases() {
+    Frame tfr = null;
+    DeepLearningModel dl1 = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+
+      // train DL model from scratch
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        parms._export_weights_and_biases = true;
+        dl1 = new DeepLearning(parms).trainModel().get();
+      }
+
+      // train DL model starting from weights/biases from first model
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        parms._initial_weights = dl1._output.weights;
+        parms._initial_biases = dl1._output.biases;
+        parms._epochs = 0;
+        dl2 = new DeepLearning(parms).trainModel().get();
+      }
+
+      Log.info("dl1  : MSE=" + dl1._output._training_metrics.mse());
+      Log.info("dl2  : MSE=" + dl2._output._training_metrics.mse());
+      Assert.assertTrue(Math.abs(dl1._output._training_metrics.mse() - dl2._output._training_metrics.mse()) < 1e-6);
+
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl1 != null) dl1.delete();
+      if (dl2 != null) dl2.delete();
+      for (Key f : dl1._output.weights) f.remove();
+      for (Key f : dl1._output.biases) f.remove();
+    }
+  }
+
+  @Test
+  public void testInitialWeightsAndBiasesPartial() {
+    Frame tfr = null;
+    DeepLearningModel dl1 = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+
+      // train DL model from scratch
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        parms._export_weights_and_biases = true;
+        dl1 = new DeepLearning(parms).trainModel().get();
+      }
+
+      // train DL model starting from weights/biases from first model
+      {
+        DeepLearningParameters parms = new DeepLearningParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._activation = DeepLearningParameters.Activation.Tanh;
+        parms._reproducible = true;
+        parms._hidden = new int[]{20, 20};
+        parms._seed = 0xdecad;
+        parms._initial_weights = dl1._output.weights;
+        parms._initial_biases = dl1._output.biases;
+        parms._initial_weights[1].remove();
+        parms._initial_weights[1] = null;
+        parms._initial_biases[0].remove();
+        parms._initial_biases[0] = null;
+        parms._epochs = 10;
+        dl2 = new DeepLearning(parms).trainModel().get();
+      }
+
+      Log.info("dl1  : MSE=" + dl1._output._training_metrics.mse());
+      Log.info("dl2  : MSE=" + dl2._output._training_metrics.mse());
+
+      // the second model is better since it got warm-started at least partially
+      Assert.assertTrue(dl1._output._training_metrics.mse() > dl2._output._training_metrics.mse());
+
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl1 != null) dl1.delete();
+      if (dl2 != null) dl2.delete();
+      for (Key f : dl1._output.weights) if (f!=null) f.remove();
+      for (Key f : dl1._output.biases) if (f!=null) f.remove();
     }
   }
 }

@@ -12,7 +12,7 @@ public class C16ChunkTest extends TestUtil {
     for (int l=0; l<2; ++l) {
       NewChunk nc = new NewChunk(null, 0);
 
-      long[] vals = new long[]{Long.MIN_VALUE, Long.MAX_VALUE-1, 1l, 12312421425l, 23523523423l, Long.MIN_VALUE+1, Long.MAX_VALUE-1, -823048234l, -123123l};
+      long[] vals = new long[]{Long.MIN_VALUE+1, Long.MAX_VALUE-1, 1l, 12312421425l, 23523523423l, Long.MIN_VALUE+1, Long.MAX_VALUE-1, -823048234l, -123123l};
       if (l==1) nc.addNA();
       for (long v : vals) nc.addUUID(v,v);
       nc.addNA();

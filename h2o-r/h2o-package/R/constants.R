@@ -40,6 +40,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "numeric",   scalar = FALSE, row.names = "float[]",      stringsAsFactors = FALSE),
                    data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key",          stringsAsFactors = FALSE),
                    data.frame(type = "H2OFrame",  scalar = TRUE,  row.names = "Key<Frame>",   stringsAsFactors = FALSE),
+                   data.frame(type = "list",      scalar = FALSE, row.names = "Key<Frame>[]", stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "Key<Key>",     stringsAsFactors = FALSE),
                    data.frame(type = "H2OModel",  scalar = TRUE,  row.names = "Key<Model>",   stringsAsFactors = FALSE),
                    data.frame(type = "numeric",   scalar = TRUE,  row.names = "int",          stringsAsFactors = FALSE),
@@ -68,6 +69,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' Parse Endpoints
 .h2o.__PARSE_SETUP    <- "ParseSetup"    # Sample Usage: ParseSetup?source_keys=["nfs://asdfsdf...", "nfs://..."]
 .h2o.__PARSE          <- "Parse"         # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME&parse_type=CSV&separator=44&number_columns=5&check_header=0&single_quotes=false&column_names=["C1",%20"C2",%20"C3",%20"C4",%20"C5"]
+.h2o.__PARSE_SVMLIGHT <- "ParseSVMLight" # Sample Usage: Parse?source_keys=["nfs://path/to/data"]&destination_frame=KEYNAME
 
 #' Inspect/Summary Endpoints
 .h2o.__FRAMES         <- "Frames"        # Frames/<key>    example: http://localhost:54321/3/Frames/meow.hex

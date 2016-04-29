@@ -59,14 +59,14 @@ public abstract class Parser extends Iced {
 
   protected final ParseSetup _setup;
   protected final Key<Job> _jobKey;
-  Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
+  protected Parser( ParseSetup setup, Key<Job> jobKey ) { _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;}
   protected int fileHasHeader(byte[] bits, ParseSetup ps) { return ParseSetup.NO_HEADER; }
 
   // Parse this one Chunk (in parallel with other Chunks)
-  abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
+  protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
   ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
-    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
+    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
@@ -82,7 +82,7 @@ public abstract class Parser extends Iced {
   // parse local chunks; distribute chunks later.
   ParseWriter streamParseZip( final InputStream is, final StreamParseWriter dout, InputStream bvs ) throws IOException {
     // All output into a fresh pile of NewChunks, one per column
-    if( !_setup._parse_type._parallelParseSupported ) throw H2O.unimpl();
+    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamData din = new StreamData(is);
     int cidx=0;
     StreamParseWriter nextChunk = dout;
@@ -110,18 +110,22 @@ public abstract class Parser extends Iced {
   /** Class implementing DataIn from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
-  private final static class StreamData implements ParseReader {
+  final static class StreamData implements ParseReader {
+    public static int bufSz = 64*1024;
     final transient InputStream _is;
-    private byte[] _bits0 = new byte[64*1024];
-    private byte[] _bits1 = new byte[64*1024];
+    private byte[] _bits0 = new byte[bufSz];
+    private byte[] _bits1 = new byte[bufSz];
     private int _cidx0=-1, _cidx1=-1; // Chunk #s
     private int _coff0=-1, _coff1=-1; // Last used byte in a chunk
     private StreamData(InputStream is){_is = is;}
+    long _gOff;
     @Override public byte[] getChunkData(int cidx) {
       if( cidx == _cidx0 ) return _bits0;
+      _gOff = _bits0.length;
       if( cidx == _cidx1 ) return _bits1;
       assert cidx==_cidx0+1 || cidx==_cidx1+1;
       byte[] bits = _cidx0<_cidx1 ? _bits0 : _bits1;
+      _gOff += bits.length;
       if( _cidx0<_cidx1 ) { _cidx0 = cidx; _coff0 = -1; }
       else                { _cidx1 = cidx; _coff1 = -1; }
       // Read as much as the buffer will hold
@@ -151,6 +155,11 @@ public abstract class Parser extends Iced {
     @Override public void setChunkDataStart(int cidx, int offset) { 
       if( _cidx0 == cidx ) _coff0 = offset;
       if( _cidx1 == cidx ) _coff1 = offset;
+    }
+
+    @Override
+    public long getGlobalByteOffset() {
+      return 0;
     }
   }
 }

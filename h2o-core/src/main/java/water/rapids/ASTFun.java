@@ -8,7 +8,7 @@ import java.util.ArrayList;
  *  Syntax: { ids... . expr }
  *  IDs are bound within expr
  */
-class ASTFun extends AST {
+public class ASTFun extends AST {
   final String[] _ids;          // Identifier names
   final AST _body;              // The function body
 
@@ -57,8 +57,7 @@ class ASTFun extends AST {
 
   // Function execution.  Just throw self on stack like a constant.  However,
   // capture the existing global scope.
-  @Override
-  public Val exec(Env env) { return new ValFun(new ASTFun(this,null,env._scope)); }
+  @Override public Val exec(Env env) { return new ValFun(new ASTFun(this,null,env._scope)); }
 
   // Expected argument count, plus self
   @Override int nargs() { return _ids.length; }
@@ -82,7 +81,8 @@ class ASTFun extends AST {
   // Apply this function: evaluate all arguments, push a lexical scope mapping
   // the IDs to the ARGs, then evaluate the body.  After execution pop the
   // lexical scope and return the results.
-  @Override Val apply( Env env, Env.StackHelp stk, AST asts[] ) {
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     // Evaluation all arguments
     Val[] args = new Val[asts.length];
     for( int i=1; i<asts.length; i++ )

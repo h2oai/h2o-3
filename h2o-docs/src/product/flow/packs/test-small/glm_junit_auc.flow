@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"auc2.hex\", [0.2], [\"auc_test.hex_0.20\",\"auc_train.hex_0.80\"]"
+      "input": "splitFrame \"auc2.hex\", [0.2], [\"auc_test.hex_0.20\",\"auc_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

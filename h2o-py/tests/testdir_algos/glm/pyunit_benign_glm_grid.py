@@ -2,10 +2,10 @@ from __future__ import print_function
 from builtins import range
 import sys
 sys.path.insert(1,"../../../")
+import h2o
 from h2o.grid.grid_search import H2OGridSearch
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
-import h2o
 from tests import pyunit_utils
 
 def benign_grid():

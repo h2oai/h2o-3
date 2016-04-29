@@ -3,7 +3,9 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -1094,7 +1096,7 @@ public class Frame extends Lockable<Frame> {
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
         coltypes[i] = vec.isInt() ? "long" : "double"; 
@@ -1217,26 +1219,62 @@ public class Frame extends Lockable<Frame> {
   /**
    *  Last column is a bit vec indicating whether or not to take the row.
    */
-  private static class DeepSelect extends MRTask<DeepSelect> {
+  public static class DeepSelect extends MRTask<DeepSelect> {
+
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      Chunk pred = chks[chks.length-1];
-      BufferedString tmpStr = new BufferedString();
-      for( int j = 0; j < chks.length - 1; j++ ) {
-        Chunk chk = chks[j];
-        NewChunk nchk = nchks[j];
-        for(int i = 0; i < pred._len; ++i) {
-          if( pred.atd(i) != 0 && !pred.isNA(i) ) {
-            if( chk.isNA(i) )                   nchk.addNA();
-            else if( chk instanceof C16Chunk )  nchk.addUUID(chk, i);
-            else if( chk instanceof CStrChunk)  nchk.addStr(chk.atStr(tmpStr, i));
-            else if( chk.hasFloat() )           nchk.addNum(chk.atd(i));
-            else                                nchk.addNum(chk.at8(i),0);
+      Chunk pred = chks[chks.length - 1];
+      int[] ids = new int[pred._len];
+      double[] vals = new double[ids.length];
+      int selected = pred.nonzeros(ids);
+      int[] selectedIds = new int[selected];
+      // todo keeping old behavior of ignoring missing, while R does insert missing into result
+      // filter out missing
+      int non_nas = 0;
+      for(int i = 0; i < selected; ++i)
+        if(!pred.isNA(ids[i]))
+          selectedIds[non_nas++] = ids[i];
+      selected = non_nas;
+      for (int i = 0; i < chks.length - 1; ++i) {
+        Chunk c = chks[i]; // do not need to inflate cause sparse does not compress doubles
+        NewChunk nc = nchks[i];
+        if (c.isSparseZero() || c.isSparseNA()) {
+          nc.alloc_indices(selectedIds.length);
+          nc.alloc_doubles(selectedIds.length);
+          nc._sparseNA = c.isSparseNA();
+          int n = c.asSparseDoubles(vals, ids);
+          int k = 0;
+          int l = -1;
+          for (int j = 0; j < n; ++j) {
+            while (k < selected && selectedIds[k] < ids[j]) ++k;
+            if (k == selected) break;
+            if (selectedIds[k] == ids[j]) {
+              int add = k - l - 1;
+              if(add > 0) {
+                if (c.isSparseZero()) nc.addZeros(add);
+                else nc.addNAs(add);
+              }
+              nc.addNum(vals[j]);
+              l = k;
+              k++;
+            }
           }
+          int add = selected - l - 1;
+          if(add > 0) {
+            if (c.isSparseZero()) nc.addZeros(add);
+            else nc.addNAs(add);
+          }
+          assert nc.len() == selected:"len = " + nc.len() + ", selected = " + selected;
+        } else {
+          NewChunk src = new NewChunk(c);
+          src = c.inflate_impl(src);
+//          if(src.sparseNA() || src.sparseZero())
+//            src.cancel_sparse();
+          for (int j = 0; j < selected; ++j)
+            src.add2Chunk(nc, selectedIds[j]);
         }
       }
     }
   }
-
   private String[][] domains(int [] cols){
     Vec[] vecs = vecs();
     String[][] res = new String[cols.length][];
@@ -1293,6 +1331,20 @@ public class Frame extends Lockable<Frame> {
     // Assert row numbering sanity.
     assert row <= lastRowOfCurrentChunk;
     return row >= lastRowOfCurrentChunk;
+  }
+
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite) {
+    // Validate input
+    boolean fileExists = H2O.getPM().exists(path);
+    if (overwrite && fileExists) {
+      Log.warn("File " + path + " exists, but will be overwritten!");
+    } else if (!overwrite && fileExists) {
+      throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+    }
+    InputStream is = (fr).toCSV(true, false);
+    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
+    FrameUtils.ExportTask t = new FrameUtils.ExportTask(is, path, frameName, overwrite, job);
+    return job.start(t, fr.anyVec().nChunks());
   }
 
   /** Convert this Frame to a CSV (in an {@link InputStream}), that optionally

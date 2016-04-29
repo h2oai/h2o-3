@@ -8,16 +8,20 @@ import water.util.SBPrintStream;
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
-    public float _learn_rate;
-    public float _col_sample_rate;
+    public double _learn_rate;
+    public double _learn_rate_annealing;
+    public double _col_sample_rate;
+    public double _max_abs_leafnode_pred;
 
     public GBMParameters() {
       super();
-      _learn_rate = 0.1f;
-      _col_sample_rate = 1.0f;
-      _sample_rate = 1.0f;
+      _learn_rate = 0.1;
+      _learn_rate_annealing = 1.0;
+      _col_sample_rate = 1.0;
+      _sample_rate = 1.0;
       _ntrees = 50;
       _max_depth = 5;
+      _max_abs_leafnode_pred = Double.POSITIVE_INFINITY;
     }
 
     public String algoName() { return "GBM"; }
@@ -26,7 +30,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
-    public GBMOutput( GBM b, double mse_train, double mse_valid ) { super(b,mse_train,mse_valid); }
+    public GBMOutput( GBM b) { super(b); }
   }
 
   public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }

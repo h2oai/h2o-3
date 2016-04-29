@@ -483,7 +483,7 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **mtries**: Specify the columns to randomly select at each level. If the default value of `-1` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). The range is -1 to >=1. 
 
-- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
+- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). If this option is specified along with **sample\_rate_per\_class**, then only the first option that DRF encounters will be used.
 
 - **col\_sample_rate**: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
 
@@ -532,9 +532,28 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **build\_tree\_one\_node**: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. 
 
+- **sample\_rate\_per\_class**: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that DRF encounters will be used.
+
 - **binomial\_double\_trees**: (Binary classification only) Build twice as many trees (one per class). Enabling this option can lead to higher accuracy, while disabling can result in faster model building. This option is disabled by default. 
 
 - **checkpoint**: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
+
+- **col\_sample_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+	>level 1: **col\_sample_rate**
+	
+	>level 2: **col\_sample_rate** * **factor**
+	
+	>level 3: **col\_sample_rate** * **factor^2**
+	
+	>level 4: **col\_sample_rate** * **factor^3**
+	
+	>etc. 
+	
+- **col\_sample\_rate\_per\_tree**: Specifies the column sample rate per tree. This can be a value from 0.0 to 1.0. 
+	
+- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
+
+- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
@@ -1063,13 +1082,17 @@ There was some code cleanup and refactoring to support the following features:
 
 - **min\_rows**: Specify the minimum number of observations for a leaf (`nodesize` in R).   
 
-- **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.  
+- **nbins**: (Numerical/real/int only) Specify the number of bins for the histogram to build, then split at the best point.
+
+- **max\_abs\_leafnode\_pred**: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
 
 - **nbins_cats**: (Categorical/enums only) Specify the maximum number of bins for the histogram to build, then split at the best point. Higher values can lead to more overfitting.  The levels are ordered alphabetically; if there are more levels than bins, adjacent levels share bins. This value has a more significant impact on model fitness than **nbins**. Larger values may increase runtime, especially for deep trees and large clusters, so tuning may be required to find the optimal value for your configuration.  
 
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 - **learn_rate**: Specify the learning rate. The range is 0.0 to 1.0. 
+
+- **learn\_rate\_annealing**: Specifies to reduce the **learn_rate** by this factor after every tree. So for *N* trees, GBM starts with **learn_rate** and ends with **learn_rate** * **learn\_rate\_annealing**^*N*. For example, instead of using **learn_rate=0.01**, you can now try **learn_rate=0.05** and **learn\_rate\_annealing=0.99**. This method would converge much faster with almost the same accuracy. Use caution not to overfit. 
 
 - **distribution**: Select the loss function. The options are auto, bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.  
 
@@ -1082,9 +1105,26 @@ There was some code cleanup and refactoring to support the following features:
 	> - If the distribution is **quantile**, the data must be numeric and continuous (**Int**). 
 
 
-- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
+- **sample_rate**: Specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). If this option is specified along with **sample\_rate_per\_class**, then only the first option that GBM encounters will be used. 
+
+- **sample\_rate_per\_class**: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that GBM encounters will be used.
 
 - **col\_sample_rate**: Specify the column sampling rate (y-axis). The range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" ([Friedman, 1999](https://statweb.stanford.edu/~jhf/ftp/stobst.pdf)). 
+
+- **col\_sample_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+	>level 1: **col\_sample_rate**
+	
+	>level 2: **col\_sample_rate** * **factor**
+	
+	>level 3: **col\_sample_rate** * **factor^2**
+	
+	>level 4: **col\_sample_rate** * **factor^3**
+	
+	>etc. 
+
+- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. 
+
+- **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding. 
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 

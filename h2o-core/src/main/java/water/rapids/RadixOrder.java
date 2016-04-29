@@ -561,7 +561,9 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       SplitByMSBLocal.OXbatch tmp = new SplitByMSBLocal.OXbatch(_o[b], _x[b]);
       // Log.info("Putting OX header for Frame " + _fr._key + " for MSB " + _MSBvalue);
       // Log.info("Putting");
-      DKV.put(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp, fs, true);  // the OXbatchKey's on this node will be reused for the new keys
+      Value v = new Value(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp);
+      DKV.put(v._key, v, fs, true);  // the OXbatchKey's on this node will be reused for the new keys
+      v.freeMem();
     }
     fs.blockForPending();
     tryComplete();
@@ -783,7 +785,16 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
       //assert range >= 1;   // otherwise log(0)==-Inf next line
       double numerator;
       // TODO: string & double. But we we'll only allow fixed precision double in keys, unlike data.table
-      _colMin[i] = col.isCategorical() ? 0 : (long)col.min();   // temp workaround
+      if (col.isCategorical()) {
+        _colMin[i] = 0;  // temp workaround, or just leave for simplicity
+      } else {
+        if (col.min()>0)
+          _colMin[i] = Long.highestOneBit((long)col.min());    // next lower power of two
+        else {
+          // TODO to fully test this really works
+          _colMin[i] = -(Long.highestOneBit(-(long)col.min()) << 1); // next lower is larger absolute
+        }
+      }
       if (_isLeft && col.isCategorical()) {
         // the left's levels have been matched to the right's levels and we store the mapped values so it's that mapped range we need here (or the col.max() of the corresponding right table would be fine too, but mapped range might be less so use that for possible efficiency)
         assert _id_maps[i] != null;

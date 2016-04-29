@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"weights_all_ones.hex\", [0.25], [\"weights_all_ones_test\",\"weights_all_ones_train\"]"
+      "input": "splitFrame \"weights_all_ones.hex\", [0.25], [\"weights_all_ones_test\",\"weights_all_ones_train\"], 123456"
     },
     {
       "type": "cs",

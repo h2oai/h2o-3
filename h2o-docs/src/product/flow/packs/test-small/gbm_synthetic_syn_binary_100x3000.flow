@@ -28,7 +28,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"syn_binary_100x3000.hex\", [0.25], [\"syn_binary_100x3000_test\",\"syn_binary_100x3000_train\"]"
+      "input": "splitFrame \"syn_binary_100x3000.hex\", [0.25], [\"syn_binary_100x3000_test\",\"syn_binary_100x3000_train\"], 123456"
     },
     {
       "type": "cs",

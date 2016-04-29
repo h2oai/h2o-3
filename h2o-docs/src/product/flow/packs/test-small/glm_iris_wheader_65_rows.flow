@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"iris_wheader_nonspd.hex\", [0.25], [\"iris_wheader_nonspd_test\",\"iris_wheader_nonspd_train\"]"
+      "input": "splitFrame \"iris_wheader_nonspd.hex\", [0.25], [\"iris_wheader_nonspd_test\",\"iris_wheader_nonspd_train\"], 123456"
     },
     {
       "type": "cs",

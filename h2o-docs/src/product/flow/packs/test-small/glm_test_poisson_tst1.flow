@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"poisson_tst1.hex\", [0.25], [\"poisson_tst1_test\",\"poisson_tst1_train\"]"
+      "input": "splitFrame \"poisson_tst1.hex\", [0.25], [\"poisson_tst1_test\",\"poisson_tst1_train\"], 123456"
     },
     {
       "type": "cs",

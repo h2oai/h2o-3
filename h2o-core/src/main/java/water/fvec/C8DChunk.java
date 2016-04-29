@@ -54,4 +54,38 @@ public class C8DChunk extends Chunk {
     set_len(_mem.length>>3);
     assert _mem.length == _len <<3;
   }
+
+  @Override
+  public double [] getDoubles(double [] vals, int from, int to){
+    for(int i = from; i < to; ++i)
+      vals[i - from] = UnsafeUtils.get8d(_mem, i << 3);
+    return vals;
+  }
+
+  /**
+   * Dense bulk interface, fetch values from the given range
+   * @param vals
+   * @param from
+   * @param to
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int from, int to, double NA){
+    for(int i = from; i < to; ++i) {
+      double d = UnsafeUtils.get8d(_mem, i << 3);
+      vals[i - from] = Double.isNaN(d)?NA:d;
+    }
+    return vals;
+  }
+  /**
+   * Dense bulk interface, fetch values from the given ids
+   * @param vals
+   * @param ids
+   */
+  @Override
+  public double [] getDoubles(double [] vals, int [] ids){
+    int j = 0;
+    for(int i:ids) vals[j++] = UnsafeUtils.get8d(_mem,i<<3);
+    return vals;
+  }
+
 }

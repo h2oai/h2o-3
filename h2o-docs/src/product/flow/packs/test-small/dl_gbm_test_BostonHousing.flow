@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"BostonHousing.hex\", [0.3], [\"BostonHousing_test.hex_0.30\",\"BostonHousing_train.hex_0.70\"]"
+      "input": "splitFrame \"BostonHousing.hex\", [0.3], [\"BostonHousing_test.hex_0.30\",\"BostonHousing_train.hex_0.70\"], 123456"
     },
     {
       "type": "cs",

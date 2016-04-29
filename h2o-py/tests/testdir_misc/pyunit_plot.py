@@ -2,13 +2,9 @@ import sys
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
-
-
-
+from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def plot_test():
-    
-    
     kwargs = {}
     kwargs['server'] = True
 
@@ -22,8 +18,8 @@ def plot_test():
     myX = ["Origin", "Dest", "Distance", "UniqueCarrier", "fMonth", "fDayofMonth", "fDayOfWeek"]
     myY = "IsDepDelayed"
 
-    air_gbm = h2o.gbm(x=air_train[myX], y=air_train[myY], validation_x=air_valid[myX], validation_y=air_valid[myY],
-                      distribution="bernoulli", ntrees=100, max_depth=3, learn_rate=0.01)
+    air_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=100, max_depth=3, learn_rate=0.01)
+    air_gbm.train(x=myX, y=myY, training_frame=air_train, validation_frame=air_valid)
 
     # Plot ROC for training and validation sets
     air_gbm.plot(type="roc", train=True, **kwargs)

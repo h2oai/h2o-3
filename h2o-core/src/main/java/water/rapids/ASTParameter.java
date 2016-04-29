@@ -13,4 +13,6 @@ public abstract class ASTParameter extends AST {
   @Override public Val exec(Env env) { return _v; }
   @Override int nargs() { return 1; }
   public String toJavaString() { return str(); }
+
+  public static ASTNum makeNum(double d) { return new ASTNum(d); }
 }

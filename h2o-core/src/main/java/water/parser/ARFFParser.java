@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import water.Key;
 import water.fvec.Vec;
 
+import static water.parser.DefaultParserProviders.ARFF_INFO;
+
 class ARFFParser extends CsvParser {
   private static final byte GUESS_SEP = ParseSetup.GUESS_SEP;
 
@@ -29,7 +31,7 @@ class ARFFParser extends CsvParser {
       haveData = true; //more than just the header
 
     if (header.size() == 0)
-      throw new H2OParseException("No data!");
+      throw new ParseDataset.H2OParseException("No data!");
     headerlines = header.toArray(headerlines);
 
     // process header
@@ -60,7 +62,7 @@ class ARFFParser extends CsvParser {
         }
       }
       if (datablock.size() == 0)
-        throw new H2OParseException("Unexpected line.");
+        throw new ParseDataset.H2OParseException("Unexpected line.");
       datalines = datablock.toArray(datalines);
 
       // process data section
@@ -73,7 +75,7 @@ class ARFFParser extends CsvParser {
           if (datalines[0].split(",").length > 2) sep = (byte) ',';
           else if (datalines[0].split(" ").length > 2) sep = ' ';
           else
-            throw new H2OParseException("Failed to detect separator.");
+            throw new ParseDataset.H2OParseException("Failed to detect separator.");
         }
         data[0] = determineTokens(datalines[0], sep, singleQuotes);
         ncols = (ncols > 0) ? ncols : data[0].length;
@@ -95,7 +97,7 @@ class ARFFParser extends CsvParser {
     }
 
     // Return the final setup
-    return new ParseSetup(ParserType.ARFF, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data);
   }
 
   private static int readArffHeader(int offset, ArrayList<String> header, byte[] bits, boolean singleQuotes) {
@@ -129,10 +131,10 @@ class ARFFParser extends CsvParser {
     for (int i=0; i<ncols; ++i) {
       data[i] = headerlines[i].split("\\s+");
       if (!data[i][0].equalsIgnoreCase("@ATTRIBUTE")) {
-        throw new H2OParseException("Expected line to start with @ATTRIBUTE.");
+        throw new ParseDataset.H2OParseException("Expected line to start with @ATTRIBUTE.");
       } else {
         if (data[i].length < 3 ) {
-          throw new H2OParseException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
+          throw new ParseDataset.H2OParseException("Expected @ATTRIBUTE to be followed by <attribute-name> <datatype>");
         }
         labels[i] = data[i][1];
         String type = data[i][2];
@@ -172,9 +174,8 @@ class ARFFParser extends CsvParser {
             continue;
           }
         }
-
         // only get here if data is invalid ARFF
-        throw new H2OParseException("Unexpected line.");
+        throw new ParseDataset.H2OParseException("Unexpected line.");
       }
     }
 

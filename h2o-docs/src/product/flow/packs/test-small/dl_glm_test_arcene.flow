@@ -23,7 +23,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"arcene.hex\", [0.25], [\"arcene_test\",\"arcene_train\"]"
+      "input": "splitFrame \"arcene.hex\", [0.25], [\"arcene_test\",\"arcene_train\"], 123456"
     },
     {
       "type": "cs",

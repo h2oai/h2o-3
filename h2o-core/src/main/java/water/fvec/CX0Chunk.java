@@ -1,5 +1,8 @@
 package water.fvec;
 
+import water.H2O;
+import water.util.UnsafeUtils;
+
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -15,14 +18,33 @@ public final class CX0Chunk extends CXIChunk {
   @Override double max() { return 1; }
   @Override public boolean hasNA() { return false; }
 
+  @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
+    if(vals.length < _sparseLen) throw new IllegalArgumentException();
+    int off = _OFF;
+    final int inc = _ridsz;
+    if(_ridsz == 2){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get2(_mem,off) & 0xFFFF;
+        vals[i] = 1;
+      }
+    } else if(_ridsz == 4){
+      for (int i = 0; i < _sparseLen; ++i, off += inc) {
+        ids[i] = UnsafeUtils.get4(_mem,off);
+        vals[i] = 1;
+      }
+    } else throw H2O.unimpl();
+    return sparseLenZero();
+  }
+
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(_len);
-    nc.set_sparseLen(_sparseLen);
     nc.alloc_mantissa(_sparseLen);
-    Arrays.fill(nc.mantissa(),1);
     nc.alloc_exponent(_sparseLen);
     nc.alloc_indices(_sparseLen);
+    for(int i = 0; i < _sparseLen; ++i)
+      nc.addNum(1,0);
     nonzeros(nc.indices());
+    nc.set_len(_len);
+    assert nc._sparseLen == _sparseLen;
     return nc;
   }
 

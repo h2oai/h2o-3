@@ -7,6 +7,8 @@ import water.Key;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
 
+import static water.parser.DefaultParserProviders.SVMLight_INFO;
+
 class SVMLightParser extends Parser {
   private static final byte SKIP_TOKEN = 21;
   private static final byte INVALID_NUMBER = 22;
@@ -29,15 +31,16 @@ class SVMLightParser extends Parser {
     while(i > 0 && bytes[i] != '\n') --i;
     assert i >= 0;
     InputStream is = new ByteArrayInputStream(Arrays.copyOf(bytes,i));
-    SVMLightParser p = new SVMLightParser(new ParseSetup(ParserType.SVMLight,
+    SVMLightParser p = new SVMLightParser(new ParseSetup(SVMLight_INFO,
             ParseSetup.GUESS_SEP, false,ParseSetup.GUESS_HEADER,ParseSetup.GUESS_COL_CNT,
             null,null,null,null,null), null);
     SVMLightInspectParseWriter dout = new SVMLightInspectParseWriter();
-    try{ p.streamParse(is, dout); } catch(IOException e) { throw new RuntimeException(e); }
+    try{ p.streamParse(is, dout);
+    } catch(IOException e) { throw new RuntimeException(e); }
     if (dout._ncols > 0 && dout._nlines > 0 && dout._nlines > dout._invalidLines)
-      return new ParseSetup(ParserType.SVMLight, ParseSetup.GUESS_SEP,
-            false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data);
-    else throw new H2OParseException("Could not parse file as an SVMLight file.");
+      return new ParseSetup(SVMLight_INFO, ParseSetup.GUESS_SEP,
+            false,ParseSetup.NO_HEADER,dout._ncols,null,dout.guessTypes(),null,null,dout._data, dout.removeErrors());
+    else throw new ParseDataset.H2OParseException("Could not parse file as an SVMLight file.");
   }
 
   public static byte[] col_types(int ncols) {
@@ -148,7 +151,8 @@ class SVMLightParser extends Parser {
             } else if(c == 'q'){
               lstate = QID0;
             } else { // failed, skip the line
-              dout.invalidLine("Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'");
+              String err = "Unexpected character, expected number or qid, got '" + new String(Arrays.copyOfRange(bits, offset,Math.min(bits.length,offset+5))) + "...'";
+              dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
               lstate = SKIP_LINE;
               continue MAIN_LOOP;
             }
@@ -190,16 +194,17 @@ class SVMLightParser extends Parser {
                     // or too small (col ids currently must fit into int)
                     String err;
                     if(number <= colIdx)
-                      err = "Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ".";
+                      err = "Columns come in non-increasing sequence. Got " + number + " after " + colIdx + ". Rest of the line is skipped.";
                     else if(exp != 0)
-                      err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp);
+                      err = "Got non-integer as column id: " + number*PrettyPrint.pow10(exp) + ". Rest of the line is skipped.";
                     else
-                      err = "column index out of range, " + number + " does not fit into integer.";
-                    dout.invalidLine("invalid column id:" + err);
+                      err = "column index out of range, " + number + " does not fit into integer." + " Rest of the line is skipped.";
+                    dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
                     lstate = SKIP_LINE;
                   }
                 } else { // we're probably out of sync, skip the rest of the line
-                  dout.invalidLine("Unexpected character after column id: " + c);
+                  String err = "Unexpected character after column id: " + c;
+                  dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
                   lstate = SKIP_LINE;
                 }
                 break NEXT_CHAR;
@@ -220,7 +225,8 @@ class SVMLightParser extends Parser {
               if (number < LARGEST_DIGIT_NUMBER) {
                 number = (number*PrettyPrint.pow10i(zeros+1))+(c-'0');
               } else {
-                dout.invalidLine("number " + number + " is out of bounds.");
+                String err = "number " + number + " is out of bounds.";
+                dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
                 lstate = SKIP_LINE;
               }
               zeros = 0;
@@ -272,7 +278,8 @@ class SVMLightParser extends Parser {
           case INVALID_NUMBER:
             if(gstate == TGT) { // invalid tgt -> skip the whole row
               lstate = SKIP_LINE;
-              dout.invalidLine("invalid number (expecting target)");
+              String err = "invalid number (expecting target)";
+              dout.invalidLine(new ParseWriter.ParseErr(err,cidx,dout.lineNum(),offset + din.getGlobalByteOffset()));
               continue MAIN_LOOP;
             }
             if(gstate == VAL){ // add invalid value and skip until whitespace or eol

@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"drf_infinities.hex\", [0.25], [\"drf_infinities_test.hex_0.250\",\"drf_infinities_train.hex_0.750\"]"
+      "input": "splitFrame \"drf_infinities.hex\", [0.25], [\"drf_infinities_test.hex_0.250\",\"drf_infinities_train.hex_0.750\"], 123456"
     },
     {
       "type": "cs",

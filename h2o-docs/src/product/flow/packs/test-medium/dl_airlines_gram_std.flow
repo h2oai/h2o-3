@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "assist splitFrame, \"gram_std.hex\""
+      "input": "assist splitFrame, \"gram_std.hex\", 123456"
     },
     {
       "type": "cs",
-      "input": "splitFrame \"gram_std.hex\", [0.2], [\"gram_std_test.hex_0.20\",\"gram_std_train.hex_0.80\"]"
+      "input": "splitFrame \"gram_std.hex\", [0.2], [\"gram_std_test.hex_0.20\",\"gram_std_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",

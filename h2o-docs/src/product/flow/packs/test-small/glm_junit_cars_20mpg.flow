@@ -24,7 +24,7 @@
     },
     {
       "type": "cs",
-      "input": "splitFrame \"cars_20mpg1.hex\", [0.2], [\"cars_20mpg_test.hex_0.20\",\"cars_20mpg_train.hex_0.80\"]"
+      "input": "splitFrame \"cars_20mpg1.hex\", [0.2], [\"cars_20mpg_test.hex_0.20\",\"cars_20mpg_train.hex_0.80\"], 123456"
     },
     {
       "type": "cs",
