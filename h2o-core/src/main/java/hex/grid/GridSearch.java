@@ -424,7 +424,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *
    * @param <MP> type of model parameters object
    */
-  static class SimpleParametersBuilderFactory<MP extends Model.Parameters>
+  public static class SimpleParametersBuilderFactory<MP extends Model.Parameters>
       implements ModelParametersBuilderFactory<MP> {
 
     @Override
