@@ -75,7 +75,7 @@ import test_cluster_sanity
 test_cluster_sanity.test(a_node, pp, algos)
 
 # Clean up old objects from the DKV, in case the cluster has been doing other things:
-if h2o_test_utils.isVerbose(): print 'Cleaning up old stuff. . .'
+if h2o_test_utils.isVerbose(): print('Cleaning up old stuff. . .')
 h2o_test_utils.cleanup(a_node)
 
 import test_and_import_frames
