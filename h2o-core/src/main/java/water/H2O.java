@@ -148,6 +148,9 @@ final public class H2O {
             "    -ldap_login\n" +
             "          Use Jetty LdapLoginService\n" +
             "\n" +
+            "    -kerberos_login\n" +
+            "          Use Kerberos LoginService\n" +
+            "\n" +
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
             "\n" +
@@ -280,6 +283,9 @@ final public class H2O {
 
     /** -ldap_login enables LdapLoginService */
     public boolean ldap_login = false;
+
+    /** -kerberos_login enables KerberosLoginService */
+    public boolean kerberos_login = false;
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
@@ -500,6 +506,9 @@ final public class H2O {
       else if (s.matches("ldap_login")) {
         ARGS.ldap_login = true;
       }
+      else if (s.matches("kerberos_login")) {
+        ARGS.kerberos_login = true;
+      }
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         ARGS.login_conf = args[i];
@@ -523,11 +532,15 @@ final public class H2O {
       }
     }
 
-    if (ARGS.hash_login && ARGS.ldap_login) {
-      parseFailed("Can only specify one of -hash_login and -ldap_login");
+    int login_arg_count = 0;
+    for (Boolean b : new ArrayList<Boolean>(Arrays.asList(ARGS.hash_login,ARGS.ldap_login,ARGS.kerberos_login))) {
+      if (b) login_arg_count++;
+    }
+    if (login_arg_count > 1) {
+      parseFailed("Can only specify one of -hash_login, -ldap_login, and -kerberos_login");
     }
 
-    if (ARGS.hash_login || ARGS.ldap_login) {
+    if (ARGS.hash_login || ARGS.ldap_login || ARGS.kerberos_login) {
       if (H2O.ARGS.login_conf == null) {
         parseFailed("Must specify -login_conf argument");
       }
@@ -677,7 +690,7 @@ final public class H2O {
 
     // Log jetty stuff to stdout for now.
     // TODO:  figure out how to wire this into log4j.
-    System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StrErrLog");
+    System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
   }
 
   //-------------------------------------------------------------------------------------------------------------------
