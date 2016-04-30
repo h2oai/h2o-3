@@ -533,9 +533,9 @@ final public class H2O {
     }
 
     int login_arg_count = 0;
-    for (Boolean b : new ArrayList<Boolean>(Arrays.asList(ARGS.hash_login,ARGS.ldap_login,ARGS.kerberos_login))) {
-      if (b) login_arg_count++;
-    }
+    if (ARGS.hash_login) login_arg_count++;
+    if (ARGS.ldap_login) login_arg_count++;
+    if (ARGS.kerberos_login) login_arg_count++;
     if (login_arg_count > 1) {
       parseFailed("Can only specify one of -hash_login, -ldap_login, and -kerberos_login");
     }
