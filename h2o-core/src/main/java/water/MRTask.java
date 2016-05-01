@@ -574,7 +574,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       _rite._lo = mid;          // Also set self mid-point
       addToPendingCount(1);     // One fork awaiting completion
       _left.fork();             // Runs in another thread/FJ instance
-      _rite.compute2();         // Runs in THIS F/J thread
+      T rite = _rite;           // Reload _rite in case _left exited with exception
+      if( rite != null ) rite.compute2(); // Runs in THIS F/J thread
       if(_profile!=null) _profile._mapdone = System.currentTimeMillis();
       return;                   // Not complete until the fork completes
     }
