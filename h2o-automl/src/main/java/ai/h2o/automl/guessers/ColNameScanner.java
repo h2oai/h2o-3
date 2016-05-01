@@ -59,17 +59,19 @@ public final class ColNameScanner {
   // leak things to yourself.
   public final static byte DATETIME = 4;
 
-  public static byte scan(String columnName, Vec v) {
-    if( true ) return UNK;
+  public static byte scan(String name, Vec v) {
+    String columnName = name.toLowerCase();
     if( v.isTime() ) return DATETIME;
     if( v.isInt() ) {
       if( v.max()-v.min() < v.length()*.5 ) {
         // try for datetime, but if ID just return UNK since IDs likely to be useful
         return _datetime.contains(columnName)
                 ? DATETIME
-                : _age.contains(columnName) ? AGE : UNK;
+                : _age.contains(columnName) ? AGE : ID;
       }
       // if ID then return ID, otherwise, return UNK
+      for(String idString: _id)
+        if( columnName.contains(idString) ) return ID;
       return _id.contains(columnName) ? ID : UNK;
     }
     if( v.isCategorical() ) {
