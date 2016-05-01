@@ -9,7 +9,6 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.parser.ParseWriter;
 import water.parser.ParserType;
 import water.util.Log;
 
@@ -91,7 +90,8 @@ public class AutoCollect {
 
   protected static Frame parseFrame( ParseSetup ps, Key fkey, String name ) { return ParseDataset.parse(Key.make(name), new Key[]{fkey}, true, ps); }
   protected static ParseSetup paresSetup(NFSFileVec nfs, ParserType parserType) {
-    return ParseSetup.guessSetup(new Key[]{nfs._key}, new ParseSetup(parserType, ParseSetup.GUESS_SEP, false, 0, ParseSetup.GUESS_COL_CNT, null, new ParseWriter.ParseErr[0]));
+    return null;
+//    return ParseSetup.guessSetup(new Key[]{nfs._key}, new ParseSetup(parserType, ParseSetup.GUESS_SEP, false, 0, ParseSetup.GUESS_COL_CNT, null, new ParseWriter.ParseErr[0]));
   }
   // TODO: ParseSetup(ParserType.GUESS, GUESS_SEP, singleQuote, checkHeader, GUESS_COL_CNT, null)
 
