@@ -132,6 +132,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     return ml._leader;
   }
   public void delete() {
+    _fr.delete();
     for(Model m: models()) m.delete();
     DKV.remove(MODELLIST);
     DKV.remove(LEADER);
