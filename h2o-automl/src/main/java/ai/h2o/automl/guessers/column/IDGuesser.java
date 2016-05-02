@@ -37,7 +37,7 @@ public class IDGuesser extends Guesser {
     }
   }
 
-  private static class UniqTask extends MRTask<UniqTask> {
+  public static class UniqTask extends MRTask<UniqTask> {
     NonBlockingHashMapLong<String> _hm;
     int _size;
     @Override public void setupLocal() { _hm=new NonBlockingHashMapLong<>(); }
@@ -51,7 +51,7 @@ public class IDGuesser extends Guesser {
     @Override public void postGlobal() { _size = _hm.size(); }
   }
 
-  private static class UniqTaskPerChk extends MRTask<UniqTaskPerChk> {
+  public static class UniqTaskPerChk extends MRTask<UniqTaskPerChk> {
     private double _fracUniq;
     @Override public void map(Chunk c) {
       NonBlockingHashMapLong<String> hm = new NonBlockingHashMapLong<>();
