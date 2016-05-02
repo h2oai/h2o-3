@@ -229,7 +229,7 @@ class GBMSelector extends FeatureSelector {
       names[names.length-1] = "weight";
       for(int i=0;i<vecs.length;++i)
         vecs[i] = frame.vec(i).clone(); // clone vec headers now b4 launch
-      Vec[] trainTestWeights = makeWeights(frame.anyVec(), 0.8);
+      Vec[] trainTestWeights = makeWeights(frame.anyVec(), 0.8,null);
       vecs[vecs.length-1] = trainTestWeights[0];
       _taskTrain = new Frame(names,vecs.clone());  // reclone for safety
       vecs = vecs.clone();

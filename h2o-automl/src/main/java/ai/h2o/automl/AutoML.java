@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.strategies.initial.InitModel;
+import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
 import water.*;
@@ -139,7 +140,8 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
-    ModelBuilder mb = InitModel.initRF(fm._fr, fm.response()._name,fm.stratify());
+    Frame[] trainTest = AutoMLUtils.makeTrainTestFromWeight(fm._fr,fm.weights());
+    ModelBuilder mb = InitModel.initRF(trainTest[0], trainTest[1], fm.response()._name);
     mb._parms._ignored_columns = fm.ignoredCols();
     return mb;
   }

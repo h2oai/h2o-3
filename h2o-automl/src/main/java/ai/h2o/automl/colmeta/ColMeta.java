@@ -12,7 +12,9 @@ import water.fvec.Vec;
 import water.util.Log;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
 
 /** Column Meta Data
@@ -25,11 +27,17 @@ public class ColMeta extends Iced {
           "Variance", "Cardinality", "Kurtosis", "Skew", "VIF", "FractionNA",
           "TimeToMRTaskMillis"};
 
-  private static transient Set<Class<? extends Guesser>> _guessers;
+  private static transient Set<Class<? extends Guesser>> _guesserClasses;
+  private static transient String[] _guessers;
 
   static {
     Reflections reflections = new Reflections("ai.h2o.automl.guessers.column");
-    _guessers = reflections.getSubTypesOf(ai.h2o.automl.guessers.column.Guesser.class);
+    _guesserClasses = reflections.getSubTypesOf(ai.h2o.automl.guessers.column.Guesser.class);
+    _guessers = new String[_guesserClasses.size()];
+    Iterator<Class<? extends Guesser>> it = _guesserClasses.iterator();
+    for(int i=0;i<_guesserClasses.size();++i)
+      _guessers[i] = it.next().getName();
+    Arrays.sort(_guessers);
   }
 
   public final Vec _v;          // the column
@@ -42,6 +50,8 @@ public class ColMeta extends Iced {
   public double _variance;      // variance of the column, pulled from the vec
   public double _sigma;         // pulled from vec rollups
   public boolean _stratify;     // do stratified sampling when building weight columns
+  public double[] _dist;        // distribution of classes
+  public double[] _weightMult;  // weight multipliers for each class to even out distributions
 
   public String _ignoredReason; // was this ignored by user, or by automl
   public boolean _isClass;      // is a classification problem, only valid to ask when _response is true
@@ -124,9 +134,9 @@ public class ColMeta extends Iced {
 
     Class c=null;
     try {
-      for (Class guesser : _guessers)
-        ((Guesser) (c=guesser).getConstructor(ColMeta.class).newInstance(this)).guess(_name, _v);
-    } catch ( NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+      for (String guesser : _guessers)
+        ((Guesser) (c=Class.forName(guesser)).getConstructor(ColMeta.class).newInstance(this)).guess(_name, _v);
+    } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
       Log.err("Could not instantiate guesser: " + c);
       throw new RuntimeException(e);
     }

@@ -15,6 +15,7 @@ public class StratifiedGuesser extends Guesser {
     if( !_cm._response ) return;
     if( !_cm.isClassification() ) return;
     double[] dist = new MRUtils.ClassDist(v).doAll(v).rel_dist();
+    _cm._dist=dist;
     double frac = 1./dist.length;
     double avgDistFromUniform=0;
     for(double d: dist) avgDistFromUniform += Math.abs(frac-d);  // sum up the differences from the evenly distributed case
@@ -22,6 +23,9 @@ public class StratifiedGuesser extends Guesser {
     if( avgDistFromUniform > 0.1 ) {
       Log.info("class distribution is uneven, will attempt to stratify. dist=" + ArrayUtils.toString(dist));
       _cm._stratify = true;
+      _cm._weightMult = new double[dist.length];
+      for(int i=0;i<_cm._weightMult.length;++i)
+        _cm._weightMult[i] = dist[i] < frac ? frac/dist[i] : dist[i]*frac;
     }
   }
 }

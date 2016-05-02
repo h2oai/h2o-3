@@ -6,6 +6,7 @@ import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.tasks.DummyClassifier;
 import ai.h2o.automl.tasks.DummyRegressor;
 import ai.h2o.automl.tasks.VIF;
+import ai.h2o.automl.utils.AutoMLUtils;
 import hex.tree.DHistogram;
 import water.H2O;
 import water.Iced;
@@ -44,6 +45,7 @@ public class FrameMeta extends Iced {
   private int _nclass=-1;  // number of classes if classification problem
   private double[][] _dummies=null; // dummy predictions
   public ColMeta[] _cols;
+  public Vec[]  _trainTestWeight;  // weight vecs for train/test splits
 
   public final static String[] METAVALUES = new String[]{
     "DatasetName", "NRow", "NCol", "LogNRow", "LogNCol", "NACount", "NAFraction",
@@ -243,6 +245,12 @@ public class FrameMeta extends Iced {
   }
 
   public boolean stratify() { return response()._stratify; }
+
+  public Vec[] weights() {
+    if( null!=_trainTestWeight) return _trainTestWeight;
+    return _trainTestWeight = stratify() ? AutoMLUtils.makeStratifiedWeights(response()._v,0.8, response()._weightMult)
+                                  : AutoMLUtils.makeWeights(          response()._v,0.8, response()._weightMult);
+  }
 
   // blocking call to compute 1st pass of column metadata
   public FrameMeta computeFrameMetaPass1() {
