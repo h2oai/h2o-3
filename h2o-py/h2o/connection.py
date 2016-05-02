@@ -46,7 +46,7 @@ class H2OConnection(object):
   __ENCODING_ERROR__ = "replace"
 
   def __init__(self, ip, port, start_h2o, enable_assertions, license, nthreads, max_mem_size, min_mem_size, ice_root,
-               strict_version_check, proxy, https, insecure, username, password, force_connect, max_mem_size_GB, min_mem_size_GB, proxies, size):
+               strict_version_check, proxy, https, insecure, username, password, force_connect=False, max_mem_size_GB, min_mem_size_GB, proxies, size):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
