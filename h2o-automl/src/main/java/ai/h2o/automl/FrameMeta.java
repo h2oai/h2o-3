@@ -2,12 +2,15 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.autocollect.AutoCollect;
 import ai.h2o.automl.collectors.MetaCollector;
-import ai.h2o.automl.guessers.ProblemTypeGuesser;
+import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.tasks.DummyClassifier;
 import ai.h2o.automl.tasks.DummyRegressor;
 import ai.h2o.automl.tasks.VIF;
 import hex.tree.DHistogram;
-import water.*;
+import water.H2O;
+import water.Iced;
+import water.MRTask;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -208,7 +211,7 @@ public class FrameMeta extends Iced {
     _includeCols = predictors;
     if( null==_includeCols )
       for (int i = 0; i < _fr.numCols(); ++i)
-        _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response);
+          _cols[i] = new ColMeta(_fr.vec(i),_fr.name(i),i,i==_response);
     else {
       HashSet<String> preds = new HashSet<>();
       Collections.addAll(preds,_includeCols);
@@ -287,18 +290,8 @@ public class FrameMeta extends Iced {
       Vec v = fm._fr.vec(idx);
       _response=fm._response==idx;
       String colname = fm._fr.name(idx);
-      if( _response ) {
-        if( _isClassification = ProblemTypeGuesser.guess(v)) {
-          Vec deleteMe=null;
-          if( !v.isCategorical() )
-            deleteMe=fm._fr.replace(idx,(v=v.toCategoricalVec()));
-          if( deleteMe!=null ) {
-            DKV.put(fm._fr);
-            deleteMe.remove();
-          }
-        }
-      }
-      _colMeta = new ColMeta(v, colname, idx, _response);
+        _colMeta = new ColMeta(v, colname, idx, _response);
+      if( _response ) _isClassification = _colMeta.isClassification();
       _mean = v.mean();
       int nbins = (int) Math.ceil(1 + log2(v.length()));  // Sturges nbins
       _colMeta._histo = MetaCollector.DynamicHisto.makeDHistogram(colname, nbins, nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), v.min(), v.max());
