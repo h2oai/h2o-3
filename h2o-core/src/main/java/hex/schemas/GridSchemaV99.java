@@ -132,7 +132,8 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
         if (null != m) {
           Model.Output o = m._output;
 
-          training_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._training_metrics).fillFromImpl(o._training_metrics);
+          if (null != o._training_metrics)
+            training_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._training_metrics).fillFromImpl(o._training_metrics);
           if (null != o._validation_metrics) validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._validation_metrics).fillFromImpl(o._validation_metrics);
           if (null != o._cross_validation_metrics) cross_validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._cross_validation_metrics).fillFromImpl(o._cross_validation_metrics);
           if (null != o._cross_validation_metrics_summary) cross_validation_metrics_summary[i] = (TwoDimTableBase) Schema.schema(3, o._cross_validation_metrics_summary).fillFromImpl(o._cross_validation_metrics_summary);
