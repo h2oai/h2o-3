@@ -20,7 +20,7 @@ public class SpecialNAGuesser extends Guesser {
     _cm._specialNAs = new SpecialNA(v.isNumeric()
             ? (v.isInt() ? SpecialNA.INT : SpecialNA.DBL)
             : SpecialNA.STR
-    ).scan(v,_cm);
+    ).scan(v);
   }
 
   // stupid wrapper class for possibly special types of NAs; things like 999999 or -1 or 0
@@ -111,7 +111,7 @@ public class SpecialNAGuesser extends Guesser {
         _nas.add(_type==INT?_ints[i]:_dbls[i]);
     }
 
-    SpecialNA scan(Vec v, ColMeta cm) {
+    SpecialNA scan(Vec v) {
       if( _type!=STR ) {
         double median;
         median = median(v, QuantileModel.CombineMethod.INTERPOLATE);
