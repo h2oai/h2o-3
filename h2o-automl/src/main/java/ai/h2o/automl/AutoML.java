@@ -117,9 +117,9 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
     // step 2: build a fast RF
     ModelBuilder initModel = selectInitial(_fm);
-    initModel._parms._ignored_columns = _fm.ignoredCols();
-
     Model m = build(initModel); // need to track this...
+    m._parms._train.remove();
+    m._parms._valid.remove();
     System.out.println("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
@@ -139,9 +139,10 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
-    return InitModel.initRF(fm._fr, fm.response()._name);
+    ModelBuilder mb = InitModel.initRF(fm._fr, fm.response()._name);
+    mb._parms._ignored_columns = fm.ignoredCols();
+    return mb;
   }
-
 
   // track models built by automl
   public final Key<Model> MODELLIST = Key.make("AutoMLModelList"+Key.make().toString(), (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test

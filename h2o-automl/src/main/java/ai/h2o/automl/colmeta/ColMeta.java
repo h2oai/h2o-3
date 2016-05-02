@@ -129,7 +129,6 @@ public class ColMeta extends Iced {
       Log.err("Could not instantiate guesser: " + c);
       throw new RuntimeException(e);
     }
-
   }
 
   public ColMeta(Vec v, String colname, int idx, boolean response) {
