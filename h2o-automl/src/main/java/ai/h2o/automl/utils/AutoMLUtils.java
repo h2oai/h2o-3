@@ -8,6 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -46,5 +47,14 @@ public class AutoMLUtils {
     res[1] = new Frame(Key.make(), names.clone(),vecs.clone()); // reclone for safety
     DKV.put(res[1]);
     return res;
+  }
+
+  public static int[] intListToA(List<Integer> list) {
+    int[] a=new int[0];
+    if( list.size() >0 ) {
+      a = new int[list.size()];
+      for(int i=0;i<a.length;++i) a[i] = list.get(i);
+    }
+    return a;
   }
 }
