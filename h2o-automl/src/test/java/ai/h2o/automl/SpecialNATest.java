@@ -1,13 +1,14 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.guessers.column.SpecialNAGuesser.SpecialNA;
+import org.junit.Assert;
 import org.junit.Test;
-import junit.framework.Assert;
 
 // no H2O cloud needed for this test...
 public class SpecialNATest {
 
   @Test public void intsTest() {
-    ColMeta.SpecialNA specialInts = new ColMeta.SpecialNA(ColMeta.SpecialNA.INT);
+    SpecialNA specialInts = new SpecialNA(SpecialNA.INT);
     Assert.assertTrue("type was " + specialInts.typeToString() + "; expected int", specialInts.typeToString().equals("int"));
     specialInts.add(5);
 
@@ -31,7 +32,7 @@ public class SpecialNATest {
   }
 
   @Test public void strsTest() {
-    ColMeta.SpecialNA specialStrs = new ColMeta.SpecialNA(ColMeta.SpecialNA.STR);
+    SpecialNA specialStrs = new SpecialNA(SpecialNA.STR);
     Assert.assertTrue("type was " + specialStrs.typeToString() + "; expected String", specialStrs.typeToString().equals("String"));
     specialStrs.add("hello");
 
@@ -55,7 +56,7 @@ public class SpecialNATest {
   }
 
   @Test public void dblsTest() {
-    ColMeta.SpecialNA specialDbls = new ColMeta.SpecialNA(ColMeta.SpecialNA.DBL);
+    SpecialNA specialDbls = new SpecialNA(SpecialNA.DBL);
     Assert.assertTrue("type was " + specialDbls.typeToString() + "; expected double", specialDbls.typeToString().equals("double"));
     specialDbls.add(3.14159);
 
