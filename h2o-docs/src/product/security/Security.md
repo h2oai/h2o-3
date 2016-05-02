@@ -414,7 +414,7 @@ The following options are available:
 
 Use the HADOOP_OPTIONS environment variable to set the JVM options for the worker nodes
 ```
-export HADOOP_OPTS="-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc"
+export HADOOP_OPTS="-Djava.security.krb5.realm=kerberos_realm -Djava.security.krb5.kdc=kdc_server_hostname"
 ```
 Example:
 
@@ -437,7 +437,7 @@ spark.ext.h2o.user.name | Name of user for which access is allowed
 Also, spark.driver.extraJavaOptions must be used to configure the Kerberos authentication service:
 
 ```
---conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" 
+--conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=kerberos_realm -Djava.security.krb5.kdc=kdc_server_hostname" 
 ```
 
 Example:
