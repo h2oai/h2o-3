@@ -435,12 +435,14 @@ spark.ext.h2o.login.conf | LoginService configuration file
 spark.ext.h2o.user.name | Name of user for which access is allowed
 
 Also, spark.driver.extraJavaOptions must be used to configure the Kerberos authentication service:
-```--conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" ```
+```
+--conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" 
+```
 
 Example:
 
 ```
-$SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=../kerb.conf --conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+$SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf --conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 ```
 
 ### Hash file authentication
