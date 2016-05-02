@@ -9,19 +9,19 @@ pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
 
 def setVerbosity(level):
     global verbosity
-    verbosity = level
+    if level: verbosity = level
 
 def isVerbose():
     global verbosity
-    return True if verbosity > 0 else False
+    return verbosity > 0
 
 def isVerboser():
     global verbosity
-    return True if verbosity > 1 else False
+    return verbosity > 1
 
 def isVerbosest():
     global verbosity
-    return True if verbosity > 2 else False
+    return verbosity > 2
 
 def sleep(secs):
     if getpass.getuser() == 'jenkins':

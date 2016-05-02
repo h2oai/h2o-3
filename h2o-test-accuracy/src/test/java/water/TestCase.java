@@ -7,6 +7,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
@@ -14,12 +15,17 @@ import hex.tree.gbm.GBMModel;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
-
-
+import hex.schemas.HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99;
+import hex.schemas.GBMV3.GBMParametersV3;
+import hex.schemas.DeepLearningV3.DeepLearningParametersV3;
+import hex.schemas.GLMV3.GLMParametersV3;
+import hex.schemas.DRFV3.DRFParametersV3;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import water.api.Schema;
+import hex.schemas.HyperSpaceSearchCriteriaV99;
 
 public class TestCase {
 
@@ -30,7 +36,8 @@ public class TestCase {
   public String algoParameters;
   public boolean grid;
   public String gridParameters;
-  public String gridCriteria;
+  public String searchParameters;
+  public String modelSelectionCriteria;
   public boolean regression;
 
   private int trainingDataSetId;
@@ -41,6 +48,7 @@ public class TestCase {
   private DataSet trainingDataSet;
   private DataSet testingDataSet;
   private HashMap<String, Object[]> hyperParms;
+  private HyperSpaceSearchCriteria searchCriteria;
 
   private static boolean glmRegistered = false;
   private static boolean gbmRegistered = false;
@@ -48,14 +56,15 @@ public class TestCase {
   private static boolean dlRegistered = false;
 
   public TestCase(int testCaseId, String algo, String algoParameters, boolean grid, String gridParameters,
-                  String gridCriteria, boolean regression, int trainingDataSetId, int testingDataSetId,
-                  String testCaseDescription) throws Exception {
+                  String searchParameters, String modelSelectionCriteria, boolean regression, int trainingDataSetId,
+                  int testingDataSetId, String testCaseDescription) throws Exception {
     this.testCaseId = testCaseId;
     this.algo = algo;
     this.algoParameters = algoParameters;
     this.grid = grid;
     this.gridParameters = gridParameters;
-    this.gridCriteria = gridCriteria;
+    this.searchParameters = searchParameters;
+    this.modelSelectionCriteria = modelSelectionCriteria;
     this.regression = regression;
     this.trainingDataSetId = trainingDataSetId;
     this.testingDataSetId = testingDataSetId;
@@ -158,48 +167,56 @@ public class TestCase {
       }
 
     } else {
-      assert !gridCriteria.equals("");
+      assert !modelSelectionCriteria.equals("");
       makeGridParameters();
+      makeSearchCriteria();
       Grid grid = null;
       Model bestModel = null;
       String bestModelJson = null;
       try {
+        Schema.registerAllSchemasIfNecessary();
         switch (algo) {  // TODO: Hack for PUBDEV-2812
           case "drf":
             if (!drfRegistered) {
               new DRF(true);
+              new DRFParametersV3();
               drfRegistered = true;
             }
             break;
           case "glm":
             if (!glmRegistered) {
               new GLM(true);
+              new GLMParametersV3();
               glmRegistered = true;
             }
             break;
           case "gbm":
             if (!gbmRegistered) {
               new GBM(true);
+              new GBMParametersV3();
               gbmRegistered = true;
             }
             break;
           case "dl":
             if (!dlRegistered) {
               new DeepLearning(true);
+              new DeepLearningParametersV3();
               dlRegistered = true;
             }
             break;
         }
         startTime = System.currentTimeMillis();
-        Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+        // TODO: ModelParametersBuilderFactory parameter must be instantiated properly
+        Job<Grid> gs = GridSearch.startGridSearch(null,params,hyperParms,
+                new GridSearch.SimpleParametersBuilderFactory<>(),searchCriteria);
         grid = gs.get();
         stopTime = System.currentTimeMillis();
 
-        boolean higherIsBetter = higherIsBetter(gridCriteria);
+        boolean higherIsBetter = higherIsBetter(modelSelectionCriteria);
         double bestScore = higherIsBetter ? -Double.MAX_VALUE : Double.MAX_VALUE;
         for (Model m : grid.getModels()) {
-          double validationMetricScore = getMetrics(m._output._validation_metrics).get(gridCriteria);
-          AccuracyTestingSuite.summaryLog.println(gridCriteria + " for model " + m._key.toString() + " is " +
+          double validationMetricScore = getMetrics(m._output._validation_metrics).get(modelSelectionCriteria);
+          AccuracyTestingSuite.summaryLog.println(modelSelectionCriteria + " for model " + m._key.toString() + " is " +
                   validationMetricScore);
           if (higherIsBetter ? validationMetricScore > bestScore : validationMetricScore < bestScore) {
             bestScore = validationMetricScore;
@@ -275,7 +292,32 @@ public class TestCase {
         hyperParms = makeGbmGridParameters();
         break;
       default:
-        throw new Exception("No algo: " + algo);
+        throw new Exception("Algo not supported: " + algo);
+    }
+  }
+
+  private void makeSearchCriteria() throws Exception {
+    AccuracyTestingSuite.summaryLog.println("Making Grid Search Criteria.");
+    String[] tokens = searchParameters.trim().split(";", -1);
+    HashMap<String, String> tokenMap = new HashMap<>();
+    for (int i = 0; i < tokens.length; i++)
+      tokenMap.put(tokens[i].split("=", -1)[0], tokens[i].split("=", -1)[1]);
+
+    if (tokenMap.containsKey("strategy") && tokenMap.get("strategy").equals("RandomDiscrete")) {
+      RandomDiscreteValueSearchCriteriaV99 sc = new RandomDiscreteValueSearchCriteriaV99();
+      if (tokenMap.containsKey("seed"))
+        sc.seed = Integer.parseInt(tokenMap.get("seed"));
+      if (tokenMap.containsKey("stopping_rounds"))
+        sc.stopping_rounds = Integer.parseInt(tokenMap.get("stopping_rounds"));
+      if (tokenMap.containsKey("stopping_tolerance"))
+        sc.stopping_tolerance = Double.parseDouble(tokenMap.get("stopping_tolerance"));
+      if (tokenMap.containsKey("max_runtime_secs"))
+        sc.max_runtime_secs = Double.parseDouble(tokenMap.get("max_runtime_secs"));
+      if (tokenMap.containsKey("max_models"))
+        sc.max_models = Integer.parseInt(tokenMap.get("max_models"));
+      searchCriteria = sc.createAndFillImpl();
+    } else {
+      throw new Exception(tokenMap.get("strategy") + " search strategy is not supported for grid search test cases");
     }
   }
 
@@ -571,6 +613,27 @@ public class TestCase {
         case "_col_sample_rate":
           gbmParams._col_sample_rate = Float.parseFloat(parameterValue);
           break;
+        case "_col_sample_rate_per_tree":
+          gbmParams._col_sample_rate_per_tree = Double.parseDouble(parameterValue);
+          break;
+        case "_col_sample_rate_change_per_level":
+          gbmParams._col_sample_rate_change_per_level = Float.parseFloat(parameterValue);
+          break;
+        case "_min_split_improvement":
+          gbmParams._min_split_improvement = Double.parseDouble(parameterValue);
+          break;
+        case "_learn_rate_annealing":
+          gbmParams._learn_rate_annealing = Double.parseDouble(parameterValue);
+          break;
+        case "_max_abs_leafnode_pred":
+          gbmParams._max_abs_leafnode_pred = Double.parseDouble(parameterValue);
+          break;
+        case "_random_split_points":
+          gbmParams._random_split_points = Boolean.parseBoolean(parameterValue);
+          break;
+        case "_score_tree_interval":
+          gbmParams._score_tree_interval = Integer.parseInt(parameterValue);
+          break;
         default:
           throw new Exception(parameterName + " parameter is not supported for gbm test cases");
       }
@@ -622,6 +685,27 @@ public class TestCase {
           break;
         case "_col_sample_rate":
           gbmHyperParms.put("_col_sample_rate", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_col_sample_rate_per_tree":
+          gbmHyperParms.put("_col_sample_rate_per_tree", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_col_sample_rate_change_per_level":
+          gbmHyperParms.put("_col_sample_rate_change_per_level", stringArrayToFloatArray(gridParameterValues));
+          break;
+        case "_min_split_improvement":
+          gbmHyperParms.put("_min_split_improvement", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_learn_rate_annealing":
+          gbmHyperParms.put("_learn_rate_annealing", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_max_abs_leafnode_pred":
+          gbmHyperParms.put("_max_abs_leafnode_pred", stringArrayToDoubleArray(gridParameterValues));
+          break;
+        case "_random_split_points":
+          gbmHyperParms.put("_random_split_points", stringArrayToBooleanArray(gridParameterValues));
+          break;
+        case "_score_tree_interval":
+          gbmHyperParms.put("_score_tree_interval", stringArrayToIntegerArray(gridParameterValues));
           break;
         default:
           throw new Exception(gridParameterName + " grid parameter is not supported for gbm test cases");

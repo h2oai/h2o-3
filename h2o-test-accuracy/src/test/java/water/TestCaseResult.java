@@ -68,7 +68,7 @@ public class TestCaseResult {
     }
     sql += String.format("%s, '%s', '%s', '%s', %s, '%s', %s, '%s', '%s', '%s', %s, '%s', '%s', %s, '%s', '%s')",
             "NOW()", "H2O", h2oVersion, ipAddr, ncpu, gitHash, modelBuildTime, modelJson, tc.algo, tc.algoParameters,
-            tc.grid, tc.gridParameters, tc.gridCriteria, tc.regression, tr.uri,tt.uri);
+            tc.grid, tc.gridParameters, tc.modelSelectionCriteria, tc.regression, tr.uri,tt.uri);
     return sql;
   }
 }

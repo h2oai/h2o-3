@@ -3,7 +3,7 @@ import h2o_test_utils
 
 
 def test(a_node, pp):
-    if h2o_test_utils.isVerbose(): print 'Testing ModelMetrics. . .'
+    if h2o_test_utils.isVerbose(): print('Testing ModelMetrics. . .')
     ###################################
     # Compute and check ModelMetrics for 'deeplearning_prostate_binomial'
     mm = a_node.compute_model_metrics(model='deeplearning_prostate_binomial', frame='prostate_binomial')
@@ -16,7 +16,7 @@ def test(a_node, pp):
     assert 'thresholds_and_metric_scores' in mm, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " does not contain a thresholds_and_metric_scores element: " + h2o_test_utils.dump_json(mm)
     assert type(mm['thresholds_and_metric_scores']) is dict, "FAIL: ModelMetrics for scoring: " + 'deeplearning_prostate_binomial' + " on: " + 'prostate_binomial' + " confusion_matrices element is not a dict: " + h2o_test_utils.dump_json(mm)
     
-    # print h2o_test_utils.dump_json(mm)
+    # print(h2o_test_utils.dump_json(mm))
     h2o.H2O.verboseprint("ModelMetrics for scoring: ", 'deeplearning_prostate_binomial', " on: ", 'prostate_binomial', ":  ", repr(mm))
     
     ###################################
