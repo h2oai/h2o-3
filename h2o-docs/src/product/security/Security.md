@@ -435,6 +435,7 @@ spark.ext.h2o.login.conf | LoginService configuration file
 spark.ext.h2o.user.name | Name of user for which access is allowed
 
 Also, spark.driver.extraJavaOptions must be used to configure the Kerberos authentication service:
+
 ```
 --conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" 
 ```
