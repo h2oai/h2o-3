@@ -461,17 +461,17 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
   public final T getResult() {
     assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
-    while(!isReleasable()) {
+    do {
       try {
         ForkJoinPool.managedBlock(this);
-        Throwable ex = getDException();
-        if (ex != null) throw ex;
+        join(); // Throw any exception the map call threw
       } catch (InterruptedException ignore) {
         // do nothing
       } catch (Throwable re) {
+        onExceptionalCompletion(re,null); // block for left and rite
         throw (re instanceof DistributedException)?new DistributedException(re.getMessage(),re.getCause()):new DistributedException(re);
       }
-    }
+    } while( !isReleasable());
     assert _topGlobal:"lost top global flag";
     return self();
   }
@@ -573,9 +573,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       _left._hi = mid;          // Reset mid-point
       _rite._lo = mid;          // Also set self mid-point
       addToPendingCount(1);     // One fork awaiting completion
-      _left.fork();             // Runs in another thread/FJ instance
-      T rite = _rite;           // Reload _rite in case _left exited with exception
-      if( rite != null ) rite.compute2(); // Runs in THIS F/J thread
+      if( !isCompletedAbnormally() ) _left.fork();     // Runs in another thread/FJ instance
+      if( !isCompletedAbnormally() ) _rite.compute2(); // Runs in THIS F/J thread
       if(_profile!=null) _profile._mapdone = System.currentTimeMillis();
       return;                   // Not complete until the fork completes
     }
@@ -739,8 +738,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Full local work-tree cancellation
   void self_cancel2() { if( !isDone() ) { cancel(true); self_cancel1(); } }
   private void self_cancel1() {
-    T l = _left;  if( l != null ) { _left = null;  l.self_cancel2(); }
-    T r = _rite;  if( r != null ) { _rite = null;  r.self_cancel2(); }
+    if( _left != null ) { _left.self_cancel2(); }
+    if( _rite != null ) { _rite.self_cancel2(); }
   }
 
   /** Cancel/kill all work as we can, then rethrow... do not invisibly swallow
@@ -753,12 +752,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // early and begins post-task processing (generally cleanup from the
     // exception) but the work is still on-going - often trying to use the same
     // Keys as are being cleaned-up!
-
+    
     // Since blocking can throw (generally the same exception, again and again)
     // catch & ignore, keeping only the first one we already got.
-    if( _nleft != null ) try { _nleft.get(); } catch( Throwable ignore ) { } _nleft = null;
-    if( _nrite != null ) try { _nrite.get(); } catch( Throwable ignore ) { } _nrite = null;
-    return super.onExceptionalCompletion(ex, caller);
+    RPC<T> nl = _nleft; if( nl != null ) try { nl.get(); } catch( Throwable ignore ) { } _nleft = null;
+    RPC<T> nr = _nrite; if( nr != null ) try { nr.get(); } catch( Throwable ignore ) { } _nrite = null;
+    return true;
   }
 
   // Make copy, setting final-field completer and clearing out a bunch of fields 
