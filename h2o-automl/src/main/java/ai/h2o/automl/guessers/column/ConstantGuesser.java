@@ -16,7 +16,7 @@ import java.util.Iterator;
  */
 public class ConstantGuesser extends Guesser {
 
-  private static final double THRESHOLD = 0.999;
+  private static final double THRESHOLD = 0.999;  // 0.001*nrow is non-constant
   public ConstantGuesser(ColMeta cm) { super(cm); }
   @Override public void guess0(String name, Vec v) {
     if( v.isConst() ) return;  // chucked out later
@@ -30,7 +30,7 @@ public class ConstantGuesser extends Guesser {
     double cumFrac=0;
     for (long freq : freqs)
       cumFrac += (double) freq / (double) nrow;
-    if( cumFrac >= THRESHOLD) {   // 90% of the data is in a few constant values... ?
+    if( cumFrac >= THRESHOLD) {   // most data is in a few constant values... ?
       Log.info("AutoML ignoring " + name + " for mostly constant: " + toFracString(ct._cnts,nrow));
       _cm._ignored=true;
       _cm._ignoredReason="mostly constant";
