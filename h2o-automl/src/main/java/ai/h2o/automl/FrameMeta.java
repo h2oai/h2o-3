@@ -20,6 +20,8 @@ import water.util.Log;
 
 import java.util.*;
 
+import static ai.h2o.automl.utils.AutoMLUtils.intListToA;
+
 /**
  * Cache common questions asked upon the frame.
  */
@@ -32,7 +34,10 @@ public class FrameMeta extends Iced {
   public int[] _dblCols;
   public int[] _binaryCols;
   public int[] _intNotBinaryCols;
-  final int _response;
+  public int _response;
+  private boolean _isClassification;
+  private String[] _ignoredCols;
+  private String[] _includeCols;
   private long _naCnt=-1;  // count of nas across whole frame
   private int _numFeat=-1; // count of numerical features
   private int _catFeat=-1; // count of categorical features
@@ -146,15 +151,6 @@ public class FrameMeta extends Iced {
     return (_numFeat=cnt);
   }
 
-  public static int[] intListToA(List<Integer> list) {
-    int[] a=new int[0];
-    if( list.size() >0 ) {
-      a = new int[list.size()];
-      for(int i=0;i<a.length;++i) a[i] = list.get(i);
-    }
-    return a;
-  }
-
   public int numberOfCategoricalFeatures() {
     if( _catFeat!=-1 ) return _catFeat;
     ArrayList<Integer> idxs = new ArrayList<>();
@@ -183,12 +179,6 @@ public class FrameMeta extends Iced {
     _nclass = _isClassification?dc._nclass:1;
     return _dummies;
   }
-
-  private boolean _isClassification;
-
-  // cached things
-  private String[] _ignoredCols;
-  private String[] _includeCols;
 
   public FrameMeta(Frame fr, int response, String datasetName) {
     _datasetName=datasetName;
@@ -235,12 +225,22 @@ public class FrameMeta extends Iced {
   }
 
   public String[] includedCols() {
-    if( _includeCols==null )
-      _includeCols = ArrayUtils.difference(_fr.names(), ignoredCols());
+    if( _includeCols==null ) {
+      if( null==ignoredCols() ) return _includeCols = _fr.names();
+      _includeCols = ArrayUtils.difference(_fr.names(), ignoredCols());  // clones _fr.names, so line above avoids one more copy
+    }
     return _includeCols;
   }
 
-  public ColMeta response() { return _cols[_response]; }
+  public ColMeta response() {
+    if( -1==_response ) {
+      for(int i=0;i<_cols.length;++i)
+        if(_cols[i]._response) {
+          _response=i; break;
+        }
+    }
+    return _cols[_response];
+  }
 
   // blocking call to compute 1st pass of column metadata
   public FrameMeta computeFrameMetaPass1() {
@@ -253,12 +253,46 @@ public class FrameMeta extends Iced {
     H2O.submitTask(metaCollector).join();
     Log.info("MetaPass1 completed in " + (System.currentTimeMillis()-start)/1000. + " seconds");
     double sumTimeToMRTaskPerCol=0;
+    ArrayList<Integer> dropCols=new ArrayList<>();
     for(MetaPass1 cmt: tasks) {
-      _cols[cmt._colMeta._idx] = cmt._colMeta;
+      if( cmt._colMeta._ignored ) dropCols.add(cmt._colMeta._idx);
+      else                        _cols[cmt._colMeta._idx] = cmt._colMeta;
       sumTimeToMRTaskPerCol+= cmt._elapsed;
     }
     Log.info("Average time to MRTask per column: "+ ((sumTimeToMRTaskPerCol)/(tasks.length))/1000. + " seconds");
+    if( dropCols.size()>0 )
+      dropIgnoredCols(intListToA(dropCols));
     return this;
+  }
+
+  private void dropIgnoredCols(int[] dropCols) {
+    Log.info("AutoML dropping " + dropCols.length + " ignored columns");
+    Vec[] vecsToRemove = _fr.remove(dropCols);
+    for(Vec v: vecsToRemove) v.remove();
+    ColMeta cm[] = new ColMeta[_fr.numCols()];
+    int idx=0;
+    for(int i=0;i<_fr.numCols();++i) {
+      while(null==_cols[idx]) idx++;
+      cm[i]=_cols[idx++];
+    }
+    _cols=cm;
+    flushCachedItems();
+  }
+
+  private void flushCachedItems() {
+    _catFeats=null;
+    _numFeats=null;
+    _intCols=null;
+    _dblCols=null;
+    _binaryCols=null;
+    _intNotBinaryCols=null;
+    _response=-1;
+    _naCnt=-1;
+    _numFeat=-1;
+    _catFeat=-1;
+    _nclass=-1;
+    _ignoredCols=null;
+    _includeCols=null;
   }
 
   public FrameMeta computeVIFs() {
