@@ -41,6 +41,7 @@ public class ColMeta extends Iced {
   public double _percentNA;     // fraction of NAs in the column
   public double _variance;      // variance of the column, pulled from the vec
   public double _sigma;         // pulled from vec rollups
+  public boolean _stratify;     // do stratified sampling when building weight columns
 
   public String _ignoredReason; // was this ignored by user, or by automl
   public boolean _isClass;      // is a classification problem, only valid to ask when _response is true

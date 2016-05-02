@@ -139,7 +139,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
-    ModelBuilder mb = InitModel.initRF(fm._fr, fm.response()._name);
+    ModelBuilder mb = InitModel.initRF(fm._fr, fm.response()._name,fm.stratify());
     mb._parms._ignored_columns = fm.ignoredCols();
     return mb;
   }
