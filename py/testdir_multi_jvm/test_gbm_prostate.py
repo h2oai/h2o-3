@@ -11,7 +11,6 @@ import h2o
 #
 
 ip_port = sys.argv[2].split(":")
-print ip_port
 ip = ip_port[0]
 port = int(ip_port[1])
 
