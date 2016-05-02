@@ -6,7 +6,7 @@ When we look to using H2O in a production environment there are two major aspect
 ### Model Training
 Model training is the set of steps you use to load your training and optional validation data into H2O, prepare it, and train one or more models.  You will generally do this in Flow, Python, R, Scala or Java.
 
-If you've done this work in Flow, *or* if you want to drive the workflow from another application (e.g., a data collection pipline), you can use the REST API to automate these steps.
+If you've done this work in Flow, *or* if you want to drive the workflow from another application (e.g., a data collection pipeline), you can use the REST API to automate these steps.
 
 ### Predictions
 There are two ways to use the models you've trained in H2O to generate new predictions:
@@ -29,7 +29,7 @@ You can call the REST API:
  - using *curl*
  - using the language of your choice
 
-Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file and are simple to generate for other langauges if desired.
+Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file and are simple to generate for other languages if desired.
 
 ## Reference Documentation
 Reference documentation for the REST API is available in the Help sidebar in Flow, as well as on the H2O.ai website, [http://docs.h2o.ai/](http://docs.h2o.ai/).  The reference documentation is all generated from the H2O server via the Metadata facilities described below so  it is always up to date.
@@ -145,7 +145,7 @@ As an example, Flow has no hardwired knowledge of any of the model algos.  It di
 Similarly, all the endpoints (URL patterns) are described dynamically by the */Metadata/endpoints* endpoints.
 
 ## Error Condition Payloads
-All errors return one of the non-2xx HTTP status codes mentioned above and return standardized error payloads.  These contain an end-user-directed message, a developer-oriented message, the HTTP status, an optional dictionary of revelant values, and exception information if applicable.
+All errors return one of the non-2xx HTTP status codes mentioned above and return standardized error payloads.  These contain an end-user-directed message, a developer-oriented message, the HTTP status, an optional dictionary of relevant values, and exception information if applicable.
 
 Here is the result of requesting a Frame that is not present in the server: 
 
