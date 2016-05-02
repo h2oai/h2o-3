@@ -13,6 +13,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
+import water.util.Log;
 
 import java.util.*;
 
@@ -245,9 +246,15 @@ public class FrameMeta extends Iced {
       tasks[i] = new MetaPass1(i,this);
     _isClassification = tasks[_response]._isClassification;
     MetaCollector.ParallelTasks metaCollector = new MetaCollector.ParallelTasks<>(tasks);
+    long start = System.currentTimeMillis();
     H2O.submitTask(metaCollector).join();
-    for(MetaPass1 cmt: tasks)
+    Log.info("MetaPass1 completed in " + (System.currentTimeMillis()-start)/1000. + " seconds");
+    double sumTimeToMRTaskPerCol=0;
+    for(MetaPass1 cmt: tasks) {
       _cols[cmt._colMeta._idx] = cmt._colMeta;
+      sumTimeToMRTaskPerCol+= cmt._elapsed;
+    }
+    Log.info("Average time to MRTask per column: "+ ((sumTimeToMRTaskPerCol)/(tasks.length))/1000. + " seconds");
     return this;
   }
 
