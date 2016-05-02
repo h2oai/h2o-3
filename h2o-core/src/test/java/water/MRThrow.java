@@ -13,6 +13,7 @@ public class MRThrow extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5);}
 
   @Test public void testLots() {
+    for( int i=0; i<10; i++ )
       testInvokeThrow();
   }
   // ---
