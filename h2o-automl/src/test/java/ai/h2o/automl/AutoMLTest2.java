@@ -26,7 +26,11 @@ public class AutoMLTest2 {
    *
    *
    *  Building models:
+   *      1. Build a 1 tree GBM, then build TIME_BUDGET / time_for_one_tree trees
+   *      2. shrinkage = 1 / (1.5*ntree)
+   *      3. depth = 6
    *
    */
+
 
 }

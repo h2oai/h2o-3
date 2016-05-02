@@ -1,6 +1,6 @@
 package ai.h2o.automl.autocollect;
 
-import ai.h2o.automl.ColMeta;
+import ai.h2o.automl.colmeta.ColMeta;
 import ai.h2o.automl.FrameMeta;
 import water.DKV;
 import water.H2O;
