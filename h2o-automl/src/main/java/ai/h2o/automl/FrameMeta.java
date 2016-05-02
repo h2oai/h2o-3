@@ -242,6 +242,8 @@ public class FrameMeta extends Iced {
     return _cols[_response];
   }
 
+  public boolean stratify() { return response()._stratify; }
+
   // blocking call to compute 1st pass of column metadata
   public FrameMeta computeFrameMetaPass1() {
     MetaPass1[] tasks = new MetaPass1[_fr.numCols()];

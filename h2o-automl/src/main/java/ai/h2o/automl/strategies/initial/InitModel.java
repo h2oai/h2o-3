@@ -20,8 +20,8 @@ public class InitModel {
   public static final byte BINOMIAL   =1;
   public static final byte MULTINOMIAL=2;
 
-  public static DRF initRF(Frame training_frame, String response) {
-    Frame[] trainTest = AutoMLUtils.makeTrainTest(training_frame,0.8);
+  public static DRF initRF(Frame training_frame, String response, boolean stratify) {
+    Frame[] trainTest = AutoMLUtils.makeTrainTest(training_frame,response,0.8,stratify);
     return makeRF(
             trainTest[0],
             trainTest[1],
