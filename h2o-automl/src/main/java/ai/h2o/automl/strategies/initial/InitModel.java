@@ -1,5 +1,6 @@
 package ai.h2o.automl.strategies.initial;
 
+import ai.h2o.automl.utils.AutoMLUtils;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import water.fvec.Frame;
@@ -20,8 +21,10 @@ public class InitModel {
   public static final byte MULTINOMIAL=2;
 
   public static DRF initRF(Frame training_frame, String response) {
+    Frame[] trainTest = AutoMLUtils.makeTrainTest(training_frame,0.8);
     return makeRF(
-            training_frame,
+            trainTest[0],
+            trainTest[1],
             response,
             5 /*ntree*/,
             20 /*depth*/,
@@ -37,13 +40,13 @@ public class InitModel {
             0.667f /*sample_rate*/,
             -1 /*seed*/);
   }
-  private static DRF makeRF(Frame training_frame, String response, int ntree,
+  private static DRF makeRF(Frame training_frame, Frame validation_frame, String response, int ntree,
                             int max_depth, int min_rows, int stopping_rounds, double stopping_tolerance,
                             int nbins, int nbins_cats, int mtries, float sample_rate, long seed) {
     DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
     drf._train = training_frame._key;
+    drf._valid = validation_frame._key;
     drf._response_column = response;
-//    drf._model_id = Key.make(modelName);
     drf._ntrees = ntree;
     drf._max_depth = max_depth;
     drf._min_rows = min_rows;
