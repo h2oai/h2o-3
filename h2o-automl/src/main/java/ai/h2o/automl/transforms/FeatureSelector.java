@@ -14,7 +14,8 @@ import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
 import java.util.HashMap;
-import java.util.Random;
+
+import static ai.h2o.automl.utils.AutoMLUtils.makeWeights;
 
 /**
  * Stepwise feature generation and pruning using various strategies.
@@ -268,22 +269,6 @@ class GBMSelector extends FeatureSelector {
       for(int i=1;i<ts.length;++i)
         sum+=ts[i] - ts[i-1];
       return sum / (double)(ts.length-1);
-    }
-
-    private static Vec[] makeWeights(Vec v, final double trainRatio) {
-      Vec randVec = v.makeZero();
-      final long seed = water.util.RandomUtils.getRNG().nextLong();
-      new MRTask() {
-        @Override public void map(Chunk c){
-          long start = c.start();
-          Random rng = new water.util.RandomUtils.PCGRNG(start,1);
-          for(int i = 0; i < c._len; ++i) {
-            rng.setSeed(seed+start+i); // Determinstic per-row
-            c.set(i, rng.nextFloat() < trainRatio ? 1 : 0);
-          }
-        }
-      }.doAll(randVec);
-      return new Vec[]{randVec, Expr.binOp("-",1,randVec).toWrappedVec()};  // gives weight and 1-weight
     }
 
     protected GBMModel.GBMParameters genParms() {
