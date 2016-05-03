@@ -12,6 +12,10 @@ import water.fvec.Vec;
 public class MRThrow extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5);}
 
+  @Test public void testLots() {
+    for( int i=0; i<10; i++ )
+      testInvokeThrow();
+  }
   // ---
   // Map in h2o.jar - a multi-megabyte file - into Arraylets.
   // Run a distributed byte histogram.  Throw an exception in *some* map call,

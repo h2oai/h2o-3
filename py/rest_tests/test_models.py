@@ -112,7 +112,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     #######################################
     # Test default parameters validation for each model builder
     #
-    if h2o_test_utils.isVerbose(): print 'Testing ModelBuilder default parameters. . .'
+    if h2o_test_utils.isVerbose(): print('Testing ModelBuilder default parameters. . .')
     model_builders = a_node.model_builders(timeoutSecs=240)['model_builders']
     
     # Do we know about all of them?
@@ -125,7 +125,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
         if algo in algo_additional_default_params:
             test_parameters.update(algo_additional_default_params[algo])
     
-        if h2o_test_utils.isVerboser(): print 'Testing ' + algo + ' with params: ' + repr(test_parameters)
+        if h2o_test_utils.isVerboser(): print('Testing ' + algo + ' with params: ' + repr(test_parameters))
     
         parameters_validation = a_node.validate_model_parameters(algo=algo, training_frame=None, parameters=test_parameters, timeoutSecs=240) # synchronous
         assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
@@ -133,7 +133,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
         expected_count = 0
         if expected_count != parameters_validation['error_count']:
-            print "validation errors: "
+            print("validation errors: ")
             pp.pprint(parameters_validation)
         assert expected_count == parameters_validation['error_count'], "FAIL: " + str(expected_count) + " != error_count in good-parameters parameters validation result."
     
@@ -142,7 +142,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     # Test DeepLearning parameters validation
     #
     # Default parameters:
-    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning default parameters. . .'
+    if h2o_test_utils.isVerbose(): print('Testing DeepLearning default parameters. . .')
     model_builder = a_node.model_builders(algo='deeplearning', timeoutSecs=240)['model_builders']['deeplearning']
     dl_test_parameters_list = model_builder['parameters']
     dl_test_parameters = {value['name'] : value['default_value'] for value in dl_test_parameters_list}
@@ -151,24 +151,24 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
     h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
     if 0 != parameters_validation['error_count']:
-        print "validation errors: "
+        print("validation errors: ")
         pp.pprint(parameters_validation)
     assert 0 == parameters_validation['error_count'], "FAIL: 0 != error_count in good-parameters parameters validation result."
     
     # Good parameters (note: testing with null training_frame):
-    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning good parameters. . .'
+    if h2o_test_utils.isVerbose(): print('Testing DeepLearning good parameters. . .')
     dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]" }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in good-parameters parameters validation result."
     h2o.H2O.verboseprint("Bad params validation messages: ", repr(parameters_validation))
     if 0 != parameters_validation['error_count']:
-        print "validation errors: "
+        print("validation errors: ")
         pp.pprint(parameters_validation)
     assert 0 == parameters_validation['error_count'], "FAIL: 0 != error_count in good-parameters parameters validation result."
     
     # Bad parameters (hidden is null):
     # (note: testing with null training_frame)
-    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning bad parameters, null training_frame. . .'
+    if h2o_test_utils.isVerbose(): print('Testing DeepLearning bad parameters, null training_frame. . .')
     dl_test_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27 }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame=None, parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (input_dropout_ratio)."
@@ -182,7 +182,7 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     assert found_expected_error, "FAIL: Failed to find error message about input_dropout_ratio in the validation messages."
     
     # Bad parameters (no response_column):
-    if h2o_test_utils.isVerbose(): print 'Testing DeepLearning bad parameters, null response_column. . .'
+    if h2o_test_utils.isVerbose(): print('Testing DeepLearning bad parameters, null response_column. . .')
     dl_test_parameters = {'hidden': "[10, 20, 10]" }
     parameters_validation = a_node.validate_model_parameters(algo='deeplearning', training_frame='prostate_binomial', parameters=dl_test_parameters, timeoutSecs=240) # synchronous
     assert 'error_count' in parameters_validation, "FAIL: Failed to find error_count in bad-parameters parameters validation result (response_column)."
@@ -192,12 +192,12 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     
     #######################################
     # Try to build DeepLearning model for Prostate but with bad parameters; we should get a ModelParametersSchema with the error.
-    if h2o_test_utils.isVerbose(): print 'About to try to build a DeepLearning model with bad parameters. . .'
+    if h2o_test_utils.isVerbose(): print('About to try to build a DeepLearning model with bad parameters. . .')
     dl_prostate_bad_parameters = {'response_column': 'CAPSULE', 'hidden': "[10, 20, 10]", 'input_dropout_ratio': 27  }
     parameters_validation = a_node.build_model(algo='deeplearning', model_id='deeplearning_prostate_binomial_bad', training_frame='prostate_binomial', parameters=dl_prostate_bad_parameters, timeoutSecs=240) # synchronous
     h2o_test_utils.validate_validation_messages(parameters_validation, ['input_dropout_ratio'])
     assert parameters_validation['__http_response']['status_code'] == requests.codes.precondition_failed, "FAIL: expected 412 Precondition Failed from a bad build request, got: " + str(parameters_validation['__http_response']['status_code'])
-    if h2o_test_utils.isVerbose(): print 'Done trying to build DeepLearning model with bad parameters.'
+    if h2o_test_utils.isVerbose(): print('Done trying to build DeepLearning model with bad parameters.')
     
     #####################################
     # Early test of predict()
@@ -207,5 +207,5 @@ def build_and_test(a_node, pp, datasets, algos, algo_additional_default_params):
     h2o_test_utils.validate_frame_exists(a_node, 'deeplearning_airlines_binomial_predictions')
     h2o.H2O.verboseprint("Predictions for scoring: ", 'deeplearning_airlines_binomial', " on: ", 'airlines_binomial', ":  ", repr(p))
     
-    # print h2o_test_utils.dump_json(p)
+    # print(h2o_test_utils.dump_json(p))
     

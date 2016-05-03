@@ -56,7 +56,9 @@ public class DataSet {
 	private File makeDataSetFile(String uri) {
 		String filePath;
 		if (uri.contains("bigdata")) { filePath = "bigdata/laptop/testng/"; }
-		else {                         filePath = "smalldata/testng/"; }
+		else if (uri.contains("smalldata")) { filePath = "smalldata/testng/"; }
+		else if (uri.contains("tmp")) { filePath = "/tmp/"; }
+		else { filePath = ""; }
 
 		String[] uriTokens = uri.trim().split("/", -1);
 		String fileName = uriTokens[uriTokens.length - 1];
