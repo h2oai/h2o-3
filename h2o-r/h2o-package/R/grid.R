@@ -155,14 +155,23 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
                           x
                         })
   failure_details <- lapply(json$failure_details, function(msg) { msg })
-  
-  # print out the failure/warning messages from Java if it exists
-  if (length(failure_details) > 0) {
-    cat(sprintf("[%s] %s \n", Sys.time(), failure_details))
-  }
-  
   failure_stack_traces <- lapply(json$failure_stack_traces, function(msg) { msg })
   failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
+
+  # print out the failure/warning messages from Java if it exists
+  if (length(failure_details) > 0) {
+    printf("Errors/Warnings building gridsearch model!\n")
+    for (index in 1:length(failure_details)) {
+      
+      if (typeof(failed_params[[index]]) == "list") {
+        for (index2 in 1:length(hyper_names)) {
+            cat(sprintf("Hyper-parameter: %s, %s\n", hyper_names[[index2]], failed_params[[index]][[hyper_names[[index2]]]]))
+        }
+      }
+      cat(sprintf("[%s] failure_details: %s \n", Sys.time(), failure_details[index]))
+      cat(sprintf("[%s] failure_stack_traces: %s \n", Sys.time(), failure_stack_traces[index]))
+    }
+  }
 
   new(class,
       grid_id = grid_id,
@@ -175,5 +184,3 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
       summary_table     = json$summary_table
       )
 }
-
-
