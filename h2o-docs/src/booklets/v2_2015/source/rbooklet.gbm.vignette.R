@@ -16,6 +16,8 @@
 
 gbmBooklet <-
 function() {
+	# set random seed to generate random dataset
+  	set.seed(1234)
     story1 <- c(h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_uploadfile_example.R"),
                 h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun.R"),
                 h2o:::.h2o.locate("GBM_Vignette_code_examples/gbm_examplerun_stochastic.R"),
