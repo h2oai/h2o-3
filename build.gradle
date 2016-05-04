@@ -82,7 +82,7 @@ ext {
     //
     // Versions of libraries shared cross all projects
     //
-    junitVersion  = '4.11'
+    junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
     awsJavaSdkVersion = '1.8.3'
 

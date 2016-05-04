@@ -111,14 +111,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         A character string specifying how to handle missing value:
         "MeanImputation","Skip".
 
-<<<<<<< HEAD
       interactions : list, optional
         A list of column names to interact. All pairwise combinations of columns will be
         interacted.
-=======
       max_runtime_secs: int, optional
         Maximum allowed runtime, model will stop running after reaching the limit and return whatever result it has at the moment.
->>>>>>> e95576ae7d6e4928eb76beb6066e899f91123ca4
 
     Returns
     -------

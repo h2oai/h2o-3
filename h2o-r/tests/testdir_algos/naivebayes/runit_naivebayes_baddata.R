@@ -4,6 +4,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.nbayes.bad_data <- function() {
+  # set random seed to generate random dataset
+  set.seed(1234)
   rawdata <- matrix(rnorm(1000), nrow = 100, ncol = 10)
   
   Log.info("Training data with all NA's")
