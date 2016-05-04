@@ -23,6 +23,17 @@ args = parser.parse_args()
 h2o.H2O.verbose = True if args.verbose else False
 pp = pprint.PrettyPrinter(indent=4)  # pretty printer for debugging
 
+type_map = {
+    'string': 'string',
+    'byte': 'byte',
+    'short': 'int16',
+    'int': 'int32',
+    'long': 'int64',
+    'float': 'float32',
+    'double': 'float64',
+    'boolean': 'bool'
+}
+
 def cons_golang_type(pojo_name, name, h2o_type, schema_name):
     if schema_name is None or h2o_type.startswith('enum'):
         simple_type = h2o_type.replace('[]', '')
@@ -200,12 +211,12 @@ def generate_pojo(schema, pojo_name, model_builders_map):
         # TODO: we want to redfine the field even if it's inherited, because the child class can have a different default value. . .
         if field['is_inherited']:
             pojo.append("    /* INHERITED: {help} ".format(help=help))
-            pojo.append("{name} {type}: {value}".format(type=golang_type, name=name.capitalize(), value=value))
+            pojo.append("{Name} {type}: {value} `json:\"{name}\"`".format(type=golang_type, Name=name.capitalize(), value=value, name=name))
             pojo.append("     */")
             # inherited = field['inherited_from']
         else:
             pojo.append("    /** {help} */".format(help=help))
-            pojo.append("{name} {type}".format(type=golang_type, name=name.capitalize()))
+            pojo.append("{Name} {type} `json:\"{name}\"`".format(type=golang_type, Name=name.capitalize(), name=name))
 
         constructor.append("{inherited}{name}: {value},".format(name=name.capitalize(), value=value, inherited=inherited))
 
