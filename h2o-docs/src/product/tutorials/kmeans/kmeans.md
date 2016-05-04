@@ -12,7 +12,7 @@ For more information, refer to <a href="http://citeseerx.ist.psu.edu/viewdoc/dow
 
 ### Getting Started
 
-First get the tutorial's data set from  <a href="https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt" target="_blank">here</a> (In the next page Select File > Save to download the text file). (This data originally comes the publicly available data set, which can be found at <a href="http://archive.ics.uci.edu/ml/datasets/seeds" target="_blank">http://archive.ics.uci.edu/ml/datasets/seeds</a>, in the tutorial's link above we've removed random spacing that causes the data set to look like 9 columns instead of 8.)
+First get the tutorial's data set from  <a href="https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt" target="_blank">here</a> (on the next page select File > Save to download the text file). (This data originally comes from the publicly available data set, which can be found at <a href="http://archive.ics.uci.edu/ml/datasets/seeds" target="_blank">http://archive.ics.uci.edu/ml/datasets/seeds</a>. In the tutorial's link above we've removed random spacing that causes the data set to look like 9 columns instead of 8.)
 
 The data are composed of 210 observations, 7 attributes, and an a priori grouping assignment. All data are positively valued and continuous. 
 
