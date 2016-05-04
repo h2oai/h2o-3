@@ -98,7 +98,7 @@ def generate_pojo(schema, pojo_name, model_builders_map):
     if args.verbose: print('Generating POJO: ', pojo_name)
 
     pojo = []
-    pojo.append("package pojos;")
+    pojo.append("package bindings")
     pojo.append("")
 
     constructor = []
@@ -113,7 +113,8 @@ def generate_pojo(schema, pojo_name, model_builders_map):
 
     pojo.append("")
     pojo.append("type {pojo_name} struct".format(pojo_name=pojo_name) + '{')
-    pojo.append("{superclass}".format(superclass=superclass))
+    if superclass != '':
+        pojo.append("*{superclass}".format(superclass=superclass))
 
     # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the parameters schema class. . .
     is_model_builder = False
@@ -123,6 +124,7 @@ def generate_pojo(schema, pojo_name, model_builders_map):
 
     first = True
     inherited = ""
+    inherit_counter = 0
     for field in schema['fields']:
         help = field['help']
         type = field['type']
@@ -211,14 +213,18 @@ def generate_pojo(schema, pojo_name, model_builders_map):
         # TODO: we want to redfine the field even if it's inherited, because the child class can have a different default value. . .
         if field['is_inherited']:
             pojo.append("    /* INHERITED: {help} ".format(help=help))
-            pojo.append("{Name} {type}: {value} `json:\"{name}\"`".format(type=golang_type, Name=name.capitalize(), value=value, name=name))
+            pojo.append("{Name} {type}: {value} `json:\"{name}\"`".format(type=golang_type, Name=string.capwords(name, "_").replace("_", ""), value=value, name=name))
             pojo.append("     */")
-            # inherited = field['inherited_from']
+            if inherited != field['inherited_from']:
+                inherited = field['inherited_from']
+                constructor.append("{inherited}: &{inherited}".format(inherited=inherited)+ '{')
+                inherit_counter += 1
         else:
             pojo.append("    /** {help} */".format(help=help))
-            pojo.append("{Name} {type} `json:\"{name}\"`".format(type=golang_type, Name=name.capitalize(), name=name))
+            pojo.append("{Name} {type} `json:\"{name}\"`".format(type=golang_type, Name=string.capwords(name, "_").replace("_", ""), name=name))
 
-        constructor.append("{inherited}{name}: {value},".format(name=name.capitalize(), value=value, inherited=inherited))
+
+        constructor.append("{name}: {value},".format(name=string.capwords(name, "_").replace("_", ""), value=value, inherited=inherited))
 
         first = False
 
@@ -237,6 +243,8 @@ def generate_pojo(schema, pojo_name, model_builders_map):
     pojo.append("")
     for line in constructor:
         pojo.append(line)
+    for i in range(inherit_counter):
+        pojo.append("},")
     pojo.append("}")
     pojo.append("}")
     return pojo
