@@ -505,16 +505,20 @@ public abstract class GLMTask  {
       int numOff = _dinfo.numStart();
       for(int cid = 0; cid < _dinfo._nums; ++cid){
         double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
+        double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double b = scale*_beta[numOff+cid];
-        if(c.isSparseZero() || c.isSparseNA()){
+        if(c.isSparseZero()){
           int nvals = c.asSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += vals[i] * b;
+        } else if(c.isSparseNA()){
+          int nvals = c.asSparseDoubles(vals,ids,NA);
+          for(int i = 0; i < nvals; ++i)
+            etas[ids[i]] += (vals[i] - off) * b;
         } else {
           c.getDoubles(vals,0,vals.length,NA);
-          double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
           for(int i = 0; i < vals.length; ++i)
             etas[i] += (vals[i] - off) * b;
         }
@@ -527,11 +531,18 @@ public abstract class GLMTask  {
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
-        if(c.isSparseZero() || c.isSparseNA()){
+        if(c.isSparseZero()){
           double g = 0;
           int nVals = c.asSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
             g += vals[i]*scale*etas[ids[i]];
+          _gradient[numOff+cid] = g;
+        } else if(c.isSparseNA()){
+          double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
+          double g = 0;
+          int nVals = c.asSparseDoubles(vals,ids,NA);
+          for(int i = 0; i < nVals; ++i)
+            g += (vals[i]-off)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else {
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];

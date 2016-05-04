@@ -38,7 +38,7 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public double [] getDoubles(double [] vals,int from, int to, double NA){
-    double fill = isSparseNA()?Double.NaN:0;
+    double fill = isSparseNA()?NA:0;
     if(from == 0 && to == _len) {
       Arrays.fill(vals,fill);
       double [] svals = new double[_sparseLen];
