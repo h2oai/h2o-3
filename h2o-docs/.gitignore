@@ -7,3 +7,6 @@ schemas.json
 *.log
 *.out
 *.toc
+
+# Ignore _build folder
+new_look_docs/_build

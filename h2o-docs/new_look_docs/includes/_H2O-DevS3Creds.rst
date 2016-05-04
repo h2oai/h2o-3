@@ -1,0 +1,221 @@
+ # Configuration & Data Storage
+
+EC2 Instances & S3 storage
+--------------------------
+
+*Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI*
+
+To use the Amazon Web Services (AWS) S3 storage solution, you will need
+to pass your S3 access credentials to H2O. This will allow you to access
+your data on S3 when importing data frames with path prefixes
+``s3n://...``.
+
+For security reasons, we recommend writing a script to read the access
+credentials that are stored in a separate file. This will not only keep
+your credentials from propagating to other locations, but it will also
+make it easier to change the credential information later.
+
+Standalone Instance
+-------------------
+
+When running H2O in standalone mode using the simple Java launch
+command, we can pass in the S3 credentials in two ways.
+
+-  You can pass in credentials in standalone mode by creating a
+   ``core-site.xml`` file and pass it in with the flag ``-hdfs_config``.
+   For an example ``core-site.xml`` file, refer to
+   `Core-site.xml <#Example>`__.
+
+0. Edit the properties in the core-site.xml file to include your Access
+   Key ID and Access Key as shown in the following example:
+
+   \`\`\` fs.s3n.awsAccessKeyId [AWS SECRET KEY]
+
+   ::
+
+       <property>
+         <name>fs.s3n.awsSecretAccessKey</name>
+         <value>[AWS SECRET ACCESS KEY]</value>
+       </property>
+       ```
+
+1. Launch with the configuration file ``core-site.xml`` by entering the
+   following in the command line:
+
+   ::
+
+       java -jar h2o.jar -hdfs_config core-site.xml
+
+2. Import the data using importFile with the S3 url path:
+
+   ``s3n://bucket/path/to/file.csv``
+
+-  You can pass the AWS Access Key and Secret Access Key in an S3N Url
+   in Flow, R, or Python (where ``AWS_ACCESS_KEY`` represents your user
+   name and ``AWS_SECRET_KEY`` represents your password).
+
+-  To import the data from the Flow API:
+
+   ::
+
+       `importFiles [ "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv" ]`
+
+-  To import the data from the R API:
+
+   ::
+
+       `h2o.importFile(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
+
+-  To import the data from the Python API:
+
+   ::
+
+       `h2o.import_frame(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")`
+
+ ##Core-site.xml Example
+
+The following is an example core-site.xml file:
+
+::
+
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+    <!-- Put site-specific property overrides in this file. -->
+
+    <configuration>
+
+        <!--
+        <property>
+        <name>fs.default.name</name>
+        <value>s3n://<your s3 bucket></value>
+        </property>
+        -->
+
+        <property>
+            <name>fs.s3n.awsAccessKeyId</name>
+            <value>insert access key here</value>
+        </property>
+
+        <property>
+            <name>fs.s3n.awsSecretAccessKey</name>
+            <value>insert secret key here</value>
+        </property>
+        </configuration> 
+
+--------------
+
+Launching H2O
+-------------
+
+**Note**: Before launching H2O on an EC2 cluster, verify that ports
+``54321`` and ``54322`` are both accessible by TCP and UDP.
+
+Selecting the Operating System and Virtualization Type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select your operating system and the virtualization type of the prebuilt
+AMI on Amazon. If you are using Windows, you will need to use a
+hardware-assisted virtual machine (HVM). If you are using Linux, you can
+choose between para-virtualization (PV) and HVM. These selections
+determine the type of instances you can launch.
+
+.. figure:: images/ec2_system.png
+   :alt: EC2 Systems
+
+   EC2 Systems
+
+For more information about virtualization types, refer to
+`Amazon <http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/virtualization_types.html>`__.
+
+--------------
+
+Configuring the Instance
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+0. Select the IAM role and policy to use to launch the instance. H2O
+   detects the temporary access keys associated with the instance, so
+   you don't need to copy your AWS credentials to the instances.
+
+.. figure:: images/ec2_config.png
+   :alt: EC2 Configuration
+
+   EC2 Configuration
+
+0. When launching the instance, select an accessible key pair.
+
+.. figure:: images/ec2_key_pair.png
+   :alt: EC2 Key Pair
+
+   EC2 Key Pair
+
+--------------
+
+(Windows Users) Tunneling into the Instance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For Windows users that do not have the ability to use ``ssh`` from the
+terminal, either download Cygwin or a Git Bash that has the capability
+to run ``ssh``:
+
+``ssh -i amy_account.pem ec2-user@54.165.25.98``
+
+Otherwise, download PuTTY and follow these instructions:
+
+0. Launch the PuTTY Key Generator.
+1. Load your downloaded AWS pem key file. **Note:** To see the file,
+   change the browser file type to "All".
+2. Save the private key as a .ppk file.
+
+.. figure:: images/ec2_putty_key.png
+   :alt: Private Key
+
+   Private Key
+
+0. Launch the PuTTY client.
+1. In the *Session* section, enter the host name or IP address. For
+   Ubuntu users, the default host name is ``ubuntu@<ip-address>``. For
+   Linux users, the default host name is ``ec2-user@<ip-address>``.
+
+.. figure:: images/ec2_putty_connect_1.png
+   :alt: Configuring Session
+
+   Configuring Session
+
+0. Select *SSH*, then *Auth* in the sidebar, and click the **Browse**
+   button to select the private key file for authentication.
+
+|Configuring SSH| 0. Start a new session and click the **Yes** button to
+confirm caching of the server's rsa2 key fingerprint and continue
+connecting.
+
+.. figure:: images/ec2_putty_alert.png
+   :alt: PuTTY Alert
+
+   PuTTY Alert
+
+--------------
+
+Downloading Java and H2O
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+0. Download
+   `Java <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`__
+   (JDK 1.7 or later) if it is not already available on the instance.
+1. To download H2O, run the ``wget`` command with the link to the zip
+   file available on our `website <http://h2o.ai/download/>`__ by
+   copying the link associated with the **Download** button for the
+   selected H2O build.
+
+   ::
+
+       wget http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html
+       unzip h2o-{{project_version}}.zip
+       cd h2o-{{project_version}}
+       java -Xmx4g -jar h2o.jar
+
+2. From your browser, navigate to ``<Private_IP_Address>:54321`` or
+   ``<Public_DNS>:54321`` to use H2O's web interface.
+
+.. |Configuring SSH| image:: images/ec2_putty_connect_2.png
+
