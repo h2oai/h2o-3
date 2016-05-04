@@ -453,7 +453,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** The names of the levels for an categorical response column. */
     public String[] classNames() { assert isSupervised();
-      return _domains[_domains.length-1];
+      return _domains == null || _domains.length==0 ? null : _domains[_domains.length-1];
     }
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
