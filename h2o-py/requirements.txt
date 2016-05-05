@@ -15,3 +15,4 @@ future
 matplotlib
 sphinx
 numpydoc
+MySQL-python
