@@ -738,8 +738,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Full local work-tree cancellation
   void self_cancel2() { if( !isDone() ) { cancel(true); self_cancel1(); } }
   private void self_cancel1() {
-    if( _left != null ) { _left.self_cancel2(); }
-    if( _rite != null ) { _rite.self_cancel2(); }
+    T l = _left; if( l != null ) { l.self_cancel2(); }
+    T r = _rite; if( r != null ) { r.self_cancel2(); }
   }
 
   /** Cancel/kill all work as we can, then rethrow... do not invisibly swallow
