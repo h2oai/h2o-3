@@ -64,8 +64,10 @@ def run_commands(command, number_to_run, temp_file):
             time.sleep(20)
 #        subprocess.call(full_command, shell=True)   # run the command,
 
+
         with open(temp_file, 'r') as thefile:   # go into tempfile and grab test run info
             for each_line in thefile:
+                print(each_line)
 
                 temp_string = each_line.split()
                 if len(temp_string) > 0:
