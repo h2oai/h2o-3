@@ -16,6 +16,7 @@ public class AutoMLBuilderHandler extends Handler {
     if( null==frame )
       aml = AutoML.makeAutoML(Key.<AutoML>make(),
               args.dataset,
+              args.relationalDatasets,
               args.target_name,
               args.loss,
               args.max_time,
@@ -23,18 +24,18 @@ public class AutoMLBuilderHandler extends Handler {
               args.ensemble,
               args.exclude,
               args.try_mutations);
-    else
-      aml = new AutoML(
-            Key.<AutoML>make(),
-            args.dataset,
-            frame,
-            args.target_name,
-            args.loss,
-            args.max_time,
-            -1,     // min accuracy or stopping crit ... "loss threshold"
-            args.ensemble,
-            args.exclude,
-            args.try_mutations);
+    else throw new IllegalArgumentException("error: data already parsed");
+//      aml = new AutoML(
+//            Key.<AutoML>make(),
+//            args.dataset,
+//            frame,
+//            args.target_name,
+//            args.loss,
+//            args.max_time,
+//            -1,     // min accuracy or stopping crit ... "loss threshold"
+//            args.ensemble,
+//            args.exclude,
+//            args.try_mutations);
     DKV.put(aml);
     args.job = new JobV3().fillFromImpl(new TimedH2OJob(aml,aml._key).start());
     return args;

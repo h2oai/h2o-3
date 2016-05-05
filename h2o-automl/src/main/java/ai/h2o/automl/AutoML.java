@@ -44,7 +44,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   public enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
-  public AutoML(Key<AutoML> key, String datasetName, Frame fr, int response, String loss, long maxTime,
+  public AutoML(Key<AutoML> key, String datasetName, Frame fr, Frame[] relations, int response, String loss, long maxTime,
                 double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations) {
     super(key);
     _datasetName=datasetName;
@@ -63,21 +63,29 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     _jobs = new ArrayList<>();
   }
 
-  public AutoML(Key<AutoML> key, String datasetName, Frame fr, String responseName, String loss, long maxTime,
+  public AutoML(Key<AutoML> key, String datasetName, Frame fr, Frame[] relations, String responseName, String loss, long maxTime,
                 double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
-    this(key,datasetName,fr,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
+    this(key,datasetName,fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
   }
 
-  public static AutoML makeAutoML(Key<AutoML> key, String datasetPath, String responseName, String loss, long maxTime,
+  public static AutoML makeAutoML(Key<AutoML> key, String datasetPath, String[] relationPaths, String responseName, String loss, long maxTime,
                 double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
+    Frame fr = importParseFrame(datasetPath);
+    Frame[] relations = null==relationPaths?null:new Frame[relationPaths.length];
+    if( null!=relationPaths )
+      for(int i=0;i<relationPaths.length;++i)
+        relations[i] = importParseFrame(relationPaths[i]);
+    return new AutoML(key,fr._key.toString(),fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
+  }
+
+  private static Frame importParseFrame(String datasetPath) {
     ArrayList<String> files = new ArrayList();
     ArrayList<String> keys = new ArrayList();
     ArrayList<String> fails = new ArrayList();
     ArrayList<String> dels = new ArrayList();
     H2O.getPM().importFiles(datasetPath,files,keys,fails,dels);
     String datasetName = datasetPath.split("\\.(?=[^\\.]+$)")[0];
-    Frame fr = ParseDataset.parse(Key.make(datasetName), Key.make(keys.get(0)));
-    return new AutoML(key,datasetName,fr,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
+    return ParseDataset.parse(Key.make(datasetName), Key.make(keys.get(0)));
   }
 
   // used to launch the AutoML asynchronously
@@ -119,8 +127,6 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // step 2: build a fast RF
     ModelBuilder initModel = selectInitial(_fm);
     Model m = build(initModel); // need to track this...
-    m._parms._train.remove();
-    m._parms._valid.remove();
     System.out.println("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
@@ -134,6 +140,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
   public void delete() {
     _fr.delete();
+    _fm.delete();
     for(Model m: models()) m.delete();
     DKV.remove(MODELLIST);
     DKV.remove(LEADER);
@@ -213,6 +220,15 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     if( null==_jobs ) throw new AutoMLDoneException();
     _jobs.add(j=mb.trainModel());
     Model m = (Model)j.get();
+    // save the weights, drop the frames!
+    Frame train = m._parms._train.get();
+    Frame valid = null==m._parms._valid?null:m._parms._valid.get();
+    train.remove("weight");  // safe and sound in _fm
+    train.delete();
+    if( null!=valid ) {
+      valid.remove("weight");
+      valid.delete();
+    }
     if( null==_jobs ) throw new AutoMLDoneException();
     _jobs.remove(j);
     final Key<Model> modelKey  = m._key;
