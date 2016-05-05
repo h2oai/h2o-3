@@ -14,17 +14,6 @@ def grid_cars_NB():
     r = cars[0].runif(seed=42)
     train = cars[r > .2]
 
-    validation_scheme = random.randint(1,3) # 1:none, 2:cross-validation, 3:validation set
-    print("Validation scheme: {0}".format(validation_scheme))
-    if validation_scheme == 2:
-        nfolds = 2
-        print("Nfolds: 2")
-    if validation_scheme == 3:
-        valid = cars[r <= .2]
-
-    grid_space = pyunit_utils.make_random_grid_space(algo="naiveBayes")
-    print("Grid space: {0}".format(grid_space))
-
     problem = random.sample(["binomial","multinomial"],1)
     predictors = ["displacement","power","weight","acceleration","year"]
     if problem == "binomial":
@@ -37,21 +26,20 @@ def grid_cars_NB():
 
     print("Converting the response column to a factor...")
     train[response_col] = train[response_col].asfactor()
-    if validation_scheme == 3:
-        valid[response_col] = valid[response_col].asfactor()
 
-    print("Grid space: {0}".format(grid_space))
-    print("Constructing the grid of nb models...")
+    max_runtime_secs = 10  # this will return full NB model
+    # the field manual_model._model_json['output']['cross_validation_metrics_summary'].cell_values will be empty
+    max_runtime_secs = 0.001
 
-    grid_space["compute_metrics"] = [False]
+    model_params = {'compute_metrics': True, 'fold_assignment': 'AUTO', 'laplace': 8.3532975, 'nfolds': 2}
 
-    cars_nb_grid = H2OGridSearch(H2ONaiveBayesEstimator, hyper_params=grid_space)
-    if validation_scheme == 1:
-        cars_nb_grid.train(x=predictors,y=response_col,training_frame=train)
-    elif validation_scheme == 2:
-        cars_nb_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+    cars_nb = H2ONaiveBayesEstimator(**model_params)
+    cars_nb.train(x=predictors, y=response_col, training_frame=train, max_runtime_secs=max_runtime_secs)
+
+    if len(cars_nb._model_json['output']['cross_validation_metrics_summary'].cell_values) > 0:
+        print("Pass test.  Complete metrics returned.")
     else:
-        cars_nb_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+        print("Failed test.  Model metrics is missing.")
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(grid_cars_NB)
