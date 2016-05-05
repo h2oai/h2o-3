@@ -9,6 +9,7 @@ import water.api.RequestSchema;
 
 public class AutoMLBuilderV3 extends RequestSchema<Iced,AutoMLBuilderV3> {
   @API(help="the name of the dataset",direction=API.Direction.INPUT)                 public String dataset;
+  @API(help="auxiliary relational datasets", direction=API.Direction.INPUT)         public String[] relationalDatasets;
   @API(help="response column by index",direction=API.Direction.INPUT)                public int target_index;
   @API(help="response column by name", direction=API.Direction.INPUT)                public String target_name;
   @API(help="loss function",direction=API.Direction.INPUT)                           public String loss="MSE";

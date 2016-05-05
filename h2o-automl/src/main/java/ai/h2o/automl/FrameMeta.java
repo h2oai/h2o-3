@@ -47,6 +47,11 @@ public class FrameMeta extends Iced {
   public ColMeta[] _cols;
   public Vec[]  _trainTestWeight;  // weight vecs for train/test splits
 
+  public void delete() {
+    for(Vec v: _trainTestWeight)
+      if( null!=v ) v.remove();
+  }
+
   public final static String[] METAVALUES = new String[]{
     "DatasetName", "NRow", "NCol", "LogNRow", "LogNCol", "NACount", "NAFraction",
     "NumberNumericFeat", "NumberCatFeat", "RatioNumericToCatFeat", "RatioCatToNumericFeat",
