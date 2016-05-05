@@ -563,7 +563,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     scoringInfo.cross_validation = _output._cross_validation_metrics != null;
 
     if (this._output.isBinomialClassifier()) {
-      scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
+      scoringInfo.training_AUC = this._output._training_metrics == null ? null: ((ModelMetricsBinomial)this._output._training_metrics)._auc;
       scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
     }
   }
