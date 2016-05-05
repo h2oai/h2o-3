@@ -150,7 +150,7 @@ wthr1 <- h2o.importFile(path =
     locate_source("smalldata/demos/31081_New_York_City__Hourly_2014.csv")))
 
 # Peek at the data
-print(summary(wthr1))
+#print(summary(wthr1))
 
 # Lots of columns in there!  Lets plan on converting to time-since-epoch to do
 # a 'join' with the bike data, plus gather weather info that might affect
@@ -162,7 +162,7 @@ wthr2 <- wthr1[, c("Year Local","Month Local","Day Local","Hour Local","Dew Poin
   "Weather Code 1/ Description")]
 colnames(wthr2)[match("Precipitation One Hour (mm)", colnames(wthr2))] <- "Rain (mm)" # Shorter column name
 names(wthr2)[match("Weather Code 1/ Description", colnames(wthr2))] <- "WC1" # Shorter column name
-print(summary(wthr2))
+#print(summary(wthr2))
 # Much better!
 # Filter down to the weather at Noon
 wthr3 <- wthr2[ wthr2["Hour Local"]==12 ,]
@@ -177,7 +177,7 @@ wthr3$Days = floor(starttime/secsPerDay)
 # 6 - Join the weather data-per-day to the bike-starts-per-day
 print("Merge Daily Weather with Bikes-Per-Day")
 bpd_with_weather <- h2o.merge(x = bpd, y = wthr3, all.x = T, all.y = F)
-summary(bpd_with_weather)
+#summary(bpd_with_weather)
 print(bpd_with_weather)
 dim(bpd_with_weather)
 
