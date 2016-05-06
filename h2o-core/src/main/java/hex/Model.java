@@ -54,6 +54,7 @@ import water.util.Log;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
 import water.util.VecUtils;
+import water.fvec.InteractionWrappedVec;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import static water.util.FrameUtils.categoricalEncoder;

@@ -14,16 +14,16 @@ import static water.codegen.java.JCodeGenUtil.s;
 /**
  * Created by michal on 3/22/16.
  */
-public class DeepLearningPOJOModelJCodeGen
-    extends POJOModelCodeGenerator<DeepLearningPOJOModelJCodeGen, DeepLearningModel> {
+public class DeepLearningModelPOJOCodeGen
+    extends POJOModelCodeGenerator<DeepLearningModelPOJOCodeGen, DeepLearningModel> {
 
-  protected DeepLearningPOJOModelJCodeGen(DeepLearningModel model) {
+  protected DeepLearningModelPOJOCodeGen(DeepLearningModel model) {
     super(model);
   }
 
   @Override
-  protected DeepLearningPOJOModelJCodeGen buildImpl(CompilationUnitGenerator cucg,
-                                                    ClassCodeGenerator ccg) {
+  protected DeepLearningModelPOJOCodeGen buildImpl(CompilationUnitGenerator cucg,
+                                                   ClassCodeGenerator ccg) {
 
     final DeepLearningModelInfo modelInfo = model.model_info();
     if (modelInfo.data_info()._nums > 0) {

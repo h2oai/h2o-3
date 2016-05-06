@@ -120,8 +120,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract public double[] score0(@CG(delegate = "data") double[] data,
-                                  @CG(delegate = "preds") double[] preds );
+  abstract public double[] score0(@CG.Delegate(target = "data") double[] data,
+                                  @CG.Delegate(target = "preds") double[] preds );
 
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.

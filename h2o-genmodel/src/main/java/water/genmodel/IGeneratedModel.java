@@ -1,7 +1,5 @@
 package water.genmodel;
 
-import java.util.Map;
-
 import hex.genmodel.annotations.CG;
 
 /**
@@ -9,7 +7,7 @@ import hex.genmodel.annotations.CG;
  */
 public interface IGeneratedModel {
     /** Returns model's unique identifier. */
-    @CG(delegate="#getUUID")
+    @CG.Delegate(target ="#getUUID")
     String getUUID();
 
     /** Returns number of columns used as input for training (i.e., exclude response column). */

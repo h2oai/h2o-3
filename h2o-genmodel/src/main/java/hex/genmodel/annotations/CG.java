@@ -8,17 +8,46 @@ import java.lang.annotation.Target;
 /**
  * Mark method which should be generated automatically.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
-public @interface CG {
-  /** Name of method/parameter of target object which is called/used during generation. */
-  String delegate();
+public class CG {
 
-  String comment() default NA;
+  /**
+   * Delegate code generation of the value to a method/name specified in target field.
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
+  public @interface Delegate {
+    /** Name of method/parameter of target object which is called/used during generation. */
+    String target();
 
-  /** Skip value generation when query is true: ".output#isSupervised" */
-  String when() default NA; // FIXME: rename to manual
+    String comment() default NA;
 
-  String NA = "N/A";
+    /** Skip value generation when query is true: ".output#isSupervised" */
+    String when() default NA;
+  }
 
+  /**
+   * Marks fields/methods which need manual generation.
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.METHOD, ElementType.FIELD})
+  public @interface Manual {
+    String comment() default NA;
+  }
+
+  public static class CGException extends RuntimeException {
+
+    public CGException(String message) {
+      super(message);
+    }
+
+    public CGException(String message, Throwable cause) {
+      super(message, cause);
+    }
+
+    public CGException(Throwable cause) {
+      super(cause);
+    }
+  }
+
+  public static final String NA = "N/A";
 }

@@ -11,7 +11,7 @@ import static water.util.ArrayUtils.append;
 /**
  * FIXME: WIP
  */
-public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerator, CodeGenerator> {
+public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator> {
 
   public static MethodCodeGenerator codegen(String name) {
     return new MethodCodeGenerator(name);
@@ -24,7 +24,10 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
   private String[] paramNames;
   private Class returnType = void.class;
   private boolean override = false;
+  private CodeGenerator body;
+  private boolean parantheses = true;
 
+  /** The method owner */
   private ClassCodeGenerator ccg;
 
   protected MethodCodeGenerator(String name) {
@@ -43,22 +46,19 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
     return self();
   }
 
-  public MethodCodeGenerator withBody(CodeGenerator codegen) {
-    add(codegen);
+  public MethodCodeGenerator withBody(CodeGenerator body) {
+    this.body = body;
     return self();
   }
 
   public MethodCodeGenerator withBody(final JCodeSB body) {
-    // Delete all attached generators
-    resetBody();
     // Add a new generator generating body of the method directly
-    add(new CodeGenerator() {
+    return withBody(new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
         out.p(body);
       }
     });
-    return self();
   }
 
   public MethodCodeGenerator withOverride(boolean flag) {
@@ -76,11 +76,12 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
     return returnType;
   }
 
-  public void resetBody() {
-    this.reset();
-  }
-
   public boolean isCtor() { return returnType == null; }
+
+  public MethodCodeGenerator withParentheses(boolean flag) {
+    this.parantheses = flag;
+    return self();
+  }
 
   @Override
   public void generate(JCodeSB out) {
@@ -91,13 +92,15 @@ public class MethodCodeGenerator extends CodeGeneratorPipeline<MethodCodeGenerat
       out.pj(returnType).p(' ');
     }
     // Append method name and types
-    pMethodParams(out.p(name).p('('), paramTypes, paramNames).p(") {").ii(2).nl();
+    pMethodParams(out.p(name).p('('), paramTypes, paramNames).p(") ");
+    if (parantheses) out.p("{").ii(2).nl();
     // Generate method body
-    super.generate(out);
+    body.generate(out);
     // Close method
-    out
-        .di(2).nl()
-        .p("} // End of method ").p(name).nl(2);
+    if (parantheses) {
+      out.di(2).nl().p("}");
+    }
+    out.p(" // End of method ").p(name).nl(2);
   }
 
   ClassCodeGenerator ccg() {

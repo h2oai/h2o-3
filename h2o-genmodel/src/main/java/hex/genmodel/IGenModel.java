@@ -14,21 +14,21 @@ public interface IGenModel {
    * Returns true for supervised models.
    * @return true if this class represents supervised model.
    */
-  @CG(delegate="#isSupervised")
+  @CG.Delegate(target ="#isSupervised")
   boolean isSupervised();
 
   /**
    * Returns number of input features.
    * @return number of input features used for training.
    */
-  @CG(delegate="._output#nfeatures")
+  @CG.Delegate(target ="._output#nfeatures")
   int nfeatures();
 
   /**
    * Returns number of output classes for classifiers or 1 for regression models.
    * @return returns number of output classes or 1 for regression models.
    */
-  @CG(delegate="._output#nclasses")
+  @CG.Delegate(target ="._output#nclasses")
   int nclasses();
 
 
@@ -37,6 +37,6 @@ public interface IGenModel {
    * @return model category
    * @see hex.ModelCategory
    */
-  @CG(delegate="._output#getModelCategory")
+  @CG.Delegate(target ="._output#getModelCategory")
   ModelCategory getModelCategory();
 }
