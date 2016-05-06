@@ -39,7 +39,7 @@ securityGroupName = 'SecurityDisabled'
 
 numInstancesToLaunch = 4
 instanceType = 'm3.2xlarge'
-instanceNameRoot = 'navdeep-instance'
+instanceNameRoot = 'h2o-instance'
 
 
 # Options to help debugging.
