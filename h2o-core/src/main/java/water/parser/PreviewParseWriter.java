@@ -132,7 +132,8 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       //Very redundant tests, but clearer and not speed critical
 
       // is it clearly numeric?
-      if ((_nnums[i] + _nzeros[i]) >= _ndates[i]
+      if (_nnums[i] > 0
+              && (_nnums[i] + _nzeros[i]) >= _ndates[i]
               && (_nnums[i] + _nzeros[i]) >= _nUUID[i]
               && _nnums[i] >= _nstrings[i]) { // 0s can be an NA among categoricals, ignore
         types[i] = Vec.T_NUM;

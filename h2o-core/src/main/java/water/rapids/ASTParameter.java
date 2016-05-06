@@ -1,5 +1,7 @@
 package water.rapids;
 
+import water.H2O;
+
 public abstract class ASTParameter extends AST {
   public final Val _v;
   ASTParameter(String str) { _v=new ValStr(str); }
@@ -15,4 +17,5 @@ public abstract class ASTParameter extends AST {
   public String toJavaString() { return str(); }
 
   public static ASTNum makeNum(double d) { return new ASTNum(d); }
+  public void setNum(double d) { throw H2O.unimpl(); }
 }

@@ -31,6 +31,7 @@ import string
 import copy
 import json
 import math
+from random import shuffle
 
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -1980,7 +1981,7 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
 
             if para_name not in hyper_params.keys():    # add default value to user defined parameter list
                  # gridable parameter not seen before.  Randomly generate values for it
-                if 'int' in gridable_types[count_index]:
+                if ('int' in gridable_types[count_index]) or ('long' in gridable_types[count_index]):
                     # make sure integer values are not duplicated, using set action to remove duplicates
                     hyper_params[para_name] = list(set([random.randint(min_int_val, max_int_val) for p in
                                                         range(0, max_int_number)]))
@@ -2381,6 +2382,59 @@ def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better
         return not (ratio > 1+tolerance)
     else:
         return not (ratio < 1-tolerance)
+
+
+def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero, params_more_than_one,
+                           params_zero_positive, max_grid_model):
+    """
+    This function will look at the hyper-parameter space set in hyper_params, generate a new hyper_param space that
+    will contain a smaller number of grid_models.  It will determine how many models will be built from
+    this new hyper_param space.  In order to arrive at the correct answer, it must discount parameter settings that
+    are illegal.
+
+    :param hyper_params: dict containing model parameter names and list of values to set it to
+    :param params_zero_one: list containing model parameter names whose values must be between 0 and 1
+    :param params_more_than_zero: list containing model parameter names whose values must exceed zero
+    :param params_more_than_one: list containing model parameter names whose values must exceed one
+    :param params_zero_positive: list containing model parameter names whose values must equal to or exceed zero
+    :param max_grid_model: maximum number of grid_model that can be generated from the new hyper_params space
+
+    :return: total model: integer denoting number of grid models that can be built from all legal parameter settings
+                          in new hyper_parameter space
+             final_hyper_params: dict of new hyper parameter space derived from the original hyper_params
+    """
+
+    total_model = 1
+    param_len = 0
+    hyper_keys = list(hyper_params)
+    shuffle(hyper_keys)    # get all hyper_parameter names in random order
+    final_hyper_params = dict()
+
+    for param in hyper_keys:
+
+        # this param should be between 0 and 2
+        if param == "col_sample_rate_change_per_level":
+            param_len = len([x for x in hyper_params["col_sample_rate_change_per_level"] if (x >= 0)
+                                 and (x <= 2)])
+        elif param in params_zero_one:
+            param_len = len([x for x in hyper_params[param] if (x >= 0)
+                                 and (x <= 1)])
+        elif param in params_more_than_zero:
+            param_len = len([x for x in hyper_params[param] if (x > 0)])
+        elif param in params_more_than_one:
+            param_len = len([x for x in hyper_params[param] if (x > 1)])
+        elif param in params_zero_positive:
+            param_len = len([x for x in hyper_params[param] if (x >= 0)])
+        else:
+            param_len = len(hyper_params[param])
+
+        if (param_len > 0) and ((total_model*param_len) <= max_grid_model):
+            total_model *= param_len
+            final_hyper_params[param] = hyper_params[param]
+        elif (total_model*param_len) > max_grid_model:
+            break
+
+    return total_model, final_hyper_params
 
 
 def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
