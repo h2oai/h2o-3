@@ -233,7 +233,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
-    double[] preds = new double[m.getPredsSize()];
+    double[] preds = new double[m.nclasses()];
     preds = predict(data, preds);
     return preds;
   }
