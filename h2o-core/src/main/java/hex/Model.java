@@ -6,6 +6,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
+import sun.org.mozilla.javascript.tools.debugger.Dim;
 import water.*;
 import water.api.StreamWriter;
 import water.codegen.CodeGenerator;
@@ -1324,6 +1325,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                             d2 = (col==0) ? bmp.labelIndex : bmp.classProbabilities[col-1];  break;
           case Multinomial: MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
                             d2 = (col==0) ? mmp.labelIndex : mmp.classProbabilities[col-1];  break;
+          case DimReduction: d2 = ((DimReductionModelPrediction) p).dimensions[col]; break;
+
           }
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
