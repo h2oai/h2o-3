@@ -10,9 +10,9 @@ import boto.ec2
 # Environment variables you MUST set (either here or by passing them in).
 # -----------------------------------------------------------------------
 #
-# os.environ['AWS_ACCESS_KEY_ID'] = '...'
-# os.environ['AWS_SECRET_ACCESS_KEY'] = '...'
-# os.environ['AWS_SSH_PRIVATE_KEY_FILE'] = '/path/to/private_key.pem'
+#os.environ['AWS_ACCESS_KEY_ID'] = ''
+#os.environ['AWS_SECRET_ACCESS_KEY'] = ''
+#os.environ['AWS_SSH_PRIVATE_KEY_FILE'] = '/path/to/private_key.pem'
 
 # Launch EC2 instances with an IAM role
 # --------------------------------------
@@ -25,7 +25,7 @@ iam_profile_name = None
 # ------------------------------------------------
 
 # SSH key pair name.
-keyName = '0xdata_Big' 
+keyName = '' 
 
 # AWS security group name.
 # Note:
@@ -37,9 +37,9 @@ securityGroupName = 'SecurityDisabled'
 # Options you might want to change.
 # ---------------------------------
 
-numInstancesToLaunch = 2
-instanceType = 'm3.large'
-instanceNameRoot = 'h2o-ai-stable'
+numInstancesToLaunch = 4
+instanceType = 'm3.2xlarge'
+instanceNameRoot = 'navdeep-instance'
 
 
 # Options to help debugging.
@@ -165,5 +165,4 @@ rv = os.system(cmd)
 if rv != 0:
     print 'Failed.'
     sys.exit(1)
-
 # Distribute flatfile script already prints success when it completes.
