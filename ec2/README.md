@@ -34,7 +34,7 @@ STEP 3:  Build a cluster of EC2 instances
 keyName = 'SSH key pair name'
 numInstancesToLaunch = 4
 instanceType = 'm3.2xlarge'
-instanceNameRoot = 'navdeep-instance'
+instanceNameRoot = 'h2o-instance'
 ```
 - After changing the previous run the following:
 ```
