@@ -27,7 +27,7 @@ def grid_cars_RF():
 
     # reduce the magnitude of nbins_cats, run was too long.
     if 'nbins_cats' in list(grid_space):
-        grid_space['nbins_cats'] = random.sample(list(range(2, 500)), random.randint(2, 3))
+        grid_space['nbins_cats'] = random.sample(list(range(2, 200)), random.randint(2, 3))
 
     print("Grid space: {0}".format(grid_space))
 
