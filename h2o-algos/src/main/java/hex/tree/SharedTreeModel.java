@@ -249,15 +249,17 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return res;
   }
 
+  @Override protected double[] score0(double data[], double[] preds, double weight, double offset) {
+    return score0(data,preds,weight,offset,_output._treeKeys.length);
+  }
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     return score0(data, preds, 1.0, 0.0);
   }
-  @Override
-  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
+  protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
     Arrays.fill(preds,0);
-    for( int tidx=0; tidx<_output._treeKeys.length; tidx++ )
+    for( int tidx=0; tidx<ntrees; tidx++ )
       score0(data, preds, tidx);
     return preds;
   }

@@ -160,7 +160,7 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
 
   # print out the failure/warning messages from Java if it exists
   if (length(failure_details) > 0) {
-    printf("Errors/Warnings building gridsearch model!\n")
+    sprintf("Errors/Warnings building gridsearch model!\n")
     for (index in 1:length(failure_details)) {
       
       if (typeof(failed_params[[index]]) == "list") {

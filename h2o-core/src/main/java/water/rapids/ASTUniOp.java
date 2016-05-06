@@ -81,6 +81,7 @@ class ASTGamma  extends ASTUniOp { public String str(){ return "gamma";  } doubl
 class ASTLGamma extends ASTUniOp { public String str(){ return "lgamma"; } double op(double d) { return Gamma.logGamma(d);}}
 class ASTDiGamma  extends ASTUniOp { public String str(){ return "digamma";  } double op(double d) {  return Double.isNaN(d)?Double.NaN:Gamma.digamma(d);}}
 class ASTTriGamma  extends ASTUniOp { public String str(){ return "trigamma";  } double op(double d) {  return Double.isNaN(d)?Double.NaN:Gamma.trigamma(d);}}
+class ASTNoOp extends ASTUniOp { public String str(){ return "none"; } double op(double d) { return d; }}
 
 // Split out in it's own function, instead of Yet Another UniOp, because it
 // needs a "is.NA" check instead of just using the Double.isNaN hack... because

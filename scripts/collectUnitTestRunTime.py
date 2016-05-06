@@ -61,11 +61,13 @@ def run_commands(command, number_to_run, temp_file):
         child = subprocess.Popen(full_command, shell=True)
 
         while child.poll() is None:
-            time.sleep(20)
+            time.sleep(10)
 #        subprocess.call(full_command, shell=True)   # run the command,
+
 
         with open(temp_file, 'r') as thefile:   # go into tempfile and grab test run info
             for each_line in thefile:
+                print(each_line)
 
                 temp_string = each_line.split()
                 if len(temp_string) > 0:
@@ -119,7 +121,7 @@ def write_result_summary(result_dict, directory_path, is_new_run):
                 result_dict["total_number_of_runs"] = len(run_time)
 
                 # save results in json file
-                with open(json_file, 'a') as test_file:
+                with open(json_file, 'w') as test_file:
                     json.dump(result_dict, test_file)
 
                 print("Run result summary: \n {0}".format(result_dict))

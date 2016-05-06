@@ -453,7 +453,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** The names of the levels for an categorical response column. */
     public String[] classNames() { assert isSupervised();
-      return _domains[_domains.length-1];
+      return _domains == null || _domains.length==0 ? null : _domains[_domains.length-1];
     }
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
@@ -563,7 +563,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     scoringInfo.cross_validation = _output._cross_validation_metrics != null;
 
     if (this._output.isBinomialClassifier()) {
-      scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
+      scoringInfo.training_AUC = this._output._training_metrics == null ? null: ((ModelMetricsBinomial)this._output._training_metrics)._auc;
       scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
     }
   }
@@ -1324,6 +1324,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                             d2 = (col==0) ? bmp.labelIndex : bmp.classProbabilities[col-1];  break;
           case Multinomial: MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
                             d2 = (col==0) ? mmp.labelIndex : mmp.classProbabilities[col-1];  break;
+          case DimReduction: d2 = ((DimReductionModelPrediction) p).dimensions[col]; break;
+
           }
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
@@ -1386,11 +1388,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return new Frame(interactionNames, interactionVecs);
   }
 
+  public static InteractionWrappedVec[] makeInteractions(Frame fr, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+    Vec anyTrainVec = fr.anyVec();
+    InteractionWrappedVec[] interactionVecs = new InteractionWrappedVec[interactions.length];
+    int idx = 0;
+    for (InteractionPair ip : interactions)
+      interactionVecs[idx++] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+    return interactionVecs;
+  }
+
   public static InteractionWrappedVec makeInteraction(Frame fr, InteractionPair ip, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyVec = fr.anyVec();
     return new InteractionWrappedVec(anyVec.group().addVec(), anyVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
   }
-
 
   /**
    * This class represents a pair of interacting columns plus some additional data

@@ -1029,8 +1029,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     {
       Model m = DKV.getGet(cvmodels[0]);
       ModelMetrics mm = m._output._validation_metrics;
-      ConfusionMatrix cm = mm.cm();
+
       if (mm!=null) {
+
         for (Method meth : mm.getClass().getMethods()) {
           if (excluded.contains(meth.getName())) continue;
           try {
@@ -1038,14 +1039,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             methods.add(meth);
           } catch (Exception e) {}
         }
-      }
-      if (cm!=null) {
-        for (Method meth : cm.getClass().getMethods()) {
-          if (excluded.contains(meth.getName())) continue;
-          try {
-            double c = (double) meth.invoke(cm);
-            methods.add(meth);
-          } catch (Exception e) {}
+
+        ConfusionMatrix cm = mm.cm();
+        if (cm!=null) {
+          for (Method meth : cm.getClass().getMethods()) {
+            if (excluded.contains(meth.getName())) continue;
+            try {
+              double c = (double) meth.invoke(cm);
+              methods.add(meth);
+            } catch (Exception e) {
+            }
+          }
         }
       }
     }

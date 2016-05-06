@@ -3,6 +3,10 @@ source("../../scripts/h2o-r-test-setup.R")
 #This tests quantile and weighted quantile on synthetic data by comparing with R
 
 test.quantile <- function(conn){
+	
+# set random seed to generate random dataset
+set.seed(1234)
+
 N = 1000
 
 x = rgamma(N, shape=0.067,  scale = 0.008) 
