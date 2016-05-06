@@ -6,7 +6,6 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
-import sun.org.mozilla.javascript.tools.debugger.Dim;
 import water.*;
 import water.api.StreamWriter;
 import water.codegen.CodeGenerator;
