@@ -12,17 +12,9 @@ dependencies {
   compile "com.google.code.javaparser:javaparser:1.0.11"
 
   testCompile "junit:junit:${junitVersion}"
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
 }
 
-// The default 'test' behavior is broken in that it does not grok clusters.
-// For H2O, all tests need to be run on a cluster, where each JVM is
-// "free-running" - it's stdout/stderr are NOT hooked by another process.  If
-// they are hooked (e.g., by the gradle driver process) then the stdout/err get
-// buffered and when all CPUs are maxed out (happens over a large fraction of
-// the test run) no output is visible.  If the JVMs then crash (again, common
-// enough), we get NO output for the test run.  So instead we need to arrange a
-// complete cluster of free-running JVMs and redirect all output (at the OS
-// level) to files - then scrape the files later for test results.
 test {
   //dependsOn ":h2o-core:testJar"
   //dependsOn cpLibs, testMultiNode, testJar
@@ -30,18 +22,16 @@ test {
   // Defeat task 'test' by running no tests.
   exclude '**'
 }
-/*
-task copyMixinsToWebRoot(type: Copy) {
-  from "src/"
-  into "build/resources/main/www/${h2oRESTApiVersion}/"
-  rename { filename -> "h2o-genmodel.jar"}
+
+task copyMixinsToResources(type: Copy) {
+  from "src/main/java/water/codegen/java/mixins/"
+  into "src/main/resources/codegen/java/mixins/"
+  rename { f -> f.replace('.java', '.mixin')}
 }
 
-task deleteMixinsFromWebRoot(type: Delete) {
-    delete "src/main/resources/www/${h2oRESTApiVersion}/h2o-genmodel.jar"
+task deleteMixinsFromResources(type: Delete) {
+  delete "src/main/resources/codegen/java"
 }
 
-processResources.dependsOn copyMixinsToWebRoot
-clean.dependsOn deleteMixinsFromWebRoot
-*/
-
+processResources.dependsOn copyMixinsToResources
+clean.dependsOn deleteMixinsFromResources

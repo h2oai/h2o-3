@@ -16,7 +16,7 @@ import water.fvec.Frame;
 /**
  * Created by michal on 3/21/16.
  */
-public class KMeansModelJCodeGenTest extends water.TestUtil {
+public class KMeansModelPOJOCodeGenTest extends water.TestUtil {
 
   static final String IRIS_PATH = "smalldata/iris/iris_wheader.csv";
 
@@ -44,7 +44,7 @@ public class KMeansModelJCodeGenTest extends water.TestUtil {
       try {
         // FIXME: i cannot switch the driver without switching a target
         // Probably builder patter would be better here
-        driver.codegen(new KMeansPOJOModelJCodeGen(model).build(), fos);
+        driver.codegen(new KMeansModelPOJOCodeGen(model).build(), fos);
       } finally {
         fos.close();
       }

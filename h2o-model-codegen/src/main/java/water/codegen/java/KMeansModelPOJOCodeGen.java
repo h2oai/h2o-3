@@ -10,15 +10,15 @@ import static water.codegen.java.JCodeGenUtil.VALUE;
 /**
  * Created by michal on 3/21/16.
  */
-public class KMeansPOJOModelJCodeGen
-    extends POJOModelCodeGenerator<KMeansPOJOModelJCodeGen, KMeansModel> {
+public class KMeansModelPOJOCodeGen
+    extends POJOModelCodeGenerator<KMeansModelPOJOCodeGen, KMeansModel> {
 
-  protected KMeansPOJOModelJCodeGen(KMeansModel model) {
+  protected KMeansModelPOJOCodeGen(KMeansModel model) {
     super(model);
   }
 
   @Override
-  protected KMeansPOJOModelJCodeGen buildImpl(CompilationUnitGenerator cucg, ClassCodeGenerator ccg) {
+  protected KMeansModelPOJOCodeGen buildImpl(CompilationUnitGenerator cucg, ClassCodeGenerator ccg) {
     // Inject all fields generators
     ccg.withMixin(model, KMeansModelMixin.class);
 
@@ -32,20 +32,22 @@ public class KMeansPOJOModelJCodeGen
           .withValue(VALUE(model._output._centers_std_raw));
 
       // Generate score0 method body
+      /*
       score0Method.withBody(
           s("preds[0] = KMeans_closest(CENTERS, data, DOMAINS, MEANS, MULTS);").nl()
           .p("return preds;").nl()
-      );
+      );*/
     } else {
       ccg.field("CENTERS")
           .withComment("Denormalized cluster centers[K][features]")
           .withValue(VALUE(model._output._centers_raw));
 
       // Generate score0 method body
+      /*
       score0Method.withBody(
               s("preds[0] = KMeans_closest(CENTERS, data, DOMAINS, null, null);").nl()
                 .p("return preds;").nl()
-      );
+      );*/
     }
 
     return self();

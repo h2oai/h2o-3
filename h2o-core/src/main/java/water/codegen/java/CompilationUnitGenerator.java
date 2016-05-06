@@ -54,15 +54,13 @@ public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationU
     genClassComment(out);
     // Package of CU
     if (packageName != null) {
-      out
-          .p("package ").p(packageName).p(';').nl(2);
+      out.p("package ").p(packageName).p(';').nl(2);
     }
 
     // Imported packages
     if (importedPackages != null) {
       for (String importedPackage : importedPackages) {
-        out
-            .p("import ").p(importedPackage).p(';').nl();
+        out.p("import ").p(importedPackage).p(';').nl();
       }
       out.nl(2);
     }

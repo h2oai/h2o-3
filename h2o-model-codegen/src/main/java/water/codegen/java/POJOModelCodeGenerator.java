@@ -77,6 +77,7 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
               .withBody(s("super(NAMES, DOMAINS);"))
         );
 
+    // FIXME: should be in mixin via delegation - there should be 2 mixins
     if (model.isSupervised()) {
       ccg
           .withField(

@@ -1,5 +1,11 @@
 package water.codegen.java;
 
+import japa.parser.JavaParser;
+import japa.parser.ast.CompilationUnit;
+import japa.parser.ast.body.MethodDeclaration;
+import japa.parser.ast.visitor.VoidVisitorAdapter;
+
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
@@ -9,6 +15,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.codegen.JCodeSB;
 import water.util.ReflectionUtils;
 
+import static water.codegen.java.JCodeGenUtil.s;
 import static water.util.ArrayUtils.append;
 import static water.codegen.java.JCodeGenUtil.VALUE;
 
@@ -39,30 +46,69 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
   }
 
   public ClassCodeGenerator withMixin(Object source, boolean includeParent, Class... mixins) {
+    // Copy all fields and generate their content based on delegation to source object
     for (Class mixin : mixins) {
       for (Field f : ReflectionUtils.findAllFields(mixin, includeParent)) {
         // Process only fields
-        CG anno = f.getAnnotation(CG.class);
-        if (anno != null) {
+        CG.Delegate delegAnno = f.getAnnotation(CG.Delegate.class);
+        CG.Manual manualAnno = f.getAnnotation(CG.Manual.class);
+
+        if (delegAnno != null) {
           // Skip field value generation
-          boolean skip = !anno.when().equals(CG.NA) && ReflectionUtils.getValue(source, anno.when(), Boolean.class);
+          boolean skip = !delegAnno.when().equals(CG.NA) && ReflectionUtils.getValue(source, delegAnno.when(), Boolean.class);
 
           FieldCodeGenerator fcg = new FieldCodeGenerator(f);
           // Append comment from @CG annotation
-          if (!anno.comment().equals(CG.NA)) {
-            fcg.withComment(anno.comment());
+          if (!delegAnno.comment().equals(CG.NA)) {
+            fcg.withComment(delegAnno.comment());
           }
           // Append value from @CG annotation or leave empty for manual filling
-          if (!anno.delegate().equals(CG.NA)) {
+          if (!delegAnno.target().equals(CG.NA)) {
             Class fieldType = f.getType();
-            Object value = skip ? ReflectionUtils.getValue(null, f, fieldType) : ReflectionUtils.getValue(source, anno.delegate(), fieldType);
+            Object value = skip ? ReflectionUtils.getValue(null, f, fieldType) : ReflectionUtils.getValue(source, delegAnno.target(), fieldType);
             fcg.withValue(VALUE(value, fieldType));
             System.out.println(f.getName() + " : " + fieldType.getCanonicalName() + " :=: " + value + ":" + (value != null ? value.getClass().getCanonicalName() : null));
           }
           withField(fcg);
+        } else if (manualAnno != null) {
+          FieldCodeGenerator fcg = new FieldCodeGenerator(f);
+          if (!manualAnno.comment().equals(CG.NA)) {
+            fcg.withComment(manualAnno.comment());
+          }
+          withField(fcg);
         }
       }
+
+      // Now try to find mixin source code and inject all remaining method code
+      ClassLoader cl = ModelCodeGenerator.class.getClassLoader();
+      InputStream is = cl.getResourceAsStream("codegen/java/mixins/" + mixin.getSimpleName() + ".mixin");
+      try {
+        CompilationUnit cu = JavaParser.parse(is);
+        new VoidVisitorAdapter() {
+          @Override
+          public void visit(MethodDeclaration n, Object arg) {
+            MethodCodeGenerator mcg = method(n.getName());
+            if (mcg != null) {
+              // Method is already in just append body
+              // Note: make sure that parameters matches!!!
+              mcg.withBody(s(n.getBody().toString())).withParentheses(false);
+            } else {
+              final String methodString = n.toString();
+              add(new MethodCodeGenerator(n.getName()) {
+                @Override public boolean isCtor() { return false; }
+                @Override public void generate(JCodeSB out) {
+                  out.p(methodString);
+                }
+              });
+            }
+          }
+        }.visit(cu, null);
+        cu = null;
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
+
     return self();
   }
 

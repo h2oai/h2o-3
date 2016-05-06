@@ -1,22 +1,14 @@
 package water.codegen.java;
 
-import javassist.compiler.CodeGen;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.List;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.annotations.CG;
-import water.codegen.CodeGenerator;
 import water.codegen.JCodeSB;
 import water.codegen.SB;
 import water.util.ReflectionUtils;
-
-import static java.lang.reflect.Modifier.FINAL;
-import static java.lang.reflect.Modifier.PUBLIC;
-import static java.lang.reflect.Modifier.STATIC;
 
 /**
  * Created by michal on 12/11/15.
@@ -41,12 +33,12 @@ public class JCodeGenUtil {
 
     // Attach all methods which can be simply delegated to model
     for (Method m : ReflectionUtils.findAllAbstractMethods(GenModel.class)) {
-      CG cg = m.getAnnotation(CG.class);
+      CG.Delegate cg = m.getAnnotation(CG.Delegate.class);
       MethodCodeGenerator mcg = method(m);
       if (cg != null) { // Attach body
         Class returnType = m.getReturnType();
         // Read value from object
-        Object value = ReflectionUtils.getValue(source, cg.delegate(), returnType);
+        Object value = ReflectionUtils.getValue(source, cg.target(), returnType);
         // Generate body
         mcg.withBody(s("return ").pj(value, returnType).p(";").nl());
       } // else leave body for corresponding model code generator
@@ -63,7 +55,7 @@ public class JCodeGenUtil {
     return new MethodCodeGenerator(methodName);
   }
 
-  public static MethodCodeGenerator method(Method m) {
+  private static MethodCodeGenerator method(Method m) {
     MethodCodeGenerator mcg = new MethodCodeGenerator(m.getName());
     mcg
         .withModifiers(m.getModifiers() ^ Modifier.ABSTRACT)
@@ -74,9 +66,9 @@ public class JCodeGenUtil {
     Class[] paramTypes = m.getParameterTypes();
     for (int i = 0; i < paramTypes.length; i++) {
       Class paramType = paramTypes[i];
-      CG cgAnno = find(paramAnnos[i], CG.class);
+      CG.Delegate cgAnno = find(paramAnnos[i], CG.Delegate.class);
       if (cgAnno != null) {
-        mcg.withParams(paramType, cgAnno.delegate());
+        mcg.withParams(paramType, cgAnno.target());
       } else {
         throw new RuntimeException("Method '" + m + "' does not annotate fields of abstract method! Please use @CG annotation!");
       }
