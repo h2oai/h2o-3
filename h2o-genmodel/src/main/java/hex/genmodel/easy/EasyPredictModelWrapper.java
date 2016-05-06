@@ -233,7 +233,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
-    double[] preds = new double[m.nclasses()];
+    double[] preds = null;
+    if (c == ModelCategory.DimReduction) {
+      preds = new double[m.nclasses()];
+    } else {
+      preds = new double[m.getPredsSize()];
+    }
     preds = predict(data, preds);
     return preds;
   }
