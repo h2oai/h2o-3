@@ -1,20 +1,20 @@
 package water.codegen.java;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
+import hex.genmodel.GenModel;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
-import water.codegen.driver.CodeGenDriver;
-import water.codegen.driver.DirectOutputDriver;
 import water.fvec.Frame;
 
+import static water.codegen.java.CodeGenTestUtil.getPojoModel;
+
 /**
- * Created by michal on 3/21/16.
+ * KMeans model POJO generator.
  */
 public class KMeansModelPOJOCodeGenTest extends water.TestUtil {
 
@@ -24,6 +24,7 @@ public class KMeansModelPOJOCodeGenTest extends water.TestUtil {
 
   @Test public void simpleModel() throws IOException {
     Frame fr = null;
+    Frame prediction = null;
     KMeansModel model = null;
     try {
       final Frame f = fr = parse_test_file(IRIS_PATH);
@@ -38,20 +39,16 @@ public class KMeansModelPOJOCodeGenTest extends water.TestUtil {
       }};
 
       model = new KMeans(params).trainModel().get();
-      //CodeGenDriver driver = new ZipOutputDriver();
-      CodeGenDriver driver = new DirectOutputDriver();
-      FileOutputStream fos = new FileOutputStream(new File("/tmp/testmodel.java"));
-      try {
-        // FIXME: i cannot switch the driver without switching a target
-        // Probably builder patter would be better here
-        driver.codegen(new KMeansModelPOJOCodeGen(model).build(), fos);
-      } finally {
-        fos.close();
-      }
-      //model.toJava(System.err, false, true);
-
+      // Generate POJO based model
+      POJOModelCodeGenerator pojoCodeGen = new KMeansModelPOJOCodeGen(model).build();
+      GenModel genModel = getPojoModel(pojoCodeGen);
+      // Verify that prediction of runtime model matches prediction of generated model
+      prediction = model.score(fr);
+      // Compare model prediction with validation data
+      Assert.assertTrue(model.testJavaScoring(genModel, fr, prediction, 1e-15));
     } finally {
       if (fr != null) fr.delete();
+      if (prediction != null) prediction.delete();
       if (model != null) model.delete();
     }
   }
