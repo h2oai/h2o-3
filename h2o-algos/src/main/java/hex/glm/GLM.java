@@ -219,15 +219,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return 2;
     return 1;
   }
-  private boolean doingIRLSM() {
-    if (_parms._family == Family.gaussian && _parms._link == Link.identity)
-      return false; // no need for IRLSM, standard LSM will do
-    if (_parms._solver == Solver.IRLSM)
-      return true;
-    if (_parms._solver == Solver.AUTO)
-      return true; // todo
-    return false;
-  }
 
   private transient double[] _nullBeta;
 
@@ -346,14 +337,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
-        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, !_parms._stdOverride, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
-        if (ymt._wsum == 0)
+        int [] coffsets = null;
+
+        YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
+        if (ymt.wsum() == 0)
           throw new IllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or impute your missing values prior to calling glm.");
-        Log.info(LogMsg("using " + ymt._nobs + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
+        Log.info(LogMsg("using " + ymt.nobs() + " nobs out of " + _dinfo._adaptedFrame.numRows() + " total"));
         // if sparse data, need second pass to compute variance
-        _nobs = ymt._nobs;
+        _nobs = ymt.nobs();
         if (_parms._obj_reg == -1)
-          _parms._obj_reg = 1.0 / ymt._wsum;
+          _parms._obj_reg = 1.0 / ymt.wsum();
         if(!_parms._stdOverride)
           _dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
         _state._ymu = _parms._intercept?ymt._yMu:new double[]{_parms.linkInv(0)};
@@ -555,7 +548,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         while (true) {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
-          assert !firstIter || MathUtils.compare(t._likelihood,_state.likelihood(),1e-15,1e-15):LogMsg("likelihoods don't match, " + t._likelihood + " != " + _state.likelihood());
+//          assert !firstIter || MathUtils.compare(t._likelihood,_state.likelihood(),1e-15,1e-15):LogMsg("likelihoods don't match, " + t._likelihood + " != " + _state.likelihood());
           long t2 = System.currentTimeMillis();
           if (!_state._lsNeeded && (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective() + _parms._objective_epsilon)) {
             _state._lsNeeded = true;
