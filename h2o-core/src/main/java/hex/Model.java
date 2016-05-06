@@ -1266,6 +1266,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
+    String modelName = JCodeGen.toJavaId(_key.toString());
+    boolean preview = false;
+    String java_text = toJava(preview, true);
+    GenModel genmodel;
+    try {
+      Class clz = JCodeGen.compile(modelName,java_text);
+      genmodel = (GenModel) clz.newInstance();
+    } catch (Exception e) {
+      throw H2O.fail("Internal POJO compilation failed",e);
+    }
+
+    return testJavaScoring(genmodel, data, model_predictions, rel_epsilon);
+  }
+
+  public boolean testJavaScoring(GenModel genModel, Frame data, Frame model_predictions, double rel_epsilon) {
     assert data.numRows()==model_predictions.numRows();
     final Frame fr = new Frame(data);
     boolean computeMetrics = data.find(_output.responseName()) != -1;
@@ -1286,22 +1301,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
 
-      String modelName = JCodeGen.toJavaId(_key.toString());
-      boolean preview = false;
-      String java_text = toJava(preview, true);
-      GenModel genmodel;
-      try {
-        Class clz = JCodeGen.compile(modelName,java_text);
-        genmodel = (GenModel)clz.newInstance();
-      } catch (Exception e) {
-        throw H2O.fail("Internal POJO compilation failed",e);
-      }
-
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
 
-      double features   [] = MemoryManager.malloc8d(genmodel._names.length);
-      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
+      double features   [] = MemoryManager.malloc8d(genModel._names.length);
+      double predictions[] = MemoryManager.malloc8d(genModel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
       int totalMiss = 0;
@@ -1311,7 +1315,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // Native Java API
         for (int col = 0; col < features.length; col++) // Build feature set
           features[col] = dvecs[col].at(row);
-        genmodel.score0(features, predictions);            // POJO predictions
+        genModel.score0(features, predictions);            // POJO predictions
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
           double d = pvecs[col].at(row);                  // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
@@ -1324,17 +1328,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
 
       // EasyPredict API
-      EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
+      EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genModel);
       RowData rowData = new RowData();
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
-        if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
+        if (genModel.getModelCategory() == ModelCategory.AutoEncoder) continue;
         for( int col=0; col<features.length; col++ ) {
           double val = dvecs[col].at(row);
           rowData.put(
-                  genmodel._names[col],
-                  genmodel._domains[col] == null ? (Double) val
+                  genModel._names[col],
+                  genModel._domains[col] == null ? (Double) val
                           : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
-                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
+                          : (int)val < genModel._domains[col].length ? genModel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
         }
 
         AbstractPrediction p;
@@ -1344,7 +1348,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double d = pvecs[col].at(row); // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
           double d2 = Double.NaN;
-          switch( genmodel.getModelCategory()) {
+          switch( genModel.getModelCategory()) {
           case Clustering:  d2 = ((ClusteringModelPrediction) p).cluster;  break;
           case Regression:  d2 = ((RegressionModelPrediction) p).value;    break;
           case Binomial:       BinomialModelPrediction bmp = (   BinomialModelPrediction) p;

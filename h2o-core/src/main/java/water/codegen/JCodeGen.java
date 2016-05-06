@@ -407,13 +407,20 @@ public class JCodeGen {
 
     // Compiled; now load all classes.  Our single POJO file actually makes a
     // bunch of classes to keep each class constant pool size reasonable.
-    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    ClassLoader cl = new PojoCL(Thread.currentThread().getContextClassLoader()); //Thread.currentThread().getContextClassLoader();
     for( Map.Entry<String, ByteArrayOutputStream> entry : jfm._buffers.entrySet()) {
       byte[] bits = entry.getValue().toByteArray();
       // Call classLoader.defineClass("className",byte[])
       DEFINE_CLASS_METHOD.invoke(cl, entry.getKey(), bits, 0, bits.length);
     }
-    return Class.forName(class_name); // Return the original top-level class
+    return Class.forName(class_name, true, cl); // Return the original top-level class
+  }
+
+  private static class PojoCL extends ClassLoader {
+
+    public PojoCL(ClassLoader parent) {
+      super(parent);
+    }
   }
 
   // Parts of this code are shamelessly robbed from:
