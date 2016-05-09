@@ -3,10 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to sampledoc's documentation!
+Welcome to H2O-3!
 =====================================
-
-Fresh Contents:
 
 .. toctree::
    :maxdepth: 2
@@ -27,7 +25,6 @@ Fresh Contents:
    inlucludes/_FAQ.rst
    includes/_Security
    includes/_glossary
-   source/getting_started
 
 
 API Reference
