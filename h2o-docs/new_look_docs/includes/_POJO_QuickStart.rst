@@ -3,11 +3,11 @@ POJO Quick Start
 
 This document describes how to build and implement a POJO to use
 predictive scoring. Java developers should refer to the
-`Javadoc <http://h2o-release.s3.amazonaws.com/h2o/%7B%7Bbranch_name%7D%7D/%7B%7Bbuild_number%7D%7D/docs-website/h2o-genmodel/javadoc/index.html>`__
+`Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`__
 for more information, including packages.
 
     **Note**: POJOs are not supported for source files larger than 1G.
-    For more information, refer to the `FAQ <#POJO_Err>`__ below.
+    For more information, refer to the `FAQ`_ below.
 
 What is a POJO?
 ---------------
@@ -20,27 +20,24 @@ POJOs allow users to build a model using H2O and then deploy the model
 to score in real-time, using the POJO model or a REST API call to a
 scoring server.
 
-0. Start H2O in terminal window #1:
+1. Start H2O in terminal window #1:
 
-``$ java -jar h2o.jar``
+  ``$ java -jar h2o.jar``
 
-0. Build a model using your web browser:
+2. Build a model using your web browser:
 
-   0. Go to http://localhost:54321
-   1. Click **view example Flows** near the right edge of the screen.
-      Here is a screenshot of what to look for:
-   2. Click ``GBM_Airlines_Classification.flow``
-   3. If a confirmation prompt appears asking you to "Load Notebook",
-      click it
-   4. From the "Flow" menu choose the "Run all cells" option
-   5. Scroll down and find the "Model" cell in the notebook. Click on
+   a. Go to http://localhost:54321
+   b. Click **View Example Flows** near the right edge of the screen.
+   c. Click ``GBM_Airlines_Classification.flow``
+   d. If a confirmation prompt appears asking you to "Load Notebook", click it.
+   e. From the "Flow" menu choose the "Run all cells" option.
+   f. Scroll down and find the "Model" cell in the notebook. Click on
       the Download POJO button as shown in the following screenshot:
 
     **Note**: The instructions below assume that the POJO model was
     downloaded to the "Downloads" folder.
 
-0. Download model pieces in a *new* terminal window - H2O must still be
-   running in terminal window #1:
+3. Download model pieces in a *new* terminal window - H2O must still be running in terminal window #1:
 
    ::
 
@@ -49,8 +46,7 @@ scoring server.
        $ mv ~/Downloads/gbm_pojo_test.java .
        $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
 
-1. Create your main program in terminal window #2 by creating a new file
-   called main.java (``vim main.java``) with the following contents:
+4. Create your main program in terminal window #2 by creating a new file called main.java (``vim main.java``) with the following contents:
 
    ::
 
@@ -90,7 +86,7 @@ scoring server.
          }
        }
 
-2. Compile and run in terminal window 2:
+5. Compile and run in terminal window 2:
 
    ::
 
@@ -111,14 +107,14 @@ Extracting Models from H2O
 
 Generated models can be extracted from H2O in the following ways:
 
--  **From the H2O Flow Web UI:**
+**From the H2O Flow Web UI:**
 
 When viewing a model, click the **Download POJO** button at the top of
 the model cell, as shown in the example in the Quick start section. You
 can also preview the POJO inside Flow, but it will only show the first
 thousand lines or so in the web browser, truncating large models.
 
--  **From R:**
+**From R:**
 
 The following code snippet shows an example of H2O building a model and
 downloading its corresponding POJO from an R script.
@@ -138,7 +134,7 @@ downloading its corresponding POJO from an R script.
     h2o.download_pojo(model)
     ```
 
--  **From Python:**
+**From Python:**
 
 The following code snippet shows an example of building a model and
 downloading its corresponding POJO from a Python script.
@@ -191,50 +187,34 @@ FAQ
 -  **How do I score new cases in real-time in a production
    environment?**
 
-If you're using the UI, click the **Preview POJO** button for your
-model. This produces a Java class with methods that you can reference
-and use in your production app.
+   If you're using the UI, click the **Preview POJO** button for your model. This produces a Java class with methods that you can reference and use in your production app.
 
 -  **What kind of technology would I need to use?**
 
-Anything that runs in a JVM. The POJO is a standalone Java class with no
-dependencies on H2O.
+   Anything that runs in a JVM. The POJO is a standalone Java class with no dependencies on H2O.
 
 -  **How should I format my data before calling the POJO?**
 
-   Here are our requirements (assuming you are using the "easy"
-   Prediction API for the POJO as described in the
-   `Javadoc <http://h2o-release.s3.amazonaws.com/h2o/%7B%7Bbranch_name%7D%7D/%7B%7Bbuild_number%7D%7D/docs-website/h2o-genmodel/javadoc/index.html>`__).
+   Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the `Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`__).
 
-   -  Input columns must only contain categorical levels that were seen
-      during training
-   -  Any additional input columns not used for training are ignored
-
--  If no input column is specified, it will be treated as an ``NA``
-
-   -  Some models do not handle NAs well (e.g., GLM)
-   -  Any transformations applied to data before model training must
-      also be applied before calling the POJO predict method
+  -  Input columns must only contain categorical levels that were seen during training
+    -  Any additional input columns not used for training are ignored
+    -  If no input column is specified, it will be treated as an ``NA``
+    -  Some models do not handle NAs well (e.g., GLM)
+    -  Any transformations applied to data before model training must also be applied before calling the POJO predict method
 
 -  **How do I run a POJO on a Spark Cluster?**
 
-The POJO provides just the math logic to do predictions, so you won’t
-find any Spark (or even H2O) specific code there. If you want to use the
-POJO to make predictions on a dataset in Spark, create a map to call the
-POJO for each row and save the result to a new column, row-by-row.
+   The POJO provides just the math logic to do predictions, so you won’t find any Spark (or even H2O) specific code there. If you want to use the POJO to make predictions on a dataset in Spark, create a map to call the POJO for each row and save the result to a new column, row-by-row.
 
 -  **How do I communicate with a remote cluster using the REST API?**
 
-You can dl the POJO using the REST API but when calling the POJO predict
-function, it's in the same JVM, not across a REST API.
+   You can dl the POJO using the REST API but when calling the POJO predict function, it's in the same JVM, not across a REST API.
 
 -  **Is it possible to make predictions using my H2O cluster with the
    REST API?**
 
-Yes, but this way of making predictions is separate from the POJO. For
-more information about in-H2O predictions (as opposed to POJO
-predictions), see the documentation for the H2O REST API endpoint
-/3/Predictions.
+   Yes, but this way of making predictions is separate from the POJO. For more information about in-H2O predictions (as opposed to POJO predictions), see the documentation for the H2O REST API endpoint /3/Predictions.
 
 -  **Why did I receive the following error when trying to compile the
    POJO?**
