@@ -8,8 +8,6 @@ abstract public class ArrayGenerator<S extends ArrayGenerator<S>> extends ValueC
 
   /** Modifiers for generated classes. */
   int modifiers;
-  /** Array component type */
-  Class type; // FIXME why we have here component type?
 
   final int off;
   final int len;
@@ -18,18 +16,4 @@ abstract public class ArrayGenerator<S extends ArrayGenerator<S>> extends ValueC
     this.off = off;
     this.len = len;
   }
-
-  // FIXME: remove - we are generating value, not field
-  public S withModifiers(int...modifiers) {
-    for (int m : modifiers) {
-      this.modifiers |= m;
-    }
-    return self();
-  }
-
-  public S withType(Class type) {
-    this.type = type;
-    return self();
-  }
-
 }

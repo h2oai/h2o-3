@@ -1,11 +1,9 @@
 package water.codegen.java;
 
 import java.io.Serializable;
-import java.lang.reflect.Array;
 
 import water.codegen.CodeGenerator;
 import water.codegen.JCodeSB;
-import water.util.ReflectionUtils;
 
 import static java.lang.reflect.Modifier.FINAL;
 import static java.lang.reflect.Modifier.PUBLIC;
@@ -14,6 +12,7 @@ import static water.codegen.java.JCodeGenUtil.field;
 import static water.codegen.java.JCodeGenUtil.klazz;
 import static water.codegen.java.JCodeGenUtil.method;
 import static water.codegen.java.JCodeGenUtil.s;
+import water.codegen.java.JCodeGenUtil.ArrayWrapper;
 
 
 /**
@@ -24,48 +23,31 @@ import static water.codegen.java.JCodeGenUtil.s;
  */
 public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T>> {
 
-  final Object value;
+  final ArrayWrapper ary;
 
-  public LargeArrayGenerator(Object value, int off, int len) {
+  public LargeArrayGenerator(ArrayWrapper value, int off, int len) {
     super(off, len);
-    this.value = value;
-    this.type = value != null ? ReflectionUtils.getBasedComponentType(value) : null;
+    this.ary = value;
   }
-
-  private static int getArrayDim(Object ary) {
-    Class<?> klazz = ary.getClass();
-    assert klazz.isArray() : "Value has to be array!";
-    int dim = 0; // Dimension
-    while (klazz.isArray()) {
-      klazz = klazz.getComponentType();
-      dim++;
-    }
-    // in theory we should compare type =:= klazz or at least klazz <: type
-    return dim;
-  }
-
 
   @Override
   public void generate(JCodeSB out) {
-    generateArrayValue(out, value, off, len, prefix());
+    generateArrayValue(out, ary, off, len, prefix());
   }
 
-  protected JCodeSB generateArrayValue(JCodeSB out, final Object ary, final int aryOff, final int aryLen, final String aryClassPrefix) {
-    if (ary == null) {
+  protected JCodeSB generateArrayValue(JCodeSB out, final ArrayWrapper ary, final int aryOff, final int aryLen, final String aryClassPrefix) {
+    if (ary.isNull()) {
       // End quickly if null is passed
-      return out.p("null");
+      return out.NULL();
     }
 
     // Write value to the output
     out.p(aryClassPrefix).p(".VALUES");
 
     // Get dimension of ary
-    final int dim = getArrayDim(ary);
-    final Class<?> aryKlazz = ary.getClass();
-    assert aryKlazz.isArray() : "only array should be here";
-    Class<?> elemKlazz  = ary.getClass().getComponentType();
-    System.out.println("---> " +elemKlazz);
-    final boolean isNested = elemKlazz.isArray();
+    final int dim = ary.getDim();
+    final boolean isNested = ary.isNested();
+    final Class type = ary.getType();
 
     // But offload generation of the field into multiple generators
     // Generate VALUES holder represented by a class
@@ -76,13 +58,13 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
             .withImplements(Serializable.class)
             .withField(field("VALUES")
                            .withModifiers(PUBLIC | STATIC | FINAL)
-                           .withType(aryKlazz)
+                           .withType(ary.getArrayType())
                            .withValue(s("new ").pj(type).p("[").p(aryLen).p("]").pbraces(dim-1)));
     // Add to top-level container handling encapsulation of this class (class level, compilation unit)
     classContainer().add(topLevelCCG);
 
     // Generate static initializer for VALUES field
-    topLevelCCG.add(new CodeGenerator() {
+    topLevelCCG.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         out.p("static {").ii(1).nl();
@@ -99,11 +81,13 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
                   .withMethod(
                       method("fill") // FIXME: at this point we know aprox size of constant pool items, however actual size depends on actual values
                           .withModifiers(PUBLIC | STATIC)
-                          .withParams(aryKlazz, "sa")
+                          .withParams(ary.getArrayType(), "sa")
                           .withBody(isNested ? fillNestedArray(subClzName, ary, alen, astart, aryOff)
-                                             : String.class == type
-                                               ? fillArrayWithPrimitive(asSA(ary), alen, astart, aryOff)
-                                               : double.class == type ? fillArrayWithPrimitive(asDA(ary), alen, astart, aryOff) : null)
+                                             : String.class == type ? fillArrayWithPrimitive(asSA(ary.get()), alen, astart, aryOff)
+                                               : double.class == type ? fillArrayWithPrimitive(asDA(ary.get()), alen, astart, aryOff)
+                                                 : int.class == type ? fillArrayWithPrimitive(asIA(ary.get()), alen, astart, aryOff)
+                                                   : float.class == type ? fillArrayWithPrimitive(asFA(ary.get()), alen, astart, aryOff)
+                                                     : null)
                   );
           // Append class generator to the top-level container
           classContainer().add(subCcg);
@@ -131,6 +115,10 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     return (int[]) o;
   }
 
+  static float[] asFA(Object o) {
+    return (float[]) o;
+  }
+
   private static CodeGenerator fillArrayWithPrimitive(final double[] ary, final int alen, final int astart, final int aryOff) {
     return new CodeGenerator() {
       @Override
@@ -142,7 +130,7 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     };
   }
 
-  private CodeGenerator fillArrayWithPrimitive(final String[] ary, final int alen, final int astart, final int aryOff) {
+  private static CodeGenerator fillArrayWithPrimitive(final float[] ary, final int alen, final int astart, final int aryOff) {
     return new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
@@ -153,16 +141,38 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     };
   }
 
-  private CodeGenerator fillNestedArray(final String clzName, final Object ary, final int alen, final int astart, final int aryOff) {
+  private static CodeGenerator fillArrayWithPrimitive(final String[] ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        for(int i = 0; i < alen; i++) {
+          out.p("sa[").p(astart + i).p("] = ").pj(ary[astart + aryOff + i]).p(";").nl();
+        }
+      }
+    };
+  }
+
+  private static CodeGenerator fillArrayWithPrimitive(final int[] ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        for(int i = 0; i < alen; i++) {
+          out.p("sa[").p(astart + i).p("] = ").pj(ary[astart + aryOff + i]).p(";").nl();
+        }
+      }
+    };
+  }
+
+  private CodeGenerator fillNestedArray(final String clzName, final ArrayWrapper ary, final int alen, final int astart, final int aryOff) {
     return new CodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {
           int idx = aryOff + astart + i;
           out.p("sa[").p(idx).p("] = ");
-          Object aryAtIdx = Array.get(ary, idx);
-          if (aryAtIdx != null) {
-            int len = Array.getLength(aryAtIdx);
+          ArrayWrapper aryAtIdx = (ArrayWrapper) ary.get(idx);
+          if (!aryAtIdx.isNull()) {
+            int len = aryAtIdx.getLen();
             generateArrayValue(out, aryAtIdx, 0, len, clzName + "_" + idx);
           } else {
             out.NULL();
@@ -175,5 +185,4 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
 
   /** FIXME: remove it!!! Maximum number of string generated per class (static initializer) */
   public static int MAX_STRINGS_IN_CONST_POOL = 30;
-
 }

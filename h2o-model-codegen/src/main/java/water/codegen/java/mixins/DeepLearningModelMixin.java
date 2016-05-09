@@ -4,6 +4,8 @@ import hex.genmodel.annotations.CG;
 
 /**
  * DeepLearning model mixin.
+ *
+ * Note: before running make sure to call Gradle target :h2o-model-codegen:copyMixinsToResources
  */
 public class DeepLearningModelMixin extends ModelMixin {
 
@@ -17,7 +19,7 @@ public class DeepLearningModelMixin extends ModelMixin {
   public static final double[] NORMSUB = null;
 
   // FIXME: why it is initialized here and also below in static-init-block
-  @CG.Delegate(target = "#model_info#data_info._cats", comment = "Workspace for storing categorical input variables.")
+  @CG.Manual(comment = "Workspace for storing categorical input variables.")
   public static final int[] CATS;
 
   @CG.Delegate(target = "#model_info#data_info._catOffsets", comment = "Workspace for categorical offsets.")
@@ -31,6 +33,9 @@ public class DeepLearningModelMixin extends ModelMixin {
 
   @CG.Delegate(target = "#model_info#get_params._hidden_dropout_ratios", comment = "Hidden layer dropout ratios.")
   public static final double[] HIDDEN_DROPOUT_RATIOS = null;
+
+  @CG.Manual(comment = "Number of neurons for each layer.")
+  public final double[][] ACTIVATION;
 
   @CG.Manual(comment = "Number of neurons for each layer.")
   public static final int[] NEURONS = null;
@@ -72,7 +77,7 @@ public class DeepLearningModelMixin extends ModelMixin {
   @CG.Delegate(target = "#model_info#data_info#fullN")
   private static final int GEN_FULLN = -1;
 
-  // --- COPY --
+  // --- The following code will be copied into resulting POJO --
 
   // Static initialization
   static {
@@ -82,10 +87,15 @@ public class DeepLearningModelMixin extends ModelMixin {
   // Instance initialization
   {
     NUMS = GEN_NUMS > 0 ? new double[GEN_NUMS] : null;
+    ACTIVATION = new double[NEURONS.length][];
+    for (int i = 0; i < NEURONS.length; i++) ACTIVATION[i] = new double[NEURONS[i]];
   }
 
+  public double[] score0(double[] data, double[] preds ) {
+    return scoreImpl(data, preds, NUMS, CATS, ACTIVATION);
+  }
 
-  public static void score0(double[] data, double[] preds, double[] nums, int[] cats /* FIXME: cats?? */, double[][] activation) {
+  public static double[] scoreImpl(double[] data, double[] preds, double[] nums, int[] cats /* FIXME: cats?? */, double[][] activation) {
     java.util.Arrays.fill(preds,0);
     java.util.Arrays.fill(activation[0],0);
     int i = 0, ncats = 0;
@@ -207,7 +217,7 @@ public class DeepLearningModelMixin extends ModelMixin {
       }
     }
     if (GEN_IS_AUTOENCODER) {
-      return;
+      return preds;
     } else if (GEN_IS_CLASSIFIER) {
       if (GEN_BALANCE_CLASSES) {
         hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);
@@ -216,6 +226,8 @@ public class DeepLearningModelMixin extends ModelMixin {
     } else {
       preds[0] = preds[1];
     }
+
+    return preds;
   }
 
   final static void pureMatVec(double[][] activation, int i) {
@@ -251,9 +263,8 @@ public class DeepLearningModelMixin extends ModelMixin {
     }
   }
 
-  @CG.Manual
-  public static final double linkInv(double f) {
-    throw new CG.CGException("Need to be implemented by a generator");
+  static final double linkInv(double f) {
+    throw new hex.genmodel.annotations.CG.CGException("Need to be implemented by a generator");
   }
   // --- END ---
 }

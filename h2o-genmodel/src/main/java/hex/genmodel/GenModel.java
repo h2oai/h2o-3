@@ -29,9 +29,9 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   @Override public int nfeatures() {
     return _names.length;
   }
-  @Override public int nclasses() {
+  /*@Override public int nclasses() {
     return 0;
-  }
+  }*/
   // --- END --
 
   @Override public int getNumCols() {

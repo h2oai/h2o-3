@@ -3,7 +3,10 @@ package water.codegen.java.mixins;
 import hex.genmodel.annotations.CG;
 
 /**
- * The mixin which define common model-POJO fields.
+ * The mixin which define common model-POJO generated fields.
+ *
+ * In the most of cases, the field generation is directly delegated
+ * to a specified field/method of model.
  */
 public class ModelMixin {
 

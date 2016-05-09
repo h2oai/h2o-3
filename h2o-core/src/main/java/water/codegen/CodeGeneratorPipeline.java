@@ -3,6 +3,8 @@ package water.codegen;
 import java.util.ArrayList;
 
 import water.codegen.java.ClassGenContainer;
+import water.codegen.java.CodeGeneratorB;
+import water.codegen.java.HasBuild;
 
 /**
  * A simple code generation pipeline.
@@ -10,9 +12,9 @@ import water.codegen.java.ClassGenContainer;
  * It composes code generators and allows for their execution
  * later.
  */
-public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S, E>, E extends CodeGenerator>
+public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S, E>, E extends CodeGenerator & HasBuild>
     extends ArrayList<E>
-    implements CodeGenerator, HasId<S> {
+    implements CodeGenerator<S>, HasId<S>, HasBuild<S> {
 
   @Override
   public void generate(JCodeSB out) {
@@ -51,5 +53,14 @@ public class CodeGeneratorPipeline<S extends CodeGeneratorPipeline<S, E>, E exte
 
   public /* abstract */ ClassGenContainer classContainer(CodeGenerator caller) {
     throw new RuntimeException("Should be overridden! Cannot be abstract now without breaking old API!");
+  }
+
+  @Override
+  public S build() {
+    for (int i = 0; i < this.size(); i++) {
+      HasBuild cg = this.get(i);
+      cg.build();
+    }
+    return self();
   }
 }

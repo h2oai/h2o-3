@@ -47,6 +47,7 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
   }
 
   public MethodCodeGenerator withBody(CodeGenerator body) {
+    assert body != null : "Body generator should be not null";
     this.body = body;
     return self();
   }
@@ -85,6 +86,7 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
 
   @Override
   public void generate(JCodeSB out) {
+    System.out.println("Method: " + name + ccg().name);
     // Output method preamble
     if (override) out.p("@Override ");
     out.p(Modifier.toString(modifiers)).p(' ');

@@ -1,6 +1,7 @@
 package water.codegen.java;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -133,19 +134,23 @@ public class JCodeGenUtil {
   }
 
   public static <T> ValueCodeGenerator VALUE(T[] ary) {
-    return new LargeArrayGenerator(ary, 0, ary != null ? ary.length : 0);
+    return new LargeArrayGenerator(new JavaArrayWrapper(ary), 0, ary != null ? ary.length : 0);
   }
 
   public static ValueCodeGenerator VALUE(double[] ary) {
     // FIXME: zde se potrebuju rozhodnout podle aktualni context
     // Ale nyni se muzem rozhodnout primo
-    return new LargeArrayGenerator(ary, 0, ary != null ? ary.length : 0);
+    return new LargeArrayGenerator(new JavaArrayWrapper(ary), 0, ary != null ? ary.length : 0);
   }
 
   public static ValueCodeGenerator VALUE(int[] ary) {
     // FIXME: zde se potrebuju rozhodnout podle aktualni context
     // Ale nyni se muzem rozhodnout primo
-    return new LargeArrayGenerator(ary, 0, ary != null ? ary.length : 0);
+    return new LargeArrayGenerator(new JavaArrayWrapper(ary), 0, ary != null ? ary.length : 0);
+  }
+
+  public static ValueCodeGenerator VALUE(ArrayWrapper aaw) {
+    return new LargeArrayGenerator(aaw, 0, aaw.getLen());
   }
 
   private static ValueCodeGenerator valueFallback(final Object o, final Class<?> klazz) {
@@ -189,4 +194,71 @@ public class JCodeGenUtil {
     else
       return type.getCanonicalName();
   }
+
+  public abstract static class ArrayWrapper {
+    final Class type;
+    final Class aryType;
+    final int dim;
+    final boolean nested;
+    final boolean isNull;
+
+    protected ArrayWrapper(Class aryType) {
+      this.aryType = aryType != null ? aryType : null;
+      this.type = aryType != null ? ReflectionUtils.getBasedComponentType(aryType) : null;
+      this.dim = aryType != null ? getArrayDim(aryType) : -1;
+      this.nested = aryType != null ? aryType.getComponentType().isArray() : false;
+      this.isNull = aryType == null;
+    }
+
+    public Class getType() { return type; }
+    public Class getArrayType() { return aryType; }
+    public int getDim() { return dim; }
+    public Object get() { return this; }
+    public abstract Object get(int idx);
+    public boolean isNested() { return nested; }
+    public abstract int getLen();
+    public boolean isNull() { return isNull; };
+  }
+
+  public static class JavaArrayWrapper extends ArrayWrapper {
+    final Object value;
+    final int len;
+
+    public JavaArrayWrapper(Object value, Class aryType) {
+      super(value != null ? aryType : null);
+      this.value = value;
+      this.len = value != null ? Array.getLength(value) : 0;
+    }
+
+    public JavaArrayWrapper(Object value) {
+      this(value, value != null ? value.getClass() : null);
+    }
+
+    @Override
+    public Object get() {
+      return this.value;
+    }
+
+    @Override
+    public Object get(int idx) {
+      return isNested() ? new JavaArrayWrapper(Array.get(value, idx), value.getClass().getComponentType()) : Array.get(value, idx);
+    }
+
+    @Override
+    public int getLen() {
+      return len;
+    }
+  }
+
+  static int getArrayDim(Class klazz) {
+    assert klazz.isArray() : "Value has to be array!";
+    int dim = 0; // Dimension
+    while (klazz.isArray()) {
+      klazz = klazz.getComponentType();
+      dim++;
+    }
+    // in theory we should compare type =:= klazz or at least klazz <: type
+    return dim;
+  }
+
 }

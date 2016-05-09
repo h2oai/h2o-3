@@ -1,11 +1,14 @@
 package water.codegen;
 
 import water.codegen.java.ClassGenContainer;
+import water.codegen.java.CodeGeneratorB;
+import water.codegen.java.HasBuild;
 
 /**
  * FIXME:
  */
-abstract public class SimpleCodeGenerator<S extends SimpleCodeGenerator<S>> implements CodeGenerator, HasId<S> {
+abstract public class SimpleCodeGenerator<S extends SimpleCodeGenerator<S>> extends CodeGeneratorB<S>
+    implements HasId<S> {
 
   String id;
 
@@ -18,10 +21,6 @@ abstract public class SimpleCodeGenerator<S extends SimpleCodeGenerator<S>> impl
   @Override
   public String id() {
     return id;
-  }
-
-  protected final S self() {
-    return (S) this;
   }
 
   // FIXME: extract to interface
