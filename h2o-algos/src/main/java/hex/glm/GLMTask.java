@@ -211,9 +211,16 @@ public abstract class GLMTask  {
       Arrays.fill(ws,1);
      boolean changedWeights = false;
      if(_skipNAs) { // first find the rows to skip, need to go over all chunks including categoricals
+       double [] vals = MemoryManager.malloc8d(chunks[0]._len);
+       int [] ids = MemoryManager.malloc4(vals.length);
        for (int i = 0; i < chunks.length; ++i) {
-         for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
-           if (ws[r] != 0 && chunks[i].isNA(r)) {
+         int n = vals.length;
+         if(chunks[i].isSparseZero())
+           n = chunks[i].asSparseDoubles(vals,ids);
+         else
+          chunks[i].getDoubles(vals,0,n);
+         for (int r = 0; r < n; ++r) {
+           if (ws[r] != 0 && Double.isNaN(vals[r])) {
              ws[r] = 0;
              changedWeights = true;
            }
@@ -240,17 +247,11 @@ public abstract class GLMTask  {
        }
      }
      if (response == null) return;
-     long nobs;
-     double wsum;
-     if(_weightId != -1){
-       nobs = 0; wsum = 0;
-       for(double w:ws) {
-         if(w != 0)++nobs;
-         wsum += w;
-       }
-     } else {
-       nobs = chunks[0]._len;
-       wsum = nobs;
+     long nobs = 0;
+     double wsum = 0;
+     for(double w:ws) {
+       if(w != 0)++nobs;
+       wsum += w;
      }
      _basicStats.setNobs(nobs,wsum);
      // compute the mean for the response
