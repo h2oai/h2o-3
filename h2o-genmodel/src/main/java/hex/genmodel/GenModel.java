@@ -22,16 +22,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public GenModel( String[] names, String[][] domains ) { _names = names; _domains = domains; }
 
   // --- CAN BE GENERATED --
-  @Override public boolean isSupervised() {
-    // FIXME: can be derived directly from model category?
-    return false;
-  }
+
   @Override public int nfeatures() {
     return _names.length;
   }
-  @Override public int nclasses() {
-    return 0;
-  }
+
   // --- END --
 
   @Override public int getNumCols() {

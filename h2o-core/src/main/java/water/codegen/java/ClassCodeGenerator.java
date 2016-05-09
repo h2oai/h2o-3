@@ -2,6 +2,7 @@ package water.codegen.java;
 
 import japa.parser.JavaParser;
 import japa.parser.ast.CompilationUnit;
+import japa.parser.ast.body.InitializerDeclaration;
 import japa.parser.ast.body.MethodDeclaration;
 import japa.parser.ast.visitor.VoidVisitorAdapter;
 
@@ -22,7 +23,7 @@ import static water.codegen.java.JCodeGenUtil.VALUE;
 /**
  * FIXME:
  */
-public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator, CodeGenerator> {
+public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator, CodeGeneratorB> {
 
   /** Name of class to generate. */
   final String name;
@@ -80,11 +81,13 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
       }
 
       // Now try to find mixin source code and inject all remaining method code
-      ClassLoader cl = ModelCodeGenerator.class.getClassLoader();
+      ClassLoader cl = ModelCodeGenerator.class.getClassLoader();  // Should be in the same jar as the generator
       InputStream is = cl.getResourceAsStream("codegen/java/mixins/" + mixin.getSimpleName() + ".mixin");
       try {
         CompilationUnit cu = JavaParser.parse(is);
+
         new VoidVisitorAdapter() {
+          // Copy methods
           @Override
           public void visit(MethodDeclaration n, Object arg) {
             MethodCodeGenerator mcg = method(n.getName());
@@ -94,13 +97,23 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
               mcg.withBody(s(n.getBody().toString())).withParentheses(false);
             } else {
               final String methodString = n.toString();
-              add(new MethodCodeGenerator(n.getName()) {
+              withMethod(new MethodCodeGenerator(n.getName()) {
                 @Override public boolean isCtor() { return false; }
                 @Override public void generate(JCodeSB out) {
-                  out.p(methodString);
+                  out.p(methodString).nl(2);
                 }
               });
             }
+          }
+
+          @Override
+          public void visit(final InitializerDeclaration n, Object arg) {
+            add(new CodeGeneratorB() {
+              @Override
+              public void generate(JCodeSB out) {
+                out.p(n.toString()).nl(2);
+              }
+            });
           }
         }.visit(cu, null);
         cu = null;

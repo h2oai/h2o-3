@@ -157,6 +157,22 @@ public class ReflectionUtils {
   }
 
   /**
+   * Note: consider hidden allocation overhead inside call getMethods and reconsider
+   * using findAllMethods and searching for a specific method manually.
+   *
+   * @param clz
+   * @param name
+   * @param includeParent
+   * @return
+   */
+  public static Method findMethod(Class clz, String name, boolean includeParent) {
+    for (Method m : clz.getMethods()) {
+
+    }
+    return null;
+  }
+
+  /**
    * Return all fields declared by a given class.
    *
    * It returns all fields including fields from parent classes
@@ -165,7 +181,7 @@ public class ReflectionUtils {
    * @param clz  class to query
    * @return  list of fields
    */
-  public static Field[] findAllFiels(Class clz) {
+  public static Field[] findAllFields(Class clz) {
     return findAllFields(clz, true);
   }
   public static Field[] findAllFields(Class clz, boolean includeParent) {
@@ -232,8 +248,8 @@ public class ReflectionUtils {
    * @param o  any object
    * @return component type
    */
-  public static Class<?> getBasedComponentType(Object o) {
-    Class result = o.getClass().getComponentType();
+  public static Class<?> getBasedComponentType(Class clz) {
+    Class result = clz.getComponentType();
     while (result.isArray()) result = result.getComponentType();
     return result;
   }

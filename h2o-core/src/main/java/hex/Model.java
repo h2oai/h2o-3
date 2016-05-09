@@ -1453,7 +1453,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           totalMiss = miss;
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
+      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + "/" + fr.numRows() + (totalMiss > 20 ? " (only first 20 are shown)": ""));
       return totalMiss==0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.

@@ -1,7 +1,7 @@
 //
-// H2O Core Module
+// H2O Code Generator Module
 //
-description = "H2O Model Codegen"
+description = "H2O Code Generator"
 
 dependencies {
   // Dependency on shared model support

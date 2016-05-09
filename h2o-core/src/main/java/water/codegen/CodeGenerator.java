@@ -3,7 +3,7 @@ package water.codegen;
 /**
  * Interface for code generator.
  */
-public interface CodeGenerator {
+public interface CodeGenerator<S extends CodeGenerator> {
 
   /** Generate code to given output.
    *

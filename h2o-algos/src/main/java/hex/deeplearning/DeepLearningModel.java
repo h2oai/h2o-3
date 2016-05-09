@@ -9,6 +9,7 @@ import water.*;
 import water.api.schemas3.ModelSchemaV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
+import water.codegen.java.CodeGeneratorB;
 import water.exceptions.H2OIllegalArgumentException;
 import water.codegen.*;
 import water.fvec.Chunk;
@@ -1011,7 +1012,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       sb.nl();
     }
     sb.i(1).p("};").nl();
-    fileCtx.add(new CodeGenerator() {
+    fileCtx.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for (int i=0; i<neurons.length; i++) {
@@ -1034,7 +1035,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     sb.i(1).p("};").nl();
     // Generate additonal classes
-    fileCtx.add(new CodeGenerator() {
+    fileCtx.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for (int i=0; i<neurons.length; i++) {
@@ -1061,7 +1062,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     sb.i(1).p("};").nl();
     // Generate weight classes
-    fileCtx.add(new CodeGenerator() {
+    fileCtx.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for (int i = 0; i < neurons.length; i++) {

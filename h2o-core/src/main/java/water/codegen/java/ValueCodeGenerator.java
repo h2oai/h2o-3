@@ -6,7 +6,6 @@ import water.codegen.SimpleCodeGenerator;
 
 /**
  * Created by michal on 3/25/16.
- *
  */
 public abstract class ValueCodeGenerator<S extends ValueCodeGenerator<S>> extends SimpleCodeGenerator<S> {
 

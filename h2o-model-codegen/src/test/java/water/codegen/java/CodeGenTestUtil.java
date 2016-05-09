@@ -1,6 +1,9 @@
 package water.codegen.java;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 
 import hex.genmodel.GenModel;
@@ -30,9 +33,18 @@ public class CodeGenTestUtil {
       // Compile code
       String javaModelCode = new String(fos.toByteArray());
       String javaModelId = modelCodeGen.getModelName();
-      Class klazzGenModel = JCodeGen.compile(javaModelId, javaModelCode);
+      // ---
+      File o = new File("/tmp/" + javaModelId + ".java");
+      FileUtils.writeStringToFile(o, javaModelCode);
+      System.out.println("Model written to: " + o.getCanonicalPath());
+      File o2 = new File("/tmp/" + javaModelId + ".java2");
+      FileUtils.writeStringToFile(o2, modelCodeGen.model.toJava(false, false));
+      //javaModelCode = modelCodeGen.model.toJava(false, false);
+      // ---
+      Class klazzGenModel = JCodeGen.compile(javaModelId, javaModelCode, true);
       return (GenModel) klazzGenModel.newInstance();
     } catch (Exception e) {
+      e.printStackTrace();
       throw H2O.fail("Model compilation failed", e);
     } finally {
       try { fos.close(); } catch (IOException ioe) { /* ignore */ }

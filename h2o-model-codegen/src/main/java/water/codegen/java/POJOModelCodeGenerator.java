@@ -77,20 +77,8 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
               .withBody(s("super(NAMES, DOMAINS);"))
         );
 
-    // FIXME: should be in mixin via delegation - there should be 2 mixins
-    if (model.isSupervised()) {
-      ccg
-          .withField(
-              field(double[].class, "PRIOR_CLASS_DISTRIB")
-                  .withComment("Prior class distribution")
-                  .withModifiers(PUBLIC | STATIC | FINAL)
-                  .withValue(s().pj(model._output._priorClassDist)),
-              field(double[].class, "MODEL_CLASS_DISTRIB")
-                  .withComment("Class distribution used for model building")
-                  .withModifiers(PUBLIC | STATIC | FINAL)
-                  .withValue(s().pj(model._output._modelClassDist))
-          );
-    }
+    // Need to update names generation
+    ccg.field("NAMES").withValue(VALUE(model._output._names, 0, model._output.nfeatures()));
 
     return ccg;
   }
@@ -104,7 +92,10 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
     this.withCompilationUnit(cug.withClassGenerator(cg));
 
     // Reimplement in model-specifc subclasss
-    return buildImpl(cug, cg);
+    buildImpl(cug, cg);
+
+    // At the end call all defined generators build method
+    return super.build();
   }
 
   /**

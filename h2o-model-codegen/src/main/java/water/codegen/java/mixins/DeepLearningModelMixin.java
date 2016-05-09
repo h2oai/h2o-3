@@ -1,9 +1,13 @@
 package water.codegen.java.mixins;
 
+import java.util.Arrays;
+
 import hex.genmodel.annotations.CG;
 
 /**
  * DeepLearning model mixin.
+ *
+ * Note: before running make sure to call Gradle target :h2o-model-codegen:copyMixinsToResources
  */
 public class DeepLearningModelMixin extends ModelMixin {
 
@@ -17,7 +21,7 @@ public class DeepLearningModelMixin extends ModelMixin {
   public static final double[] NORMSUB = null;
 
   // FIXME: why it is initialized here and also below in static-init-block
-  @CG.Delegate(target = "#model_info#data_info._cats", comment = "Workspace for storing categorical input variables.")
+  @CG.Manual(comment = "Workspace for storing categorical input variables.")
   public static final int[] CATS;
 
   @CG.Delegate(target = "#model_info#data_info._catOffsets", comment = "Workspace for categorical offsets.")
@@ -31,6 +35,9 @@ public class DeepLearningModelMixin extends ModelMixin {
 
   @CG.Delegate(target = "#model_info#get_params._hidden_dropout_ratios", comment = "Hidden layer dropout ratios.")
   public static final double[] HIDDEN_DROPOUT_RATIOS = null;
+
+  @CG.Manual(comment = "Number of neurons for each layer.")
+  public final double[][] ACTIVATION;
 
   @CG.Manual(comment = "Number of neurons for each layer.")
   public static final int[] NEURONS = null;
@@ -72,7 +79,7 @@ public class DeepLearningModelMixin extends ModelMixin {
   @CG.Delegate(target = "#model_info#data_info#fullN")
   private static final int GEN_FULLN = -1;
 
-  // --- COPY --
+  // --- The following code will be copied into resulting POJO --
 
   // Static initialization
   static {
@@ -82,10 +89,15 @@ public class DeepLearningModelMixin extends ModelMixin {
   // Instance initialization
   {
     NUMS = GEN_NUMS > 0 ? new double[GEN_NUMS] : null;
+    ACTIVATION = new double[NEURONS.length][];
+    for (int i = 0; i < NEURONS.length; i++) ACTIVATION[i] = new double[NEURONS[i]];
   }
 
+  public double[] score0(double[] data, double[] preds ) {
+    return scoreImpl(data, preds, NUMS, CATS, ACTIVATION);
+  }
 
-  public static void score0(double[] data, double[] preds, double[] nums, int[] cats /* FIXME: cats?? */, double[][] activation) {
+  public static double[] scoreImpl(double[] data, double[] preds, double[] nums, int[] cats, double[][] activation) {
     java.util.Arrays.fill(preds,0);
     java.util.Arrays.fill(activation[0],0);
     int i = 0, ncats = 0;
@@ -101,16 +113,14 @@ public class DeepLearningModelMixin extends ModelMixin {
           }
         }
       }
-      for (i=0; i<ncats; ++i) activation[0][cats[i]] = 1;
+      for (int j=0; j<ncats; ++j) activation[0][cats[j]] = 1;
     }
     if (GEN_NUMS > 0) {
       java.util.Arrays.fill(nums, 0);
       final int n = data.length; // FIXME: data.lenght is known before, can be generated
       final int cats_off = GEN_CATS > 0 ? - GEN_CATS : 0;
-      for (; i < n; i++) {
-        nums[i + cats_off] = Double.isNaN(data[i]) ? 0 : // FIXME +cats_off can be replace by - GEN_CATS
-                             NORMMUL != null ? (data[i] - NORMSUB[i + cats_off] * NORMMUL[i + cats_off])
-                                             : data[i];
+      for (; i < n; ++i) {
+        nums[i + cats_off] = Double.isNaN(data[i]) ? 0 : NORMMUL != null ? (data[i] - NORMSUB[i + cats_off]) * NORMMUL[i + cats_off] : data[i];
       }
       for (i=0; i<nums.length; ++i) {
         activation[0][CATOFFSET[CATOFFSET.length-1] + i] = Double.isNaN(nums[i]) ? 0 : nums[i];
@@ -145,11 +155,10 @@ public class DeepLearningModelMixin extends ModelMixin {
           }
         }
         if (i == activation.length-1) {
-         // FIXME: pure mathvec
+          pureMatVec(activation, i); // Should be inlined
         }
       } else { // else is not maxout
-        // pure matvec
-        // FIXME here pure matvec
+        pureMatVec(activation, i); // Should be inlined
         if (i < stopping) {
           for (int r=0; r<activation[i].length; ++r) {
             if (GEN_IS_TANH) {
@@ -182,7 +191,7 @@ public class DeepLearningModelMixin extends ModelMixin {
             preds[r+1] = activation[i][r];
           }
         }
-      } else if (!GEN_IS_AUTOENCODER) {
+      } else if (!GEN_IS_AUTOENCODER) { // Regression
         if (i == activation.length-1) {
           if (NORMRESPMUL != null) {
             preds[1] = (activation[i][0] / NORMRESPMUL[0] + NORMRESPSUB[0]);
@@ -192,7 +201,7 @@ public class DeepLearningModelMixin extends ModelMixin {
           preds[1] = linkInv(preds[1]);
           if (Double.isNaN(preds[1])) throw new RuntimeException("Predicted regression target NaN!");
         }
-      } else { // is autoencoder
+      } else { // Autoencoder
         if (i == activation.length-1) {
           for (int r=0; r<activation[i].length; r++) {
             if (Double.isNaN(activation[i][r])) throw new RuntimeException("Numerical instability, reconstructed NaN.");
@@ -206,16 +215,19 @@ public class DeepLearningModelMixin extends ModelMixin {
         }
       }
     }
-    if (GEN_IS_AUTOENCODER) {
-      return;
-    } else if (GEN_IS_CLASSIFIER) {
-      if (GEN_BALANCE_CLASSES) {
-        hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);
+    if (!GEN_IS_AUTOENCODER) {
+      if (GEN_IS_CLASSIFIER) {
+        if (GEN_BALANCE_CLASSES) {
+          hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);
+        }
         preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, DEFAULT_THRESHOLD);
+        System.out.println(java.util.Arrays.toString(preds));
+      } else {
+        preds[0] = preds[1];
       }
-    } else {
-      preds[0] = preds[1];
     }
+
+    return preds;
   }
 
   final static void pureMatVec(double[][] activation, int i) {
@@ -251,9 +263,8 @@ public class DeepLearningModelMixin extends ModelMixin {
     }
   }
 
-  @CG.Manual
-  public static final double linkInv(double f) {
-    throw new CG.CGException("Need to be implemented by a generator");
+  static final double linkInv(double f) {
+    throw new hex.genmodel.annotations.CG.CGException("Need to be implemented by a generator");
   }
   // --- END ---
 }

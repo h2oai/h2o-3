@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -394,15 +395,22 @@ public class JCodeGen {
 
   // Compiler loaded???
   public static boolean canCompile() { return COMPILER!=null; }
-  
+
   public static Class compile(String class_name, String java_text) throws Exception {
+    return compile(class_name, java_text, false);
+  }
+
+  public static Class compile(String class_name, String java_text, boolean debug) throws Exception {
     if( COMPILER==null ) throw new UnsupportedOperationException("Unable to launch an internal instance of javac");
     // Wrap input string up as a file-like java source thing
     JavaFileObject file = new JavaSourceFromString(class_name, java_text);
     // Capture all output class "files" as simple ByteArrayOutputStreams
     JavacFileManager jfm = new JavacFileManager(COMPILER.getStandardFileManager(null, null, null));
+    LinkedList<String> options = !debug ? null : new LinkedList<String>() {{
+      add("-g");
+    }};
     // Invoke javac
-    if( !COMPILER.getTask(null, jfm, null, /*javac options*/null, null, Arrays.asList(file)).call() )
+    if( !COMPILER.getTask(null, jfm, null, options, null, Arrays.asList(file)).call() )
       throw H2O.fail("Internal POJO compilation failed.");
 
     // Compiled; now load all classes.  Our single POJO file actually makes a
