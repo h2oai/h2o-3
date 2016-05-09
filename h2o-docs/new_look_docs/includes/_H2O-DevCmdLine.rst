@@ -1,4 +1,4 @@
-Launch H2O From the Command Line
+… From the Cmd Line
 ============================================
 
 .. todo:: create a table of command line options (should you say expression or primary?) 
@@ -110,41 +110,35 @@ node you are using to launch H2O.
 
 To configure H2O on a multi-node cluster:
 
-0. Locate a set of hosts that will be used to create your cluster. A
+#. Locate a set of hosts that will be used to create your cluster. A
    host can be a server, an EC2 instance, or your laptop.
-1. `Download <http://h2o.ai/download>`__ the appropriate version of H2O
+#. `Download <http://h2o.ai/download>`__ the appropriate version of H2O
    for your environment.
-2. Verify the same h2o.jar file is available on each host in the
+#. Verify the same h2o.jar file is available on each host in the
    multi-node cluster.
-3. Create a flatfile.txt that contains an IP address and port number for
+#. Create a flatfile.txt that contains an IP address and port number for
    each H2O instance. Use one entry per line. For example:
+   ``192.168.1.163:54321    192.168.1.164:54321`` 
+#. Copy the flatfile.txt to each node in the cluster.
+#. Use the ``-Xmx`` option to specify the amount of memory for each node. The cluster's memory capacity is the sum of all H2O nodes in the cluster. 
+  For example, if you create a cluster with four 20g nodes (by specifying ``-Xmx20g`` four times), H2O will have a total of 80 gigs of memory available.
 
-``192.168.1.163:54321    192.168.1.164:54321`` 0. Copy the flatfile.txt
-to each node in the cluster. 0. Use the ``-Xmx`` option to specify the
-amount of memory for each node. The cluster's memory capacity is the sum
-of all H2O nodes in the cluster.
+  For best performance, we recommend sizing your cluster to be about four
+  times the size of your data. To avoid swapping, the ``-Xmx`` allocation
+  must not exceed the physical memory on any node. Allocating the same
+  amount of memory for all nodes is strongly recommended, as H2O works
+  best with symmetric nodes.
 
-For example, if you create a cluster with four 20g nodes (by specifying
-``-Xmx20g`` four times), H2O will have a total of 80 gigs of memory
-available.
+  Note the optional ``-ip`` and ``-port`` options specify the IP address
+  and ports to use. The ``-ip`` option is especially helpful for hosts
+  with multiple network interfaces.
 
-For best performance, we recommend sizing your cluster to be about four
-times the size of your data. To avoid swapping, the ``-Xmx`` allocation
-must not exceed the physical memory on any node. Allocating the same
-amount of memory for all nodes is strongly recommended, as H2O works
-best with symmetric nodes.
+  ``java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321``
 
-Note the optional ``-ip`` and ``-port`` options specify the IP address
-and ports to use. The ``-ip`` option is especially helpful for hosts
-with multiple network interfaces.
-
-``java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321``
-
-The output will resemble the following:
+  The output will resemble the following:
 
 ::
 
-    ```
     04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   1. Open a terminal and run 'ssh -L 55555:localhost:54321 H2O-3User@###.###.#.##'
     04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   2. Point your browser to http://localhost:55555
     04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Log dir: '/tmp/h2o-H2O-3User/h2ologs'
@@ -153,11 +147,10 @@ The output will resemble the following:
     04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: S3 subsystem successfully initialized
     04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: Flow dir: '/Users/H2O-3User/h2oflows'
     04-20 16:14:00.475 192.168.1.70:54321    2754   main      INFO: Cloud of size 1 formed [/192.168.1.70:54321]
-    ```
 
-As you add more nodes to your cluster, the output is updated:
-``INFO WATER: Cloud of size 2 formed [/...]...``
+.. todo:: see if you can move the 'note' out one tab and change '7' bullet to use a #
+**Note** As you add more nodes to your cluster, the output is updated: ``INFO WATER: Cloud of size 2 formed [/...]...``
 
-0. Access the H2O 3.0 web UI (Flow) with your browser. Point your
+7. Access the H2O 3.0 web UI (Flow) with your browser. Point your
    browser to the HTTP address specified in the output
    ``Listening for HTTP and REST traffic on ...``.

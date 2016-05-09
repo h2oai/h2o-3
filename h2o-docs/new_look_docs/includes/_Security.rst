@@ -13,41 +13,213 @@ H2O software does and does not do.
 Terms
 ~~~~~
 
-+-------------------------------------+---------------------------------+
-| Term                                | Definition                      |
-+=====================================+=================================+
-| **H2O Cluster**                     | A collection of H2O nodes that  | 
-|                                     | work together. In the H2O Flow  | 
-|                                     | Web UI, the cluster status menu |
-|                                     | item shows the list of nodes in | 
-|                                     | an H2O cluster.                 |
-+-------------------------------------+---------------------------------+
-| **H2O node**                        | One VM instance running the H2O |
-|                                     | main class. One H2O node        | 
-|                                     | corresponds to one OS-level     | 
-|                                     | process. In the YARN case, one  | 
-|                                     | H2O node corresponds to one     |
-|                                     | mapper instance and one YARN    |
-|                                     | container.                      |
-+-------------------------------------+---------------------------------+
-| **H2O embedded web port**           | Each Each H2O node contains an  |
-|                                     | embedded web port (by default   |
-|                                     | port 54321). This web port      |
-|                                     | hosts H2O Flow as well as the   |
-|                                     | H2O REST API. The user interacts|
-|                                     | directly with this web port.    |
-+-------------------------------------+---------------------------------+
-| **H2O Internal communication port** | Each Each H2O node also has an  |
-|                                     | internal port (web port+1, so by| 
-|                                     | default port 54322) for internal| 
-|                                     | node-to-node communication. This| 
-|                                     | is a proprietary binary         |
-|                                     | protocol. An attacker using a   |
-|                                     | tool like tcpdump or wireshark  |
-|                                     | may be able to reverse engineer |
-|                                     | data captured on this           |
-|                                     | communication path.             |
-+-------------------------------------+---------------------------------+
++------+------+
+| Term | Defi |
+|      | niti |
+|      | on   |
++======+======+
+| **H2 | A    |
+| O    | coll |
+| clus | ecti |
+| ter* | on   |
+| *    | of   |
+|      | H2O  |
+|      | node |
+|      | s    |
+|      | that |
+|      | work |
+|      | toge |
+|      | ther |
+|      | .    |
+|      | In   |
+|      | the  |
+|      | H2O  |
+|      | Flow |
+|      | Web  |
+|      | UI,  |
+|      | the  |
+|      | clus |
+|      | ter  |
+|      | stat |
+|      | us   |
+|      | menu |
+|      | item |
+|      | show |
+|      | s    |
+|      | the  |
+|      | list |
+|      | of   |
+|      | node |
+|      | s    |
+|      | in   |
+|      | an   |
+|      | H2O  |
+|      | clus |
+|      | ter. |
++------+------+
+| **H2 | One  |
+| O    | JVM  |
+| node | inst |
+| **   | ance |
+|      | runn |
+|      | ing  |
+|      | the  |
+|      | H2O  |
+|      | main |
+|      | clas |
+|      | s.   |
+|      | One  |
+|      | H2O  |
+|      | node |
+|      | corr |
+|      | espo |
+|      | nds  |
+|      | to   |
+|      | one  |
+|      | OS-l |
+|      | evel |
+|      | proc |
+|      | ess. |
+|      | In   |
+|      | the  |
+|      | YARN |
+|      | case |
+|      | ,    |
+|      | one  |
+|      | H2O  |
+|      | node |
+|      | corr |
+|      | espo |
+|      | nds  |
+|      | to   |
+|      | one  |
+|      | mapp |
+|      | er   |
+|      | inst |
+|      | ance |
+|      | and  |
+|      | one  |
+|      | YARN |
+|      | cont |
+|      | aine |
+|      | r.   |
++------+------+
+| **H2 | Each |
+| O    | H2O  |
+| embe | node |
+| dded | cont |
+| web  | ains |
+| port | an   |
+| **   | embe |
+|      | dded |
+|      | web  |
+|      | port |
+|      | (by  |
+|      | defa |
+|      | ult  |
+|      | port |
+|      | 5432 |
+|      | 1).  |
+|      | This |
+|      | web  |
+|      | port |
+|      | host |
+|      | s    |
+|      | H2O  |
+|      | Flow |
+|      | as   |
+|      | well |
+|      | as   |
+|      | the  |
+|      | H2O  |
+|      | REST |
+|      | API. |
+|      | The  |
+|      | user |
+|      | inte |
+|      | ract |
+|      | s    |
+|      | dire |
+|      | ctly |
+|      | with |
+|      | this |
+|      | web  |
+|      | port |
+|      | .    |
++------+------+
+| **H2 | Each |
+| O    | H2O  |
+| inte | node |
+| rnal | also |
+| comm | has  |
+| unic | an   |
+| atio | inte |
+| n    | rnal |
+| port | port |
+| **   | (web |
+|      | port |
+|      | +1,  |
+|      | so   |
+|      | by   |
+|      | defa |
+|      | ult  |
+|      | port |
+|      | 5432 |
+|      | 2)   |
+|      | for  |
+|      | inte |
+|      | rnal |
+|      | node |
+|      | -to- |
+|      | node |
+|      | comm |
+|      | unic |
+|      | atio |
+|      | n.   |
+|      | This |
+|      | is a |
+|      | prop |
+|      | riet |
+|      | ary  |
+|      | bina |
+|      | ry   |
+|      | prot |
+|      | ocol |
+|      | .    |
+|      | An   |
+|      | atta |
+|      | cker |
+|      | usin |
+|      | g    |
+|      | a    |
+|      | tool |
+|      | like |
+|      | tcpd |
+|      | ump  |
+|      | or   |
+|      | wire |
+|      | shar |
+|      | k    |
+|      | may  |
+|      | be   |
+|      | able |
+|      | to   |
+|      | reve |
+|      | rse  |
+|      | engi |
+|      | neer |
+|      | data |
+|      | capt |
+|      | ured |
+|      | on   |
+|      | this |
+|      | comm |
+|      | unic |
+|      | atio |
+|      | n    |
+|      | path |
+|      | .    |
++------+------+
 
 Assumptions (threat model)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -105,7 +277,9 @@ Assumptions (threat model)
 Data chain-of-custody in a Hadoop data center environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Note**: This holds true for all versions of Hadoop (including YARN) supported by H2O.
+    | Notes:
+    | - This holds true for all versions of Hadoop (including YARN)
+      supported by H2O.
 
 Through this sequence, it is shown that a user is only able to access
 the same data from H2O that they could already access from normal Hadoop
@@ -134,18 +308,54 @@ What is being secured today
 
 2. The embedded web port in each node of H2O can be secured in two ways:
 
- +------------------+---------------------------------------+
- | Method           | Description                           |
- +==================+=======================================+
- | HTTPS            | Encrypted socket communication between|
- |                  | the user client and the embedded H2O  |
- |                  | web port.                             |
- +------------------+---------------------------------------+
- | Authentication   | An HTTP Basic Auth username and       |
- |                  | password from the user client.        |
- +------------------+---------------------------------------+
++------+------+
+| Meth | Desc |
+| od   | ript |
+|      | ion  |
++======+======+
+| HTTP | Encr |
+| S    | ypte |
+|      | d    |
+|      | sock |
+|      | et   |
+|      | comm |
+|      | unic |
+|      | atio |
+|      | n    |
+|      | betw |
+|      | een  |
+|      | the  |
+|      | user |
+|      | clie |
+|      | nt   |
+|      | and  |
+|      | the  |
+|      | embe |
+|      | dded |
+|      | H2O  |
+|      | web  |
+|      | port |
+|      | .    |
++------+------+
+| Auth | An   |
+| enti | HTTP |
+| cati | Basi |
+| on   | c    |
+|      | Auth |
+|      | user |
+|      | name |
+|      | and  |
+|      | pass |
+|      | word |
+|      | from |
+|      | the  |
+|      | user |
+|      | clie |
+|      | nt.  |
++------+------+
 
-**Note**: Embedded web port HTTPS and authentication may be used separately or together.
+    Note: Embedded web port HTTPS and authentication may be used
+    separately or together.
 
 What is specifically not being secured today
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -214,7 +424,14 @@ with HTTPS:
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
 
- **Caution:** Certificate checking has not been implemented yet. The insecure flag tells the client to ignore certificate checking. This means your client is exposed to a man-in-the-middle attack. We assume for the time being that in a secure corporate network such attacks are of low concern. Currently, the insecure flag must be set to TRUE so that in some future version of H2O you will confidently know when certificate checking has actually been implemented.
+    | **Caution:**
+    | Certificate checking has not been implemented yet. The insecure
+      flag tells the client to ignore certificate checking. This means
+      your client is exposed to a man-in-the-middle attack. We assume
+      for the time being that in a secure corporate network such attacks
+      are of low concern. Currently, the insecure flag must be set to
+      TRUE so that in some future version of H2O you will confidently
+      know when certificate checking has actually been implemented.
 
 Python client
 '''''''''''''
@@ -224,14 +441,14 @@ Not yet implemented. Please contact H2O for an update.
 HTTPS server side
 ^^^^^^^^^^^^^^^^^
 
-A `Java Keystore <https://en.wikipedia.org/wiki/Keystore>`_ must be
+A `Java Keystore <https://en.wikipedia.org/wiki/Keystore>`__ must be
 provided on the server side to enable HTTPS. Keystores can be
 manipulated on the command line with the
-`keytool <http://docs.oracle.com/javase/6/docs/technotes/tools/solaris/keytool.html>`_
+`keytool <http://docs.oracle.com/javase/6/docs/technotes/tools/solaris/keytool.html>`__
 command.
 
 The underlying HTTPS implementation is provided by Jetty 8 and the Java
-runtime. (**Note**: Jetty 8 was chosen to retain Java 6 compatibility.)
+runtime. (Note: Jetty 8 was chosen to retain Java 6 compatibility.)
 
 Standalone H2O
 ''''''''''''''
@@ -498,17 +715,17 @@ Python client
 
 Not yet implemented. Please contact H2O for an update.
 
-Hash file H2O-server side
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Hash file H2O-server side
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A **realm.properties** configuration file must be provided by the user.
+A realm.properties configuration file must be provided by the user.
 
 Example **realm.properties**:
 
 ::
 
     # See https://wiki.eclipse.org/Jetty/Howto/Secure_Passwords
-    # java -cp h2o.jar org.eclipse.jetty.util.security.Password
+    #     java -cp h2o.jar org.eclipse.jetty.util.security.Password
     username1: password1
     username2: MD5:6cb75f652a9b52798eb6cf2201057c73
 
@@ -520,9 +737,9 @@ tool:
     java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
 
 See the `Jetty 8 HashLoginService
-documentation <http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService>`_
+documentation <http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService>`__
 and `Jetty 8 Secure Password
-HOWTO <http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords>`_ for more
+HOWTO <http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords>`__ for more
 information.
 
 Standalone H2O

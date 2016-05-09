@@ -1,3 +1,5 @@
+.. _on-hadoop:
+
 On Hadoop
 =========
 

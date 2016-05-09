@@ -54,22 +54,22 @@ Use YARN to obtain the ``stdout`` and ``stderr`` logs that are used for
 troubleshooting. To learn how to access YARN based on management
 software, version, and job status, see `Accessing YARN <#AccessYARN>`__.
 
-1. Click the **Applications** link to view all jobs, then click the
+0. Click the **Applications** link to view all jobs, then click the
    **History** link for the job.
 
-	![image](../images/YARN_AllApps_History.png)
+.. figure:: images/YARN_AllApps_History.png
    :alt: YARN - History
 
    YARN - History
 
-2. Click the **logs** link.
+0. Click the **logs** link.
 
-   	![image](../images/YARN_History_Logs.png)
+   .. figure:: images/YARN_History_Logs.png
       :alt: YARN - History
 
       YARN - History
 
-3. Copy the information that displays and send it in an email to
+1. Copy the information that displays and send it in an email to
    support@h2o.ai.
 
    .. figure:: images/YARN_History_Logs2.png
@@ -92,14 +92,14 @@ If you are using Hadoop and the job is still running:
 0. Click the **Applications** link to view all jobs, then click the
    **ApplicationMaster** link for the job.
 
-   .. figure:: ../images/YARN_AllApps_AppMaster.png
+   .. figure:: images/YARN_AllApps_AppMaster.png
       :alt: YARN - Application Master
 
       YARN - Application Master
 
 1. Select the job from the list of active jobs.
 
-   .. figure:: ../images/YARN_AppMaster_Job.png
+   .. figure:: images/YARN_AppMaster_Job.png
       :alt: YARN - Application Master
 
       YARN - Application Master

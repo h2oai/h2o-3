@@ -65,13 +65,17 @@ Grid Search in R
 Grid search in R provides the following capabilities:
 
 -  ``H2OGrid class``: Represents the results of the grid search
--  ``h2o.getGrid(<grid_id>, sort_by, decreasing)``: Display the specified grid
+-  ``h2o.getGrid(<grid_id>, sort_by, decreasing)``: Display the
+   specified grid
 -  ``h2o.grid``: Start a new grid search parameterized by
 
    -  model builder name (e.g., ``gbm``)
    -  model parameters (e.g., ``ntrees=100``)
-   -  ``hyper_parameters`` attribute for passing a list of hyper parameters (e.g.,       ``list(ntrees=c(1,100), learn_rate=c(0.1,0.001))``)
-   -  ``search_criteria`` optional attribute for specifying a more advanced search strategy
+   -  ``hyper_parameters`` attribute for passing a list of hyper
+      parameters (e.g.,
+      ``list(ntrees=c(1,100), learn_rate=c(0.1,0.001))``)
+   -  ``search_criteria`` optional attribute for specifying more a
+      advanced search strategy
 
 Example
 ~~~~~~~
@@ -185,9 +189,9 @@ Random Hyper-Parameter Grid Search Example
     print(ntrees)
 
 For more information, refer to the `R grid search
-code <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R>`_
+code <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R>`__
 and
-`runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`_.
+`runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`__.
 
 Grid Search in Python
 ---------------------
@@ -218,9 +222,9 @@ Example
       grid_search.show()
 
 For more information, refer to the `Python grid search
-code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`_
+code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__
 and
-`pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`_.
+`pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
 
 Grid Search Java API
 --------------------
@@ -260,9 +264,12 @@ to get the models.
 
 Launch the grid search by specifying:
 
--  the common model hyperparameters (parameter values which will be common across all models in the search)
--  the search hyperparameters (a map ``<parameterName, listOfValues>`` that defines the parameter spaces to traverse)
--  optionally, search criteria (an instance of ``HyperSpaceSearchCriteria``)
+-  the common model hyperparameters (parameter values which will be
+   common across all models in the search)
+-  the search hyperparameters (a map ``<parameterName, listOfValues>``
+   that defines the parameter spaces to traverse)
+-  optionally, search criteria (an instance of
+   ``HyperSpaceSearchCriteria``)
 
 The Java API can grid search any parameters defined in the model
 parameter's class (e.g., ``GBMParameters``). Paramters that are
@@ -294,7 +301,6 @@ Example
     GBMModel.GBMParameters params = new GBMModel.GBMParameters();
     params._train = fr._key;
     params._response_column = "cylinders";
-    
     // Trigger new grid search job, block for results and get the resulting grid object
     GridSearch gs = 
      GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY, new HyperSpaceSearchCriteria.CartesianSearchCriteria());
@@ -313,81 +319,59 @@ are assumed:
 
 To add support for PCA grid search:
 
-1. Add the PCA model build factory into the ``hex.grid.ModelFactories``
+0. Add the PCA model build factory into the ``hex.grid.ModelFactories``
    class:
 
-   ::
-
-		class ModelFactories { 
-		  /* ... */
-		  public static ModelFactory<PCAModel.PCA_Paremters>
-		    <PCA_MODEL_FACTORY> = 
-		    new ModelFactory<PCAModel.PCAParameters() { 
-		     @Override
-		     public String getModelName() { 
-		       return "PCA"; 
-		     }
-
-		     @Override
-		     public ModelBuilder buildModel(PCAModel.PCAParameters params) {
-		       return new PCA(params);
-		     }
-		  };
-		}
-
-2. Add the PCA REST end-point schema:
-
-  ::
-  
-	  public class PCAGridSearchV99 extends GridSearchSchema<PCAGridSearchHandler.PCAGrid,
-		PCAGridSearchV99, 
-		PCAModel.PCAParameters, 
-		PCAV3.PCAParametersV3> {
-	  }
-
-3. Add the PCA REST end-point handler:
-
-  ::
-
-	public class PCAGridSearchHandler
-	  extends GridSearchHandler<PCAGridSearchHandler.PCAGrid,
-	  PCAGridSearchV99,
-	  PCAModel.PCAParameters>
-	  PCAV3.PCAParametersV3> {
-
-		public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
-		  return super.do_train(version, gridSearchSchema);
-		}
-		
-		public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
-	  	  return super.do_train(version, gridSearchSchema);
-		}
-
-		@Override
-		protected ModelFactory<PCAModel.PCAParameters> getModelFactory() {
-		  return ModelFactories.PCA_MODEL_FACTORY;
-		}
-
-		@Deprecated
-		public static class PCAGrid extends Grid<PCAModel.PCAParameters> {
-			public PCAGrid() {
-				super(null, null, null, null);
-			}
-	  	}
-	}
-
-4. Register the REST end-point in the register factory ``hex.api.Register``:
+   \`\`\`java class ModelFactories { /\* ... \*/ public static
+   ModelFactory PCA\_MODEL\_FACTORY = new ModelFactory() { @Override
+   public String getModelName() { return "PCA"; }
 
    ::
-   
-		public class Register extends AbstractRegister {
-			@Override
-			public void register() {
-				// ...
-				H2O.registerPOST("/99/Grid/pca", PCAGridSearchHandler.class, "train", "Run grid search for PCA model.");
-				// ...
-			}
-		}
+
+           @Override
+           public ModelBuilder buildModel(PCAModel.PCAParameters params) {
+             return new PCA(params);
+           }
+         };
+
+   } \`\`\`
+
+1. Add the PCA REST end-point schema:
+
+   \`\`\`java public class PCAGridSearchV99 extends GridSearchSchema {
+
+   } \`\`\`
+
+2. Add the PCA REST end-point handler:
+
+   \`\`\`java public class PCAGridSearchHandler extends
+   GridSearchHandler {
+
+   ::
+
+       public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
+         return super.do_train(version, gridSearchSchema);
+       }
+
+       @Override
+       protected ModelFactory<PCAModel.PCAParameters> getModelFactory() {
+         return ModelFactories.PCA_MODEL_FACTORY;
+       }
+
+       @Deprecated
+       public static class PCAGrid extends Grid<PCAModel.PCAParameters> {
+
+         public PCAGrid() {
+           super(null, null, null, null);
+         }
+       }
+
+   } \`\`\`
+
+3. Register the REST end-point in the register factory
+   ``hex.api.Register``:
+
+   ``java   public class Register extends AbstractRegister {       @Override       public void register() {           // ...           H2O.registerPOST("/99/Grid/pca", PCAGridSearchHandler.class, "train", "Run grid search for PCA model.");           // ...        }   }``
 
 Grid Testing
 ------------
@@ -410,9 +394,9 @@ The current test infrastructure includes:
 -  JUnit test assertions for grid results
 
 There are tests for the ``RandomDiscrete`` search criteria in
-`runit_GBMGrid_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`_
+`runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`__
 and
-`pyunit_benign_glm_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`_.
+`pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
 
 Caveats/In Progress
 -------------------
@@ -433,8 +417,8 @@ Caveats/In Progress
 Documentation
 -------------
 
--  `H2O Core Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide
+-  H2O Core Java Developer Documentation: The definitive Java API guide
    for the core components of H2O.
 
--  `H2O Algos Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-algos/javadoc/index.html>`_: The definitive Java API guide
+-  H2O Algos Java Developer Documentation: The definitive Java API guide
    for the algorithms used by H2O.
