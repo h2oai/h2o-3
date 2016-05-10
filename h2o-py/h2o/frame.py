@@ -205,7 +205,7 @@ class H2OFrame(object):
 
   def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     # [] and () cases -- folded together since H2OFrame is mutable
-    if isinstance(python_obj, (list, tuple)): col_header, data_to_write = _handle_python_lists(python_obj)
+    if isinstance(python_obj, (list, tuple)): col_header, data_to_write = _handle_python_lists(python_obj, header)
 
     # {} and collections.OrderedDict cases
     elif isinstance(python_obj, (dict, collections.OrderedDict)): col_header, data_to_write = _handle_python_dicts(python_obj)
@@ -215,18 +215,18 @@ class H2OFrame(object):
       if can_use_numpy() and can_use_pandas():
         import numpy
         import pandas
-        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj)
-        elif isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj)
+        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj, header)
+        elif isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
         else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
                                "pandas.DataFrame. Got: " + str(type(python_obj)))
       elif can_use_numpy():
         import numpy
-        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj)
+        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj, header)
         else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
                                "pandas.DataFrame. Got: " + str(type(python_obj)))
       elif can_use_pandas():
         import pandas
-        if isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj)
+        if isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
         else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
                                "pandas.DataFrame. Got: " + str(type(python_obj)))
       else:
@@ -244,7 +244,9 @@ class H2OFrame(object):
     tmp_file = os.fdopen(tmp_handle,'w')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",", quoting=csv.QUOTE_ALL)
-    #csv_writer.writeheader()              # write the header
+    csv_writer.writeheader()              # write the header
+    #because we have written the header, header in this newly created tmp csv file must be 1
+    header = 1
     if column_names is None: column_names = col_header
     csv_writer.writerows(data_to_write)    # write the data
     tmp_file.close()                       # close the streams
