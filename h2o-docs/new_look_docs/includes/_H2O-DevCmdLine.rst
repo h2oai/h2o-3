@@ -17,7 +17,7 @@ the cloud, and more.
 For more detailed instructions on how to build and launch H2O, including
 how to clone the repository, how to pull from the repository, and how to
 install required dependencies, refer to the `developer
-documentation <https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start>`__.
+documentation <https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start>`_.
 
 There are two different argument types:
 
@@ -149,7 +149,9 @@ To configure H2O on a multi-node cluster:
     04-20 16:14:00.475 192.168.1.70:54321    2754   main      INFO: Cloud of size 1 formed [/192.168.1.70:54321]
 
 .. todo:: see if you can move the 'note' out one tab and change '7' bullet to use a #
-**Note** As you add more nodes to your cluster, the output is updated: ``INFO WATER: Cloud of size 2 formed [/...]...``
+..
+
+    **Note** As you add more nodes to your cluster, the output is updated: ``INFO WATER: Cloud of size 2 formed [/...]...``
 
 7. Access the H2O 3.0 web UI (Flow) with your browser. Point your
    browser to the HTTP address specified in the output
