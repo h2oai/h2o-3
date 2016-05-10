@@ -104,6 +104,13 @@ rm -fr h2o
 cd ../..
 openssl dgst target/Rjar/h2o.jar | sed 's/.*= //' > target/Rjar/h2o.jar.md5
 
+# Add h2o-docs sphinx new_look_docs to target.
+mkdir -p target/new_look_docs
+cd h2o-docs/new_look_docs
+sphinx-build -b html -d _build/doctrees . _build/html
+cd ../..
+rsync -a h2o-docs/new_look_docs/_build/html/ target/new_look_docs
+
 # Add Python dist to target.
 mkdir -p target/Python
 
