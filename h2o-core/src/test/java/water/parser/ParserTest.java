@@ -7,6 +7,7 @@ import water.fvec.*;
 import water.util.Log;
 
 import java.io.File;
+import java.util.Arrays;
 
 public class ParserTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -783,6 +784,34 @@ public class ParserTest extends TestUtil {
           }
         }
       }
+    }
+  }
+
+  @Test
+  public void testPubDev2897() {
+    Frame f = parse_test_file("smalldata/jira/pubdev_2897.csv");
+    try {
+      Assert.assertEquals("Frame rows", 5, f.numRows());
+      Assert.assertEquals("Frame columns", 3, f.numCols());
+
+      Vec v0 = f.vec(0);
+      Assert.assertEquals("1. Column type", Vec.T_NUM, v0.get_type());
+
+      Vec v1 = f.vec(1);
+      Assert.assertEquals("2. Column type", Vec.T_NUM, v1.get_type());
+
+      Vec v2 = f.vec(2);
+      Assert.assertEquals("3. Column type", Vec.T_CAT, v2.get_type());
+      Assert.assertArrayEquals("3. Column domain", ar("A", "B"), v2.domain());
+      int domainLen = v2.domain().length;
+      // Verify values in columns
+      for (int i = 0; i < f.numRows(); i++) {
+        if (v2.isNA(i)) continue;
+        long value = v2.at8(i);
+        Assert.assertTrue("Vector value should reference a string inside domain", value >= 0 && value < domainLen);
+      }
+    } finally {
+      f.delete();
     }
   }
 }
