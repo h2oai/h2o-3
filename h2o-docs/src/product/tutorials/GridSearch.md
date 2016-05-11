@@ -1,4 +1,4 @@
-#Grid Search (Hyperparameter Search) API
+# Grid Search (Hyperparameter Search) API
 ## REST
 
 The current implementation of the grid search REST API exposes the following endpoints: 
@@ -32,6 +32,174 @@ An optional `search_criteria` dictionary specifies options for controlling more 
 ```
 
 With grid search, each model is built sequentially, allowing users to view each model as it is built. 
+
+## Supported Grid Search Hyperparameters
+The following hyperparameters are supported by grid search.
+
+### Common Hyperparameters Supported by Grid Search
+
+- validation_frame
+- response_column
+- weights_column
+- offset_column
+- fold_column
+- fold_assignment
+- stopping_rounds
+- max\_runtime\_secs
+- stopping_metric
+- stopping_tolerance
+
+### K-Means Hyperparameters Supported by Grid Search
+
+- max_iterations
+- standardize
+- seed
+- init
+
+### GLM Hyperparameters Supported by Grid Search
+
+- transform
+- k
+- loss
+- multi_loss
+- loss\_by\_col
+- period
+- regularization_x
+- regularization_y
+- gamma_x
+- gamma_y
+- max_iterations
+- max_updates
+- init\_step\_size
+- min\_step\_size
+- seed
+- init
+- svd_method
+
+### DRF Hyperparameters Supported by Grid Search
+
+- mtries
+
+### Naïve Bayes Hyperparameters Supported by Grid Search
+
+- laplace
+- min_sdev
+- eps_sdev
+- min_prob
+- eps_prob
+- compute_metrics
+- seed
+
+### PCA Hyperparameters Supported by Grid Search
+
+- transform
+- k
+- max_iterations
+
+### GBM Hyperparameters Supported by Grid Search
+
+- learn_rate
+- learn\_rate\_annealing
+- distribution
+- quantile_alpha
+- tweedie_power
+- col\_sample\_rate
+- max\_abs\_leafnode\_pred
+
+### Deep Learning Hyperparameters Supported by Grid Search
+
+- balance_classes
+- class\_sampling\_factors
+- max\_after\_balance\_size
+- max\_confusion\_matrix\_size
+- max\_hit\_ratio\_k
+- overwrite\_with\_best\_model
+- use\_all\_factor\_levels
+- standardize
+- activation
+- hidden
+- epochs
+- train\_samples\_per\_iteration
+- target\_ratio\_comm\_to\_comp
+- seed
+- adaptive_rate
+- rho
+- epsilon
+- rate
+- rate_annealing
+- rate_decay
+- momentum_start
+- momentum_ramp
+- momentum_stable
+- nesterov\_accelerated\_gradient
+- input\_dropout\_ratio
+- hidden\_dropout\ratios
+- l1
+- l2
+- max_w2
+- initial\_weight\_distribution
+- initial\_weight\_scale
+- initial_weights
+- initial_biases
+- loss
+- distribution
+- tweedie_power
+- quantile_alpha
+- score_interval
+- score\_training\_samples
+- score\_validation\_samples
+- score\_duty\_cycle
+- classification_stop
+- regression_stop
+- quiet_mode
+- score\_validation\_sampling
+- variable_importances
+- fast_mode
+- force\_load\_balance
+- replicate\_training\_data
+- single\_node\_mode
+- shuffle\_training\_data
+- missing\_values\_handling
+- sparse
+- col_major
+- average_activation
+- sparsity_beta
+- max\_categorical\_features
+- reproducible
+- elastic_averaging
+- elastic\_averaging\_moving\_rate
+- elastic\_averaging\_regularization
+
+### Shared Tree Hyperparameters Supported by Grid Search
+
+- balance_classes
+- class\_sampling\_factors
+- max\_after\_balance\_size
+- max\_hit\_ratio\_k
+- ntrees
+- max_depth
+- min_rows
+- nbins
+- nbins\_top\_level
+- nbins_cats
+- r2_stopping
+- seed
+- build\_tree\_one\_node
+- sample_rate
+- sample\_rate\_per\_class
+- col\_sample\_rate\_per\_tree
+- col\_sample\_rate\_change\_per\_level
+- score\_tree\_interval
+- min\_split\_improvement
+- random\_split\_points
+
+### Aggregator Hyperparameters Supported by Grid Search
+
+- radius_scale
+- transform
+- pca_method
+- k
+- max_iterations
 
 ##Example
 
