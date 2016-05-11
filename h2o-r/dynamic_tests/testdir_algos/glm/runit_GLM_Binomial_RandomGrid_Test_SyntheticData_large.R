@@ -1,6 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
-source("../../tests/runitUtils/utilsR.R")
+source("../../../tests/runitUtils/utilsR.R")
 
 # PUBDEV-1843: Grid testing.  Subtask 9.
 # This class is created to test the three stopping conditions for randomized gridsearch using

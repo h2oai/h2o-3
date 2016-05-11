@@ -1,6 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
-source("../../tests/runitUtils/utilsR.R")
+source("../../../tests/runitUtils/utilsR.R")
 
 #   This test is written to test the gridsearch according to PUBDEV-1843: subtask 7, 8.  Basically,
 #   We need to perform the following two tests:
