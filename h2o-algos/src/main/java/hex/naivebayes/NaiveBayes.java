@@ -59,7 +59,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       if (!_response.isCategorical()) error("_response", "Response must be a categorical column");
       else if (_response.isConst()) error("_response", "Response must have at least two unique categorical levels");
     }
-    if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be an integer >= 0");
+    if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be a number >= 0");
     if (_parms._min_sdev < 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10");
     if (_parms._eps_sdev < 0) error("_eps_sdev", "Threshold for standard deviation must be positive");
     if (_parms._min_prob < 1e-10) error("_min_prob", "Min. probability must be at least 1e-10");
@@ -76,7 +76,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       model._output._rescnt = tsk._rescnt;
       model._output._ncats = dinfo._cats;
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Initializing arrays for model statistics");
       // String[][] domains = dinfo._adaptedFrame.domains();
       String[][] domains = model._output._domains;
@@ -87,7 +87,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         pcond[i] = new double[tsk._nrescat][ncnt];
       }
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Computing probabilities for categorical cols");
       // A-priori probability of response y
       for(int i = 0; i < apriori.length; i++)
@@ -103,7 +103,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         }
       }
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Computing mean and standard deviation for numeric cols");
       // Mean and standard deviation of numeric predictor x_j for every level of response y
       for(int col = 0; col < dinfo._nums; col++) {
@@ -150,7 +150,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
               new String[1][], new double[][] {apriori});
       model._output._model_summary = createModelSummaryTable(model._output);
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Scoring and computing metrics on training data");
       if (_parms._compute_metrics) {
         model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
@@ -158,7 +158,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       }
 
       // At the end: validation scoring (no need to gather scoring history)
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Scoring and computing metrics on validation data");
       if (_valid != null) {
         model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set

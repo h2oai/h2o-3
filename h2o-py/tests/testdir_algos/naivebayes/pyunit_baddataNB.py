@@ -12,7 +12,7 @@ import string
 
 def nb_baddata():
 
-
+  random.seed(1234)
   rawdata = [[random.gauss(0,1) for r in range(100)] for c in range(10)]
 
   print("Training data with all NA's")

@@ -10,7 +10,7 @@ from h2o_test_utils import DatasetSpec
 def load_and_test(a_node, pp):
     ##################
     # Test CreateFrame
-    if h2o_test_utils.isVerbose(): print 'Testing CreateFrame. . .'
+    if h2o_test_utils.isVerbose(): print('Testing CreateFrame. . .')
     created_job = a_node.create_frame(dest='created') # call with defaults
     
     a_node.poll_job(job_key=created_job['key']['name']) # wait until done and get CreateFrameV3 instance (aka the Job)
@@ -55,11 +55,11 @@ def load_and_test(a_node, pp):
     frames_dict = h2o_test_utils.list_to_dict(frames, 'frame_id/name')
     
     if h2o_test_utils.isVerboser():
-        print "frames: "
+        print("frames: ")
         pp.pprint(frames)
     
     if h2o_test_utils.isVerboser():
-        print "frames_dict: "
+        print("frames_dict: ")
         pp.pprint(frames_dict)
     
     assert 'prostate_binomial' in frames_dict, "FAIL: Failed to find " + 'prostate_binomial' + " in Frames list."
@@ -119,7 +119,7 @@ def load_and_test(a_node, pp):
     # NB: col['percentiles'] corresponds to probs=[0.001,0.01,0.1,0.2,0.25,0.3,1.0/3.0,0.4,0.5,0.6,2.0/3.0,0.7,0.75,0.8,0.9,0.99,0.999]
     
     # Test /SplitFrame for prostate.csv
-    if h2o_test_utils.isVerbose(): print 'Testing SplitFrame with named destination_frames. . .'
+    if h2o_test_utils.isVerbose(): print('Testing SplitFrame with named destination_frames. . .')
     splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.8], destination_frames=['bigger', 'smaller'])
     frames = a_node.frames()['frames']
     h2o_test_utils.validate_frame_exists(a_node, 'bigger', frames)
@@ -130,7 +130,7 @@ def load_and_test(a_node, pp):
     assert smaller['rows'] == 76, 'FAIL: 80/20 SplitFrame yielded the wrong number of rows.  Expected: 76; got: ' + smaller['rows']
     h2o_test_utils.validate_job_exists(a_node, splits['key']['name'])
     
-    if h2o_test_utils.isVerbose(): print 'Testing SplitFrame with generated destination_frames. . .'
+    if h2o_test_utils.isVerbose(): print('Testing SplitFrame with generated destination_frames. . .')
     splits = a_node.split_frame(dataset='prostate_binomial', ratios=[0.5])
     frames = a_node.frames()['frames']
     h2o_test_utils.validate_frame_exists(a_node, splits['destination_frames'][0]['name'], frames)

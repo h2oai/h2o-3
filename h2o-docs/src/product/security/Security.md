@@ -91,7 +91,7 @@ Since H2O is a regular Java program, the files H2O can access are restricted by 
 
 Since H2O is a regular Hadoop MapReduce program, the files H2O can access are restricted by the standard HDFS permissions of the user that starts H2O.
 
-Since H2O is a regular Hadoop MapReduce program, Kerberos (kinit) works seamlessly.  (No code was added to H2O to support Kerberos.)
+Since H2O is a regular Hadoop MapReduce program, Kerberos (kinit) works seamlessly.  (No code was added to H2O to support Kerberos file security.)
 
 ### Sparkling Water on YARN
 
@@ -218,12 +218,14 @@ Enter key password for <mykey>
 java -jar h2o.jar -jks mykeystore.jks -jks_pass mypass
 ```
 
+## Authentication 
+H2O client and server side configuration for LDAP and Kerberos is discussed below.  Authentication is implemented using [Basic Auth](https://en.wikipedia.org/wiki/Basic_access_authentication).
+
 ### LDAP authentication
 
-H2O client and server side configuration for LDAP is discussed below.  Authentication is implemented using [Basic Auth](https://en.wikipedia.org/wiki/Basic_access_authentication).
+
 
 #### LDAP H2O-client side
-
 ##### Flow Web UI client
 
 When authentication is enabled, the user will be presented with a username and password dialog box when attempting to reach Flow.
@@ -334,6 +336,114 @@ Example:
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
 $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+```
+
+### Kerberos authentication
+
+#### Kerberos H2O-client side
+##### Flow Web UI client
+
+When authentication is enabled, the user will be presented with a username and password dialog box when attempting to reach Flow.
+
+##### R client
+
+The following code snippet demonstrates connecting to an H2O cluster with authentication:
+
+```
+h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+```
+
+##### Python client
+For Python, connecting to H2O with authentication is similar:
+```
+h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+```
+
+#### Kerberos H2O-server side
+You must provide a simple configuration file that specifies the Kerberos login module
+
+Example **kerb.conf**:
+```
+krb5loginmodule {
+     com.sun.security.auth.module.Krb5LoginModule required;
+};
+```
+For more detail about Kerberos configuration: [Krb5LoginModule](https://docs.oracle.com/javase/7/docs/jre/api/security/jaas/spec/com/sun/security/auth/module/Krb5LoginModule.html), [Jaas note](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/AcnOnly.html)
+
+##### Standalone H2O
+
+The following options are required for Kerberos authentication:
+
+```
+-kerberos_login
+      Use Jetty LdapLoginService
+
+-login_conf <filename>
+      LoginService configuration file
+     
+-user_name <username>
+      Override name of user for which access is allowed
+```
+
+The following JVM options must be set:
+```
+ -Djava.security.krb5.realm=kerberos_realm -Djava.security.krb5.kdc=kdc_server_hostname
+```
+
+Example:
+
+```
+java  -Djava.security.krb5.realm="0XDATA.LOC" -Djava.security.krb5.kdc="ldap.0xdata.loc" -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
+
+```
+
+##### H2O on Hadoop
+
+The following options are available:
+
+```
+-kerberos_login
+      Use Jetty LdapLoginService
+
+-login_conf <filename>
+      LoginService configuration file
+     
+-user_name <username>
+      Override name of user for which access is allowed
+```
+
+Use the HADOOP_OPTIONS environment variable to set the JVM options for the worker nodes
+```
+export HADOOP_OPTS="-Djava.security.krb5.realm=kerberos_realm -Djava.security.krb5.kdc=kdc_server_hostname"
+```
+Example:
+
+```
+export HADOOP_OPTS="-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc"
+hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -kerberos_login -login_conf kerb.conf -output hdfsOutputDirectory -user_name kerb_principal
+
+```
+
+##### Sparkling Water
+
+The following Spark conf properties exist for Kerberos configuration:
+
+Spark conf property | Description
+--- | ---
+spark.ext.h2o.kerberos.login | Use Jetty Krb5LoginModule
+spark.ext.h2o.login.conf | LoginService configuration file
+spark.ext.h2o.user.name | Name of user for which access is allowed
+
+Also, spark.driver.extraJavaOptions must be used to configure the Kerberos authentication service:
+
+```
+--conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=kerberos_realm -Djava.security.krb5.kdc=kdc_server_hostname" 
+```
+
+Example:
+
+```
+$SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf --conf "spark.driver.extraJavaOptions=-Djava.security.krb5.realm=0XDATA.LOC -Djava.security.krb5.kdc=ldap.0xdata.loc" sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 ```
 
 ### Hash file authentication

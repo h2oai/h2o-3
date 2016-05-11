@@ -117,7 +117,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       max_runtime_secs: int, optional
         Maximum allowed runtime, model will stop running after reaching the limit and return whatever result it has at the moment.
 
-
     Returns
     -------
       A subclass of ModelBase is returned. The specific subclass depends on the machine

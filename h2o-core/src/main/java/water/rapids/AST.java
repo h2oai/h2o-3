@@ -90,6 +90,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTTanh  ());
     init(new ASTTriGamma());
     init(new ASTTrunc ());
+    init(new ASTNoOp());
 
     // Math binary ops
     init(new ASTAnd ());
@@ -253,6 +254,7 @@ class ASTNum extends ASTParameter {
   ASTNum( double d ) { super(d); }
   @Override public Val exec(Env env) { return _v; }
   @Override int[] columns( String[] names ) { return new int[]{(int)_v.getNum()}; }
+  public void setNum(double d) { ((ValNum)_v).setNum(d); }
 }
 
 /** A String.  Execution is just to return the constant. */

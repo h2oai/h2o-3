@@ -8,12 +8,7 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
-import hex.genmodel.easy.prediction.AbstractPrediction;
-import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
-import hex.genmodel.easy.prediction.BinomialModelPrediction;
-import hex.genmodel.easy.prediction.ClusteringModelPrediction;
-import hex.genmodel.easy.prediction.MultinomialModelPrediction;
-import hex.genmodel.easy.prediction.RegressionModelPrediction;
+import hex.genmodel.easy.prediction.*;
 
 /**
  * An easy-to-use prediction wrapper for generated models.
@@ -86,6 +81,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         return predictClustering(data);
       case Regression:
         return predictRegression(data);
+      case DimReduction:
+        return predictDimReduction(data);
 
       case Unknown:
         throw new PredictException("Unknown model category");
@@ -105,7 +102,21 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     double[] preds = preamble(ModelCategory.AutoEncoder, data);
     throw new RuntimeException("Unimplemented " + preds.length);
   }
+  /**
+   * Make a prediction on a new data point using a Dimension Reduction model (PCA, GLRM)
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public DimReductionModelPrediction predictDimReduction(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.DimReduction, data);
 
+    DimReductionModelPrediction p = new DimReductionModelPrediction();
+    p.dimensions = preds;
+
+    return p;
+
+  }
   /**
    * Make a prediction on a new data point using a Binomial model.
    *
@@ -222,7 +233,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
-    double[] preds = new double[m.getPredsSize()];
+    double[] preds = null;
+    if (c == ModelCategory.DimReduction) {
+      preds = new double[m.nclasses()];
+    } else {
+      preds = new double[m.getPredsSize()];
+    }
     preds = predict(data, preds);
     return preds;
   }

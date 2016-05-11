@@ -4,6 +4,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.km.bad_data <- function() {
+  # set random seed to generate random dataset
+  set.seed(1234)
+  
   prop <- 0.1
   rawdata <- matrix(rnorm(1000), nrow = 100, ncol = 10)
   
@@ -30,7 +33,7 @@ test.km.bad_data <- function() {
   Log.info("Training data with all NA's")
   train <- matrix(rep(NA, 1000), nrow = 100, ncol = 10)
   allNA.hex <- as.h2o( train)
-  expect_error(h2o.kmeans(allNA.hex, k = 5))
+  expect_error(h2o.kmeans(allNA.hex, k = 5), "ERROR:*")
   
   Log.info("Training data with a categorical column(s)")
   train <- data.frame(rawdata)

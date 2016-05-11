@@ -180,7 +180,7 @@ public class JettyHTTPD {
   protected void createServer(Connector connector) throws Exception {
     _server.setConnectors(new Connector[]{connector});
 
-    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login) {
+    if (H2O.ARGS.hash_login || H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login) {
       // REFER TO http://www.eclipse.org/jetty/documentation/9.1.4.v20140401/embedded-examples.html#embedded-secured-hello-handler
       if (H2O.ARGS.login_conf == null) {
         Log.err("Must specify -login_conf argument");
@@ -196,6 +196,11 @@ public class JettyHTTPD {
         Log.info("Configuring JAASLoginService (with LDAP)");
         System.setProperty("java.security.auth.login.config", H2O.ARGS.login_conf);
         loginService = new JAASLoginService("ldaploginmodule");
+      }
+      else if (H2O.ARGS.kerberos_login) {
+        Log.info("Configuring JAASLoginService (with Kerberos)");
+        System.setProperty("java.security.auth.login.config",H2O.ARGS.login_conf);
+        loginService = new JAASLoginService("krb5loginmodule");
       }
       else {
         throw H2O.fail();
@@ -376,7 +381,7 @@ public class JettyHTTPD {
                        Request baseRequest,
                        HttpServletRequest request,
                        HttpServletResponse response) throws IOException, ServletException {
-      if (! H2O.ARGS.ldap_login) {
+      if (! (H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login)) {
         return;
       }
 
@@ -632,7 +637,7 @@ public class JettyHTTPD {
         if (hex_string != null && hex_string.toLowerCase().equals("true")) {
           use_hex = true;
         }
-        
+
         Frame dataset = DKV.getGet(f_name);
         // TODO: Find a way to determing the hex_string parameter. It should not always be false
         InputStream is = dataset.toCSV(true, use_hex);

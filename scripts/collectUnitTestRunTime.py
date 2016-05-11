@@ -61,11 +61,13 @@ def run_commands(command, number_to_run, temp_file):
         child = subprocess.Popen(full_command, shell=True)
 
         while child.poll() is None:
-            time.sleep(20)
+            time.sleep(10)
 #        subprocess.call(full_command, shell=True)   # run the command,
+
 
         with open(temp_file, 'r') as thefile:   # go into tempfile and grab test run info
             for each_line in thefile:
+                print(each_line)
 
                 temp_string = each_line.split()
                 if len(temp_string) > 0:
@@ -117,9 +119,10 @@ def write_result_summary(result_dict, directory_path, is_new_run):
                 result_dict['mean_run_time_secs'] = np.mean(run_time)
                 result_dict['run_time_std'] = np.std(run_time)
                 result_dict["total_number_of_runs"] = len(run_time)
+                result_dict["run_time_secs"] = run_time
 
                 # save results in json file
-                with open(json_file, 'a') as test_file:
+                with open(json_file, 'w') as test_file:
                     json.dump(result_dict, test_file)
 
                 print("Run result summary: \n {0}".format(result_dict))
@@ -146,7 +149,11 @@ def main(argv):
     else:   # we may be in business
         repeat_number = int(argv[1])         # number of times to run a unit test
         command_lists = argv[2]         # list of unit tests to run
-        is_new_run = bool(argv[3])            # brand new run or need to add onto old results
+
+        if (argv[3] == 'True'):
+            is_new_run = True
+        else:
+            is_new_run = False            # brand new run or need to add onto old results
 
         for command in command_lists.split(','):   # for each command in the list
 

@@ -54,7 +54,12 @@ class H2OJob:
     if self.status == "CANCELLED":
       raise EnvironmentError("Job with key {} was cancelled by the user.".format(self.job_key))
     if self.status == "FAILED":
-      raise EnvironmentError("Job with key {} failed with an exception: {}".format(self.job_key, self.exception))
+      if (isinstance(self.job, dict)) and ("stacktrace" in list(self.job)):
+        raise EnvironmentError("Job with key {} failed with an exception: {}\nstacktrace: "
+                               "\n{}".format(self.job_key, self.exception, self.job["stacktrace"]))
+      else:
+        raise EnvironmentError("Job with key {} failed with an exception: {}".format(self.job_key, self.exception))
+
     return self
 
   def poll_once(self):

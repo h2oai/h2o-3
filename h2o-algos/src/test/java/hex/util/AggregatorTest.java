@@ -13,8 +13,6 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
-import water.util.FrameUtils;
 import water.util.Log;
 
 public class AggregatorTest extends TestUtil {
@@ -34,7 +32,9 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 1.0;
-    AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
     frame.delete();
@@ -50,8 +50,9 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 5.0;
-    AggregatorModel agg = new Aggregator(parms).trainModel().get();
-    agg.checkConsistency();
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.179
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
     frame.delete();
     Frame output = agg._output._output_frame.get();
     Log.info("Exemplars: " + output.toString());
@@ -67,8 +68,9 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 3.0;
-    AggregatorModel agg = new Aggregator(parms).trainModel().get();
-    agg.checkConsistency();
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.418
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
     Log.info("Number of exemplars: " + agg._exemplars.length);
 //    Assert.assertTrue(agg._exemplars.length==1993);
@@ -85,8 +87,9 @@ public class AggregatorTest extends TestUtil {
       parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;
       parms._radius_scale = 3.0;
-      AggregatorModel agg2 = new Aggregator(parms).trainModel().get();
-      agg2.checkConsistency();
+      start = System.currentTimeMillis();
+      AggregatorModel agg2 = new Aggregator(parms).trainModel().get();  // 0.373 0.504 0.357 0.454 0.368 0.355
+      System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");      agg2.checkConsistency();
       Log.info("Number of exemplars for " + i + " chunks: " + agg2._exemplars.length);
       rebalanced.delete();
       Assert.assertTrue(Math.abs(agg._exemplars.length - agg2._exemplars.length) == 0); //< agg._exemplars.length*0);
@@ -103,8 +106,9 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 5.0;
-    AggregatorModel agg = new Aggregator(parms).trainModel().get();
-    agg.checkConsistency();
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();   // 1.489
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
 
 //    Frame assignment = new Frame(new Vec[]{(Vec)agg._exemplar_assignment_vec_key.get()});
 //    Frame.export(assignment, "/tmp/assignment", "yada", true);
@@ -134,8 +138,9 @@ public class AggregatorTest extends TestUtil {
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 100.0;
+    long start = System.currentTimeMillis();
     AggregatorModel agg = new Aggregator(parms).trainModel().get();
-    agg.checkConsistency();
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");    agg.checkConsistency();
     frame.delete();
     Frame output = agg._output._output_frame.get();
 //    Log.info("Exemplars: " + output);
