@@ -6,10 +6,13 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.schemas.DataInfoFrameV3;
 import hex.schemas.GLMModelV3;
+import hex.schemas.GLMRegularizationPathV3;
 import hex.schemas.MakeGLMModelV3;
 import water.DKV;
+import water.Iced;
 import water.Key;
 import water.MRTask;
+import water.api.API;
 import water.api.Handler;
 import water.api.KeyV3;
 import water.fvec.*;
@@ -32,7 +35,7 @@ public class MakeGLMModelHandler extends Handler {
     double [] beta = model.beta().clone();
     for(int i = 0; i < beta.length; ++i)
       beta[i] = coefs.get(names[i]);
-    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, new double[]{.5}, Double.NaN, Double.NaN, -1);
+    GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu, Double.NaN, Double.NaN, -1);
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
     // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
@@ -43,6 +46,12 @@ public class MakeGLMModelHandler extends Handler {
     return res;
   }
 
+  public GLMRegularizationPathV3 extractRegularizationPath(int v, GLMRegularizationPathV3 args) {
+    GLMModel model = DKV.getGet(args.model.key());
+    if(model == null)
+      throw new IllegalArgumentException("missing source model " + args.model);
+    return new GLMRegularizationPathV3().fillFromImpl(model.getRegularizationPath());
+  }
   // instead of adding a new endpoint, just put this stupid test functionality here
  /** Get the expanded (interactions + offsets) dataset. Careful printing! Test only
   */

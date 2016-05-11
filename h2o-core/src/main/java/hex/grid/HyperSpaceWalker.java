@@ -300,7 +300,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     protected int integerHash(int[] ar) {
       Integer[] hashMe = new Integer[ar.length];
       for (int i = 0; i < ar.length; i++)
-        hashMe[i] = ar[i];
+        hashMe[i] = ar[i] * _hyperParams.get(_hyperParamNames[i]).length;
       return Arrays.deepHashCode(hashMe);
     }
   }

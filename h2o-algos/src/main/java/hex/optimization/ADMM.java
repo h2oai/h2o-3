@@ -32,15 +32,18 @@ public class ADMM {
 
     MathUtils.Norm _gradientNorm = Norm.L_Infinite;
 
+    public double [] _u;
+
     public static double DEFAULT_RELTOL = 1e-2;
     public static double DEFAULT_ABSTOL = 1e-4;
     public L1Solver setGradientNorm(MathUtils.Norm n) {_gradientNorm = n; return this;}
-    public L1Solver(double eps, int max_iter) {
-      this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL);
+    public L1Solver(double eps, int max_iter, double [] u) {
+      this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL,u);
     }
 
-    public L1Solver(double eps, int max_iter, double reltol, double abstol) {
+    public L1Solver(double eps, int max_iter, double reltol, double abstol, double [] u) {
       _eps = eps; this.max_iter = max_iter;
+      _u = u;
       RELTOL = reltol;
       ABSTOL = abstol;
     }
@@ -88,27 +91,28 @@ public class ADMM {
         solver.solve(null, z);
         return true;
       }
-      int ii = hasIntercept?1:0;
-      double [] zbest = null;
+      int hasIcpt = hasIntercept?1:0;
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
-      double [] u = MemoryManager.malloc8d(N);
       double [] x = z.clone();
       double [] beta_given = MemoryManager.malloc8d(N);
+      double [] u;
+      if(_u != null) {
+        u = _u;
+        for (int i = 0; i < beta_given.length - hasIcpt; ++i)
+          beta_given[i] = z[i] - _u[i];
+      } else u = _u = MemoryManager.malloc8d(z.length);
       double [] kappa = MemoryManager.malloc8d(rho.length);
-      int hasIcpt = hasIntercept?1:0;
       if(l1pen > 0)
         for(int i = 0; i < N-hasIcpt; ++i)
           kappa[i] = rho[i] != 0?l1pen/rho[i]:0;
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
-      double best_err = Double.POSITIVE_INFINITY;
       for (i = 0; i < max_iter && solver.solve(beta_given, x); ++i) {
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
-        boolean allzeros = true;
         for (int j = 0; j < N - hasIcpt; ++j) {
           double xj = x[j];
           double zjold = z[j];
@@ -127,7 +131,6 @@ public class ADMM {
           xnorm += xj * xj;
           unorm += rho[j] * rho[j] * u[j] * u[j];
           z[j] = zj;
-          allzeros &= zj == 0;
         }
         if (hasIntercept) {
           int idx = x.length - 1;

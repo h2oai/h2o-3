@@ -80,6 +80,8 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__CREATE_FRAME   <- "CreateFrame"
 
 .h2o.__GLMMakeModel <- "MakeGLMModel"
+.h2o.__GLMRegPath <- "GetGLMRegPath"
+
 
 #' Rapids Endpoint
 .h2o.__RAPIDS         <- "Rapids"
