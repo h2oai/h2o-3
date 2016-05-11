@@ -126,6 +126,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
 
 .. _Core-site.xml:
 
+
 Core-site.xml Example
 -------------------------------
 

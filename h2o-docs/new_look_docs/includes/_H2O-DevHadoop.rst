@@ -18,7 +18,7 @@ Currently supported versions:
 **Important Points to Remember**:
 
 -  The command used to launch H2O differs from previous versions (refer
-   to the `Build <#Build>`__ section)
+   to the `Walkthrough`_ section)
 -  Launching H2O on Hadoop requires at least 6 GB of memory
 -  Each H2O node runs as a mapper
 -  Run only one mapper per host
@@ -46,7 +46,7 @@ operating system.
 
 Optionally specify this port using the ``-baseport`` option in the
 ``hadoop jar`` command (refer to `Hadoop Launch
-Parameters <#LaunchParam>`__ below. This port and the next subsequent
+Parameters`_ below. This port and the next subsequent
 port are opened on the mapper hosts (the Hadoop worker nodes) where the
 H2O mapper nodes are placed by the Resource Manager. By default, ports
 54321 (TCP) and 54322 (TCP & UDP) are used.
@@ -58,17 +58,16 @@ will place two H2O mappers for the same H2O cluster request on the same
 physical host. For this reason, we recommend opening a range of more
 than two ports (20 ports should be sufficient).
 
-+------+
-|      |
-+------+
-| Buil |
-| d    |
-+------+
+-----------------------
+
+.. _Walkthrough:
+
+**Walkthrough**
 
 The following steps show you how to download or build H2O with Hadoop
 and the parameters involved in launching H2O from the command line.
 
-0. Download the latest H2O release for your version of Hadoop:
+1. Download the latest H2O release for your version of Hadoop:
 
    ::
 
@@ -83,7 +82,7 @@ and the parameters involved in launching H2O from the command line.
 
    **Note**: Enter only one of the above commands.
 
-1. Prepare the job input on the Hadoop Node by unzipping the build file
+2. Prepare the job input on the Hadoop Node by unzipping the build file
    and changing to the directory with the Hadoop and H2O's driver jar
    files.
 
@@ -92,7 +91,7 @@ and the parameters involved in launching H2O from the command line.
        unzip h2o-{{project_version}}-*.zip
        cd h2o-{{project_version}}-*
 
-2. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
+3. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
    ::
 
@@ -111,7 +110,7 @@ and the parameters involved in launching H2O from the command line.
       cloud is created so it is necessary for the name to be unique each
       time it is launched.
 
-3. To monitor your job, direct your web browser to your standard job
+4. To monitor your job, direct your web browser to your standard job
    tracker Web UI. To access H2O's Web UI, direct your web browser to
    one of the launched instances. If you are unsure where your JVM is
    launched, review the output from your command after the nodes has
@@ -131,6 +130,8 @@ and the parameters involved in launching H2O from the command line.
        H2O node 172.16.2.184:54321 reports H2O cluster size 1 
        H2O cluster (1 nodes) is up
        Blocking until the H2O cluster shuts down...
+
+.. _Hadoop Launch Parameters:
 
 Hadoop Launch Parameters
 ------------------------
@@ -192,8 +193,7 @@ enable access, follow the instructions below.
 
 Edit Hadoop's ``core-site.xml``, then set the ``HADOOP_CONF_DIR``
 environment property to the directory containing the ``core-site.xml``
-file. For an example ``core-site.xml`` file, refer to
-`Core-site.xml <#Example>`__. Typically, the configuration directory for
+file. For an example ``core-site.xml`` file, file, refer to :ref:`Core-site.xml`. Typically, the configuration directory for
 most Hadoop distributions is ``/etc/hadoop/conf``.
 
 You can also pass the S3 credentials when launching H2O with the Hadoop
