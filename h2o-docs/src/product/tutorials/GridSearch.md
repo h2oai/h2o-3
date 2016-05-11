@@ -38,168 +38,168 @@ The following hyperparameters are supported by grid search.
 
 ### Common Hyperparameters Supported by Grid Search
 
-- validation_frame
-- response_column
-- weights_column
-- offset_column
-- fold_column
-- fold_assignment
-- stopping_rounds
-- max\_runtime\_secs
-- stopping_metric
-- stopping_tolerance
+- `validation_frame`
+- `response_column`
+- `weights_column`
+- `offset_column`
+- `fold_column`
+- `fold_assignment`
+- `stopping_rounds`
+- `max_runtime_secs`
+- `stopping_metric`
+- `stopping_tolerance`
 
 ### K-Means Hyperparameters Supported by Grid Search
 
-- max_iterations
-- standardize
-- seed
-- init
+- `max_iterations`
+- `standardize`
+- `seed`
+- `init`
 
 ### GLM Hyperparameters Supported by Grid Search
 
-- transform
-- k
-- loss
-- multi_loss
-- loss\_by\_col
-- period
-- regularization_x
-- regularization_y
-- gamma_x
-- gamma_y
-- max_iterations
-- max_updates
-- init\_step\_size
-- min\_step\_size
-- seed
-- init
-- svd_method
+- `transform`
+- `k`
+- `loss`
+- `multi_loss`
+- `loss_by_col`
+- `period`
+- `regularization_x`
+- `regularization_y`
+- `gamma_x`
+- `gamma_y`
+- `max_iterations`
+- `max_updates`
+- `init_step_size`
+- `min_step_size`
+- `seed`
+- `init`
+- `svd_method`
 
 ### DRF Hyperparameters Supported by Grid Search
 
-- mtries
+- `mtries`
 
 ### Naïve Bayes Hyperparameters Supported by Grid Search
 
-- laplace
-- min_sdev
-- eps_sdev
-- min_prob
-- eps_prob
-- compute_metrics
-- seed
+- `laplace`
+- `min_sdev`
+- `eps_sdev`
+- `min_prob`
+- `eps_prob`
+- `compute_metrics`
+- `seed`
 
 ### PCA Hyperparameters Supported by Grid Search
 
-- transform
-- k
-- max_iterations
+- `transform`
+- `k`
+- `max_iterations`
 
 ### GBM Hyperparameters Supported by Grid Search
 
-- learn_rate
-- learn\_rate\_annealing
-- distribution
-- quantile_alpha
-- tweedie_power
-- col\_sample\_rate
-- max\_abs\_leafnode\_pred
+- `learn_rate`
+- `learn_rate_annealing`
+- `distribution`
+- `quantile_alpha`
+- `tweedie_power`
+- `col_sample_rate`
+- `max_abs_leafnode_pred`
 
 ### Deep Learning Hyperparameters Supported by Grid Search
 
-- balance_classes
-- class\_sampling\_factors
-- max\_after\_balance\_size
-- max\_confusion\_matrix\_size
-- max\_hit\_ratio\_k
-- overwrite\_with\_best\_model
-- use\_all\_factor\_levels
-- standardize
-- activation
-- hidden
-- epochs
-- train\_samples\_per\_iteration
-- target\_ratio\_comm\_to\_comp
-- seed
-- adaptive_rate
-- rho
-- epsilon
-- rate
-- rate_annealing
-- rate_decay
-- momentum_start
-- momentum_ramp
-- momentum_stable
-- nesterov\_accelerated\_gradient
-- input\_dropout\_ratio
-- hidden\_dropout\ratios
-- l1
-- l2
-- max_w2
-- initial\_weight\_distribution
-- initial\_weight\_scale
-- initial_weights
-- initial_biases
-- loss
-- distribution
-- tweedie_power
-- quantile_alpha
-- score_interval
-- score\_training\_samples
-- score\_validation\_samples
-- score\_duty\_cycle
-- classification_stop
-- regression_stop
-- quiet_mode
-- score\_validation\_sampling
-- variable_importances
-- fast_mode
-- force\_load\_balance
-- replicate\_training\_data
-- single\_node\_mode
-- shuffle\_training\_data
-- missing\_values\_handling
-- sparse
-- col_major
-- average_activation
-- sparsity_beta
-- max\_categorical\_features
-- reproducible
-- elastic_averaging
-- elastic\_averaging\_moving\_rate
-- elastic\_averaging\_regularization
+- `balance_classes`
+- `class_sampling_factors`
+- `max_after_balance_size`
+- `max_confusion_matrix_size`
+- `max_hit_ratio_k`
+- `overwrite_with_best_model`
+- `use_all_factor_levels`
+- `standardize`
+- `activation`
+- `hidden`
+- `epochs`
+- `train_samples_per_iteration`
+- `target_ratio_comm_to_comp`
+- `seed`
+- `adaptive_rate`
+- `rho`
+- `epsilon`
+- `rate`
+- `rate_annealing`
+- `rate_decay`
+- `momentum_start`
+- `momentum_ramp`
+- `momentum_stable`
+- `nesterov_accelerated_gradient`
+- `input_dropout_ratio`
+- `hidden_dropout_ratios`
+- `l1`
+- `l2`
+- `max_w2`
+- `initial_weight_distribution`
+- `initial_weight_scale`
+- `initial_weights`
+- `initial_biases`
+- `loss`
+- `distribution`
+- `tweedie_power`
+- `quantile_alpha`
+- `score_interval`
+- `score_training_samples`
+- `score_validation_samples`
+- `score_duty_cycle`
+- `classification_stop`
+- `regression_stop`
+- `quiet_mode`
+- `score_validation_sampling`
+- `variable_importances`
+- `fast_mode`
+- `force_load_balance`
+- `replicate_training_data`
+- `single_node_mode`
+- `shuffle_training_data`
+- `missing_values_handling`
+- `sparse`
+- `col_major`
+- `average_activation`
+- `sparsity_beta`
+- `max_categorical_features`
+- `reproducible`
+- `elastic_averaging`
+- `elastic_averaging_moving_rate`
+- `elastic_averaging_regularization`
 
 ### Shared Tree Hyperparameters Supported by Grid Search
 
-- balance_classes
-- class\_sampling\_factors
-- max\_after\_balance\_size
-- max\_hit\_ratio\_k
-- ntrees
-- max_depth
-- min_rows
-- nbins
-- nbins\_top\_level
-- nbins_cats
-- r2_stopping
-- seed
-- build\_tree\_one\_node
-- sample_rate
-- sample\_rate\_per\_class
-- col\_sample\_rate\_per\_tree
-- col\_sample\_rate\_change\_per\_level
-- score\_tree\_interval
-- min\_split\_improvement
-- random\_split\_points
+- `balance_classes`
+- `class_sampling_factors`
+- `max_after_balance_size`
+- `max_hit_ratio_k`
+- `ntrees`
+- `max_depth`
+- `min_rows`
+- `nbins`
+- `nbins_top_level`
+- `nbins_cats`
+- `r2_stopping`
+- `seed`
+- `build_tree_one_node`
+- `sample_rate`
+- `sample_rate_per_class`
+- `col_sample_rate_per_tree`
+- `col_sample_rate_change_per_level`
+- `score_tree_interval`
+- `min_split_improvement`
+- `random_split_points`
 
 ### Aggregator Hyperparameters Supported by Grid Search
 
-- radius_scale
-- transform
-- pca_method
-- k
-- max_iterations
+- `radius_scale`
+- `transform`
+- `pca_method`
+- `k`
+- `max_iterations`
 
 ##Example
 
