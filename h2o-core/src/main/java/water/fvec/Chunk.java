@@ -467,6 +467,11 @@ public abstract class Chunk extends Iced<Chunk> {
     return l;
   }
 
+  public final double [] set(double [] d){
+    assert d.length == _len && _chk2 == null;
+    _chk2 = new NewChunk(this,d);
+    return d;
+  }
   /** Write a {@code double} with check-relative indexing.  NaN will be treated
    *  as a missing value.
    *

@@ -309,6 +309,14 @@ public class NewChunk extends Chunk {
     _start = c._start;
   }
 
+  // Constructor used when inflating a Chunk.
+  public NewChunk( Chunk c, double [] vals) {
+    _vec = c._vec; _cidx = c.cidx();
+    _start = c._start;
+    _ds = vals;
+    _sparseLen = _len = _ds.length;
+  }
+
   // Pre-sized newchunks.
   public NewChunk( Vec vec, int cidx, int len ) {
     this(vec,cidx);

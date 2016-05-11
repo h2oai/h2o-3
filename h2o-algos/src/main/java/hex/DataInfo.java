@@ -902,7 +902,8 @@ public class DataInfo extends Keyed<DataInfo> {
     boolean isIWV = isInteractionVec(cid);
     if( !_useAllFactorLevels && !isIWV )  // categorical interaction vecs drop reference level in a special way
       val -= 1;
-    if(val >= fullCatOffsets()[cid+1]) {  // previously unseen level
+    int [] offs = fullCatOffsets();
+    if(val + offs[cid] >= offs[cid+1]) {  // previously unseen level
       assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
       val = _catModes[cid] - (_useAllFactorLevels||isIWV?0:1);
     }

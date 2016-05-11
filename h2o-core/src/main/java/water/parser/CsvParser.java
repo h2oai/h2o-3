@@ -719,6 +719,10 @@ MAIN_LOOP:
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
+      int i = bits.length-1;
+      for(; i > 0; --i)
+        if(bits[i] == '\n') break;
+      if(i > 0) bits = Arrays.copyOf(bits,i); // stop at the last full line
       InputStream is = new ByteArrayInputStream(bits);
       CsvParser p = new CsvParser(resSetup, null);
       PreviewParseWriter dout = new PreviewParseWriter(resSetup._number_columns);
