@@ -162,103 +162,103 @@ public abstract class GLMTask  {
  }
  static public class YMUTask extends MRTask<YMUTask> {
    double _yMin = Double.POSITIVE_INFINITY, _yMax = Double.NEGATIVE_INFINITY;
-   long _nobs;
-   public double _wsum;
    final int _responseId;
    final int _weightId;
    final int _offsetId;
    final int _nums; // number of numeric columns
    final int _numOff;
-   final boolean _computeWeightedSigma;
    final boolean _skipNAs;
    final boolean _computeWeightedMeanSigmaResponse;
 
    private BasicStats _basicStats;
    private BasicStats _basicStatsResponse;
    double [] _yMu;
-   double [] _means;
    final int _nClasses;
 
+
    private double [] _predictorSDs;
+
    public double [] predictorMeans(){return _basicStats.mean();}
    public double [] predictorSDs(){
      if(_predictorSDs != null) return _predictorSDs;
-     if(!_basicStats.sparse())
-       return (_predictorSDs = _basicStats.sigma());
-     double [] means = _basicStats.mean();
-     double [] sigma = new double[means.length];
-     Frame fr = new Frame(_fr);
-     if(_responseId >= 0)
-       fr.remove(_responseId);
-     int wid = _weightId > _responseId?_weightId-1:_weightId;
-     WeightedSDTask wsdt = new WeightedSDTask(wid,means).doAll(fr);
-     long nobs = _basicStats.nobs();
-     double wsum = _basicStats._wsum;
-     for(int i = 0; i < wsdt._varSum.length; ++i){
-       long zeros = nobs - _basicStats._nzCnt[i];
-       sigma[i] = Math.sqrt((wsdt._varSum[i] + means[i]*means[i]*zeros)/wsum * nobs/(double)(nobs-1));
-     }
-     return (_predictorSDs = sigma);
+     return (_predictorSDs = _basicStats.sigma());
    }
 
    public double [] responseMeans(){return _basicStatsResponse.mean();}
    public double [] responseSDs(){
-     if(_basicStatsResponse.sparse())
-       throw H2O.unimpl();
      return _basicStatsResponse.sigma();
    }
 
-   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedSigma, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse){
+   public YMUTask(DataInfo dinfo, int nclasses, boolean computeWeightedMeanSigmaResponse, boolean skipNAs, boolean haveResponse) {
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
      _responseId = haveResponse ? dinfo.responseChunkId(0) : -1;
      _weightId = dinfo._weights?dinfo.weightChunkId():-1;
      _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
      _nClasses = nclasses;
-     _computeWeightedSigma = computeWeightedSigma;
      _computeWeightedMeanSigmaResponse = computeWeightedMeanSigmaResponse;
      _skipNAs = skipNAs;
-     _means = dinfo._numMeans;
    }
+
    @Override public void setupLocal(){}
 
    @Override public void map(Chunk [] chunks) {
      _yMu = new double[_nClasses];
-     Chunk weight = _weightId == -1?new C0DChunk(1.0,chunks[0]._len):chunks[_weightId];
-     boolean [] skip = MemoryManager.mallocZ(chunks[0]._len);
-     for(int i = 0; i < chunks.length; ++i) {
-       for (int r = chunks[i].nextNZ(-1); r < chunks[i]._len; r = chunks[i].nextNZ(r)) {
-         if(skip[r]) continue;
-         if((skip[r] = _skipNAs && chunks[i].isNA(r)) && _weightId != -1)
-            weight.set(r,0);
+     double [] ws = MemoryManager.malloc8d(chunks[0].len());
+     if(_weightId != -1)
+       chunks[_weightId].getDoubles(ws,0,ws.length);
+     else
+      Arrays.fill(ws,1);
+     boolean changedWeights = false;
+     if(_skipNAs) { // first find the rows to skip, need to go over all chunks including categoricals
+       double [] vals = MemoryManager.malloc8d(chunks[0]._len);
+       int [] ids = MemoryManager.malloc4(vals.length);
+       for (int i = 0; i < chunks.length; ++i) {
+         int n = vals.length;
+         if(chunks[i].isSparseZero())
+           n = chunks[i].asSparseDoubles(vals,ids);
+         else
+          chunks[i].getDoubles(vals,0,n);
+         for (int r = 0; r < n; ++r) {
+           if (ws[r] != 0 && Double.isNaN(vals[r])) {
+             ws[r] = 0;
+             changedWeights = true;
+           }
+         }
        }
+       if(changedWeights && _weightId != -1)
+         chunks[_weightId].set(ws);
      }
      Chunk response = _responseId < 0 ? null : chunks[_responseId];
-
      double [] numsResponse = null;
-     if(_computeWeightedSigma)
-       _basicStats = new BasicStats(_nums);
+     _basicStats = new BasicStats(_nums);
      if(_computeWeightedMeanSigmaResponse) {
        _basicStatsResponse = new BasicStats(_nClasses);
        numsResponse = MemoryManager.malloc8d(_nClasses);
      }
-     double w;
-     if (response == null) return;
-     if(_computeWeightedSigma) {
-       for(int i = 0; i < _nums; ++i) {
-         Chunk c = chunks[i + _numOff];
-         for(int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-           if(skip[r] || (w = weight.atd(r)) == 0)
-             continue;
-           double d = chunks[i + _numOff].atd(r);
-           if (Double.isNaN(d))
-             d = _means[i];
-           _basicStats.add(d,w,i);
-         }
+     // compute basic stats for numeric predictors
+     for(int i = 0; i < _nums; ++i) {
+       Chunk c = chunks[i + _numOff];
+       double w;
+       for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+         if ((w = ws[r]) == 0) continue;
+         double d = c.atd(r);
+         _basicStats.add(d, w, i);
        }
      }
+     if (response == null) return;
+     long nobs = 0;
+     double wsum = 0;
+     for(double w:ws) {
+       if(w != 0)++nobs;
+       wsum += w;
+     }
+     _basicStats.setNobs(nobs,wsum);
+     // compute the mean for the response
+     // autoexpand categoricals into binary vecs
      for(int r = 0; r < response._len; ++r) {
-       if(skip[r] || (w = weight.atd(r)) == 0)
+       double w;
+       if((w = ws[r]) == 0)
          continue;
        if(_computeWeightedMeanSigmaResponse) {
          //FIXME: Add support for subtracting offset from response
@@ -276,42 +276,41 @@ public abstract class GLMTask  {
            _yMin = d;
          if (d > _yMax)
            _yMax = d;
-         _nobs++;
-         _wsum += w;
        }
+     }
+     if(_basicStatsResponse != null)_basicStatsResponse.setNobs(nobs,wsum);
+     for(int i = 0; i < _nums; ++i) {
+       if(chunks[i+_numOff].isSparseZero())
+         _basicStats.fillSparseZeros(i);
+       else if(chunks[i+_numOff].isSparseNA())
+         _basicStats.fillSparseNAs(i);
      }
    }
    @Override public void postGlobal() {
-     if(_computeWeightedSigma)
-      _basicStats.fillInZeros(_nobs,_wsum);
-     if(_computeWeightedMeanSigmaResponse)
-       _basicStatsResponse.fillInZeros(_nobs,_wsum);
-     ArrayUtils.mult(_yMu,1.0/_wsum);
+     ArrayUtils.mult(_yMu,1.0/_basicStats._wsum);
    }
 
    @Override public void reduce(YMUTask ymt) {
-     if(_nobs > 0 && ymt._nobs > 0) {
+     if(ymt._basicStats.nobs() > 0 && ymt._basicStats.nobs() > 0) {
        ArrayUtils.add(_yMu,ymt._yMu);
-       _nobs += ymt._nobs;
-       _wsum += ymt._wsum;
        if(_yMin > ymt._yMin)
          _yMin = ymt._yMin;
        if(_yMax < ymt._yMax)
          _yMax = ymt._yMax;
-       if(_computeWeightedSigma)
-         _basicStats.reduce(ymt._basicStats);
+       _basicStats.reduce(ymt._basicStats);
        if(_computeWeightedMeanSigmaResponse)
          _basicStatsResponse.reduce(ymt._basicStatsResponse);
-     } else if (_nobs == 0) {
+     } else if (_basicStats.nobs() == 0) {
        _yMu = ymt._yMu;
-       _nobs = ymt._nobs;
-       _wsum = ymt._wsum;
        _yMin = ymt._yMin;
        _yMax = ymt._yMax;
        _basicStats = ymt._basicStats;
        _basicStatsResponse = ymt._basicStatsResponse;
      }
    }
+   public double wsum() {return _basicStats._wsum;}
+
+   public long nobs() {return _basicStats.nobs();}
  }
 
   static double  computeMultinomialEtas(double [] etas, double [] exps) {
@@ -505,16 +504,20 @@ public abstract class GLMTask  {
       int numOff = _dinfo.numStart();
       for(int cid = 0; cid < _dinfo._nums; ++cid){
         double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
+        double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double b = scale*_beta[numOff+cid];
-        if(c.isSparseZero() || c.isSparseNA()){
+        if(c.isSparseZero()){
           int nvals = c.asSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nvals; ++i)
             etas[ids[i]] += vals[i] * b;
+        } else if(c.isSparseNA()){
+          int nvals = c.asSparseDoubles(vals,ids,NA);
+          for(int i = 0; i < nvals; ++i)
+            etas[ids[i]] += (vals[i] - off) * b;
         } else {
           c.getDoubles(vals,0,vals.length,NA);
-          double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
           for(int i = 0; i < vals.length; ++i)
             etas[i] += (vals[i] - off) * b;
         }
@@ -527,11 +530,18 @@ public abstract class GLMTask  {
         double NA = _dinfo._numMeans[cid];
         Chunk c = chks[cid+_dinfo._cats];
         double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
-        if(c.isSparseZero() || c.isSparseNA()){
+        if(c.isSparseZero()){
           double g = 0;
           int nVals = c.asSparseDoubles(vals,ids,NA);
           for(int i = 0; i < nVals; ++i)
             g += vals[i]*scale*etas[ids[i]];
+          _gradient[numOff+cid] = g;
+        } else if(c.isSparseNA()){
+          double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
+          double g = 0;
+          int nVals = c.asSparseDoubles(vals,ids,NA);
+          for(int i = 0; i < nVals; ++i)
+            g += (vals[i]-off)*scale*etas[ids[i]];
           _gradient[numOff+cid] = g;
         } else {
           double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];

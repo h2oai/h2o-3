@@ -1,5 +1,5 @@
 from .estimator_base import H2OEstimator
-
+from h2o.connection import H2OConnection
 
 class H2OGeneralizedLinearEstimator(H2OEstimator):
   """Build a Generalized Linear Model
@@ -137,7 +137,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
                compute_p_values=False, remove_collinear_columns=False,
-               missing_values_handling=None, interactions=None):
+               missing_values_handling=None, interactions=None, max_runtime_secs = 0):
     super(H2OGeneralizedLinearEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k: v for k, v in self._parms.items() if k != "self"}
@@ -366,4 +366,39 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @missing_values_handling.setter
   def missing_values_handling(self, value):
     self._parms["missing_values_handling"] = value
+
+  """
+  Extract full regularization path explored during lambda search from glm model.
+
+  Parameters:
+
+  model - source lambda search model
+
+  """
+  @staticmethod
+  def getGLMRegularizationPath(model):
+    x = H2OConnection.get_json("GetGLMRegPath",model=model._model_json['model_id']['name'])
+    ns = x.pop('coefficient_names')
+    res = {'lambdas':x['lambdas'],'explained_deviance_train':x['explained_deviance_train'],'explained_deviance_valid':x['explained_deviance_valid']}
+    res['coefficients'] = [dict(zip(ns,y)) for y in x['coefficients']]
+    if 'coefficients_std' in x:
+      res['coefficients_std'] = [dict(zip(ns,y)) for y in x['coefficients_std']]
+    return res
+
+  """
+  Create a custom GLM model using the given coefficients.
+  Needs to be passed source model trained on the dataset to extract the dataset information from.
+
+  Parameters:
+    model - source model, used for extracting dataset information
+    coefs - dictionary containing model coefficients
+    threshold - (optional, only for binomial) decision threshold used for classification
+
+  """
+  @staticmethod
+  def makeGLMModel(model, coefs, threshold=.5):
+    model_json = H2OConnection.post_json("MakeGLMModel",model=model._model_json['model_id']['name'], names=list(coefs.keys()), beta = list(coefs.values()), threshold = threshold)
+    m = H2OGeneralizedLinearEstimator()
+    m._resolve_model(model_json['model_id']['name'], model_json)
+    return m
 
