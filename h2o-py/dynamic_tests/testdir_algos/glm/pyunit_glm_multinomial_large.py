@@ -7,7 +7,7 @@ import math
 import numpy as np
 import time
 
-sys.path.insert(1, "../../../../")
+sys.path.insert(1, "../../../")
 
 import h2o
 

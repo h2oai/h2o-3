@@ -1,6 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../../../scripts/h2o-r-test-setup.R")
-source("../../../runitUtils/utilsR.R")
+source("../../../scripts/h2o-r-test-setup.R")
+source("../../../tests/runitUtils/utilsR.R")
 
 #   This test is written to test the gridsearch according to PUBDEV-1843: subtask 7, 8.  Basically,
 #   We need to perform the following two tests:
@@ -30,17 +30,6 @@ test.GLM.Gaussian.Grid.Test1.SyntheticData <- function() {
   # set random seed to generate random dataset
   set.seed(as.integer(Sys.time()))
   
-  # setup parameters that control dataset size
-  max_col_count = 4
-  max_col_count_ratio = 300
-  min_col_count_ratio = 200
-  
-  max_predictor_value = 50
-  min_predictor_value = -50
-  
-  max_weight_value = 50
-  min_weight_value = -50
-  
   # setup parameters that control random hyperparameter value generation
   max_int_val = 10
   min_int_val = -10
@@ -57,19 +46,13 @@ test.GLM.Gaussian.Grid.Test1.SyntheticData <- function() {
   test_failed = 1   # set to 1 if test has failed for some reason, default to be bad
   
   # set data size and generate the dataset
-  noise_std = runif(1, 0, sqrt((max_predictor_value-min_predictor_value)^2/12))
-  train_col_count = round(runif(1, 1, max_col_count))
-  train_row_count = train_col_count * round(runif(1, min_col_count_ratio, max_col_count_ratio))
-  
-  training_dataset = genRegressionData(train_col_count, train_row_count, max_weight_value, min_weight_value,
-                                       max_predictor_value, min_predictor_value, noise_std)
-  
-  col_names = colnames(training_dataset)
-  predictor_names = col_names[1:train_col_count]
-  response_name = col_names[train_col_count+1]
-  
-  # convert R data frame to H2O dataframe
-  train_data = as.h2o(training_dataset)
+  train_data = h2o.importFile(locate("smalldata/gridsearch/gaussian_training1_set.csv"))
+
+  col_names = colnames(train_data)
+  train_col_count = length(col_names)
+  response_index = train_col_count
+  predictor_names = col_names[1:1-response_index]
+  response_name = col_names[response_index]
   
   # setup hyper-parameter for gridsearch
   hyper_parameters <- list()
