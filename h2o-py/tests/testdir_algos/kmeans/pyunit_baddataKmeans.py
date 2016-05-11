@@ -15,6 +15,7 @@ def baddataKmeans():
   # Connect to a pre-existing cluster
   # connect to localhost:54321
 
+  random.seed(1234)
   rows = 100
   cols = 10
   rawdata = [[random.random() for c in range(cols)] for r in range(rows)]

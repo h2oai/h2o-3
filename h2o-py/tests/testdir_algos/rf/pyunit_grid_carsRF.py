@@ -24,6 +24,11 @@ def grid_cars_RF():
 
     predictors = ["displacement","power","weight","acceleration","year"]
     grid_space = pyunit_utils.make_random_grid_space(algo="rf", ncols=len(predictors))
+
+    # reduce the magnitude of nbins_cats, run was too long.
+    if 'nbins_cats' in list(grid_space):
+        grid_space['nbins_cats'] = random.sample(list(range(2, 200)), random.randint(2, 3))
+
     print("Grid space: {0}".format(grid_space))
 
     problem = random.randint(1,3)
@@ -46,11 +51,11 @@ def grid_cars_RF():
     print("Constructing the grid of RF models...")
     cars_rf_grid = H2OGridSearch(H2ORandomForestEstimator, hyper_params=grid_space)
     if validation_scheme == 1:
-        cars_rf_grid.train(x=predictors,y=response_col,training_frame=train)
+        cars_rf_grid.train(x=predictors,y=response_col, training_frame=train)
     elif validation_scheme == 2:
-        cars_rf_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+        cars_rf_grid.train(x=predictors,y=response_col, training_frame=train, nfolds=nfolds)
     else:
-        cars_rf_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+        cars_rf_grid.train(x=predictors,y=response_col, training_frame=train, validation_frame=valid)
 
     for model in cars_rf_grid:
       assert isinstance(model, H2ORandomForestEstimator)
@@ -74,11 +79,11 @@ def grid_cars_RF():
     print("Constructing the new grid of RF models...")
     cars_rf_grid2 = H2OGridSearch(H2ORandomForestEstimator, hyper_params=new_grid_space)
     if validation_scheme == 1:
-        cars_rf_grid2.train(x=predictors,y=response_col,training_frame=train)
+        cars_rf_grid2.train(x=predictors,y=response_col, training_frame=train)
     elif validation_scheme == 2:
-        cars_rf_grid2.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+        cars_rf_grid2.train(x=predictors,y=response_col, training_frame=train, nfolds=nfolds)
     else:
-        cars_rf_grid2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+        cars_rf_grid2.train(x=predictors,y=response_col, training_frame=train, validation_frame=valid)
     actual_size2 = len(cars_rf_grid2)
     assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
                                         "size: {1}".format(actual_size, actual_size2)

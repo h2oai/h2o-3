@@ -1,11 +1,5 @@
 package water.api;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
@@ -15,6 +9,12 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
 import water.util.Log;
 import water.util.ReflectionUtils;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The metadata info on all the fields in a Schema.  This is used to help Schema be self-documenting,
@@ -86,6 +86,11 @@ public final class SchemaMetadata extends Iced {
      * Is this field inherited from a class higher in the hierarchy?
      */
     public boolean is_inherited;
+
+    /**
+     * If this field is inherited from a class higher in the hierarchy which one?
+     */
+    public String inherited_from;
 
     /**
      * Is this field gridable?  Set from the @API annotation.
@@ -171,6 +176,8 @@ public final class SchemaMetadata extends Iced {
         }
 
         this.is_inherited = (superclassFields.contains(f));
+        if (this.is_inherited)
+            this.inherited_from = f.getDeclaringClass().getSimpleName();
 
         if (null != annotation) {
           String l = annotation.label();
