@@ -90,7 +90,7 @@ To set up your Python environment to run these examples, download and install H2
 
 ####Chicago Crime
 
-- [chicagoAllWeather](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoAllWeather.csv), [chicagoCensus](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoCensus.csv), and [chicagoCrimes10k](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoCrimes10k.csv) - Used in [Chicago Crime Rate](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/chicago_crimes.ipynb)
+- [chicagoAllWeather](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoAllWeather.csv), [chicagoCensus](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoCensus.csv), and [chicagoCrimes10k](https://github.com/h2oai/sparkling-water/raw/master/examples/smalldata/chicagoCrimes10k.csv) - Used in [Chicago Crime Rate](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_chicago_crimes.ipynb)
 
 ####Citibike Data
  - Used in [NYC Citibike Demand with Weather](https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/citi_bike_large.ipynb) 

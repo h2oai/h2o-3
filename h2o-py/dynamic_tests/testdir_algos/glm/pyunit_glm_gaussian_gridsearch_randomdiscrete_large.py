@@ -10,7 +10,7 @@ import time
 import pickle
 import json
 
-sys.path.insert(1, "../../../../")
+sys.path.insert(1, "../../../")
 
 import h2o
 from tests import pyunit_utils
@@ -39,30 +39,11 @@ class Test_glm_random_grid_search:
     increasing or decreasing.
     """
     # parameters set by users, change with care
-    max_col_count = 4         # set maximum values of train/test row and column counts
-    max_col_count_ratio = 300   # set max row count to be multiples of col_count to avoid over fitting
-    min_col_count_ratio = 200    # set min row count to be multiples of col_count to avoid over fitting
-
-    max_p_value = 2            # set maximum predictor value
-    min_p_value = -2            # set minimum predictor value
-
-    max_w_value = 2             # set maximum weight value
-    min_w_value = -2            # set minimum weight value
-
-    class_number = 2            # number of response class for classification, randomly determined later
-
-    class_method = 'probability'    # can be 'probability' or 'threshold', control how discrete response is generated
-    test_class_method = 'probability'   # for test data set
-    margin = 0.0                    # only used when class_method = 'threshold'
-    test_class_margin = 0.2         # for test data set
-
     curr_time = str(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
-    training1_filename = "gridsearch_training1_"+curr_time+"_set.csv"
-    json_filename = "gridsearch_hyper_parameter_" + curr_time + ".json"
-
-    weight_filename = "gridsearch_"+curr_time+"_weight.csv"
+    training1_filename = "smalldata/gridsearch/gaussian_training1_set.csv"
+    json_filename = "random_gridsearch_GLM_Gaussian_hyper_parameter_" + curr_time + ".json"
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed
     allowed_diff = 0.1   # error tolerance allowed
@@ -71,21 +52,16 @@ class Test_glm_random_grid_search:
     # System parameters, do not change.  Dire consequences may follow if you do
     current_dir = os.path.dirname(os.path.realpath(sys.argv[1]))    # directory of this test file
 
-    noise_std = 0.01            # noise variance in Gaussian noise generation added to response
-    noise_var = noise_std*noise_std     # Gaussian noise variance
-
     train_row_count = 0         # training data row count, randomly generated later
     train_col_count = 0         # training data column count, randomly generated later
 
-    data_type = 2               # determine data type of data set and weight, 1: integers, 2: real
-
     max_int_val = 1000          # maximum size of random integer values
     min_int_val = 0             # minimum size of random integer values
-    max_int_number = 5          # maximum number of integer random grid values to generate
+    max_int_number = 4          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
     min_real_val = 0.0          # minimum size of random float values
-    max_real_number = 5         # maximum number of real grid values to generate
+    max_real_number = 4         # maximum number of real grid values to generate
 
     lambda_scale = 100          # scale lambda value to be from 0 to 100 instead of 0 to 1
     max_runtime_scale = 3       # scale the max runtime to be different from 0 to 1
@@ -145,17 +121,6 @@ class Test_glm_random_grid_search:
         :param family: distribution family for tests
         :return: None
         """
-
-        if ("binomial" in family) or ("gaussian" in family):
-            self.family = family
-            # parameters denoting filenames with absolute paths
-            self.training1_data_file = os.path.join(self.current_dir, self.family+"_"+self.training1_filename)
-            self.weight_data_file = os.path.join(self.current_dir, self.family+"_"+self.weight_filename)
-            self.json_filename = self.family + "_" + self.json_filename
-        else:
-            print("Only binomial or gaussian is accepted as distribution family.")
-            sys.exit(1)
-
         self.setup_data()       # setup_data training data
         self.setup_grid_params()    # setup_data grid hyper-parameters
 
@@ -170,56 +135,17 @@ class Test_glm_random_grid_search:
         # clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
 
-        # randomly set Gaussian noise standard deviation as a fraction of actual predictor standard deviation
-        self.noise_std = random.uniform(0, math.sqrt(pow((self.max_p_value - self.min_p_value), 2) / 12))
-        self.noise_var = self.noise_std*self.noise_std
-
-        # randomly determine data set size in terms of column and row counts
-        self.train_col_count = random.randint(1, self.max_col_count)
-        self.train_row_count = round(self.train_col_count * random.uniform(self.min_col_count_ratio,
-                                                                           self.max_col_count_ratio))
-
         #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.train_col_count = 3
-        # self.train_row_count = 200
         # self.max_real_number = 5
         # self.max_int_number = 5
         # end DEBUGGING
 
-        if 'gaussian' in self.family:       # increase data range
-            self.max_p_value *= 50
-            self.min_p_value *= 50
-            self.max_w_value *= 50
-            self.min_w_value *= 50
-
-        # generate real value weight vector and training/validation/test data sets for GLM
-        pyunit_utils.write_syn_floating_point_dataset_glm(self.training1_data_file, "",
-                                                          "", self.weight_data_file,
-                                                          self.train_row_count, self.train_col_count, self.data_type,
-                                                          self.max_p_value, self.min_p_value, self.max_w_value,
-                                                          self.min_w_value, self.noise_std, self.family,
-                                                          self.train_row_count, self.train_row_count,
-                                                          class_number=self.class_number,
-                                                          class_method=[self.class_method, self.class_method,
-                                                                        self.test_class_method],
-                                                          class_margin=[self.margin, self.margin,
-                                                                        self.test_class_margin])
-
         # preload data sets
-        self.training1_data = h2o.import_file(pyunit_utils.locate(self.training1_data_file))
+        self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename))
 
         # set data set indices for predictors and response
         self.y_index = self.training1_data.ncol-1
         self.x_indices = list(range(self.y_index))
-
-        # set response to be categorical for classification tasks
-        if ('binomial' in self.family):
-            self.training1_data[self.y_index] = self.training1_data[self.y_index].round().asfactor()
-
-            # check to make sure all response classes are represented, otherwise, quit
-            if self.training1_data[self.y_index].nlevels()[0] < self.class_number:
-                print("Response classes are not represented in training dataset.")
-                sys.exit(0)
 
         # save the training data files just in case the code crashed.
         pyunit_utils.remove_csv_files(self.current_dir, ".csv", action='copy', new_dir_path=self.sandbox_dir)
@@ -238,7 +164,7 @@ class Test_glm_random_grid_search:
         :return: None
         """
         # build bare bone model to get all parameters
-        model = H2OGeneralizedLinearEstimator(family=self.family)
+        model = H2OGeneralizedLinearEstimator(family=self.family, nfolds=self.nfolds)
         model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data)
 
         self.one_model_time = pyunit_utils.find_grid_runtime([model])  # find model train time
@@ -303,14 +229,12 @@ class Test_glm_random_grid_search:
         else:   # all tests have passed.  Delete sandbox if if was not wiped before
             pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
 
-        # remove any csv files left in test directory
-        pyunit_utils.remove_csv_files(self.current_dir, ".csv")
-        pyunit_utils.remove_csv_files(self.current_dir, ".json")
-
-    def test1_glm_random_grid_search_model_number(self):
+    def test1_glm_random_grid_search_model_number(self, metric_name):
         """
         This test is used to make sure the randomized gridsearch will generate all models specified in the
         hyperparameters if no stopping condition is given in the search criterion.
+
+        :param metric_name: string to denote what grid search model should be sort by
 
         :return: None
         """
@@ -483,6 +407,9 @@ class Test_glm_random_grid_search:
 
         print("GLM Gaussian grid search_criteria: {0}".format(search_criteria))
 
+        # add max_runtime_secs back into hyper-parameters to limit model runtime.
+        self.hyper_params["max_runtime_secs"] = [0.3]   # arbitrarily set to 0.1 second
+
         # fire off random grid-search
         grid_model = \
             H2OGridSearch(H2OGeneralizedLinearEstimator(family=self.family, nfolds=self.nfolds),
@@ -514,13 +441,13 @@ def test_random_grid_search_for_glm():
     # randomize grid search for Gaussian
     start_time = time.clock()
     test_glm_gaussian_random_grid = Test_glm_random_grid_search("gaussian")
-    test_glm_gaussian_random_grid.test1_glm_random_grid_search_model_number()  # this test must be run.
+    test_glm_gaussian_random_grid.test1_glm_random_grid_search_model_number("mse(xval=True)")   # this test must be run.
     test_glm_gaussian_random_grid.test2_glm_random_grid_search_max_model()
     test_glm_gaussian_random_grid.test3_glm_random_grid_search_max_runtime_secs()
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("MSE", False)
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("r2", True)
     print("Gaussian randomized gridsearch run time is {0}".format(time.clock() - start_time))
-#    test_glm_gaussian_random_grid.tear_down()
+#    test_glm_gaussian_random_grid.tear_down()  # obsolete
 
     # exit with error if any tests have failed
     if test_glm_gaussian_random_grid.test_failed > 0:

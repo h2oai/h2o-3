@@ -10,7 +10,7 @@ from scipy import stats
 from builtins import range
 import time
 
-sys.path.insert(1, "../../../../")
+sys.path.insert(1, "../../../")
 
 import h2o
 from tests import pyunit_utils
