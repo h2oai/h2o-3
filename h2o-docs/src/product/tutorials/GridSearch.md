@@ -49,6 +49,45 @@ The following hyperparameters are supported by grid search.
 - `stopping_metric`
 - `stopping_tolerance`
 
+### Shared Tree Hyperparameters Supported by Grid Search
+
+>***Note***: The Shared Tree hyperparameters apply to DRF and GBM.
+
+- `balance_classes`
+- `class_sampling_factors`
+- `max_after_balance_size`
+- `max_hit_ratio_k`
+- `ntrees`
+- `max_depth`
+- `min_rows`
+- `nbins`
+- `nbins_top_level`
+- `nbins_cats`
+- `r2_stopping`
+- `seed`
+- `build_tree_one_node`
+- `sample_rate`
+- `sample_rate_per_class`
+- `col_sample_rate_per_tree`
+- `col_sample_rate_change_per_level`
+- `score_tree_interval`
+- `min_split_improvement`
+- `random_split_points`
+
+### DRF Hyperparameters Supported by Grid Search
+
+- `mtries`
+
+### GBM Hyperparameters Supported by Grid Search
+
+- `learn_rate`
+- `learn_rate_annealing`
+- `distribution`
+- `quantile_alpha`
+- `tweedie_power`
+- `col_sample_rate`
+- `max_abs_leafnode_pred`
+
 ### K-Means Hyperparameters Supported by Grid Search
 
 - `max_iterations`
@@ -76,10 +115,6 @@ The following hyperparameters are supported by grid search.
 - `init`
 - `svd_method`
 
-### DRF Hyperparameters Supported by Grid Search
-
-- `mtries`
-
 ### Naïve Bayes Hyperparameters Supported by Grid Search
 
 - `laplace`
@@ -95,16 +130,6 @@ The following hyperparameters are supported by grid search.
 - `transform`
 - `k`
 - `max_iterations`
-
-### GBM Hyperparameters Supported by Grid Search
-
-- `learn_rate`
-- `learn_rate_annealing`
-- `distribution`
-- `quantile_alpha`
-- `tweedie_power`
-- `col_sample_rate`
-- `max_abs_leafnode_pred`
 
 ### Deep Learning Hyperparameters Supported by Grid Search
 
@@ -169,29 +194,6 @@ The following hyperparameters are supported by grid search.
 - `elastic_averaging`
 - `elastic_averaging_moving_rate`
 - `elastic_averaging_regularization`
-
-### Shared Tree Hyperparameters Supported by Grid Search
-
-- `balance_classes`
-- `class_sampling_factors`
-- `max_after_balance_size`
-- `max_hit_ratio_k`
-- `ntrees`
-- `max_depth`
-- `min_rows`
-- `nbins`
-- `nbins_top_level`
-- `nbins_cats`
-- `r2_stopping`
-- `seed`
-- `build_tree_one_node`
-- `sample_rate`
-- `sample_rate_per_class`
-- `col_sample_rate_per_tree`
-- `col_sample_rate_change_per_level`
-- `score_tree_interval`
-- `min_split_improvement`
-- `random_split_points`
 
 ### Aggregator Hyperparameters Supported by Grid Search
 
