@@ -60,8 +60,10 @@ class H2ORandomForestEstimator(H2OEstimator):
       Number of folds for cross-validation. If nfolds >= 2, then validation must
       remain empty.
     fold_assignment : str
-      Cross-validation fold assignment scheme, if fold_column is not specified
-      Must be "AUTO", "Random" or "Modulo"
+      Cross-validation fold assignment scheme, if fold_column is not
+      specified, must be "AUTO", "Random",  "Modulo", or "Stratified". 
+      The Stratified option will stratify the folds based on the response 
+      variable, for classification problems.
     keep_cross_validation_predictions : bool
       Whether to keep the predictions of the cross-validation models
     keep_cross_validation_fold_assignment : bool
