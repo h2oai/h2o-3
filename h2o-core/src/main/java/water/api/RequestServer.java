@@ -3,6 +3,7 @@ package water.api;
 import com.google.code.regexp.Matcher;
 import com.google.code.regexp.Pattern;
 import water.*;
+import water.codegen.JCodeGen;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.init.NodePersistentStorage;
@@ -689,7 +690,8 @@ public class RequestServer extends NanoHTTPD {
       if (s instanceof AssemblyV99) {
         Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
         Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
-        r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
+        r.addHeader("Content-Disposition", "attachment; filename=\""+ JCodeGen
+            .toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
         return r;
       } else if (s instanceof StreamingSchema) {
         StreamingSchema ss = (StreamingSchema) s;

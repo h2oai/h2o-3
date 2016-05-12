@@ -1,4 +1,4 @@
-package water.exceptions;
+package water.codegen;
 
 import water.util.IcedBitSet;
 
@@ -8,9 +8,6 @@ import water.util.IcedBitSet;
  * Designed for Java code generation.
  */
 public interface JCodeSB<T extends JCodeSB> {
-
-  // Append primitves
-  T ps(String s);
 
   T p(String s);
 
@@ -30,6 +27,8 @@ public interface JCodeSB<T extends JCodeSB> {
 
   T pobj(Object s);
 
+  T p(Enum e);
+
   /** Increase indentation counter */
   T i(int d);
 
@@ -48,8 +47,40 @@ public interface JCodeSB<T extends JCodeSB> {
   // Java specific append of float
   T pj(float s);
 
-  /* Append Java string - escape all " and \ */
+  /* Append Java string - escape all " and \ and encapsulate it into "..." */
   T pj(String s);
+
+  /** Append full name of class. */
+  T pj(Class c);
+
+  /** Append Java int */
+  T pj(int l);
+
+  /** Append Java Long */
+  T pj(long l);
+
+  /** Append Java array as new double[] { val1, val2, ...} */
+  T pj(double[] ary);
+
+  T pj(Enum e);
+
+  /** Append object as it would be represented in Java code.
+   *
+   * For example o = "Hello"; then representation in Java is "Hello"
+   *
+   * @param o  any
+   * @param klazz expected class
+   * @return self
+   */
+  T pj(Object o, Class klazz);
+
+  /** Print number of [] based on passed dimension */
+  T pbraces(int dim);
+
+  /* Append line comment */
+  T lineComment(String s);
+
+  T blockComment(String s);
 
   /** Append reference to object's field
    *
@@ -70,7 +101,11 @@ public interface JCodeSB<T extends JCodeSB> {
   // Copy indent from given string buffer
   T ci(JCodeSB sb);
 
+  /** Output new line */
   T nl();
+
+  /** Output number of new lines. */
+  T nl(int n);
 
   // Convert a String[] into a valid Java String initializer
   T toJavaStringInit(String[] ss);
@@ -86,6 +121,8 @@ public interface JCodeSB<T extends JCodeSB> {
   T toJSArray(float[] nums);
 
   T toJSArray(String[] ss);
+
+  T NULL();
 
   int getIndent();
 

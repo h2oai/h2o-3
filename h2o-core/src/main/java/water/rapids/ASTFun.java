@@ -1,6 +1,6 @@
 package water.rapids;
 
-import water.util.SB;
+import water.codegen.SB;
 
 import java.util.ArrayList;
 

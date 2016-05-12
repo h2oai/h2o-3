@@ -3,7 +3,7 @@ package hex.tree.gbm;
 import hex.Distribution;
 import hex.tree.SharedTreeModel;
 import water.Key;
-import water.util.SBPrintStream;
+import water.codegen.SBPrintStream;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 

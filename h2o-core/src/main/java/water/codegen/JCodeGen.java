@@ -1,4 +1,4 @@
-package water.util;
+package water.codegen;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,9 +25,11 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 import water.H2O;
-import water.exceptions.JCodeSB;
+import water.codegen.java.JCodeGenUtil;
 
-/** Internal utility for pretty-printing Models as Java code
+/** Internal utility for pretty-printing Models as Java code.
+ *
+ * Implements methods from JCodeSB ingerface.
  */
 public class JCodeGen {
 
@@ -317,7 +320,7 @@ public class JCodeGen {
     sb.ip("static final class ").p(clzName).p(" implements java.io.Serializable {").ii(1).nl();
     sb.ip("static final void fill(String[] sa) {").ii(1).nl();
     for (int i=0; i<len; i++) {
-      sb.ip("sa[").p(start+i).p("] = ").ps(values[start+i]).p(";").nl();
+      sb.ip("sa[").p(start+i).p("] = ").pj(values[start+i]).p(";").nl();
     }
     sb.di(1).ip("}").nl();
     sb.di(1).ip("}").nl();
@@ -386,10 +389,7 @@ public class JCodeGen {
 
   /** Transform given string to legal java Identifier (see Java grammar http://docs.oracle.com/javase/specs/jls/se7/html/jls-3.html#jls-3.8) */
   public static String toJavaId(String s) {
-    // Note that the leading 4 backslashes turn into 2 backslashes in the
-    // string - which turn into a single backslash in the REGEXP.
-    // "+-*/ !@#$%^&()={}[]|\\;:'\"<>,.?/"
-    return s.replaceAll("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]",  "_");
+    return JCodeGenUtil.toJavaId(s);
   }
 
   // Compiler loaded???
@@ -407,13 +407,20 @@ public class JCodeGen {
 
     // Compiled; now load all classes.  Our single POJO file actually makes a
     // bunch of classes to keep each class constant pool size reasonable.
-    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    ClassLoader cl = new PojoCL(Thread.currentThread().getContextClassLoader()); //Thread.currentThread().getContextClassLoader();
     for( Map.Entry<String, ByteArrayOutputStream> entry : jfm._buffers.entrySet()) {
       byte[] bits = entry.getValue().toByteArray();
       // Call classLoader.defineClass("className",byte[])
       DEFINE_CLASS_METHOD.invoke(cl, entry.getKey(), bits, 0, bits.length);
     }
-    return Class.forName(class_name); // Return the original top-level class
+    return Class.forName(class_name, true, cl); // Return the original top-level class
+  }
+
+  private static class PojoCL extends ClassLoader {
+
+    public PojoCL(ClassLoader parent) {
+      super(parent);
+    }
   }
 
   // Parts of this code are shamelessly robbed from:
@@ -493,6 +500,18 @@ public class JCodeGen {
     public void flush() throws IOException { _fileManager.flush(); }
     public void close() throws IOException { _fileManager.close(); }
     public int isSupportedOption(String option) { return _fileManager.isSupportedOption(option); }
+  }
+
+  public static JCodeSB pMethodParams(JCodeSB sb, Class[] types, String[] names) {
+    assert types == null && names == null || types.length == names.length : "Length of types does not match length of names";
+    if (types != null) {
+      for (int i = 0; i < types.length; i++) {
+        if (i > 0)
+          sb.p(", ");
+        sb.pj(types[i]).p(' ').p(names[i]);
+      }
+    }
+    return sb;
   }
 }
 

@@ -946,6 +946,15 @@ public class ArrayUtils {
     System.arraycopy(b,0,c,a.length,b.length);
     return c;
   }
+  static public int[] append( int[] a, int[] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    int[] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
   static public String[] append( String[] a, String[] b ) {
     if( a==null ) return b;
     if( b==null ) return a;

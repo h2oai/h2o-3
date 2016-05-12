@@ -303,7 +303,7 @@ public final class AutoBuffer {
       long now = System.currentTimeMillis();
       if( now < HWM ) return bb;
       HWM = now+1000;
-      water.util.SB sb = new water.util.SB();
+      water.codegen.SB sb = new water.codegen.SB();
       sb.p("BB").p(this==BBP_BIG?1:0).p(" made=").p(_made).p(" -freed=").p(_freed).p(", cache hit=").p(_cached).p(" ratio=").p(_numer/_denom).p(", goal=").p(_goal).p(" cache size=").p(_bbs.size()).nl();
       for( int i=0; i<H2O.MAX_PRIORITY; i++ ) {
         int x = H2O.getWrkQueueSize(i);

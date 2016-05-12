@@ -6,7 +6,7 @@
 // The top-level jar file that gets produced is empty and not usable
 // for anything.  Use the jar file produced by the h2o-assembly subproject.
 //
-apply from: 'gradle/java.gradle'
+apply plugin: 'base'
 
 // For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
 if (project.hasProperty("doRelease")) {
@@ -51,7 +51,9 @@ ext {
       project(':h2o-persist-hdfs'),
       project(':h2o-genmodel'),
       project(':h2o-java-rest-bindings'),
-      project(':h2o-avro-parser')
+      project(':h2o-avro-parser'),
+      project(':h2o-java-rest-bindings'),
+      project(':h2o-model-codegen'),
     ]
 
     javaProjects = [
@@ -65,6 +67,7 @@ ext {
       project(':h2o-genmodel'),
       project(':h2o-java-rest-bindings'),
       project(':h2o-avro-parser'),
+      project(':h2o-model-codegen'),
     ]
 
     scalaProjects = [
@@ -273,3 +276,15 @@ clean.dependsOn cleanTarget
 // Import project development profiles
 //
 apply from: "gradle/profiles.gradle"
+
+// 
+// Setup idea module
+// 
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file('build/main')
+        testOutputDir = file('build/test')
+    }
+}
+

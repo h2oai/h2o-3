@@ -8,8 +8,9 @@ import water.*;
 import water.api.ModelSchema;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
+import water.codegen.java.CodeGeneratorB;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.JCodeSB;
+import water.codegen.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -981,7 +982,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       sb.nl();
     }
     sb.i(1).p("};").nl();
-    fileCtx.add(new CodeGenerator() {
+    fileCtx.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for (int i=0; i<neurons.length; i++) {
@@ -1004,7 +1005,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     sb.i(1).p("};").nl();
     // Generate additonal classes
-    fileCtx.add(new CodeGenerator() {
+    fileCtx.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for (int i=0; i<neurons.length; i++) {
@@ -1031,7 +1032,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     sb.i(1).p("};").nl();
     // Generate weight classes
-    fileCtx.add(new CodeGenerator() {
+    fileCtx.add(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for (int i = 0; i < neurons.length; i++) {
@@ -1687,7 +1688,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * Activation functions
      */
     public enum Activation {
-      Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout, ExpRectifier, ExpRectifierWithDropout
+      Tanh, TanhWithDropout,
+      Rectifier, RectifierWithDropout,
+      Maxout, MaxoutWithDropout,
+      ExpRectifier, ExpRectifierWithDropout;
+
+      public boolean isTanh() {
+        return this == Tanh || this == TanhWithDropout;
+      }
+
+      public boolean isRelu() {
+        return this == Rectifier || this == RectifierWithDropout;
+      }
+
+      public boolean isMaxout() {
+        return this == Maxout || this == MaxoutWithDropout;
+      }
     }
   
     /**

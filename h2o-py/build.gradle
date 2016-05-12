@@ -60,7 +60,6 @@ def testsPath = new File("./tests")
 
 task smokeTest(type: Exec) {
     dependsOn build
-    println "PyUnit smoke test (run.py --wipeall --testsize s)..."
     workingDir testsPath
     commandLine 'pwd'
     commandLine 'python', '../../scripts/run.py', '--wipeall', '--testsize', 's'

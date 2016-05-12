@@ -1,19 +1,21 @@
-package water.util;
+package water.codegen;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import water.exceptions.JCodeSB;
+import water.util.IcedBitSet;
 
 /** Tight/tiny StringBuilder wrapper.
  *  Short short names on purpose; so they don't obscure the printing.
  *  Can't believe this wasn't done long long ago. */
 public final class SB implements JCodeSB<SB> {
+
+  private static final Package JAVA_LANG_PACKAGE = String.class.getPackage();
+
   public final StringBuilder _sb;
   int _indent = 0;
   public SB(        ) { _sb = new StringBuilder( ); }
   public SB(String s) { _sb = new StringBuilder(s); }
-  public SB ps( String s ) { _sb.append("\""); pj(s); _sb.append("\""); return this;  }
   public SB p( String s ) { _sb.append(s); return this; }
   public SB p( float  s ) {
     if( Float.isNaN(s) )
@@ -37,7 +39,10 @@ public final class SB implements JCodeSB<SB> {
   public SB p( boolean s) { _sb.append(s); return this; }
   // Not spelled "p" on purpose: too easy to accidentally say "p(1.0)" and
   // suddenly call the the autoboxed version.
-  public SB pobj( Object s ) { _sb.append(s.toString()); return this; }
+  public SB pobj( Object s ) {
+    _sb.append(s.toString()); return this;
+  }
+  public SB p( Enum e) { _sb.append(e.toString()); return this; }
   public SB i( int d ) { for( int i=0; i<d+_indent; i++ ) p("  "); return this; }
   public SB i( ) { return i(0); }
   public SB ip(String s) { return i().p(s); }
@@ -63,7 +68,69 @@ public final class SB implements JCodeSB<SB> {
     return this;
   }
   /* Append Java string - escape all " and \ */
-  public SB pj( String s ) { _sb.append(escapeJava(s)); return this; }
+  public SB pj( String s ) {
+    _sb.append('"').append(escapeJava(s)).append('"');
+    return this;
+  }
+
+  @Override
+  public SB pj(Class c) {
+    Package p = c.getPackage();
+    _sb.append(p != null && p == JAVA_LANG_PACKAGE ? c.getSimpleName() : c.getCanonicalName());
+    return this;
+  }
+
+  @Override
+  public SB pj( int i ) {
+    _sb.append(i);
+    return this;
+  }
+
+  @Override
+  public SB pj( long l ) {
+    _sb.append(l).append('L');
+    return this;
+  }
+
+  @Override
+  public SB pj(Enum e) {
+    _sb.append(e.getDeclaringClass().getName()).append('.').append(e.name());
+    return this;
+  }
+
+  @Override
+  public SB pj(Object o, Class klazz) {
+    if (Enum.class.isAssignableFrom(klazz)) {
+      return pj((Enum) o);
+    } else if (String.class.isAssignableFrom(klazz)) {
+      return pj((String) o);
+    } else {
+      return pobj(o);
+    }
+  }
+
+  @Override
+  public SB pj(double[] ary) {
+    return toJavaStringInit(ary);
+  }
+
+  @Override
+  public SB pbraces(int dim) {
+    while (dim-- > 0) {
+      _sb.append("[]");
+    }
+    return this;
+  }
+
+  @Override
+  public SB lineComment(String s) {
+    return p("// ").p(s);
+  }
+
+  @Override
+  public SB blockComment(String s) {
+    return p("/* ").p(s).p(" */");
+  }
 
   @Override
   public SB pj(String objectName, String fieldName) {
@@ -84,7 +151,14 @@ public final class SB implements JCodeSB<SB> {
   }
 
   // Copy indent from given string buffer
-  public SB nl( ) { return p('\n'); }
+  public SB nl() { return p('\n').i(); }
+
+  @Override
+  public SB nl(int n) {
+    while (n-- > 0) nl();
+    return this;
+  }
+
   // Convert a String[] into a valid Java String initializer
   public SB toJavaStringInit( String[] ss ) {
     if (ss==null) return p("null");
@@ -136,6 +210,10 @@ public final class SB implements JCodeSB<SB> {
       p('"').p(ss[i]).p('"');
     }
     return p(']');
+  }
+
+  public SB NULL() {
+    return p("null");
   }
 
   @Override

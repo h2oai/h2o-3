@@ -1,0 +1,37 @@
+//
+// H2O Code Generator Module
+//
+description = "H2O Code Generator"
+
+dependencies {
+  // Dependency on shared model support
+  compile project (':h2o-core')
+  compile project (':h2o-algos')
+  
+  // Javacode loader
+  compile "com.google.code.javaparser:javaparser:1.0.11"
+
+  testCompile "junit:junit:${junitVersion}"
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
+}
+
+test {
+  //dependsOn ":h2o-core:testJar"
+  //dependsOn cpLibs, testMultiNode, testJar
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}
+
+task copyMixinsToResources(type: Copy) {
+  from "src/main/java/water/codegen/java/mixins/"
+  into "src/main/resources/codegen/java/mixins/"
+  rename { f -> f.replace('.java', '.mixin')}
+}
+
+task deleteMixinsFromResources(type: Delete) {
+  delete "src/main/resources/codegen/java"
+}
+
+processResources.dependsOn copyMixinsToResources
+clean.dependsOn deleteMixinsFromResources
