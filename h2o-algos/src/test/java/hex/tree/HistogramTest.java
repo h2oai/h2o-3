@@ -6,13 +6,10 @@ import org.junit.Test;
 import water.Futures;
 import water.H2O;
 import water.TestUtil;
-import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.Log;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 /**

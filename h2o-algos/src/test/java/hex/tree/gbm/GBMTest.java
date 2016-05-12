@@ -228,7 +228,7 @@ public class GBMTest extends TestUtil {
       double auc = mm._auc._auc;
       Assert.assertTrue(0.83 <= auc && auc < 0.87); // Sanely good model
       double[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ard(ard(316, 77), ard(26, 81)), cm);
+      Assert.assertArrayEquals(ard(ard(322, 71), ard(31, 76)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -611,7 +611,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21971359753455724, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21971340929271474, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -668,7 +668,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21971359753455724, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21971340929271474, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1635,6 +1635,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "C55";
       parms._seed = 1234;
+      parms._auto_rebalance = false;
       parms._col_sample_rate_per_tree = 0.5f;
       parms._col_sample_rate = 0.3f;
       parms._ntrees = 5;
@@ -1721,7 +1722,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.79259) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.65668) < 1e-4);
 
     } finally {
       parms._train.remove();

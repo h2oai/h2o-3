@@ -310,13 +310,13 @@ public final class DHistogram extends Iced {
   // Compute response mean & variance.
   // Done racily instead F/J map calls, so atomic
   public void incr0( int b, double y, double w ) {
-    AtomicUtils.DoubleArray.add(_sums,b,w*y); //See 'HistogramTest' JUnit for float-casting rationalization (not done right now)
-    AtomicUtils.DoubleArray.add(_ssqs,b,w*y*y);
+    AtomicUtils.DoubleArray.add(_sums,b,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
+    AtomicUtils.DoubleArray.add(_ssqs,b,(float)(w*y*y));
   }
   // Same, except square done by caller
   public void incr1( int b, double y, double yy) {
-    AtomicUtils.DoubleArray.add(_sums,b,y); //See 'HistogramTest' JUnit for float-casting rationalization (not done right now)
-    AtomicUtils.DoubleArray.add(_ssqs,b,yy);
+    AtomicUtils.DoubleArray.add(_sums,b,(float)y); //See 'HistogramTest' JUnit for float-casting rationalization
+    AtomicUtils.DoubleArray.add(_ssqs,b,(float)yy);
   }
 
   // Merge two equal histograms together.
