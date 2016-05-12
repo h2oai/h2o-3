@@ -1447,6 +1447,26 @@ class H2OFrame(object):
     if (by_y==None): by_y = [other.names.index(c) for c in common_names]
     return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
 
+  def relevel(self,y):
+    """ Reorders levels of an H2O factor, similarly to standard R's relevel().
+    The levels of a factor are reordered such that the reference level is at level 0, remaining levels are moved down
+    as needed.
+
+    Parameters
+    ----------
+     x: Column
+      Column in H2O Frame
+
+     y : String
+      Reference level
+
+    Returns
+    -------
+     New reordered factor column
+    """
+
+    return H2OFrame._expr(expr=ExprNode("relevel", self, quote(y)))
+
   def insert_missing_values(self, fraction=0.1, seed=None):
     """Inserting Missing Values into an H2OFrame.
     Randomly replaces a user-specified fraction of entries in a H2O dataset with missing
