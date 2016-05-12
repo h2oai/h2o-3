@@ -118,8 +118,9 @@
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified.
-#'        Must be "AUTO", "Random" or "Modulo".
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
+#'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will 
+#'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param ... extra parameters to pass onto functions (not implemented)
@@ -211,7 +212,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              weights_column = NULL,
                              nfolds = 0,
                              fold_column = NULL,
-                             fold_assignment = c("AUTO","Random","Modulo"),
+                             fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE
                              )
