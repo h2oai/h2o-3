@@ -1,3 +1,5 @@
+.. _H2O-DevLogs:
+
 Downloading Logs
 ================
 
@@ -19,7 +21,7 @@ Without Running Jobs
    using the ``yarn logs -applicationId`` command. When you start an H2O
    instance, the complete command displays in the output:
 
-::
+  ::
 
         jessica@mr-0x8:~/h2o-3.1.0.3008-cdh5.2$ hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
     Determining driver host interface for mapper->driver callback...
@@ -52,30 +54,24 @@ of the output that displayed when you created the cluster).
 
 Use YARN to obtain the ``stdout`` and ``stderr`` logs that are used for
 troubleshooting. To learn how to access YARN based on management
-software, version, and job status, see `Accessing YARN <#AccessYARN>`__.
+software, version, and job status, see `Accessing YARN <#AccessYARN>`_.
 
-0. Click the **Applications** link to view all jobs, then click the
+1. Click the **Applications** link to view all jobs, then click the
    **History** link for the job.
 
-.. figure:: images/YARN_AllApps_History.png
-   :alt: YARN - History
+   .. figure:: ../images/YARN_AllApps_History.png
+       :alt: Application History
+       
+2. Click the **logs** link.
 
-   YARN - History
-
-0. Click the **logs** link.
-
-   .. figure:: images/YARN_History_Logs.png
-      :alt: YARN - History
-
-      YARN - History
-
-1. Copy the information that displays and send it in an email to
+   .. figure:: ../images/YARN_History_Logs.png
+       :alt: YARN History Logs
+ 
+3. Copy the information that displays and send it in an email to
    support@h2o.ai.
-
-   .. figure:: images/YARN_History_Logs2.png
-      :alt: YARN - History
-
-      YARN - History
+   
+   .. figure:: ../images/YARN_history_Logs2.png
+       :alt: Logs for Support
 
 --------------
 
@@ -87,36 +83,28 @@ If you are using Hadoop and the job is still running:
 -  Use YARN to obtain the ``stdout`` and ``stderr`` logs that are used
    for troubleshooting. To learn how to access YARN based on management
    software, version, and job status, see `Accessing
-   YARN <#AccessYARN>`__.
+   YARN <#AccessYARN>`_.
 
-0. Click the **Applications** link to view all jobs, then click the
+1. Click the **Applications** link to view all jobs, then click the
    **ApplicationMaster** link for the job.
 
-   .. figure:: images/YARN_AllApps_AppMaster.png
+   .. figure:: ../images/YARN_AllApps_AppMaster.png
       :alt: YARN - Application Master
 
-      YARN - Application Master
+2. Select the job from the list of active jobs.
 
-1. Select the job from the list of active jobs.
-
-   .. figure:: images/YARN_AppMaster_Job.png
+   .. figure:: ../images/YARN_AppMaster_Job.png
       :alt: YARN - Application Master
 
-      YARN - Application Master
+3. Click the **logs** link.
 
-2. Click the **logs** link.
-
-   .. figure:: images/YARN_AppMaster_Logs.png
+   .. figure:: ../images/YARN_AppMaster_Logs.png
       :alt: YARN - Application Master
 
-      YARN - Application Master
+4. Send the contents of the displayed files to support@h2o.ai.
 
-3. Send the contents of the displayed files to support@h2o.ai.
-
-   .. figure:: images/YARN_AppMaster_Logs2.png
+   .. figure:: ../images/YARN_AppMaster_Logs2.png
       :alt: YARN - Application Master
-
-      YARN - Application Master
 
 --------------
 
@@ -124,10 +112,9 @@ If you are using Hadoop and the job is still running:
    the results select a node or log file type from the drop-down menus.
    To download the logs, click the **Download Logs** button.
 
-When you view the log, the output displays the location of log directory
-after ``Log dir:`` (as shown in the last line in the following example):
+   When you view the log, the output displays the location of log directory after ``Log dir:`` (as shown in the last line in the following example):
 
-::
+  ::
 
     05-06 17:12:15.610 172.16.2.179:54321    26336  main      INFO: ----- H2O started  -----
     05-06 17:12:15.731 172.16.2.179:54321    26336  main      INFO: Build git branch: master
@@ -179,7 +166,8 @@ after ``Log dir:`` (as shown in the last line in the following example):
 
 --------------
 
- ##Accessing YARN
+Accessing YARN
+--------------
 
 Methods for accessing YARN vary depending on the default management
 software and version, as well as job status.
@@ -191,19 +179,15 @@ Cloudera 5 & 5.2
 
 1. In Cloudera Manager, click the **YARN** link in the cluster section.
 
-.. figure:: images/Logs_cloudera5_1.png
-   :alt: Cloudera Manager
-
-   Cloudera Manager
+  .. figure:: ../images/Logs_cloudera5_1.png
+     :alt: Cloudera Manager
 
 2. In the Quick Links section, select **ResourceManager Web UI** if the
    job is running or select **HistoryServer Web UI** if the job is not
    running.
 
-.. figure:: images/Logs_cloudera5_2.png
-   :alt: Cloudera Manager
-
-   Cloudera Manager
+  .. figure:: ../images/Logs_cloudera5_2.png
+     :alt: Cloudera Manager
 
 --------------
 
@@ -212,17 +196,13 @@ Ambari
 
 1. From the Ambari Dashboard, select **YARN**.
 
-.. figure:: images/Logs_ambari1.png
-   :alt: Ambari
-
-   Ambari
+  .. figure:: ../images/Logs_ambari1.png
+     :alt: Ambari
 
 2. From the Quick Links drop-down menu, select **ResourceManager UI**.
 
-.. figure:: images/Logs_ambari2.png
-   :alt: Ambari
-
-   Ambari
+  .. figure:: ../images/Logs_ambari2.png
+     :alt: Ambari
 
 --------------
 
@@ -253,14 +233,13 @@ With Current Jobs
 If you are not using Hadoop and the job is still running:
 
 -  Go to the H2O web UI and select **Admin** > **Inspect Log** or go to
-   http://localhost:54321/LogView.html. |Logs|
+   http://localhost:54321/LogView.html.
 
-To download the logs, click the **Download Logs** button.
+   To download the logs, click the **Download Logs** button. 
+   
+   When you view the log, the output displays the location of log directory after ``Log dir:`` (as shown in the last line in the following example):
 
-When you view the log, the output displays the location of log directory
-after ``Log dir:`` (as shown in the last line in the following example):
-
-::
+  ::
 
     05-06 17:12:15.610 172.16.2.179:54321    26336  main      INFO: ----- H2O started  -----
     05-06 17:12:15.731 172.16.2.179:54321    26336  main      INFO: Build git branch: master
@@ -308,8 +287,7 @@ after ``Log dir:`` (as shown in the last line in the following example):
 
 -  To view the REST API logs from R:
 
-0. In R, enter ``h2o.startLogging()``. The output displays the location
-   of the REST API logs:
+ 1. In R, enter ``h2o.startLogging()``. The output displays the location of the REST API logs:
 
    ::
 
@@ -318,12 +296,11 @@ after ``Log dir:`` (as shown in the last line in the following example):
        Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
        ```
 
-1. Copy the displayed file path. In Terminal, enter ``less`` and paste
-   the file path.
-2. Press Enter. A time-stamped log of all REST API transactions
-   displays.
+ 2. Copy the displayed file path. In Terminal, enter ``less`` and paste the file path.
 
-::
+ 3. Press Enter. A time-stamped log of all REST API transactions displays.
+
+   ::
 
             ------------------------------------------------------------
 
@@ -343,11 +320,8 @@ after ``Log dir:`` (as shown in the last line in the following example):
 
 --------------
 
--  Download the logs using R. In R, enter the command
-   ``h2o.downloadAllLogs(filename = "logs.zip")`` (where ``filename`` is
-   the specified filename for the logs).
+-  Download the logs using R. 
+
+   In R, enter the command ``h2o.downloadAllLogs(filename = "logs.zip")`` (where ``filename`` is the specified filename for the logs).
 
 --------------
-
-.. |Logs| image:: images/Logsdownload.png
-

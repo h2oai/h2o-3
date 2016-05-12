@@ -22,8 +22,8 @@ Welcome to H2O-3!
    includes/_POJO_QuickStart
    includes/_GridSearch
    includes/_Architecture
-   inlucludes/_FAQ.rst
    includes/_Security
+   includes/_FAQ
    includes/_glossary
 
 

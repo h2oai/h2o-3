@@ -122,7 +122,7 @@ then try adding an intercept.
 
 **What's the process for implementing new algorithms in H2O?**
 
-This `blog post <http://h2o.ai/blog/2014/16/Hacking/Algos/>`__ by Cliff
+This `blog post <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`__ by Cliff
 walks you through building a new algorithm, using K-Means, Quantiles,
 and Grep as examples.
 
@@ -152,10 +152,8 @@ To generate p-values, do one of the following:
 The p-values are listed in the coefficients table (as shown in the
 following example screenshot):
 
-.. figure:: images/Flow_Pvalues.png
+.. figure:: ../images/Flow_Pvalues.png
    :alt: Coefficients Table with P-values
-
-   Coefficients Table with P-values
 
 --------------
 
@@ -249,11 +247,11 @@ R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplear
 
 Currently, the following examples are available for Sparkling Water:
 
-a) Use TF-IDF weighting scheme for classifying text messages
-   https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/mlconf\_2015\_hamSpam.script.scala
+- Use TF-IDF weighting scheme for classifying text messages
+   https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/hamOrSpam.script.scala
 
-b) Use Word2Vec Skip-gram model + GBM for classifying job titles
-   https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.scala
+- Use Word2Vec Skip-gram model + GBM for classifying job titles
+   https://github.com/h2oai/sparkling-water/blob/master/examples/scripts/craigslistJobTitles.script.scala
 
 --------------
 
@@ -263,15 +261,15 @@ predictions in this scenario?**
 
 Here is an example of how the prediction process works in H2O:
 
-0. Train a model using data that has a categorical predictor column with
+1. Train a model using data that has a categorical predictor column with
    levels B,C, and D (no other levels); this level will be the "training
    set domain": {B,C,D}
-1. During scoring, the test set has only rows with levels A,C, and E for
+2. During scoring, the test set has only rows with levels A,C, and E for
    that column; this is the "test set domain": {A,C,E}
-2. For scoring, a combined "scoring domain" is created, which is the
+3. For scoring, a combined "scoring domain" is created, which is the
    training domain appended with the extra test set domain entries:
    {B,C,D,A,E}
-3. Each model can handle these extra levels {A,E} separately during
+4. Each model can handle these extra levels {A,E} separately during
    scoring.
 
 The behavior for unseen categorical levels depends on the algorithm and
@@ -310,10 +308,8 @@ To convert the response column:
 -  Before parsing, click the drop-down menu to the right of the column
    name or number and select ``Enum``
 
-.. figure:: images/Flow_Parse_ConvertEnum.png
+.. figure:: ../images/Flow_Parse_ConvertEnum.png
    :alt: Parsing - Convert to Enum
-
-   Parsing - Convert to Enum
 
 or
 
@@ -322,10 +318,8 @@ or
    ``<frame_name>`` is the name of the frame), then click the **Convert
    to enum** link to the right of the column name or number
 
-.. figure:: images/Flow_Summary_ConvertToEnum.png
+.. figure:: ../images/Flow_Summary_ConvertToEnum.png
    :alt: Summary - Convert to Enum
-
-   Summary - Convert to Enum
 
 --------------
 
@@ -386,12 +380,10 @@ If this does not resolve the issue, try the following additional
 troubleshooting tips:
 
 -  Confirm your internet connection is active.
-
 -  Test connectivity using curl: First, log in to the first node and
    enter curl http://:54321 (where is the IP address of the second node.
    Then, log in to the second node and enter curl http://:54321 (where
    is the IP address of the first node). Look for output from H2O.
-
 -  Confirm ports 54321 and 54322 are available for both TCP and UDP.
 -  Confirm your firewall is not preventing the nodes from locating each
    other.
@@ -470,7 +462,17 @@ If you launch without specifying the IP address by adding argument -ip:
 and multiple local IP addresses are detected, H2O uses the default
 localhost (127.0.0.1) as shown below:
 
-``10:26:32.266 main      WARN WATER: Multiple local IPs detected:   +                                    /198.168.1.161  /198.168.58.102   +                                  Attempting to determine correct address...   10:26:32.284 main      WARN WATER: Failed to determine IP, falling back to localhost.   10:26:32.325 main      INFO WATER: Internal communication uses port: 54322   +                                  Listening for HTTP and REST traffic   +                                  on http://127.0.0.1:54321/   10:26:32.378 main      WARN WATER: Flatfile configuration does not include self:   /127.0.0.1:54321 but contains [/192.168.1.161:54321, /192.168.1.162:54321]``
+::
+
+	10:26:32.266 main      WARN WATER: Multiple local IPs detected:
+	+                                    /198.168.1.161  /198.168.58.102
+	+                                  Attempting to determine correct address...
+	10:26:32.284 main      WARN WATER: Failed to determine IP, falling back to localhost.
+	10:26:32.325 main      INFO WATER: Internal communication uses port: 54322
+	+                                  Listening for HTTP and REST traffic
+	+                                  on http://127.0.0.1:54321/
+	10:26:32.378 main      WARN WATER: Flatfile configuration does not include self:
+	/127.0.0.1:54321 but contains [/192.168.1.161:54321, /192.168.1.162:54321]
 
 To avoid using 127.0.0.1 on servers with multiple local IP addresses,
 run the command with the -ip argument to force H2O to launch at the
@@ -629,9 +631,7 @@ names will need to be changed.
     curl http://127.0.0.1:54321/3/Models.java/gbm_model > gbm_model.java
 
 To score a simple .CSV file, download the
-`PredictCSV.java <https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-r/tests/testdir_javapredict/PredictCSV.java>`__
-file and compile it with the POJO. Make a subdirectory for the
-compilation (this is useful if you have multiple models to score on).
+`PredictCsv.java <https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java>`_ file and compile it with the POJO. Make a subdirectory for the compilation (this is useful if you have multiple models to score on).
 
 ::
 
@@ -879,10 +879,7 @@ To cite our software:
 -  The H2O.ai Team. (2015) *h2o: h2o: Python Interface for H2O*. Python
    package version 3.1.0.99999. http://www.h2o.ai.
 
--  
-
-   -  The H2O.ai Team. (2015) *H2O: Scalable Machine Learning*. Version
-      3.1.0.99999. http://www.h2o.ai.
+-  The H2O.ai Team. (2015) *H2O: Scalable Machine Learning*. Version 3.1.0.99999. http://www.h2o.ai.
 
 To cite one of our booklets:
 
@@ -1025,11 +1022,12 @@ To save the model in HDFS, prepend the save directory with ``hdfs://``:
 **How do I specify which nodes should run H2O in a Hadoop cluster?**
 
 After creating and applying the desired node labels and associating them
-with specific queues as described in the `Hadoop
-documentation <http://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.2.0/YARN_RM_v22/node_labels/index.html#Item1.1>`__,
-launch H2O using the following command:
+with specific queues as described in the Hadoop
+documentation, launch H2O using the following command:
 
-``hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName``
+::
+
+	hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName
 
 -  ``-Dmapreduce.job.queuename=<my-h2o-queue>`` represents the queue
    name
@@ -1060,10 +1058,8 @@ In Flow, the easiest way is to let the auto-suggestion feature in the
 the file, starting with the top-level directory, and H2O provides a list
 of matching files.
 
-.. figure:: images/Flow_Import_AutoSuggest.png
+.. figure:: ../images/Flow_Import_AutoSuggest.png
    :alt: Flow - Import Auto-Suggest
-
-   Flow - Import Auto-Suggest
 
 Click the file to add it to the *Search:* field.
 
@@ -1157,10 +1153,10 @@ Water <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`__.
 To create a set of bare POJOs for the REST API payloads that can be used
 by JVM REST API clients:
 
-0. Clone the sources from GitHub.
-1. Start an H2O instance.
-2. Enter ``% cd py``.
-3. Enter ``% python generate_java_binding.py``.
+1. Clone the sources from GitHub.
+2. Start an H2O instance.
+3. Enter ``% cd py``.
+4. Enter ``% python generate_java_binding.py``.
 
 This script connects to the server, gets all the metadata for the REST
 API schemas, and writes the Java POJOs to
@@ -1237,40 +1233,19 @@ If you are encountering errors related to missing Python packages when
 using H2O, refer to the following list for a complete list of all Python
 packages, including dependencies:
 
-.. raw:: html
-
-   <table>
-
-::
-
-    <tr>
-        <td><code>grip</code></td>
-        <td><code>tabulate</code></td>
-        <td><code>wheel</code></td>
-        <td><code>jsonlite</code></td>
-        <td><code>ipython</code></td>
-    </tr>
-    <tr>
-        <td><code>numpy</code></td>
-        <td><code>scipy</code></td>
-        <td><code>pandas</code></td>
-        <td><code>-U gensim</code></td>
-        <td><code>jupyter</code></td>
-    </tr>
-    <tr>
-        <td><code>-U PIL</code></td>
-        <td><code>nltk</code></td>
-        <td><code>beautifulsoup4</code></td>
-        <td><code></code></td>
-        <td><code></code></td>
-
-.. raw:: html
-
-   </tr>
-
-.. raw:: html
-
-   </table>
+- ``grip``
+- ``tabulate``
+- ``wheele``
+- ``jsonlite``
+- ``ipython``
+- ``numpy``
+- ``scipy``
+- ``pandas``
+- ``-U gensim``
+- ``jupyter``
+- ``-U PIL``
+- ``nltk``
+- ``beautifulsoup4``
 
 --------------
 
@@ -1361,7 +1336,7 @@ or ``eggs`` display.
 After completing this procedure, go to Python and use ``h2o.init()`` to
 start H2O in Python.
 
-    **Note**:
+    **Notes**:
 
     If you use gradlew to build the jar yourself, you have to start the
     jar >yourself before you do ``h2o.init()``.
@@ -1500,68 +1475,39 @@ If you are encountering errors related to missing R packages when using
 H2O, refer to the following list for a complete list of all R packages,
 including dependencies:
 
-.. raw:: html
-
-   <table>
-
-::
-
-    <tr>
-        <td><code>statmod</code></td>
-        <td><code>bitops</code></td>
-        <td><code>RCurl</code></td>
-        <td><code>jsonlite</code></td>
-        <td><code>methods</code></td>
-    </tr>
-    <tr>
-        <td><code>stats</code></td>
-        <td><code>graphics</code></td>
-        <td><code>tools</code></td>
-        <td><code>utils</code></td>
-        <td><code>stringi</code></td>
-    </tr>
-    <tr>
-        <td><code>magrittr</code></td>
-        <td><code>colorspace</code></td>
-        <td><code>stringr</code></td>
-        <td><code>RColorBrewer</code></td>
-        <td><code>dichromat</code></td>
-    </tr>
-    <tr>
-        <td><code>munsell</code></td>
-        <td><code>labeling</code></td>
-        <td><code>plyr</code></td>
-        <td><code>digest</code></td>
-        <td><code>gtable</code></td>
-    </tr>
-    <tr>
-        <td><code>reshape2</code></td>
-        <td><code>scales</code></td>
-        <td><code>proto</code></td>
-        <td><code>ggplot2</code></td>
-        <td><code>h2oEnsemble</code></td>
-    </tr>
-    <tr>
-        <td><code>gtools</code></td>
-        <td><code>gdata</code></td>
-        <td><code>caTools</code></td>
-        <td><code>gplots</code></td>
-        <td><code>chron</code></td>
-    </tr>
-    <tr>
-        <td><code>ROCR</code></td>
-        <td><code>data.table</code></td>
-        <td><code>cvAUC</code></td>
-        <td></td>
-        <td></td>
-
-.. raw:: html
-
-   </tr>
-
-.. raw:: html
-
-   </table>
+- ``statmod``
+- ``bitops``
+- ``RCurl``
+- ``jsonlite``
+- ``methods``
+- ``stats``
+- ``graphics``
+- ``tools``
+- ``utils``
+- ``stringi``
+- ``magrittr``
+- ``colorspace``
+- ``stringr``
+- ``RColorBrewer``
+- ``dichromat``
+- ``munsell``
+- ``labeling``
+- ``plyr``
+- ``digest``
+- ``gtable``
+- ``reshape2``
+- ``scales``
+- ``proto``
+- ``ggplot2``
+- ``h2oEnsemble``
+- ``gtools``
+- ``gdata``
+- ``caTools``
+- ``gplots``
+- ``chron``
+- ``ROCR``
+- ``data.table``
+- ``cvAUC``
 
 --------------
 
@@ -2041,7 +1987,10 @@ There are two ways to do this:
 or
 
 -  Pass ``--conf`` via spark-submit when you launch your droplet (e.g.,
-   ``$SPARK_HOME/bin/spark-submit --conf spark.executor.memory=4g --master $MASTER --class org.my.Droplet $TOPDIR/assembly/build/libs/droplet.jar``
+
+::
+
+	$SPARK_HOME/bin/spark-submit --conf spark.executor.memory=4g --master $MASTER --class org.my.Droplet $TOPDIR/assembly/build/libs/droplet.jar
 
 --------------
 
@@ -2141,7 +2090,9 @@ examples:
 
 The "magic" behind ``run-example.sh`` is a regular Spark Submit:
 
-``$SPARK_HOME/bin/spark-submit ChicagoCrimeAppSmall --packages ai.h2o:sparkling-water-core_2.10:1.3.3 --packages ai.h2o:sparkling-water-examples_2.10:1.3.3``
+::
+
+	$SPARK_HOME/bin/spark-submit ChicagoCrimeAppSmall --packages ai.h2o:sparkling-water-core_2.10:1.3.3 --packages ai.h2o:sparkling-water-examples_2.10:1.3.3
 
 --------------
 
@@ -2215,8 +2166,8 @@ This returns output similar to the following:
     ```
 
 3. Log into the remote machine where the running instance of H2O will be
-   forwarded using a command similar to the following (your specified
-   port numbers and IP address will be different)
+   forwarded using a command similar to the following. (Your specified
+   port numbers and IP address will be different.)
 
    ``ssh -L 55577:localhost:55599 irene@192.168.1.173``
 

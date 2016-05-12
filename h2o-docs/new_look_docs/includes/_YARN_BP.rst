@@ -55,54 +55,48 @@ more than one role group.**
    field. If more than one group is listed, change the values for all
    listed groups.
 
-   .. figure:: images/TroubleshootingHadoopClouderayarnnodemgr.png
+   .. figure:: ../images/TroubleshootingHadoopClouderayarnnodemgr.png
       :alt: Cloudera Configuration
 
-      Cloudera Configuration
-
 3. Click the **Save Changes** button in the upper-right corner.
+
 4. Enter the following search term in quotes:
    **yarn.scheduler.maximum-allocation-mb**
+
 5. Change the value, click the **Save Changes** button in the
    upper-right corner, and redeploy.
 
-.. figure:: images/TroubleshootingHadoopClouderayarnscheduler.png
-   :alt: Cloudera Configuration
-
-   Cloudera Configuration
+  .. figure:: ../images/TroubleshootingHadoopClouderayarnscheduler.png
+     :alt: Cloudera Configuration
 
 **For Hortonworks,**
 `configure <http://docs.hortonworks.com/HDPDocuments/Ambari-1.6.0.0/bk_Monitoring_Hadoop_Book/content/monitor-chap2-3-3_2x.html>`__
 **the settings in Ambari.**
 
 1. Select **YARN**, then click the **Configs** tab.
+
 2. Select the group.
-3. In the **Node Manager** section, enter the amount of memory (in MB)
-   to allocate in the **yarn.nodemanager.resource.memory-mb** entry
-   field.
 
-.. figure:: images/TroubleshootingHadoopAmbariNodeMgr.png
-   :alt: Ambari Configuration
+3. In the **Node Manager** section, enter the amount of memory (in MB) to allocate in the **yarn.nodemanager.resource.memory-mb** entry field.
 
-   Ambari Configuration
+  .. figure:: ../images/TroubleshootingHadoopAmbariNodeMgr.png
+     :alt: Ambari Configuration
 
-4. In the **Scheduler** section, enter the amount of memory (in MB)to
-   allocate in the **yarn.scheduler.maximum-allocation-mb** entry field.
+4. In the **Scheduler** section, enter the amount of memory (in MB) to allocate in the **yarn.scheduler.maximum-allocation-mb** entry field.
 
-.. figure:: images/TroubleshootingHadoopAmbariyarnscheduler.png
-   :alt: Ambari Configuration
-
-   Ambari Configuration
+  .. figure:: ../images/TroubleshootingHadoopAmbariyarnscheduler.png
+     :alt: Ambari Configuration
 
 5. Click the **Save** button at the bottom of the page and redeploy the
    cluster.
 
 **For MapR:**
 
-1. Edit the **yarn-site.xml** file for the node running the
-   ResourceManager.
+1. Edit the **yarn-site.xml** file for the node running the ResourceManager.
+
 2. Change the values for the ``yarn.nodemanager.resource.memory-mb`` and
    ``yarn.scheduler.maximum-allocation-mb`` properties.
+
 3. Restart the ResourceManager and redeploy the cluster.
 
 To verify the values were changed, check the values for the following
@@ -133,15 +127,14 @@ If you do not specify a queue when launching H2O, H2O jobs are submitted
 to the default queue. Jobs submitted to the default queue have a lower
 priority than jobs submitted to a specific queue.
 
-To specify a queue with Hadoop, enter
-``-Dmapreduce.job.queuename=<my-h2o-queue>``
-
-(where ``<my-h2o-queue>`` is the name of the queue) when launching
+To specify a queue with Hadoop, enter ``-Dmapreduce.job.queuename=<my-h2o-queue>`` (where ``<my-h2o-queue>`` is the name of the queue) when launching
 Hadoop.
 
 For example,
 
-``hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName``
+::
+
+	hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName
 
 Specifying Output Directories
 -----------------------------
@@ -164,5 +157,4 @@ YARN to confirm the changes.
 Accessing Logs
 --------------
 
-To learn how to access logs in YARN, refer to `Downloading
-Logs <http://h2o-release.s3.amazonaws.com/h2o/%7B%7Bbranch_name%7D%7D/%7B%7Bbuild_number%7D%7D/docs-website/h2o-docs/index.html#Downloading%20Logs>`__.
+To learn how to access logs in YARN, refer to :ref:`H2O-DevLogs`.

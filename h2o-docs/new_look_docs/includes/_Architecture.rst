@@ -17,31 +17,33 @@ process.
 The color scheme in the diagram shows each layer in a consistent color
 but always shows user-added customer algorithm code as gray.
 
-.. figure:: ../images/h2o_stack.png
+.. image:: ../images/h2o_stack.png
    :alt: H2O stack
+   
 
 REST API Clients
-~~~~~~~~~~~~~~~~
-
+------------------
 All REST API clients communicate with H2O over a socket connection.
 
-| **JavaScript**
-| The embedded H2O Web UI is written in JavaScript, and uses the standard REST API.
 
-| **R**
-| R scripts can use the H2O R package ['library(h2o)']. Users can write their own R functions that run on H2O with 'apply' or 'ddply'.
+**JavaScript**
+ The embedded H2O Web UI is written in JavaScript, and uses the standard REST API.
 
-| **Python**
-| Python scripts currently must use the REST API directly. An H2O client API for python is planned.
+**R**
+ R scripts can use the H2O R package ['library(h2o)']. Users can write their own R functions that run on H2O with 'apply' or 'ddply'.
 
-| **Excel**
-| An H2O worksheet for Microsoft Excel is available. It allows you to import big datasets into H2O and run algorithms like GLM directly from Excel.
+**Python**
+ Python scripts currently must use the REST API directly. An H2O client API for python is planned.
 
-| **Tableau**
-| Users can pull results from H2O for visualization in Tableau.
+**Excel**
+ An H2O worksheet for Microsoft Excel is available. It allows you to import big datasets into H2O and run algorithms like GLM directly from Excel.
 
-| **Flow**
-| H2O Flow is the notebook style Web UI for H2O.
+**Tableau**
+ Users can pull results from H2O for visualization in Tableau.
+
+**Flow**
+ H2O Flow is the notebook style Web UI for H2O.
+
 
 JVM Components
 ~~~~~~~~~~~~~~
@@ -66,34 +68,27 @@ managed at this level.
 Memory Management
 ^^^^^^^^^^^^^^^^^
 
-| **Fluid Vector Frame**
-| A Frame is an H2O Data Frame, the basic unit of data storage exposed
-  to users. "Fluid Vector" is an internal engineering term that caught
-  on. It refers to the ability to add and update and remove columns in a
-  frame "fluidly" (as opposed to the frame being rigid and immutable).
-  The Frame->Vector->Chunk->Element taxonomy that stores data in memory
-  is described in Javadoc. The Fluid Vector (or fvec) code is the
-  column-compressed store implementation.
+**Fluid Vector Frame**
+ A Frame is an H2O Data Frame, the basic unit of data storage exposed to users. "Fluid Vector" is an internal engineering term that caught on. It refers to the ability to add and update and remove columns in a frame "fluidly" (as opposed to the frame being rigid and immutable). The Frame->Vector->Chunk->Element taxonomy that stores data in memory is described in Javadoc. The Fluid Vector (or fvec) code is the column-compressed store implementation.
 
-| **Distributed K/V store**
-| Atomic and distributed in-memory storage spread across the cluster.
+**Distributed K/V store**
+ Atomic and distributed in-memory storage spread across the cluster.
 
-| **Non-blocking Hash Map**
-| Used in the K/V store implementation.
+**Non-blocking Hash Map**
+ Used in the K/V store implementation.
 
 CPU Management
 ^^^^^^^^^^^^^^
 
-| **Job**
-| Jobs are large pieces of work that have progress bars and can be
-  monitored in the Web UI. Model creation is an example of a job.
+**Job**
+ Jobs are large pieces of work that have progress bars and can be monitored in the Web UI. Model creation is an example of a job.
 
-| **MRTask**
-| MRTask stands for MapReduce Task. This is an H2O in-memory MapReduce
-  Task, not to be confused with a Hadoop MapReduce task.
+**MRTask**
+ MRTask stands for MapReduce Task. This is an H2O in-memory MapReduce Task, not to be confused with a Hadoop MapReduce task.
 
-| **Fork/Join**
-| A modified JSR166y lightweight task execution framework.
+**Fork/Join**
+ A modified JSR166y lightweight task execution framework.
+
 
 How R (and Python) Interacts with H2O
 -------------------------------------
@@ -114,14 +109,14 @@ H2O cluster to read data from HDFS into a distributed H2O Frame.
 **Step 1: The R user calls the importFile function**
 
 
-.. figure:: ../images/r_hdfs_read_step1.png
+.. image:: ../images/r_hdfs_read_step1.png
    :alt: r_hdfs_read_step1
 
 **Step 2: The R client tells the cluster to read the data**
 
 The thin arrows show control information.
 
-.. figure:: ../images/r_hdfs_read_step2.png
+.. image:: ../images/r_hdfs_read_step2.png
    :alt: r_hdfs_read_step2
 
 **Step 3: The data is returned from HDFS into a distributed H2O Frame**
@@ -130,7 +125,7 @@ The thin arrows show control information. The thick arrows show data
 being returned from HDFS. The blocks of data live in the distributed H2O
 Frame cluster memory.
 
-.. figure:: ../images/r_hdfs_read_step3.png
+.. image:: ../images/r_hdfs_read_step3.png
    :alt: r_hdfs_read_step3
 
 How R Scripts Call H2O GLM
