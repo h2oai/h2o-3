@@ -1,10 +1,19 @@
-Using Docker
-============
+... Using Docker
+================
 
-Install and Launch Docker
-~~~~~~~~~~~~~~~~~~~~~~~~~
+This walkthrough describes:
 
-**Prerequisites:**
+-  Installing Docker on Mac or Linux OS
+-  Creating and modifying the Dockerfile
+-  Building a Docker image from the Dockerfile
+-  Running the Docker build
+-  Launching H2O
+-  Accessing H2O from the web browser or R
+
+Walkthrough
+-----------
+
+**Prerequisites**
 
 -  Linux kernel version 3.8+
 
@@ -17,12 +26,18 @@ or
    daemon window
 -  Using ``User`` directory (not ``root``)
 
-*Older Linux kernel versions are known to cause kernel panics that break
-Docker; there are ways around it, but these should be attempted at your
-own risk. To check the version of your kernel, run ``uname -r`` at the
-command prompt.* *The following walkthrough has been tested on a Mac OS
-X 10.10.1.* *Notes: The Dockerfile always pulls the latest H2O release
-and the Docker image only needs to be built once.*
+Notes
+-----
+
+-  Older Linux kernel versions are known to cause kernel panics that
+   break Docker; there are ways around it, but these should be attempted
+   at your own risk. To check the version of your kernel, run
+   ``uname -r`` at the command prompt. The following walkthrough has
+   been tested on a Mac OS X 10.10.1.
+-  The Dockerfile always pulls the latest H2O release.
+-  The Docker image only needs to be built once.
+
+**Step 1 - Install and Launch Docker**
 
 Depending on your OS, select the appropriate installation method:
 
@@ -32,12 +47,14 @@ Depending on your OS, select the appropriate installation method:
    Installation <https://docs.docker.com/installation/ubuntulinux/>`__
 -  `Other OS Installations <https://docs.docker.com/installation/>`__
 
-**Step 1 - Create or Download Dockerfile**
+**Step 2 - Create or Download Dockerfile**
 
     **Note**: If the following commands do not work, prepend with
     ``sudo``.
 
 Create a folder on the Host OS to host your Dockerfile by running:
+
+.. todo:: figure out if branch_name is getting replaced with the actual branch_name or how to set that up
 
 ::
 
@@ -63,7 +80,7 @@ The Dockerfile:
 -  exposes ports 54321 and 54322 in preparation for launching H2O on
    those ports
 
-**Step 2 - Build Docker image from Dockerfile**
+**Step 3 - Build Docker image from Dockerfile**
 
 From the /data/h2o-{{branch\_name}} directory, run:
 
@@ -76,7 +93,7 @@ From the /data/h2o-{{branch\_name}} directory, run:
 Because it assembles all the necessary parts for the image, this process
 can take a few minutes.
 
-**Step 3 - Run Docker Build**
+**Step 4 - Run Docker Build**
 
 On a Mac, use the argument *-p 54321:54321* to expressly map the port
 54321. This is not necessary on Linux.
@@ -87,7 +104,7 @@ On a Mac, use the argument *-p 54321:54321* to expressly map the port
 
     **Note**: ``v5`` represents the version number.
 
-**Step 4 - Launch H2O**
+**Step 5 - Launch H2O**
 
 Navigate to the ``/opt`` directory and launch H2O. Change the value of
 ``-Xmx`` to the amount of memory you want to allocate to the H2O
