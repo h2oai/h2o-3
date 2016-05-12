@@ -41,6 +41,11 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   }
 
   @Override
+  public SBPrintStream pj(boolean b) {
+    return append(b);
+  }
+
+  @Override
   public SBPrintStream p(String s) {
     append(s);
     return this;
@@ -413,6 +418,11 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
 
   public SBPrintStream append(SB sb) {
     append(sb.toString());
+    return this;
+  }
+
+  public SBPrintStream append(boolean b) {
+    append(Boolean.toString(b));
     return this;
   }
 }

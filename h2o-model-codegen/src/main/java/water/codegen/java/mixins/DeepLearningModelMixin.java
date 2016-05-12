@@ -221,7 +221,6 @@ public class DeepLearningModelMixin extends ModelMixin {
           hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);
         }
         preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, DEFAULT_THRESHOLD);
-        System.out.println(java.util.Arrays.toString(preds));
       } else {
         preds[0] = preds[1];
       }

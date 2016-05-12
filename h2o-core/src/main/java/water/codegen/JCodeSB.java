@@ -59,6 +59,9 @@ public interface JCodeSB<T extends JCodeSB> {
   /** Append Java Long */
   T pj(long l);
 
+  /** Append Java boolean */
+  T pj(boolean b);
+
   /** Append Java array as new double[] { val1, val2, ...} */
   T pj(double[] ary);
 

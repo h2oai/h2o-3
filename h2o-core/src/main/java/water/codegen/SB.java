@@ -93,6 +93,12 @@ public final class SB implements JCodeSB<SB> {
   }
 
   @Override
+  public SB pj(boolean b) {
+    _sb.append(b);
+    return this;
+  }
+
+  @Override
   public SB pj(Enum e) {
     _sb.append(e.getDeclaringClass().getName()).append('.').append(e.name());
     return this;

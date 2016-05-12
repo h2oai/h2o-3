@@ -80,7 +80,7 @@ public class DeepLearningModelPOJOCodeGen
     }));
 
     // Define method link
-    ccg.method("linkInv").withBody(s("return ").p(new Distribution(modelInfo.get_params()).linkInvString("f")).p(';'));
+    ccg.method("linkInv").withBody(s("return ").p(new Distribution(modelInfo.get_params()).linkInvString("f")).p(';')).withParentheses(true);
 
     // FIXME
     if (model.get_params()._autoencoder) {

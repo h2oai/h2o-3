@@ -8,14 +8,17 @@ import japa.parser.ast.visitor.VoidVisitorAdapter;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import hex.genmodel.annotations.CG;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
+import water.codegen.JCodeGen;
 import water.codegen.JCodeSB;
 import water.util.ReflectionUtils;
 
+import static water.codegen.java.JCodeGenUtil.method;
 import static water.codegen.java.JCodeGenUtil.s;
 import static water.util.ArrayUtils.append;
 import static water.codegen.java.JCodeGenUtil.VALUE;
@@ -34,7 +37,7 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
   /** Implements interface */
   Class[] interfaces;
   /** Annotation generators */   // FIXME remove
-  CodeGenerator[] acgs;
+  JCodeSB[] acgs;
 
   private CompilationUnitGenerator cug;
 
@@ -81,8 +84,9 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
       }
 
       // Now try to find mixin source code and inject all remaining method code
-      ClassLoader cl = ModelCodeGenerator.class.getClassLoader();  // Should be in the same jar as the generator
+      ClassLoader cl = ClassCodeGenerator.class.getClassLoader();  // Should be in the same jar as the generator
       InputStream is = cl.getResourceAsStream("codegen/java/mixins/" + mixin.getSimpleName() + ".mixin");
+      final Method[] declaredMethods = mixin.getDeclaredMethods();
       try {
         CompilationUnit cu = JavaParser.parse(is);
 
@@ -91,19 +95,13 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
           @Override
           public void visit(MethodDeclaration n, Object arg) {
             MethodCodeGenerator mcg = method(n.getName());
-            if (mcg != null) {
-              // Method is already in just append body
-              // Note: make sure that parameters matches!!!
-              mcg.withBody(s(n.getBody().toString())).withParentheses(false);
-            } else {
-              final String methodString = n.toString();
-              withMethod(new MethodCodeGenerator(n.getName()) {
-                @Override public boolean isCtor() { return false; }
-                @Override public void generate(JCodeSB out) {
-                  out.p(methodString).nl(2);
-                }
-              });
+            if (mcg == null) { // Method not found
+              final Method declaredMethod = JCodeGenUtil.find(declaredMethods, n);
+              mcg = JCodeGenUtil.method(declaredMethod, n);
+              withMethod(mcg);
             }
+            String methodBody = n.getBody().toString();
+            mcg.withBody(s(methodBody)).withParentheses(false);
           }
 
           @Override
@@ -142,22 +140,8 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
     return this;
   }
 
-  public ClassCodeGenerator withAnnotation(CodeGenerator... acgs) {
+  public ClassCodeGenerator withAnnotation(JCodeSB... acgs) {
     this.acgs = append(this.acgs, acgs);
-    return this;
-  }
-
-  public ClassCodeGenerator withAnnotation(final JCodeSB ... acgs) {
-    if (acgs != null) {
-      this.acgs = append(this.acgs, new CodeGenerator() {
-        @Override
-        public void generate(JCodeSB out) {
-          for (JCodeSB acg : acgs) {
-            out.p(acg).nl();
-          }
-        }
-      });
-    }
     return this;
   }
 
@@ -225,8 +209,8 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
   protected JCodeSB genClassHeader(JCodeSB sb) {
     // Generate annotations
     if (acgs != null) {
-      for (CodeGenerator acg : acgs) {
-        acg.generate(sb);
+      for (JCodeSB acg : acgs) {
+        sb.p(acg).nl();
       }
     }
     // Starts to define class

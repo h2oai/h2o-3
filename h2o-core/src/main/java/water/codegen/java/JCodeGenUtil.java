@@ -1,9 +1,13 @@
 package water.codegen.java;
 
+import japa.parser.ast.body.MethodDeclaration;
+import japa.parser.ast.body.Parameter;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.annotations.CG;
@@ -59,10 +63,9 @@ public class JCodeGenUtil {
   private static MethodCodeGenerator method(Method m) {
     MethodCodeGenerator mcg = new MethodCodeGenerator(m.getName());
     mcg
-        .withModifiers(m.getModifiers() ^ Modifier.ABSTRACT)
+        .withModifiers(m.getModifiers() & ~Modifier.ABSTRACT)
         .withOverride(true)
         .withReturnType(m.getReturnType());
-    int cnt = 0;
     Annotation[][] paramAnnos = m.getParameterAnnotations();
     Class[] paramTypes = m.getParameterTypes();
     for (int i = 0; i < paramTypes.length; i++) {
@@ -73,7 +76,20 @@ public class JCodeGenUtil {
       } else {
         throw new RuntimeException("Method '" + m + "' does not annotate fields of abstract method! Please use @CG annotation!");
       }
-      cnt++;
+    }
+    return mcg;
+  }
+
+  static MethodCodeGenerator method(Method m, MethodDeclaration mDcl) {
+    MethodCodeGenerator mcg = new MethodCodeGenerator(m.getName());
+    mcg
+        .withModifiers(m.getModifiers() & ~Modifier.ABSTRACT)
+        .withReturnType(m.getReturnType());
+    Class[] paramTypes = m.getParameterTypes();
+    List<Parameter> params = mDcl.getParameters();
+    assert paramTypes.length == params.size() : "Number of parameters has to match!";
+    for (int i = 0; i < paramTypes.length; i++) {
+      mcg.withParams(paramTypes[i], params.get(i).getId().getName());
     }
     return mcg;
   }
@@ -125,6 +141,15 @@ public class JCodeGenUtil {
   }
 
   public static ValueCodeGenerator VALUE(final double v) {
+    return new ValueCodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        out.pj(v);
+      }
+    };
+  }
+
+  public static ValueCodeGenerator VALUE(final boolean v) {
     return new ValueCodeGenerator() {
       @Override
       public void generate(JCodeSB out) {
@@ -187,6 +212,13 @@ public class JCodeGenUtil {
     for (int i = 0; i < ary.length; i++) {
       if (klazz.isAssignableFrom(ary[i].getClass()))
         return (X) ary[i];
+    }
+    return null;
+  }
+
+  public static Method find(Method[] declaredMethods, MethodDeclaration mDcl) {
+    for (Method m : declaredMethods) {
+      if (m.getName().equals(mDcl.getName())) return m;
     }
     return null;
   }

@@ -35,7 +35,7 @@ public class DRFModelJCodeGenTest extends water.TestUtil {
 
       // FIXME: calling new XXX().build() is bad pattern here, since you can
       // forget call of build and result will have no output.
-      new DirectOutputDriver().codegen(new DRFPOJOModelJCodeGen(model).build(), System.err);
+      new DirectOutputDriver().codegen(new DRFModelPOJOCodeGen(model).build(), System.err);
       model.toJava(System.err, false, true);
 
     } finally {
