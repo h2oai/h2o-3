@@ -616,6 +616,7 @@ public class DRFTest extends TestUtil {
       parms._response_column = "C55";
       parms._ntrees = 10;
       parms._seed = 1234;
+      parms._auto_rebalance = false;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
