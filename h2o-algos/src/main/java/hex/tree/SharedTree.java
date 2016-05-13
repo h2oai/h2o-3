@@ -299,7 +299,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if (_model._output._treeStats._max_depth==0) {
           Log.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
         }
-        if (timeout()) break; // If timed out, do the final scoring
+        if (timeout()) {
+          _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
+          break; // If timed out, do the final scoring
+        }
         if (stop_requested()) throw new Job.JobCancelledException();
       }
       // Final scoring (skip if job was cancelled)

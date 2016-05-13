@@ -122,12 +122,17 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Total expected work. */
   public long _work;            // Total work to-do
+  public long _max_runtime_msecs;
   private long _worked;         // Work accomplished; between 0 and _work
   private String _msg;          // Progress string
 
   /** Returns a float from 0 to 1 representing progress.  Polled periodically.
    *  Can default to returning e.g. 0 always.  */
-  public float progress() { update_from_remote(); return _work==0 ? 0f : Math.min(1,(float)_worked/_work); }
+  public float progress() { update_from_remote();
+    float regularProgress = _work==0 ? 0f : Math.min(1,(float)_worked/_work);
+    if (_max_runtime_msecs>0) return Math.min(1,Math.max(regularProgress, (float)msec()/_max_runtime_msecs));
+    return regularProgress;
+  }
   /** Returns last progress message. */
   public String progress_msg() { update_from_remote(); return _msg; }
 
@@ -178,6 +183,11 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     // One-shot throw-away attempt at remove dead jobs from the jobs list
     DKV.DputIfMatch(LIST,new Value(LIST,new JobList(keys)),val,new Futures());
     return jobs;
+  }
+
+  public Job<T> start(final H2OCountedCompleter fjtask, long work, double max_runtime_secs) {
+    _max_runtime_msecs = (long)(max_runtime_secs*1e3);
+    return start(fjtask, work);
   }
 
   /** Start this task based on given top-level fork-join task representing job computation.
@@ -360,7 +370,8 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if(_work      != remote._work      ) differ = true;
     if(_worked    != remote._worked    ) differ = true;
     if(_msg       != remote._msg       ) differ = true;
-    if( differ ) 
+    if(_max_runtime_msecs != remote._max_runtime_msecs) differ = true;
+    if( differ )
       synchronized(this) { 
         _stop_requested = remote._stop_requested;
         _start_time= remote._start_time;
@@ -369,6 +380,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         _work      = remote._work      ;
         _worked    = remote._worked    ;
         _msg       = remote._msg       ;
+        _max_runtime_msecs = remote._max_runtime_msecs;
       }
   }
   @Override public Class<water.api.KeyV3.JobKeyV3> makeSchema() { return water.api.KeyV3.JobKeyV3.class; }
