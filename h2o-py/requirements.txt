@@ -15,7 +15,7 @@ future
 matplotlib
 sphinx
 numpydoc
-MySQL-python
+mysqlclient
 recommonmark
 sphinx_rtd_theme
 sphinxcontrib_osexample
