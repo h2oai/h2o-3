@@ -155,32 +155,32 @@
         {
             "name" : "GLM",
             "id"   : "booklet-glm",
-            "path" : "docs-website/h2o-docs/booklets/GLM_Vignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/GLMBooklet.pdf"
         },
         {
             "name" : "DeepLearning",
             "id"   : "booklet-deeplearning",
-            "path" : "docs-website/h2o-docs/booklets/DeepLearning_Vignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/DeepLearningBooklet.pdf"
         },
         {
             "name" : "GBM",
             "id"   : "booklet-gbm",
-            "path" : "docs-website/h2o-docs/booklets/GBM_Vignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/GBMBooklet.pdf"
         },
         {
             "name" : "R",
             "id"   : "booklet-r",
-            "path" : "docs-website/h2o-docs/booklets/R_Vignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/RBooklet.pdf"
         },
         {
             "name" : "Python",
             "id"   : "booklet-python",
-            "path" : "docs-website/h2o-docs/booklets/Python_booklet.pdf"
+            "path" : "docs-website/h2o-docs/booklets/PythonBooklet.pdf"
         },
         {
             "name" : "SparklingWater",
             "id"   : "booklet-sparklingwater",
-            "path" : "docs-website/h2o-docs/booklets/SparklingWaterVignette.pdf"
+            "path" : "docs-website/h2o-docs/booklets/SparklingWaterBooklet.pdf"
         }
     ]
 }

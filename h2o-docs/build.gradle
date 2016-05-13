@@ -32,12 +32,12 @@ clean.dependsOn cleanGenerateRESTAPIDocs
 def bookletPath = file("src/booklets/v2_2015/source")
 def bookletOutputPath = file("src/booklets/v2_2015/source/build")
 def bookletList = [
-            "GLM_Vignette",
-            "GBM_Vignette",
-            "DeepLearning_Vignette",
-            "SparklingWaterVignette",
-            "R_Vignette",
-            "Python_booklet"]
+            "GLMBooklet",
+            "GBMBooklet",
+            "DeepLearningBooklet",
+            "SparklingWaterBooklet",
+            "RBooklet",
+            "PythonBooklet"]
 
 task(createBuildInfoTex) << {
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
