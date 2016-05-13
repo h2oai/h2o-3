@@ -489,7 +489,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
           //
           // _currentPermutationNum is 1-based
-          return (_visitedPermutationHashes.size() < _maxHyperSpaceSize && _currentPermutationNum < search_criteria().max_models());
+          return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
+                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
+          );
         }
 
         @Override
