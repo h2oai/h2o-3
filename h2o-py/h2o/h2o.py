@@ -418,11 +418,26 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
 
 
 def assign(data,xid):
+  """Returns a copy of the frame w/ key xid
+
+  Parameters
+  ----------
+    data : H2OFrame
+      Source frame
+
+    xid : str
+      The frame identification in h2o
+
+  Returns
+  -------
+    New H2OFrame
+  """
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
-  data._ex = ExprNode("assign",xid,data)._eval_driver(False)
-  data._ex._cache._id = xid
-  data._ex._children = None
-  return data
+  fr = copy.deepcopy(data)
+  fr._ex = ExprNode("assign",xid,data)._eval_driver(False)
+  fr._ex._cache._id = xid
+  fr._ex._children = None
+  return fr
 
 
 def get_model(model_id):
