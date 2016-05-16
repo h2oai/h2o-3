@@ -23,12 +23,12 @@ def test_na_omits():
     assert hf_col_summary == 1  # we have one NAN here
 
     # attempt to remove it by calling na_omit
-    hf.na_omit()
-    hf.summary()
-    hf_col_summary = h2o.H2OConnection.get_json("Frames/" + urllib.parse.quote(hf.frame_id) +
+    hf_naomit = hf.na_omit()
+    hf_naomit.summary()
+    hf_naomit_col_summary = h2o.H2OConnection.get_json("Frames/" + urllib.parse.quote(hf_naomit.frame_id) +
                                                 "/summary")["frames"][0]["columns"]
-    hf_col_summary = sum([e["missing_count"] for e in hf_col_summary])
-    assert hf_col_summary == 0  # we have removed the NAN row
+    hf_naomit_col_summary = sum([e["missing_count"] for e in hf_naomit_col_summary])
+    assert hf_naomit_col_summary == 0  # we have removed the NAN row
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_na_omits)
