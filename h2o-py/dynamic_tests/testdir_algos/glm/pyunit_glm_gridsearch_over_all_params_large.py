@@ -119,7 +119,7 @@ class Test_glm_grid_search:
 
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params_bad = dict()
-    hyper_params_bad["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
+    hyper_params_bad["fold_assignment"] = ['AUTO', 'Random', 'Modulo', "Stratified"]
     hyper_params_bad["missing_values_handling"] = ['MeanImputation', 'Skip']
 
     hyper_params = dict()

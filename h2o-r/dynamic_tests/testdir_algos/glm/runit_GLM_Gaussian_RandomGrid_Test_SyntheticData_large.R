@@ -68,7 +68,7 @@ test.GLM.Gaussian.RandomGrid.Test.SyntheticData <- function() {
   
   # setup hyper-parameter for gridsearch
   hyper_parameters <- list()
-  hyper_parameters$fold_assignment = c('AUTO', 'Random', 'Modulo')
+  hyper_parameters$fold_assignment = c('AUTO', 'Random', 'Modulo', 'Stratified')
   hyper_parameters$missing_values_handling = c('MeanImputation', 'Skip')
   
   # generate random hyper-parameter for gridsearch
@@ -116,6 +116,7 @@ test.GLM.Gaussian.RandomGrid.Test.SyntheticData <- function() {
   
   # setup search-criteria for test2: test stopping condition max_model
   search_criteria$max_models = round(runif(1, 1, correct_model_number * model_number_scale))
+  search_criteria$stopping_rounds = NULL
   
   Log.info("************* Test2: Test max_models stopping criteria:")
   print(search_criteria)  # print out search criteria used
