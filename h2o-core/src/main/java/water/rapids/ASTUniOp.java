@@ -115,9 +115,10 @@ class ASTIsNA  extends ASTPrim {
   double op(double d) { return Double.isNaN(d)?1:0; }
 }
 
-/*Remove rows with NAs from an H2OFrame.
-Currently this is NOT in place replacement!
-*/
+/**
+ * Remove rows with NAs from the H2OFrame
+ * Note: Current implementation is NOT in place replacement
+ */
 class ASTNAOmit extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
   @Override
