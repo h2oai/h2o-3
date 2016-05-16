@@ -1,10 +1,4 @@
-.. role:: math(raw)
-   :format: html latex
-..
-
-.. role:: raw-latex(raw)
-   :format: latex
-..
+.. todo :: the parameters are defined with respect to Flow, add header to clarify or move under Flow
 
 Data Science Algorithms
 =======================
@@ -77,6 +71,7 @@ Defining a K-Means Model
    initial Y matrix is chosen by the final cluster centers from the
    K-Means PlusPlus algorithm.
 
+.. todo:: update the fold_assignment with "Stratified" parameter
 -  **fold\_assignment**: (Applicable only if a value for **nfolds** is
    specified and **fold\_column** is not selected) Select the
    cross-validation fold assignment scheme. The available options are
@@ -152,50 +147,50 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-Missing values are automatically imputed by the column mean. K-means
-also handles missing values by assuming that missing feature distance
-contributions are equal to the average of all other distance term
-contributions.
+  Missing values are automatically imputed by the column mean. K-means
+  also handles missing values by assuming that missing feature distance
+  contributions are equal to the average of all other distance term
+  contributions.
 
 -  **How does the algorithm handle missing values during testing?**
 
-Missing values are automatically imputed by the column mean of the
-training data.
+  Missing values are automatically imputed by the column mean of the
+  training data.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-An unseen categorical level in a row does not contribute to that row's
-prediction. This is because the unseen categorical level does not
-contribute to the distance comparison between clusters, and therefore
-does not factor in predicting the cluster to which that row belongs.
+  An unseen categorical level in a row does not contribute to that row's
+  prediction. This is because the unseen categorical level does not
+  contribute to the distance comparison between clusters, and therefore
+  does not factor in predicting the cluster to which that row belongs.
 
 -  **Does it matter if the data is sorted?**
 
-No.
+  No.
 
 -  **Should data be shuffled before training?**
 
-No.
+  No.
 
 -  **What if there are a large number of columns?**
 
-K-Means suffers from the curse of dimensionality: all points are roughly
-at the same distance from each other in high dimensions, making the
-algorithm less and less useful.
+  K-Means suffers from the curse of dimensionality: all points are roughly
+  at the same distance from each other in high dimensions, making the
+  algorithm less and less useful.
 
 -  **What if there are a large number of categorical factor levels?**
 
-This can be problematic, as categoricals are one-hot encoded on the fly,
-which can lead to the same problem as datasets with a large number of
-columns.
+  This can be problematic, as categoricals are one-hot encoded on the fly,
+  which can lead to the same problem as datasets with a large number of
+  columns.
 
 K-Means Algorithm
 ~~~~~~~~~~~~~~~~~
 
 The number of clusters (K) is user-defined and is determined a priori.
 
-1. Choose (K) initial cluster centers (m\_{k}) according to one of the
+1. Choose (K) initial cluster centers :math:`m_{k}` according to one of the
    following:
 
    -  **Randomization**: Choose (K) clusters from the set of (N)
@@ -204,7 +199,7 @@ The number of clusters (K) is user-defined and is determined a priori.
 
    -  **Plus Plus**
 
-   a. Choose one center (m\_{1}) at random.
+   a. Choose one center :math:`m_{1}` at random.
 
    2. Calculate the difference between (m\_{1}) and each of the
       remaining (N-1) observations (x\_{i}). (d(x\_{i}, m\_{1}) =
@@ -225,8 +220,11 @@ The number of clusters (K) is user-defined and is determined a priori.
    a. Choose one center (m\_{1}) at random.
 
    2. Calculate the difference between (m\_{1}) and each of the
-      remaining (N-1) observations (x\_{i}). (d(x\_{i}, m\_{1}) =
-      \|\|(x\_{i}-m\_{1})\|\|^2)
+      remaining (N-1) observations (x\_{i}). 
+
+      .. math::
+
+         d(x_{i}, m_{1} = ||(x_{i}-m_{1})||^2)
 
    3. Choose (m\_{2}) to be the (x\_{i}) that maximizes (d(x\_{i},
       m\_{1})).
