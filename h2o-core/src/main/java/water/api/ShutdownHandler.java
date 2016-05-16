@@ -10,7 +10,7 @@ public class ShutdownHandler extends Handler {
   @SuppressWarnings("unused")
   public ShutdownV3 shutdown (int version, ShutdownV3 s) {
     Shutdown t = s.createAndFillImpl();
-    H2O.requestShutdown();
+/**H2O.requestShutdown();*/
     return s.fillFromImpl(t);
   }
 }
