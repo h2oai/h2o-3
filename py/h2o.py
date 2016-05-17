@@ -10,7 +10,7 @@ class H2O(object):
     json_url_history = []
     python_test_name = inspect.stack()[1][1]
     verbose = False
-    experimental_algos = ["svd"]
+    experimental_algos = ["svd","aggregator"]
 
     ## TODO: support api_version parameter for all api calls!
     # Also a global in the H2O object set at creation time.
