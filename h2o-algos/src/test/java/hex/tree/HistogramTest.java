@@ -117,13 +117,13 @@ public class HistogramTest extends TestUtil {
     byte isInt = 0;
     double min = 1;
     double maxEx = 6.900000000000001;
-    for (boolean randomSplitPoints : new boolean[]{false,true}) {
+    for (SharedTreeModel.SharedTreeParameters.HistogramType histoType : SharedTreeModel.SharedTreeParameters.HistogramType.values()) {
       Log.info();
-      Log.info("random split points: " + randomSplitPoints);
+      Log.info("random split points: " + histoType);
       long seed = new Random().nextLong();
-      if (randomSplitPoints)
+      if (histoType== SharedTreeModel.SharedTreeParameters.HistogramType.Random)
         Log.info("random seed: " + seed);
-      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,randomSplitPoints,seed);
+      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed);
       hist.init();
       int N=10000000;
       int bin=-1;

@@ -68,7 +68,7 @@ test.GLM.Gaussian.RandomGrid.Test.SyntheticData <- function() {
   
   # setup hyper-parameter for gridsearch
   hyper_parameters <- list()
-  hyper_parameters$fold_assignment = c('AUTO', 'Random', 'Modulo', 'Stratified')
+  hyper_parameters$fold_assignment = c('AUTO', 'Random', 'Modulo')
   hyper_parameters$missing_values_handling = c('MeanImputation', 'Skip')
   
   # generate random hyper-parameter for gridsearch
