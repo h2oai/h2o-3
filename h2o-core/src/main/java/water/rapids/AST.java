@@ -187,6 +187,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTSetDomain());
     init(new ASTSetLevel());
     init(new ASTReLevel());
+    init(new ASTNAOmit());
 
     // Assignment; all of these lean heavily on Copy-On-Write optimizations.
     init(new ASTAppend());      // Add a column

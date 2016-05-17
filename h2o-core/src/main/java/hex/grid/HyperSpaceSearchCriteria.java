@@ -42,8 +42,8 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     /////////////////////
     // stopping criteria:
-    private int _max_models = Integer.MAX_VALUE;
-    private double _max_runtime_secs = Double.MAX_VALUE;
+    private int _max_models = 0;
+    private double _max_runtime_secs = 0;
     private int _stopping_rounds = 0;
     private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
     public double _stopping_tolerance = defaultStoppingTolerance();
@@ -56,7 +56,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     public int max_models() { return _max_models; }
 
     /**
-     * Max runtime for the entire grid, in seconds.  Can be combined with <i>max_runtime_secs</i> in the model parameters. If
+     * Max runtime for the entire grid, in seconds. Set to 0 to disable. Can be combined with <i>max_runtime_secs</i> in the model parameters. If
      * <i>max_runtime_secs</i> is not set in the model parameters then each model build is launched with a limit equal to
      * the remainder of the grid time.  If <i>max_runtime_secs</i> <b>is</b> set in the mode parameters each build is launched
      * with a limit equal to the minimum of the model time limit and the remaining time for the grid.

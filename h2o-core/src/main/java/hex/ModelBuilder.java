@@ -164,16 +164,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
     if( !nFoldCV() )
-      return _job.start(trainModelImpl(), _parms.progressUnits());
+      return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
-        @Override
-        public void compute2() {
-          computeCrossValidation();
-          tryComplete();
-        }
-      }, (1/*for all pre-fold work*/+nFoldWork()+1/*for all the post-fold work*/) * _parms.progressUnits());
+                        @Override
+                        public void compute2() {
+                          computeCrossValidation();
+                          tryComplete();
+                        }
+                      },
+            (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
 
   /** Train a model as part of a larger Job; the Job already exists and has started. */
@@ -230,7 +231,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 2: Make 2*N binary weight vectors
       final Vec[] weights = cv_makeWeights(N,foldAssignment);
-      _job.update(1);           // Did the major pre-fold work
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);

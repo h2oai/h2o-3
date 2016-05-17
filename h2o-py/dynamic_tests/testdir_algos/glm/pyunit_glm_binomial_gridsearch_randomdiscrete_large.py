@@ -177,7 +177,7 @@ class Test_glm_random_grid_search:
 
         # give the user opportunity to pre-assign hyper parameters for fixed values
         self.hyper_params = {}
-        self.hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
+        self.hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo', "Stratified"]
         self.hyper_params["missing_values_handling"] = ['MeanImputation', 'Skip']
 
         # randomly generate griddable parameters

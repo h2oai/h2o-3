@@ -91,7 +91,7 @@ class Test_naivebayes_grid_search:
 
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
-    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo"]
+    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["compute_metrics"] = [False, True]
 
     # parameters to be excluded from hyper parameter list even though they may be gridable

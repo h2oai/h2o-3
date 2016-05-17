@@ -765,7 +765,9 @@ match.H2OFrame <- h2o.match
 #' @param object H2OFrame object
 #' @param ... Ignored
 #' @export
-na.omit.H2OFrame <- function(object, ...) .newExpr("na.omit", object)
+na.omit.H2OFrame <- function(object, ...){
+  .newExpr("na.omit", object)
+}
 
 #' Compute DCT of an H2OFrame
 #'

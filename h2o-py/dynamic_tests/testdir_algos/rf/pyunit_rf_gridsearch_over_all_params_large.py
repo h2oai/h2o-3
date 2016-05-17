@@ -93,7 +93,7 @@ class Test_rf_grid_search:
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
     hyper_params["balance_classes"] = [True, False]
-    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo"]
+    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["stopping_metric"] = ['logloss', 'r2']
 
     # parameters to be excluded from hyper parameter list even though they may be gridable

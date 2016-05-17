@@ -96,7 +96,7 @@ class Test_deeplearning_grid_search:
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
     hyper_params["balance_classes"] = [True, False]
-    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo"]
+    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["activation"] = ["Tanh", "TanhWithDropout"]
     hyper_params["quiet_mode"] = [True]
     hyper_params["initial_weight_distribution"] = ["Uniform", "UniformAdaptive", "Normal"]
