@@ -188,69 +188,67 @@ FAQ
 K-Means Algorithm
 ~~~~~~~~~~~~~~~~~
 
-The number of clusters (K) is user-defined and is determined a priori.
+The number of clusters :math:`K` is user-defined and is determined a priori.
 
-1. Choose (K) initial cluster centers :math:`m_{k}` according to one of the
+1. Choose :math:`K` initial cluster centers :math:`m_{k}` according to one of the
    following:
 
-   -  **Randomization**: Choose (K) clusters from the set of (N)
+   -  **Randomization**: Choose :math:`K` clusters from the set of :math:`N`
       observations at random so that each observation has an equal
       chance of being chosen.
 
    -  **Plus Plus**
 
-   a. Choose one center :math:`m_{1}` at random.
+   		a. Choose one center :math:`m_{1}` at random.
 
-   2. Calculate the difference between (m\_{1}) and each of the
-      remaining (N-1) observations (x\_{i}). (d(x\_{i}, m\_{1}) =
-      \|\|(x\_{i}-m\_{1})\|\|^2)
+   1. Calculate the difference between :math:`m_{1}` and each of the
+      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) =
+      \|(x_{i}-m_{1})\|^2`
 
-   3. Let (P(i)) be the probability of choosing (x\_{i}) as (m\_{2}).
-      Weight (P(i)) by (d(x\_{i}, m\_{1})) so that those (x\_{i})
-      furthest from (m\_{2}) have a higher probability of being selected
-      than those (x\_{i}) close to (m\_{1}).
+   2. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`.
+      Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}`
+      furthest from :math:`m_{2}` have a higher probability of being selected
+      than those :math:`x_{i}` close to :math:`m_{1}`.
 
-   4. Choose the next center (m\_{2}) by drawing at random according to
+   3. Choose the next center :math:`m_{2}` by drawing at random according to
       the weighted probability distribution.
 
-   5. Repeat until (K) centers have been chosen.
+   4. Repeat until :math:`K` centers have been chosen.
 
 -  **Furthest**
 
-   a. Choose one center (m\_{1}) at random.
+   		a. Choose one center :math:`m_{1}` at random.
 
-   2. Calculate the difference between (m\_{1}) and each of the
-      remaining (N-1) observations (x\_{i}). 
+   1. Calculate the difference between :math:`m_{1}` and each of the
+      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
 
-      .. math::
+   2. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i},
+      m_{1})`.
 
-         d(x_{i}, m_{1} = ||(x_{i}-m_{1})||^2)
+   3. Repeat until :math:`K` centers have been chosen.
 
-   3. Choose (m\_{2}) to be the (x\_{i}) that maximizes (d(x\_{i},
-      m\_{1})).
+2. Once :math:`K` initial centers have been chosen calculate the difference
+   between each observation :math:`x_{i}` and each of the centers
+   :math:`m_{1},...,m_{K}`, where difference is the squared Euclidean
+   distance taken over :math:`p` parameters.
 
-   4. Repeat until (K) centers have been chosen.
+   .. math::
 
-2. Once (K) initial centers have been chosen calculate the difference
-   between each observation (x\_{i}) and each of the centers
-   (m\_{1},...,m\_{K}), where difference is the squared Euclidean
-   distance taken over (p) parameters.
+   		d(x_{i}, m_{k})=\sum_{j=1}^{p}(x_{ij}-m_{k})^2=\|(x_{i}-m_{k})\|^2
 
-(d(x\_{i}, m\_{k})=)
-(:raw-latex:`\sum`\ *{j=1}:sup:`{p}(x\_{ij}-m\_{k})`\ 2=)
-(:raw-latex:`\lVert`(x*\ {i}-m\_{k}):raw-latex:`\rVert`^2)
+3. Assign :math:`x_{i}` to the cluster :math:`k` defined by :math:`m_{k}` that minimizes
+   :math:`d(x_{i}, m_{k})`
 
-3. Assign (x\_{i}) to the cluster (k) defined by (m\_{k}) that minimizes
-   (d(x\_{i}, m\_{k}))
-
-4. When all observations (x\_{i}) are assigned to a cluster calculate
+4. When all observations :math:`x_{i}` are assigned to a cluster calculate
    the mean of the points in the cluster.
 
-   (:raw-latex:`\bar`{x}(k)=:raw-latex:`\lbrace`:raw-latex:`\bar`{x\_{i1}},…:raw-latex:`\bar`{x\_{ip}}:raw-latex:`\rbrace`)
+   .. math::
 
-5. Set the (:raw-latex:`\bar`{x}(k)) as the new cluster centers
-   (m\_{k}). Repeat steps 2 through 5 until the specified number of max
-   iterations is reached or cluster assignments of the (x\_{i}) are
+   	  \bar{x}(k)=\{\bar{x_{i1}},…\bar{x_{ip}}\}
+
+5. Set the :math:`\bar{x}(k)` as the new cluster centers
+   :math:`m_{k}`. Repeat steps 2 through 5 until the specified number of max
+   iterations is reached or cluster assignments of the :math:`x_{i}` are
    stable.
 
 References
@@ -265,9 +263,8 @@ Validation Measures: A Data- distribution Perspective.” Systems, Man,
 and Cybernetics, Part B: Cybernetics, IEEE Transactions on 39.2 (2009):
 318-331.
 
+GLM
 --------------
-
- ##GLM
 
 Introduction
 ~~~~~~~~~~~~
@@ -302,8 +299,8 @@ Defining a GLM Model
    the accuracy of the model.
 
 -  **nfolds**: Specify the number of folds for cross-validation.
-   >\ **Note**: Lambda search is not supported when cross-validation is
-   enabled.
+
+   		**Note**: Lambda search is not supported when cross-validation is enabled.
 
 -  **response\_column**: (Required) Select the column to use as the
    independent variable.
@@ -586,21 +583,21 @@ the generalization of linear models to non-linear distributions of the
 response variable Y, H2O fits GLM models based on the maximum likelihood
 estimation via iteratively reweighed least squares.
 
-Let (y\_{1},…,y\_{n}) be n observations of the independent, random
-response variable (Y\_{i}).
+Let (y_{1},…,y_{n}) be n observations of the independent, random
+response variable (Y_{i}).
 
 Assume that the observations are distributed according to a function
 from the exponential family and have a probability density function of
 the form:
 
-(f(y\_{i})=exp[:raw-latex:`\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)}`
-+ c(y\_{i}; :raw-latex:`\phi`)]) where (:raw-latex:`\theta`) and
+(f(y_{i})=exp[:raw-latex:`\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)}`
++ c(y_{i}; :raw-latex:`\phi`)]) where (:raw-latex:`\theta`) and
 (:raw-latex:`\phi`) are location and scale parameters, and (:
-a\_{i}(:raw-latex:`\phi`), :b\_{i}(:raw-latex:`\theta`\ *{i}),:
-c*\ {i}(y\_{i}; :raw-latex:`\phi`)) are known functions.
+a_{i}(:raw-latex:`\phi`), :b\_{i}(:raw-latex:`\theta`\ *{i}),:
+c*\ {i}(y_{i}; :raw-latex:`\phi`)) are known functions.
 
-(a\_{i}) is of the form (:a\_{i}=:raw-latex:`\frac{\phi}{p_{i}}`;
-p\_{i}) is a known prior weight.
+(a_{i}) is of the form (:a_{i}=:raw-latex:`\frac{\phi}{p_{i}}`;
+p_{i}) is a known prior weight.
 
 When (Y) has a pdf from the exponential family:
 
@@ -624,7 +621,7 @@ For an initial rough estimate of the parameters
 (:raw-latex:`\mu`\_{i}=g^{-1}(:raw-latex:`\hat{\eta_{i}}`))
 
 Let (z) be a working dependent variable such that
-(z\_{i}=:raw-latex:`\hat{\eta_{i}}`+(y\_{i}-:raw-latex:`\hat{\mu_{i}}`):raw-latex:`\frac{d\eta_{i}}{d\mu_{i}}`),
+(z\_{i}=:raw-latex:`\hat{\eta_{i}}`+(y_{i}-:raw-latex:`\hat{\mu_{i}}`):raw-latex:`\frac{d\eta_{i}}{d\mu_{i}}`),
 
 where (:raw-latex:`\frac{d\eta_{i}}{d\mu_{i}}`) is the derivative of the
 link function evaluated at the trial estimate.
@@ -636,20 +633,20 @@ Where (b^{:raw-latex:`\prime`:raw-latex:`\prime`}) is the second
 derivative of (b(:raw-latex:`\theta`\_{i})) evaluated at the trial
 estimate.
 
-Assume (a\_{i}(:raw-latex:`\phi`)) is of the form
-(:raw-latex:`\frac{\phi}{p_{i}}`). The weight (w\_{i}) is inversely
-proportional to the variance of the working dependent variable (z\_{i})
+Assume (a_{i}(:raw-latex:`\phi`)) is of the form
+(:raw-latex:`\frac{\phi}{p_{i}}`). The weight (w_{i}) is inversely
+proportional to the variance of the working dependent variable (z_{i})
 for current parameter estimates and proportionality factor
 (:raw-latex:`\phi`).
 
-Regress (z\_{i}) on the predictors (x\_{i}) using the weights (w\_{i})
+Regress (z_{i}) on the predictors (x_{i}) using the weights (w_{i})
 to obtain new estimates of (:raw-latex:`\beta`).
 (:raw-latex:`\hat{\beta}`=(:raw-latex:`\mathbf{X}`\ :sup:`{:raw-latex:`\prime`}:raw-latex:`\mathbf{W}`:raw-latex:`\mathbf{X}`)`\ {-1}:raw-latex:`\mathbf{X}`^{:raw-latex:`\prime`}:raw-latex:`\mathbf{W}`:raw-latex:`\mathbf{z}`)
 
 Where (:raw-latex:`\mathbf{X}`) is the model matrix,
-(:raw-latex:`\mathbf{W}`) is a diagonal matrix of (w\_{i}), and
+(:raw-latex:`\mathbf{W}`) is a diagonal matrix of (w_{i}), and
 (:raw-latex:`\mathbf{z}`) is a vector of the working response variable
-(z\_{i}).
+(z_{i}).
 
 This process is repeated until the estimates (:raw-latex:`\hat{\beta}`)
 change by less than the specified amount.
@@ -722,9 +719,8 @@ Statistical Association 73.364 (April, 2012):
 Snee, Ronald D. “Validation of Regression Models: Methods and Examples.”
 Technometrics 19.4 (1977): 415-428.
 
+DRF
 --------------
-
- ##DRF
 
 Introduction
 ~~~~~~~~~~~~
@@ -1102,9 +1098,9 @@ DRF Algorithm
 References
 ~~~~~~~~~~
 
---------------
 
- ##Naïve Bayes
+Naïve Bayes
+--------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -1384,9 +1380,9 @@ Elements of Statistical Learning. Vol.1. N.p., Springer New York,
 `Ng, Andrew. "Generative Learning algorithms."
 (2008). <http://cs229.stanford.edu/notes/cs229-notes2.pdf>`__
 
---------------
 
- ##PCA
+PCA
+--------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -1724,9 +1720,9 @@ References
 Gockenbach, Mark S. "Finite-Dimensional Linear Algebra (Discrete
 Mathematics and Its Applications)." (2010): 566-567.
 
---------------
 
- ##GBM
+GBM
+--------------
 
 Introduction
 ~~~~~~~~~~~~
@@ -2218,9 +2214,9 @@ Elements of Statistical Learning. Vol.1. N.p., page 339: Springer New
 York,
 2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
 
---------------
 
- ##Deep Learning
+Deep Learning
+--------------
 
 Introduction
 ~~~~~~~~~~~~
