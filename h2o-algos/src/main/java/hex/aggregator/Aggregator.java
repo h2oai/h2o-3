@@ -12,6 +12,7 @@ import water.util.ArrayUtils;
 import java.util.Arrays;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
   public static class Exemplar extends Iced<Exemplar> {
     Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }

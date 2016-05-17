@@ -86,8 +86,9 @@ class H2ORandomForestEstimator(H2OEstimator):
       Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
     min_split_improvement : float
       Minimum relative improvement in squared error reduction for a split to happen
-    random_split_points : boolean
-      Whether to use random split points for histograms (to pick the best split from).
+    histogram_type : str
+      What type of histogram to use for finding optimal split points.
+      Can be one of "AUTO", "UniformAdaptive" or "Random".
     """
   def __init__(self, model_id=None, mtries=None, col_sample_rate_change_per_level=None,
                sample_rate=None, sample_rate_per_class=None, col_sample_rate_per_tree=None,
@@ -98,7 +99,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                score_each_iteration=None, score_tree_interval=None,
                keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
-               checkpoint=None, min_split_improvement=None, random_split_points=None):
+               checkpoint=None, min_split_improvement=None, histogram_type=None):
     super(H2ORandomForestEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -320,9 +321,9 @@ class H2ORandomForestEstimator(H2OEstimator):
     self._parms["min_split_improvement"] = value
 
   @property
-  def random_split_points(self):
-    return self._parms["random_split_points"]
+  def histogram_type(self):
+    return self._parms["histogram_type"]
 
-  @random_split_points.setter
-  def random_split_points(self, value):
-    self._parms["random_split_points"] = value
+  @histogram_type.setter
+  def histogram_type(self, value):
+    self._parms["histogram_type"] = value

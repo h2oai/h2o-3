@@ -123,8 +123,10 @@ class Test_glm_grid_search:
     hyper_params_bad["missing_values_handling"] = ['MeanImputation', 'Skip']
 
     hyper_params = dict()
-    hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
+    hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo', "Stratified"]
     hyper_params["missing_values_handling"] = ['MeanImputation', 'Skip']
+
+    scale_model = 1
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['tweedie_link_power', 'tweedie_variance_power']   # do not need these
@@ -184,6 +186,8 @@ class Test_glm_grid_search:
         else:
             self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename[0]))
             self.training2_data = h2o.import_file(path=pyunit_utils.locate(self.training2_filename[0]))
+            self.scale_model = 0.75
+            self.hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
 
         # set data set indices for predictors and response
         self.y_index = self.training1_data.ncol-1
@@ -261,8 +265,8 @@ class Test_glm_grid_search:
         len_good_lambda = len([x for x in self.hyper_params_bad["lambda"] if (x >= 0)])
         len_good_time = len([x for x in self.hyper_params_bad["max_runtime_secs"] if (x >= 0)])
 
-        self.possible_number_models = int(self.possible_number_models * len_good_alpha * len_good_lambda *
-                                          len_good_time/ (alpha_len * lambda_len * time_len))
+        self.possible_number_models = int(self.scale_model * self.possible_number_models * len_good_alpha *
+                                          len_good_lambda * len_good_time/ (alpha_len * lambda_len * time_len))
 
         # randomly generate griddable parameters with only good values
         (self.hyper_params, self.gridable_parameters, self.gridable_types, self.gridable_defaults) = \

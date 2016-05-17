@@ -165,7 +165,7 @@ public class FrameUtils {
      * Driver for MissingInserter
      */
     class MissingInserterDriver extends H2O.H2OCountedCompleter {
-      final Frame _frame;
+      transient final Frame _frame;
       MissingInserterDriver(Frame frame) {_frame = frame; }
       @Override
       public void compute2() {
