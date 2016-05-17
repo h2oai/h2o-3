@@ -991,10 +991,10 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     for (int i = 0; i < _responses; ++i) {
-      try {
-        row.response[i] = chunks[responseChunkId(i)].atd(rid);
-      } catch(Throwable t){
-        throw new RuntimeException(t);
+      row.response[i] = chunks[responseChunkId(i)].atd(rid);
+      if(Double.isNaN(row.response[i])) {
+        row.response_bad = true;
+        break;
       }
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];

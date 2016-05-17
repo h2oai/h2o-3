@@ -41,7 +41,8 @@ public class GLMScore extends MRTask<GLMScore> {
       Arrays.fill(ps,0);
     } else {
       _m.scoreRow(r, r.offset, ps);
-      if (_computeMetrics && !r.response_bad) _mb.perRow(ps, res, r.weight, r.offset, _m);
+      if (_computeMetrics && !r.response_bad)
+        _mb.perRow(ps, res, r.weight, r.offset, _m);
     }
     if (_generatePredictions)
       for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
