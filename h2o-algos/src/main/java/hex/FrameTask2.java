@@ -57,14 +57,14 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
     // compute
     if(_sparse) {
       for(Row r:_dinfo.extractSparseRows(chks)) {
-        if(!r.bad && r.weight != 0)
+        if(!r.isBad() && r.weight != 0)
           processRow(r);
       }
     } else {
       Row row = _dinfo.newDenseRow();
       for(int r = 0 ; r < chks[0]._len; ++r) {
         _dinfo.extractDenseRow(chks, r, row);
-        if(!row.bad && row.weight != 0)
+        if(!row.isBad() && row.weight != 0)
           processRow(row);
       }
     }
