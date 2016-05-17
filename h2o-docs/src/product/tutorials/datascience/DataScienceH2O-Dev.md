@@ -1227,15 +1227,19 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
+  Missing values affect tree split points.  NAs always “go right”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math. No new node is created. Instead, the observation is treated as if it had the maximum feature value of all observations in the node to be split. Note that the missing value might not be separated from the largest value itself. For example, if a node contains feature values of 0,1,2,3,4,5, then the missing value is counted as a 5. No matter what split decision is then made, the value 5 and the missing values won’t be separated. The 5 and the missing stay together, even in splits down the tree.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
 
 - **What happens if the response has missing values?**
 
   No errors will occur, but nothing will be learned from rows containing missing the response.
+
+-  **What happens when you try to predict on a categorical level not seen during training?**
+
+  GBM converts a new categorical level to an "undefined" value in the test set, and then splits either left or right during scoring.  
 
 - **Does it matter if the data is sorted?** 
 
@@ -1267,19 +1271,21 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **When fitting a random number between 0 and 1 as a single feature, the training ROC curve is consistent with `random` for low tree numbers and overfits as the number of trees is increased, as expected. However, when a random number is included as part of a set of hundreds of features, as the number of trees increases, the random number increases in feature importance. Why is this?**
  
-This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
+  This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
 
 - **How is column sampling implemented for GBM?**
 
-For an example model using: 
+  For an example model using: 
 
-- 100 columns
-- `col_sample_rate_per_tree=0.754`
-- `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
+  - 100 columns
+  - `col_sample_rate_per_tree=0.754`
+  - `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
 
-For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
+  For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
+- **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
 
+  The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
 
 ###GBM Algorithm 
 
