@@ -30,9 +30,68 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
+
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
+  protected static void testScoring(GLMModel m, Frame fr) {
+    Scope.enter();
+    // standard predictions
+    Frame fr2 = new Frame(fr);
+    Frame preds = Scope.track(m.score(fr2));
+    m.adaptTestForTrain(fr2,true,false);
+    fr2.remove(fr2.numCols()-1); // remove response
+    int p = m._output._dinfo._cats + m._output._dinfo._nums;
+    int p2 = fr2.numCols() - (m._output._dinfo._weights?1:0)- (m._output._dinfo._offset?1:0);
+    assert p == p2: p + " != " + p2;
+    fr2.add(preds.names(),preds.vecs());
+    // test score0
+    new TestScore0(m,m._output._dinfo._weights,m._output._dinfo._offset).doAll(fr2);
+    // test pojo
+    if((!m._output._dinfo._weights && !m._output._dinfo._offset))
+      Assert.assertTrue(m.testJavaScoring(fr,preds,1e-15));
+    Scope.exit();
+  }
 
+
+  // class to test score0 since score0 is now not being called by the standard bulk scoring
+  public static class TestScore0 extends MRTask {
+    final GLMModel _m;
+    final boolean _weights;
+    final boolean _offset;
+
+    public TestScore0(GLMModel m, boolean w, boolean o) {_m = m; _weights = w; _offset = o;}
+
+    @Override public void map(Chunk [] chks) {
+      int nout = _m._parms._family == Family.multinomial?_m._output.nclasses()+1:_m._parms._family == Family.binomial?3:1;
+      Chunk [] outputs = Arrays.copyOfRange(chks,chks.length-nout,chks.length);
+      chks = Arrays.copyOf(chks,chks.length-nout);
+      Chunk off = new C0DChunk(0,chks[0]._len);
+      Chunk w = new C0DChunk(1,chks[0]._len);
+      double [] tmp = new double[_m._output._dinfo._cats + _m._output._dinfo._nums];
+      double [] predictions = new double [nout];
+      if(_offset) {
+        off = chks[chks.length - 1];
+        chks = Arrays.copyOf(chks, chks.length - 1);
+      }
+      if(_weights) {
+        w = chks[chks.length - 1];
+        chks = Arrays.copyOf(chks, chks.length - 1);
+      }
+      if(_weights || _offset) {
+        for (int i = 0; i < chks[0]._len; ++i) {
+          _m.score0(chks, w.atd(i), off.atd(i),i, tmp, predictions);
+          for (int j = 0; j < predictions.length; ++j)
+            assertEquals("mismatch at row " + (i + chks[0].start()) + ", p = " + j + ": " + outputs[j].atd(i) + " != " + predictions[j], outputs[j].atd(i), predictions[j], 1e-6);
+        }
+      } else {
+        for (int i = 0; i < chks[0]._len; ++i) {
+          _m.score0(chks, i, tmp, predictions);
+          for (int j = 0; j < predictions.length; ++j)
+            assertEquals("mismatch at row " + (i + chks[0].start()) + ", p = " + j + ": " + outputs[j].atd(i) + " != " + predictions[j] + ", preds = " + Arrays.toString(predictions), outputs[j].atd(i), predictions[j], 1e-6);
+        }
+      }
+    }
+  }
   //------------------- simple tests on synthetic data------------------------------------
   @Test
   public void testGaussianRegression() throws InterruptedException, ExecutionException {
@@ -55,11 +114,7 @@ public class GLMTest  extends TestUtil {
       HashMap<String, Double> coefs = model.coefficients();
       assertEquals(0.0, coefs.get("Intercept"), 1e-4);
       assertEquals(0.1, coefs.get("x"), 1e-4);
-
-      res = model.score(fr);
-      // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(fr, res, 1e-15));
-
+      testScoring(model,fr);
     } finally {
       if (fr != null) fr.remove();
       if (res != null) res.remove();
@@ -75,7 +130,7 @@ public class GLMTest  extends TestUtil {
   public void testPoissonRegression() throws InterruptedException, ExecutionException {
     Key raw = Key.make("poisson_test_data_raw");
     Key parsed = Key.make("poisson_test_data_parsed");
-    Key modelKey = Key.make("poisson_test");
+
     GLMModel model = null;
     Frame fr = null, res = null;
     try {
@@ -90,9 +145,10 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
       params._standardize = false;
-      model = new GLM(params, modelKey).trainModel().get();
+      model = new GLM(params,  Key.make("poisson_test_1")).trainModel().get();
       for (double c : model.beta())
         assertEquals(Math.log(2), c, 1e-2); // only 1e-2 precision cause the perfect solution is too perfect -> will trigger grid search
+      testScoring(model,fr);
       model.delete();
       fr.delete();
 
@@ -106,14 +162,11 @@ public class GLMTest  extends TestUtil {
       params2._lambda = new double[]{0};
       params2._standardize = true;
       params2._beta_epsilon = 1e-5;
-      model = new GLM(params2,modelKey).trainModel().get();
+      model = new GLM(params2, Key.make("poisson_test_2")).trainModel().get();
       assertEquals(0.3396, model.beta()[1], 1e-1);
       assertEquals(0.2565, model.beta()[0], 1e-1);
       // test scoring
-      res = model.score(fr);
-      // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(fr, res, 1e-15));
-
+      testScoring(model,fr);
     } finally {
       if (fr != null) fr.delete();
       if (res != null) res.delete();
@@ -150,10 +203,7 @@ public class GLMTest  extends TestUtil {
       model = new GLM(params,glmkey("gamma_test")).trainModel().get();
       for (double c : model.beta()) assertEquals(1.0, c, 1e-4);
       // test scoring
-      res = model.score(fr);
-      // Build a POJO, validate same results
-      Assert.assertTrue(model.testJavaScoring(fr, res, 1e-15));
-
+      testScoring(model,fr);
     } finally {
       if (fr != null) fr.delete();
       if (res != null) res.delete();
@@ -418,8 +468,8 @@ public class GLMTest  extends TestUtil {
    */
   @Test
   public void testCars() throws InterruptedException, ExecutionException {
+    Scope.enter();
     Key parsed = Key.make("cars_parsed");
-    Key<GLMModel> modelKey = Key.make("cars_model");
     Frame fr = null;
     GLMModel model = null;
     Frame score = null;
@@ -433,7 +483,8 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
-      model = new GLM( params, modelKey).trainModel().get();
+
+      model = new GLM( params, Key.make("glm_testCars_1")).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
       double[] vls1 = new double[]{4.9504805, -0.0095859, -0.0063046, 0.0004392, 0.0001762, -0.0469810, 0.0002891};
@@ -441,10 +492,8 @@ public class GLMTest  extends TestUtil {
         assertEquals(vls1[i], coefs.get(cfs1[i]), 1e-4);
       // test gamma
       double[] vls2 = new double[]{8.992e-03, 1.818e-04, -1.125e-04, 1.505e-06, -1.284e-06, 4.510e-04, -7.254e-05};
-      score = model.score(fr);
-      score.delete();
+      testScoring(model,fr);
       model.delete();
-
       params = new GLMParameters(Family.gamma, Family.gamma.defaultLink, new double[]{0}, new double[]{0},0,0);
       params._response_column = "power (hp)";
       // params._response = fr.find(params._response_column);
@@ -453,11 +502,11 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._beta_epsilon = 1e-5;
       params._missing_values_handling = MissingValuesHandling.Skip;
-      model = new GLM( params, modelKey).trainModel().get();
+      model = new GLM( params, Key.make("glm_testCars_2")).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls2[i], coefs.get(cfs1[i]), 1e-4);
-      score = model.score(fr);
+      testScoring(model,fr);
       model.delete();
       // test gaussian
       double[] vls3 = new double[]{166.95862, -0.00531, -2.46690, 0.12635, 0.02159, -4.66995, -0.85724};
@@ -468,7 +517,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
-      model = new GLM( params, modelKey).trainModel().get();
+      model = new GLM( params, Key.make("glm_testCars_3")).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls3[i], coefs.get(cfs1[i]), 1e-4);
@@ -477,7 +526,7 @@ public class GLMTest  extends TestUtil {
       if (fr != null) fr.delete();
       if (score != null) score.delete();
       if (model != null) model.delete();
-      checkLeakedKeys();
+      Scope.exit();
     }
   }
 
@@ -1012,7 +1061,8 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._standardize = false;
       params._use_all_factor_levels = false;
-      model1 = new GLM(params,glmkey("airlines_cat_nostd")).trainModel().get();
+      model1 = new GLM(params,glmkey("airlines_cat_nostd_x")).trainModel().get();
+      testScoring(model1,fr);
       Frame score1 = model1.score(fr);
       ModelMetricsRegressionGLM mm = (ModelMetricsRegressionGLM) ModelMetrics.getFromDKV(model1, fr);
       Assert.assertEquals(((ModelMetricsRegressionGLM) model1._output._training_metrics)._resDev, mm._resDev, 1e-4);
@@ -1021,10 +1071,10 @@ public class GLMTest  extends TestUtil {
       mm.remove();
       res = model1.score(fr);
       // Build a POJO, validate same results
-      Assert.assertTrue(model1.testJavaScoring(fr, res, 1e-15));
       params._train = frMM._key;
       params._ignored_columns = new String[]{"X"};
       model2 = new GLM( params,glmkey("airlines_mm")).trainModel().get();      HashMap<String, Double> coefs1 = model1.coefficients();
+      testScoring(model2,frMM);
       HashMap<String, Double> coefs2 = model2.coefficients();
       boolean failed = false;
       // compare against each other
@@ -1060,10 +1110,12 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._family = Family.binomial;
       params._link = Link.logit;
-      model3 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
+      model3 = new GLM( params,glmkey("airlines_mm_2")).trainModel().get();
+      testScoring(model3,frMM);
       params._train = fr._key;
       params._ignored_columns = ignoredCols;
-      model4 = new GLM( params,glmkey("airlines_mm")).trainModel().get();
+      model4 = new GLM( params,glmkey("airlines_3")).trainModel().get();
+      testScoring(model4,fr);
       assertEquals(nullDeviance(model3), nullDeviance(model4), 1e-4);
       assertEquals(residualDeviance(model4), residualDeviance(model3), nullDeviance(model3) * 1e-3);
 
@@ -1132,7 +1184,7 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;
       params._lambda_search = true;
       params._nlambdas = 5;
-      GLM glm = new GLM( params,glmkey("airlines_cat_nostd")); 
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd_5"));
       model1 = glm.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
@@ -1168,7 +1220,7 @@ public class GLMTest  extends TestUtil {
       params._standardize = false;
       params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
-      GLM glm = new GLM( params,glmkey("airlines_cat_nostd"));
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd_2"));
       model1 = glm.trainModel().get();
       double [] beta = model1.beta();
       double l1pen = ArrayUtils.l1norm(beta,true);
@@ -1202,7 +1254,7 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT_NAIVE;//IRLSM
       params._lambda_search = true;
       params._nlambdas = 5;
-      GLM glm = new GLM( params,glmkey("airlines_cat_nostd"));
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd_3"));
       model1 = glm.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
       double [] beta = sm.beta;
@@ -1237,7 +1289,7 @@ public class GLMTest  extends TestUtil {
       params._solver = Solver.COORDINATE_DESCENT;
       params._lambda_search = true;
       params._nlambdas = 5;
-      GLM glm = new GLM( params,glmkey("airlines_cat_nostd"));
+      GLM glm = new GLM( params,glmkey("airlines_cat_nostd_4"));
       model1 = glm.trainModel().get();
       GLMModel.Submodel sm = model1._output._submodels[model1._output._submodels.length-1];
       double [] beta = sm.beta;
@@ -1410,10 +1462,7 @@ public class GLMTest  extends TestUtil {
       assertEquals(378.3, residualDeviance(model),1e-1);
       assertEquals(371,   resDOF(model),0);
       assertEquals(396.3, aic(model),1e-1);
-      Frame testFr = model.score(fr);
-      model.testJavaScoring(fr,testFr,1e-8);
-      testFr.delete();
-      model.delete();
+      testScoring(model,fr);
       // test scoring
       model.score(fr).delete();
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(model,fr);
@@ -1528,9 +1577,9 @@ public class GLMTest  extends TestUtil {
       params._response_column = "bikes";
       params._train = tfr._key;
       params._valid = vfr._key;
-      GLM glm = new GLM( params,glmkey("glm_model"));
+      GLM glm = new GLM( params,glmkey("glm_model_testCitibikeReproPUBDEV1839"));
       model = glm.trainModel().get();
-
+      testScoring(model,vfr);
     } finally {
       tfr.remove();
       vfr.remove();
@@ -1552,9 +1601,9 @@ public class GLMTest  extends TestUtil {
       params._train = tfr._key;
       params._valid = vfr._key;
       params._family = Family.poisson;
-      GLM glm = new GLM( params,glmkey("glm_model"));
+      GLM glm = new GLM( params,glmkey("glm_model_testCitibikeReproPUBDEV1953"));
       model = glm.trainModel().get();
-
+      testScoring(model,vfr);
     } finally {
       tfr.remove();
       vfr.remove();
@@ -1600,7 +1649,7 @@ public class GLMTest  extends TestUtil {
         System.out.println(model._output._training_metrics);
         // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
       }
-
+      model.delete();
       // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
       params = new GLMParameters(Family.gaussian);
       // params._response = 0;
@@ -1612,11 +1661,14 @@ public class GLMTest  extends TestUtil {
       params._lambda_min_ratio = 0.18;
       params._max_active_predictors = 20;
       params._alpha = new double[]{1};
-      GLM glm = new GLM(params,modelKey);
+      GLM glm = new GLM(params);
       glm.trainModel().get();
-      model = DKV.get(modelKey).get();
+      model = DKV.get(glm.dest()).get();
+      testScoring(model,fr);
       assertTrue(model._output._submodels.length > 3);
       assertTrue(residualDeviance(model) <= 93);
+      model.delete();
+      model = null;
     } finally {
       fr.delete();
       if(model != null)model.delete();
@@ -1668,10 +1720,7 @@ public class GLMTest  extends TestUtil {
       params._lambda_search = true;
       GLM glm = new GLM(params);
       model = glm.trainModel().get();
-      Frame res = model.score(fr);
-      Scope.track(res);
-      model.testJavaScoring(fr,res,0.0);
-      
+      testScoring(model,fr);
     } finally {
       if( model != null ) model.delete();
       Scope.exit();

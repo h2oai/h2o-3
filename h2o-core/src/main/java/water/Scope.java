@@ -65,17 +65,19 @@ public class Scope {
     track_impl(scope, k);
   }
 
-  static public void track( Vec vec ) {
+  static public Vec track( Vec vec ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
     track_impl(scope, vec._key);
+    return vec;
   }
 
-  static public void track( Frame fr ) {
+  static public Frame track( Frame fr ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
     for( Vec vec: fr.vecs() ) track_impl(scope, vec._key);
     track_impl(scope, fr._key);
+    return fr;
   }
 
   static private void track_impl(Scope scope, Key key) {

@@ -57,6 +57,10 @@ public class DataInfo extends Keyed<DataInfo> {
     _responses += vecs.length;
   }
 
+  public int[] catModes() {return _catModes;}
+
+  public int catMode(int cid) {return _catModes[cid];}
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -94,7 +98,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _cats;  // "raw" number of categorical columns as they exist in the frame
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
-  public int [] _catModes;    // majority class of each categorical col
+  private int [] _catModes;    // majority class of each categorical col
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
@@ -346,10 +350,9 @@ public class DataInfo extends Keyed<DataInfo> {
     res._weights = _weights && adaptFrame.find(_adaptedFrame.name(weightChunkId())) != -1;
     res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
     res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
-    res._responses = 0;
     int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
-    if(resId != -1 && adaptFrame.vec(resId).naCnt() != adaptFrame.numRows())
-      res._responses = 1;
+    if(resId == -1 || adaptFrame.vec(resId).naCnt() == adaptFrame.numRows())
+      res._responses = 0;
     res._valid = true;
     res._interactions=_interactions;
     res._interactionColumns=_interactionColumns;
@@ -775,7 +778,9 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final class Row extends Iced {
-    public boolean bad;        // should the row be skipped (GLM skip NA for example)
+    public boolean predictors_bad;        // should the row be skipped (GLM skip NA for example)
+    public boolean response_bad;
+    public boolean isBad(){return predictors_bad || response_bad;}
     public double [] numVals;  // the backing data of the row
     public double [] response;
     public int    [] numIds;   // location of next sparse value
@@ -892,6 +897,13 @@ public class DataInfo extends Keyed<DataInfo> {
     public void setResponse(int i, double z) {response[i] = z;}
   }
 
+
+  public final int getCategoricalId(int cid, double val) {
+    if(Double.isNaN(val)) return getCategoricalId(cid, _catModes[cid]);
+    int ival = (int)val;
+    if(ival != val) throw new IllegalArgumentException("Categorical id must be an integer or NA (missing).");
+    return getCategoricalId(cid,ival);
+  }
   /**
    * Get the offset into the expanded categorical
    * @param cid the column id
@@ -905,7 +917,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] offs = fullCatOffsets();
     if(val + offs[cid] >= offs[cid+1]) {  // previously unseen level
       assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
-      val = _catModes[cid] - (_useAllFactorLevels||isIWV?0:1);
+      val = _catModes[cid];
     }
     if (_catLvls[cid] != null) {  // some levels are ignored?
       assert _useAllFactorLevels;
@@ -930,15 +942,9 @@ public class DataInfo extends Keyed<DataInfo> {
     return val < 0?-1:val+_numOffsets[cid];
   }
 
-  public final Row extractDenseRow(Vec[] vecs, long rid, Row row) {
-    Chunk[] chunks = new Chunk[vecs.length];
-    for (int i=0;i<chunks.length;++i)
-      chunks[i] = vecs[i].chunkForRow(rid);
-    return extractDenseRow(chunks, (int)(rid-chunks[0].start()), row);
-  }
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
-    row.bad = false;
+    row.predictors_bad = false;
     row.rid = rid + chunks[0].start();
     row.cid = rid;
     if(_weights)
@@ -948,7 +954,7 @@ public class DataInfo extends Keyed<DataInfo> {
       int N = _cats + _nums;
       for (int i = 0; i < N; ++i)
         if (chunks[i].isNA(rid)) {
-          row.bad = true;
+          row.predictors_bad = true;
           return row;
         }
     }
@@ -992,10 +998,6 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
-      if (Double.isNaN(row.response[i])) {
-        row.bad = true;
-        return row;
-      }
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
@@ -1063,27 +1065,30 @@ public class DataInfo extends Keyed<DataInfo> {
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
-        if(Double.isNaN(rows[i].offset)) rows[i].bad = true;
+        if(Double.isNaN(rows[i].offset)) {
+          rows[i].predictors_bad = true;
+          continue;
+        }
       }
       if(_weights) {
         rows[i].weight = chunks[weightChunkId()].atd(i);
-        if(Double.isNaN(rows[i].weight)) rows[i].bad = true;
-      }
-      if (_skipMissing) {
-        int N = _cats + _nums;
-        for (int c = 0; c < N; ++c)
-          if (chunks[c].isNA(i))
-            rows[i].bad = true;
+        if(Double.isNaN(rows[i].weight)) {
+          rows[i].predictors_bad = true;
+          continue;
+        }
       }
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        if(row.bad)continue;
         int cid = getCategoricalId(i,chunks[i].isNA(r)?_catModes[i]:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
+        else if(_skipMissing) {
+          row.predictors_bad = true;
+          continue;
+        }
       }
     }
     // generic numbers + interactions
@@ -1095,8 +1100,9 @@ public class DataInfo extends Keyed<DataInfo> {
         InteractionWrappedVec iwv = (InteractionWrappedVec)c.vec();
         for(int r=0;r<c._len;++r) {  // the vec is "vertically" dense and "horizontally" sparse (i.e., every row has one, and only one, value)
           Row row = rows[r];
-          if( row.bad ) continue;
-          if( c.isNA(r) ) row.bad = _skipMissing;
+          if( c.isNA(r) && _skipMissing)
+            row.predictors_bad = true;
+          if(row.predictors_bad) continue;
           int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
           if( cidVirtualOffset>=0 ) {
             if( cid < _intLvls.length && _intLvls[cid]!=null && Arrays.binarySearch(_intLvls[cid],cidVirtualOffset) < 0 ) continue; // skip the filtered out interactions
@@ -1114,10 +1120,10 @@ public class DataInfo extends Keyed<DataInfo> {
         for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
           if (c.atd(r) == 0) continue;
           assert r > oldRow;
-          oldRow = r;
-          Row row = rows[r];
-          if (row.bad) continue;
-          if (c.isNA(r)) row.bad = _skipMissing;
+          oldRow = r;Row row = rows[r];
+          if (c.isNA(r) && _skipMissing)
+            row.predictors_bad = true;
+          if (row.predictors_bad) continue;
           double d = c.atd(r);
           if (Double.isNaN(d))
             d = _numMeans[cid];
@@ -1134,13 +1140,14 @@ public class DataInfo extends Keyed<DataInfo> {
       Chunk rChunk = chunks[rid];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        if(row.bad) continue;
         row.response[i-1] = rChunk.atd(r);
+        if(Double.isNaN(row.response[i-1])) {
+          row.response_bad = true;
+          break;
+        }
         if (_normRespMul != null) {
           row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
         }
-        if (Double.isNaN(row.response[row.response.length - i]))
-          row.bad = true;
       }
     }
     return rows;

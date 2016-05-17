@@ -96,7 +96,7 @@ public class MakeGLMModelHandler extends Handler {
           DataInfo.Row r = dinfo.newDenseRow();
           for(int i=0;i<cs[0]._len;++i) {
             r=dinfo.extractDenseRow(cs,i,r);
-            if( skipMissing && r.bad ) continue;
+            if( skipMissing && r.isBad() ) continue;
             int newChkIdx=0;
             for(int idx=0;idx<colIds.length;++idx) {
               int startOffset = colIds[idx];
@@ -115,7 +115,7 @@ public class MakeGLMModelHandler extends Handler {
           DataInfo.Row r = dinfo.newDenseRow();
           for (int i = 0; i < cs[0]._len; ++i) {
             r = dinfo.extractDenseRow(cs, i, r);
-            if( skipMissing && r.bad ) continue;
+            if( skipMissing && r.isBad() ) continue;
             for (int n = 0; n < ncs.length; ++n)
               ncs[n].addNum(r.get(n));
           }
