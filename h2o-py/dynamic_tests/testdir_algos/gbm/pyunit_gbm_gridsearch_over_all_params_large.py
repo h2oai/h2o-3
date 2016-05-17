@@ -97,7 +97,7 @@ class Test_gbm_grid_search:
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
     hyper_params["balance_classes"] = [True, False]
-    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo"]
+    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["stopping_metric"] =["AUTO", "deviance", "MSE", "r2"]
     hyper_params["random_split_points"] = [True, False]
 
