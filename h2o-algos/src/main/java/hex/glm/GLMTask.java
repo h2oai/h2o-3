@@ -460,97 +460,73 @@ public abstract class GLMTask  {
     }
     protected abstract void computeGradientMultipliers(double [] es, double [] ys, double [] ws);
 
-    private final void computeCategoricalEtas(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+    private final void computeCategoricalEtas(Chunk [] chks, final double [] etas) {
       // categoricals
-      for(int cid = 0; cid < _dinfo._cats; ++cid){
-        Chunk c = chks[cid];
-        if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catMode(cid));
-          for(int i = 0; i < nvals; ++i){
-            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
-            if(id >=0) etas[ids[i]] += _beta[id];
+      for(int c = 0; c < _dinfo._cats; ++c) {
+        final int cid = c;
+        final int cmode = _dinfo.catMode(cid);
+        chks[cid].processRows(new Chunk.ChunkFunctor(true,true) {
+          @Override
+          public void addValue(long l, int i) {
+            int id = _dinfo.getCategoricalId(cid, (int)l);
+            if (id >= 0) etas[i] += _beta[id];
           }
-        } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catMode(cid));
-          for(int i = 0; i < ids.length; ++i){
-            int id = _dinfo.getCategoricalId(cid,ids[i]);
-            if(id >=0) etas[i] += _beta[id];
+          @Override
+          public void addMissing(int i) {
+            addValue(_dinfo.getCategoricalId(cid, cmode),i);
           }
-        }
+        },0,chks[c]._len);
       }
     }
 
-    private final void computeCategoricalGrads(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+    private final void computeCategoricalGrads(Chunk [] chks, final double [] etas) {
       // categoricals
-      for(int cid = 0; cid < _dinfo._cats; ++cid){
-        Chunk c = chks[cid];
-        if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catMode(cid));
-          for(int i = 0; i < nvals; ++i){
-            int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
-            if(id >=0) _gradient[id] += etas[ids[i]];
-          }
-        } else {
-          c.getIntegers(ids, 0, c._len,_dinfo.catMode(cid));
-          for(int i = 0; i < ids.length; ++i){
-            int id = _dinfo.getCategoricalId(cid,(int)ids[i]);
+      for(int c = 0; c < _dinfo._cats; ++c){
+        final int cid = c;
+        final int NA = _dinfo.catMode(cid);
+        chks[cid].processRows(new Chunk.ChunkFunctor(true,false){
+          @Override public void addValue(long l, int i) {
+            int id = _dinfo.getCategoricalId(cid,(int)l);
             if(id >=0) _gradient[id] += etas[i];
           }
-        }
+          @Override public void addMissing(int i) {
+            int id = _dinfo.getCategoricalId(cid,NA);
+            if(id >=0) _gradient[id] += etas[i];
+          }
+        },0,chks[c]._len);
       }
     }
 
-    private final void computeNumericEtas(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+    private final void computeNumericEtas(Chunk [] chks, final double [] etas) {
       int numOff = _dinfo.numStart();
       for(int cid = 0; cid < _dinfo._nums; ++cid){
-        double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
-        double off = _dinfo._normSub != null?_dinfo._normSub[cid]:0;
-        double NA = _dinfo._numMeans[cid];
-        Chunk c = chks[cid+_dinfo._cats];
-        double b = scale*_beta[numOff+cid];
-        if(c.isSparseZero()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
-          for(int i = 0; i < nvals; ++i)
-            etas[ids[i]] += vals[i] * b;
-        } else if(c.isSparseNA()){
-          int nvals = c.asSparseDoubles(vals,ids,NA);
-          for(int i = 0; i < nvals; ++i)
-            etas[ids[i]] += (vals[i] - off) * b;
-        } else {
-          c.getDoubles(vals,0,vals.length,NA);
-          for(int i = 0; i < vals.length; ++i)
-            etas[i] += (vals[i] - off) * b;
-        }
+        final double scale = _dinfo._normMul != null?_dinfo._normMul[cid]:1;
+        final double off = _dinfo._normSub != null && !(chks[cid+_dinfo._cats].isSparseZero())?_dinfo._normSub[cid]:0;
+        final double b = scale*_beta[numOff+cid];
+        final double NA = _dinfo._numMeans[cid];
+        chks[cid+_dinfo._cats].processRows(new Chunk.ChunkFunctor(true,true){
+          @Override public void addValue(double d, int i) {
+            if(Double.isNaN(d)) d = NA;
+            etas[i] += (d - off) * b;
+          }
+        },0,chks[0]._len);
       }
     }
 
-    private final void computeNumericGrads(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
+    private final void computeNumericGrads(Chunk [] chks, final double [] etas) {
       int numOff = _dinfo.numStart();
       for(int cid = 0; cid < _dinfo._nums; ++cid){
-        double NA = _dinfo._numMeans[cid];
-        Chunk c = chks[cid+_dinfo._cats];
-        double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
-        if(c.isSparseZero()){
-          double g = 0;
-          int nVals = c.asSparseDoubles(vals,ids,NA);
-          for(int i = 0; i < nVals; ++i)
-            g += vals[i]*scale*etas[ids[i]];
-          _gradient[numOff+cid] = g;
-        } else if(c.isSparseNA()){
-          double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
-          double g = 0;
-          int nVals = c.asSparseDoubles(vals,ids,NA);
-          for(int i = 0; i < nVals; ++i)
-            g += (vals[i]-off)*scale*etas[ids[i]];
-          _gradient[numOff+cid] = g;
-        } else {
-          double off = _dinfo._normSub == null?0:_dinfo._normSub[cid];
-          c.getDoubles(vals,0,vals.length,NA);
-          double g = 0;
-          for(int i = 0; i < vals.length; ++i)
-            g += (vals[i]-off)*scale*etas[i];
-          _gradient[numOff+cid] = g;
-        }
+        final double scale = _dinfo._normMul == null?1:_dinfo._normMul[cid];
+        final double off = (_dinfo._normSub == null || chks[cid+_dinfo._cats].isSparseZero())?0:_dinfo._normSub[cid];
+        final double NA = _dinfo._numMeans[cid];
+        _gradient[numOff+cid] = ((Double)chks[cid+_dinfo._cats].processRows(new Chunk.ChunkFunctor(true,true){
+          double _g;
+          @Override public void addValue(double d, int i){
+            if(Double.isNaN(d)) d = NA;
+            _g += (d-off)*scale*etas[i];
+          }
+          @Override public Double result(){return _g;}
+        },0,chks[cid+_dinfo._cats]._len).result());
       }
     }
 
@@ -570,14 +546,12 @@ public abstract class GLMTask  {
           if(chks[_dinfo._cats + i].isSparseZero())
             sparseOffset -= _beta[numStart + i]*_dinfo._normSub[i]*_dinfo._normMul[i];
       ArrayUtils.add(etas,sparseOffset + _beta[_beta.length-1]);
-      double [] vals = MemoryManager.malloc8d(response._len);
-      int [] ids = MemoryManager.malloc4(response._len);
-      computeCategoricalEtas(chks,etas,vals,ids);
-      computeNumericEtas(chks,etas,vals,ids);
+      computeCategoricalEtas(chks,etas);
+      computeNumericEtas(chks,etas);
       computeGradientMultipliers(etas,ys,ws);
       // walk the chunks again, add to the gradient
-      computeCategoricalGrads(chks,etas,vals,ids);
-      computeNumericGrads(chks,etas,vals,ids);
+      computeCategoricalGrads(chks,etas);
+      computeNumericGrads(chks,etas);
       // add intercept
       _gradient[_gradient.length-1] = ArrayUtils.sum(etas);
       if(_dinfo._normSub != null) {

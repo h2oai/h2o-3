@@ -80,7 +80,24 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
-    for(int i = from; i < to; ++i)
+    if(isSparseZero() && cf.supportsSparseZero || isSparseNA() && cf.supportsSparseNA) {
+      int offStart = findOffset(from);
+      int offEnd = findOffset(to-1);
+      assert offStart >= _OFF;
+      assert offEnd <= _mem.length;
+      for(int off = offStart; off <= offEnd; off += (_ridsz + _valsz)) {
+        int id = getId(off);
+        if(hasFloat()) {
+          double val = getFValue(off);
+          if(Double.isNaN(val)) cf.addMissing(id);
+          else cf.addValue(val,id);
+        } else {
+          long val = getIValue(off);
+          if(val == NAS[_valsz_log]) cf.addMissing(id);
+          else cf.addValue(val,id);
+        }
+      }
+    } else for(int i = from; i < to; ++i)
       processRow(cf,i);
     return cf;
   }

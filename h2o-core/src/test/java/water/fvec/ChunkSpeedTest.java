@@ -136,7 +136,7 @@ public class ChunkSpeedTest extends TestUtil {
   }
 
   double walkChunkVistor(final Chunk c) {
-    return ((Double)c.processRows(new Chunk.ChunkFunctor(){
+    return ((Double)c.processRows(new Chunk.ChunkFunctor(true,true){
       double sum = 0;
       @Override public void addValue(double v, int id){sum += v;}
       @Override public Double result(){return sum;}

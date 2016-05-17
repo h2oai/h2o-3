@@ -267,7 +267,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final double minmax[] = new double[]{rh._min2,rh._maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, sums and sum-squares.
-    cs.processRows(new Chunk.ChunkFunctor(){
+    cs.processRows(new Chunk.ChunkFunctor(false,false){
       @Override public void addValue(double col_data, int k) {
         double w = ws[k];
         if (w == 0) return;

@@ -113,17 +113,23 @@ public abstract class Chunk extends Iced<Chunk> {
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
-  public static class ChunkFunctor {
+  public static class ChunkFunctor<T> {
+    public final boolean supportsSparseZero;
+    public final boolean supportsSparseNA;
+    public ChunkFunctor(boolean supportsSparseZero, boolean supportsSparseNA) {
+      this.supportsSparseZero = supportsSparseZero;
+      this.supportsSparseNA = supportsSparseNA;
+    }
     public void addValue(double val, int id){throw H2O.unimpl();}
     public void addMissing(int id){ addValue(Double.NaN,id);}
     public void addValue(long val, int id){ addValue((double)val,id);}
     public void addValue(BufferedString str, int id){throw H2O.unimpl();}
     // reduced result if any
-    public Object result(){return null;}
+    public T result(){return null;}
 
   }
 
-  public final ChunkFunctor processRows(ChunkFunctor cf) {return processRows(cf,0,_len);}
+  public final ChunkFunctor processRows(ChunkFunctor cf) {return processRows(cf,0,_len-1);}
 
   public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
     for(int i = from; i < to; ++i)
