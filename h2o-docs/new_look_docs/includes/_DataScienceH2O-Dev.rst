@@ -201,31 +201,31 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
 
    		a. Choose one center :math:`m_{1}` at random.
 
-   1. Calculate the difference between :math:`m_{1}` and each of the
-      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) =
-      \|(x_{i}-m_{1})\|^2`
+		   1. Calculate the difference between :math:`m_{1}` and each of the
+		      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) =
+		      \|(x_{i}-m_{1})\|^2`
 
-   2. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`.
-      Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}`
-      furthest from :math:`m_{2}` have a higher probability of being selected
-      than those :math:`x_{i}` close to :math:`m_{1}`.
+		   2. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`.
+		      Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}`
+		      furthest from :math:`m_{2}` have a higher probability of being selected
+		      than those :math:`x_{i}` close to :math:`m_{1}`.
 
-   3. Choose the next center :math:`m_{2}` by drawing at random according to
-      the weighted probability distribution.
+		   3. Choose the next center :math:`m_{2}` by drawing at random according to
+		      the weighted probability distribution.
 
-   4. Repeat until :math:`K` centers have been chosen.
+		   4. Repeat until :math:`K` centers have been chosen.
 
 -  **Furthest**
 
    		a. Choose one center :math:`m_{1}` at random.
 
-   1. Calculate the difference between :math:`m_{1}` and each of the
-      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
+		   1. Calculate the difference between :math:`m_{1}` and each of the
+		      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
 
-   2. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i},
-      m_{1})`.
+		   2. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i},
+		      m_{1})`.
 
-   3. Repeat until :math:`K` centers have been chosen.
+		   3. Repeat until :math:`K` centers have been chosen.
 
 2. Once :math:`K` initial centers have been chosen calculate the difference
    between each observation :math:`x_{i}` and each of the centers
@@ -292,8 +292,9 @@ Defining a GLM Model
    key.
 
 -  **training\_frame**: (Required) Select the dataset used to build the
-   model. **NOTE**: If you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+   model. 
+
+   		**NOTE**: If you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
 -  **validation\_frame**: (Optional) Select the dataset used to evaluate
    the accuracy of the model.
@@ -366,8 +367,9 @@ Defining a GLM Model
 
 -  **lambda\_search**: Check this checkbox to enable lambda search,
    starting with lambda max. The given lambda is then interpreted as
-   lambda min. >\ **Note**: Lambda search is not supported when
-   cross-validation is enabled.
+   lambda min.
+
+   		**Note**: Lambda search is not supported when cross-validation is enabled.
 
 -  **nlambdas**: (Applicable only if **lambda\_search** is enabled)
    Specify the number of lambdas to use in the search. The default is
@@ -414,15 +416,16 @@ Defining a GLM Model
 
 -  **offset\_column**: Select a column to use as the offset; the value
    cannot be the same as the value for the ``weights_column``.
-   >\ *Note*: Offsets are per-row "bias values" that are used during
-   model training. For Gaussian distributions, they can be seen as
-   simple corrections to the response (y) column. Instead of learning to
-   predict the response (y-row), the model learns to predict the (row)
-   offset of the response column. For other distributions, the offset
-   corrections are applied in the linearized space before applying the
-   inverse link function to get the actual response values. For more
-   information, refer to the following
-   `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+	   
+	   **Note:** Offsets are per-row "bias values" that are used during
+	   model training. For Gaussian distributions, they can be seen as
+	   simple corrections to the response (y) column. Instead of learning to
+	   predict the response (y-row), the model learns to predict the (row)
+	   offset of the response column. For other distributions, the offset
+	   corrections are applied in the linearized space before applying the
+	   inverse link function to get the actual response values. For more
+	   information, refer to the following
+	   `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`_.
 
 -  **weights\_column**: Select a column to use for the observation
    weights, which are used for bias correction. The specified
@@ -430,11 +433,12 @@ Defining a GLM Model
    ``training_frame``. *Python only*: To use a weights column when
    passing an H2OFrame to ``x`` instead of a list of column names, the
    specified ``training_frame`` must contain the specified
-   ``weights_column``. >\ *Note*: Weights are per-row observation
-   weights and do not increase the size of the data frame. This is
-   typically the number of times a row is repeated, but non-integer
-   values are supported as well. During training, rows with higher
-   weights matter more, due to the larger loss function pre-factor.
+   ``weights_column``.
+	   *Note*: Weights are per-row observation
+	   weights and do not increase the size of the data frame. This is
+	   typically the number of times a row is repeated, but non-integer
+	   values are supported as well. During training, rows with higher
+	   weights matter more, due to the larger loss function pre-factor.
 
 -  **max\_iterations**: Specify the number of training iterations.
 
@@ -476,9 +480,9 @@ Defining a GLM Model
 
 -  **prior**: Specify prior probability for p(y==1). Use this parameter
    for logistic regression if the data has been sampled and the mean of
-   response does not reflect reality. Note: this is simple method
-   affecting only the intercept, you may want to use weights and offset
-   for better fit.
+   response does not reflect reality. 
+
+   		**Note:** this is simple method affecting only the intercept, you may want to use weights and offset for better fit.
 
 -  **lambda\_min\_ratio**: Specify the minimum lambda to use for lambda
    search (specified as a ratio of **lambda\_max**).
@@ -505,75 +509,65 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-| Depending on the selected missing value handling policy, they are
-  either imputed mean or the whole row is skipped.
-| The default behavior is mean imputation. Note that categorical
-  variables are imputed by adding extra "missing" level.
-| Optionally, glm can skip all rows with any missing values.
+ Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.
 
--  **How does the algorithm handle missing values during testing?** Same
-   as during training. If the missing value handling is set to skip and
-   we are generating predictions, skipped rows will have Na (missing)
-   prediction.
+ The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level. 
+
+ Optionally, glm can skip all rows with any missing values.
+
+-  **How does the algorithm handle missing values during testing?** 
+
+ Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 -  **What happens if the response has missing values?**
-
-The rows with missing response are ignored during model training and
-validation.
+ 
+ The rows with missing response are ignored during model training and validation.
 
 -  **What happens during prediction if the new sample has categorical
-   levels not seen in training?** The value will be filled with either
-   special missing level (if trained with missing values and
-   missing\_value\_handling was set to MeanImputation) or 0.
+   levels not seen in training?** 
+
+ The value will be filled with either special missing level (if trained with missing values and ``missing_value_handling`` was set to ``MeanImputation``) or 0.
 
 -  **Does it matter if the data is sorted?**
 
-No.
+ No.
 
 -  **Should data be shuffled before training?**
 
-No.
+ No.
 
 -  **How does the algorithm handle highly imbalanced data in a response
    column?**
 
-GLM does not require special handling for imbalanced data.
+ GLM does not require special handling for imbalanced data.
 
 -  **What if there are a large number of columns?**
 
-IRLS will get quadratically slower with the number of columns. Try
-L-BFGS for datasets with more than 5-10 thousand columns.
+ IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
-GLM internally one-hot encodes the categorical factor levels; the same
-limitations as with a high column count will apply.
+ GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
 
 -  **When building the model, does GLM use all features or a selection
    of the best features?**
 
-Typically, GLM picks the best predictors, especially if lasso is used
-(``alpha = 1``). By default, the GLM model includes an L1 penalty and
-will pick only the most predictive predictors.
+ Typically, GLM picks the best predictors, especially if lasso is used (``alpha = 1``). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
 
 -  **When running GLM, is it better to create a cluster that uses many
    smaller nodes or fewer larger nodes?**
 
-A rough heuristic would be:
+ A rough heuristic would be:
 
-nodes ~=M\ *N^2/(p*\ 1e8)
+ :math:`nodes ~=(M\ *N^2)/(p\ *1e8)`
 
-where M is the number of observations, N is the number of columns
-(categorical columns count as a single column in this case), and p is
-the number of CPU cores per node.
+ where M is the number of observations, N is the number of columns (categorical columns count as a single column in this case), and p is the number of CPU cores per node.
 
-For example, a dataset with 250 columns and 1M rows would optimally use
-about 20 nodes with 32 cores each (following the formula
-250^2\ *1000000/(32*\ 1e8) = 19.5 ~= 20).
+ For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula :math:`(1000000\ *250^2)/(32\ *1e8) = 19.5 ~= 20`).
 
 -  **How is variable importance calculated for GLM?**
 
-For GLM, the variable importance represents the coefficient magnitudes.
+ For GLM, the variable importance represents the coefficient magnitudes.
 
 GLM Algorithm
 ~~~~~~~~~~~~~
@@ -583,72 +577,70 @@ the generalization of linear models to non-linear distributions of the
 response variable Y, H2O fits GLM models based on the maximum likelihood
 estimation via iteratively reweighed least squares.
 
-Let (y_{1},…,y_{n}) be n observations of the independent, random
-response variable (Y_{i}).
+Let :math:`y_{1},…,y_{n}` be n observations of the independent, random
+response variable :math:`Y_{i}`.
 
 Assume that the observations are distributed according to a function
 from the exponential family and have a probability density function of
 the form:
 
-(f(y_{i})=exp[:raw-latex:`\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)}`
-+ c(y_{i}; :raw-latex:`\phi`)]) where (:raw-latex:`\theta`) and
-(:raw-latex:`\phi`) are location and scale parameters, and (:
-a_{i}(:raw-latex:`\phi`), :b\_{i}(:raw-latex:`\theta`\ *{i}),:
-c*\ {i}(y_{i}; :raw-latex:`\phi`)) are known functions.
+:math:`f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)}
++ c(y_{i}; \phi)]` where :math:`\theta` and
+:math:`\phi` are location and scale parameters, and :math:`a_{i}(\phi),b_{i}(\theta_{i}),c_{i}(y_{i}; \phi)` are known functions.
 
-(a_{i}) is of the form (:a_{i}=:raw-latex:`\frac{\phi}{p_{i}}`;
+(a_{i}) is of the form (:a_{i}=\frac{\phi}{p_{i}}`;
 p_{i}) is a known prior weight.
 
 When (Y) has a pdf from the exponential family:
 
-(E(Y\_{i})=:raw-latex:`\mu`\ *{i}=b^{:raw-latex:`\prime`})
-(var(Y*\ {i})=:raw-latex:`\sigma`\ *{i}:sup:`2=b`\ {:raw-latex:`\prime`:raw-latex:`\prime`}(:raw-latex:`\theta`*\ {i})a\_{i}(:raw-latex:`\phi`))
+(E(Y\_{i})=\mu`\ *{i}=b^{\prime`})
+(var(Y*\ {i})=\sigma`\ *{i}:sup:`2=b`\ {\prime`\prime`}(\theta`*\ {i})a\_{i}(\phi`))
 
-Let (g(:raw-latex:`\mu`\ *{i})=:raw-latex:`\eta`*\ {i}) be a monotonic,
+Let (g(\mu`\ *{i})=\eta`*\ {i}) be a monotonic,
 differentiable transformation of the expected value of (y\_{i}). The
-function (:raw-latex:`\eta`\_{i}) is the link function and follows a
+function (\eta`\_{i}) is the link function and follows a
 linear model.
 
-(g(:raw-latex:`\mu`\ *{i})=:raw-latex:`\eta`*\ {i}=:raw-latex:`\mathbf{x_{i}^{\prime}}`:raw-latex:`\beta`)
+(g(\mu`\ *{i})=\eta`*\ {i}=\mathbf{x_{i}^{\prime}}`\beta`)
 
 When inverted:
-(:raw-latex:`\mu`=g^{-1}(:raw-latex:`\mathbf{x_{i}^{\prime}}`:raw-latex:`\beta`))
+(\mu`=g^{-1}(\mathbf{x_{i}^{\prime}}`\beta`))
 
 **Maximum Likelihood Estimation**
 
 For an initial rough estimate of the parameters
-(:raw-latex:`\hat{\beta}`), use the estimate to generate fitted values:
-(:raw-latex:`\mu`\_{i}=g^{-1}(:raw-latex:`\hat{\eta_{i}}`))
+(\hat{\beta}`), use the estimate to generate fitted values:
+(\mu`\_{i}=g^{-1}(\hat{\eta_{i}}`))
 
 Let (z) be a working dependent variable such that
-(z\_{i}=:raw-latex:`\hat{\eta_{i}}`+(y_{i}-:raw-latex:`\hat{\mu_{i}}`):raw-latex:`\frac{d\eta_{i}}{d\mu_{i}}`),
+(z\_{i}=\hat{\eta_{i}}`+(y_{i}-\hat{\mu_{i}}`)\frac{d\eta_{i}}{d\mu_{i}}`),
 
-where (:raw-latex:`\frac{d\eta_{i}}{d\mu_{i}}`) is the derivative of the
+where (\frac{d\eta_{i}}{d\mu_{i}}`) is the derivative of the
 link function evaluated at the trial estimate.
 
 Calculate the iterative weights:
-(w\_{i}=:raw-latex:`\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`)
+(w\_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`)
 
-Where (b^{:raw-latex:`\prime`:raw-latex:`\prime`}) is the second
-derivative of (b(:raw-latex:`\theta`\_{i})) evaluated at the trial
+Where (b^{\prime`\prime`}) is the second
+derivative of (b(\theta`\_{i})) evaluated at the trial
 estimate.
 
-Assume (a_{i}(:raw-latex:`\phi`)) is of the form
-(:raw-latex:`\frac{\phi}{p_{i}}`). The weight (w_{i}) is inversely
+Assume (a_{i}(\phi`)) is of the form
+(\frac{\phi}{p_{i}}`). The weight (w_{i}) is inversely
 proportional to the variance of the working dependent variable (z_{i})
 for current parameter estimates and proportionality factor
-(:raw-latex:`\phi`).
+(\phi`).
 
 Regress (z_{i}) on the predictors (x_{i}) using the weights (w_{i})
-to obtain new estimates of (:raw-latex:`\beta`).
-(:raw-latex:`\hat{\beta}`=(:raw-latex:`\mathbf{X}`\ :sup:`{:raw-latex:`\prime`}:raw-latex:`\mathbf{W}`:raw-latex:`\mathbf{X}`)`\ {-1}:raw-latex:`\mathbf{X}`^{:raw-latex:`\prime`}:raw-latex:`\mathbf{W}`:raw-latex:`\mathbf{z}`)
+to obtain new estimates of (\beta`).
+(\hat{\beta}`=(\mathbf{X}`\ :sup:`{\prime`}\mathbf{W}`\mathbf{X}`)`\ {-1}\mathbf{X}`^{\prime`}\mathbf{W}`\mathbf{z}`)
 
-Where (:raw-latex:`\mathbf{X}`) is the model matrix,
-(:raw-latex:`\mathbf{W}`) is a diagonal matrix of (w_{i}), and
-(:raw-latex:`\mathbf{z}`) is a vector of the working response variable
+Where (\mathbf{X}`) is the model matrix,
+(\mathbf{W}`) is a diagonal matrix of (w_{i}), and
+(\mathbf{z}`) is a vector of the working response variable
 (z_{i}).
 
-This process is repeated until the estimates (:raw-latex:`\hat{\beta}`)
+This process is repeated until the estimates (\hat{\beta}`)
 change by less than the specified amount.
 
 **Cost of computation**
@@ -663,7 +655,7 @@ Y values depend on information in each of the predictor variable
 vectors. If O is a complexity function, N is the number of observations
 (or rows), and P is the number of predictors (or columns) then
 
-    (Runtime:raw-latex:`\propto `p^3+:raw-latex:`\frac{(N*p^2)}{CPUs}`)
+    (Runtime\propto `p^3+\frac{(N*p^2)}{CPUs}`)
 
 Distribution reduces the time it takes an algorithm to process because
 it decreases N.
@@ -762,8 +754,9 @@ Defining a DRF Model
    key.
 
 -  **training\_frame**: (Required) Select the dataset used to build the
-   model. **NOTE**: If you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+   model. 
+	   **NOTE**: If you click the **Build a model** button from the
+	   ``Parse`` cell, the training frame is entered automatically.
 
 -  **validation\_frame**: (Optional) Select the dataset used to evaluate
    the accuracy of the model.
@@ -1307,44 +1300,44 @@ for a set of discrete valued features X
 
 The joint likelihood of the data can be expressed as:
 
-(:raw-latex:`\mathcal{L}` : (:raw-latex:`\phi`(y),:
-:raw-latex:`\phi`\ *{i\|y=1},::raw-latex:`\phi`*\ {i\|y=0})=:raw-latex:`\Pi`\_{i=1}^{m}
+(\mathcal{L}` : (\phi`(y),:
+\phi`\ *{i\|y=1},:\phi`*\ {i\|y=0})=\Pi`\_{i=1}^{m}
 p(X^{(i)},: y^{(i)}))
 
 The model can be parameterized by:
 
-(:raw-latex:`\phi`\ *{i\|y=0}= p(x*\ {i}=1\| y=0);:
-:raw-latex:`\phi`\ *{i\|y=1}= p(x*\ {i}=1\|y=1);: :raw-latex:`\phi`(y))
+(\phi`\ *{i\|y=0}= p(x*\ {i}=1\| y=0);:
+\phi`\ *{i\|y=1}= p(x*\ {i}=1\|y=1);: \phi`(y))
 
-Where (:raw-latex:`\phi`\ *{i\|y=0}= p(x*\ {i}=1\| y=0)) can be thought
+Where (\phi`\ *{i\|y=0}= p(x*\ {i}=1\| y=0)) can be thought
 of as the fraction of the observed instances where feature (x\_{i}) is
 observed, and the outcome is (y=0,
-:raw-latex:`\phi`\ *{i\|y=1}=p(x*\ {i}=1\| y=1)) is the fraction of the
+\phi`\ *{i\|y=1}=p(x*\ {i}=1\| y=1)) is the fraction of the
 observed instances where feature (x\_{i}) is observed, and the outcome
 is (y=1), and so on.
 
 The objective of the algorithm is to maximize with respect to
-(:raw-latex:`\phi`\ *{i\|y=0},  :raw-latex:`\phi`*\ {i\|y=1}, and
- :raw-latex:`\phi`(y))
+(\phi`\ *{i\|y=0},  \phi`*\ {i\|y=1}, and
+ \phi`(y))
 
 Where the maximum likelihood estimates are:
 
-(:raw-latex:`\phi`\_{j\|y=1}=
-:raw-latex:`\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1)}{\Sigma_{i=1}^{m}(y^{(i)}=1}`)
+(\phi`\_{j\|y=1}=
+\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1)}{\Sigma_{i=1}^{m}(y^{(i)}=1}`)
 
-(:raw-latex:`\phi`\_{j\|y=0}=
-:raw-latex:`\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0)}{\Sigma_{i=1}^{m}(y^{(i)}=0}`)
+(\phi`\_{j\|y=0}=
+\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0)}{\Sigma_{i=1}^{m}(y^{(i)}=0}`)
 
-(:raw-latex:`\phi`(y)= :raw-latex:`\frac{(y^{i} = 1)}{m}`)
+(\phi`(y)= \frac{(y^{i} = 1)}{m}`)
 
-Once all parameters (:raw-latex:`\phi`\ *{j\|y}) are fitted, the model
+Once all parameters (\phi`\ *{j\|y}) are fitted, the model
 can be used to predict new examples with features (X*\ {(i^\*)}).
 
 This is carried out by calculating:
 
-(p(y=1\|x)=:raw-latex:`\frac{\Pi p(x_i|y=1) p(y=1)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}`)
+(p(y=1\|x)=\frac{\Pi p(x_i|y=1) p(y=1)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}`)
 
-(p(y=0\|x)=:raw-latex:`\frac{\Pi p(x_i|y=0) p(y=0)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}`)
+(p(y=0\|x)=\frac{\Pi p(x_i|y=0) p(y=0)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}`)
 
 and predicting the class with the highest probability.
 
@@ -1355,11 +1348,11 @@ for these features predict a probability of 0 for all cases of y.
 Laplace smoothing allows a model to predict on out of training data
 features by adjusting the maximum likelihood estimates to be:
 
-(:raw-latex:`\phi`\_{j\|y=1}=
-:raw-latex:`\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=1 \: + \: 2}`)
+(\phi`\_{j\|y=1}=
+\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=1 \: + \: 2}`)
 
-(:raw-latex:`\phi`\_{j\|y=0}=
-:raw-latex:`\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=0 \: + \: 2}`)
+(\phi`\_{j\|y=0}=
+\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=0 \: + \: 2}`)
 
 Note that in the general case where y takes on k values, there are k+1
 modified parameter estimates, and they are added in when the denominator
@@ -1590,7 +1583,7 @@ supervised learning models on the new data frame.
 PCA Algorithm
 ~~~~~~~~~~~~~
 
-Let (X) be an (M:raw-latex:`\times `N) matrix where
+Let (X) be an (M\times `N) matrix where
 
 -  Each row corresponds to the set of all measurements on a particular
    attribute, and
@@ -1600,20 +1593,20 @@ Let (X) be an (M:raw-latex:`\times `N) matrix where
 
 The covariance matrix (C\_{x}) is
 
-(C\_{x}=:raw-latex:`\frac{1}{n}`XX^{T})
+(C\_{x}=\frac{1}{n}`XX^{T})
 
 where (n) is the number of observations.
 
-(C\_{x}) is a square, symmetric (m:raw-latex:`\times `m) matrix, the
+(C\_{x}) is a square, symmetric (m\times `m) matrix, the
 diagonal entries of which are the variances of attributes, and the
 off-diagonal entries are covariances between attributes.
 
 PCA convergence is based on the method described by Gockenbach: "The
 rate of convergence of the power method depends on the ratio
-(lambda\_2\|/\|:raw-latex:`\lambda`\_1). If this is small...then the
+(lambda\_2\|/\|\lambda`\_1). If this is small...then the
 power method converges rapidly. If the ratio is close to 1, then
 convergence is quite slow. The power method will fail if (lambda\_2\| =
-\|:raw-latex:`\lambda`\_1)." (567).
+\|\lambda`\_1)." (567).
 
 The objective of PCA is to maximize variance while minimizing
 covariance.
@@ -1621,28 +1614,28 @@ covariance.
 To accomplish this, for a new matrix (C\_{y}) with off diagonal entries
 of 0, and each successive dimension of Y ranked according to variance,
 PCA finds an orthonormal matrix (P) such that (Y=PX) constrained by the
-requirement that (C\_{y}=:raw-latex:`\frac{1}{n}`YY^{T}) be a diagonal
+requirement that (C\_{y}=\frac{1}{n}`YY^{T}) be a diagonal
 matrix.
 
 The rows of (P) are the principal components of X.
 
-(C\_{y}=:raw-latex:`\frac{1}{n}`YY\ :sup:`{T})
-(=:raw-latex:`\frac{1}{n}`(PX)(PX)`\ {T}) (C\_{y}=PC\_{x}P^{T}.)
+(C\_{y}=\frac{1}{n}`YY\ :sup:`{T})
+(=\frac{1}{n}`(PX)(PX)`\ {T}) (C\_{y}=PC\_{x}P^{T}.)
 
 Because any symmetric matrix is diagonalized by an orthogonal matrix of
 its eigenvectors, solve matrix (P) to be a matrix where each row is an
-eigenvector of (:raw-latex:`\frac{1}{n}`XX^{T}=C\_{x})
+eigenvector of (\frac{1}{n}`XX^{T}=C\_{x})
 
 Then the principal components of (X) are the eigenvectors of (C\_{x}),
 and the (i^{th}) diagonal value of (C\_{y}) is the variance of (X) along
 (p\_{i}).
 
 Eigenvectors of (C\_{x}) are found by first finding the eigenvalues
-(:raw-latex:`\lambda`) of (C\_{x}).
+(\lambda`) of (C\_{x}).
 
-For each eigenvalue (:raw-latex:`\lambda`)
-((C-{x}-:raw-latex:`\lambda `I)x =0) where (x) is the eigenvector
-associated with (:raw-latex:`\lambda`).
+For each eigenvalue (\lambda`)
+((C-{x}-\lambda `I)x =0) where (x) is the eigenvector
+associated with (\lambda`).
 
 Solve for (x) by Gaussian elimination.
 
@@ -1650,8 +1643,8 @@ Recovering SVD from GLRM
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 GLRM gives (x) and (y), where (x
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R `^{n \* k}) and ( y
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R `^{k\*m} )
+\in `\rm \Bbb I \!\Bbb R `^{n \* k}) and ( y
+\in `\rm \Bbb I \!\Bbb R `^{k\*m} )
 
    - (n)= number of rows (A)
 
@@ -1668,7 +1661,7 @@ First, perform QR decomposition of (x) and (y^T):
     (y^T = ZS), where (Q^TQ = I = Z^TZ)
 
       Call JAMA QR Decomposition directly on (y^T) to get ( Z
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \! \Bbb R\), \( S \in \Bbb I \! \Bbb R \)`
+\in `\rm \Bbb I \! \Bbb R\), \( S \in \Bbb I \! \Bbb R \)`
 
       ( R ) from QR decomposition of ( x ) is the upper triangular
 factor of Cholesky of (X^TX) Gram
@@ -1678,12 +1671,12 @@ factor of Cholesky of (X^TX) Gram
       ( X^TX= (R:sup:`TQ`\ T) QR = R^TR ), since (Q^TQ=I ) => (R=L^T)
 (transpose lower triangular)
 
-**Note**: In code, (X^TX :raw-latex:`\over `n) = ( LL^T )
+**Note**: In code, (X^TX \over `n) = ( LL^T )
 
-   ( X^TX = (L :raw-latex:`\sqrt{n}`)(L :raw-latex:`\sqrt{n}`)^T =R^TR )
+   ( X^TX = (L \sqrt{n}`)(L \sqrt{n}`)^T =R^TR )
 
-   ( R = L^T :raw-latex:`\sqrt{n}`
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \! \Bbb R`^{k \* k} ) reduced QR
+   ( R = L^T \sqrt{n}`
+\in `\rm \Bbb I \! \Bbb R`^{k \* k} ) reduced QR
 decomposition.
 
 For more information, refer to the `Rectangular
@@ -1692,27 +1685,27 @@ section of "QR Decomposition" on Wikipedia.
 
 ( XY = QR(ZS)^T = Q(RS\ :sup:`T)Z`\ T )
 
-**Note**: ( (RS^T) :raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R \)`
+**Note**: ( (RS^T) \in `\rm \Bbb I \!\Bbb R \)`
 
 Find SVD (locally) of ( RS^T )
 
-( RS^T = U :raw-latex:`\sum `V^T, U^TU = I = V^TV ) orthogonal
+( RS^T = U \sum `V^T, U^TU = I = V^TV ) orthogonal
 
-( XY = Q(RS\ :sup:`T)Z`\ T = (QU :raw-latex:`\sum `(V^T Z^T) SVD )
+( XY = Q(RS\ :sup:`T)Z`\ T = (QU \sum `(V^T Z^T) SVD )
 
    ( (QU)^T(QU) = U^T Q^TQU U^TU = I)
 
    ( (ZV)^T(ZV) = V\ :sup:`TZ`\ TZV = V^TV =I )
 
 Right singular vectors: ( ZV
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{m \* k} )
+\in `\rm \Bbb I \!\Bbb R`^{m \* k} )
 
 Singular values: (
-:raw-latex:`\sum `:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{k
+\sum `\in `\rm \Bbb I \!\Bbb R`^{k
 \* k} ) diagonal
 
 Left singular vectors: ( (QU)
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{n \* k})
+\in `\rm \Bbb I \!\Bbb R`^{n \* k})
 
 References
 ~~~~~~~~~~
@@ -2127,17 +2120,17 @@ Initialize (f\_{k0} = 0,: k=1,2,…,K)
 For (m=1) to (M:)
 
   (a) Set
-(p\_{k}(x)=:raw-latex:`\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}}`,:k=1,2,…,K)
+(p\_{k}(x)=\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}}`,:k=1,2,…,K)
 
   (b) For (k=1) to (K):
 
     i. Compute (r\_{ikm}=y\_{ik}-p\_{k}(x\_{i}),:i=1,2,…,N.)     ii. Fit
 a regression tree to the targets (r\_{ikm},:i=1,2,…,N), giving terminal
 regions (R\_{jim},:j=1,2,…,J\_{m}.) (iii. Compute)
-(:raw-latex:`\gamma`\ *{jkm}=:raw-latex:`\frac{K-1}{K}`::raw-latex:`\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})}`,:j=1,2,…,J*\ {m}.)
-(:iv.:Update:f\_{km}(x)=f\_{k,m-1}(x)+:raw-latex:`\sum`\ *{j=1}^{J*\ {m}}:raw-latex:`\gamma`\ *{jkm}I(x:raw-latex:`\in`:R*\ {jkm}).)
+(\gamma`\ *{jkm}=\frac{K-1}{K}`:\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})}`,:j=1,2,…,J*\ {m}.)
+(:iv.:Update:f\_{km}(x)=f\_{k,m-1}(x)+\sum`\ *{j=1}^{J*\ {m}}\gamma`\ *{jkm}I(x\in`:R*\ {jkm}).)
 
-Output (::raw-latex:`\hat{f_{k}}`(x)=f\_{kM}(x),:k=1,2,…,K.)
+Output (:\hat{f_{k}}`(x)=f\_{kM}(x),:k=1,2,…,K.)
 
 Be aware that the column type affects how the histogram is created and
 the column type depends on whether rows are excluded or assigned a
