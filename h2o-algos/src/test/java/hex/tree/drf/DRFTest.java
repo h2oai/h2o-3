@@ -31,8 +31,6 @@ public class DRFTest extends TestUtil {
   abstract static class PrepData { abstract int prep(Frame fr); }
 
   static String[] s(String...arr)  { return arr; }
-  static long[]   a(long ...arr)   { return arr; }
-  static long[][] a(long[] ...arr) { return arr; }
 
   @Test public void testClassIris1() throws Throwable {
 
