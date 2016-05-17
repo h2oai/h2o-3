@@ -54,7 +54,7 @@ of the output that displayed when you created the cluster).
 
 Use YARN to obtain the ``stdout`` and ``stderr`` logs that are used for
 troubleshooting. To learn how to access YARN based on management
-software, version, and job status, see `Accessing YARN <#AccessYARN>`_.
+software, version, and job status, see `Accessing YARN`_.
 
 1. Click the **Applications** link to view all jobs, then click the
    **History** link for the job.
@@ -83,7 +83,7 @@ If you are using Hadoop and the job is still running:
 -  Use YARN to obtain the ``stdout`` and ``stderr`` logs that are used
    for troubleshooting. To learn how to access YARN based on management
    software, version, and job status, see `Accessing
-   YARN <#AccessYARN>`_.
+   YARN`_.
 
 1. Click the **Applications** link to view all jobs, then click the
    **ApplicationMaster** link for the job.

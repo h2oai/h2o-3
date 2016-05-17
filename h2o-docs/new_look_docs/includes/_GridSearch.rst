@@ -95,7 +95,7 @@ Shared Tree Hyperparameters Supported by Grid Search
 -  ``col_sample_rate_change_per_level``
 -  ``score_tree_interval``
 -  ``min_split_improvement``
--  ``random_split_points``
+-  ``histogram_type``
 
 DRF Hyperparameters Supported by Grid Search
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

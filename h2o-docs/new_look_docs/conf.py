@@ -116,10 +116,10 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Use a built-in theme with RTD.
-#html_style = 'source/css/theme.css'
+# html_style = 'spinx_rtd_theme/static/css/theme.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -127,7 +127,7 @@ html_theme = 'sphinx_rtd_theme'
 html_theme_options = {"logo_only":"true"}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ["sphinx_rtd_theme/static/css"]
+html_theme_path = ["sphinx_rtd_theme/source/css"]
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
@@ -148,7 +148,7 @@ html_favicon = "images/favicon.ico"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static', 'source/css/']
+html_static_path = ['sphinx_rtd_theme/static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

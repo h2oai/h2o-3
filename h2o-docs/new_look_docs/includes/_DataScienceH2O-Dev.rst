@@ -193,39 +193,25 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
 1. Choose :math:`K` initial cluster centers :math:`m_{k}` according to one of the
    following:
 
-   -  **Randomization**: Choose :math:`K` clusters from the set of :math:`N`
-      observations at random so that each observation has an equal
-      chance of being chosen.
+   -  **Randomization**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
 
-   -  **Plus Plus**
+   -  **Plus Plus**: Choose one center :math:`m_{1}` at random.
 
-   		a. Choose one center :math:`m_{1}` at random.
+    1. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = \|(x_{i}-m_{1})\|^2`
 
-		   1. Calculate the difference between :math:`m_{1}` and each of the
-		      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) =
-		      \|(x_{i}-m_{1})\|^2`
+    2. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`. Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}` furthest from :math:`m_{2}` have a higher probability of being selected than those :math:`x_{i}` close to :math:`m_{1}`.
 
-		   2. Let :math:`P(i)` be the probability of choosing :math:`x_{i}` as :math:`m_{2}`.
-		      Weight :math:`P(i)` by :math:`d(x_{i}, m_{1})` so that those :math:`x_{i}`
-		      furthest from :math:`m_{2}` have a higher probability of being selected
-		      than those :math:`x_{i}` close to :math:`m_{1}`.
+    3. Choose the next center :math:`m_{2}` by drawing at random according to the weighted probability distribution.
+   
+    4. Repeat until :math:`K` centers have been chosen.
 
-		   3. Choose the next center :math:`m_{2}` by drawing at random according to
-		      the weighted probability distribution.
+   -  **Furthest**: Choose one center :math:`m_{1}` at random.
 
-		   4. Repeat until :math:`K` centers have been chosen.
+    1. Calculate the difference between :math:`m_{1}` and each of the remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
 
--  **Furthest**
+    2. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i}, m_{1})`.
 
-   		a. Choose one center :math:`m_{1}` at random.
-
-		   1. Calculate the difference between :math:`m_{1}` and each of the
-		      remaining :math:`N-1` observations :math:`x_{i}`. :math:`d(x_{i}, m_{1}) = ||(x_{i}-m_{1})||^2`
-
-		   2. Choose :math:`m_{2}` to be the :math:`x_{i}` that maximizes :math:`d(x_{i},
-		      m_{1})`.
-
-		   3. Repeat until :math:`K` centers have been chosen.
+    3. Repeat until :math:`K` centers have been chosen.
 
 2. Once :math:`K` initial centers have been chosen calculate the difference
    between each observation :math:`x_{i}` and each of the centers
@@ -292,16 +278,15 @@ Defining a GLM Model
    key.
 
 -  **training\_frame**: (Required) Select the dataset used to build the
-   model. 
-
-   		**NOTE**: If you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+   model. **NOTE**: If you click the **Build a model** button from the
+   ``Parse`` cell, the training frame is entered automatically.
 
 -  **validation\_frame**: (Optional) Select the dataset used to evaluate
    the accuracy of the model.
 
 -  **nfolds**: Specify the number of folds for cross-validation.
 
-   		**Note**: Lambda search is not supported when cross-validation is enabled.
+   	 **Note**: Lambda search is not supported when cross-validation is enabled.
 
 -  **response\_column**: (Required) Select the column to use as the
    independent variable.
@@ -330,18 +315,12 @@ Defining a GLM Model
 
 -  **family**: Select the model type.
 
-       -  If the family is **gaussian**, the data must be numeric
-          (**Real** or **Int**).
-       -  If the family is **binomial**, the data must be categorical 2
-          levels/classes or binary (**Enum** or **Int**).
-       -  If the family is **multinomial**, the data can be categorical
-          with more than two levels/classes (**Enum**).
-       -  If the family is **poisson**, the data must be numeric and
-          non-negative (**Int**).
-       -  If the family is **gamma**, the data must be numeric and
-          continuous and positive (**Real** or **Int**).
-       -  If the family is **tweedie**, the data must be numeric and
-          continuous (**Real**) and non-negative.
+   -  If the family is **gaussian**, the data must be numeric (**Real** or **Int**).
+   -  If the family is **binomial**, the data must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **multinomial**, the data can be categorical with more than two levels/classes (**Enum**).
+   -  If the family is **poisson**, the data must be numeric and non-negative (**Int**).
+   -  If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
+   -  If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
 
 -  **tweedie\_variance\_power**: (Only applicable if *Tweedie* is
    selected for **Family**) Specify the Tweedie variance power.
@@ -367,9 +346,9 @@ Defining a GLM Model
 
 -  **lambda\_search**: Check this checkbox to enable lambda search,
    starting with lambda max. The given lambda is then interpreted as
-   lambda min.
-
-   		**Note**: Lambda search is not supported when cross-validation is enabled.
+   lambda min. 
+   
+     **Note**: Lambda search is not supported when cross-validation is enabled.
 
 -  **nlambdas**: (Applicable only if **lambda\_search** is enabled)
    Specify the number of lambdas to use in the search. The default is
@@ -416,16 +395,8 @@ Defining a GLM Model
 
 -  **offset\_column**: Select a column to use as the offset; the value
    cannot be the same as the value for the ``weights_column``.
-	   
-	   **Note:** Offsets are per-row "bias values" that are used during
-	   model training. For Gaussian distributions, they can be seen as
-	   simple corrections to the response (y) column. Instead of learning to
-	   predict the response (y-row), the model learns to predict the (row)
-	   offset of the response column. For other distributions, the offset
-	   corrections are applied in the linearized space before applying the
-	   inverse link function to get the actual response values. For more
-	   information, refer to the following
-	   `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`_.
+   
+     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
 -  **weights\_column**: Select a column to use for the observation
    weights, which are used for bias correction. The specified
@@ -433,26 +404,20 @@ Defining a GLM Model
    ``training_frame``. *Python only*: To use a weights column when
    passing an H2OFrame to ``x`` instead of a list of column names, the
    specified ``training_frame`` must contain the specified
-   ``weights_column``.
-	   *Note*: Weights are per-row observation
-	   weights and do not increase the size of the data frame. This is
-	   typically the number of times a row is repeated, but non-integer
-	   values are supported as well. During training, rows with higher
-	   weights matter more, due to the larger loss function pre-factor.
+   ``weights_column``. 
+   
+    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **max\_iterations**: Specify the number of training iterations.
 
 -  **link**: Select a link function (Identity, Family\_Default, Logit,
    Log, Inverse, or Tweedie).
 
-       -  If the family is **Gaussian**, **Identity**, **Log**, and
-          **Inverse** are supported.
-       -  If the family is **Binomial**, **Logit** is supported.
-       -  If the family is **Poisson**, **Log** and **Identity** are
-          supported.
-       -  If the family is **Gamma**, **Inverse**, **Log**, and
-          **Identity** are supported.
-       -  If the family is **Tweedie**, only **Tweedie** is supported.
+   -  If the family is **Gaussian**, **Identity**, **Log**, and **Inverse** are supported.
+   -  If the family is **Binomial**, **Logit** is supported.
+   -  If the family is **Poisson**, **Log** and **Identity** are supported.
+   -  If the family is **Gamma**, **Inverse**, **Log**, and **Identity** are supported.
+   -  If the family is **Tweedie**, only **Tweedie** is supported.
 
 -  **max\_confusion\_matrix\_size**: Specify the maximum size (number of
    classes) for the confusion matrices printed in the logs.
@@ -481,8 +446,8 @@ Defining a GLM Model
 -  **prior**: Specify prior probability for p(y==1). Use this parameter
    for logistic regression if the data has been sampled and the mean of
    response does not reflect reality. 
-
-   		**Note:** this is simple method affecting only the intercept, you may want to use weights and offset for better fit.
+   
+     **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
 -  **lambda\_min\_ratio**: Specify the minimum lambda to use for lambda
    search (specified as a ratio of **lambda\_max**).
@@ -509,65 +474,61 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
- Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.
-
- The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level. 
-
- Optionally, glm can skip all rows with any missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level. Optionally, glm can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?** 
 
- Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
+  Same as during training. If the missing value handling is set to skip and we are generating predictions, skipped rows will have Na (missing) prediction.
 
 -  **What happens if the response has missing values?**
- 
- The rows with missing response are ignored during model training and validation.
+
+  The rows with missing response are ignored during model training and validation.
 
 -  **What happens during prediction if the new sample has categorical
    levels not seen in training?** 
-
- The value will be filled with either special missing level (if trained with missing values and ``missing_value_handling`` was set to ``MeanImputation``) or 0.
+   
+  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing\_value\_handling`` was set to **MeanImputation**).
 
 -  **Does it matter if the data is sorted?**
 
- No.
+  No.
 
 -  **Should data be shuffled before training?**
 
- No.
+  No.
 
 -  **How does the algorithm handle highly imbalanced data in a response
    column?**
 
- GLM does not require special handling for imbalanced data.
+  GLM does not require special handling for imbalanced data.
 
 -  **What if there are a large number of columns?**
 
- IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
+  IRLS will get quadratically slower with the number of columns. Try L-BFGS for datasets with more than 5-10 thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
- GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
+  GLM internally one-hot encodes the categorical factor levels; the same limitations as with a high column count will apply.
 
 -  **When building the model, does GLM use all features or a selection
    of the best features?**
 
- Typically, GLM picks the best predictors, especially if lasso is used (``alpha = 1``). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
+  Typically, GLM picks the best predictors, especially if lasso is used (``alpha = 1``). By default, the GLM model includes an L1 penalty and will pick only the most predictive predictors.
 
 -  **When running GLM, is it better to create a cluster that uses many
    smaller nodes or fewer larger nodes?**
 
- A rough heuristic would be:
+  A rough heuristic would be:
 
- :math:`nodes ~=(M\ *N^2)/(p\ *1e8)`
+   :math:`nodes ~=M *N^2/(p * 1e8)`
 
- where M is the number of observations, N is the number of columns (categorical columns count as a single column in this case), and p is the number of CPU cores per node.
+  where :math:`M` is the number of observations, :math:`N` is the number of columns (categorical columns count as a single column in this case), and :math:`p` is the number of CPU cores per node.
 
- For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula :math:`(1000000\ *250^2)/(32\ *1e8) = 19.5 ~= 20`).
+  For example, a dataset with 250 columns and 1M rows would optimally use about 20 nodes with 32 cores each (following the formula :math:`250^2 *1000000/(32* 1e8) = 19.5 ~= 20)`.
 
 -  **How is variable importance calculated for GLM?**
 
- For GLM, the variable importance represents the coefficient magnitudes.
+  For GLM, the variable importance represents the coefficient magnitudes.
 
 GLM Algorithm
 ~~~~~~~~~~~~~
@@ -584,64 +545,42 @@ Assume that the observations are distributed according to a function
 from the exponential family and have a probability density function of
 the form:
 
-:math:`f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)}
-+ c(y_{i}; \phi)]` where :math:`\theta` and
-:math:`\phi` are location and scale parameters, and :math:`a_{i}(\phi),b_{i}(\theta_{i}),c_{i}(y_{i}; \phi)` are known functions.
+  :math:`f(y_{i})=exp[\frac{y_{i}\theta_{i} - b(\theta_{i})}{a_{i}(\phi)} + c(y_{i}; \phi)]` where :math:`\theta` and :math:`\phi` are location and scale parameters, and :math:`a_{i}(\phi)`, :math:`b_{i}(\theta{i})`, and :math:`c_{i}(y_{i}; \phi)` are known functions.
 
-(a_{i}) is of the form (:a_{i}=\frac{\phi}{p_{i}}`;
-p_{i}) is a known prior weight.
+  :math:`a_{i}` is of the form :math:`a_{i}= \frac{\phi}{p_{i}}` where :math:`p_{i}` is a known prior weight.
 
-When (Y) has a pdf from the exponential family:
+When :math:`Y` has a pdf from the exponential family:
 
-(E(Y\_{i})=\mu`\ *{i}=b^{\prime`})
-(var(Y*\ {i})=\sigma`\ *{i}:sup:`2=b`\ {\prime`\prime`}(\theta`*\ {i})a\_{i}(\phi`))
+ :math:`E(Y_{i})=\mu_{i}=b^{\prime} var(Y_{i})=\sigma_{i}^2=b^{\prime\prime}(\theta_{i})a_{i}(\phi)`
 
-Let (g(\mu`\ *{i})=\eta`*\ {i}) be a monotonic,
-differentiable transformation of the expected value of (y\_{i}). The
-function (\eta`\_{i}) is the link function and follows a
+Let :math:`g(\mu_{i})=\eta_{i}` be a monotonic, differentiable transformation of the expected value of :math:`y_{i}`. The function :math:`\eta_{i}` is the link function and follows a
 linear model.
 
-(g(\mu`\ *{i})=\eta`*\ {i}=\mathbf{x_{i}^{\prime}}`\beta`)
+  :math:`g(\mu_{i})=\eta_{i}=\mathbf{x_{i}^{\prime}}\beta`
 
-When inverted:
-(\mu`=g^{-1}(\mathbf{x_{i}^{\prime}}`\beta`))
+When inverted: :math:`\mu=g^{-1}(\mathbf{x_{i}^{\prime}}\beta)`
 
 **Maximum Likelihood Estimation**
 
-For an initial rough estimate of the parameters
-(\hat{\beta}`), use the estimate to generate fitted values:
-(\mu`\_{i}=g^{-1}(\hat{\eta_{i}}`))
+For an initial rough estimate of the parameters :math:`\hat{\beta}`, use the estimate to generate fitted values: :math:`\mu_{i}=g^{-1}(\hat{\eta_{i}})`
 
-Let (z) be a working dependent variable such that
-(z\_{i}=\hat{\eta_{i}}`+(y_{i}-\hat{\mu_{i}}`)\frac{d\eta_{i}}{d\mu_{i}}`),
+Let :math:`z` be a working dependent variable such that :math:`z_{i}=\hat{\eta_{i}}+(y_{i}-\hat{\mu_{i}})\frac{d\eta_{i}}{d\mu_{i}}`,
 
-where (\frac{d\eta_{i}}{d\mu_{i}}`) is the derivative of the
-link function evaluated at the trial estimate.
+ where :math:`\frac{d\eta_{i}}{d\mu_{i}}` is the derivative of the link function evaluated at the trial estimate.
 
-Calculate the iterative weights:
-(w\_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`)
+Calculate the iterative weights: :math:`w_{i}=\frac{p_{i}}{[b^{\prime\prime}(\theta_{i})\frac{d\eta_{i}}{d\mu_{i}}^{2}]}`
 
-Where (b^{\prime`\prime`}) is the second
-derivative of (b(\theta`\_{i})) evaluated at the trial
-estimate.
+ where :math:`b^{\prime\prime}` is the second derivative of :math:`b(\theta_{i})` evaluated at the trial estimate.
 
-Assume (a_{i}(\phi`)) is of the form
-(\frac{\phi}{p_{i}}`). The weight (w_{i}) is inversely
-proportional to the variance of the working dependent variable (z_{i})
-for current parameter estimates and proportionality factor
-(\phi`).
+Assume :math:`a_{i}(\phi)` is of the form :math:`\frac{\phi}{p_{i}}`. The weight :math:`w_{i}` is inversely proportional to the variance of the working dependent variable :math:`z_{i}` for current parameter estimates and proportionality factor :math:`\phi`.
 
-Regress (z_{i}) on the predictors (x_{i}) using the weights (w_{i})
-to obtain new estimates of (\beta`).
-(\hat{\beta}`=(\mathbf{X}`\ :sup:`{\prime`}\mathbf{W}`\mathbf{X}`)`\ {-1}\mathbf{X}`^{\prime`}\mathbf{W}`\mathbf{z}`)
+Regress :math:`z_{i}` on the predictors :math:`x_{i}` using the weights :math:`w_{i}` to obtain new estimates of :math:`\beta`. 
 
-Where (\mathbf{X}`) is the model matrix,
-(\mathbf{W}`) is a diagonal matrix of (w_{i}), and
-(\mathbf{z}`) is a vector of the working response variable
-(z_{i}).
+  :math:`\hat{\beta}=(\mathbf{X}^{\prime}\mathbf{W}\mathbf{X})^{-1}\mathbf{X}^{\prime}\mathbf{W}\mathbf{z}`
 
-This process is repeated until the estimates (\hat{\beta}`)
-change by less than the specified amount.
+ where :math:`\mathbf{X}` is the model matrix, :math:`\mathbf{W}` is a diagonal matrix of :math:`w_{i}`, and :math:`\mathbf{z}` is a vector of the working response variable :math:`z_{i}`.
+
+This process is repeated until the estimates :math:`\hat{\beta}` change by less than the specified amount.
 
 **Cost of computation**
 
@@ -655,7 +594,7 @@ Y values depend on information in each of the predictor variable
 vectors. If O is a complexity function, N is the number of observations
 (or rows), and P is the number of predictors (or columns) then
 
-    (Runtime\propto `p^3+\frac{(N*p^2)}{CPUs}`)
+  :math:`Runtime \propto p^3+\frac{(N*p^2)}{CPUs}`
 
 Distribution reduces the time it takes an algorithm to process because
 it decreases N.
@@ -664,7 +603,7 @@ Relative to P, the larger that (N/CPUs) becomes, the more trivial p
 becomes to the overall computational cost. However, when p is greater
 than (N/CPUs), O is dominated by p.
 
-    (Complexity = O(p^3 + N\*p^2))
+  :math:`Complexity = O(p^3 + N*p^2)`
 
 For more information about how GLM works, refer to the `Generalized
 Linear Modeling booklet <http://h2o.ai/resources>`__.
@@ -754,9 +693,8 @@ Defining a DRF Model
    key.
 
 -  **training\_frame**: (Required) Select the dataset used to build the
-   model. 
-	   **NOTE**: If you click the **Build a model** button from the
-	   ``Parse`` cell, the training frame is entered automatically.
+   model. **NOTE**: If you click the **Build a model** button from the
+   ``Parse`` cell, the training frame is entered automatically.
 
 -  **validation\_frame**: (Optional) Select the dataset used to evaluate
    the accuracy of the model.
@@ -839,28 +777,18 @@ Defining a DRF Model
 -  **fold\_column**: Select the column that contains the
    cross-validation fold index assignment per observation.
 
--  **offset\_column**: Select a column to use as the offset. >\ *Note*:
-   Offsets are per-row "bias values" that are used during model
-   training. For Gaussian distributions, they can be seen as simple
-   corrections to the response (y) column. Instead of learning to
-   predict the response (y-row), the model learns to predict the (row)
-   offset of the response column. For other distributions, the offset
-   corrections are applied in the linearized space before applying the
-   inverse link function to get the actual response values. For more
-   information, refer to the following
-   `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset\_column**: Select a column to use as the offset. 
+
+    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
 -  **weights\_column**: Select a column to use for the observation
    weights, which are used for bias correction. The specified
    ``weights_column`` must be included in the specified
-   ``training_frame``. *Python only*: To use a weights column when
-   passing an H2OFrame to ``x`` instead of a list of column names, the
-   specified ``training_frame`` must contain the specified
-   ``weights_column``. >\ *Note*: Weights are per-row observation
-   weights and do not increase the size of the data frame. This is
-   typically the number of times a row is repeated, but non-integer
-   values are supported as well. During training, rows with higher
-   weights matter more, due to the larger loss function pre-factor.
+   ``training_frame``. 
+   
+    **Python only**: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+    
+   | **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **balance\_classes**: Oversample the minority classes to balance the
    class distribution. This option is not selected by default and can
@@ -875,7 +803,7 @@ Defining a DRF Model
    multi-class only. To disable, enter 0.
 
 -  **r2\_stopping**: Specify a threshold for the coefficient of
-   determination ((r^2)) metric value. When this threshold is met or
+   determination :math:`(r^2)` metric value. When this threshold is met or
    exceeded, H2O stops making trees.
 
 -  **stopping\_rounds**: Stops training when the option selected for
@@ -884,18 +812,14 @@ Defining a DRF Model
    feature, specify ``0``. The metric is computed on the validation data
    (if provided); otherwise, training data is used. When used with
    **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. >\ **Note**: If
-   cross-validation is enabled:
+   generated for the given **stopping\_metric** option. 
+   
+     **Note**: If cross-validation is enabled:
 
-   1. All cross-validation models stop training when the validation
-      metric doesn't improve.
-   2. The main model runs for the mean number of epochs.
-   3. N+1 models do *not* use **overwrite\_with\_best\_model**
-   4. N+1 models may be off by the number specified for
-      **stopping\_rounds** from the best model, but the cross-validation
-      metric estimates the performance of the main model for the
-      resulting number of epochs (which may be fewer than the specified
-      number of epochs).
+     1. All cross-validation models stop training when the validation metric doesn't improve.
+     2. The main model runs for the mean number of epochs.
+     3. N+1 models do *not* use **overwrite\_with\_best\_model**
+     4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 -  **stopping\_metric**: Select the metric to use for early stopping.
    The available options are:
@@ -972,7 +896,7 @@ Leaf Node Assignment
 
 Trees cluster observations into leaf nodes, and this information can be
 useful for feature engineering or model interpretability. Use
-**h2o.predict\_leaf\_node\_assignment(model, frame)** to get an H2OFrame
+**h2o.predict\_leaf\_node\_assignment(** *model*, *frame* **)** to get an H2OFrame
 with the leaf node assignments, or click the checkbox when making
 predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
@@ -983,47 +907,37 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-Missing values affect tree split points. NAs always “go left”, and hence
-affect the split-finding math (since the corresponding response for the
-row still matters). If the response is missing, then the row won't
-affect the split-finding math.
+  Missing values affect tree split points. NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
 
 -  **How does the algorithm handle missing values during testing?**
 
-During scoring, missing values "always go left" at any decision point in
-a tree. Due to dynamic binning in DRF, a row with a missing value
-typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
 
 -  **What happens if the response has missing values?**
 
-No errors will occur, but nothing will be learned from rows containing
-missing the response.
+  No errors will occur, but nothing will be learned from rows containing missing the response.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-DRF converts a new categorical level to a NA value in the test set, and
-then splits left on the NA value during scoring. The algorithm splits
-left on NA values because, during training, Na values are grouped with
-the outliers in the left-most bin.
+  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, Na values are grouped with the outliers in the left-most bin.
 
 -  **Does it matter if the data is sorted?**
 
-No.
+  No.
 
 -  **Should data be shuffled before training?**
 
-No.
+  No.
 
 -  **How does the algorithm handle highly imbalanced data in a response
    column?**
 
-Specify ``balance_classes``, ``class_sampling_factors`` and
-``max_after_balance_size`` to control over/under-sampling.
+  Specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
 
 -  **What if there are a large number of columns?**
 
-DRFs are best for datasets with fewer than a few thousand columns.
+  DRFs are best for datasets with fewer than a few thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
@@ -1032,64 +946,45 @@ never any one-hot encoding.
 
 -  **How is variable importance calculated for DRF?**
 
-Variable importance is determined by calculating the relative influence
-of each variable: whether that variable was selected during splitting in
-the tree building process and how much the squared error (over all
-trees) improved as a result.
+ Variable importance is determined by calculating the relative influence of each variable: whether that variable was selected during splitting in the tree building process and how much the squared error (over all trees) improved as a result.
 
 -  **How is column sampling implemented for DRF?**
 
-For an example model using:
+  For an example model using:
 
--  100 columns
--  ``col_sample_rate_per_tree`` is 0.602
--  ``mtries`` is -1 or 7 (refers to the number of active predictor
-   columns for the dataset)
+   - 100 columns
+   - ``col_sample_rate_per_tree`` is 0.602
+   - ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
 
-For each tree, the floor is used to determine the number - for this
-example, (0.602\*100)=60 out of the 100 - of columns that are randomly
-picked. For classification cases where ``mtries=-1``, the square root -
-for this example, (100)=10 columns - are then randomly chosen for each
-split decision (out of the total 60).
+  For each tree, the floor is used to determine the number - for this example, (0.602\*100)=60 out of the 100 ()of columns that are randomly picked_. For classification cases where ``mtries=-1``, the square root ()for this example, (100)=10 columns) are then randomly chosen for each split decision (out of the total 60).
 
-For regression, the floor - in this example, (100/3)=33 columns - is
-used for each split by default. If ``mtries=7``, then 7 columns are
-picked for each split decision (out of the 60).
+  For regression, the floor ()in this example, (100/3)=33 columns) is used for each split by default. If ``mtries=7``, then 7 columns are picked for each split decision (out of the 60).
 
-``mtries`` is configured independently of ``col_sample_rate_per_tree``,
-but it can be limited by it. For example, if
-``col_sample_rate_per_tree=0.01``, then there's only one column left for
+  ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there's only one column left for
 each split, regardless of how large the value for ``mtries`` is.
 
 DRF Algorithm
 ~~~~~~~~~~~~~
 
 .. raw:: html
-  
-  <embed>
-   <iframe src="//www.slideshare.net/slideshow/embed_code/key/tASzUyJ19dtJsQ" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen>
-  </embed>
+
+		<iframe src="http://www.slideshare.net/0xdata/rf-brighttalk" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen="true"> </iframe> 
 
 .. raw:: html
 
-  <iframe src="//www.slideshare.net/slideshow/embed_code/key/tASzUyJ19dtJsQ" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/0xdata/rf-brighttalk" title="Building Random Forest at Scale" target="_blank">Building Random Forest at Scale</a> </strong> from <strong><a href="//www.slideshare.net/0xdata" target="_blank">Sri Ambati</a></strong> </div>
-
+        <object width="480" height="385"><param name="movie" value="http://www.slideshare.net/0xdata/rf-brighttalk"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><iframe src="http://www.slideshare.net/0xdata/rf-brighttalk" type="application/vnd.ms-powerpoint" allowscriptaccess="always" allowfullscreen="true" width="480" height="385"></iframe></object>		
 .. raw:: html
 
-   </iframe>
+        <object width="480" height="385"><param name="movie" value="http://www.youtube.com/v/SBqYZ3KdAUc&hl=en_US&fs=1&rel=0"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/SBqYZ3KdAUc&hl=en_US&fs=1&rel=0" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="480" height="385"></embed></object>
 
-.. raw:: html
 
-   <div style="margin-bottom:5px">
+.. image:: http://image.slidesharecdn.com/rfbrighttalk-140522173736-phpapp02/95/building-random-forest-at-scale-1-638.jpg?cb=1400782751.png
+   :width: 425px
+   :height: 355px
+   :target: http://www.slideshare.net/0xdata/rf-brighttalk
 
- Building Random Forest at Scale from Sri Ambati
 
-.. raw:: html
-
-   </div>
-
-References
-~~~~~~~~~~
+`Building Random Forest at Scale <http://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
 
 
 Naïve Bayes
@@ -1111,8 +1006,9 @@ Defining a Naïve Bayes Model
    key.
 
 -  **training\_frame**: (Required) Select the dataset used to build the
-   model. **NOTE**: If you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+   model. 
+   
+     **NOTE**: If you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
 -  **validation\_frame**: (Optional) Select the dataset used to evaluate
    the accuracy of the model.
@@ -1212,8 +1108,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-All rows with one or more missing values (either in the predictors or
-the response) will be skipped during model building.
+  All rows with one or more missing values (either in the predictors or the response) will be skipped during model building.
 
 -  **How does the algorithm handle missing values during testing?**
 
@@ -1224,69 +1119,47 @@ conditional on the response.
 -  **What happens if the response domain is different in the training
    and test datasets?**
 
-The response column in the test dataset is not used during scoring, so
-any response categories absent in the training data will not be
-predicted.
+  The response column in the test dataset is not used during scoring, so any response categories absent in the training data will not be predicted.
 
--  **What happens when you try to predict on a categorical level not
-   seen during training?**
+-  **What happens when you try to predict on a categorical level not seen during training?**
 
-If the Laplace smoothing parameter is disabled ('laplace = 0'), then
-Naive Bayes will predict a probability of 0 for any row in the test set
-that contains a previously unseen categorical level. However, if the
-Laplace smoothing parameter is used (e.g. 'laplace = 1'), then the model
-can make predictions for rows that include previously unseen categorical
-level.
+ The conditional probability of that predictor level will be set according to the Laplace smoothing factor. If the Laplace smoothing parameter is disabled (``laplace = 0``), then Naive Bayes will predict a probability of 0 for any row in the test set that contains a previously unseen categorical level. However, if the Laplace smoothing parameter is used (e.g. ``laplace = 1``), then the model can make predictions for rows that include previously unseen categorical level.
 
-Laplace smoothing adjusts the maximum likelihood estimates by adding 1
-to the numerator and k to the denominator to allow for new categorical
-levels in the training set:
+ Laplace smoothing adjusts the maximum likelihood estimates by adding 1 to the numerator and :math:`k` to the denominator to allow for new categorical levels in the training set:
 
-:math:`\phi_{j|y=1}= \frac{\Sigma_{i=1}^m 1(x_{j}^{(i)} \ = \ 1 \ \bigcap y^{(i)} \ = \ 1) \ + \ 1}{\Sigma_{i=1}^{m}1(y^{(i)} \ = \ 1) \ + \ k}`
+   :math:`\phi_{j|y=1}= \frac{\Sigma_{i=1}^m 1(x_{j}^{(i)} \ = \ 1 \ \bigcap y^{(i)} \ = \ 1) \ + \ 1}{\Sigma_{i=1}^{m}1(y^{(i)} \ = \ 1) \ + \ k}`
 
-:math:`\phi_{j|y=0}= \frac{\Sigma_{i=1}^m 1(x_{j}^{(i)} \ = \ 1 \ \bigcap y^{(i)} \ = \ 0) \ + \ 1}{\Sigma_{i \ = \ 1}^{m}1(y^{(i)} \ = \ 0) \ + \ k}`
+   :math:`\phi_{j|y=0}= \frac{\Sigma_{i=1}^m 1(x_{j}^{(i)} \ = \ 1 \ \bigcap y^{(i)} \ = \ 0) \ + \ 1}{\Sigma_{i \ = \ 1}^{m}1(y^{(i)} \ = \ 0) \ + \ k}`
 
-:math:`x^{(i)}` represents features, :math:`y^{(i)}` represents the
-response column, and :math:`k` represents the addition of each new
-categorical level (k functions to balance the added 1 in the numerator)
+ :math:`x^{(i)}` represents features, :math:`y^{(i)}` represents the response column, and :math:`k` represents the addition of each new categorical level (k functions to balance the added 1 in the numerator)
 
-Laplace smoothing should be used with care; it is generally intended to
-allow for predictions in rare events. As prediction data becomes
-increasingly distinct from training data, new models should be trained
-when possible to account for a broader set of possible feature values.
+ Laplace smoothing should be used with care; it is generally intended to allow for predictions in rare events. As prediction data becomes increasingly distinct from training data, new models should be trained when possible to account for a broader set of possible feature values.
 
 -  **Does it matter if the data is sorted?**
 
-No.
+  No.
 
 -  **Should data be shuffled before training?**
 
-This does not affect model building.
+  This does not affect model building.
 
 -  **How does the algorithm handle highly imbalanced data in a response
    column?**
 
-Unbalanced data will not affect the model. However, if one response
-category has very few observations compared to the total, the
-conditional probability may be very low. A cutoff (``eps_prob``) and
-minimum value (``min_prob``) are available for the user to set a floor
-on the calculated probability.
+  Unbalanced data will not affect the model. However, if one response category has very few observations compared to the total, the conditional probability may be very low. A cutoff (``eps_prob``) and minimum value (``min_prob``) are available for the user to set a floor on the calculated probability.
 
 -  **What if there are a large number of columns?**
 
-More memory will be allocated on each node to store the joint frequency
-counts and sums.
+  More memory will be allocated on each node to store the joint frequency counts and sums.
 
 -  **What if there are a large number of categorical factor levels?**
 
-More memory will be allocated on each node to store the joint frequency
-count of each categorical predictor level with the response’s level.
+  More memory will be allocated on each node to store the joint frequency count of each categorical predictor level with the response’s level.
 
 -  **When running PCA, is it better to create a cluster that uses many
    smaller nodes or fewer larger nodes?**
 
-For Naïve Bayes, we recommend using many smaller nodes because the
-distributed task doesn't require intensive computation.
+  For Naïve Bayes, we recommend using many smaller nodes because the distributed task doesn't require intensive computation.
 
 Naïve Bayes Algorithm
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1294,74 +1167,46 @@ Naïve Bayes Algorithm
 The algorithm is presented for the simplified binomial case without loss
 of generality.
 
-Under the Naive Bayes assumption of independence, given a training set
-for a set of discrete valued features X
-({(X:sup:`{(i)}, y`\ {(i)}; i=1,...m)})
+Under the Naive Bayes assumption of independence, given a training set for a set of discrete valued features X :math:`{(X^{(i)}, y^{(i)}; i=1,...m)}`
 
 The joint likelihood of the data can be expressed as:
 
-(\mathcal{L}` : (\phi`(y),:
-\phi`\ *{i\|y=1},:\phi`*\ {i\|y=0})=\Pi`\_{i=1}^{m}
-p(X^{(i)},: y^{(i)}))
+:math:`\mathcal{L}(\phi(y), \phi_{i|y=1}, \phi_{i|y=0})=\Pi_{i=1}^{m}p(X^{(i)},y^{(i)})`
 
 The model can be parameterized by:
 
-(\phi`\ *{i\|y=0}= p(x*\ {i}=1\| y=0);:
-\phi`\ *{i\|y=1}= p(x*\ {i}=1\|y=1);: \phi`(y))
+:math:`\phi_{i|y=0} = p(x_{i}=1|y=0); \phi_{i|y=1}= p(x_{i}=1|y=1);\phi(y)`
 
-Where (\phi`\ *{i\|y=0}= p(x*\ {i}=1\| y=0)) can be thought
-of as the fraction of the observed instances where feature (x\_{i}) is
-observed, and the outcome is (y=0,
-\phi`\ *{i\|y=1}=p(x*\ {i}=1\| y=1)) is the fraction of the
-observed instances where feature (x\_{i}) is observed, and the outcome
-is (y=1), and so on.
+where :math:`\phi_{i|y=0}= p(x_{i}=1| y=0)` can be thought of as the fraction of the observed instances where feature :math:`x_{i}` is observed, and the outcome is :math:`y=0,\phi_{i|y=1}=p(x_{i}=1| y=1)` is the fraction of the observed instances where feature :math:`x_{i}` is observed, and the outcome is :math:`y=1`, and so on.
 
-The objective of the algorithm is to maximize with respect to
-(\phi`\ *{i\|y=0},  \phi`*\ {i\|y=1}, and
- \phi`(y))
+The objective of the algorithm is to maximize with respect to :math:`\phi_{i|y=0}`, :math:`\phi_{i|y=1}`, and :math:`\phi(y)` where the maximum likelihood estimates are:
 
-Where the maximum likelihood estimates are:
+ :math:`\phi_{j|y=1}=\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1)}{\Sigma_{i=1}^{m}(y^{(i)}=1)}`
 
-(\phi`\_{j\|y=1}=
-\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1)}{\Sigma_{i=1}^{m}(y^{(i)}=1}`)
+ :math:`\phi\_{j|y=0}=\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0)}{\Sigma_{i=1}^{m}(y^{(i)}=0)}`
 
-(\phi`\_{j\|y=0}=
-\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0)}{\Sigma_{i=1}^{m}(y^{(i)}=0}`)
+ :math:`\phi(y)=\frac{(y^{i} = 1)}{m}`
 
-(\phi`(y)= \frac{(y^{i} = 1)}{m}`)
+Once all parameters :math:`\phi_{j|y}` are fitted, the model can be used to predict new examples with features :math:`X_{(i^*)}`. This is carried out by calculating:
 
-Once all parameters (\phi`\ *{j\|y}) are fitted, the model
-can be used to predict new examples with features (X*\ {(i^\*)}).
+ :math:`p(y=1|x)=\frac{\Pi p(x_i|y=1) p(y=1)}{\Pi p(x_i|y=1)p(y=1) + \Pi p(x_i|y=0)p(y=0)}`
 
-This is carried out by calculating:
+ :math:`p(y=0|x)=\frac{\Pi p(x_i|y=0) p(y=0)}{\Pi p(x_i|y=1)p(y=1) + \Pi p(x_i|y=0)p(y=0)}`
 
-(p(y=1\|x)=\frac{\Pi p(x_i|y=1) p(y=1)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}`)
+and then predicting the class with the highest probability.
 
-(p(y=0\|x)=\frac{\Pi p(x_i|y=0) p(y=0)}{\Pi p(x_i|y=1)p(y=1) \: +\: \Pi p(x_i|y=0)p(y=0)}`)
-
-and predicting the class with the highest probability.
-
-It is possible that prediction sets contain features not originally seen
-in the training set. If this occurs, the maximum likelihood estimates
-for these features predict a probability of 0 for all cases of y.
+It is possible that prediction sets contain features not originally seen in the training set. If this occurs, the maximum likelihood estimates for these features predict a probability of 0 for all cases of :math:`y`.
 
 Laplace smoothing allows a model to predict on out of training data
 features by adjusting the maximum likelihood estimates to be:
 
-(\phi`\_{j\|y=1}=
-\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=1 \: + \: 2}`)
+ :math:`\phi_{j|y=1}=\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 1) + 1}{\Sigma_{i=1}^{m}(y^{(i)}=1 + 2}`)
 
-(\phi`\_{j\|y=0}=
-\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0) \: + \: 1}{\Sigma_{i=1}^{m}(y^{(i)}=0 \: + \: 2}`)
+ :math:`\phi_{j|y=0}=\frac{\Sigma_{i}^m 1(x_{j}^{(i)}=1 \ \bigcap y^{i} = 0) + 1}{\Sigma_{i=1}^{m}(y^{(i)}=0 + 2}`
 
-Note that in the general case where y takes on k values, there are k+1
-modified parameter estimates, and they are added in when the denominator
-is k (rather than two, as shown in the two-level classifier shown here.)
+Note that in the general case where :math:`y` takes on :math:`k` values, there are :math:`k+1` modified parameter estimates, and they are added in when the denominator is :math:`k` (rather than 2, as shown in the two-level classifier shown here).
 
-Laplace smoothing should be used with care; it is generally intended to
-allow for predictions in rare events. As prediction data becomes
-increasingly distinct from training data, train new models when possible
-to account for a broader set of possible X values.
+Laplace smoothing should be used with care; it is generally intended to allow for predictions in rare events. As prediction data becomes increasingly distinct from training data, train new models when possible to account for a broader set of possible X values.
 
 References
 ~~~~~~~~~~
@@ -1398,23 +1243,21 @@ Defining a PCA Model
    key.
 
 -  **training\_frame**: (Required) Select the dataset used to build the
-   model. **NOTE**: If you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+   model. 
+   
+    **NOTE**: If you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
 -  **validation\_frame**: (Optional) Select the dataset used to evaluate
    the accuracy of the model.
 
--  **ignored\_columns**: (Optional) Click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  **ignored\_columns**: (Optional) Click the checkbox next to a column name to add it to the list of columns excluded from the model. 
+
+   - To add all columns, click the **All** button. 
+   - To remove a column from thelist of ignored columns, click the X next to the column name.
+   - To remove all columns from the list of ignored columns, click the **None** button. 
+   - To search for a specific column, type the column name in the **Search** field above the column list. 
+   - To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. 
+   - To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
 -  **ignore\_const\_cols**: Check this checkbox to ignore constant
    training columns, since no information can be gained from them. This
@@ -1424,20 +1267,14 @@ Defining a PCA Model
    data: None, Standardize, Normalize, Demean, or Descale. The default
    is None.
 
--  **pca\_method**: Select the algorithm to use for computing the
-   principal components:
+-  **pca\_method**: Select the algorithm to use for computing the principal components:
 
-   -  *GramSVD*: Uses a distributed computation of the Gram matrix,
-      followed by a local SVD using the JAMA package
-   -  *Power*: Computes the SVD using the power iteration method
-      (experimental)
-   -  *Randomized*: Uses randomized subspace iteration method
-   -  *GLRM*: Fits a generalized low-rank model with L2 loss function
-      and no regularization and solves for the SVD using local matrix
-      algebra (experimental)
+   -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package
+   -  **Power**: Computes the SVD using the power iteration method (experimental)
+   -  **Randomized**: Uses randomized subspace iteration method
+   -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
--  **k**\ \*: Specify the rank of matrix approximation. The default is
-   1.
+-  **k**\ \*: Specify the rank of matrix approximation. The default is 1.
 
 -  **max\_iterations**: Specify the number of training iterations. The
    value must be between 1 and 1e6 and the default is 1000.
@@ -1491,99 +1328,56 @@ FAQ
 
 -  **How does the algorithm handle missing values during scoring?**
 
-For the GramSVD and Power methods, all rows containing missing values
-are ignored during training. For the GLRM method, missing values are
-excluded from the sum over the loss function in the objective. For more
-information, refer to section 4 Generalized Loss Functions, equation
-(13), in `"Generalized Low Rank
-Models" <https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf>`__ by Boyd
-et al.
+  For the GramSVD and Power methods, all rows containing missing values are ignored during training. For the GLRM method, missing values are excluded from the sum over the loss function in the objective. For more information, refer to section 4 Generalized Loss Functions, equation (13), in `"Generalized Low Rank Models" <https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf>`__ by Boyd et al.
 
 -  **How does the algorithm handle missing values during testing?**
 
-During scoring, the test data is right-multiplied by the eigenvector
-matrix produced by PCA. Missing categorical values are skipped in the
-row product-sum. Missing numeric values propagate an entire row of NAs
-in the resulting projection matrix.
+  During scoring, the test data is right-multiplied by the eigenvector matrix produced by PCA. Missing categorical values are skipped in the row product-sum. Missing numeric values propagate an entire row of NAs in the resulting projection matrix.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-New categorical levels in the test data that were not present in the
-training data, are skipped in the row product- sum.
+  New categorical levels in the test data that were not present in the training data, are skipped in the row product- sum.
 
 -  **Does it matter if the data is sorted?**
 
-No, sorting data does not affect the model.
+  No, sorting data does not affect the model.
 
 -  **Should data be shuffled before training?**
 
-No, shuffling data does not affect the model.
+  No, shuffling data does not affect the model.
 
 -  **What if there are a large number of columns?**
 
-Calculating the SVD will be slower, since computations on the Gram
-matrix are handled locally.
+  Calculating the SVD will be slower, since computations on the Gram matrix are handled locally.
 
 -  **What if there are a large number of categorical factor levels?**
 
-Each factor level (with the exception of the first, depending on whether
-**use\_all\_factor\_levels** is enabled) is assigned an indicator
-column. The indicator column is 1 if the observation corresponds to a
-particular factor; otherwise, it is 0. As a result, many factor levels
-result in a large Gram matrix and slower computation of the SVD.
+  Each factor level (with the exception of the first, depending on whether **use\_all\_factor\_levels** is enabled) is assigned an indicator column. The indicator column is 1 if the observation corresponds to a particular factor; otherwise, it is 0. As a result, many factor levels result in a large Gram matrix and slower computation of the SVD.
 
 -  **How are categorical columns handled during model building?**
 
-If the GramSVD or Power methods are used, the categorical columns are
-expanded into 0/1 indicator columns for each factor level. The algorithm
-is then performed on this expanded training frame. For GLRM, the
-multidimensional loss function for categorical columns is discussed in
-Section 6.1 of `"Generalized Low Rank
-Models" <https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf>`__ by Boyd
-et al.
+  If the GramSVD or Power methods are used, the categorical columns are expanded into 0/1 indicator columns for each factor level. The algorithm is then performed on this expanded training frame. For GLRM, the multidimensional loss function for categorical columns is discussed in Section 6.1 of `"Generalized Low Rank Models" <https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf>`__ by Boyd et al.
 
 -  **When running PCA, is it better to create a cluster that uses many
    smaller nodes or fewer larger nodes?**
 
-For PCA, this is dependent on the selected ``pca_method`` parameter:
+  For PCA, this is dependent on the selected ``pca_method`` parameter:
 
--  For **GramSVD**, use fewer larger nodes for better performance.
-   Forming the Gram matrix requires few intensive calculations and the
-   main bottleneck is the JAMA library's SVD function, which is not
-   parallelized and runs on a single machine. We do not recommend
-   selecting GramSVD for datasets with many columns and/or categorical
-   levels in one or more columns.
--  For **Randomized**, use many smaller nodes for better performance,
-   since H2O calls a few different distributed tasks in a loop, where
-   each task does fairly simple matrix algebra computations.
--  For **GLRM**, the number of nodes depends on whether the dataset
-   contains many categorical columns with many levels. If this is the
-   case, we recommend using fewer larger nodes, since computing the loss
-   function for categoricals is an intensive task. If the majority of
-   the data is numeric and the categorical columns have only a small
-   number of levels (~10-20), we recommend using many small nodes in the
-   cluster.
--  For **Power**, we recommend using fewer larger nodes because the
-   intensive calculations are single-threaded. However, this method is
-   only recommended for obtaining principal component values (such as
-   ``k << ncol(train))`` because the other methods are far more
-   efficient.
+  -  For **GramSVD**, use fewer larger nodes for better performance. Forming the Gram matrix requires few intensive calculations and the main bottleneck is the JAMA library's SVD function, which is not parallelized and runs on a single machine. We do not recommend selecting GramSVD for datasets with many columns and/or categorical levels in one or more columns.
+  -  For **Randomized**, use many smaller nodes for better performance, since H2O calls a few different distributed tasks in a loop, where each task does fairly simple matrix algebra computations.
+  -  For **GLRM**, the number of nodes depends on whether the dataset contains many categorical columns with many levels. If this is the case, we recommend using fewer larger nodes, since computing the loss function for categoricals is an intensive task. If the majority of the data is numeric and the categorical columns have only a small number of levels (~10-20), we recommend using many small nodes in the cluster.
+  -  For **Power**, we recommend using fewer larger nodes because the intensive calculations are single-threaded. However, this method is only recommended for obtaining principal component values (such as ``k << ncol(train))`` because the other methods are far more efficient.
 
 -  **I ran PCA on my dataset - how do I input the new parameters into a
    model?**
 
-After the PCA model has been built using ``h2o.prcomp``, use
-``h2o.predict`` on the original data frame and the PCA model to produce
-the dimensionality-reduced representation. Use ``cbind`` to add the
-predictor column from the original data frame to the data frame produced
-by the output of ``h2o.predict``. At this point, you can build
-supervised learning models on the new data frame.
+  After the PCA model has been built using ``h2o.prcomp``, use ``h2o.predict`` on the original data frame and the PCA model to produce the dimensionality-reduced representation. Use ``cbind`` to add the predictor column from the original data frame to the data frame produced by the output of ``h2o.predict``. At this point, you can build supervised learning models on the new data frame.
 
 PCA Algorithm
 ~~~~~~~~~~~~~
 
-Let (X) be an (M\times `N) matrix where
+Let :math:`X` be an :math:`M \times N` matrix where
 
 -  Each row corresponds to the set of all measurements on a particular
    attribute, and
@@ -1591,60 +1385,40 @@ Let (X) be an (M\times `N) matrix where
 -  Each column corresponds to a set of measurements from a given
    observation or trial
 
-The covariance matrix (C\_{x}) is
+The covariance matrix :math:`C_{x}` is
 
-(C\_{x}=\frac{1}{n}`XX^{T})
+ :math:`C_{x}=\frac{1}{n}XX^{T}`
 
-where (n) is the number of observations.
+where :math:`n` is the number of observations, and :math:`C_{x}` is a square, symmetric :math:`m \times m` matrix, the diagonal entries of which are the variances of attributes, and the off-diagonal entries are covariances between attributes.
 
-(C\_{x}) is a square, symmetric (m\times `m) matrix, the
-diagonal entries of which are the variances of attributes, and the
-off-diagonal entries are covariances between attributes.
-
-PCA convergence is based on the method described by Gockenbach: "The
-rate of convergence of the power method depends on the ratio
-(lambda\_2\|/\|\lambda`\_1). If this is small...then the
-power method converges rapidly. If the ratio is close to 1, then
-convergence is quite slow. The power method will fail if (lambda\_2\| =
-\|\lambda`\_1)." (567).
+PCA convergence is based on the method described by Gockenbach: "The rate of convergence of the power method depends on the ratio :math:`lambda_2|/|\lambda_1`. If this is small...then the power method converges rapidly. If the ratio is close to 1, then convergence is quite slow. The power method will fail if :math:`lambda_2| = |\lambda_1`." (567).
 
 The objective of PCA is to maximize variance while minimizing
 covariance.
 
-To accomplish this, for a new matrix (C\_{y}) with off diagonal entries
-of 0, and each successive dimension of Y ranked according to variance,
-PCA finds an orthonormal matrix (P) such that (Y=PX) constrained by the
-requirement that (C\_{y}=\frac{1}{n}`YY^{T}) be a diagonal
-matrix.
+To accomplish this, for a new matrix :math:`C_{y}` with off diagonal entries of 0, and each successive dimension of :math:`Y` ranked according to variance, PCA finds an orthonormal matrix :math:`P` such that :math:`Y=PX` constrained by the requirement that :math:`C_{y}=\frac{1}{n}YY^{T}` be a diagonal matrix.
 
-The rows of (P) are the principal components of X.
+The rows of :math:`P` are the principal components of :math:`X`.
 
-(C\_{y}=\frac{1}{n}`YY\ :sup:`{T})
-(=\frac{1}{n}`(PX)(PX)`\ {T}) (C\_{y}=PC\_{x}P^{T}.)
+ :math:`C_{y}=\frac{1}{n}YY^{T}=\frac{1}{n}(PX)(PX)^{T}C_{y}=PC_{x}P^{T}`.
 
-Because any symmetric matrix is diagonalized by an orthogonal matrix of
-its eigenvectors, solve matrix (P) to be a matrix where each row is an
-eigenvector of (\frac{1}{n}`XX^{T}=C\_{x})
+Because any symmetric matrix is diagonalized by an orthogonal matrix of its eigenvectors, solve matrix :math:`P` to be a matrix where each row is an eigenvector of :math:`\frac{1}{n}XX^{T}=C_{x}`
 
-Then the principal components of (X) are the eigenvectors of (C\_{x}),
-and the (i^{th}) diagonal value of (C\_{y}) is the variance of (X) along
-(p\_{i}).
+Then the principal components of :math:`X` are the eigenvectors of :math:`C_{x}`, and the :math:`i^{th}` diagonal value of :math:`C_{y}` is the variance of :math:`X` along :math:`p_{i}`.
 
-Eigenvectors of (C\_{x}) are found by first finding the eigenvalues
-(\lambda`) of (C\_{x}).
+Eigenvectors of :math:`C_{x}` are found by first finding the eigenvalues :math:`\lambda` of :math:`C_{x}`.
 
-For each eigenvalue (\lambda`)
-((C-{x}-\lambda `I)x =0) where (x) is the eigenvector
-associated with (\lambda`).
+For each eigenvalue :math:`\lambda(C-{x}-\lambda I)x =0` where :math:`x` is the eigenvector
+associated with :math:`\lambda`.
 
-Solve for (x) by Gaussian elimination.
+Solve for :math:`x` by Gaussian elimination.
 
 Recovering SVD from GLRM
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 GLRM gives (x) and (y), where (x
-\in `\rm \Bbb I \!\Bbb R `^{n \* k}) and ( y
-\in `\rm \Bbb I \!\Bbb R `^{k\*m} )
+:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R `^{n \* k}) and ( y
+:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R `^{k\*m} )
 
    - (n)= number of rows (A)
 
@@ -1661,7 +1435,7 @@ First, perform QR decomposition of (x) and (y^T):
     (y^T = ZS), where (Q^TQ = I = Z^TZ)
 
       Call JAMA QR Decomposition directly on (y^T) to get ( Z
-\in `\rm \Bbb I \! \Bbb R\), \( S \in \Bbb I \! \Bbb R \)`
+:raw-latex:`\in `:raw-latex:`\rm \Bbb I \! \Bbb R\), \( S \in \Bbb I \! \Bbb R \)`
 
       ( R ) from QR decomposition of ( x ) is the upper triangular
 factor of Cholesky of (X^TX) Gram
@@ -1671,12 +1445,12 @@ factor of Cholesky of (X^TX) Gram
       ( X^TX= (R:sup:`TQ`\ T) QR = R^TR ), since (Q^TQ=I ) => (R=L^T)
 (transpose lower triangular)
 
-**Note**: In code, (X^TX \over `n) = ( LL^T )
+**Note**: In code, (X^TX :raw-latex:`\over `n) = ( LL^T )
 
-   ( X^TX = (L \sqrt{n}`)(L \sqrt{n}`)^T =R^TR )
+   ( X^TX = (L :raw-latex:`\sqrt{n}`)(L :raw-latex:`\sqrt{n}`)^T =R^TR )
 
-   ( R = L^T \sqrt{n}`
-\in `\rm \Bbb I \! \Bbb R`^{k \* k} ) reduced QR
+   ( R = L^T :raw-latex:`\sqrt{n}`
+:raw-latex:`\in `:raw-latex:`\rm \Bbb I \! \Bbb R`^{k \* k} ) reduced QR
 decomposition.
 
 For more information, refer to the `Rectangular
@@ -1685,27 +1459,27 @@ section of "QR Decomposition" on Wikipedia.
 
 ( XY = QR(ZS)^T = Q(RS\ :sup:`T)Z`\ T )
 
-**Note**: ( (RS^T) \in `\rm \Bbb I \!\Bbb R \)`
+**Note**: ( (RS^T) :raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R \)`
 
 Find SVD (locally) of ( RS^T )
 
-( RS^T = U \sum `V^T, U^TU = I = V^TV ) orthogonal
+( RS^T = U :raw-latex:`\sum `V^T, U^TU = I = V^TV ) orthogonal
 
-( XY = Q(RS\ :sup:`T)Z`\ T = (QU \sum `(V^T Z^T) SVD )
+( XY = Q(RS\ :sup:`T)Z`\ T = (QU :raw-latex:`\sum `(V^T Z^T) SVD )
 
    ( (QU)^T(QU) = U^T Q^TQU U^TU = I)
 
    ( (ZV)^T(ZV) = V\ :sup:`TZ`\ TZV = V^TV =I )
 
 Right singular vectors: ( ZV
-\in `\rm \Bbb I \!\Bbb R`^{m \* k} )
+:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{m \* k} )
 
 Singular values: (
-\sum `\in `\rm \Bbb I \!\Bbb R`^{k
+:raw-latex:`\sum `:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{k
 \* k} ) diagonal
 
 Left singular vectors: ( (QU)
-\in `\rm \Bbb I \!\Bbb R`^{n \* k})
+:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{n \* k})
 
 References
 ~~~~~~~~~~
@@ -2017,16 +1791,11 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-Missing values affect tree split points. NAs always “go left”, and hence
-affect the split-finding math (since the corresponding response for the
-row still matters). If the response is missing, then the row won't
-affect the split-finding math.
+  Missing values affect tree split points. NAs always “go right”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math. No new node is created. Instead, the observation is treated as if it had the maximum feature value of all observations in the node to be split. Note that the missing value might not be separated from the largest value itself. For example, if a node contains feature values of 0,1,2,3,4,5, then the missing value is counted as a 5. No matter what split decision is then made, the value 5 and the missing values won’t be separated. The 5 and the missing stay together, even in splits down the tree.
 
 -  **How does the algorithm handle missing values during testing?**
 
-During scoring, missing values "always go left" at any decision point in
-a tree. Due to dynamic binning in GBM, a row with a missing value
-typically ends up in the "leftmost bin" - with other outliers.
+During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
 
 -  **What happens if the response has missing values?**
 
@@ -2036,10 +1805,8 @@ missing the response.
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-GMB converts a new categorical level to a NA value in the test set, and
-then splits left on the NA value during scoring. The algorithm splits
-left on NA values because, during training, Na values are grouped with
-the outliers in the left-most bin.
+GBM converts a new categorical level to an "undefined" value in the test set, and
+then splits either left or right during scoring. 
 
 -  **Does it matter if the data is sorted?**
 
@@ -2109,6 +1876,10 @@ picked, and then the floor is used to determine the number - in this
 case,(0.754*\ 0.8\*100)=60 - of columns that are then randomly chosen
 for each split decision (out of the 75).
 
+- **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
+
+ The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
+
 GBM Algorithm
 ~~~~~~~~~~~~~
 
@@ -2120,17 +1891,17 @@ Initialize (f\_{k0} = 0,: k=1,2,…,K)
 For (m=1) to (M:)
 
   (a) Set
-(p\_{k}(x)=\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}}`,:k=1,2,…,K)
+(p\_{k}(x)=:raw-latex:`\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}}`,:k=1,2,…,K)
 
   (b) For (k=1) to (K):
 
     i. Compute (r\_{ikm}=y\_{ik}-p\_{k}(x\_{i}),:i=1,2,…,N.)     ii. Fit
 a regression tree to the targets (r\_{ikm},:i=1,2,…,N), giving terminal
 regions (R\_{jim},:j=1,2,…,J\_{m}.) (iii. Compute)
-(\gamma`\ *{jkm}=\frac{K-1}{K}`:\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})}`,:j=1,2,…,J*\ {m}.)
-(:iv.:Update:f\_{km}(x)=f\_{k,m-1}(x)+\sum`\ *{j=1}^{J*\ {m}}\gamma`\ *{jkm}I(x\in`:R*\ {jkm}).)
+(:raw-latex:`\gamma`\ *{jkm}=:raw-latex:`\frac{K-1}{K}`::raw-latex:`\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})}`,:j=1,2,…,J*\ {m}.)
+(:iv.:Update:f\_{km}(x)=f\_{k,m-1}(x)+:raw-latex:`\sum`\ *{j=1}^{J*\ {m}}:raw-latex:`\gamma`\ *{jkm}I(x:raw-latex:`\in`:R*\ {jkm}).)
 
-Output (:\hat{f_{k}}`(x)=f\_{kM}(x),:k=1,2,…,K.)
+Output (::raw-latex:`\hat{f_{k}}`(x)=f\_{kM}(x),:k=1,2,…,K.)
 
 Be aware that the column type affects how the histogram is created and
 the column type depends on whether rows are excluded or assigned a
