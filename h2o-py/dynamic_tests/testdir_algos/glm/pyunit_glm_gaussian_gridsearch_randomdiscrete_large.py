@@ -198,7 +198,7 @@ class Test_glm_random_grid_search:
                                                      self.hyper_params["max_runtime_secs"]]
 
         # number of possible models being built:
-        self.possible_number_models = pyunit_utils.count_models(self.hyper_params)
+        self.possible_number_models = pyunit_utils.count_models(self.hyper_params) * 3/4
 
         # save hyper-parameters in sandbox and current test directories.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,

@@ -254,6 +254,10 @@ class Test_deeplearning_grid_search:
             len_good_time = len([x for x in self.hyper_params["max_runtime_secs"] if (x >= 0)])
             self.possible_number_models = self.possible_number_models*len_good_time
 
+        # make correction for stratified not being a legal argument
+        if "fold_assignment" in list(self.final_hyper_params):
+            self.possible_number_models = self.possible_number_models * 3/4
+
         # write out the hyper-parameters used into json files.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
                                                  self.final_hyper_params)

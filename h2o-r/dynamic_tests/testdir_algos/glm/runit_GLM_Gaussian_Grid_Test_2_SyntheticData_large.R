@@ -53,7 +53,7 @@ test.GLM.Gaussian.Grid.Test2.SyntheticData <- function() {
   
   # setup hyper-parameter for gridsearch
   hyper_parameters <- list()
-  hyper_parameters$fold_assignment = c('AUTO', 'Random', 'Modulo')
+  hyper_parameters$fold_assignment = c('AUTO', 'Random', 'Modulo', 'Stratified')
   hyper_parameters$missing_values_handling = c('MeanImputation', 'Skip')
   
   # generate random hyper-parameter for gridsearch
@@ -63,6 +63,9 @@ test.GLM.Gaussian.Grid.Test2.SyntheticData <- function() {
   
   # count upper bound on number of grid search model that can be built
   correct_model_number = hyperSpaceDimension(hyper_parameters)
+
+   # correct for stratified not used to build model
+   correct_model_number = correct_model_number * 3/4
   
   # setup model parameters for GLM Gaussian
   family = 'gaussian'

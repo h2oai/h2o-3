@@ -79,6 +79,7 @@ class Test_gbm_grid_search:
     model_run_time = 0.0        # time taken to run a vanilla GBM model.  Determined later.
     allowed_runtime_diff = 0.05     # run time difference between GBM manually built and gridsearch models before
                                     # we attempt to compare training metrics.
+    scale_model = 1             # scale number of models that can be built
 
     families = ['gaussian', 'multinomial']    # distribution family to perform grid search over
     family = 'gaussian'     # choose default family to be gaussian
@@ -162,6 +163,7 @@ class Test_gbm_grid_search:
             self.y_index = self.training1_data.ncol-1
             self.x_indices = list(range(self.y_index))
             self.training1_data[self.y_index] = self.training1_data[self.y_index].round().asfactor()
+            self.scale_model = 1
 
         else:
             # preload data sets
@@ -169,6 +171,7 @@ class Test_gbm_grid_search:
             # set data set indices for predictors and response
             self.y_index = self.training1_data.ncol-1
             self.x_indices = list(range(self.y_index))
+            self.scale_model = 0.75
 
         # save the training data files just in case the code crashed.
         pyunit_utils.remove_csv_files(self.current_dir, ".csv", action='copy', new_dir_path=self.sandbox_dir)
@@ -235,6 +238,9 @@ class Test_gbm_grid_search:
             self.final_hyper_params["max_runtime_secs"] = self.hyper_params["max_runtime_secs"]
             len_good_time = len([x for x in self.hyper_params["max_runtime_secs"] if (x >= 0)])
             self.possible_number_models = self.possible_number_models*len_good_time
+
+        if "fold_assignment" in list(self.final_hyper_params):
+            self.possible_number_models = self.possible_number_models * self.scale_model
 
         # write out the hyper-parameters used into json files.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
