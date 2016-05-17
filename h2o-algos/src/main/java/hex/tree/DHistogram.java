@@ -48,7 +48,7 @@ public final class DHistogram extends Iced {
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public double _bins[];   // Bins, shared, atomically incremented
   private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
-  public boolean _randomSplitPoints; //whether ot use random split points
+  public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
   private transient double _splitPts[]; // random split points between _min and _maxEx (instead of _delta)
   private final transient long _seed;
 
@@ -92,7 +92,7 @@ public final class DHistogram extends Iced {
       old = _maxIn;
   }
 
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement, boolean randomSplitPoints, long seed) {
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed) {
     assert nbins > 1;
     assert nbins_cats > 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -103,7 +103,7 @@ public final class DHistogram extends Iced {
     _min2 =  Double.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Double.MAX_VALUE;
     _minSplitImprovement = minSplitImprovement;
-    _randomSplitPoints = randomSplitPoints;
+    _histoType = histogramType;
     _seed = seed;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
@@ -182,7 +182,7 @@ public final class DHistogram extends Iced {
     _bins = MemoryManager.malloc8d(_nbin);
     _sums = MemoryManager.malloc8d(_nbin);
     _ssqs = MemoryManager.malloc8d(_nbin);
-    if (_randomSplitPoints) {
+    if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
       // every node makes the same split points
       Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
       _splitPts = new double[_nbin];
@@ -191,7 +191,7 @@ public final class DHistogram extends Iced {
       for (int i = 1; i < _nbin-1; ++i)
          _splitPts[i] = rng.nextFloat() * (_nbin-1);
       Arrays.sort(_splitPts);
-    }
+    } //otherwise it's AUTO or UniformAdaptive
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -250,7 +250,7 @@ public final class DHistogram extends Iced {
   }
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, SharedTreeModel.SharedTreeParameters parms) {
-    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._random_split_points, parms._seed);
+    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, parms._seed);
   }
 
   public static DHistogram make(String name, final int nbins, int nbins_cats, byte isInt, double minIn, double maxEx, double minSplitImprovement) {

@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.tree.SharedTreeModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -1878,8 +1879,8 @@ public class GBMTest extends TestUtil {
       // Invoke the job
       sf.exec().get();
       ksplits = sf._destination_frames;
-      boolean[] randomize = new boolean[]{false, true};
-      final int N = randomize.length;
+      SharedTreeModel.SharedTreeParameters.HistogramType[] histoType = SharedTreeModel.SharedTreeParameters.HistogramType.values();
+      final int N = histoType.length;
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
@@ -1888,7 +1889,7 @@ public class GBMTest extends TestUtil {
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
         parms._learn_rate = 0.05f;
-        parms._random_split_points = randomize[i];
+        parms._histogram_type = histoType[i];
         parms._ntrees = 20;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 5;
@@ -1898,11 +1899,11 @@ public class GBMTest extends TestUtil {
         loglosses[i] = gbm._output._scored_valid[gbm._output._scored_valid.length - 1]._logloss;
         if (gbm!=null) gbm.delete();
       }
-      for (int i = 0; i < randomize.length; ++i) {
-        Log.info("randomize: " + randomize[i] + " -> validation logloss: " + loglosses[i]);
+      for (int i = 0; i < histoType.length; ++i) {
+        Log.info("histoType: " + histoType[i] + " -> validation logloss: " + loglosses[i]);
       }
       int idx = ArrayUtils.minIndex(loglosses);
-      Log.info("Optimal randomization: " + randomize[idx]);
+      Log.info("Optimal randomization: " + histoType[idx]);
       //assertTrue(1 == idx);
     } finally {
       if (gbm!=null) gbm.delete();

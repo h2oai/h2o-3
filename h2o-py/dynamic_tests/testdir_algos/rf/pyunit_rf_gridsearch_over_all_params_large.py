@@ -100,7 +100,7 @@ class Test_rf_grid_search:
     exclude_parameter_lists = ['validation_frame', 'response_column', 'fold_column', 'offset_column',
                                'col_sample_rate_change_per_level', 'sample_rate_per_class', 'col_sample_rate_per_tree',
                                'nbins', 'nbins_top_level', 'nbins_cats', 'seed', 'class_sampling_factors',
-                               'max_after_balance_size', 'min_split_improvement', 'random_split_points', 'mtries',
+                               'max_after_balance_size', 'min_split_improvement', 'histogram_type', 'mtries',
                                'weights_column', 'min_rows', 'r2_stopping', 'max_hit_ratio_k', 'score_tree_interval']
 
     params_zero_one = ["sample_rate"]

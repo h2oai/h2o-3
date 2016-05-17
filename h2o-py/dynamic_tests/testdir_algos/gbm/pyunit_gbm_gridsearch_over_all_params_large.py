@@ -100,7 +100,7 @@ class Test_gbm_grid_search:
     hyper_params["balance_classes"] = [True, False]
     hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["stopping_metric"] =["AUTO", "deviance", "MSE", "r2"]
-    hyper_params["random_split_points"] = [True, False]
+    hyper_params["histogram_type"] = ["AUTO", "UniformAdaptive", "Random"]
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['distribution', 'tweedie_power', 'validation_frame', 'response_column',
