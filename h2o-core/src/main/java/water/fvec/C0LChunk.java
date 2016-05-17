@@ -28,6 +28,21 @@ public class C0LChunk extends Chunk {
   @Override boolean set_impl (int idx, String str) { return false; }
   @Override double min() { return _con; }
   @Override double max() { return _con; }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i)
+      cf.addValue(_con, i);
+    return cf;
+  }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows) cf.addValue(_con,i);
+    return cf;
+  }
+
+
   @Override public NewChunk inflate_impl(NewChunk nc) {
     if(_con == 0) {
       nc.set_len(nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
