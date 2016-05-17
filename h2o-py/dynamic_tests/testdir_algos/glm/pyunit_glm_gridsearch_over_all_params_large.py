@@ -123,7 +123,7 @@ class Test_glm_grid_search:
     hyper_params_bad["missing_values_handling"] = ['MeanImputation', 'Skip']
 
     hyper_params = dict()
-    hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
+    hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo', "Stratified"]
     hyper_params["missing_values_handling"] = ['MeanImputation', 'Skip']
 
     scale_model = 1
@@ -187,6 +187,7 @@ class Test_glm_grid_search:
             self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename[0]))
             self.training2_data = h2o.import_file(path=pyunit_utils.locate(self.training2_filename[0]))
             self.scale_model = 0.75
+            self.hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
 
         # set data set indices for predictors and response
         self.y_index = self.training1_data.ncol-1
@@ -276,7 +277,7 @@ class Test_glm_grid_search:
                                          random.randint(1, self.max_real_number),
                                          self.max_real_val, 0)
 
-        self.true_correct_model_number = pyunit_utils.count_models(self.hyper_params) * self.scale_model
+        self.true_correct_model_number = pyunit_utils.count_models(self.hyper_params)
 
         # scale the value of lambda parameters
         if "lambda" in list(self.hyper_params):

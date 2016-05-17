@@ -176,7 +176,7 @@ class Test_glm_random_grid_search:
 
         # give the user opportunity to pre-assign hyper parameters for fixed values
         self.hyper_params = {}
-        self.hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo', "Stratified"]
+        self.hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo']
         self.hyper_params["missing_values_handling"] = ['MeanImputation', 'Skip']
 
         # randomly generate griddable parameters
@@ -198,7 +198,7 @@ class Test_glm_random_grid_search:
                                                      self.hyper_params["max_runtime_secs"]]
 
         # number of possible models being built:
-        self.possible_number_models = pyunit_utils.count_models(self.hyper_params) * 3/4
+        self.possible_number_models = pyunit_utils.count_models(self.hyper_params)
 
         # save hyper-parameters in sandbox and current test directories.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
