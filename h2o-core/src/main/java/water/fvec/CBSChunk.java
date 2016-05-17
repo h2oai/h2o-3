@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.H2O;
 import water.MemoryManager;
+import water.util.UnsafeUtils;
 
 /** A simple chunk for boolean values. In fact simple bit vector.
  *  Each boolean is represented by 2bits since we need to represent NA.
@@ -137,5 +138,23 @@ public class CBSChunk extends Chunk {
     return vals;
   }
 
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i) {
+      byte b = atb(i);
+      if(b == _NA)cf.addMissing(i);
+      else cf.addValue(b, i);
+    }
+    return cf;
+  }
 
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows) {
+      byte b = atb(i);
+      if(b == _NA)cf.addMissing(i);
+      else cf.addValue(b, i);
+    }
+    return cf;
+  }
 }

@@ -13,6 +13,18 @@ public class C4SChunk extends Chunk {
   public double scale() { return _scale; }
   private transient long _bias;
   @Override public boolean hasFloat(){ return _scale != (long)_scale; }
+
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows) {
+      long res = UnsafeUtils.get4(_mem,_OFF+(i << 2));
+      if(res == C4Chunk._NA)cf.addMissing(i);
+      else cf.addValue((res+_bias)*_scale, i);
+    }
+    return cf;
+  }
+
   C4SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len((_mem.length - _OFF) >> 2);
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem,0,scale);

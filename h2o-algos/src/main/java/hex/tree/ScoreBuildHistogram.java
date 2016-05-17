@@ -8,6 +8,8 @@ import water.fvec.Chunk;
 import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 
+import java.util.Arrays;
+
 /**  Score and Build Histogram
  *
  * <p>Fuse 2 conceptual passes into one:
@@ -233,17 +235,13 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols,c) >= 0) {
-          if (!extracted) {
-            chks[c].getDoubles(cs, 0, cs.length);
-            extracted = true;
-          }
-          overAllRows(cs, ys, ws, rows, hcs[n][c], n == 0 ? 0 : nh[n - 1], nh[n], bins, sums, ssqs);
+          overAllRows(chks[c], ys, ws, rows, hcs[n][c], n == 0 ? 0 : nh[n - 1], nh[n], bins, sums, ssqs);
         }
       }
     }
   }
 
-  private static void overAllRows(double [] cs, double [] ys, double [] ws, int[] rows, final DHistogram rh, int lo, int hi, double[] bins, double[] sums, double[] ssqs) {
+  private static void overAllRows(Chunk cs, double [] ys, double [] ws, int[] rows, final DHistogram rh, int lo, int hi, double[] bins, double[] sums, double[] ssqs) {
     if( rh==null ) return; // Ignore untracked columns in this split
     int rhbinslen = rh._bins.length;
     if( rhbinslen > bins.length) { // Grow bins if needed
@@ -265,27 +263,26 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-  private static void fillLocalHistoForNode(double[] bins, double[] sums, double[] ssqs, double[] ws, double[] cs, double[] ys, DHistogram rh, int [] rows, int hi, int lo) {
-    double minmax[] = new double[]{rh._min2,rh._maxIn};
+  private static void fillLocalHistoForNode(final double[] bins, final double[] sums, final double[] ssqs, final double[] ws, Chunk cs, final double[] ys, final DHistogram rh, final int [] rows, int hi, int lo) {
+    final double minmax[] = new double[]{rh._min2,rh._maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, sums and sum-squares.
-    for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double w = ws[k];
-      if (w == 0) continue;
-      double col_data = cs[k];
-      if( col_data < minmax[0] ) minmax[0] = col_data;
-      if( col_data > minmax[1] ) minmax[1] = col_data;
-      int b = rh.bin(col_data); // Compute bin# via linear interpolation
-      double resp = ys[k];
-      double wy = w*resp;
-      bins[b] += w;                // Bump count in bin
-      sums[b] += wy;
-      ssqs[b] += wy*resp;
-    }
+    cs.processRows(new Chunk.ChunkFunctor(){
+      @Override public void addValue(double col_data, int k) {
+        double w = ws[k];
+        if (w == 0) return;
+        if( col_data < minmax[0] ) minmax[0] = col_data;
+        if( col_data > minmax[1] ) minmax[1] = col_data;
+        int b = rh.bin(col_data); // Compute bin# via linear interpolation
+        double resp = ys[k];
+        double wy = w*resp;
+        bins[b] += w;                // Bump count in bin
+        sums[b] += wy;
+        ssqs[b] += wy*resp;
+      }
+    }, Arrays.copyOfRange(rows, lo, hi));
     // Add all the data into the Histogram (atomically add)
     rh.setMin(minmax[0]);       // Track actual lower/upper bound per-bin
     rh.setMax(minmax[1]);
   }
-
 }

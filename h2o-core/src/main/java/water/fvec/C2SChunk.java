@@ -17,6 +17,27 @@ public class C2SChunk extends Chunk {
     UnsafeUtils.set8d(_mem, 0, scale);
     UnsafeUtils.set8 (_mem,8,bias );
   }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i) {
+      long res = UnsafeUtils.get2(_mem,_OFF+(i << 1));
+      if(res == C2Chunk._NA)cf.addMissing(i);
+      else cf.addValue((res+_bias)*_scale, i);
+    }
+    return cf;
+  }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i: rows) {
+      long res = UnsafeUtils.get2(_mem,_OFF+(i << 1));
+      if(res == C2Chunk._NA)cf.addMissing(i);
+      else cf.addValue((res+_bias)*_scale, i);
+    }
+    return cf;
+  }
+
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
     if( res == C2Chunk._NA ) throw new IllegalArgumentException("at8_abs but value is missing");

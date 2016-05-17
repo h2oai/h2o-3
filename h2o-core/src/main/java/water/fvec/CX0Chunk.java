@@ -11,6 +11,19 @@ public final class CX0Chunk extends CXIChunk {
   // Sparse constructor
   protected CX0Chunk(int len, byte [] buf){super(len,0,buf);}
 
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    int startOff = from == 0?_OFF:findOffset(from);
+    int endOff = to == _len?_mem.length:findOffset(to);
+    final int inc = _ridsz;
+    if(_ridsz == 2)
+      for (int off = startOff; off < endOff; off += inc)
+        cf.addValue(1, UnsafeUtils.get2(_mem, off) & 0xFFFF);
+    else
+      for (int off = startOff; off < endOff; off += inc)
+        cf.addValue(1,UnsafeUtils.get4(_mem,off) & 0xFFFF);
+    return cf;
+  }
+
   @Override protected final long at8_impl(int idx) {return getId(findOffset(idx)) == idx?1:0;}
   @Override protected final double atd_impl(int idx) { return at8_impl(idx); }
   @Override protected final boolean isNA_impl( int i ) { return false; }

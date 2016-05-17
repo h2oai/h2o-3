@@ -40,6 +40,8 @@ public class ChunkSpeedTest extends TestUtil {
     for (int i = 0; i < ll; ++i)
       chunks_bulk();
     for (int i = 0; i < ll; ++i)
+      chunks_visitor();
+    for (int i = 0; i < ll; ++i)
       chunks_part();
     for (int i = 0; i < ll; ++i)
       chunksInline();
@@ -133,6 +135,14 @@ public class ChunkSpeedTest extends TestUtil {
     return sum;
   }
 
+  double walkChunkVistor(final Chunk c) {
+    return ((Double)c.processRows(new Chunk.ChunkFunctor(){
+      double sum = 0;
+      @Override public void addValue(double v, int id){sum += v;}
+      @Override public Double result(){return sum;}
+    }).result()).doubleValue() ;
+  }
+
   double walkChunkParts(final Chunk c, double [] vals) {
     double sum =0;
     int from = 0;
@@ -160,6 +170,14 @@ public class ChunkSpeedTest extends TestUtil {
     double [] vals = new double[chunks[0]._len];
     for (int j=0; j<cols; ++j) {
       sum += walkChunkBulk(chunks[j],vals);
+    }
+    return sum;
+  }
+
+  double loop_visitor() {
+    double sum =0;
+    for (int j=0; j<cols; ++j) {
+      sum += walkChunkVistor(chunks[j]);
     }
     return sum;
   }
@@ -236,6 +254,27 @@ public class ChunkSpeedTest extends TestUtil {
     Log.info("Time for METHODS chunks getDoubles(): " + PrettyPrint.msecs(done - start, true));
     Log.info("");
   }
+  void chunks_visitor()
+  {
+    long start = 0;
+    double sum = 0;
+    for (int r = 0; r < rep; ++r) {
+      if (r==rep/10)
+        start = System.currentTimeMillis();
+      sum += loop_visitor();
+    }
+    long done = System.currentTimeMillis();
+    Log.info("Sum: " + sum);
+    long siz = 0;
+    for (int j=0; j<cols; ++j) {
+      siz += chunks[j].byteSize();
+    }
+    Log.info("Data size: " + PrettyPrint.bytes(siz));
+    Log.info("Time for METHODS chunks visitor: " + PrettyPrint.msecs(done - start, true));
+    Log.info("");
+  }
+
+
   void chunks_part()
   {
     long start = 0;
