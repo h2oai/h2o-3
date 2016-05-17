@@ -55,6 +55,37 @@ public class CXIChunk extends Chunk {
     return vals;
   }
 
+
+  private final void processRow(ChunkFunctor cf, int i) {
+    int off = getOff(i);
+    if (getId(off) != i) {
+      if (isSparseNA())
+        cf.addMissing(i);
+      else
+        cf.addValue(0, i);
+    } else if (hasFloat())
+      cf.addValue(getFValue(off), i);
+    else {
+      long val = getIValue(off);
+      if (val == NAS[_valsz_log])
+        cf.addMissing(i);
+      else
+        cf.addValue(val, i);
+    }
+  }
+  @Override public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+     for(int i:rows)
+       processRow(cf,i);
+     return cf;
+  }
+
+  @Override public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i)
+      processRow(cf,i);
+    return cf;
+  }
+
+
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.alloc_nums(_sparseLen);
     nc.alloc_indices(_sparseLen);
