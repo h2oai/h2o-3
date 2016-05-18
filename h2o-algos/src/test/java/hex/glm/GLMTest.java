@@ -199,7 +199,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._train = parsed;
       params._lambda = new double[]{0};
-      model = new GLM(params,glmkey("gamma_test")).trainModel().get();
+      model = new GLM(params).trainModel().get();
       for (double c : model.beta()) assertEquals(1.0, c, 1e-4);
       // test scoring
       testScoring(model,fr);
@@ -256,7 +256,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
-      GLM glm = new GLM( params, glmkey("gamma_test"));
+      GLM glm = new GLM( params);
       glm.trainModel().get();
       assertFalse("should've thrown IAE", true);
     } catch (IllegalArgumentException e) {
