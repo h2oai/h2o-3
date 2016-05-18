@@ -46,13 +46,13 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
     builder.init(false);          // validate parameters
 
-    _t_start = System.currentTimeMillis();
-    if( doTrain ) builder.trainModel();
-    _t_stop  = System.currentTimeMillis();
-
     schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
     PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
     schema.setHttpStatus(HttpResponseStatus.OK.getCode());
+
+    _t_start = System.currentTimeMillis();
+    if( doTrain ) builder.trainModel();
+    _t_stop  = System.currentTimeMillis();
     return schema;
   }
 
