@@ -14,14 +14,10 @@ import java.lang.reflect.Modifier;
 import hex.genmodel.annotations.CG;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
-import water.codegen.JCodeGen;
 import water.codegen.JCodeSB;
-import water.util.ReflectionUtils;
+import water.codegen.util.ReflectionUtils;
 
-import static water.codegen.java.JCodeGenUtil.method;
-import static water.codegen.java.JCodeGenUtil.s;
-import static water.util.ArrayUtils.append;
-import static water.codegen.java.JCodeGenUtil.VALUE;
+import static water.codegen.util.ArrayUtils.append;
 
 /**
  * FIXME:
@@ -70,7 +66,7 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
           if (!delegAnno.target().equals(CG.NA)) {
             Class fieldType = f.getType();
             Object value = skip ? ReflectionUtils.getValue(null, f, fieldType) : ReflectionUtils.getValue(source, delegAnno.target(), fieldType);
-            fcg.withValue(VALUE(value, fieldType));
+            fcg.withValue(JCodeGenUtil.VALUE(value, fieldType));
             System.out.println(f.getName() + " : " + fieldType.getCanonicalName() + " :=: " + value + ":" + (value != null ? value.getClass().getCanonicalName() : null));
           }
           withField(fcg);
@@ -101,7 +97,7 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
               withMethod(mcg);
             }
             String methodBody = n.getBody().toString();
-            mcg.withBody(s(methodBody)).withParentheses(false);
+            mcg.withBody(JCodeGenUtil.s(methodBody)).withParentheses(false);
           }
 
           @Override

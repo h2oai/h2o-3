@@ -75,7 +75,7 @@ else
     COVERAGE=""
 fi
 # Command to invoke test.
-JVM="nice $JAVA_CMD $COVERAGE $MAX_MEM -Xms3g -ea -cp build/resources/main${SEP}build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE $MAX_MEM -Xms3g -ea -cp build/resources/main${SEP}build/classes/test${SEP}build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../h2o-codegen-build/build/libs/h2o-codegen-base.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

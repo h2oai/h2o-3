@@ -53,13 +53,14 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     // Generate VALUES holder represented by a class
     // with a static field and static initializer
     ClassCodeGenerator topLevelCCG =
-        klazz(aryClassPrefix)
+        JCodeGenUtil.klazz(aryClassPrefix)
             .withModifiers(modifiers)
             .withImplements(Serializable.class)
-            .withField(field("VALUES")
+            .withField(JCodeGenUtil.field("VALUES")
                            .withModifiers(PUBLIC | STATIC | FINAL)
                            .withType(ary.getArrayType())
-                           .withValue(s("new ").pj(type).p("[").p(aryLen).p("]").pbraces(dim-1)));
+                           .withValue(JCodeGenUtil
+                                          .s("new ").pj(type).p("[").p(aryLen).p("]").pbraces(dim - 1)));
     // Add to top-level container handling encapsulation of this class (class level, compilation unit)
     classContainer().add(topLevelCCG);
 
@@ -75,11 +76,11 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
           final int alen = Math.min(MAX_STRINGS_IN_CONST_POOL, remain);
           final int astart = start;
           ClassCodeGenerator subCcg =
-              klazz(subClzName)
+              JCodeGenUtil.klazz(subClzName)
                   .withModifiers(modifiers)
                   .withImplements(Serializable.class)
                   .withMethod(
-                      method("fill") // FIXME: at this point we know aprox size of constant pool items, however actual size depends on actual values
+                      JCodeGenUtil.method("fill") // FIXME: at this point we know aprox size of constant pool items, however actual size depends on actual values
                           .withModifiers(PUBLIC | STATIC)
                           .withParams(ary.getArrayType(), "sa")
                           .withBody(isNested ? fillNestedArray(subClzName, ary, alen, astart, aryOff)

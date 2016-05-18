@@ -1,6 +1,7 @@
 package water.codegen.java;
 
 import water.codegen.CodeGenerator;
+import water.codegen.HasBuild;
 import water.codegen.JCodeSB;
 
 /**

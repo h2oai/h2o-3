@@ -2,7 +2,6 @@ package water.codegen;
 
 import water.codegen.java.ClassGenContainer;
 import water.codegen.java.CodeGeneratorB;
-import water.codegen.java.HasBuild;
 
 /**
  * FIXME:

@@ -68,7 +68,7 @@ fi
 
 
 # Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../h2o-codegen-build/build/libs/h2o-codegen-base.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner

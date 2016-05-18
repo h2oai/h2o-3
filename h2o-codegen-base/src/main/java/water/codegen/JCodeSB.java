@@ -1,7 +1,5 @@
 package water.codegen;
 
-import water.util.IcedBitSet;
-
 /**
  * Simple interface to share definition of SB and SBPrintStream.
  *
@@ -92,8 +90,6 @@ public interface JCodeSB<T extends JCodeSB> {
    * @return
    */
   T pj(String objectName, String fieldName);
-
-  T p(IcedBitSet ibs);
 
   /** Increase indentation counter */
   T ii(int i);

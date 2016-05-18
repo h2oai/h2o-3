@@ -4,8 +4,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
-import water.util.IcedBitSet;
-
 /**
  * A simple stream mimicking API of {@link SB}.
  */
@@ -232,13 +230,6 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
   public SBPrintStream pj(String objectName, String fieldName) {
     append(objectName).append('.').append(fieldName);
     return this;
-  }
-
-  @Override
-  public SBPrintStream p(IcedBitSet ibs) {
-    SB sb = new SB();
-    sb = ibs.toString(sb);
-    return append(sb);
   }
 
   public SBPrintStream p(SB sb) {

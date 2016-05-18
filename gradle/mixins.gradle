@@ -1,0 +1,15 @@
+//
+// Copy mixins into resources.
+//
+task copyMixinsToResources(type: Copy) {
+  from "src/main/java/water/codegen/java/mixins/"
+  into "src/main/resources/codegen/java/mixins/"
+  rename { f -> f.replace('.java', '.mixin')}
+}
+
+task deleteMixinsFromResources(type: Delete) {
+  delete "src/main/resources/codegen/java"
+}
+
+processResources.dependsOn copyMixinsToResources
+clean.dependsOn deleteMixinsFromResources

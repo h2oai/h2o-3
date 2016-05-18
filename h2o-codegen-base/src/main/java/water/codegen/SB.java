@@ -3,8 +3,6 @@ package water.codegen;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import water.util.IcedBitSet;
-
 /** Tight/tiny StringBuilder wrapper.
  *  Short short names on purpose; so they don't obscure the printing.
  *  Can't believe this wasn't done long long ago. */
@@ -144,7 +142,6 @@ public final class SB implements JCodeSB<SB> {
     return this;
   }
 
-  public SB p( IcedBitSet ibs ) { return ibs.toString(this); }
   // Increase indentation
   public SB ii( int i) { _indent += i; return this; }
   // Decrease indentation

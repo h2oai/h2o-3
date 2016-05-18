@@ -10,9 +10,13 @@ configurations {
 }
 
 dependencies {
+
   // Dependency on shared model support
+  compile project (':h2o-codegen-base')
   compile project (':h2o-genmodel')
+  // Add the h2o-genmodel.jar into exposed resources
   publishedJars project(':h2o-genmodel')
+
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"
   compile "gov.nist.math:jama:1.0.3"

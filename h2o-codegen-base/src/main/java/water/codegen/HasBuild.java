@@ -1,4 +1,4 @@
-package water.codegen.java;
+package water.codegen;
 
 /**
  * Created by michal on 5/6/16.

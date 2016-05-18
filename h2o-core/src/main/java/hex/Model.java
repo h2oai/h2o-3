@@ -23,6 +23,7 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.AbstractPrediction;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.ClusteringModelPrediction;
+import hex.genmodel.easy.prediction.DimReductionModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
 import water.AutoBuffer;

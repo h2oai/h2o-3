@@ -11,12 +11,5 @@ public interface CodeGenerator<S extends CodeGenerator> {
    */
   void generate(JCodeSB out);
 
-  // FIXME
-  /* Impact on java bytecode
-  int javaConstantPool();
-
-  int javaBytecodeLen();
-  */
-
 }
 

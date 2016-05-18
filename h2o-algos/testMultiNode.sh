@@ -52,7 +52,6 @@ fi
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-
 MAX_MEM="-Xmx3g"
 
 # Check if coverage should be run
@@ -64,7 +63,7 @@ then
 else
     COVERAGE=""
 fi
-JVM="nice $JAVA_CMD $COVERAGE -ea $MAX_MEM -Xms3g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -ea $MAX_MEM -Xms3g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../h2o-codegen-build/build/libs/h2o-codegen-base.jar${SEP}.../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test

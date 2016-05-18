@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -509,16 +508,5 @@ public class JCodeGen {
     public int isSupportedOption(String option) { return _fileManager.isSupportedOption(option); }
   }
 
-  public static JCodeSB pMethodParams(JCodeSB sb, Class[] types, String[] names) {
-    assert types == null && names == null || types.length == names.length : "Length of types does not match length of names";
-    if (types != null) {
-      for (int i = 0; i < types.length; i++) {
-        if (i > 0)
-          sb.p(", ");
-        sb.pj(types[i]).p(' ').p(names[i]);
-      }
-    }
-    return sb;
-  }
 }
 

@@ -13,7 +13,7 @@ import hex.genmodel.GenModel;
 import hex.genmodel.annotations.CG;
 import water.codegen.JCodeSB;
 import water.codegen.SB;
-import water.util.ReflectionUtils;
+import water.codegen.util.ReflectionUtils;
 
 /**
  * Created by michal on 12/11/15.

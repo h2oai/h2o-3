@@ -3,8 +3,6 @@ package water.codegen;
 import java.util.ArrayList;
 
 import water.codegen.java.ClassGenContainer;
-import water.codegen.java.CodeGeneratorB;
-import water.codegen.java.HasBuild;
 
 /**
  * A simple code generation pipeline.

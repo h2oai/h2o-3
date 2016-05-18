@@ -1,0 +1,15 @@
+//
+// H2O Code Generator Base Module
+//
+description = "H2O Code Generator Base"
+
+dependencies {
+  // Annotation for generated code
+  compile project(':h2o-genmodel')
+
+  // Javacode parser 
+  compile "com.google.code.javaparser:javaparser:1.0.11"
+
+  testCompile "junit:junit:${junitVersion}"
+}
+

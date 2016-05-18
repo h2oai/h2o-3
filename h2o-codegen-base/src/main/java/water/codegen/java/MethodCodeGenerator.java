@@ -1,11 +1,9 @@
 package water.codegen.java;
 
 import java.lang.reflect.Modifier;
-
 import water.codegen.*;
 
-import static water.codegen.JCodeGen.*;
-import static water.util.ArrayUtils.append;
+import static water.codegen.util.ArrayUtils.append;
 
 
 /**
@@ -93,7 +91,7 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
       out.pj(returnType).p(' ');
     }
     // Append method name and types
-    pMethodParams(out.p(name).p('('), paramTypes, paramNames).p(") ");
+    printMethodParams(out.p(name).p('('), paramTypes, paramNames).p(") ");
     if (parantheses) out.p("{").ii(2).nl();
     // Generate method body
     body.generate(out);
@@ -115,5 +113,17 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
   @Override
   final public ClassGenContainer classContainer(CodeGenerator caller) {
     return ccg.classContainer(caller);
+  }
+
+  static JCodeSB printMethodParams(JCodeSB sb, Class[] types, String[] names) {
+    assert types == null && names == null || types.length == names.length : "Length of types does not match length of names";
+    if (types != null) {
+      for (int i = 0; i < types.length; i++) {
+        if (i > 0)
+          sb.p(", ");
+        sb.pj(types[i]).p(' ').p(names[i]);
+      }
+    }
+    return sb;
   }
 }

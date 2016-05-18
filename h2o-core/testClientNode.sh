@@ -31,7 +31,6 @@ trap cleanup SIGTERM SIGINT
 #   build/libs/h2o-core.jar      - Main h2o core classes
 #   build/libs/test-h2o-core.jar - Test h2o core classes
 #   build/resources/main         - Main resources (e.g. page.html)
-
 MAX_MEM="-Xmx2g"
 
 # Check if coverage should be run
@@ -44,7 +43,7 @@ else
     COVERAGE=""
 fi
 
-JVM="nice java $COVERAGE -ea $MAX_MEM -Xms2g -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar"
+JVM="nice java $COVERAGE -ea $MAX_MEM -Xms2g -cp build/classes/main${SEP}build/classes/test${SEP}../lib/*${SEP}../h2o-algos/build/classes/main${SEP}../h2o-app/build/classes/main${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../h2o-codegen-build/build/libs/h2o-codegen-base.jar"
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
