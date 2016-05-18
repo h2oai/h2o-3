@@ -483,7 +483,7 @@ public class GLMTest  extends TestUtil {
       params._alpha = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
 
-      model = new GLM( params, Key.make("glm_testCars_1")).trainModel().get();
+      model = new GLM( params).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       String[] cfs1 = new String[]{"Intercept", "economy (mpg)", "cylinders", "displacement (cc)", "weight (lb)", "0-60 mph (s)", "year"};
       double[] vls1 = new double[]{4.9504805, -0.0095859, -0.0063046, 0.0004392, 0.0001762, -0.0469810, 0.0002891};
@@ -501,7 +501,7 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._beta_epsilon = 1e-5;
       params._missing_values_handling = MissingValuesHandling.Skip;
-      model = new GLM( params, Key.make("glm_testCars_2")).trainModel().get();
+      model = new GLM( params).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls2[i], coefs.get(cfs1[i]), 1e-4);
@@ -516,7 +516,7 @@ public class GLMTest  extends TestUtil {
       params._train = parsed;
       params._lambda = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
-      model = new GLM( params, Key.make("glm_testCars_3")).trainModel().get();
+      model = new GLM( params).trainModel().get();
       coefs = model.coefficients();
       for (int i = 0; i < cfs1.length; ++i)
         assertEquals(vls3[i], coefs.get(cfs1[i]), 1e-4);
