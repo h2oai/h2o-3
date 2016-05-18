@@ -269,7 +269,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length:-100;
+      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
       _permutation[i] = cats[i];
     }
     _numOffsets = MemoryManager.malloc4(nnums+1);
@@ -945,6 +945,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     row.predictors_bad = false;
+    row.response_bad = false;
     row.rid = rid + chunks[0].start();
     row.cid = rid;
     if(_weights)
