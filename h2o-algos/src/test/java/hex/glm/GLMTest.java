@@ -144,7 +144,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
       params._standardize = false;
-      model = new GLM(params,  Key.make("poisson_test_1")).trainModel().get();
+      model = new GLM(params).trainModel().get();
       for (double c : model.beta())
         assertEquals(Math.log(2), c, 1e-2); // only 1e-2 precision cause the perfect solution is too perfect -> will trigger grid search
       testScoring(model,fr);
