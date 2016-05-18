@@ -10,6 +10,7 @@ import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
+import org.apache.commons.lang.*;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
@@ -21,6 +22,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1049,15 +1051,62 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
 
 
-
-  @Override
-  // public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds )
-  public double[] score0(Chunk[] chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds) {
-    throw H2O.unimpl();
-  }
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
-    throw H2O.unimpl();
+    if(_parms._family == Family.multinomial) {
+      if(o != 0) throw H2O.unimpl("Offset is not implemented for multinomial.");
+      if(_eta == null) _eta = new ThreadLocal<>();
+      double[] eta = _eta.get();
+      if(eta == null) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
+      final double[][] bm = _output._global_beta_multinomial;
+      double sumExp = 0;
+      double maxRow = 0;
+      for (int c = 0; c < bm.length; ++c) {
+        double e = bm[c][bm[c].length-1];
+        double [] b = bm[c];
+        for(int i = 0; i < _output._dinfo._cats; ++i)
+          e += b[_output._dinfo.getCategoricalId(i,data[i])];
+        int coff = _output._dinfo._cats;
+        int boff = _output._dinfo.numStart();
+        for(int i = 0; i < _output._dinfo._nums; ++i) {
+          double d = data[coff+i];
+          if(!_output._dinfo._skipMissing && Double.isNaN(d))
+            d = _output._dinfo._numMeans[i];
+          e += d*b[boff+i];
+        }
+        if(e > maxRow) maxRow = e;
+        eta[c] = e;
+      }
+      for (int c = 0; c < bm.length; ++c)
+        sumExp += eta[c] = Math.exp(eta[c]-maxRow); // intercept
+      sumExp = 1.0 / sumExp;
+      for (int c = 0; c < bm.length; ++c)
+        preds[c + 1] = eta[c] * sumExp;
+      preds[0] = ArrayUtils.maxIndex(eta);
+    } else {
+      double[] b = beta();
+      double eta = b[b.length - 1] + o; // intercept + offset
+      for (int i = 0; i < _output._dinfo._cats && !Double.isNaN(eta); ++i) {
+        int l = _output._dinfo.getCategoricalId(i, data[i]);
+        if (l >= 0) eta += b[l];
+      }
+      int numStart = _output._dinfo.numStart();
+      int ncats = _output._dinfo._cats;
+      for (int i = 0; i < _output._dinfo._nums && !Double.isNaN(eta); ++i) {
+        double d = data[ncats + i];
+        if (!_output._dinfo._skipMissing && Double.isNaN(d))
+          d = _output._dinfo._numMeans[i];
+        eta += b[numStart + i] * d;
+      }
+      double mu = _parms.linkInv(eta);
+      if (_parms._family == Family.binomial) { // threshold for prediction
+        preds[0] = mu >= defaultThreshold()?1:0;
+        preds[1] = 1.0 - mu; // class 0
+        preds[2] = mu; // class 1
+      } else
+        preds[0] = mu;
+    }
+    return preds;
   }
 
   @Override protected void toJavaPredictBody(SBPrintStream body,
@@ -1070,7 +1119,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       public void generate(JCodeSB out) {
         JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
-        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo._catModes,"Imputed categorical values.");
+        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catModes(),"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
       }
     });
@@ -1099,7 +1148,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       body.ip("}").nl();
       final int noff = dinfo().numStart() - dinfo()._cats;
       body.ip("for(int i = ").p(dinfo()._cats).p("; i < b.length-1-").p(noff).p("; ++i)").nl();
-      body.ip("  eta += b[").p(noff).p("+i]*data[i];").nl();
+      body.ip("eta += b[").p(noff).p("+i]*data[i];").nl();
       body.ip("eta += b[b.length-1]; // reduce intercept").nl();
       if(_parms._family != Family.tweedie)
         body.ip("double mu = hex.genmodel.GenModel.GLM_").p(_parms._link.toString()).p("Inv(eta");
@@ -1107,7 +1156,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         body.ip("double mu = hex.genmodel.GenModel.GLM_tweedieInv(eta," + _parms._tweedie_link_power);
       body.p(");").nl();
       if (_parms._family == Family.binomial) {
-        body.ip("preds[0] = (mu > ").p(defaultThreshold()).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
+        body.ip("preds[0] = (mu >= ").p(defaultThreshold()).p(") ? 1 : 0").p("; // threshold given by ROC").nl();
         body.ip("preds[1] = 1.0 - mu; // class 0").nl();
         body.ip("preds[2] =       mu; // class 1").nl();
       } else {

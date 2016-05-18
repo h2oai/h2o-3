@@ -35,13 +35,14 @@ public class GLMScore extends MRTask<GLMScore> {
 
   private void processRow(DataInfo.Row r, float [] res, double [] ps, NewChunk [] preds, int ncols) {
     if(_dinfo._responses != 0)res[0] = (float) r.response[0];
-    if (r.bad) {
+    if (r.predictors_bad) {
       Arrays.fill(ps,Double.NaN);
     } else if(r.weight == 0) {
       Arrays.fill(ps,0);
     } else {
       _m.scoreRow(r, r.offset, ps);
-      if (_computeMetrics) _mb.perRow(ps, res, r.weight, r.offset, _m);
+      if (_computeMetrics && !r.response_bad)
+        _mb.perRow(ps, res, r.weight, r.offset, _m);
     }
     if (_generatePredictions)
       for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
@@ -49,8 +50,12 @@ public class GLMScore extends MRTask<GLMScore> {
   }
   public void map(Chunk[] chks, NewChunk[] preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
-    if (_computeMetrics) _mb = _m.makeMetricBuilder(_domain);
-    double[] ps = _mb._work;  // Sized for the union of test and train classes
+    double[] ps;
+    if (_computeMetrics) {
+      _mb = _m.makeMetricBuilder(_domain);
+      ps = _mb._work;  // Sized for the union of test and train classes
+    } else
+      ps = new double[_m._output._nclasses+1];
     float[] res = new float[1];
     final int nc = _m._output.nclasses();
     final int ncols = nc == 1 ? 1 : nc + 1; // Regression has 1 predict col; classification also has class distribution
@@ -58,7 +63,6 @@ public class GLMScore extends MRTask<GLMScore> {
     if (_sparse) {
       for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
         processRow(r,res,ps,preds,ncols);
-
     } else {
       DataInfo.Row r = _dinfo.newDenseRow();
       for (int rid = 0; rid < chks[0]._len; ++rid) {
