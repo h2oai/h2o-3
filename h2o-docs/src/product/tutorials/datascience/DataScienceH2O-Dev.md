@@ -467,7 +467,7 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 ###Introduction
 
-Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
+Distributed Random Forest (DRF) is a powerful classification and regression tool. When given a set of data, DRF generates a forest of classification (or regression) trees, rather than a single classification (or regression) tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification/regression from each H2O tree can be thought of as a vote; the most votes determines the classification/regression.
 
 The current version of DRF is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
 
@@ -481,7 +481,7 @@ There was some code cleanup and refactoring to support the following features:
 - Per-row offsets
 - N-fold cross-validation
 
-DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram), since it was not applicable to cases with observation weights or for cross-validation. 
+DRF no longer has a special-cased histogram for classification or regression (class DBinomHistogram has been superseded by DRealHistogram) since it was not applicable to cases with observation weights or for cross-validation. 
 
 
 ###Defining a DRF Model
