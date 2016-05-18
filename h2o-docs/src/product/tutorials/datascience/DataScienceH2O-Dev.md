@@ -274,7 +274,19 @@ By default, the following output displays:
 - Coefficients
 - Coefficient magnitudes
 
-### Lambda Search and Full Regularzion Path
+### Handling of Categorical Variables
+GLM auto-expands categorical variables into one-hot encoded binary variables (i.e. if variable has levels "cat","dog", "mouse", cat is encoded as 1,0,0, mouse is 0,1,0 and dog is 0,0,1).
+It is generally more efficient to let GLM perform auto-expansion instead of expanding data manually and it also adds the benefit of correct handling of different categorical mappings between different datasets as welll as handling of unseen categorical levels.
+Unlike binary numeric columns, auto-expanded variables are not standardized.
+
+It is common to skip one of the levels during the one-hot encoding to prevent linear dependency between the variable and the intercept.
+H3O follows the convention of skipping the first level.
+This behavior can be controlled by setting use_all_factor_levels_flag (no level is going to be skipped if the flag is true).
+The default depends on regularization parameter - it is set to false if no regularization and to true otherwise.
+The reference level which is skipped is always the first level, you can change which level is the reference level by calling h2o.relevel function prior to building the model.
+
+
+### Lambda Search and Full Regularization Path
 If lambda_search option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper).
 Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step.
 The returned model will have coefficients corresponding to the "optimal" lambda value as decided during training.

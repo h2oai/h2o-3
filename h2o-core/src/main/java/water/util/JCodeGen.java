@@ -405,15 +405,25 @@ public class JCodeGen {
     if( !COMPILER.getTask(null, jfm, null, /*javac options*/null, null, Arrays.asList(file)).call() )
       throw H2O.fail("Internal POJO compilation failed.");
 
-    // Compiled; now load all classes.  Our single POJO file actually makes a
-    // bunch of classes to keep each class constant pool size reasonable.
-    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    // Load POJO classes via a separated classloader to separate POJO namespace
+    ClassLoader cl = new TestPojoCL(Thread.currentThread().getContextClassLoader());
     for( Map.Entry<String, ByteArrayOutputStream> entry : jfm._buffers.entrySet()) {
       byte[] bits = entry.getValue().toByteArray();
       // Call classLoader.defineClass("className",byte[])
       DEFINE_CLASS_METHOD.invoke(cl, entry.getKey(), bits, 0, bits.length);
     }
-    return Class.forName(class_name); // Return the original top-level class
+    return Class.forName(class_name, true, cl); // Return the original top-level class
+  }
+
+  /**
+   * A private pojo classloader to separate each pojo namespace and
+   * avoid collisions in loading
+   */
+  private static class TestPojoCL extends ClassLoader {
+
+    public TestPojoCL(ClassLoader parent) {
+      super(parent);
+    }
   }
 
   // Parts of this code are shamelessly robbed from:
