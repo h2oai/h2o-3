@@ -161,7 +161,7 @@ public class GLMTest  extends TestUtil {
       params2._lambda = new double[]{0};
       params2._standardize = true;
       params2._beta_epsilon = 1e-5;
-      model = new GLM(params2, Key.make("poisson_test_2")).trainModel().get();
+      model = new GLM(params2).trainModel().get();
       assertEquals(0.3396, model.beta()[1], 1e-1);
       assertEquals(0.2565, model.beta()[0], 1e-1);
       // test scoring
