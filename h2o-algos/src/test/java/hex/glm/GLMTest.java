@@ -97,7 +97,6 @@ public class GLMTest  extends TestUtil {
   public void testGaussianRegression() throws InterruptedException, ExecutionException {
     Key raw = Key.make("gaussian_test_data_raw");
     Key parsed = Key.make("gaussian_test_data_parsed");
-    Key modelKey = Key.make("gaussian_test");
     GLMModel model = null;
     Frame fr = null, res = null;
     try {
@@ -110,7 +109,7 @@ public class GLMTest  extends TestUtil {
       params._response_column = fr._names[1];
       params._lambda = new double[]{0};
 //      params._standardize= false;
-      model = new GLM(params, modelKey).trainModel().get();
+      model = new GLM(params).trainModel().get();
       HashMap<String, Double> coefs = model.coefficients();
       assertEquals(0.0, coefs.get("Intercept"), 1e-4);
       assertEquals(0.1, coefs.get("x"), 1e-4);
