@@ -32,7 +32,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _min_split_improvement = 0; // Minimum relative improvement in squared error reduction for a split to happen
 
-    public enum HistogramType { AUTO, UniformAdaptive, Random }
+    public enum HistogramType { AUTO, UniformAdaptive, Random, QuantilesGlobal }
     public HistogramType _histogram_type = HistogramType.AUTO; // What type of histogram to use for finding optimal split points
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value

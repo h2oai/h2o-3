@@ -68,7 +68,7 @@
 #' @param weights_column Specify the weights column.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
 #' @param histogram_type What type of histogram to use for finding optimal split points
-#'        Can be one of "AUTO", "UniformAdaptive" or "Random".
+#'        Can be one of "AUTO", "UniformAdaptive", "Random" or "QuantilesGlobal".
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -126,7 +126,7 @@ h2o.gbm <- function(x, y, training_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     min_split_improvement,
-                    histogram_type=c("AUTO","UniformAdaptive","Random"),
+                    histogram_type=c("AUTO","UniformAdaptive","Random","QuantilesGlobal"),
                     max_abs_leafnode_pred
                     )
 {

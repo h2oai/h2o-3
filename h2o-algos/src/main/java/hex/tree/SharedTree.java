@@ -2,6 +2,8 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -41,6 +43,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Number of columns in training set, not counting the response column
   protected int _ncols;
+
+  protected double[][] _quantiles;
 
   // Initially predicted value (for zero trees)
   protected double _initialPrediction;
@@ -210,6 +214,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             for (int i = 0; i < nclasses(); ++i)
               Log.info(" sample rate for class '" + response().domain()[i] + "' : " + _parms._sample_rate_per_class[i]);
           }
+        }
+
+        // top-level quantiles for all columns
+        // non-numeric columns get a vector full of NAs
+        if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+          int N = _parms._nbins_top_level;
+          QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
+          Key rndKey = Key.make();
+          if (DKV.get(rndKey)==null) DKV.put(rndKey, _train);
+          p._train = rndKey;
+          p._weights_column = _parms._weights_column;
+          p._combine_method = QuantileModel.CombineMethod.INTERPOLATE;
+          p._probs = new double[N];
+          for (int i = 0; i < N; ++i) //compute quantiles such that they span from (inclusive) min...maxEx (exclusive)
+            p._probs[i] = i * 1./N;
+          Job<QuantileModel> job = new Quantile(p).trainModel();
+          QuantileModel qm = job.get();
+          job.remove();
+          _quantiles = qm._output._quantiles;
+          qm.delete();
+          DKV.remove(rndKey);
         }
 
         // Also add to the basic working Frame these sets:
