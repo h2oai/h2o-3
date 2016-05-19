@@ -865,7 +865,7 @@ Defining a DRF Model
 
 -  **histogram_type**: By default DRF bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
 
-   - Auto
+   - AUTO
    - UniformAdaptive
    - Random
    - QuantilesGlobal
@@ -1627,7 +1627,7 @@ Defining a GBM Model
 
 -  **histogram_type**: By default GBM bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
 
-	- Auto
+	- AUTO
 	- UniformAdaptive
 	- Random
 	- QuantilesGlobal
