@@ -113,13 +113,15 @@ public final class DHistogram extends Iced {
     _maxIn= -Double.MAX_VALUE;
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
-    if (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
+    _seed = seed;
+    while (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
       SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
-      _histoType = h[(int)Math.abs(seed % h.length)];
+      _histoType = h[(int)Math.abs(seed++ % h.length)];
     }
     if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
       _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
-    _seed = seed;
+    assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.AUTO);
+    assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
     _globalQuantilesKey = globalQuantilesKey;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
@@ -212,6 +214,7 @@ public final class DHistogram extends Iced {
         }
       }
     }
+    else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
     //otherwise AUTO/UniformAdaptive
   }
 
