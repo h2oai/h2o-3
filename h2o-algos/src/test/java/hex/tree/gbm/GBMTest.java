@@ -1893,7 +1893,7 @@ public class GBMTest extends TestUtil {
         parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 5;
-        parms._seed = 0xDECAFF;
+        parms._seed = 0xDECAFFEE;
 
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();

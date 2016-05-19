@@ -247,7 +247,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             if (splitPoints[i].length <= 1) //not enough split points left - fall back to regular binning
               splitPoints[i] = null;
             else
-              splitPoints[i] = ArrayUtils.padUniformly(_parms._seed, splitPoints[i], _parms._nbins_top_level);
+              splitPoints[i] = ArrayUtils.padUniformly(splitPoints[i], _parms._nbins_top_level);
             assert splitPoints[i] == null || splitPoints[i].length > 1;
             if (splitPoints[i]!=null && keys[i]!=null) {
 //              Log.info("Creating quantiles for column " + i + " (key: "+ keys[i] +")");

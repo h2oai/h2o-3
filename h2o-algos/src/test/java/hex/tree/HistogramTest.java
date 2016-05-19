@@ -229,17 +229,17 @@ public class HistogramTest extends TestUtil {
   }
   @Test public void testPadding() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
-    double[] after = ArrayUtils.padUniformly(1234,before,9);
+    double[] after = ArrayUtils.padUniformly(before,9);
     assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.55,0.7}));
   }
   @Test public void testPadding2() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
-    double[] after = ArrayUtils.padUniformly(1234,before,10);
-    assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.55,0.6363486689348754,0.7}));
+    double[] after = ArrayUtils.padUniformly(before,10);
+    assert(Arrays.equals(after, new double[]{0.3,0.3025,0.3075,0.31,0.315,0.32,0.36,0.4,0.55,0.7}));
   }
   @Test public void testPadding3() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
-    double[] after = ArrayUtils.padUniformly(1234,before,8);
-    assert(Arrays.equals(after, new double[]{0.3,0.305,0.30786090690944334,0.31,0.3105345867957048,0.32,0.4,0.7}));
+    double[] after = ArrayUtils.padUniformly(before,8);
+    assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.7}));
   }
 }

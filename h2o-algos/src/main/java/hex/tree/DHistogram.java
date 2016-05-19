@@ -191,7 +191,7 @@ public final class DHistogram extends Iced {
           if (_splitPts!=null) {
 //            Log.info("Obtaining global splitPoints: " + Arrays.toString(_splitPts));
             _splitPts = ArrayUtils.makeUniqueAndLimitToRange(_splitPts, _min, _maxEx);
-            _splitPts = ArrayUtils.padUniformly(_seed, _splitPts, _nbin);
+            _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
             if (_splitPts.length <= 1 || _splitPts.length > _nbin) {
               _splitPts = null; //abort, fall back to uniform binning
               _histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
