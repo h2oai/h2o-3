@@ -323,13 +323,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
-        if (_parms._solver == Solver.IRLSM) {
+        if (_parms._solver == Solver.L_BFGS)
+          _parms._max_iterations = _parms._lambda_search?_parms._nlambdas * 100 * numclasses:numclasses * Math.max(20, _dinfo.fullN() >> 2);
+        else
           _parms._max_iterations = _parms._lambda_search ? numclasses * 10 * _parms._nlambdas : numclasses * 50;
-        } else {
-          _parms._max_iterations = numclasses * Math.max(20, _dinfo.fullN() >> 2);
-          if (_parms._lambda_search)
-            _parms._max_iterations = _parms._nlambdas * 100 * numclasses;
-        }
       }
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
@@ -465,7 +462,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
-    private double[] solveGram(Gram gram, double [] xy) {
+    private double [] solveGram(Solver s, GLMIterationTask t) {
+      return (s == Solver.COORDINATE_DESCENT)?COD_solve(t,_state._alpha,_state.lambda()):ADMM_solve(t._gram, t._xy);
+    }
+
+    private double[] ADMM_solve(Gram gram, double [] xy) {
       if(!_parms._intercept) {
         gram.dropIntercept();
         xy = Arrays.copyOf(xy, xy.length - 1);
@@ -509,8 +510,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return _parms._intercept?xy:Arrays.copyOf(xy,xy.length+1);
     }
 
-    private void fitIRLSM_multinomial(){
-      assert _dinfo._responses == 3;
+    private void fitIRLSM_multinomial(Solver s){
+      assert _dinfo._responses == 3:"IRLSM for multinomial needs extra information encoded in additional reponses, expected 3 response vecs, got " + _dinfo._responses;
       double relImprovement = 1;
       double obj = _state.objective();
       while(_state._iter < _parms._max_iterations && relImprovement > _parms._objective_epsilon) {
@@ -527,7 +528,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           long t2 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeDataMultinomial(c), glmw, ls.getX(), c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
           long t3 = System.currentTimeMillis();
-          double[] betaCnd = solveGram(t._gram, t._xy);
+          double[] betaCnd = solveGram(s,t);
           long t4 = System.currentTimeMillis();
           if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
             Log.info(LogMsg("Ls failed " + ls));
@@ -546,15 +547,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    private void fitLSM(){
+    private void fitLSM(Solver s){
       GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
       int [] zeros = t._gram.dropZeroCols();
       t._xy = ArrayUtils.removeIds(t._xy,zeros);
       _state.removeCols(zeros);
-      _state.updateState(solveGram(t._gram,t._xy), -1);
+      _state.updateState(solveGram(s,t), -1);
     }
 
-    private void fitIRLSM(Solver solver) {
+    private void fitIRLSM(Solver s) {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       double [] betaCnd = _state.beta();
       LineSearchSolver ls = null;
@@ -563,7 +564,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         while (true) {
           long t1 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), glmw, betaCnd).doAll(_state.activeData()._adaptedFrame);
-//          assert !firstIter || MathUtils.compare(t._likelihood,_state.likelihood(),1e-15,1e-15):LogMsg("likelihoods don't match, " + t._likelihood + " != " + _state.likelihood());
           long t2 = System.currentTimeMillis();
           if (!_state._lsNeeded && (Double.isNaN(t._likelihood) || _state.objective(t._beta, t._likelihood) > _state.objective() + _parms._objective_epsilon)) {
             _state._lsNeeded = true;
@@ -574,7 +574,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             t._xy = ArrayUtils.removeIds(t._xy,zeros);
             t._beta = ArrayUtils.removeIds(t._beta,zeros);
             _state.removeCols(zeros);
-            betaCnd = solver == Solver.COORDINATE_DESCENT ? COD_solve(t, _state._alpha, _state.lambda()) : solveGram(t._gram, t._xy);
+            betaCnd = solveGram(s,t);
           }
           firstIter = false;
           long t3 = System.currentTimeMillis();
@@ -832,9 +832,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         case COORDINATE_DESCENT: // fall through to IRLSM
         case IRLSM:
           if(_parms._family == Family.multinomial)
-            fitIRLSM_multinomial();
+            fitIRLSM_multinomial(solver);
           else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
-            fitLSM();
+            fitLSM(solver);
           else
             fitIRLSM(solver);
           break;
@@ -917,7 +917,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else
         _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
 
-      if(_parms._family == Family.multinomial && _parms._solver == Solver.IRLSM) {
+      if(_parms._family == Family.multinomial && _parms._solver != Solver.L_BFGS && (_parms._solver != Solver.AUTO || defaultSolver() != Solver.L_BFGS) ) {
         double [] nb = getNullBeta();
         double maxRow = ArrayUtils.maxValue(nb);
         double sumExp = 0;
@@ -1097,7 +1097,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     double l2pen = lambda*(1-alpha);
     double [][] xx = gt._gram.getXX();
     double [] grads = gt._xy.clone();
-    double [] beta = gt._beta.clone();
+    double [] beta = _state.beta().clone();
     for(int i = 0; i < grads.length; ++i) {
       double ip = 0;
       for(int j = 0; j < beta.length; ++j)

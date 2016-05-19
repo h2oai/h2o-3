@@ -9,7 +9,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function() {
   iris_hex = as.h2o(iris)
-  model = h2o.glm(1:4,5,training=iris_hex)
+  model = h2o.glm(1:4,5,training=iris_hex,family="multinomial")
   
   h2o.rm(iris_hex)
   expect_false(exists('iris_hex'))
