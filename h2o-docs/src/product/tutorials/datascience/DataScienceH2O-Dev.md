@@ -585,7 +585,12 @@ DRF no longer has a special-cased histogram for classification or regression (cl
 	
 - **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
-- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
+- **histogram_type**: By default DRF bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+
+  - Auto
+  - UniformAdaptive
+  - Random
+  - QuantilesGlobal
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
@@ -1154,9 +1159,14 @@ There was some code cleanup and refactoring to support the following features:
 	
 	>etc. 
 
-- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. 
+- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
-- **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding. 
+- **histogram_type**: By default GBM bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+
+  - Auto
+  - UniformAdaptive
+  - Random
+  - QuantilesGlobal
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
