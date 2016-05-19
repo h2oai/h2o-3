@@ -3,9 +3,8 @@ package hex.tree;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Futures;
-import water.H2O;
-import water.TestUtil;
+import water.*;
+import water.util.ArrayUtils;
 import water.util.AtomicUtils;
 import water.util.Log;
 
@@ -123,7 +122,13 @@ public class HistogramTest extends TestUtil {
       long seed = new Random().nextLong();
       if (histoType== SharedTreeModel.SharedTreeParameters.HistogramType.Random)
         Log.info("random seed: " + seed);
-      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed);
+      double[] splitPts = null;
+      if (histoType == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+        splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
+      }
+      Key k = Key.make();
+      DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
+      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k);
       hist.init();
       int N=10000000;
       int bin=-1;
@@ -147,6 +152,94 @@ public class HistogramTest extends TestUtil {
       for (int i=0;i<nbins;++i) {
         Assert.assertTrue(Math.abs(l1[i]-l2[i]) < 1e-6);
       }
+      k.remove();
     }
+  }
+  @Test public void testUniformAdaptiveRange() {
+    int nbins = 13;
+    int nbins_cats = nbins;
+    byte isInt = 0;
+    double min = 1;
+    double maxEx = 6.900000000000001;
+    long seed = 1234;
+    SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
+    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, 0, histoType, seed, null);
+    hist.init();
+    assert(hist.binAt(0)==min);
+    assert(hist.binAt(nbins-1)<maxEx);
+    assert(hist.bin(min) == 0);
+    assert(hist.bin(maxEx-1e-15) == nbins-1);
+  }
+
+  @Test public void testRandomRange() {
+    int nbins = 13;
+    int nbins_cats = nbins;
+    byte isInt = 0;
+    double min = 1;
+    double maxEx = 6.900000000000001;
+    long seed = 1234;
+    SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
+    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, 0, histoType, seed, null);
+    hist.init();
+    assert(hist.binAt(0)==min);
+    assert(hist.binAt(nbins-1)<maxEx);
+    assert(hist.bin(min) == 0);
+    assert(hist.bin(maxEx-1e-15) == nbins-1);
+  }
+
+  @Test public void testQuantilesRange() {
+    int nbins = 13;
+    int nbins_cats = nbins;
+    byte isInt = 0;
+    double min = 1;
+    double maxEx = 6.900000000000001;
+    long seed = 1234;
+    SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal;
+    double[] splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
+    Key k = Key.make();
+    DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
+    DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k);
+    hist.init();
+    assert(hist.binAt(0)==min);
+    assert(hist.binAt(nbins-1)<maxEx);
+    assert(hist.bin(min) == 0);
+    assert(hist.bin(maxEx-1e-15) == nbins-1);
+    k.remove();
+  }
+
+  @Test public void testShrinking() {
+    double[] before = new double[]{0.2,0.28,0.31,0.32,0.32,0.4,0.7,0.81,0.84};
+    double[] after = ArrayUtils.makeUniqueAndLimitToRange(before, 0.3,0.8);
+    assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4,0.7}));
+  }
+  @Test public void testShrinking2() {
+    double[] before = new double[]{-0.3,0.2,0.28,0.28,0.3,0.3,0.31,0.32,0.32,0.4,0.7,0.7,0.8,0.8,0.81,0.84};
+    double[] after = ArrayUtils.makeUniqueAndLimitToRange(before, 0.3,0.8);
+    assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4,0.7}));
+  }
+  @Test public void testShrinking3() {
+    double[] before = new double[]{-0.3,0.2,0.28,0.28,0.3,0.3,0.31,0.32,0.32,0.4,0.7,0.7,0.8,0.8,0.81,0.84};
+    double[] after = ArrayUtils.makeUniqueAndLimitToRange(before, 0.3,0.9);
+    assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4,0.7,0.8,0.81,0.84}));
+  }
+  @Test public void testShrinking4() {
+    double[] before = new double[]{0.31,0.32,0.32,0.4,0.7,0.7};
+    double[] after = ArrayUtils.makeUniqueAndLimitToRange(before, 0.3,0.9);
+    assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4,0.7}));
+  }
+  @Test public void testPadding() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.padUniformly(1234,before,9);
+    assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.55,0.7}));
+  }
+  @Test public void testPadding2() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.padUniformly(1234,before,10);
+    assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.55,0.6363486689348754,0.7}));
+  }
+  @Test public void testPadding3() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.padUniformly(1234,before,8);
+    assert(Arrays.equals(after, new double[]{0.3,0.305,0.30786090690944334,0.31,0.3105345867957048,0.32,0.4,0.7}));
   }
 }

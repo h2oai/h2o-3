@@ -65,7 +65,7 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
 #' @param histogram_type What type of histogram to use for finding optimal split points
-#'        Can be one of "AUTO", "UniformAdaptive" or "Random".
+#'        Can be one of "AUTO", "UniformAdaptive", "Random" or "QuantilesGlobal".
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -106,7 +106,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_tolerance=1e-3,
                              max_runtime_secs=0,
                              min_split_improvement,
-                             histogram_type=c("AUTO","UniformAdaptive","Random")
+                             histogram_type=c("AUTO","UniformAdaptive","Random","QuantilesGlobal")
                              )
 {
   # Training_frame and validation_frame may be a key or an H2OFrame object

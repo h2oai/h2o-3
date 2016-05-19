@@ -1309,4 +1309,74 @@ public class ArrayUtils {
     if(id == 0) return Arrays.copyOfRange(ary,id,ary.length);
     return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id,ary.length));
   }
+
+  public static double[] padUniformly(long seed, double[] origPoints, int newLength) {
+    int origLength = origPoints.length;
+    if (newLength <= origLength || origLength<=1) return origPoints;
+    int extraPoints = newLength - origLength;
+    double extraPointsPerBin = (double)extraPoints/(origLength-1);
+    double extraPointsPerBinRemainder = extraPointsPerBin - (int)extraPointsPerBin;
+    long myseed = seed + 0xDECAF*origLength - 0xDA7A*newLength;
+    Random rng = RandomUtils.getRNG(myseed);
+    Set<Double> newPoints = new TreeSet<>();
+    for (int i=0;i<origLength;++i)
+      newPoints.add(origPoints[i]);
+
+    // add padding
+    for (int i=0;i<origLength-1;++i) {
+      double startPos = origPoints[i];
+      double delta = origPoints[i+1]-startPos;
+      int howmany=(int)extraPointsPerBin;
+      if (howmany < 1 && rng.nextDouble()<extraPointsPerBinRemainder && newPoints.size() < newLength)
+        howmany = 1;
+      for (int j=0;j<howmany && newPoints.size()<newLength;++j)
+        newPoints.add(startPos+(j+0.5)/howmany * delta);
+      if (rng.nextDouble()<extraPointsPerBinRemainder && newPoints.size() < newLength)
+        newPoints.add(startPos+rng.nextDouble()*delta);
+    }
+    while (newPoints.size() < newLength)
+      newPoints.add(origPoints[0] + rng.nextDouble() * (origPoints[origPoints.length - 1] - origPoints[0]));
+    double[] res = new double[newPoints.size()];
+    Iterator<Double> it=newPoints.iterator();
+    int count=0;
+    while (it.hasNext()) {
+      double val = it.next();
+      assert(val >= origPoints[0]);
+      assert(val <= origPoints[origPoints.length-1]);
+      res[count++]=val;
+    }
+    assert(res.length==newLength);
+    return res;
+  }
+
+  // See HistogramTest JUnit for tests
+  public static double[] makeUniqueAndLimitToRange(double[] splitPoints, double min, double maxEx) {
+    double last= splitPoints[0];
+    double[] uniqueValidPoints = new double[splitPoints.length+2];
+    int count=0;
+    // keep all unique points that are minimally overlapping with min..maxEx
+    for (int i = 0; i< splitPoints.length; ++i) {
+      double pos = splitPoints[i];
+      // first one
+      if (pos >= min && count==0) {
+        uniqueValidPoints[count++]= min;
+        if (pos> min) uniqueValidPoints[count++]=pos;
+        last=pos;
+        continue;
+      }
+      //last one
+      else if (pos > maxEx) {
+        break;
+      }
+      // regular case: add to uniques
+      else if (pos > min && pos < maxEx && (i==0 || pos != last)) {
+        uniqueValidPoints[count++] = pos;
+        last = pos;
+      }
+    }
+    if (count==0) {
+      return new double[]{min};
+    }
+    return Arrays.copyOfRange(uniqueValidPoints,0,count);
+  }
 }

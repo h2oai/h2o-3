@@ -88,7 +88,7 @@ class H2ORandomForestEstimator(H2OEstimator):
       Minimum relative improvement in squared error reduction for a split to happen
     histogram_type : str
       What type of histogram to use for finding optimal split points.
-      Can be one of "AUTO", "UniformAdaptive" or "Random".
+      Can be one of "AUTO", "UniformAdaptive", "Random" or "QuantilesGlobal".
     """
   def __init__(self, model_id=None, mtries=None, col_sample_rate_change_per_level=None,
                sample_rate=None, sample_rate_per_class=None, col_sample_rate_per_tree=None,
