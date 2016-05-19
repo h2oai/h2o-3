@@ -1863,6 +1863,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Ignore
   @Test public void randomizeSplitPoints() {
     Frame tfr = null;
     Key[] ksplits = null;

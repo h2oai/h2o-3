@@ -1520,6 +1520,7 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+  @Ignore
   @Test public void randomizeSplitPoints() {
     Frame tfr = null;
     Key[] ksplits = null;
