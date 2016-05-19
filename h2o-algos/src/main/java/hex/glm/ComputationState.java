@@ -32,7 +32,7 @@ public final class ComputationState {
   double [] _z;
   boolean _allIn;
   int _iter;
-  private double _lambda;
+  private double _lambda = -1;
   private double _previousLambda;
   private GLMGradientInfo _ginfo; // gradient info excluding l1 penalty
   private double _likelihood;
@@ -63,6 +63,7 @@ public final class ComputationState {
   public GLMGradientSolver gslvr(){return _gslvr;}
   public double lambda(){return _lambda;}
   public double previousLambda() {return _previousLambda;}
+  public void setLambdaMax(double lmax) {_lambda = lmax;}
   public void setLambda(double lambda) {
     _previousLambda = _lambda;
     _lambda = lambda;
@@ -90,8 +91,13 @@ public final class ComputationState {
 
   private void adjustToNewLambda() {
     double ldiff = _lambda - _previousLambda;
-    if(ldiff == 0) return;
-    double l2pen = .5*l2pen();
+    assert ldiff <= 0:"ldiff = " + ldiff + ", previous lambda = " + _previousLambda + ", current lambda = " + _lambda;
+    if(ldiff == 0 || l2pen() == 0) return;
+    double l2pen = .5*ArrayUtils.l2norm2(_beta,true);
+    if(l2pen > 0) {
+      for(int i = 0; i < _ginfo._gradient.length-1; ++i)
+        _ginfo._gradient[i] += ldiff*_beta[i];
+    }
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
   }
 
@@ -276,9 +282,11 @@ public final class ComputationState {
         u =  ArrayUtils.expandAndScatter(_u, _dinfo.fullN() + 1, _activeData._activeCols);
     }
     int [] activeCols = _activeData.activeCols();
-    _gslvr = new GLMGradientSolver(_job,_parms,_dinfo,(1-_alpha)*_lambda,_bc);
-    GLMGradientInfo ginfo = _gslvr.getGradient(beta);
-    double[] grad = ginfo._gradient.clone();
+    if(beta != _beta || _ginfo == null) {
+      _gslvr = new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
+      _ginfo = _gslvr.getGradient(beta);
+    }
+    double[] grad = _ginfo._gradient.clone();
     double err = 1e-4;
     if(u != null && u != _u){ // fill in u for missing variables
       int k = 0;
@@ -297,7 +305,6 @@ public final class ComputationState {
     _gradientErr = err;
     _beta = beta;
     _u = u;
-    _ginfo = ginfo;
     _activeBC = null;
     if(!_allIn) {
       int[] failedCols = new int[64];
@@ -319,7 +326,7 @@ public final class ComputationState {
         Arrays.sort(newCols);
         _beta = ArrayUtils.select(beta, newCols);
         if(_u != null) _u = ArrayUtils.select(_u,newCols);
-        _ginfo = new GLMGradientInfo(ginfo._likelihood, ginfo._objVal, ArrayUtils.select(ginfo._gradient, newCols));
+        _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, newCols));
         _activeData = _dinfo.filterExpandedColumns(newCols);
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_job, _parms, _activeData, (1 - _alpha) * _lambda, _activeBC);
@@ -371,7 +378,15 @@ public final class ComputationState {
   private double _betaDiff;
   private double _relImprovement;
 
-  public boolean converged(){return _betaDiff < _parms._beta_epsilon || _relImprovement < _parms._objective_epsilon;}
+  String convergenceMsg = "";
+  public boolean converged(){
+    if(_betaDiff < _parms._beta_epsilon)
+      convergenceMsg = "betaDiff < eps; betaDiff = " + _betaDiff + ", eps = " + _parms._beta_epsilon;
+    else if(_relImprovement < _parms._objective_epsilon)
+      convergenceMsg = "relImprovement < eps; relImprovement = " + _relImprovement + ", eps = " + _parms._objective_epsilon;
+    else convergenceMsg = "not converged, betaDiff = " + _betaDiff + ", relImprovement = " + _relImprovement;
+    return  (_betaDiff < _parms._beta_epsilon || _relImprovement < _parms._objective_epsilon);
+  }
 
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);

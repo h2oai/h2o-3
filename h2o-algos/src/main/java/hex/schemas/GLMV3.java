@@ -49,6 +49,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "objective_epsilon",
             "beta_epsilon",
             "gradient_epsilon",
+            "stopping_rounds",
+            "stopping_tolerance",
             "link",
             "prior",
             "lambda_min_ratio",

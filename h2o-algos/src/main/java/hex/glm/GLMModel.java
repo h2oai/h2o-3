@@ -1,11 +1,8 @@
 package hex.glm;
 
-import hex.DataInfo;
+import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
-import hex.GLMMetrics;
-import hex.Model;
-import hex.ModelMetrics;
 import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -151,6 +148,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
 
   public static class GLMParameters extends Model.Parameters {
+
     public String algoName() { return "GLM"; }
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
@@ -159,7 +157,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _standardize = true;
     public Family _family;
     public Link _link = Link.family_default;
-    public Solver _solver = Solver.IRLSM;
+    public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
     public double [] _alpha = null;
@@ -176,13 +174,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _intercept = true;
     public double _beta_epsilon = 1e-4;
     public double _objective_epsilon = -1;
-    public double _gradient_epsilon = 1e-4;
+    public double _gradient_epsilon = -1;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
     public boolean _remove_collinear_columns = false;
     public String[] _interactions=null;
     public boolean _early_stopping = true;
-
 
     public Key<Frame> _beta_constraints = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
@@ -206,9 +203,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("_alpha", "Alpha value must be between 0 and 1");
       if(_lambda != null && _lambda[0] < 0)
         glm.error("_lambda", "Lambda value must be >= 0");
-      if(_lambda_search)
-        if(_nlambdas == -1)
-          _nlambdas = 100;
       if(_obj_reg != -1 && _obj_reg <= 0)
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
@@ -277,7 +271,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMParameters(){
       this(Family.gaussian, Link.family_default);
       assert _link == Link.family_default;
+      _stopping_rounds = 1;
+      _stopping_metric = ScoreKeeper.StoppingMetric.deviance;
+      _stopping_tolerance = 1e-4;
     }
+
     public GLMParameters(Family f){this(f,f.defaultLink);}
     public GLMParameters(Family f, Link l){this(f,l, null, null, 0, 1);}
     public GLMParameters(Family f, Link l, double[] lambda, double[] alpha, double twVar, double twLnk) {

@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
+import water.MemoryManager;
 import water.api.API;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
@@ -118,6 +119,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
       coefficients_table = new TwoDimTableBase();
       final double [] magnitudes;
       double [] beta = impl.beta();
+      if(beta == null) beta = MemoryManager.malloc8d(names.length);
       String [] colTypes = new String[]{"double"};
       String [] colFormats = new String[]{"%5f"};
       String [] colnames = new String[]{"Coefficients"};
@@ -135,12 +137,13 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
       }
       TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", ns, colnames, colTypes, colFormats, "names");
       // fill in coefficients
+
       tdt.set(0, 0, beta[beta.length - 1]);
       for (int i = 0; i < beta.length - 1; ++i) {
         tdt.set(i + 1, 0, beta[i]);
       }
       double[] norm_beta = null;
-      if(impl.isStandardized()) {
+      if(impl.isStandardized() &&impl.beta() != null) {
         norm_beta = impl.getNormBeta();
         tdt.set(0, stdOff, norm_beta[norm_beta.length - 1]);
         for (int i = 0; i < norm_beta.length - 1; ++i)
@@ -160,7 +163,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         }
       }
       coefficients_table.fillFromImpl(tdt);
-      if(impl.isStandardized()) {
+      if(impl.isStandardized() && impl.beta() != null) {
         magnitudes = norm_beta.clone();
         for (int i = 0; i < magnitudes.length; ++i)
           if (magnitudes[i] < 0) magnitudes[i] *= -1;

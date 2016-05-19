@@ -300,10 +300,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     if (expensive) {
       if (error_count() > 0) return;
+      if (_parms._alpha == null)
+        _parms._alpha = new double[]{_parms._solver == Solver.L_BFGS ? 0 : .5};
+      if (_parms._lambda_search  &&_parms._nlambdas == -1)
+          _parms._nlambdas = _parms._alpha[0] == 0?30:100; // fewer lambdas needed for ridge
       _lsc = new LambdaSearchScoringHistory();
       _sc = new ScoringHistory();
-      if (_parms._alpha == null)
-        _parms._alpha = new double[]{_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT_NAIVE ? .5 : 0};
       _train.bulkRollups(); // make sure we have all the rollups computed in parallel
       _sc = new ScoringHistory();
       _t0 = System.currentTimeMillis();
@@ -325,7 +327,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _parms._max_iterations = _parms._nlambdas * 100 * numclasses;
         }
       }
-
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
       _state = new ComputationState(_job, _parms, _dinfo, null, nclasses());
@@ -378,21 +379,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_weights != null) vecs.add(_weights);
       if(_offset != null) vecs.add(_offset);
       vecs.add(_response);
-      _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
-      String[] warns = _model.adaptTestForTrain(_valid, true, true);
-      for (String s : warns) warn("_validation_frame", s);
-      if (_parms._lambda_min_ratio == -1)
-        _parms._lambda_min_ratio = (_nobs >> 4) >  _dinfo.fullN() ? 1e-4 : 1e-2;
       double [] beta = getNullBeta();
       GLMGradientInfo ginfo = new GLMGradientSolver(_job,_parms, _dinfo, 0, _state.activeBC()).getGradient(beta);
+      _lmax = lmax(ginfo._gradient);
+      _state.setLambdaMax(_lmax);
+      _model = new GLMModel(_result, _parms, GLM.this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
+      String[] warns = _model.adaptTestForTrain(_valid, true, true);
+      for (String s : warns) _job.warn(s);
+      if (_parms._lambda_min_ratio == -1) {
+        _parms._lambda_min_ratio = (_nobs >> 4) > _dinfo.fullN() ? 1e-4 : 1e-2;
+        if(_parms._alpha[0] == 0)
+          _parms._lambda_min_ratio *= 1e-2; // smalelr lambda min for ridge as we are starting quite high
+      }
+
       _state.updateState(beta,ginfo);
       if (_parms._lambda == null) {  // no lambda given, we will base lambda as a fraction of lambda max
-        _lmax = lmax(ginfo._gradient);
         if (_parms._lambda_search) {
-          if (_parms._nlambdas == -1)
-            _parms._nlambdas = 100;
           _parms._lambda = new double[_parms._nlambdas];
-
           double dec = Math.pow(_parms._lambda_min_ratio, 1.0/(_parms._nlambdas - 1));
           _parms._lambda[0] = _lmax;
           double l = _lmax;
@@ -410,8 +413,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           }
         _parms._lambda[_parms._lambda.length-1] = _lambdaCVEstimate;
       }
-      if(_parms._objective_epsilon == -1)
-        _parms._objective_epsilon = _parms._lambda[0] == 0?1e-6:1e-4; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
+      if(_parms._objective_epsilon == -1) {
+        if(_parms._lambda_search)
+          _parms._objective_epsilon = 1e-6; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
+        else
+          _parms._objective_epsilon =  _parms._lambda[0] == 0?1e-6:1e-4;
+      }
+      if(_parms._gradient_epsilon == -1) {
+        _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-8 : 1e-6; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
+        if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
+      }
       // clone2 so that I don't change instance which is in the DKV directly
       // (clone2 also shallow clones _output)
       _model.clone2().delete_and_lock(_job._key);
@@ -539,7 +550,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(solveGram(t._gram,t._xy), -1);
     }
 
-    private void fitIRLSM() {
+    private void fitIRLSM(Solver solver) {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       double [] betaCnd = _state.beta();
       LineSearchSolver ls = null;
@@ -559,7 +570,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             t._xy = ArrayUtils.removeIds(t._xy,zeros);
             t._beta = ArrayUtils.removeIds(t._beta,zeros);
             _state.removeCols(zeros);
-            betaCnd = _parms._solver == Solver.COORDINATE_DESCENT ? COD_solve(t, _state._alpha, _state.lambda()) : solveGram(t._gram, t._xy);
+            betaCnd = solver == Solver.COORDINATE_DESCENT ? COD_solve(t, _state._alpha, _state.lambda()) : solveGram(t._gram, t._xy);
           }
           firstIter = false;
           long t3 = System.currentTimeMillis();
@@ -653,7 +664,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           @Override
           public boolean progress(double[] beta, GradientInfo ginfo) {
             if(_state._iter < 4 || ((_state._iter & 3) == 0))
-              Log.info(LogMsg("LBFGS, gradient norm = " + ArrayUtils.linfnorm(ginfo._gradient,false)));
+              Log.info(LogMsg("LBFGS, gradient norm = " + ArrayUtils.linfnorm(ginfo._gradient, false)));
             return GLMDriver.this.progress(beta,ginfo);
           }
         });
@@ -821,7 +832,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
             fitLSM();
           else
-            fitIRLSM();
+            fitIRLSM(solver);
           break;
         case L_BFGS:
           fitLBFGS();
@@ -990,14 +1001,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(beta,gginfo);
       if(!_parms._lambda_search)
         updateProgress();
-      return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !_state.converged();
+      boolean converged = _state.converged();
+      if(converged) Log.info(LogMsg(_state.convergenceMsg));
+      return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
     }
 
     public boolean progress(double [] beta, double likelihood) {
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
         updateProgress();
-      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !_state.converged();
+      boolean converged = _state.converged();
+      if(converged) Log.info(LogMsg(_state.convergenceMsg));
+      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
@@ -1015,7 +1030,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private Solver defaultSolver() {
-    return Solver.IRLSM;
+    Solver s = Solver.IRLSM;
+    if(_state.activeData().fullN() >= 5000)
+      s = Solver.L_BFGS;
+    else if(_parms._lambda_search && _parms._alpha[0] > 0) s = Solver.COORDINATE_DESCENT;
+    Log.info(LogMsg("picked solver " + s));
+    return s;
   }
 
   private double currentLambda() {
@@ -1393,7 +1413,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     public String toString(){
-      return "GLM grad info: likelihood = " + _likelihood + ", obj = " + _objVal + ", gradient = " + Arrays.toString(_gradient);
+      return "GLM grad info: likelihood = " + _likelihood + super.toString();
     }
   }
 
