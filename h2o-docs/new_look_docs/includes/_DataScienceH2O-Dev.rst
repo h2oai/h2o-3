@@ -847,6 +847,29 @@ Defining a DRF Model
    previously-trained model. Use this option to build a new model as a
    continuation of a previously-generated model.
 
+-  **col\_sample_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+
+	 level 1: **col\_sample_rate**
+	
+	 level 2: **col\_sample_rate** * **factor**
+	
+	 level 3: **col\_sample_rate** * **factor^2**
+	
+	 level 4: **col\_sample_rate** * **factor^3**
+	
+	 etc.
+
+-  **col\_sample\_rate\_per\_tree**: Specifies the column sample rate per tree. This can be a value from 0.0 to 1.0.
+
+-  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
+
+-  **histogram_type**: By default DRF bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+
+   - Auto
+   - UniformAdaptive
+   - Random
+   - QuantilesGlobal
+
 -  **keep\_cross\_validation\_predictions**: To keep the
    cross-validation predictions, check this checkbox.
 
@@ -1587,6 +1610,27 @@ Defining a GBM Model
    Test accuracy improves when either columns or rows are sampled. For
    details, refer to "Stochastic Gradient Boosting" (`Friedman,
    1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+   
+-  **col\_sample_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+	
+	  level 1: **col\_sample_rate**
+	
+	  level 2: **col\_sample_rate** * **factor**
+	
+	  level 3: **col\_sample_rate** * **factor^2**
+	
+	  level 4: **col\_sample_rate** * **factor^3**
+	
+	  etc. 
+
+-  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
+
+-  **histogram_type**: By default GBM bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+
+	- Auto
+	- UniformAdaptive
+	- Random
+	- QuantilesGlobal
 
 -  **score\_each\_iteration**: (Optional) Check this checkbox to score
    during each iteration of the model training.
