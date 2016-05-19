@@ -18,7 +18,7 @@ test <- function() {
   expect_false(exists('model'))
   
   iris_hex = as.h2o(iris)
-  model = h2o.glm(1:4,5,training=iris_hex)
+  model = h2o.glm(1:4,5,training=iris_hex, family="multinomial")
   remove_me = c(iris_hex, model)
   h2o.rm(remove_me)
   expect_false(exists('remove_me'))
