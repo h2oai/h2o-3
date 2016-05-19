@@ -473,7 +473,7 @@ The current version of DRF is fundamentally the same as in previous versions of 
 
 - Improved ability to train on categorical variables (using the `nbins_cats` parameter)
 - Minor changes in histogramming logic for some corner cases
-- By default, DRF now builds half as many trees for binomial problems, similar to GBM: one tree to estimate class 0, probability p0, class 1 probability is 1-p0. 
+- By default, DRF builds half as many trees for binomial problems, similar to GBM: it uses a single tree to estimate class 0 (probability "p0"), and then computes the probability of class 0 as ``1.0 - p0``. For multiclass problems, a tree is used to estimate the probability of each class separately. 
 
 There was some code cleanup and refactoring to support the following features:
 
