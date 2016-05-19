@@ -587,7 +587,7 @@ DRF no longer has a special-cased histogram for classification or regression (cl
 
 - **histogram_type**: By default DRF bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
 
-  - Auto
+  - AUTO
   - UniformAdaptive
   - Random
   - QuantilesGlobal
@@ -1163,7 +1163,7 @@ There was some code cleanup and refactoring to support the following features:
 
 - **histogram_type**: By default GBM bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
 
-  - Auto
+  - AUTO
   - UniformAdaptive
   - Random
   - QuantilesGlobal
