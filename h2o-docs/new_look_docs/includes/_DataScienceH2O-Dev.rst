@@ -957,23 +957,10 @@ never any one-hot encoding.
 
   For regression, the floor ()in this example, (100/3)=33 columns) is used for each split by default. If ``mtries=7``, then 7 columns are picked for each split decision (out of the 60).
 
-  ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there's only one column left for
-each split, regardless of how large the value for ``mtries`` is.
+  ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there's only one column left for each split, regardless of how large the value for ``mtries`` is.
 
 DRF Algorithm
 ~~~~~~~~~~~~~
-
-.. raw:: html
-
-		<iframe src="http://www.slideshare.net/0xdata/rf-brighttalk" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen="true"> </iframe> 
-
-.. raw:: html
-
-        <object width="480" height="385"><param name="movie" value="http://www.slideshare.net/0xdata/rf-brighttalk"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><iframe src="http://www.slideshare.net/0xdata/rf-brighttalk" type="application/vnd.ms-powerpoint" allowscriptaccess="always" allowfullscreen="true" width="480" height="385"></iframe></object>		
-.. raw:: html
-
-        <object width="480" height="385"><param name="movie" value="http://www.youtube.com/v/SBqYZ3KdAUc&hl=en_US&fs=1&rel=0"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/SBqYZ3KdAUc&hl=en_US&fs=1&rel=0" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="480" height="385"></embed></object>
-
 
 .. image:: http://image.slidesharecdn.com/rfbrighttalk-140522173736-phpapp02/95/building-random-forest-at-scale-1-638.jpg?cb=1400782751.png
    :width: 425px
@@ -1109,9 +1096,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during testing?**
 
-If a predictor is missing, it will be skipped when taking the product of
-conditional probabilities in calculating the joint probability
-conditional on the response.
+  If a predictor is missing, it will be skipped when taking the product of conditional probabilities in calculating the joint probability conditional on the response.
 
 -  **What happens if the response domain is different in the training
    and test datasets?**
@@ -1413,70 +1398,59 @@ Solve for :math:`x` by Gaussian elimination.
 Recovering SVD from GLRM
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-GLRM gives (x) and (y), where (x
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R `^{n \* k}) and ( y
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R `^{k\*m} )
+GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n * k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k*m}`
 
-   - (n)= number of rows (A)
+   - :math:`n` = number of rows :math:`A`
 
-   - (m)= number of columns (A)
+   - :math:`m` = number of columns :math:`A`
 
-   - (k)= user-specified rank    - (A)= training matrix
+   - :math:`k` = user-specified rank
+   
+   - :math:`A` = training matrix
 
-It is assumed that the (x) and (y) columns are independent.
+It is assumed that the :math:`x` and :math:`y` columns are independent.
 
-First, perform QR decomposition of (x) and (y^T):
+1. Perform QR decomposition of :math:`x` and :math:`y^T`:
 
-   (x = QR)
+  :math:`x = QR`
+  
+  :math:`y^T = ZS`, where :math:`Q^TQ = I = Z^TZ`
 
-    (y^T = ZS), where (Q^TQ = I = Z^TZ)
+2. Call JAMA QR Decomposition directly on :math:`y^T` to get :math:`Z\in\rm \Bbb I \! \Bbb R`, :math:`S \in \Bbb I \! \Bbb R`
 
-      Call JAMA QR Decomposition directly on (y^T) to get ( Z
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \! \Bbb R\), \( S \in \Bbb I \! \Bbb R \)`
+  :math:`R` from QR decomposition of :math:`x` is the upper triangular factor of Cholesky of :math:`X^TX` Gram
+  
+  :math:`X^TX = LL^T, X = QR`
+  
+  :math:`X^TX= (R^TQ^T) QR = R^TR`, since :math:`Q^TQ=I => R=L^T` (transpose lower triangular)
 
-      ( R ) from QR decomposition of ( x ) is the upper triangular
-factor of Cholesky of (X^TX) Gram
+   **Note**: In code, :math:`X^TX \over n = LL^T`
 
-      ( X^TX = LL^T, X = QR )
+    :math:`X^TX = (L \sqrt{n})(L\sqrt{n})^T =R^TR`
 
-      ( X^TX= (R:sup:`TQ`\ T) QR = R^TR ), since (Q^TQ=I ) => (R=L^T)
-(transpose lower triangular)
+    :math:`R = L^T\sqrt{n}\in\rm \Bbb I \! \Bbb R^{k * k}` reduced QR decomposition.
 
-**Note**: In code, (X^TX :raw-latex:`\over `n) = ( LL^T )
+    For more information, refer to the `Rectangular matrix <https://en.wikipedia.org/wiki/QR_decomposition#Rectangular_matrix>`__ section of "QR Decomposition" on Wikipedia.
 
-   ( X^TX = (L :raw-latex:`\sqrt{n}`)(L :raw-latex:`\sqrt{n}`)^T =R^TR )
+  :math:`XY = QR(ZS)^T = Q(RS^T)Z^T`
+  
+   **Note**: :math:`(RS^T)\in \rm \Bbb I \!\Bbb R`
 
-   ( R = L^T :raw-latex:`\sqrt{n}`
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \! \Bbb R`^{k \* k} ) reduced QR
-decomposition.
+3. Find SVD (locally) of :math:`RS^T`
 
-For more information, refer to the `Rectangular
-matrix <https://en.wikipedia.org/wiki/QR_decomposition#Rectangular_matrix>`__
-section of "QR Decomposition" on Wikipedia.
+  :math:`RS^T = U \sum V^T, U^TU = I = V^TV` orthogonal
+  
+  :math:`XY = Q(RS^T)Z^T = (QU\sum(V^T Z^T) SVD`
+  
+  :math:`(QU)^T(QU) = U^T Q^TQU U^TU = I`
+  
+  :math:`(ZV)^T(ZV) = V^TZ^TZV = V^TV = I`
 
-( XY = QR(ZS)^T = Q(RS\ :sup:`T)Z`\ T )
+Right singular vectors: :math:`ZV \in \rm \Bbb I \!\Bbb R^{m * k}`
 
-**Note**: ( (RS^T) :raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R \)`
+Singular values: :math:`\sum \in \rm \Bbb I \!\Bbb R^{k * k}` diagonal
 
-Find SVD (locally) of ( RS^T )
-
-( RS^T = U :raw-latex:`\sum `V^T, U^TU = I = V^TV ) orthogonal
-
-( XY = Q(RS\ :sup:`T)Z`\ T = (QU :raw-latex:`\sum `(V^T Z^T) SVD )
-
-   ( (QU)^T(QU) = U^T Q^TQU U^TU = I)
-
-   ( (ZV)^T(ZV) = V\ :sup:`TZ`\ TZV = V^TV =I )
-
-Right singular vectors: ( ZV
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{m \* k} )
-
-Singular values: (
-:raw-latex:`\sum `:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{k
-\* k} ) diagonal
-
-Left singular vectors: ( (QU)
-:raw-latex:`\in `:raw-latex:`\rm \Bbb I \!\Bbb R`^{n \* k})
+Left singular vectors: :math:`(QU) \in \rm \Bbb I \!\Bbb R^{n * k}`
 
 References
 ~~~~~~~~~~
@@ -1589,7 +1563,6 @@ Defining a GBM Model
           be numeric.
        -  If the distribution is **gaussian**, the response column must
           be numeric.
-
        -  If the distribution is **multinomial**, the response column
           must be categorical.
        -  If the distribution is **poisson**, the response column must
@@ -1639,30 +1612,18 @@ Defining a GBM Model
    cross-validation fold index assignment per observation.
 
 -  **offset\_column**: (Not applicable if the **distribution** is
-   **multinomial**) Select a column to use as the offset. >\ *Note*:
-   Offsets are per-row "bias values" that are used during model
-   training. For Gaussian distributions, they can be seen as simple
-   corrections to the response (y) column. Instead of learning to
-   predict the response (y-row), the model learns to predict the (row)
-   offset of the response column. For other distributions, the offset
-   corrections are applied in the linearized space before applying the
-   inverse link function to get the actual response values. For more
-   information, refer to the following
-   `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
-   If the **distribution** is **Bernoulli**, the value must be less than
-   one.
+   **multinomial**) Select a column to use as the offset.
+   
+	**Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. If the **distribution** is **Bernoulli**, the value must be less than one.
 
 -  **weights\_column**: Select a column to use for the observation
    weights, which are used for bias correction. The specified
    ``weights_column`` must be included in the specified
-   ``training_frame``. *Python only*: To use a weights column when
-   passing an H2OFrame to ``x`` instead of a list of column names, the
-   specified ``training_frame`` must contain the specified
-   ``weights_column``. >\ *Note*: Weights are per-row observation
-   weights and do not increase the size of the data frame. This is
-   typically the number of times a row is repeated, but non-integer
-   values are supported as well. During training, rows with higher
-   weights matter more, due to the larger loss function pre-factor.
+   ``training_frame``. 
+   
+    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+   
+    **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **balance\_classes**: Oversample the minority classes to balance the
    class distribution. This option is not selected by default and can
@@ -1687,18 +1648,14 @@ Defining a GBM Model
    feature, specify ``0``. The metric is computed on the validation data
    (if provided); otherwise, training data is used. When used with
    **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. >\ **Note**: If
-   cross-validation is enabled:
+   generated for the given **stopping\_metric** option. 
+   
+   **Note**: If cross-validation is enabled:
 
-   1. All cross-validation models stop training when the validation
-      metric doesn't improve.
-   2. The main model runs for the mean number of epochs.
-   3. N+1 models do *not* use **overwrite\_with\_best\_model**
-   4. N+1 models may be off by the number specified for
-      **stopping\_rounds** from the best model, but the cross-validation
-      metric estimates the performance of the main model for the
-      resulting number of epochs (which may be fewer than the specified
-      number of epochs).
+    1. All cross-validation models stop training when the validation metric doesn't improve.
+    2. The main model runs for the mean number of epochs.
+    3. N+1 models do *not* use **overwrite\_with\_best\_model**
+    4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 -  **stopping\_metric**: Select the metric to use for early stopping.
    The available options are:
@@ -1792,55 +1749,47 @@ FAQ
 
 -  **How does the algorithm handle missing values during testing?**
 
-During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
+  During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
 
 -  **What happens if the response has missing values?**
 
-No errors will occur, but nothing will be learned from rows containing
-missing the response.
+  No errors will occur, but nothing will be learned from rows containing missing the response.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-GBM converts a new categorical level to an "undefined" value in the test set, and
-then splits either left or right during scoring. 
+  GBM converts a new categorical level to an "undefined" value in the test set, and then splits either left or right during scoring. 
 
 -  **Does it matter if the data is sorted?**
 
-No.
+  No.
 
 -  **Should data be shuffled before training?**
 
-No.
+  No.
 
 -  **How does the algorithm handle highly imbalanced data in a response
    column?**
 
-You can specify ``balance_classes``, ``class_sampling_factors`` and
-``max_after_balance_size`` to control over/under-sampling.
+  You can specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
 
 -  **What if there are a large number of columns?**
 
-DRF models are best for datasets with fewer than a few thousand columns.
+  DRF models are best for datasets with fewer than a few thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
-Large numbers of categoricals are handled very efficiently - there is
-never any one-hot encoding.
+  Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
 
 -  **Given the same training set and the same GBM parameters, will GBM
    produce a different model with two different validation data sets, or
    the same model?**
 
-The same model will be generated.
+  The same model will be generated.
 
 -  **How deterministic is GBM?**
 
-The ``nfolds`` and ``balance_classes`` parameters use the seed directly.
-Otherwise, GBM is deterministic up to floating point rounding errors
-(out-of-order atomic addition of multiple threads during histogram
-building). Any observed variations in the AUC curve should be the same
-up to at least three to four significant digits.
+  The ``nfolds`` and ``balance_classes`` parameters use the seed directly. Otherwise, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). Any observed variations in the AUC curve should be the same up to at least three to four significant digits.
 
 -  **When fitting a random number between 0 and 1 as a single feature,
    the training ROC curve is consistent with ``random`` for low tree
@@ -1849,29 +1798,17 @@ up to at least three to four significant digits.
    of hundreds of features, as the number of trees increases, the random
    number increases in feature importance. Why is this?**
 
-This is a known behavior of GBM that is similar to its behavior in R.
-If, for example, it takes 50 trees to learn all there is to learn from a
-frame without the random features, when you add a random predictor and
-train 1000 trees, the first 50 trees will be approximately the same. The
-final 950 trees are used to make sense of the random number, which will
-take a long time since there's no structure. The variable importance
-will reflect the fact that all the splits from the first 950 trees are
-devoted to the random feature.
+  This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature.
 
 -  **How is column sampling implemented for GBM?**
 
-For an example model using:
+  For an example model using:
 
--  100 columns
--  ``col_sample_rate_per_tree=0.754``
--  ``col_sample_rate=0.8`` (refers to available columns after per-tree
-   sampling)
+   -  100 columns
+   -  ``col_sample_rate_per_tree=0.754``
+   -  ``col_sample_rate=0.8`` (refers to available columns after per-tree sampling)
 
-For each tree, the floor is used to determine the number - in this
-example, (0.754*100)=75 out of the 100 - of columns that are randomly
-picked, and then the floor is used to determine the number - in this
-case,(0.754*\ 0.8\*100)=60 - of columns that are then randomly chosen
-for each split decision (out of the 75).
+  For each tree, the floor is used to determine the number - in this example, (0.754 * 100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754 * 0.8 * 100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
 - **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
 
@@ -1883,22 +1820,23 @@ GBM Algorithm
 H2O's Gradient Boosting Algorithms follow the algorithm specified by
 Hastie et al (2001):
 
-Initialize (f\_{k0} = 0,: k=1,2,…,K)
+Initialize :math:`f_{k0} = 0, k=1,2,…,K`
 
-For (m=1) to (M:)
+For :math:`m=1` to :math:`M`:
 
-  (a) Set
-(p\_{k}(x)=:raw-latex:`\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}}`,:k=1,2,…,K)
+1. Set :math:`p_{k}(x)=\frac{e^{f_{k}(x)}}{\sum_{l=1}^{K}e^{f_{l}(x)}},k=1,2,…,K`
 
-  (b) For (k=1) to (K):
+2. For :math:`k=1` to :math:`K`:
 
-    i. Compute (r\_{ikm}=y\_{ik}-p\_{k}(x\_{i}),:i=1,2,…,N.)     ii. Fit
-a regression tree to the targets (r\_{ikm},:i=1,2,…,N), giving terminal
-regions (R\_{jim},:j=1,2,…,J\_{m}.) (iii. Compute)
-(:raw-latex:`\gamma`\ *{jkm}=:raw-latex:`\frac{K-1}{K}`::raw-latex:`\frac{\sum_{x_{i}\in R_{jkm}}(r_{ikm})}{\sum_{x_{i}\in R_{jkm}}|r_{ikm}|(1-|r_{ikm})}`,:j=1,2,…,J*\ {m}.)
-(:iv.:Update:f\_{km}(x)=f\_{k,m-1}(x)+:raw-latex:`\sum`\ *{j=1}^{J*\ {m}}:raw-latex:`\gamma`\ *{jkm}I(x:raw-latex:`\in`:R*\ {jkm}).)
+	a. Compute :math:`r_{ikm}=y_{ik}-p_{k}(x_{i}),i=1,2,…,N`
+	
+	b. Fit a regression tree to the targets :math:`r_{ikm},i=1,2,…,N`, giving terminal regions :math:`R_{jim},j=1,2,…,J_{m}`
+	
+	c. Compute :math:`\gamma_{jkm}=\frac{K-1}{K} \frac{\sum_{x_{i} \in R_{jkm}}(r_{ikm})}{\sum_{x_{i} \in R_{jkm}}|r_{ikm}|(1-|r_{ikm})},j=1,2,…,J_m`.
+	
+	d. Update :math:`f_{km}(x)=f_{k,m-1}(x)+\sum_{j=1}^{J_m}\gamma_{jkm} I(x\in R_{jkm})`.
 
-Output (::raw-latex:`\hat{f_{k}}`(x)=f\_{kM}(x),:k=1,2,…,K.)
+Output :math:`\hat{f_{k}}(x)=f_{kM}(x),k=1,2,…,K`
 
 Be aware that the column type affects how the histogram is created and
 the column type depends on whether rows are excluded or assigned a
@@ -2015,8 +1953,8 @@ recommended, as model performance can vary greatly.
    the accuracy of the model.
 
 -  **nfolds**: Specify the number of folds for cross-validation.
-   >\ **Note**: Cross-validation is not supported when autoencoder is
-   enabled.
+   
+    **Note**: Cross-validation is not supported when autoencoder is enabled.
 
 -  **response\_column**: Select the column to use as the independent
    variable. The data can be numeric or categorical.
@@ -2039,8 +1977,9 @@ recommended, as model performance can vary greatly.
 
 -  **activation**: Select the activation function (Tahn, Tahn with
    dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with
-   dropout). > - **Maxout** is not supported when **autoencoder** is
-   enabled.
+   dropout).
+   
+    **Note**: **Maxout** is not supported when **autoencoder** is enabled.
 
 -  **hidden**: Specify the hidden layer sizes (e.g., 100,100). The value
    must be positive.
@@ -2063,25 +2002,16 @@ recommended, as model performance can vary greatly.
 -  **weights\_column**: Select a column to use for the observation
    weights, which are used for bias correction. The specified
    ``weights_column`` must be included in the specified
-   ``training_frame``. *Python only*: To use a weights column when
-   passing an H2OFrame to ``x`` instead of a list of column names, the
-   specified ``training_frame`` must contain the specified
-   ``weights_column``. >\ *Note*: Weights are per-row observation
-   weights. This is typically the number of times a row is repeated, but
-   non-integer values are supported as well. During training, rows with
-   higher weights matter more, due to the larger loss function
-   pre-factor.
+   ``training_frame``. 
+   
+    *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
+   
+    **Note**: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
 -  **offset\_column**: (Applicable for regression only) Select a column
-   to use as the offset. >\ *Note*: Offsets are per-row "bias values"
-   that are used during model training. For Gaussian distributions, they
-   can be seen as simple corrections to the response (y) column. Instead
-   of learning to predict the response (y-row), the model learns to
-   predict the (row) offset of the response column. For other
-   distributions, the offset corrections are applied in the linearized
-   space before applying the inverse link function to get the actual
-   response values. For more information, refer to the following
-   `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+   to use as the offset. 
+   
+    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
 -  **balance\_classes**: (Applicable for classification only) Oversample
    the minority classes to balance the class distribution. This option
@@ -2103,8 +2033,8 @@ recommended, as model performance can vary greatly.
 -  **checkpoint**: Enter a model key associated with a
    previously-trained Deep Learning model. Use this option to build a
    new model as a continuation of a previously-generated model.
-   >\ **Note**: Cross-validation is not supported during checkpoint
-   restarts.
+   
+    **Note**: Cross-validation is not supported during checkpoint restarts.
 
 -  **use\_all\_factor\_levels**: Check this checkbox to use all factor
    levels in the possible set of predictors; if you enable this option,
@@ -2138,9 +2068,10 @@ recommended, as model performance can vary greatly.
 
 -  **loss**: Select the loss function. The options are Automatic,
    CrossEntropy, Quadratic, Huber, or Absolute and the default value is
-   Automatic. > - Use **Absolute**, **Quadratic**, or **Huber** for
-   regression > - Use **Absolute**, **Quadratic**, **Huber**, or
-   **CrossEntropy** for classification
+   Automatic. 
+   
+    - Use **Absolute**, **Quadratic**, or **Huber** for regression 
+    - Use **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
 
 -  **distribution**: Select the distribution type from the drop-down
    list. The options are auto, bernoulli, multinomial, gaussian,
@@ -2151,12 +2082,14 @@ recommended, as model performance can vary greatly.
    Regression.
 
 -  **tweedie\_power**: (Only applicable if *Tweedie* is selected for
-   **distribution**) Specify the Tweedie power. The range is from 1 to
-   2. For a normal distribution, enter ``0``. For Poisson distribution,
-   enter ``1``. For a gamma distribution, enter ``2``. For a compound
-   Poisson-gamma distribution, enter a value greater than 1 but less
-   than 2. For more information, refer to `Tweedie
-   distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
+   **distribution**) Specify the Tweedie power. The range is from 1 to 2. 
+   
+    - For a normal distribution, enter ``0``.
+    - For Poisson distribution, enter ``1``. 
+    - For a gamma distribution, enter ``2``. 
+    - For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. 
+    
+   For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
 -  **score\_interval**: Specify the shortest time interval (in seconds)
    to wait between model scoring.
@@ -2180,8 +2113,9 @@ recommended, as model performance can vary greatly.
    feature, specify ``0``. The metric is computed on the validation data
    (if provided); otherwise, training data is used. When used with
    **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. >\ **Note**: If
-   cross-validation is enabled:
+   generated for the given **stopping\_metric** option. 
+   
+    **Note**: If cross-validation is enabled:
 
    1. All cross-validation models stop training when the validation
       metric doesn't improve.
@@ -2209,15 +2143,12 @@ recommended, as model performance can vary greatly.
    than this value.
 
 -  **autoencoder**: Check this checkbox to enable the Deep Learning
-   autoencoder. This option is not selected by default. >\ **Note**:
-   Cross-validation is not supported when autoencoder is enabled.
+   autoencoder. This option is not selected by default. 
+   
+    **Note**: Cross-validation is not supported when autoencoder is enabled.
 
 -  **max\_runtime\_secs**: Maximum allowed runtime in seconds for model
    training. Use 0 to disable.
-
--  **autoencoder**: Check this checkbox to enable the Deep Learning
-   autoencoder. This option is not selected by default. >\ **Note**:
-   Cross-validation is not supported when autoencoder is enabled.
 
 -  **class\_sampling\_factors**: (Applicable only for classification and
    when **balance\_classes** is enabled) Specify the per-class (in
@@ -2299,7 +2230,7 @@ recommended, as model performance can vary greatly.
    is not selected by default.
 
 -  **average\_activation**: Specify the average activation for the
-   sparse autoencoder. > - If **Rectifier** is used, the
+   sparse autoencoder. If **Rectifier** is used, the
    **average\_activation** value must be positive.
 
 -  **sparsity\_beta**: (Applicable only if **autoencoder** is enabled)
@@ -2383,253 +2314,134 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-Deep Learning performs mean-imputation for missing numericals and
-creates a separate factor level for missing categoricals by default.
+ Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default.
 
 -  **How does the algorithm handle missing values during testing?**
 
-Missing values in the test set will be mean-imputed during scoring.
+ Missing values in the test set will be mean-imputed during scoring.
 
 -  **What happens if the response has missing values?**
 
-No errors will occur, but nothing will be learned from rows containing
-missing the response.
+ No errors will occur, but nothing will be learned from rows containing missing the response.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**
 
-For an unseen categorical level in the test set, Deep Learning makes an
-extra input neuron that remains untrained and contributes some random
-amount to the subsequent layer.
+ For an unseen categorical level in the test set, Deep Learning makes an extra input neuron that remains untrained and contributes some random amount to the subsequent layer.
 
 -  **Does it matter if the data is sorted?**
 
-Yes, since the training set is processed in order. Depending whether
-``train_samples_per_iteration`` is enabled, some rows will be skipped.
-If ``shuffle_training_data`` is enabled, then each thread that is
-processing a small subset of rows will process rows randomly, but it is
-not a global shuffle.
+ Yes, since the training set is processed in order. Depending whether ``train_samples_per_iteration`` is enabled, some rows will be skipped. If ``shuffle_training_data`` is enabled, then each thread that is processing a small subset of rows will process rows randomly, but it is not a global shuffle.
 
 -  **Should data be shuffled before training?**
 
-Yes, the data should be shuffled before training, especially if the
-dataset is sorted.
+ Yes, the data should be shuffled before training, especially if the dataset is sorted.
 
 -  **How does the algorithm handle highly imbalanced data in a response
    column?**
 
-Specify ``balance_classes``, ``class_sampling_factors`` and
-``max_after_balance_size`` to control over/under-sampling.
+ Specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
 
 -  **What if there are a large number of columns?**
 
-The input neuron layer's size is scaled to the number of input features,
-so as the number of columns increases, the model complexity increases as
-well.
+ The input neuron layer's size is scaled to the number of input features, so as the number of columns increases, the model complexity increases as well.
 
 -  **What if there are a large number of categorical factor levels?**
 
-This is something to look out for. Say you have three columns: zip code
-(70k levels), height, and income. The resulting number of internally
-one-hot encoded features will be 70,002 and only 3 of them will be
-activated (non-zero). If the first hidden layer has 200 neurons, then
-the resulting weight matrix will be of size 70,002 x 200, which can take
-a long time to train and converge. In this case, we recommend either
-reducing the number of categorical factor levels upfront (e.g., using
-``h2o.interaction()`` from R), or specifying
-``max_categorical_features`` to use feature hashing to reduce the
-dimensionality.
+ This is something to look out for. Say you have three columns: zip code (70k levels), height, and income. The resulting number of internally one-hot encoded features will be 70,002 and only 3 of them will be activated (non-zero). If the first hidden layer has 200 neurons, then the resulting weight matrix will be of size 70,002 x 200, which can take a long time to train and converge. In this case, we recommend either reducing the number of categorical factor levels upfront (e.g., using ``h2o.interaction()`` from R), or specifying ``max_categorical_features`` to use feature hashing to reduce the dimensionality.
 
 -  **How does your Deep Learning Autoencoder work? Is it deep or
    shallow?**
 
-H2O’s DL autoencoder is based on the standard deep (multi-layer) neural
-net architecture, where the entire network is learned together, instead
-of being stacked layer-by-layer. The only difference is that no response
-is required in the input and that the output layer has as many neurons
-as the input layer. If you don’t achieve convergence, then try using the
-*Tanh* activation and fewer layers. We have some example test scripts
-`here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/>`__,
-and even some that show `how stacked auto-encoders can be implemented in
-R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R>`__.
+ H2O’s DL autoencoder is based on the standard deep (multi-layer) neural net architecture, where the entire network is learned together, instead of being stacked layer-by-layer. The only difference is that no response is required in the input and that the output layer has as many neurons as the input layer. If you don’t achieve convergence, then try using the *Tanh* activation and fewer layers. We have some example test scripts `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/>`__, and even some that show `how stacked auto-encoders can be implemented in R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/deeplearning/runit_deeplearning_stacked_autoencoder_large.R>`__.
 
 -  **When building the model, does Deep Learning use all features or a
    selection of the best features?**
 
-For Deep Learning, all features are used, unless you manually specify
-that columns should be ignored. Adding an L1 penalty can make the model
-sparse, but it is still the full size.
+ For Deep Learning, all features are used, unless you manually specify that columns should be ignored. Adding an L1 penalty can make the model sparse, but it is still the full size.
 
 -  **What is the relationship between iterations, epochs, and the
    ``train_samples_per_iteration`` parameter?**
 
-Epochs measures the amount of training. An iteration is one MapReduce
-(MR) step - essentially, one pass over the data. The
-``train_samples_per_iteration`` parameter is the amount of data to use
-for training for each MR step, which can be more or less than the number
-of rows.
+ Epochs measures the amount of training. An iteration is one MapReduce (MR) step - essentially, one pass over the data. The ``train_samples_per_iteration`` parameter is the amount of data to use for training for each MR step, which can be more or less than the number of rows.
 
 -  **When do ``reduce()`` calls occur, after each iteration or each
    epoch?**
 
-Neither; ``reduce()`` calls occur after every two ``map()`` calls,
-between threads and ultimately between nodes. There are many
-``reduce()`` calls, much more than one per MapReduce step (also known as
-an "iteration"). Epochs are not related to MR iterations, unless you
-specify ``train_samples_per_iteration`` as ``0`` or ``-1`` (or to number
-of rows/nodes). Otherwise, one MR iteration can train with an arbitrary
-number of training samples (as specified by
-``train_samples_per_iteration``).
+ Neither; ``reduce()`` calls occur after every two ``map()`` calls, between threads and ultimately between nodes. There are many ``reduce()`` calls, much more than one per MapReduce step (also known as an "iteration"). Epochs are not related to MR iterations, unless you specify ``train_samples_per_iteration`` as ``0`` or ``-1`` (or to number of rows/nodes). Otherwise, one MR iteration can train with an arbitrary number of training samples (as specified by ``train_samples_per_iteration``).
 
 -  **Does each Mapper task work on a separate neural-net model that is
    combined during reduction, or is each Mapper manipulating a shared
    object that's persistent across nodes?**
 
-Neither; there's one model per compute node, so multiple Mappers/threads
-share one model, which is why H2O is not reproducible unless a small
-dataset is used and ``force_load_balance=F`` or ``reproducible=T``,
-which effectively rebalances to a single chunk and leads to only one
-thread to launch a ``map()``. The current behavior is simple model
-averaging; between-node model averaging via "Elastic Averaging" is
-currently `in
-progress <https://0xdata.atlassian.net/browse/HEXDEV-206>`__.
+ Neither; there's one model per compute node, so multiple Mappers/threads share one model, which is why H2O is not reproducible unless a small dataset is used and ``force_load_balance=F`` or ``reproducible=T``, which effectively rebalances to a single chunk and leads to only one thread to launch a ``map()``. The current behavior is simple model averaging; between-node model averaging via "Elastic Averaging" is currently `in progress <https://0xdata.atlassian.net/browse/HEXDEV-206>`__.
 
 -  **Is the loss function and backpropagation performed after each
    individual training sample, each iteration, or at the epoch level?**
 
-Loss function and backpropagation are performed after each training
-sample (mini-batch size 1 == online stochastic gradient descent).
+ Loss function and backpropagation are performed after each training sample (mini-batch size 1 == online stochastic gradient descent).
 
 -  **When using Hinton's dropout and specifying an input dropout ratio
    of ~20% and ``train_samples_per_iteration`` is set to 50, will each
    of the 50 samples have a different set of the 20% input neurons
    suppressed?**
 
-Yes - suppression is not done at the iteration level across as samples
-in that iteration. The dropout mask is different for each training
-sample.
+ Yes - suppression is not done at the iteration level across as samples in that iteration. The dropout mask is different for each training sample.
 
 -  **When using dropout parameters such as ``input_dropout_ratio``, what
    happens if you use only ``Rectifier`` instead of
    ``RectifierWithDropout`` in the activation parameter?**
 
-The amount of dropout on the input layer can be specified for all
-activation functions, but hidden layer dropout is only supported is set
-to ``WithDropout``. The default hidden dropout is 50%, so you don't need
-to specify anything but the activation type to get good results, but you
-can set the hidden dropout values for each layer separately.
+ The amount of dropout on the input layer can be specified for all activation functions, but hidden layer dropout is only supported is set to ``WithDropout``. The default hidden dropout is 50%, so you don't need to specify anything but the activation type to get good results, but you can set the hidden dropout values for each layer separately.
 
 -  **When using the ``score_validation_sampling`` and
    ``score_training_samples`` parameters, is scoring done at the end of
    the Deep Learning run?**
 
-The majority of scoring takes place after each MR iteration. After the
-iteration is complete, it may or may not be scored, depending on two
-criteria: the time since the last scoring and the time needed for
-scoring.
+ The majority of scoring takes place after each MR iteration. After the iteration is complete, it may or may not be scored, depending on two criteria: the time since the last scoring and the time needed for scoring.
 
-The maximum time between scoring (``score_interval``, default = 5
-seconds) and the maximum fraction of time spent scoring
-(``score_duty_cycle``) independently of loss function, backpropagation,
-etc.
+ The maximum time between scoring (``score_interval``, default = 5 seconds) and the maximum fraction of time spent scoring (``score_duty_cycle``) independently of loss function, backpropagation, etc.
 
-Of course, using more training or validation samples will increase the
-time for scoring, as well as scoring more frequently. For more
-information about how this affects runtime, refer to the `Deep Learning
-Performance
-Guide <http://h2o.ai/blog/2015/02/deep-learning-performance/>`__.
+ Of course, using more training or validation samples will increase the time for scoring, as well as scoring more frequently. For more information about how this affects runtime, refer to the `Deep Learning Performance Guide <http://h2o.ai/blog/2015/02/deep-learning-performance/>`__.
 
 -  **How does the validation frame affect the built neuron network?**
 
-The validation frame is only used for scoring and does not directly
-affect the model. However, the validation frame can be used stopping the
-model early if ``overwrite_with_best_model = T``, which is the default.
-If this parameter is enabled, the model with the lowest validation error
-is displayed at the end of the training.
+ The validation frame is only used for scoring and does not directly affect the model. However, the validation frame can be used stopping the model early if ``overwrite_with_best_model = T``, which is the default. If this parameter is enabled, the model with the lowest validation error is displayed at the end of the training.
 
-By default, the validation frame is used to tune the model parameters
-(such as number of epochs) and will return the best model as measured by
-the validation metrics, depending on how often the validation metrics
-are computed (``score_duty_cycle``) and whether the validation frame
-itself was sampled.
+ By default, the validation frame is used to tune the model parameters (such as number of epochs) and will return the best model as measured by the validation metrics, depending on how often the validation metrics are computed (``score_duty_cycle``) and whether the validation frame itself was sampled.
 
-Model-internal sampling of the validation frame
-(``score_validation_samples`` and ``score_validation_sampling`` for
-optional stratification) will affect early stopping quality. If you
-specify a validation frame but set ``score_validation_samples`` to more
-than the number of rows in the validation frame (instead of 0, which
-represents the entire frame), the validation metrics received at the end
-of training will not be reproducible, since the model does internal
-sampling.
+ Model-internal sampling of the validation frame (``score_validation_samples`` and ``score_validation_sampling`` for optional stratification) will affect early stopping quality. If you specify a validation frame but set ``score_validation_samples`` to more than the number of rows in the validation frame (instead of 0, which represents the entire frame), the validation metrics received at the end of training will not be reproducible, since the model does internal sampling.
 
 -  **Are there any best practices for building a model using
    checkpointing?**
 
-In general, to get the best possible model, we recommend building a
-model with ``train\_samples\_per\_iteration = -2`` (which is the default
-value for auto-tuning) and saving it.
+ In general, to get the best possible model, we recommend building a model with ``train_samples_per_iteration = -2`` (which is the default value for auto-tuning) and saving it.
 
-To improve the initial model, start from the previous model and add
-iterations by building another model, setting the checkpoint to the
-previous model, and changing ``train\_samples\_per\_iteration``,
-``target\_ratio\_comm\_to\_comp``, or other parameters.
+ To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing ``train_samples_per_iteration``, ``target_ratio_comm_to_comp``, or other parameters.
 
-If you don't know your model ID because it was generated by R, look it
-up using ``h2o.ls()``. By default, Deep Learning model names start with
-``deeplearning_`` To view the model, use
-``m <- h2o.getModel("my\_model\_id")`` or ``summary(m)``.
+ If you don't know your model ID because it was generated by R, look it up using ``h2o.ls()``. By default, Deep Learning model names start with ``deeplearning_`` To view the model, use ``m <- h2o.getModel("my_model_id")`` or ``summary(m)``.
 
-There are a few ways to manage checkpoint restarts:
+ There are a few ways to manage checkpoint restarts:
 
-*Option 1*: (Multi-node only) Leave
-``train\_samples\_per\_iteration = -2``, increase
-``target\_comm\_to\_comp`` from 0.05 to 0.25 or 0.5, which provides more
-communication. This should result in a better model when using multiple
-nodes. **Note:** This does not affect single-node performance.
+  *Option 1*: (Multi-node only) Leave ``train_samples_per_iteration = -2``, increase ``target_comm_to_comp`` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance.
 
-*Option 2*: (Single or multi-node) Set
-``train\_samples\_per\_iteration`` to (N), where (N) is the number of
-training samples used for training by the entire cluster for one
-iteration. Each of the nodes then trains on (N) randomly-chosen rows for
-every iteration. The number defined as (N) depends on the dataset size
-and the model complexity.
+  *Option 2*: (Single or multi-node) Set ``train_samples_per_iteration`` to (N), where (N) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on (N) randomly-chosen rows for every iteration. The number defined as (N) depends on the dataset size and the model complexity.
 
-*Option 3*: (Single or multi-node) Change regularization parameters such
-as ``l1, l2, max\_w2, input\_droput\_ratio`` or
-``hidden\_dropout\_ratios``. We recommend build the first mode using
-``RectifierWithDropout``, ``input\_dropout\_ratio = 0`` (if there is
-suspected noise in the input), and ``hidden\_dropout\_ratios=c(0,0,0)``
-(for the ability to enable dropout regularization later).
+  *Option 3*: (Single or multi-node) Change regularization parameters such as ``l1, l2, max_w2, input_droput_ratio`` or ``hidden_dropout_ratios``. We recommend build the first mode using ``RectifierWithDropout``, ``input_dropout_ratio = 0`` (if there is suspected noise in the input), and ``hidden_dropout_ratios=c(0,0,0)`` (for the ability to enable dropout regularization later).
 
 -  **How does class balancing work?**
 
-The ``max\_after\_balance\_size`` parameter defines the maximum size of
-the over-sampled dataset. For example, if
-``max\_after\_balance\_size = 3``, the over-sampled dataset will not be
-greater than three times the size of the original dataset.
+ The ``max_after_balance_size`` parameter defines the maximum size of the over-sampled dataset. For example, if ``max_after_balance_size = 3``, the over-sampled dataset will not be greater than three times the size of the original dataset.
 
-For example, if you have five classes with priors of 90%, 2.5%, 2.5%,
-and 2.5% (out of a total of one million rows) and you oversample to
-obtain a class balance using ``balance\_classes = T``, the result is all
-four minor classes are oversampled by forty times and the total dataset
-will be 4.5 times as large as the original dataset (900,000 rows of each
-class). If ``max\_after\_balance\_size = 3``, all five balance classes
-are reduced by 3/5 resulting in 600,000 rows each (three million total).
+ For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using ``balance_classes = T``, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If ``max_after_balance_size = 3``, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total).
 
-To specify the per-class over- or under-sampling factors, use
-``class\_sampling\_factors``. In the previous example, the default
-behavior with ``balance\_classes`` is equivalent to
-``c(1,40,40,40,40)``, while when ``max\_after\_balance\_size = 3``, the
-results would be ``c(3/5,40*3/5,40*3/5,40*3/5)``.
+ To specify the per-class over- or under-sampling factors, use ``class_sampling_factors``. In the previous example, the default behavior with ``balance_classes`` is equivalent to ``c(1,40,40,40,40)``, while when ``max_after_balance\size = 3``, the results would be ``c(3/5,40*3/5,40*3/5,40*3/5)``.
 
-In all cases, the probabilities are adjusted to the pre-sampled space,
-so the minority classes will have lower average final probabilities than
-the majority class, even if they were sampled to reach class balance.
+ In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance.
 
 -  **How is variable importance calculated for Deep Learning?**
 
-For Deep Learning, variable importance is calculated using the Gedeon
-method.
+ For Deep Learning, variable importance is calculated using the Gedeon method.
 
 --------------
 
@@ -2639,8 +2451,7 @@ Deep Learning Algorithm
 To compute deviance for a Deep Learning regression model, the following
 formula is used:
 
-Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE
-!= Deviance
+ Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
 
 For more information about how the Deep Learning algorithm works, refer
 to the `Deep Learning booklet <http://h2o.ai/resources>`__.
