@@ -228,6 +228,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           for (int i = 0; i < N; ++i) //compute quantiles such that they span from (inclusive) min...maxEx (exclusive)
             p._probs[i] = i * 1./N;
           Job<QuantileModel> job = new Quantile(p).trainModel();
+          _job.update(1, "Computing top-level histogram splitpoints.");
           QuantileModel qm = job.get();
           job.remove();
           double[][] origQuantiles = qm._output._quantiles;

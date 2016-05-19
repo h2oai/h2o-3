@@ -53,7 +53,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
-    @Override public long progressUnits() { return _ntrees; }
+    @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal ? 1 : 0); }
 
     @Override protected long nFoldSeed() {
       return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
