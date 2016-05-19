@@ -2,6 +2,8 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -212,6 +214,51 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           }
         }
 
+        // top-level quantiles for all columns
+        // non-numeric columns get a vector full of NAs
+        if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+          int N = _parms._nbins;
+          QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
+          Key rndKey = Key.make();
+          if (DKV.get(rndKey)==null) DKV.put(rndKey, _train);
+          p._train = rndKey;
+          p._weights_column = _parms._weights_column;
+          p._combine_method = QuantileModel.CombineMethod.INTERPOLATE;
+          p._probs = new double[N];
+          for (int i = 0; i < N; ++i) //compute quantiles such that they span from (inclusive) min...maxEx (exclusive)
+            p._probs[i] = i * 1./N;
+          Job<QuantileModel> job = new Quantile(p).trainModel();
+          _job.update(1, "Computing top-level histogram splitpoints.");
+          QuantileModel qm = job.get();
+          job.remove();
+          double[][] origQuantiles = qm._output._quantiles;
+          //pad the quantiles until we have nbins_top_level bins
+          double[][] splitPoints = new double[origQuantiles.length][];
+          Key[] keys = new Key[splitPoints.length];
+          for (int i=0;i<keys.length;++i)
+            keys[i] = getGlobalQuantilesKey(i);
+          for (int i=0;i<origQuantiles.length;++i) {
+            if (!_train.vec(i).isNumeric() || _train.vec(i).isCategorical() || _train.vec(i).isBinary() || origQuantiles[i].length <= 1) {
+              keys[i] = null;
+              continue;
+            }
+            // make the quantiles split points unique
+            splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[i], _train.vec(i).min(), _train.vec(i).max());
+            if (splitPoints[i].length <= 1) //not enough split points left - fall back to regular binning
+              splitPoints[i] = null;
+            else
+              splitPoints[i] = ArrayUtils.padUniformly(splitPoints[i], _parms._nbins_top_level);
+            assert splitPoints[i] == null || splitPoints[i].length > 1;
+            if (splitPoints[i]!=null && keys[i]!=null) {
+//              Log.info("Creating quantiles for column " + i + " (key: "+ keys[i] +")");
+//              Log.info("Quantiles for column " + i + ": " + Arrays.toString(quantiles[i]));
+              DKV.put(new DHistogram.HistoQuantiles(keys[i], splitPoints[i]));
+            }
+          }
+          qm.delete();
+          DKV.remove(rndKey);
+        }
+
         // Also add to the basic working Frame these sets:
         //   nclass Vecs of current forest results (sum across all trees)
         //   nclass Vecs of working/temp data
@@ -248,6 +295,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         _parms.read_unlock_frames(_job);
         if( _model!=null ) _model.unlock(_job);
         Scope.exit( _model==null ? null : new Key[]{_model._key, ModelMetrics.buildKey(_model,_parms.train()), ModelMetrics.buildKey(_model,_parms.valid())});
+        for (Key k : getGlobalQuantilesKeys()) if (k!=null) k.remove();
       }
       tryComplete();
     }
@@ -259,6 +307,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     abstract protected void initializeModelSpecifics();
 
     // Common methods for all tree builders
+
+
+    // Helpers to store quantiles in DKV - keep a cache on each node (instead of sending around over and over)
+    protected Key getGlobalQuantilesKey(int i) {
+      if (_parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) return null;
+      return Key.makeSystem(_model._key+"_quantiles_col_"+i);
+    }
+    protected Key[] getGlobalQuantilesKeys() {
+      Key[] keys = new Key[_ncols];
+      for (int i=0;i<keys.length;++i)
+        keys[i] = getGlobalQuantilesKey(i);
+      return keys;
+    }
 
     /**
      * Restore the workspace from a previous model (checkpoint)

@@ -274,7 +274,19 @@ By default, the following output displays:
 - Coefficients
 - Coefficient magnitudes
 
-### Lambda Search and Full Regularzion Path
+### Handling of Categorical Variables
+GLM auto-expands categorical variables into one-hot encoded binary variables (i.e. if variable has levels "cat","dog", "mouse", cat is encoded as 1,0,0, mouse is 0,1,0 and dog is 0,0,1).
+It is generally more efficient to let GLM perform auto-expansion instead of expanding data manually and it also adds the benefit of correct handling of different categorical mappings between different datasets as welll as handling of unseen categorical levels.
+Unlike binary numeric columns, auto-expanded variables are not standardized.
+
+It is common to skip one of the levels during the one-hot encoding to prevent linear dependency between the variable and the intercept.
+H3O follows the convention of skipping the first level.
+This behavior can be controlled by setting use_all_factor_levels_flag (no level is going to be skipped if the flag is true).
+The default depends on regularization parameter - it is set to false if no regularization and to true otherwise.
+The reference level which is skipped is always the first level, you can change which level is the reference level by calling h2o.relevel function prior to building the model.
+
+
+### Lambda Search and Full Regularization Path
 If lambda_search option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper).
 Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step.
 The returned model will have coefficients corresponding to the "optimal" lambda value as decided during training.
@@ -455,7 +467,7 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 ###Introduction
 
-Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
+Distributed Random Forest (DRF) is a powerful classification and regression tool. When given a set of data, DRF generates a forest of classification (or regression) trees, rather than a single classification (or regression) tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Both classification and regression take the average prediction over all of their trees to make a final prediction, whether predicting for a class or numeric value (note: for a categorical response column, DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat ->0, 'dog' -> 1, 'mouse' ->2).
 
 The current version of DRF is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
 
@@ -469,7 +481,7 @@ There was some code cleanup and refactoring to support the following features:
 - Per-row offsets
 - N-fold cross-validation
 
-DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram), since it was not applicable to cases with observation weights or for cross-validation. 
+DRF no longer has a special-cased histogram for classification or regression (class DBinomHistogram has been superseded by DRealHistogram) since it was not applicable to cases with observation weights or for cross-validation. 
 
 
 ###Defining a DRF Model
@@ -573,7 +585,12 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 	
 - **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
-- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
+- **histogram_type**: By default DRF bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+
+  - AUTO
+  - UniformAdaptive
+  - Random
+  - QuantilesGlobal
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
@@ -1142,9 +1159,14 @@ There was some code cleanup and refactoring to support the following features:
 	
 	>etc. 
 
-- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. 
+- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
-- **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding. 
+- **histogram_type**: By default GBM bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+
+  - AUTO
+  - UniformAdaptive
+  - Random
+  - QuantilesGlobal
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 

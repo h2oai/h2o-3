@@ -1520,7 +1520,7 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
-  @Test public void randomizeSplitPoints() {
+  @Test public void histoTypes() {
     Frame tfr = null;
     Key[] ksplits = null;
     DRFModel drf = null;
@@ -1550,8 +1550,8 @@ public class DRFTest extends TestUtil {
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 10;
         parms._seed = 12345;
-        parms._nbins = 10;
-        parms._nbins_top_level = 10;
+        parms._nbins = 20;
+        parms._nbins_top_level = 20;
 
         DRF job = new DRF(parms);
         drf = job.trainModel().get();
@@ -1563,7 +1563,7 @@ public class DRFTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-//      Assert.assertTrue(0 == idx); //this is a memorization problem, doesn't suffer from overfitting
+      Assert.assertTrue(3 == idx); //Quantiles are best
     } finally {
       if (drf!=null) drf.delete();
       if (tfr!=null) tfr.delete();

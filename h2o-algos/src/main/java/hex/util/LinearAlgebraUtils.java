@@ -15,7 +15,6 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class LinearAlgebraUtils {
-
   /*
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
    */
@@ -51,7 +50,7 @@ public class LinearAlgebraUtils {
     for(int col = 0; col < dinfo._cats; col++) {
       if (Double.isNaN(row[col])) {
         if (dinfo._imputeMissing)
-          cidx = dinfo._catModes[col];
+          cidx = dinfo.catModes()[col];
         else if (!dinfo._catMissing[col])
           continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
         else
@@ -122,7 +121,7 @@ public class LinearAlgebraUtils {
       for(int row = 0; row < cs[0]._len; row++) {
         // Extract row of X
         _xinfo.extractDenseRow(xchk, row, xrow);
-        if (xrow.bad) continue;
+        if (xrow.isBad()) continue;
         int bidx = _ncolX;
         for (double[] ps : _yt ) {
           // Inner product of X row with Y column (Y' row)
@@ -170,7 +169,7 @@ public class LinearAlgebraUtils {
 
             if (Double.isNaN(a)) {
               if (_ainfo._imputeMissing)
-                cidx = _ainfo._catModes[p];
+                cidx = _ainfo.catModes()[p];
               else if (!_ainfo._catMissing[p])
                 continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
               else
@@ -278,7 +277,7 @@ public class LinearAlgebraUtils {
         // 1) Extract single expanded row of A
         DataInfo.Row arow = _ainfo.newDenseRow();
         _ainfo.extractDenseRow(achks, row, arow);
-        if (arow.bad) continue;
+        if (arow.isBad()) continue;
         double[] aexp = arow.expandCats();
 
         // 2) Solve for single row of Q using forward substitution
@@ -325,7 +324,7 @@ public class LinearAlgebraUtils {
         // 1) Extract single expanded row of A
         DataInfo.Row arow = _ainfo.newDenseRow();
         _ainfo.extractDenseRow(achks, row, arow);
-        if (arow.bad) continue;
+        if (arow.isBad()) continue;
         double[] aexp = arow.expandCats();
 
         // 2) Solve for single row of Q using forward substitution
