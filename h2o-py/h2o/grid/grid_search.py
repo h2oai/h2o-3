@@ -233,7 +233,7 @@ class H2OGridSearch(object):
                                                 _rest_version=kwargs['_rest_version'])['models'][0]
       self._resolve_grid(grid.dest_key, grid_json, first_model_json)
     else:
-      raise ValueError("Gridsearch returns no model due to bad parameter values.")
+      raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
 
   def _resolve_grid(self, grid_id, grid_json, first_model_json):
     model_class = H2OGridSearch._metrics_class(first_model_json)
