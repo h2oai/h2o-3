@@ -91,7 +91,6 @@ public final class ComputationState {
 
   private void adjustToNewLambda() {
     double ldiff = _lambda - _previousLambda;
-    assert ldiff <= 0:"ldiff = " + ldiff + ", previous lambda = " + _previousLambda + ", current lambda = " + _lambda;
     if(ldiff == 0 || l2pen() == 0) return;
     double l2pen = .5*ArrayUtils.l2norm2(_beta,true);
     if(l2pen > 0) {
