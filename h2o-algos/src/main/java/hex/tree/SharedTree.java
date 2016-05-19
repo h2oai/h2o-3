@@ -216,7 +216,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // top-level quantiles for all columns
         // non-numeric columns get a vector full of NAs
-        if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+        if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
+                || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
           int N = _parms._nbins;
           QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
           Key rndKey = Key.make();
@@ -311,7 +312,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Helpers to store quantiles in DKV - keep a cache on each node (instead of sending around over and over)
     protected Key getGlobalQuantilesKey(int i) {
-      if (_parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) return null;
+      if (_parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
+              && _parms._histogram_type!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) return null;
       return Key.makeSystem(_model._key+"_quantiles_col_"+i);
     }
     protected Key[] getGlobalQuantilesKeys() {

@@ -1905,7 +1905,7 @@ public class GBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      assertTrue(3 == idx);
+      assertTrue(4 == idx);
     } finally {
       if (gbm!=null) gbm.delete();
       if (tfr!=null) tfr.delete();

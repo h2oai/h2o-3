@@ -95,7 +95,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Minimum relative improvement in squared error reduction for a split to happen
   histogram_type : str
     What type of histogram to use for finding optimal split points.
-    Can be one of "AUTO", "UniformAdaptive", "Random" or "QuantilesGlobal".
+    Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
   max_abs_leafnode_pred : float
     Maximum absolute value of a leaf node prediction.
 

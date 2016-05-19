@@ -48,7 +48,7 @@ public final class DHistogram extends Iced {
   private double _sums[], _ssqs[]; // Sums & square-sums, shared, atomically incremented
   public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
   public transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
-  private final long _seed;
+  public final long _seed;
   public transient boolean _hasQuantiles;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
 
@@ -113,6 +113,12 @@ public final class DHistogram extends Iced {
     _maxIn= -Double.MAX_VALUE;
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
+    if (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
+      SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
+      _histoType = h[(int)Math.abs(seed % h.length)];
+    }
+    if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
+      _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
     _seed = seed;
     _globalQuantilesKey = globalQuantilesKey;
     // See if we can show there are fewer unique elements than nbins.
@@ -250,7 +256,7 @@ public final class DHistogram extends Iced {
   }
 
   // The initial histogram bins are setup from the Vec rollups.
-  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey) {
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -259,15 +265,15 @@ public final class DHistogram extends Iced {
       final double maxEx = find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
       hs[c] = v.naCnt()==vlen || v.min()==v.max() ?
-          null : make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, parms, globalQuantilesKey[c]);
+          null : make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, seed, parms, globalQuantilesKey[c]);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;
   }
 
 
-  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
-    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, parms._seed, globalQuantilesKey);
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
+    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey);
   }
 
   // Pretty-print a histogram
