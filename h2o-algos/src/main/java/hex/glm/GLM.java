@@ -269,25 +269,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     hide("_max_after_balance_size", "Not applicable since class balancing is not required for GLM.");
     hide("_class_sampling_factors", "Not applicable since class balancing is not required for GLM.");
     _parms.validate(this);
-    if(_response != null)
-      switch( _parms._family) {
+    if(_response != null) {
+      if(!isClassifier() && _response.isCategorical())
+        error("_response", H2O.technote(2, "Regression requires numeric response, got categorical."));
+      switch (_parms._family) {
         case binomial:
-          if( !_response.isBinary() && _nclass != 2)
+          if (!_response.isBinary() && _nclass != 2)
             error("_family", H2O.technote(2, "Binomial requires the response to be a 2-class categorical or a binary column (0/1)"));
           break;
         case multinomial:
-          if (_nclass <= 2) error("_family", H2O.technote(2, "Multinomial requires a categorical response with at least 3 levels (for 2 class problem use family=binomial."));
+          if (_nclass <= 2)
+            error("_family", H2O.technote(2, "Multinomial requires a categorical response with at least 3 levels (for 2 class problem use family=binomial."));
           break;
         case poisson:
           if (_nclass != 1) error("_family", "Poisson requires the response to be numeric.");
-          if(_response.min() < 0)
+          if (_response.min() < 0)
             error("_family", "Poisson requires response >= 0");
-          if(!_response.isInt())
-            warn("_family","Poisson expects non-negative integer response, got floats.");
+          if (!_response.isInt())
+            warn("_family", "Poisson expects non-negative integer response, got floats.");
           break;
         case gamma:
           if (_nclass != 1) error("_distribution", H2O.technote(2, "Gamma requires the response to be numeric."));
-          if(_response.min() <= 0) error("_family","Gamma requires positive respone");
+          if (_response.min() <= 0) error("_family", "Gamma requires positive respone");
           break;
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
@@ -296,8 +299,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //          if (_nclass != 1) error("_family", H2O.technote(2, "Gaussian requires the response to be numeric."));
           break;
         default:
-          error("_family","Invalid distribution: " + _parms._distribution);
+          error("_family", "Invalid distribution: " + _parms._distribution);
       }
+    }
     if (expensive) {
       if (error_count() > 0) return;
       if (_parms._alpha == null)
