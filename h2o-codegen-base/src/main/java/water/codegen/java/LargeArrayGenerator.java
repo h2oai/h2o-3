@@ -120,8 +120,8 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     return (float[]) o;
   }
 
-  private static CodeGenerator fillArrayWithPrimitive(final double[] ary, final int alen, final int astart, final int aryOff) {
-    return new CodeGenerator() {
+  private static CodeGeneratorB fillArrayWithPrimitive(final double[] ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {
@@ -131,8 +131,8 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     };
   }
 
-  private static CodeGenerator fillArrayWithPrimitive(final float[] ary, final int alen, final int astart, final int aryOff) {
-    return new CodeGenerator() {
+  private static CodeGeneratorB fillArrayWithPrimitive(final float[] ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {
@@ -142,8 +142,8 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     };
   }
 
-  private static CodeGenerator fillArrayWithPrimitive(final String[] ary, final int alen, final int astart, final int aryOff) {
-    return new CodeGenerator() {
+  private static CodeGeneratorB fillArrayWithPrimitive(final String[] ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {
@@ -153,8 +153,8 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     };
   }
 
-  private static CodeGenerator fillArrayWithPrimitive(final int[] ary, final int alen, final int astart, final int aryOff) {
-    return new CodeGenerator() {
+  private static CodeGeneratorB fillArrayWithPrimitive(final int[] ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {
@@ -164,8 +164,8 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
     };
   }
 
-  private CodeGenerator fillNestedArray(final String clzName, final ArrayWrapper ary, final int alen, final int astart, final int aryOff) {
-    return new CodeGenerator() {
+  private CodeGeneratorB fillNestedArray(final String clzName, final ArrayWrapper ary, final int alen, final int astart, final int aryOff) {
+    return new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         for(int i = 0; i < alen; i++) {

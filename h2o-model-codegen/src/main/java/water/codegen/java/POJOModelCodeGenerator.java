@@ -103,8 +103,8 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
 
   public final S build() {
     // Shared work by all generators
-    CompilationUnitGenerator cug = createModelCu();
-    ClassCodeGenerator cg = createModelClass(cug);
+    CompilationUnitGenerator cug = createModelCu().build();
+    ClassCodeGenerator cg = createModelClass(cug).build();
 
     // FIXME: reverse initialization order with setup link: cug->mcg a pak cg->cug
     this.withCompilationUnit(cug.withClassGenerator(cg));
@@ -114,6 +114,8 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
 
     // At the end call all defined generators build method
     return super.build();
+    dfajsdlfjsalfjasl
+        lock it to disallow multiple builds
   }
 
   /**

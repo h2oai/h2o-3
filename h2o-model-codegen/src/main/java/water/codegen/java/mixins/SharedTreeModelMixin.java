@@ -10,13 +10,13 @@ public class SharedTreeModelMixin extends ModelMixin {
   @CG.Delegate(target = "._output._ntrees", comment = "Number of generated trees")
   public static final int GEN_NTREES = 0;
 
-  @CG.Delegate(target = "_parms._binomial_double_trees", comment = "Use two trees to represent a single binomial decision tree.")
+  @CG.Delegate(target = "#binomialOpt", comment = "Use two trees to represent a single binomial decision tree.")
   public static final boolean GEN_BINOMIAL_DOUBLE_TREES = false;
 
   public double[] score0(double[] data, double[] preds ) {
     java.util.Arrays.fill(preds,0);
     // Tree model specific
-    scoreImpl(data, preds);
+    scoreImpl(data, preds, GEN_NTREES);
     // Unify prediction
     unifyPreds(preds);
     // Unify class probabilities
@@ -29,7 +29,7 @@ public class SharedTreeModelMixin extends ModelMixin {
     return preds;
   }
 
-  public static double[] scoreImpl(double[] data, double[] preds) {
+  public static double[] scoreImpl(double[] data, double[] preds, int numTrees) {
     throw new CG.CGException("The method needs to be implemented!");
   }
 

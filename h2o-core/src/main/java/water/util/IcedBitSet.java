@@ -3,6 +3,7 @@ package water.util;
 import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
+import water.codegen.JCodeSB;
 import water.codegen.SB;
 
 /** BitSet - Iced, meaning cheaply serialized over the wire.
@@ -131,7 +132,7 @@ public class IcedBitSet extends Iced {
     return sb.toString();
   }
 
-  public SB toJava( SB sb, String varname, int col, String colname ) {
+  public JCodeSB toJava(JCodeSB sb, String varname, int col, String colname ) {
     // pass a double to bitSetContains, such that it can do the NaN check inside
     return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p(" /* ").p(colname).p(" */").p("])");
   }

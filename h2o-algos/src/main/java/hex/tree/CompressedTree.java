@@ -138,7 +138,10 @@ public class CompressedTree extends Keyed {
           sb.i().p(names[col]).p(' ');
           if (equal == 0) sb.p("< ").p(fcmp);
           else if (equal == 1) sb.p("!=").p(fcmp);
-          else sb.p("in ").p(gcmp);
+          else {
+            sb.p("in ");
+            gcmp.toString(sb);
+          }
         }
         sb.ii(1).nl();
       }

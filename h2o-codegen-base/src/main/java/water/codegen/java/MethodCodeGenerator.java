@@ -22,7 +22,7 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
   private String[] paramNames;
   private Class returnType = void.class;
   private boolean override = false;
-  private CodeGenerator body;
+  private CodeGeneratorB body;
   private boolean parantheses = true;
 
   /** The method owner */
@@ -44,15 +44,15 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
     return self();
   }
 
-  public MethodCodeGenerator withBody(CodeGenerator body) {
+  public MethodCodeGenerator withBody(CodeGeneratorB body) {
     assert body != null : "Body generator should be not null";
     this.body = body;
-    return self();
+    return self().withParentheses(true);
   }
 
   public MethodCodeGenerator withBody(final JCodeSB body) {
     // Add a new generator generating body of the method directly
-    return withBody(new CodeGenerator() {
+    return withBody(new CodeGeneratorB() {
       @Override
       public void generate(JCodeSB out) {
         out.p(body);
@@ -125,5 +125,11 @@ public class MethodCodeGenerator extends SimpleCodeGenerator<MethodCodeGenerator
       }
     }
     return sb;
+  }
+
+  @Override
+  public MethodCodeGenerator build() {
+    if (body != null) body.build();
+    return super.build();
   }
 }

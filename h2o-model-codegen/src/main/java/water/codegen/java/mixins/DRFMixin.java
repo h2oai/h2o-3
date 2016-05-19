@@ -1,5 +1,7 @@
 package water.codegen.java.mixins;
 
+import hex.genmodel.annotations.CG;
+
 /**
  * Created by michal on 5/12/16.
  */
@@ -9,7 +11,7 @@ public class DRFMixin extends SharedTreeModelMixin {
     if (!GEN_IS_CLASSIFIER) {
       preds[0] /= GEN_NTREES;
     } else {
-      if (NCLASSES == 2 && !GEN_BINOMIAL_DOUBLE_TREES) {
+      if (NCLASSES == 2 && GEN_BINOMIAL_DOUBLE_TREES) {
         preds[1] /= GEN_NTREES;
         preds[2] = 1.0 - preds[1];
       } else {

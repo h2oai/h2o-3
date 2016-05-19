@@ -31,6 +31,9 @@ public class GBMModelPOJOCodeGen extends POJOModelCodeGenerator<GBMModelPOJOCode
     // Implements linkInv method
     ccg.method("linkInv").withBody(s("return ").p(new Distribution(model._parms).linkInvString("f")).p(';')).withParentheses(true);
 
+    // Implements scoreImpl method
+    //ccg.method("scoreImpl").withBody(null);
+
     return self();
   }
 

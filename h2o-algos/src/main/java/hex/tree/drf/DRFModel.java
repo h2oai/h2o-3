@@ -30,7 +30,7 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
 
   public DRFModel(Key selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey,parms,output); }
 
-  @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
+  @Override public boolean binomialOpt() { return !_parms._binomial_double_trees; }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.

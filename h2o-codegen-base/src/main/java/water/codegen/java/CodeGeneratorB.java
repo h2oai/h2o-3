@@ -7,7 +7,7 @@ import water.codegen.JCodeSB;
 /**
  * Created by michal on 5/6/16.
  */
-public class CodeGeneratorB<S extends CodeGenerator<S>> implements CodeGenerator<S>, HasBuild<S> {
+public class CodeGeneratorB<S extends CodeGeneratorB<S>> implements CodeGenerator<S>, HasBuild<S> {
 
   @Override
   public void generate(JCodeSB out) {

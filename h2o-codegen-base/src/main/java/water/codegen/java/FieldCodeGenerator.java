@@ -18,7 +18,7 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
   // FIXME: can we have here Class<?> ?
   Class type;
   String name;
-  CodeGenerator initCode;
+  CodeGeneratorB initCode;
 
   private ClassCodeGenerator ccg;
 
@@ -93,5 +93,11 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
   @Override
   final public ClassGenContainer classContainer(CodeGenerator caller) {
     return ccg.classContainer(caller);
+  }
+
+  @Override
+  public FieldCodeGenerator build() {
+    initCode.build();
+    return super.build();
   }
 }

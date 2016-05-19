@@ -15,6 +15,7 @@ import hex.genmodel.annotations.CG;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.codegen.JCodeSB;
+import water.codegen.util.ArrayUtils;
 import water.codegen.util.ReflectionUtils;
 
 import static water.codegen.util.ArrayUtils.append;
@@ -43,6 +44,10 @@ public class ClassCodeGenerator extends CodeGeneratorPipeline<ClassCodeGenerator
 
   public ClassCodeGenerator withMixin(Object source, Class... mixins) {
     return withMixin(source, false, mixins);
+  }
+
+  public ClassCodeGenerator withMixin(Class mixin, Class... mixins) {
+    return withMixin(null, false, ArrayUtils.append(mixins, mixin));
   }
 
   public ClassCodeGenerator withMixin(Object source, boolean includeParent, Class... mixins) {
