@@ -242,6 +242,16 @@ public class HistogramTest extends TestUtil {
     double[] after = ArrayUtils.limitToRange(before,0.305,0.699);
     assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4}));
   }
+  @Test public void testShrinking8() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.7,0.9);
+    assert(Arrays.equals(after, new double[]{0.7}));
+  }
+  @Test public void testShrinking9() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.8,0.9);
+    assert(Arrays.equals(after, new double[]{0.7}));
+  }
   @Test public void testPadding() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
     double[] after = ArrayUtils.padUniformly(before,9);
