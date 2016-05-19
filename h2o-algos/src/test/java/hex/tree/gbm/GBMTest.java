@@ -1863,8 +1863,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Ignore
-  @Test public void randomizeSplitPoints() {
+  @Test public void histoTypes() {
     Frame tfr = null;
     Key[] ksplits = null;
     GBMModel gbm = null;
@@ -1891,9 +1890,10 @@ public class GBMTest extends TestUtil {
         parms._response_column = tfr.names()[resp];
         parms._learn_rate = 0.05f;
         parms._histogram_type = histoType[i];
-        parms._ntrees = 20;
+        parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 5;
+        parms._seed = 0xDECAFF;
 
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();
@@ -1905,7 +1905,7 @@ public class GBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      //assertTrue(1 == idx);
+      assertTrue(3 == idx);
     } finally {
       if (gbm!=null) gbm.delete();
       if (tfr!=null) tfr.delete();
