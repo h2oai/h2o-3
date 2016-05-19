@@ -1361,4 +1361,24 @@ public class ArrayUtils {
     }
     return Arrays.copyOfRange(uniqueValidPoints,0,count);
   }
+
+  // See HistogramTest JUnit for tests
+  public static double[] limitToRange(double[] sortedSplitPoints, double min, double maxEx) {
+    int start=Arrays.binarySearch(sortedSplitPoints, min);
+    if (start<0) start=-start-1;
+    if (start==sortedSplitPoints.length) start--;
+    assert(start>=0);
+
+    int end=Arrays.binarySearch(sortedSplitPoints, maxEx);
+    if (end<0) end=-end-1;
+    assert(end>0 && end<= sortedSplitPoints.length);
+    assert(end>=start);
+
+    // go back one more to include the min (inclusive)
+    if (sortedSplitPoints[start] > min && start>0) start--;
+
+    assert(sortedSplitPoints[start] <= min);
+    assert(sortedSplitPoints[end-1] < maxEx);
+    return Arrays.copyOfRange(sortedSplitPoints,start,end);
+  }
 }
