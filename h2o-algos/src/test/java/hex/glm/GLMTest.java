@@ -1046,12 +1046,13 @@ public class GLMTest  extends TestUtil {
     Vec xy = frG.remove("xy");
     frMM.remove("C1").remove();
     Vec v;
-    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).toNumericVec());
+    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(frMM._key, frMM);
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
-    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).toNumericVec());
+    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
     v.remove();
+    DKV.put(fr._key,fr);
     //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "IsDepDelayed_REC"};
     try {

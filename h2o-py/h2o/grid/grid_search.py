@@ -151,12 +151,12 @@ class H2OGridSearch(object):
   def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     #same api as estimator_base train
     algo_params = locals()
-
     parms = self._parms.copy()
     parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
     parms["search_criteria"] = self.search_criteria
     parms["hyper_parameters"] = self.hyper_params  # unique to grid search
     parms.update({k:v for k,v in list(self.model._parms.items()) if v is not None})  # unique to grid search
+    parms.update(params)
     if '__class__' in parms:  # FIXME: hackt for PY3
       del parms['__class__']
     y = algo_params["y"]

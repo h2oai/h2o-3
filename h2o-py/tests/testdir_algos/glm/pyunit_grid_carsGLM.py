@@ -43,9 +43,10 @@ def grid_cars_GLM():
             valid[response_col] = valid[response_col].asfactor()
 
     #grid_space.update({"lambda":[0.1,0.05,0.01]})
-    family = grid_space.pop('family')
+    family = grid_space.pop('family')[0]
     print("Grid space: {0}".format(grid_space))
     print("Constructing the grid of glm models...")
+    print("family = ",family)
     cars_glm_grid = H2OGridSearch(H2OGeneralizedLinearEstimator, hyper_params=grid_space)
     if validation_scheme == 1:
         cars_glm_grid.train(x=predictors,y=response_col,training_frame=train, family=family)
