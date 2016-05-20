@@ -4,9 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.util.ArrayUtils;
-import water.util.AtomicUtils;
-import water.util.Log;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -227,19 +225,92 @@ public class HistogramTest extends TestUtil {
     double[] after = ArrayUtils.makeUniqueAndLimitToRange(before, 0.3,0.9);
     assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4,0.7}));
   }
+  @Test public void testShrinking5() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.31,0.9);
+    assert(Arrays.equals(after, new double[]{0.31,0.32,0.4,0.7}));
+  }
+  @Test public void testShrinking6() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.305,0.9);
+    assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4,0.7}));
+  }
+  @Test public void testShrinking7() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.305,0.699);
+    assert(Arrays.equals(after, new double[]{0.3,0.31,0.32,0.4}));
+  }
+  @Test public void testShrinking8() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.7,0.9);
+    assert(Arrays.equals(after, new double[]{0.7}));
+  }
+  @Test public void testShrinking9() {
+    double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
+    double[] after = ArrayUtils.limitToRange(before,0.8,0.9);
+    assert(Arrays.equals(after, new double[]{0.7}));
+  }
   @Test public void testPadding() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
-    double[] after = ArrayUtils.padUniformly(1234,before,9);
+    double[] after = ArrayUtils.padUniformly(before,9);
     assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.55,0.7}));
   }
   @Test public void testPadding2() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
-    double[] after = ArrayUtils.padUniformly(1234,before,10);
-    assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.55,0.6363486689348754,0.7}));
+    double[] after = ArrayUtils.padUniformly(before,10);
+    assert(Arrays.equals(after, new double[]{0.3,0.3025,0.3075,0.31,0.315,0.32,0.36,0.4,0.55,0.7}));
   }
   @Test public void testPadding3() {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
-    double[] after = ArrayUtils.padUniformly(1234,before,8);
-    assert(Arrays.equals(after, new double[]{0.3,0.305,0.30786090690944334,0.31,0.3105345867957048,0.32,0.4,0.7}));
+    double[] after = ArrayUtils.padUniformly(before,8);
+    assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.7}));
+  }
+  @Test public void binarySearch() {
+    int R=1000000;
+    for (int N : new int[]{20,50,100}) {
+      double[] vals = new double[N];
+      for (int i = 0; i < N; ++i) {
+        vals[i] = i * 1.0 / N;
+      }
+      double[] pts = new double[N];
+      Random rnd = RandomUtils.getRNG(123);
+      for (int i = 0; i < N; ++i) {
+        pts[i] = rnd.nextInt(N) * 1. / N;
+      }
+      long sum = 0;
+      for (int r = 0; r < R; ++r) {
+        sum += Arrays.binarySearch(vals, pts[r % N]);
+      }
+      long start = System.currentTimeMillis();
+      for (int r = 0; r < R; ++r) {
+        sum += Arrays.binarySearch(vals, pts[r % N]);
+      }
+      long done = System.currentTimeMillis();
+      Log.info("N=" + N + " Sum:" + sum + " Time: " + PrettyPrint.msecs(done - start, true));
+    }
+  }
+  @Test public void linearSearch() {
+    int R=1000000;
+    for (int N : new int[]{20,50,100}) {
+      double[] vals = new double[N];
+      for (int i = 0; i < N; ++i) {
+        vals[i] = i * 1.0 / N;
+      }
+      double[] pts = new double[N];
+      Random rnd = RandomUtils.getRNG(123);
+      for (int i = 0; i < N; ++i) {
+        pts[i] = rnd.nextInt(N) * 1. / N;
+      }
+      long sum = 0;
+      for (int r = 0; r < R; ++r) {
+        sum += ArrayUtils.linearSearch(vals, pts[r % N]);
+      }
+      long start = System.currentTimeMillis();
+      for (int r = 0; r < R; ++r) {
+        sum += ArrayUtils.linearSearch(vals, pts[r % N]);
+      }
+      long done = System.currentTimeMillis();
+      Log.info("N=" + N + " Sum:" + sum + " Time: " + PrettyPrint.msecs(done - start, true));
+    }
   }
 }
