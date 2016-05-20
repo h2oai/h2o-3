@@ -82,9 +82,15 @@ public class ASTKFold extends ASTPrim {
         for(int testFold=0; testFold < nfolds; ++testFold) {
           for(int classLabel = 0; classLabel < nClass; ++classLabel) {
             for(int row=0;row<y[0]._len;++row ) {
-              if( y[0].at8(row) == (classes==null?classLabel:classes[classLabel]) ) {
-                if( testFold == getFoldId(start+row,seeds[classLabel]) )
+              // missing response gets spread around
+              if (y[0].isNA(row)) {
+                if ((start+row)%nfolds == testFold)
                   y[1].set(row,testFold);
+              } else {
+                if( y[0].at8(row) == (classes==null?classLabel:classes[classLabel]) ) {
+                  if( testFold == getFoldId(start+row,seeds[classLabel]) )
+                    y[1].set(row,testFold);
+                }
               }
             }
           }
