@@ -2,6 +2,75 @@
 
 ##H2O
 
+###Turchin (3.8.2.5) - 5/19/2016
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2909'>PUBDEV-2909</a>] -         Documentation update for relevel
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2282'>PUBDEV-2282</a>] -         DRF: cannot compile pojo
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2304'>PUBDEV-2304</a>] -         GBM pojo compile failures
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2878'>PUBDEV-2878</a>] -         Bug in h2o-py H2OScaler.inverse_transform()
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2880'>PUBDEV-2880</a>] -         Add NAOmit() to Rapids
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2897'>PUBDEV-2897</a>] -         AIOOBE in Vec.factor (due to Parse bug?)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2903'>PUBDEV-2903</a>] -         In grid search, max_runtime_secs without max_models hangs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2933'>PUBDEV-2933</a>] -         GBM&#39;s fold_assignment = &quot;Stratified&quot; breaks with missing values in response column
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2729'>PUBDEV-2729</a>] -         Implement h2o.relevel, equivalent of base R&#39;s relevel function
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2857'>PUBDEV-2857</a>] -         Add Kerberos authentication to Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2893'>PUBDEV-2893</a>] -         Summaries Fail in rdemo.citi.bike.small.R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2895'>PUBDEV-2895</a>] -         DimReduction for EasyModelAPI
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2915'>PUBDEV-2915</a>] -         Make histograms truly adaptive (quantiles-based) for DRF/GBM
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2902'>PUBDEV-2902</a>] -         Add a list of gridable parameters to the docs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2904'>PUBDEV-2904</a>] -         Add relevel() to Python API
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2905'>PUBDEV-2905</a>] -         Improve the progress bar based on max_runtime_secs &amp; max_models &amp; actual work
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2908'>PUBDEV-2908</a>] -         Improve GBM/DRF reproducibility for fixed parameters and hardware
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2911'>PUBDEV-2911</a>] -         Check sanity of random grid search parameters (max_models and max_runtime_secs)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2912'>PUBDEV-2912</a>] -         Add Job&#39;s remaining time to Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2919'>PUBDEV-2919</a>] -         Add enum option &#39;histogram_type&#39; to DRF/GBM (and remove random_split_points)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2923'>PUBDEV-2923</a>] -         JUnit: Separate POJO namespace during junit testing
+</li>
+</ul>
+
 ###Turchin (3.8.2.3) - 4/25/2016
 
 <h4>        Bug
