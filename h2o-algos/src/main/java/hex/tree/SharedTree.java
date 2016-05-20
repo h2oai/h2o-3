@@ -469,6 +469,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
+          assert((float)(s.pre_split_se()-s.se())>=0);
           AtomicUtils.FloatArray.add(_improvPerVar,s.col(),(float)(s.pre_split_se()-s.se()));
         }
       }
