@@ -4,9 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.util.ArrayUtils;
-import water.util.AtomicUtils;
-import water.util.Log;
+import water.util.*;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -266,5 +264,53 @@ public class HistogramTest extends TestUtil {
     double[] before = new double[]{0.3,0.31,0.32,0.4,0.7};
     double[] after = ArrayUtils.padUniformly(before,8);
     assert(Arrays.equals(after, new double[]{0.3,0.305,0.31,0.315,0.32,0.36,0.4,0.7}));
+  }
+  @Test public void binarySearch() {
+    int R=1000000;
+    for (int N : new int[]{20,50,100}) {
+      double[] vals = new double[N];
+      for (int i = 0; i < N; ++i) {
+        vals[i] = i * 1.0 / N;
+      }
+      double[] pts = new double[N];
+      Random rnd = RandomUtils.getRNG(123);
+      for (int i = 0; i < N; ++i) {
+        pts[i] = rnd.nextInt(N) * 1. / N;
+      }
+      long sum = 0;
+      for (int r = 0; r < R; ++r) {
+        sum += Arrays.binarySearch(vals, pts[r % N]);
+      }
+      long start = System.currentTimeMillis();
+      for (int r = 0; r < R; ++r) {
+        sum += Arrays.binarySearch(vals, pts[r % N]);
+      }
+      long done = System.currentTimeMillis();
+      Log.info("N=" + N + " Sum:" + sum + " Time: " + PrettyPrint.msecs(done - start, true));
+    }
+  }
+  @Test public void linearSearch() {
+    int R=1000000;
+    for (int N : new int[]{20,50,100}) {
+      double[] vals = new double[N];
+      for (int i = 0; i < N; ++i) {
+        vals[i] = i * 1.0 / N;
+      }
+      double[] pts = new double[N];
+      Random rnd = RandomUtils.getRNG(123);
+      for (int i = 0; i < N; ++i) {
+        pts[i] = rnd.nextInt(N) * 1. / N;
+      }
+      long sum = 0;
+      for (int r = 0; r < R; ++r) {
+        sum += ArrayUtils.linearSearch(vals, pts[r % N]);
+      }
+      long start = System.currentTimeMillis();
+      for (int r = 0; r < R; ++r) {
+        sum += ArrayUtils.linearSearch(vals, pts[r % N]);
+      }
+      long done = System.currentTimeMillis();
+      Log.info("N=" + N + " Sum:" + sum + " Time: " + PrettyPrint.msecs(done - start, true));
+    }
   }
 }

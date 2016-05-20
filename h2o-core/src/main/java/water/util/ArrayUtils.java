@@ -634,6 +634,15 @@ public class ArrayUtils {
       if( elem==ls[i] ) return i;
     return -1;
   }
+  // behaves like Arrays.binarySearch, but is slower -> Just good for tiny arrays (length<20)
+  public static int linearSearch(double[] vals, double v) {
+    final int N=vals.length;
+    for (int i=0; i<N; ++i) {
+      if (vals[i]==v) return i;
+      if (vals[i]>v) return -i-1;
+    }
+    return -1;
+  }
 
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
