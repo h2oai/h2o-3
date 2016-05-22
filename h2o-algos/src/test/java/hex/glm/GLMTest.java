@@ -31,9 +31,9 @@ import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
-  protected static void testScoring(GLMModel m, Frame fr) {
+  public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
     // standard predictions
     Frame fr2 = new Frame(fr);

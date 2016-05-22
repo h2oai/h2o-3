@@ -28,9 +28,12 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
 
 
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
+      if(impl.get_global_beta_multinomial() == null)
+        return this; // no coefificients yet
       String [] names = impl.coefficientNames().clone();
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
+
       coefficients_table = new TwoDimTableBase();
       if(impl.isStandardized()){
         int n = impl.nclasses();
@@ -44,47 +47,48 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
         String [] colFormats = new String[cols.length];
         Arrays.fill(colFormats,"%5f");
 
-        TwoDimTable tdt = new TwoDimTable("Coefficients","glm multinomial coefficients", ns, cols, colTypes, colFormats, "names");
         double [][] betaNorm = impl.getNormBetaMultinomial();
-
-        for(int c = 0; c < n; ++c) {
-          double [] beta = impl.get_global_beta_multinomial()[c];
-          tdt.set(0,c,beta[beta.length-1]);
-          tdt.set(0,n + c,betaNorm[c][beta.length-1]);
-          for(int i = 0; i < beta.length-1; ++i) {
-            tdt.set(i + 1, c, beta[i]);
-            tdt.set(i + 1, n + c, betaNorm[c][i]);
+        if(betaNorm != null) {
+          TwoDimTable tdt = new TwoDimTable("Coefficients", "glm multinomial coefficients", ns, cols, colTypes, colFormats, "names");
+          for (int c = 0; c < n; ++c) {
+            double[] beta = impl.get_global_beta_multinomial()[c];
+            tdt.set(0, c, beta[beta.length - 1]);
+            tdt.set(0, n + c, betaNorm[c][beta.length - 1]);
+            for (int i = 0; i < beta.length - 1; ++i) {
+              tdt.set(i + 1, c, beta[i]);
+              tdt.set(i + 1, n + c, betaNorm[c][i]);
+            }
           }
-        }
-        coefficients_table.fillFromImpl(tdt);
-        final double [] magnitudes = new double[betaNorm[0].length];
-        for(int i = 0; i < betaNorm.length; ++i) {
-          for (int j = 0; j < betaNorm[i].length; ++j) {
-            double d = betaNorm[i][j];
-            magnitudes[j] += d < 0 ? -d : d;
+          coefficients_table.fillFromImpl(tdt);
+          final double [] magnitudes = new double[betaNorm[0].length];
+          for(int i = 0; i < betaNorm.length; ++i) {
+            for (int j = 0; j < betaNorm[i].length; ++j) {
+              double d = betaNorm[i][j];
+              magnitudes[j] += d < 0 ? -d : d;
+            }
           }
-        }
-        Integer [] indices = new Integer[magnitudes.length-1];
-        for(int i = 0; i < indices.length; ++i)
-          indices[i] = i;
-        Arrays.sort(indices, new Comparator<Integer>() {
-          @Override
-          public int compare(Integer o1, Integer o2) {
-            if(magnitudes[o1] < magnitudes[o2]) return +1;
-            if(magnitudes[o1] > magnitudes[o2]) return -1;
-            return 0;
+          Integer [] indices = new Integer[magnitudes.length-1];
+          for(int i = 0; i < indices.length; ++i)
+            indices[i] = i;
+          Arrays.sort(indices, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer o1, Integer o2) {
+              if(magnitudes[o1] < magnitudes[o2]) return +1;
+              if(magnitudes[o1] > magnitudes[o2]) return -1;
+              return 0;
+            }
+          });
+          String [] names2 = new String[names.length];
+          for(int i = 0; i < names2.length-1; ++i)
+            names2[i] = names[indices[i]];
+          tdt = new TwoDimTable("Standardized Coefficient Magnitudes", "standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"}, new String[]{"double", "string"}, new String[]{"%5f", "%s"}, "names");
+          for (int i = 0; i < magnitudes.length - 1; ++i) {
+            tdt.set(i, 0, magnitudes[indices[i]]);
+            tdt.set(i, 1, "POS");
           }
-        });
-        String [] names2 = new String[names.length];
-        for(int i = 0; i < names2.length-1; ++i)
-          names2[i] = names[indices[i]];
-        tdt = new TwoDimTable("Standardized Coefficient Magnitudes", "standardized coefficient magnitudes", names2, new String[]{"Coefficients", "Sign"}, new String[]{"double", "string"}, new String[]{"%5f", "%s"}, "names");
-        for (int i = 0; i < magnitudes.length - 1; ++i) {
-          tdt.set(i, 0, magnitudes[indices[i]]);
-          tdt.set(i, 1, "POS");
+          standardized_coefficient_magnitudes = new TwoDimTableBase();
+          standardized_coefficient_magnitudes.fillFromImpl(tdt);
         }
-        standardized_coefficient_magnitudes = new TwoDimTableBase();
-        standardized_coefficient_magnitudes.fillFromImpl(tdt);
       } else {
         int n = impl.nclasses();
         String [] cols = new String[n];

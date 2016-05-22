@@ -107,8 +107,9 @@ public abstract class GLMTask  {
     @Override
     public void chunkInit() {
       _sparseOffsets = MemoryManager.malloc8d(_nclasses);
-      for(int c = 0; c < _nclasses; ++c)
-        _sparseOffsets[c] = GLM.sparseOffset(_beta[c],_dinfo);
+      if(_sparse)
+        for(int c = 0; c < _nclasses; ++c)
+          _sparseOffsets[c] = GLM.sparseOffset(_beta[c],_dinfo);
     }
     @Override
     protected void processRow(Row r) {

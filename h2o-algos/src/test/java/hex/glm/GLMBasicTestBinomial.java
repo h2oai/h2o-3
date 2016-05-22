@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomasnykodym on 4/26/15.
  */
-public class GLMBasicTestBinomial extends GLMTest {
+public class GLMBasicTestBinomial extends TestUtil {
   static Frame _prostateTrain; // prostate_cat_replaced
   static Frame _prostateTrainUpsampled; // prostate_cat_replaced
   static Frame _prostateTest; // prostate_cat_replaced
@@ -181,7 +181,7 @@ public class GLMBasicTestBinomial extends GLMTest {
           Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i),CD?1e-3:1e-6);
-          testScoring(model,fTrain);
+          GLMTest.testScoring(model,fTrain);
         } finally {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
@@ -217,7 +217,7 @@ public class GLMBasicTestBinomial extends GLMTest {
     GLMModel m = null;
     try {
       m = new GLM(parms).trainModel().get();
-      testScoring(m,_abcd);
+      GLMTest.testScoring(m,_abcd);
       System.out.println(m.coefficients());
     } finally {
       if(m != null) m.delete();
@@ -372,7 +372,7 @@ public class GLMBasicTestBinomial extends GLMTest {
           assertEquals(model._output._validation_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
-          testScoring(model,fTest);
+          GLMTest.testScoring(model,fTest);
           // test the actual predictions
           Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)

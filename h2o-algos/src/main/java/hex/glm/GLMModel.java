@@ -809,13 +809,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
-      _dinfo = dinfo;
+      _dinfo = dinfo.clone();
+      _dinfo._adaptedFrame = new Frame(dinfo._adaptedFrame.names().clone(),dinfo._adaptedFrame.vecs().clone());
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
       _binomial = binomial;
       _nclasses = binomial?2:1;
-
       if(_binomial && domains[domains.length-1] != null) {
         assert domains[domains.length - 1].length == 2:"Unexpected domains " + Arrays.toString(domains);
         binomialClassNames = domains[domains.length - 1];
@@ -833,12 +833,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public GLMOutput(GLM glm) {
       super(glm);
-      _dinfo = glm._dinfo;
-      if(!glm.hasWeightCol()){
-        _dinfo = (DataInfo)_dinfo.clone();
-        _dinfo._adaptedFrame = new Frame(_dinfo._adaptedFrame.names().clone(),_dinfo._adaptedFrame.vecs().clone());
+      _dinfo = glm._dinfo.clone();
+      _dinfo._adaptedFrame = new Frame(glm._dinfo._adaptedFrame.names().clone(),glm._dinfo._adaptedFrame.vecs().clone());
+      if(!glm.hasWeightCol())
         _dinfo.dropWeights();
-      }
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
@@ -898,6 +896,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public double[][] getNormBetaMultinomial(int idx) {
+      if(_submodels == null || _submodels.length == 0) // no model yet
+        return null;
       double [][] res = new double[nclasses()][];
       Submodel sm = _submodels[idx];
       int N = _dinfo.fullN()+1;

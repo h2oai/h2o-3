@@ -323,10 +323,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       if (_parms._max_iterations == -1) { // fill in default max iterations
         int numclasses = _parms._family == Family.multinomial?nclasses():1;
-        if (_parms._solver == Solver.L_BFGS)
-          _parms._max_iterations = _parms._lambda_search?_parms._nlambdas * 100 * numclasses:numclasses * Math.max(20, _dinfo.fullN() >> 2);
-        else
-          _parms._max_iterations = _parms._lambda_search ? numclasses * 10 * _parms._nlambdas : numclasses * 50;
+        if (_parms._solver == Solver.L_BFGS) {
+          _parms._max_iterations = _parms._lambda_search ? _parms._nlambdas * 100 * numclasses : numclasses * Math.max(20, _dinfo.fullN() >> 2);
+          if(_parms._alpha[0] > 0)
+            _parms._max_iterations *= 10;
+        } else
+          _parms._max_iterations = _parms._lambda_search ? 10 * _parms._nlambdas : 50;
       }
       if (_valid != null)
         _validDinfo = _dinfo.validDinfo(_valid);
@@ -416,8 +418,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
       if(_parms._objective_epsilon == -1) {
         if(_parms._lambda_search)
-          _parms._objective_epsilon = 1e-6; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
-        else
+          _parms._objective_epsilon = 1e-4;
+        else // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
           _parms._objective_epsilon =  _parms._lambda[0] == 0?1e-6:1e-4;
       }
       if(_parms._gradient_epsilon == -1) {
@@ -512,19 +514,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitIRLSM_multinomial(Solver s){
       assert _dinfo._responses == 3:"IRLSM for multinomial needs extra information encoded in additional reponses, expected 3 response vecs, got " + _dinfo._responses;
-      double relImprovement = 1;
-      double obj = _state.objective();
-      while(_state._iter < _parms._max_iterations && relImprovement > _parms._objective_epsilon) {
+      double [] beta = _state.betaMultinomial();
+      do {
+        beta = beta.clone();
         for (int c = 0; c < _nclass; ++c) {
           if (_state.activeDataMultinomial(c).fullN() == 0) continue;
-          LineSearchSolver ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-            ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c), _state.ginfoMultinomial(c))
-            : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c), _state.l1pen());
+          _state.setActiveClass(c);
+          LineSearchSolver ls = (_state.l1pen() == 0)
+            ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c,beta), _state.ginfoMultinomial(c))
+            : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c,beta), _state.l1pen());
           GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-          double bdiff = _parms._beta_epsilon + 1;
-          _state._iter++;
           long t1 = System.currentTimeMillis();
-          new GLMMultinomialUpdate(_state.activeData(), _job._key, _state.beta(), c).doAll(_state.activeData()._adaptedFrame);
+          new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta, c).doAll(_state.activeDataMultinomial()._adaptedFrame);
           long t2 = System.currentTimeMillis();
           GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeDataMultinomial(c), glmw, ls.getX(), c).doAll(_state.activeDataMultinomial(c)._adaptedFrame);
           long t3 = System.currentTimeMillis();
@@ -535,16 +536,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             continue;
           }
           long t5 = System.currentTimeMillis();
-          _state.setBetaMultinomial(c, ls.getX(), (GLMSubsetGinfo) ls.ginfo());
-          bdiff = betaDiff(t._beta, ls.getX());
+          _state.setBetaMultinomial(c, beta,ls.getX());
           // update multinomial
-          if(!_parms._lambda_search)
-            updateProgress();
-          Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "") + " bdiff = " + bdiff));
+          Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
         }
-        relImprovement = (obj - _state.objective())/obj;
-        obj = _state.objective();
-      }
+        _state.setActiveClass(-1);
+      } while(progress(beta,_state.gslvr().getGradient(beta)));
     }
 
     private void fitLSM(Solver s){
@@ -653,13 +650,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double reltol = L1Solver.DEFAULT_RELTOL;
         double abstol = L1Solver.DEFAULT_ABSTOL;
         double ADMM_gradEps = 1e-3;
-        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), new ProgressMonitor() {
-          @Override
-          public boolean progress(double[] betaDiff, GradientInfo ginfo) {
-            return ++_state._iter < _parms._max_iterations;
-          }
-        });
+        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), this);
+//        new ProgressMonitor() {
+//          @Override
+//          public boolean progress(double[] betaDiff, GradientInfo ginfo) {
+//            return ++_state._iter < _parms._max_iterations;
+//          }
+//        });
         ADMM.L1Solver l1Solver = new ADMM.L1Solver(ADMM_gradEps, 250, reltol, abstol, _state._u);
+        l1Solver._pm = this;
         l1Solver.solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _state._u = l1Solver._u;
         _state.updateState(beta,gslvr.getGradient(beta));
@@ -1001,19 +1000,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override public boolean progress(double [] beta, GradientInfo ginfo) {
-      GLMGradientInfo gginfo = (GLMGradientInfo)ginfo;
-      _state.updateState(beta,gginfo);
-      if(!_parms._lambda_search)
-        updateProgress();
-      boolean converged = _state.converged();
-      if(converged) Log.info(LogMsg(_state.convergenceMsg));
-      return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
+      if(ginfo instanceof ProximalGradientInfo) {
+        ginfo = ((ProximalGradientInfo) ginfo)._origGinfo;
+        GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+        _state.updateState(beta, gginfo);
+        if (!_parms._lambda_search)
+          updateProgress(false);
+        return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations;
+      } else {
+        GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
+        _state.updateState(beta, gginfo);
+        if (!_parms._lambda_search)
+          updateProgress(true);
+        boolean converged = _state.converged();
+        if (converged) Log.info(LogMsg(_state.convergenceMsg));
+        return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
+      }
     }
 
     public boolean progress(double [] beta, double likelihood) {
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
-        updateProgress();
+        updateProgress(true);
       boolean converged = _state.converged();
       if(converged) Log.info(LogMsg(_state.convergenceMsg));
       return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
@@ -1022,11 +1030,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
 
     // update user visible progress
-    protected void updateProgress(){
+    protected void updateProgress(boolean canScore){
       assert !_parms._lambda_search;
       _sc.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
       _job.update(_workPerIteration,_state.toString());
-      if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval) {
+      if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
         _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
         scoreAndUpdateModel();
       }
@@ -1035,9 +1043,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
-    if(_state.activeData().fullN() >= 5000)
+    if(_parms._family == Family.multinomial && _parms._alpha[0] == 0)
+      s = Solver.L_BFGS; // multinomial does better with lbfgs
+    else if(_state.activeData().fullN() >= 5000) // cutoff has to be somewhere
       s = Solver.L_BFGS;
-    else if(_parms._lambda_search && _parms._alpha[0] > 0) s = Solver.COORDINATE_DESCENT;
+    else if(_parms._lambda_search && _parms._alpha[0] > 0) { // lambda search prefers coordinate descent
+      // l1 lambda search is better with coordinate descent!
+      s = Solver.COORDINATE_DESCENT;
+    } else if(_parms._lambda_search && _parms._alpha[0] > 0) s = Solver.COORDINATE_DESCENT;
     Log.info(LogMsg("picked solver " + s));
     return s;
   }
@@ -1184,7 +1197,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double[] oldRes = MemoryManager.arrayCopyOf(result, result.length);
         for (int i = 0; i < 1000; ++i) {
           solve(oldRes, result);
-          double[] g = gradient(result);
+          double[] g = gradient(result)._gradient;
           gerr = Math.max(-ArrayUtils.minValue(g), ArrayUtils.maxValue(g));
           if (gerr < 1e-4) return;
           System.arraycopy(result, 0, oldRes, 0, result.length);
@@ -1293,11 +1306,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    public double[] gradient(double[] beta) {
+    public GradientInfo gradient(double[] beta) {
       double[] grad = _gram.mul(beta);
       for (int i = 0; i < _xy.length; ++i)
         grad[i] -= _xy[i];
-      return grad;
+      return new GradientInfo(Double.NaN,grad); // todo compute the objective
     }
 
     @Override
@@ -1398,8 +1411,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override
-    public double[] gradient(double[] beta) {
-      return getGradient(beta)._origGinfo._gradient;
+    public GradientInfo gradient(double[] beta) {
+      return getGradient(beta)._origGinfo;
     }
 
     @Override

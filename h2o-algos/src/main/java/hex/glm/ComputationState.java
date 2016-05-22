@@ -32,8 +32,8 @@ public final class ComputationState {
   double [] _z;
   boolean _allIn;
   int _iter;
-  private double _lambda = -1;
-  private double _previousLambda;
+  private double _lambda = 0;
+  private double _lambdaMax = Double.NaN;
   private GLMGradientInfo _ginfo; // gradient info excluding l1 penalty
   private double _likelihood;
   private double _gradientErr;
@@ -43,6 +43,7 @@ public final class ComputationState {
   final DataInfo _dinfo;
   private GLMGradientSolver _gslvr;
   private final Job _job;
+  private int _activeClass = -1;
 
   /**
    *
@@ -62,16 +63,24 @@ public final class ComputationState {
 
   public GLMGradientSolver gslvr(){return _gslvr;}
   public double lambda(){return _lambda;}
-  public double previousLambda() {return _previousLambda;}
-  public void setLambdaMax(double lmax) {_lambda = lmax;}
+  public void setLambdaMax(double lmax) {
+    _lambdaMax = lmax;
+  }
   public void setLambda(double lambda) {
-    _previousLambda = _lambda;
+    adjustToNewLambda(_lambda, 0);
+    // strong rules are to be applied on the gradient with no l2 penalty
+    // NOTE: we start with lambdaOld being 0, not lambda_max
+    // non-recursive strong rules should use lambdaMax instead of _lambda
+    // However, it seems tobe working nicely to use 0 instead and be more aggressive on the predictor pruning
+    // (shoudl be safe as we check the KKTs anyways)
+    applyStrongRules(lambda, _lambda);
+    adjustToNewLambda(0, lambda);
     _lambda = lambda;
-    applyStrongRules();
-    adjustToNewLambda();
     _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
   }
   public double [] beta(){
+    if(_activeClass != -1)
+      return betaMultinomial(_activeClass,_beta);
     return _beta;
   }
   public GLMGradientInfo ginfo(){return _ginfo == null?(_ginfo = gslvr().getGradient(beta())):_ginfo;}
@@ -79,8 +88,13 @@ public final class ComputationState {
   public double likelihood() {return _likelihood;}
 
 
-  public DataInfo activeData(){return _activeData;}
+  public DataInfo activeData(){
+    if(_activeClass != -1)
+      return activeDataMultinomial(_activeClass);
+    return _activeData;
+  }
 
+  public DataInfo activeDataMultinomial(){return _activeData;}
 
 
   public void dropActiveData(){_activeData = null;}
@@ -89,12 +103,20 @@ public final class ComputationState {
     return "iter=" + _iter + " lmb=" + GLM.lambdaFormatter.format(_lambda) + " obj=" + MathUtils.roundToNDigits(objective(),4) + " imp=" + GLM.lambdaFormatter.format(_relImprovement) + " bdf=" + GLM.lambdaFormatter.format(_betaDiff);
   }
 
-  private void adjustToNewLambda() {
-    double ldiff = _lambda - _previousLambda;
+  private void adjustToNewLambda(double lambdaNew, double lambdaOld) {
+    double ldiff = lambdaNew - lambdaOld;
     if(ldiff == 0 || l2pen() == 0) return;
     double l2pen = .5*ArrayUtils.l2norm2(_beta,true);
     if(l2pen > 0) {
-      for(int i = 0; i < _ginfo._gradient.length-1; ++i)
+      if(_parms._family == Family.multinomial) {
+        int off = 0;
+        for(int c = 0; c < _nclasses; ++c) {
+          DataInfo activeData = activeDataMultinomial(c);
+          for (int i = 0; i < activeData.fullN(); ++i)
+            _ginfo._gradient[off+i] += ldiff * _beta[off+i];
+          off += activeData.fullN()+1;
+        }
+      } else  for(int i = 0; i < _activeData.fullN(); ++i)
         _ginfo._gradient[i] += ldiff*_beta[i];
     }
     _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
@@ -109,16 +131,16 @@ public final class ComputationState {
    *
    * @return indices of expected active predictors.
    */
-  protected int applyStrongRules() {
+  protected int applyStrongRules(double lambdaNew, double lambdaOld) {
     if(_parms._family == Family.multinomial)
-      return applyStrongRulesMultinomial();
+      return applyStrongRulesMultinomial(lambdaNew,lambdaOld);
     int P = _dinfo.fullN();
     int newlySelected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
-    _allIn = _allIn || _parms._alpha[0]*_lambda == 0 || _activeBC.hasBounds();
+    _allIn = _allIn || _parms._alpha[0]*lambdaNew == 0 || _activeBC.hasBounds();
     if (!_allIn) {
-      final double rhs = Math.abs(_alpha * (2 * _lambda - _previousLambda));
+      final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
       int [] newCols = MemoryManager.malloc4(P);
       int j = 0;
 
@@ -185,7 +207,9 @@ public final class ComputationState {
     }
   }
 
-  public double [] betaMultinomial(int c) {return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),_beta);}
+  public double [] betaMultinomial(){return _beta;}
+
+  public double [] betaMultinomial(int c, double [] beta) {return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta);}
 
   public GLMSubsetGinfo ginfoMultinomial(int c) {
     return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
@@ -195,6 +219,8 @@ public final class ComputationState {
     _bc = bc;
     _activeBC = _bc;
   }
+
+  public void setActiveClass(int activeClass) {_activeClass = activeClass;}
 
   public static class GLMSubsetGinfo extends GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;
@@ -217,21 +243,16 @@ public final class ComputationState {
     };
   }
 
-  public void setBetaMultinomial(int c, double [] b, GLMSubsetGinfo ginfo) {
+  public void setBetaMultinomial(int c, double [] beta, double [] bc) {
     if(_u != null) Arrays.fill(_u,0);
-    fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),b,_beta);
-    double objOld = objective();
-    _ginfo = ginfo._fullInfo;
-    _likelihood = ginfo._likelihood;
-    _relImprovement = (objOld - objective())/objOld;
-
+    fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),bc,beta);
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
    *
    * @return indices of expected active predictors.
    */
-  protected int applyStrongRulesMultinomial() {
+  protected int applyStrongRulesMultinomial(double lambdaNew, double lambdaOld) {
     int P = _dinfo.fullN();
     int N = P+1;
     int selected = 0;
@@ -240,7 +261,7 @@ public final class ComputationState {
     if (!_allIn) {
       if(_activeDataMultinomial == null)
         _activeDataMultinomial = new DataInfo[_nclasses];
-      final double rhs = _alpha * (2 * _lambda - _previousLambda);
+      final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
       int [] cols = MemoryManager.malloc4(N*_nclasses);
       int j = 0;
