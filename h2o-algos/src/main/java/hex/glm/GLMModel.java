@@ -235,6 +235,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(!_lambda_search) {
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");
+        glm.hide("_stopping_rounds","only applies if lambda search is on.");
+        glm.hide("_stopping_metric", "only applies if lambda search is on.");
+        glm.hide("_stopping_threshold","only applies if lambda search is on.");
       }
       if(_link != Link.family_default) { // check we have compatible link
         switch (_family) {
@@ -271,7 +274,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMParameters(){
       this(Family.gaussian, Link.family_default);
       assert _link == Link.family_default;
-      _stopping_rounds = 1;
+      _stopping_rounds = 3;
       _stopping_metric = ScoreKeeper.StoppingMetric.deviance;
       _stopping_tolerance = 1e-4;
     }

@@ -927,7 +927,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
       }
       double testDevOld = Double.NaN;
-      double trainDevOld = Double.NaN;
+
+      double oldDev = _validDinfo != null?nullDevTest:nullDevTrain;
+      final double nullDev = oldDev;
+      double newDev;
+
+      double [] devHistory = _parms._stopping_rounds>0?new double[_parms._stopping_rounds]:null;
+
       int impcnt = 0;
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
@@ -943,20 +949,32 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           fitModel();
         } while(!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
+
         if(_parms._lambda_search) {  // compute train and test dev
-          double trainDev = _parms._family == Family.multinomial
+          double trainDev = newDev = _parms._family == Family.multinomial
             ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,_state.beta(), _nclass).doAll(_state._dinfo._adaptedFrame)._likelihood*2
             :new GLMResDevTask(_job._key, _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
           double testDev = -1;
           if(_validDinfo != null)
-            testDev = _parms._family == Family.multinomial
+            newDev = testDev = _parms._family == Family.multinomial
               ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,_dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
               :new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
-          if(_parms._early_stopping && testDev > testDevOld)
-            break; // started overfitting
+          if(_parms._stopping_rounds > 0) {
+            devHistory[i % devHistory.length] = oldDev - newDev;
+          }
+          oldDev = newDev;
+          if(_parms._early_stopping && _parms._stopping_rounds > 0 && i > _parms._stopping_rounds) {
+            double s = 0;
+            for(double d:devHistory) s += d;
+            s = s/(devHistory.length*nullDev);
+            if(s < _parms._stopping_tolerance) {
+              Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", average improvement = " + s));
+              break; // started overfitting
+            }
+          }
           testDevOld = testDev;
           if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
               scoreAndUpdateModel(); // update partial results
@@ -1052,6 +1070,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       s = Solver.COORDINATE_DESCENT;
     } else if(_parms._lambda_search && _parms._alpha[0] > 0) s = Solver.COORDINATE_DESCENT;
     Log.info(LogMsg("picked solver " + s));
+    _parms._solver = s;
     return s;
   }
 

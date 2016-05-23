@@ -399,13 +399,18 @@ public final class ComputationState {
   private double _relImprovement;
 
   String convergenceMsg = "";
+
+
   public boolean converged(){
-    if(_betaDiff < _parms._beta_epsilon)
+    boolean converged = false;
+    if(_betaDiff < _parms._beta_epsilon) {
       convergenceMsg = "betaDiff < eps; betaDiff = " + _betaDiff + ", eps = " + _parms._beta_epsilon;
-    else if(_relImprovement < _parms._objective_epsilon)
+      converged = true;
+    } else if(_relImprovement < _parms._objective_epsilon) {
       convergenceMsg = "relImprovement < eps; relImprovement = " + _relImprovement + ", eps = " + _parms._objective_epsilon;
-    else convergenceMsg = "not converged, betaDiff = " + _betaDiff + ", relImprovement = " + _relImprovement;
-    return  (_betaDiff < _parms._beta_epsilon || _relImprovement < _parms._objective_epsilon);
+      converged = true;
+    } else convergenceMsg = "not converged, betaDiff = " + _betaDiff + ", relImprovement = " + _relImprovement;
+    return converged;
   }
 
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
