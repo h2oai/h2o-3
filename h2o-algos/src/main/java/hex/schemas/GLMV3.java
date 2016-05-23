@@ -21,6 +21,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "training_frame",
             "validation_frame",
             "nfolds",
+            "seed",
             "keep_cross_validation_predictions",
             "keep_cross_validation_fold_assignment",
             "fold_assignment",
@@ -65,6 +66,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_hit_ratio_k",
             "max_runtime_secs"
     };
+
+    @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
+    public long seed;
 
     // Input fields
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
