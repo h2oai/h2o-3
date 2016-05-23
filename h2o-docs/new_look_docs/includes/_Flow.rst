@@ -1,11 +1,13 @@
-Flow - H2O's Web UI
-===========
+Using Flow - H2O's Web UI
+=========================
 
 .. todo:: change the image links all to point to git hub if that's called for
 .. todo:: find all links and change so that they point to the right location
 .. todo:: add section on how to add outside algos to Flows buildModel dropdown menu
 .. todo:: add section on how to access models trained or data imported using R, Python, or Sparkling Water
 .. todo:: add section in Flow explaining how to impute values (if not currently included)
+
+---------------------------------
 
 About
 ~~~~~~~~~
@@ -40,39 +42,37 @@ code. You can even disable the input cells to run H2O Flow using only
 the GUI. H2O Flow is designed to guide you every step of the way, by
 providing input prompts, interactive help, and example flows.
 
-------------------------------------------------------------------
 
 Download Flow
 -------------
 
-1. First `Download H2O <http://www.h2o.ai/download/>`_  (this will download a zip file in your Downloads folder that contains everything you need to get started).
+1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.8.2.5)
 
-  1a. Or run the following from your command line:
   ::
 
-    curl -o h2o.zip http://download.h2o.ai/versions/h2o-3.8.2.3.zip
+    curl -o h2o.zip http://download.h2o.ai/versions/h2o-{version}.zip
         
 
 2. Next in your terminal, enter the following command lines one at a time:
 
-  *(the first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.8.2.3 folder, and the fourth line runs your jar file.)*::
+  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.8.2.3 folder, and the fourth line runs your jar file.)*::
 
     cd ~/Downloads
     unzip h2o-3.8.2.3.zip
     cd h2o-3.8.2.3
     java -jar h2o.jar
 
-3. Finally, to start up Flow point your browser to http://localhost:54321
+3. Finally, to start Flow point your browser to http://localhost:54321.
 
 
 Launch Flow
 -------------
 
-The next time you want to launch Flow: change into the directory that contains your H2O package and run the JAR file from the command line.
+The next time you want to launch Flow, change into the directory that contains your H2O package and run the JAR file from the command line.
 
-*(note: if your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-3.8.2.3 with the correct path to your h2o-3.8.2.3 package)*::
+**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-{version} with the correct path to your h2o-{version} package)*::
 
-  cd ~/Downloads/h2o-3.8.2.3 
+  cd ~/Downloads/h2o-{version} 
   java -jar h2o.jar
 
 
@@ -84,7 +84,7 @@ How to Use the Interface
 
 This guide walks through using Flow, H2O's web UI, for machine learning projects.
 
-Within the Flow web page hit the ``h`` key - a list of helpful shortcuts will appear on your screen:
+Within the Flow web page, pressing the ``h`` key will open a list of helpful shortcuts on your screen:
 
 .. figure:: ../images/Flow_shortcuts.png
    :alt: help menu
@@ -92,7 +92,7 @@ Within the Flow web page hit the ``h`` key - a list of helpful shortcuts will ap
 
    *Help Menu*
 
-To close this window, click the **X** in the upper-right corner, or
+To close this window, click the **X** in the upper-right corner or
 click the **Close** button in the lower-right corner. You can also click
 behind the window to close it. You can also access this list of
 shortcuts by clicking the **Help** menu and selecting **Keyboard
@@ -111,7 +111,8 @@ list of common tasks displays to help you find the correct command.
 
 .. figure:: ../images/Flow_assist.png
    :alt: Assist Me links
-
+   :figclass: align-center
+   
    *Assist Me links*
 
 There are multiple resources to help you get started with Flow in the
@@ -133,9 +134,11 @@ You can also explore the pre-configured flows available in H2O Flow for
 a demonstration of how to create a flow. To view the example flows:
 
 -  Click the **view example Flows** link below the **Quickstart Videos**
-   button in the **Help** sidebar |Flow - View Example Flows link|
+   button in the **Help** sidebar 
+   
+   |Flow - View Example Flows link|
 
-or
+ or
 
 -  Click the **Browse installed packs...** link in the **Packs**
    subsection of the **Help** sidebar. Click the **examples** folder and
@@ -143,8 +146,10 @@ or
 
 .. figure:: ../images/Flow_ExampleFlows.png
    :alt: Flow Packs
-
+   :figclass: align-center
+   
    *Flow Packs*
+
 
 If you have a flow currently open, a confirmation window appears asking
 if the current notebook should be replaced. To load the example flow,
@@ -156,7 +161,8 @@ or **Schemas**).
 
 .. figure:: ../images/Flow_REST_docs.png
    :alt: REST API documentation
-
+   :figclass: align-center
+   
    *REST API documentation*
 
 Before getting started with H2O Flow, make sure you understand the

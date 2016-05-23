@@ -10,11 +10,11 @@ Welcome to H2O-3!
    :maxdepth: 2
    
    includes/_SiteIntro
-   includes/_H2O-DevCmdLine
+   includes/_StartH2O
    includes/_H2O-DevS3Creds
    includes/_H2O-DevHadoop   
    includes/_H2O-DevDocker
-   includes/_README
+   includes/_Flow
    includes/_DataScienceH2O-Dev
    includes/_YARN_BP
    includes/_H2O-DevLogs

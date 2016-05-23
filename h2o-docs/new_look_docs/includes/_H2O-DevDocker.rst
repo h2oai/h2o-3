@@ -1,5 +1,5 @@
-... Using Docker
-================
+Using H2O with Docker
+=====================
 
 This walkthrough describes:
 
@@ -10,16 +10,10 @@ This walkthrough describes:
 -  Launching H2O
 -  Accessing H2O from the web browser or R
 
-Walkthrough
------------
+Prerequisites
+-------------
 
-**Prerequisites**
-
--  Linux kernel version 3.8+
-
-or
-
--  Mac OS X 10.6+
+-  Linux kernel version 3.8+ or Mac OS X 10.6+
 -  VirtualBox
 -  Latest version of Docker is installed and configured
 -  Docker daemon is running - enter all commands below in the Docker
@@ -32,10 +26,13 @@ Notes
 -  Older Linux kernel versions are known to cause kernel panics that
    break Docker; there are ways around it, but these should be attempted
    at your own risk. To check the version of your kernel, run
-   ``uname -r`` at the command prompt. The following walkthrough has
+   ``uname -r`` at the command prompt. The walkkthrough that follows has
    been tested on a Mac OS X 10.10.1.
 -  The Dockerfile always pulls the latest H2O release.
 -  The Docker image only needs to be built once.
+
+Walkthrough
+-----------
 
 **Step 1 - Install and Launch Docker**
 
@@ -49,28 +46,24 @@ Depending on your OS, select the appropriate installation method:
 
 **Step 2 - Create or Download Dockerfile**
 
-    **Note**: If the following commands do not work, prepend with
-    ``sudo``.
+**Note**: If the following commands do not work, prepend them with ``sudo``.
 
-Create a folder on the Host OS to host your Dockerfile by running:
+1. Create a folder on the Host OS to host your Dockerfile by running:
 
 .. todo:: figure out if branch_name is getting replaced with the actual branch_name or how to set that up
 
-::
+  ::
 
-    mkdir -p /data/h2o-{{branch_name}}
+      mkdir -p /data/h2o-{{branch_name}}
 
-Next, either download or create a Dockerfile, which is a build recipe
-that builds the container.
+2. Next, either download or create a Dockerfile, which is a build recipe that builds the container.
 
-Download and use our `Dockerfile
-template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__ by
-running:
+  Download and use our `Dockerfile template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__ by running:
 
-::
+  ::
 
-    cd /data/h2o-{{branch_name}}
-    wget https://raw.githubusercontent.com/h2oai/h2o-3/master/Dockerfile
+      cd /data/h2o-{{branch_name}}
+      wget https://raw.githubusercontent.com/h2oai/h2o-3/master/Dockerfile
 
 The Dockerfile:
 
@@ -82,7 +75,7 @@ The Dockerfile:
 
 **Step 3 - Build Docker image from Dockerfile**
 
-From the /data/h2o-{{branch\_name}} directory, run:
+From the **/data/h2o-{{branch\_name}}** directory, run:
 
 ::
 
@@ -121,19 +114,19 @@ instance. By default, H2O launches on port 54321.
    port of the H2O instance into the address bar of your browser. In the
    following example, the IP is ``172.17.0.5:54321``.
 
-::
+  ::
 
-    03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
+     03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
 
 -  *On OSX*: Locate the IP address of the Docker's network
    (``192.168.59.103`` in the following examples) that bridges to your
    Host OS by opening a new Terminal window (not a bash for your
    container) and running ``boot2docker ip``.
 
-::
+  ::
 
-    $ boot2docker ip
-    192.168.59.103
+     $ boot2docker ip
+     192.168.59.103
 
 You can also view the IP address (``192.168.99.100`` in the example
 below) by scrolling to the top of the Docker daemon window:
@@ -154,9 +147,7 @@ below) by scrolling to the top of the Docker daemon window:
     docker is configured to use the default machine with IP 192.168.99.100
     For help getting started, check out the docs at https://docs.docker.com
 
-After obtaining the IP address, point your `browser <localhost:54321>`__
-to the specified ip address and port. In R, you can access the instance
-by installing the latest version of the H2O R package and running:
+After obtaining the IP address, point your browser to the specified ip address and port. In R, you can access the instance by installing the latest version of the H2O R package and running:
 
 ::
 

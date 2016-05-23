@@ -1,6 +1,6 @@
 .. _on-hadoop:
 
-On Hadoop
+Using H2O On Hadoop
 =========
 
 Currently supported versions:
@@ -62,7 +62,8 @@ than two ports (20 ports should be sufficient).
 
 .. _Walkthrough:
 
-**Walkthrough**
+Walkthrough
+-----------
 
 The following steps show you how to download or build H2O with Hadoop
 and the parameters involved in launching H2O from the command line.

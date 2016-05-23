@@ -1,5 +1,28 @@
-… From the Cmd Line
-============================================
+Starting H2O
+============
+
+There are a variety of ways to start H2O, depending on which client you
+would like to use.
+
+From R
+------
+
+To use H2O in R, follow the instructions on the `download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#R>`_.
+
+From Python
+-----------
+
+To use H2O in Python, follow the instructions on the `download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Python>`_.
+
+On Spark
+--------
+
+To use H2O on Spark, follow the instructions on the Sparkling Water
+`download page <http://h2o-release.s3.amazonaws.com/sparkling-water/master/103/index.html>`__.
+
+
+From the Cmd Line
+-----------------
 
 .. todo:: create a table of command line options (should you say expression or primary?) 
 .. todo:: provide examples for most common clusters
@@ -28,7 +51,7 @@ The arguments use the following format: java ``<JVM Options>`` -jar
 h2o.jar ``<H2O Options>``.
 
 JVM Options
------------
+~~~~~~~~~~~
 
 -  ``-version``: Display Java version info.
 -  ``-Xmx<Heap Size>``: To set the total heap size for an H2O node,
@@ -40,7 +63,7 @@ JVM Options
     available.
 
 H2O Options
------------
+~~~~~~~~~~~
 
 -  ``-h`` or ``-help``: Display this information in the command line
    output.
@@ -75,7 +98,7 @@ H2O Options
    running Sparkling Water.
 
 Cloud Formation Behavior
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 New H2O nodes join to form a cloud during launch. After a job has
 started on the cloud, it prevents new members from joining.
@@ -87,16 +110,14 @@ started on the cloud, it prevents new members from joining.
    ``java -Xmx6g -jar h2o.jar -name MyCloud``
 
 -  To start an H2O cloud with three 2GB nodes using the default cloud
-   names:
-
-``java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &``
+   names: ``java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &   java -Xmx2g -jar h2o.jar &``
 
 Wait for the ``INFO: Registered: # schemas in: #mS`` output before
 entering the above command again to add another node (the number for #
 will vary).
 
 Flatfile Configuration for Multi-Node Clusters
-----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Running H2O on a multi-node cluster allows you to use more memory for
 large-scale tasks (for example, creating models from huge datasets) than
@@ -110,30 +131,32 @@ node you are using to launch H2O.
 
 To configure H2O on a multi-node cluster:
 
-#. Locate a set of hosts that will be used to create your cluster. A
+1. Locate a set of hosts that will be used to create your cluster. A
    host can be a server, an EC2 instance, or your laptop.
-#. `Download <http://h2o.ai/download>`__ the appropriate version of H2O
+
+2. `Download <http://h2o.ai/download>`__ the appropriate version of H2O
    for your environment.
-#. Verify the same h2o.jar file is available on each host in the
+
+3. Verify the same h2o.jar file is available on each host in the
    multi-node cluster.
-#. Create a flatfile.txt that contains an IP address and port number for
+
+4. Create a flatfile.txt that contains an IP address and port number for
    each H2O instance. Use one entry per line. For example:
    ``192.168.1.163:54321    192.168.1.164:54321`` 
-#. Copy the flatfile.txt to each node in the cluster.
-#. Use the ``-Xmx`` option to specify the amount of memory for each node. The cluster's memory capacity is the sum of all H2O nodes in the cluster. 
-  For example, if you create a cluster with four 20g nodes (by specifying ``-Xmx20g`` four times), H2O will have a total of 80 gigs of memory available.
 
-  For best performance, we recommend sizing your cluster to be about four
+5. Copy the flatfile.txt to each node in the cluster.
+
+6. Use the ``-Xmx`` option to specify the amount of memory for each node. The cluster's memory capacity is the sum of all H2O nodes in the cluster. For example, if you create a cluster with four 20g nodes (by specifying ``-Xmx20g`` four times), H2O will have a total of 80 gigs of memory available.  ``java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321``
+
+  **Note**: For best performance, we recommend sizing your cluster to be about four
   times the size of your data. To avoid swapping, the ``-Xmx`` allocation
   must not exceed the physical memory on any node. Allocating the same
   amount of memory for all nodes is strongly recommended, as H2O works
   best with symmetric nodes.
 
-  Note the optional ``-ip`` and ``-port`` options specify the IP address
+  **Note**: the optional ``-ip`` and ``-port`` options specify the IP address
   and ports to use. The ``-ip`` option is especially helpful for hosts
   with multiple network interfaces.
-
-  ``java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321``
 
   The output will resemble the following:
 

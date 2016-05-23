@@ -1,4 +1,4 @@
-Welcome to H2O 3.0
+Welcome to H2O 3
 ==================
 
 .. todo :: add bullets at the top and then link through
@@ -24,23 +24,19 @@ We welcome your feedback! Please let us know if you have any questions
 or comments about H2O by clicking the chat balloon button in the
 lower-right corner in Flow (H2O's web UI).
 
-.. figure:: ../images/ChatButton.png
+.. image:: ../images/ChatButton.png
    :alt: Chat Button
-
-   *Chat Button*
 
 Type your question in the entry field that appears at the bottom of the
 sidebar and you will be connected with an H2O expert who will respond to
 your query in real time.
 
-.. figure:: ../images/ChatSidebar.png
+.. image:: ../images/ChatSidebar.png
    :alt: Chat Sidebar
-
-   *Chat Sidebar*
-
+ 
 
 New Users
---------------
+---------
 
 If you're just getting started with H2O, here are some links to help you
 learn more:
@@ -70,14 +66,8 @@ learn more:
    selecting a build under "Download H2O" (the "Bleeding Edge" build
    contains the latest changes, while the latest alpha release is a more
    stable build), then use the installation instruction tabs to install
-   H2O on your client of choice
-   (`standalone <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html>`__,
-   `R <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#R>`__,
-   `Python <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Python>`__,
-   `Hadoop <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Hadoop>`__,
-   or
-   `Maven <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Maven>`__)
-   .
+   H2O on your `client of choice <http://www.h2o.ai/download/h2o/choose>`_
+   (standalone, R, Python, Hadoop, or Maven).
 
    For first-time users, we recommend downloading the latest alpha
    release and the default standalone option (the first tab) as the
@@ -104,11 +94,10 @@ learn more:
    allocate more memory, or use a flatfile for quick configuration of a
    cluster).
 
--  `Algorithms <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md>`_: This document describes the science behind our algorithms
-   and provides a detailed, per-algo view of each model type.
+-  `Algorithms <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md>`_: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
 Experienced Users
---------------
+-----------------
 
 
 If you've used previous versions of H2O, the following links will help
@@ -145,11 +134,6 @@ guide you through the process of upgrading to H2O 3.0.
    between the versions. If you'd like to learn more about the benefits
    of upgrading, this is a great source of information.
 
--  `Algorithms Roadmap <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/flow/images/H2O-Algorithms-Road-Map.pdf>`_: This document outlines our currently implemented
-   features and describes which features are planned for future software
-   versions. If you'd like to know what's up next for H2O, this is the
-   place to go.
-
 -  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O,
    we appreciate your assistance! This document describes how to access
    our list of Jiras that are suggested tasks for contributors and how
@@ -158,7 +142,7 @@ guide you through the process of upgrading to H2O 3.0.
 
 
 Sparkling Water Users
---------------
+---------------------
 
 Sparkling Water is a gradle project with the following submodules:
 
@@ -194,7 +178,9 @@ installed version of Spark:
    1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html>`__
    for Spark 1.5
 
-**Getting Started with Sparkling Water**
+Getting Started with Sparkling Water
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 -  `Download Sparkling Water <http://www.h2o.ai/download/>`_: Go here to download Sparkling Water.
 
@@ -212,23 +198,17 @@ installed version of Spark:
    -  `Sparkling Water GBM Tutorial <https://github.com/h2oai/sparkling-water/blob/master/examples/src/main/scala/org/apache/spark/examples/h2o/CitiBikeSharingDemo.scala>`_: Go here to view a demo that uses
       Scala to create a GBM model.
 
--  `Sparkling Water on YARN <h2o.ai/blog/2014/11-sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling
-   Water on a YARN cluster.
+   - `Sparkling Water on YARN <http://blog.h2o.ai/2014/11/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
 
-.. todo:: fix the link for the bellow bullet or remove this bullet
--  Building Applications on top of H2O: This short tutorial describes
-   project building and demonstrates the capabilities of Sparkling Water
-   using Spark Shell to build a Deep Learning model.
+-  `Building Applications on top of H2O <http://learn.h2o.ai/content/tutorials/sparkling-water/index.html>`_ : This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
 -  `Sparkling Water FAQ <http://www.h2o.ai/product/faq/#SparklingH2O>`_: This FAQ provides answers to many common
    questions about Sparkling Water.
 
-.. todo:: remove links to blog posts or come up with a way to make sure they stay valid
--  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial
-   describes how to use RStudio to connect to Sparkling Water.
+-  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial describes how to use RStudio to connect to Sparkling Water.
 
-**Sparkling Water Blog Posts**
-
+Sparkling Water Blog Posts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  `How Sparkling Water Brings H2O to Spark <http://blog.h2o.ai/2014/09/how-sparkling-water-brings-h2o-to-spark/>`_
 
@@ -236,38 +216,38 @@ installed version of Spark:
 
 -  `In-memory Big Data: Spark + H2O <http://blog.h2o.ai/2014/03/spark-h2o/>`_
 
-**Sparkling Water Meetup Slide Decks**
+Sparkling Water Meetup Slide Decks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: check if these links are correct or should be removed and added somewhere else
--  `Sparkling Water Meetup 02/03/2015 <https://github.com/h2oai/sparkling-water/tree/master/examples/scripts>`_
-
--  `Sparkling Water Meetup <http://www.slideshare.net/0xdata/spa-43755759>`_
+-  `Sparkling Water Meetups <http://www.slideshare.net/0xdata/spa-43755759>`_
 
 -  `Interactive Session on Sparkling Water <http://www.slideshare.net/0xdata/2014-12-17meetup>`_
 
 -  `Sparkling Water Hands-On <http://www.slideshare.net/0xdata/2014-09-30sparklingwaterhandson>`_
 
-**PySparkling**
+-  `Additional Sparkling Water Meetup meeting notes <https://github.com/h2oai/sparkling-water/tree/master/examples/meetups>`_
 
-    *Note*: PySparkling requires `Sparkling Water
-    1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html>`__
-    or later.
 
-H2O's PySparkling package is not available through ``pip`` (there is
+PySparkling
+~~~~~~~~~~~~
+
+**Note**: PySparkling requires `Sparkling Water 1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html>`__ or later.
+
+H2O's PySparkling package is not available through ``pip``. (There is
 `another <https://pypi.python.org/pypi/pysparkling/>`__ similarly-named
-package). H2O's PySparkling package requires
+package.) H2O's PySparkling package requires
 `EasyInstall <http://peak.telecommunity.com/DevCenter/EasyInstall>`__.
 
 To install H2O's PySparkling package, use the egg file included in the
 distribution.
 
-0. Download `Spark 1.5.1 <https://spark.apache.org/downloads.html>`__.
-1. Set the ``SPARK_HOME`` and ``MASTER`` variables as described on the
+1. Download `Spark 1.5.1 <https://spark.apache.org/downloads.html>`__.
+2. Set the ``SPARK_HOME`` and ``MASTER`` variables as described on the
    `Downloads
    page <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/6/index.html>`__.
-2. Download `Sparkling Water
+3. Download `Sparkling Water
    1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/6/index.html>`__
-3. In the unpacked Sparkling Water directory, run the following command:
+4. In the unpacked Sparkling Water directory, run the following command:
    ``easy_install --upgrade sparkling-water-1.5.6/py/dist/pySparkling-1.5.6-py2.7.egg``
 
 
@@ -280,25 +260,24 @@ popular programming language. Python users can also use H2O with IPython
 notebooks. For more information, refer to the following links.
 
 -  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Python>`__
+   `here <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html#Python>`__
    to view instructions on how to use H2O with Python.
 
 -  `Python readme <https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst>`_: This document describes how to setup and install the
    prerequisites for using Python with H2O.
 
--  `Python docs <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-py/docs/index.html>`_: This document represents the definitive guide to using
+-  `Python docs <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-py/docs/index.html>`_: This document represents the definitive guide to using
    Python with H2O.
 
 -  `Python Parity <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md>`_: This document is is a list of Python capabilities that
    were previously available only through the H2O R interface but are
    now available in H2O using the Python interface.
 
--   `Grid Search in Python <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb>`_: This notebook demonstrates the use of grid
-   search in Python.
+-   `Grid Search in Python <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb>`_: This notebook demonstrates the use of grid search in Python.
 
 
 R Users
---------------
+-------
 
 Don't worry, R users - we still provide R support in the latest version
 of H2O, just as before. The R components of H2O have been cleaned up,
@@ -320,10 +299,10 @@ To check which version of H2O is installed in R, use
 ``versions::installed.versions("h2o")``.
 
 -  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#R>`__
+   `here <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html#R>`__
    to view instructions for using H2O with R.
 
--  `R User Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O
+-  `R User Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O
    package for R, including examples and arguments. It represents the
    definitive guide to using H2O in R.
 
@@ -369,15 +348,10 @@ the sensor data falls below a specified threshold.
    commands are used in H2O, versioning, experimental APIs, verbs,
    status codes, formats, schemas, payloads, metadata, and examples.
 
-.. todo:: add internal links for the  bullets below AND CHECK that they work later
+-  `REST API Reference <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-docs/index.html#route-reference>`_: This document represents the definitive guide to the H2O REST API.
 
--  :ref:`REST API Reference`: This document represents the definitive guide to
-   the H2O REST API.
+-  `REST API Schema Reference <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-docs/index.html#schema-reference>`_: This document represents the definitive guide to the H2O REST API schemas.
 
--  :ref:`REST API Schema Reference`: This document represents the definitive
-   guide to the H2O REST API schemas.
-
-.. todo:: delete what was here in the original docs as well (repeat of bullet 1)
 
 Java Users
 --------------
@@ -385,13 +359,13 @@ Java Users
 For Java developers, the following resources will help you create your
 own custom app that uses H2O.
 
--  `H2O Core Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide
+-  `H2O Core Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
 
--  `H2O Algos Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-algos/javadoc/index.html>`_: The definitive Java API guide
+-  `H2O Algos Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-algos/javadoc/index.html>`_: The definitive Java API guide
    for the algorithms used by H2O.
 
--  `h2o-genmodel (POJO) Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
+-  `h2o-genmodel (POJO) Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
 
 SDK Information
 ---------------
@@ -441,12 +415,12 @@ test process, they will cloud up and run the multi-node JUnit tests.
    versions, cloud computing environments, browsers, and other resources
    recommended to run H2O.
 
--  `Developer Documentation <https://github.com/h2oai/h2o-3#41-building-from-the-command-line-quick-start>`_: Detailed instructions on how to build and
+-  `Developer Documentation <https://github.com/h2oai/h2o-3#4-building-h2o-3>`_: Detailed instructions on how to build and
    launch H2O, including how to clone the repository, how to pull from
    the repository, and how to install required dependencies.
 
 -  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Maven>`__
+   `here <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Maven>`__
    to view instructions on how to use H2O with Maven.
 
 -  `Maven install <https://github.com/h2oai/h2o-3/blob/master/build.gradle>`_: This page provides information on how to build a
@@ -462,8 +436,7 @@ test process, they will cloud up and run the multi-node JUnit tests.
 
 -  `H2O Scala API Developer Documentation <https://github.com/h2oai/h2o-droplets>`_: The definitive Scala API guide
    for H2O.
-
-.. todo:: remove the link below from here and in original docs
+   
 -  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a
    new algorithm, using K-Means, Quantiles, and Grep as examples.
 
@@ -482,33 +455,11 @@ Downloading H2O
 ===============
 
 -  `Download page for this
-   build <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html>`__
+   build <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html>`__
 -  `h2o.ai main download page <http://www.h2o.ai/download>`__
 
 To download H2O, go to our `downloads
 page <http://www.h2o.ai/download>`__. Select a build type (bleeding edge
 or latest alpha), then select an installation method
-(`standalone <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html>`__, `R <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#R>`__, `Python <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Python>`__, `Hadoop <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Hadoop>`__, or `Maven <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Maven>`__) by clicking the tabs at the top of the page. Follow the instructions in
+(`standalone <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html>`__, `R <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#R>`__, `Python <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Python>`__, `Hadoop <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Hadoop>`__, or `Maven <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Maven>`__) by clicking the tabs at the top of the page. Follow the instructions in
 the tab to install H2O.
-
-Starting H2O ...
-================
-
-There are a variety of ways to start H2O, depending on which client you
-would like to use.
-
-... From R
-==========
-
-To use H2O in R, follow the instructions on the `download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#R>`_.
-
-... From Python
-===============
-
-To use H2O in Python, follow the instructions on the `download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/index.html#Python>`_.
-
-... On Spark
-============
-
-To use H2O on Spark, follow the instructions on the Sparkling Water
-`download page <http://h2o-release.s3.amazonaws.com/sparkling-water/master/103/index.html>`__.

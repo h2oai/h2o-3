@@ -131,7 +131,7 @@ html_theme_path = ["sphinx_rtd_theme/source/css"]
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-html_title = u'version 3.8.2.4'
+# html_title = u'version no'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
