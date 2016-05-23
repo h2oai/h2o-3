@@ -146,6 +146,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         types[i] = (_domains[i].containsKey("NA") ||
                     _domains[i].containsKey("na") ||
                     _domains[i].containsKey("Na") ||
+                    _domains[i].containsKey("N/A") ||
                     _nstrings[i] < _nnums[i]+_nzeros[i]) ? Vec.T_NUM : Vec.T_CAT;
         continue;
       }
