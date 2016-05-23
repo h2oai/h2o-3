@@ -1051,18 +1051,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return preds;
   }
 
-  private transient ThreadLocal<Row> _row;
-  private transient ThreadLocal<double[]> _eta;
-
-
+  private static ThreadLocal<double[]> _eta = new ThreadLocal<>();
 
   @Override protected double[] score0(double[] data, double[] preds){return score0(data,preds,1,0);}
   @Override protected double[] score0(double[] data, double[] preds, double w, double o) {
     if(_parms._family == Family.multinomial) {
       if(o != 0) throw H2O.unimpl("Offset is not implemented for multinomial.");
-      if(_eta == null) _eta = new ThreadLocal<>();
       double[] eta = _eta.get();
-      if(eta == null) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
+      if(eta == null || eta.length < _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
       final double[][] bm = _output._global_beta_multinomial;
       double sumExp = 0;
       double maxRow = 0;
