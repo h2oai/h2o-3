@@ -25,12 +25,18 @@ def reg_path_glm():
         diff = 0
         diff2 = 0
         for n in cs.keys():
-            diff = max(diff,abs(cs[n] - m.coef()[n]))
-            diff2 = max(diff2,abs(cs_norm[n] - m.coef_norm()[n]))
+            diff = max(diff,abs((cs[n] - m.coef()[n])))
+            diff2 = max(diff2,abs((cs_norm[n] - m.coef_norm()[n])))
         print(diff)
         print(diff2)
-        assert diff < 1e-3
-        assert diff2 < 1e-3
+        assert diff < 1e-2
+        assert diff2 < 1e-2
+        p = m.model_performance(d)
+        devm = 1-p.residual_deviance()/p.null_deviance()
+        devn = r['explained_deviance_train'][l]
+        print(devm)
+        print(devn)
+        assert abs(devm - devn) < 1e-4
 if __name__ == "__main__":
     pyunit_utils.standalone_test(reg_path_glm)
 else:
