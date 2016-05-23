@@ -175,10 +175,6 @@ public final class DHistogram extends Iced {
   // Big allocation of arrays
   public void init() {
     assert _bins == null;
-    assert(_nbin>0);
-    _bins = MemoryManager.malloc8d(_nbin);
-    _sums = MemoryManager.malloc8d(_nbin);
-    _ssqs = MemoryManager.malloc8d(_nbin);
     if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
       // every node makes the same split points
       Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
@@ -201,13 +197,13 @@ public final class DHistogram extends Iced {
             _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
             if (_splitPts.length > 1 && _splitPts.length < _nbin)
               _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
-            if (_splitPts.length <= 1 || _splitPts.length > _nbin) {
+            if (_splitPts.length <= 1) {
               _splitPts = null; //abort, fall back to uniform binning
               _histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
             }
             else {
               _hasQuantiles=true;
-              assert(_splitPts.length==_nbin);
+              _nbin = (char)_splitPts.length;
 //              Log.info("Refined splitPoints: " + Arrays.toString(_splitPts));
             }
           }
@@ -216,6 +212,10 @@ public final class DHistogram extends Iced {
     }
     else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
     //otherwise AUTO/UniformAdaptive
+    assert(_nbin>0);
+    _bins = MemoryManager.malloc8d(_nbin);
+    _sums = MemoryManager.malloc8d(_nbin);
+    _ssqs = MemoryManager.malloc8d(_nbin);
   }
 
   // Add one row to a bin found via simple linear interpolation.

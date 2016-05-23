@@ -353,6 +353,8 @@ public class DataInfo extends Keyed<DataInfo> {
     int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
     if(resId == -1 || adaptFrame.vec(resId).naCnt() == adaptFrame.numRows())
       res._responses = 0;
+    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
+      res._responses = 1;
     res._valid = true;
     res._interactions=_interactions;
     res._interactionColumns=_interactionColumns;
