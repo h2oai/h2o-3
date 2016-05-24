@@ -214,16 +214,14 @@ Without Current Jobs
 
 If you are not using Hadoop and the job is not running:
 
--  In Terminal, enter ``cd /tmp/h2o-<UserName>/h2ologs`` (where
-   ``<UserName>`` is your computer user name), then enter ``ls -l`` to
-   view a list of the log files. The ``httpd`` log contains the
-   request/response status of all REST API transactions. The rest of the
-   logs use the format
-   ``h2o_\<IPaddress>\_<Port>-<LogLevel>-<LogLevelName>.log``, where
-   ``<IPaddress>`` is the bind address of the H2O instance, ``<Port>``
-   is the port number, ``<LogLevel>`` is the numerical log level (1-6,
-   with 6 as the highest severity level), and ``<LogLevelName>`` is the
-   name of the log level (trace, debug, info, warn, error, or fatal).
+-  In Terminal, enter ``cd /tmp/h2o-<UserName>/h2ologs`` (where ``<UserName>`` is your computer user name), then enter ``ls -l`` to  view a list of the log files. 
+
+   The ``httpd`` log contains the request/response status of all REST API transactions. The rest of the logs use the format ``h2o_<IPaddress>_<Port>-<LogLevel>-<LogLevelName>.log``, where:
+   
+   - ``<IPaddress>`` is the bind address of the H2O instance 
+   - ``<Port>``  is the port number
+   - ``<LogLevel>`` is the numerical log level (1-6, with 6 as the highest severity level)
+   - ``<LogLevelName>`` is the  name of the log level (trace, debug, info, warn, error, or fatal).
 
 --------------
 
@@ -272,16 +270,14 @@ If you are not using Hadoop and the job is still running:
 
 --------------
 
--  In Terminal, enter ``cd /tmp/h2o-<UserName>/h2ologs`` (where
-   ``<UserName>`` is your computer user name), then enter ``ls -l`` to
-   view a list of the log files. The ``httpd`` log contains the
-   request/response status of all REST API transactions. The rest of the
-   logs use the format
-   ``h2o_\<IPaddress>\_<Port>-<LogLevel>-<LogLevelName>.log``, where
-   ``<IPaddress>`` is the bind address of the H2O instance, ``<Port>``
-   is the port number, ``<LogLevel>`` is the numerical log level (1-6,
-   with 6 as the highest severity level), and ``<LogLevelName>`` is the
-   name of the log level (trace, debug, info, warn, error, or fatal).
+-  In Terminal, enter ``cd /tmp/h2o-<UserName>/h2ologs`` (where ``<UserName>`` is your computer user name), then enter ``ls -l`` to  view a list of the log files. 
+
+   The ``httpd`` log contains the request/response status of all REST API transactions. The rest of the logs use the format ``h2o_<IPaddress>_<Port>-<LogLevel>-<LogLevelName>.log``, where:
+   
+   - ``<IPaddress>`` is the bind address of the H2O instance 
+   - ``<Port>``  is the port number
+   - ``<LogLevel>`` is the numerical log level (1-6, with 6 as the highest severity level)
+   - ``<LogLevelName>`` is the  name of the log level (trace, debug, info, warn, error, or fatal).
 
 --------------
 
@@ -290,11 +286,9 @@ If you are not using Hadoop and the job is still running:
  1. In R, enter ``h2o.startLogging()``. The output displays the location of the REST API logs:
 
    ::
-
-       ```     
+    
        > h2o.startLogging()
        Appending REST API transactions to log file /var/folders/ylcq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpE7X8Yv/rest.log 
-       ```
 
  2. Copy the displayed file path. In Terminal, enter ``less`` and paste the file path.
 

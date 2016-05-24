@@ -57,8 +57,8 @@ Supported Grid Search Hyperparameters
 
 The following hyperparameters are supported by grid search.
 
-Common Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Common Hyperparameters 
+~~~~~~~~~~~~~~~~~~~~~~
 
 -  ``validation_frame``
 -  ``response_column``
@@ -71,8 +71,8 @@ Common Hyperparameters Supported by Grid Search
 -  ``stopping_metric``
 -  ``stopping_tolerance``
 
-Shared Tree Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Shared Tree Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ***Note***: The Shared Tree hyperparameters apply to DRF and GBM. 
 
@@ -97,13 +97,13 @@ Shared Tree Hyperparameters Supported by Grid Search
 -  ``min_split_improvement``
 -  ``histogram_type``
 
-DRF Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DRF Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
 -  ``mtries``
 
-GBM Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GBM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
 -  ``learn_rate``
 -  ``learn_rate_annealing``
@@ -113,16 +113,16 @@ GBM Hyperparameters Supported by Grid Search
 -  ``col_sample_rate``
 -  ``max_abs_leafnode_pred``
 
-K-Means Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+K-Means Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
 
 -  ``max_iterations``
 -  ``standardize``
 -  ``seed``
 -  ``init``
 
-GLM Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
 -  ``transform``
 -  ``k``
@@ -142,8 +142,8 @@ GLM Hyperparameters Supported by Grid Search
 -  ``init``
 -  ``svd_method``
 
-Naïve Bayes Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Naïve Bayes Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  ``laplace``
 -  ``min_sdev``
@@ -153,15 +153,15 @@ Naïve Bayes Hyperparameters Supported by Grid Search
 -  ``compute_metrics``
 -  ``seed``
 
-PCA Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PCA Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
 -  ``transform``
 -  ``k``
 -  ``max_iterations``
 
-Deep Learning Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Deep Learning Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  ``balance_classes``
 -  ``class_sampling_factors``
@@ -225,8 +225,8 @@ Deep Learning Hyperparameters Supported by Grid Search
 -  ``elastic_averaging_moving_rate``
 -  ``elastic_averaging_regularization``
 
-Aggregator Hyperparameters Supported by Grid Search
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Aggregator Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  ``radius_scale``
 -  ``transform``
@@ -618,8 +618,8 @@ Caveats/In Progress
 -  There is no way to list the hyper space parameters that caused a
    model builder job failure.
 
-Documentation
--------------
+Additional Documentation
+------------------------
 
 -  `H2O Core Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.

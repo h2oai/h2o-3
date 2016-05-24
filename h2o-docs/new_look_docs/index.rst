@@ -7,21 +7,22 @@ Welcome to H2O-3!
 =====================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    includes/_SiteIntro
+   includes/_Architecture
+   includes/_Download
    includes/_StartH2O
    includes/_H2O-DevS3Creds
    includes/_H2O-DevHadoop   
    includes/_H2O-DevDocker
    includes/_Flow
-   includes/_DataScienceH2O-Dev
-   includes/_YARN_BP
+   includes/_DataScienceH2O
+   includes/_CrossValidation
+   includes/_GridSearch
+   includes/_POJO_QuickStart
    includes/_H2O-DevLogs
    includes/_Migration
-   includes/_POJO_QuickStart
-   includes/_GridSearch
-   includes/_Architecture
    includes/_Security
    includes/_FAQ
    includes/_glossary

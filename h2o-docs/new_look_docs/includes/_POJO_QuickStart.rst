@@ -97,31 +97,33 @@ The following output displays:
 
 ::
 
-    ```
+    
     Label (aka prediction) is flight departure delayed: YES
     Class probabilities: 0.4790490513429604,0.5209509486570396
-    ```
+    
 
 Extracting Models from H2O
 --------------------------
 
 Generated models can be extracted from H2O in the following ways:
 
-**From the H2O Flow Web UI:**
+From the H2O Flow Web UI
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 When viewing a model, click the **Download POJO** button at the top of
 the model cell, as shown in the example in the Quick start section. You
 can also preview the POJO inside Flow, but it will only show the first
 thousand lines or so in the web browser, truncating large models.
 
-**From R:**
+From R and Python
+~~~~~~~~~~~~~~~~~
 
 The following code snippet shows an example of H2O building a model and
-downloading its corresponding POJO from an R script.
+downloading its corresponding POJO from an R script and a Python script.
 
-::
+.. example-code::
+   .. code-block:: R
 
-    ```
     library(h2o)
     h2o.init()
     path = system.file("extdata", "prostate.csv", package = "h2o")
@@ -132,16 +134,9 @@ downloading its corresponding POJO from an R script.
                     training_frame = h2o_df,
                     family = "binomial")
     h2o.download_pojo(model)
-    ```
+    
+   .. code-block:: Python
 
-**From Python:**
-
-The following code snippet shows an example of building a model and
-downloading its corresponding POJO from a Python script.
-
-::
-
-    ```
     import h2o
     h2o.init()
     path = h2o.system_file("prostate.csv")
@@ -152,7 +147,7 @@ downloading its corresponding POJO from a Python script.
                     training_frame = h2o_df,
                     family = "binomial")
     h2o.download_pojo(model)
-    ```
+
 
 .. raw:: html
 
@@ -187,17 +182,17 @@ FAQ
 -  **How do I score new cases in real-time in a production
    environment?**
 
-   If you're using the UI, click the **Preview POJO** button for your model. This produces a Java class with methods that you can reference and use in your production app.
+    If you're using the UI, click the **Preview POJO** button for your model. This produces a Java class with methods that you can reference and use in your production app.
 
 -  **What kind of technology would I need to use?**
 
-   Anything that runs in a JVM. The POJO is a standalone Java class with no dependencies on H2O.
+    Anything that runs in a JVM. The POJO is a standalone Java class with no dependencies on H2O.
 
 -  **How should I format my data before calling the POJO?**
 
-   Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the `Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`__).
+    Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the `Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`__).
 
-  -  Input columns must only contain categorical levels that were seen during training
+    -  Input columns must only contain categorical levels that were seen during training
     -  Any additional input columns not used for training are ignored
     -  If no input column is specified, it will be treated as an ``NA``
     -  Some models do not handle NAs well (e.g., GLM)
@@ -205,21 +200,21 @@ FAQ
 
 -  **How do I run a POJO on a Spark Cluster?**
 
-   The POJO provides just the math logic to do predictions, so you won’t find any Spark (or even H2O) specific code there. If you want to use the POJO to make predictions on a dataset in Spark, create a map to call the POJO for each row and save the result to a new column, row-by-row.
+    The POJO provides just the math logic to do predictions, so you won’t find any Spark (or even H2O) specific code there. If you want to use the POJO to make predictions on a dataset in Spark, create a map to call the POJO for each row and save the result to a new column, row-by-row.
 
 -  **How do I communicate with a remote cluster using the REST API?**
 
-   You can dl the POJO using the REST API but when calling the POJO predict function, it's in the same JVM, not across a REST API.
+    You can dl the POJO using the REST API but when calling the POJO predict function, it's in the same JVM, not across a REST API.
 
 -  **Is it possible to make predictions using my H2O cluster with the
    REST API?**
 
-   Yes, but this way of making predictions is separate from the POJO. For more information about in-H2O predictions (as opposed to POJO predictions), see the documentation for the H2O REST API endpoint /3/Predictions.
+    Yes, but this way of making predictions is separate from the POJO. For more information about in-H2O predictions (as opposed to POJO predictions), see the documentation for the H2O REST API endpoint /3/Predictions.
 
 -  **Why did I receive the following error when trying to compile the
    POJO?**
 
-::
+  ::
 
     Michals-MBP:b michal$ javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m drf_b9b9d3be_cf5a_464a_b518_90701549c12a.java
     An exception has occurred in the compiler (1.7.0_60). Please file a bug at the Java Developer Connection (http://java.sun.com/webapps/bugreport)  after checking the Bug Parade for duplicates. Include your program and the following diagnostic in your report.  Thank you.
@@ -240,4 +235,4 @@ FAQ
         at com.sun.tools.javac.Main.compile(Main.java:76)
         at com.sun.tools.javac.Main.main(Main.java:61)
 
-This error is generated when the source file is larger than 1G.
+  This error is generated when the source file is larger than 1G.
