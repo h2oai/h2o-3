@@ -1772,7 +1772,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_betaLB != null && _betaUB != null)
         for (int i = 0; i < _betaLB.length; ++i)
           if (!(_betaLB[i] <= _betaUB[i]))
-            throw new IllegalArgumentException("lower bounds myst be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
+            throw new IllegalArgumentException("lower bounds must be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
     }
 
     public BetaConstraint filterExpandedColumns(int[] activeCols) {
