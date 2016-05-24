@@ -23,8 +23,6 @@ STEP 2:  Install python and boto, if necessary
 - Boto: http://boto.readthedocs.org/en/latest/
 - Python: https://www.python.org/
 
-**Note:** After following steps 1 & 2 (where you set up your environment) you can run the scripts within the repo using the following command: `./run-all.sh` or you can do it manually by following steps 3-5.
-
 STEP 3:  Build a cluster of EC2 instances
 -----------------------------------------
 
@@ -36,6 +34,8 @@ numInstancesToLaunch = 4
 instanceType = 'm3.2xlarge'
 instanceNameRoot = 'h2o-instance'
 ```
+**Note:** After following steps 1-3 (where you set up your environment) you can run the scripts within the repo using the following command: `./run-all.sh` or you can do it manually by following the steps below.
+
 - After changing the previous run the following:
 ```
 ./h2o-cluster-launch-instances.py
