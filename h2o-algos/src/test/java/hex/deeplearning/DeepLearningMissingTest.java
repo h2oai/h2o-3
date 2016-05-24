@@ -127,8 +127,8 @@ public class DeepLearningMissingTest extends TestUtil {
       sumErr.put(mvh, sumerr);
     }
     Log.info(sb.toString());
-    Assert.assertEquals(501.16458, sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip), 1e-2);
-    Assert.assertEquals(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation), 5.41304469, 1e-7);
+    Assert.assertEquals(405.3682, sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip), 1e-2);
+    Assert.assertEquals(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation), 5.609743, 1e-7);
   }
 }
 

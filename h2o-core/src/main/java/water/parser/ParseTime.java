@@ -59,7 +59,7 @@ public abstract class ParseTime {
     final int end = i+str.length();
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
-    if( (end-i) != 10 && (end-i) < 19 ) return Long.MIN_VALUE;
+    if( (end-i) < 8 ) return Long.MIN_VALUE;
     int yyyy=0, MM=0, dd=0;
 
     // Parse date
@@ -69,17 +69,17 @@ public abstract class ParseTime {
     yyyy = digit(yyyy,buf[i++]);
     if( buf[i++] != '-' ) return Long.MIN_VALUE;
     MM = digit(MM,buf[i++]);
-    MM = digit(MM,buf[i++]);
+    MM = buf[i]!='-' ? digit(MM,buf[i++]) : MM;
     if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
     if( buf[i++] != '-' ) return Long.MIN_VALUE;
     dd = digit(dd,buf[i++]);
-    dd = digit(dd,buf[i++]);
+    dd = i<end && buf[i]>='0' && buf[i]<='9' ? digit(dd,buf[i++]) : dd;
     if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
+    while( i<end && buf[i] == ' ' ) i++;
     if( i==end )
       return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
 
     //Parse time
-    if( buf[i++] != ' ' ) return Long.MIN_VALUE;
     return parseTime(buf, i, end, yyyy, MM, dd);
   }
 
@@ -137,6 +137,12 @@ public abstract class ParseTime {
     // Parse time
     if( buf[i] != ' ' &&  buf[i] != ':') return Long.MIN_VALUE;
     return parseTime(buf, ++i, end, yyyy, MM, dd);
+  }
+
+  // Tries to parse "HH:mm:ss.SSS aa"
+  // where MMM is a text representation of the month (e.g. Jul or July)
+  private static long attemptTimeOnlyParse(BufferedString str) {
+    return 0;
   }
 
   /**
