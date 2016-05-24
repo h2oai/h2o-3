@@ -1006,7 +1006,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     if(_output.nclasses() > 2) {
       _output._model_summary.set(0, 3 + lambdaSearch,_output.bestSubmodel().beta.length);
     } else {
-      _output._model_summary.set(0, 3 + lambdaSearch, beta().length);
+      _output._model_summary.set(0, 3 + lambdaSearch, beta().length - 1);
     }
     _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
     _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
