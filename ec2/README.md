@@ -36,6 +36,8 @@ instanceNameRoot = 'h2o-instance'
 ```
 **Note:** After following steps 1-3 (where you set up your environment) you can run the scripts within the repo using the following command: `./run-all.sh` or you can do it manually by following steps 4-5.
 
+**Note:** If you fail to initialize a cluster instance, then you should `Terminate` the instance before re-trying to prevent a refusal of connection. 
+
 STEP 4:  Start H2O Cluster
 -------------------------------------------------
 
