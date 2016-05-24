@@ -285,7 +285,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
         o, e = p.communicate()
         print("Java output: {0}".format(o))
         assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
-        munged2 = h2o.upload_file(path=out_pojo_csv)
+        munged2 = h2o.upload_file(path=out_pojo_csv, col_types=test.types)
         print("Pojo predictions saved in {0}".format(out_pojo_csv))
 
         print("Comparing predictions between H2O and Java POJO")
@@ -297,17 +297,18 @@ def javamunge(assembly, pojoname, test, compile_only=False):
 
         # Value
         import math
+        import numbers
         munged.show()
         munged2.show()
         for r in range(hr):
           for c in range(hc):
               hp = munged[r,c]
               pp = munged2[r,c]
-              if isinstance(hp, float):
-                assert isinstance(pp, float)
+              if isinstance(hp, numbers.Number):
+                assert isinstance(pp, numbers.Number)
                 assert (math.fabs(hp-pp) < 1e-8) or (math.isnan(hp) and math.isnan(pp)), "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
               else:
-                assert hp == pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
+                assert hp==pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
 
 def locate(path):
     """

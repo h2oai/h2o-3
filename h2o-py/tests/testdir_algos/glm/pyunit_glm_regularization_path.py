@@ -16,7 +16,6 @@ def reg_path_glm():
     p = m2.model_performance(d)
     dev2 = 1-p.residual_deviance()/p.null_deviance()
     assert abs(dev1 - dev2) < 1e-6
-    assert len(r['lambdas']) == 100
     for l in range(0,len(r['lambdas'])):
         m = glm(family='binomial',lambda_search=False,Lambda=r['lambdas'][l],solver='COORDINATE_DESCENT')
         m.train(training_frame=d,x=[2,3,4,5,6,7,8],y=1)
@@ -25,12 +24,18 @@ def reg_path_glm():
         diff = 0
         diff2 = 0
         for n in cs.keys():
-            diff = max(diff,abs(cs[n] - m.coef()[n]))
-            diff2 = max(diff2,abs(cs_norm[n] - m.coef_norm()[n]))
+            diff = max(diff,abs((cs[n] - m.coef()[n])))
+            diff2 = max(diff2,abs((cs_norm[n] - m.coef_norm()[n])))
         print(diff)
         print(diff2)
-        assert diff < 1e-3
-        assert diff2 < 1e-3
+        assert diff < 1e-2
+        assert diff2 < 1e-2
+        p = m.model_performance(d)
+        devm = 1-p.residual_deviance()/p.null_deviance()
+        devn = r['explained_deviance_train'][l]
+        print(devm)
+        print(devn)
+        assert abs(devm - devn) < 1e-4
 if __name__ == "__main__":
     pyunit_utils.standalone_test(reg_path_glm)
 else:
