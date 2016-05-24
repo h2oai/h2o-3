@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tomasnykodym on 10/28/15.
  */
-public class GLMBasicTestMultinomial extends GLMTest {
+public class GLMBasicTestMultinomial extends TestUtil {
   static Frame _covtype;
   static Frame _train;
   static Frame _test;
@@ -72,7 +72,7 @@ public class GLMBasicTestMultinomial extends GLMTest {
           params._alpha[0] = alpha[i];
           params._lambda[0] = lambda[i];
           model = new GLM(params).trainModel().get();
-          testScoring(model,_covtype);
+//          GLMTest.testScoring(model,_covtype);
           System.out.println(model._output._training_metrics);
           System.out.println(model._output._validation_metrics);
           assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));

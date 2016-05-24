@@ -31,9 +31,9 @@ import static org.junit.Assert.assertTrue;
 
 public class GLMTest  extends TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
-  protected static void testScoring(GLMModel m, Frame fr) {
+  public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
     // standard predictions
     Frame fr2 = new Frame(fr);
@@ -1045,9 +1045,14 @@ public class GLMTest  extends TestUtil {
     Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
     Vec xy = frG.remove("xy");
     frMM.remove("C1").remove();
-    frMM.add("IsDepDelayed", frMM.remove("IsDepDelayed"));
+    Vec v;
+    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
+    v.remove();
     DKV.put(frMM._key, frMM);
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
+    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
+    v.remove();
+    DKV.put(fr._key,fr);
     //  Distance + Origin + Dest + UniqueCarrier
     String[] ignoredCols = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "DepTime", "ArrTime", "IsDepDelayed_REC"};
     try {

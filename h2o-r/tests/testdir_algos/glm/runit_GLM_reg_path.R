@@ -9,14 +9,14 @@ test.glm_reg_path <- function() {
     regpath = h2o.getGLMFullRegularizationPath(m)
     expect_true(is.null(regpath$explained_deviance_valid))
     coefs1 = coefficients(m@model)
-    coefs2 = regpath$coefficients[100,]
+    coefs2 = regpath$coefficients[length(regpath$lambdas),]
     expect_false(max(abs(coefs1[names(coefs2)] - coefs2)) > 1e-10)
     # run glmnet
     d2 = as.data.frame(d)
     x = as.matrix(d2[,3:9])
     y = as.matrix(d2[,2])
     m_net = glmnet(x=x,y=y,family='binomial')
-    for(i in 1:length(m_net$lambda)){
+    for(i in 1:length(regpath$lambdas)){
       coefs_net = m_net$beta[,i]
       coefs_h2o = regpath$coefficients[i,]
       diff = max(abs((coefs_h2o[names(coefs_net)] - coefs_net)/max(1,coefs_net)))

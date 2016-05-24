@@ -1,16 +1,15 @@
 package water.parser;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.util.Log;
 
-import java.io.File;
-import java.util.Arrays;
-
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -71,13 +70,13 @@ public class ParserTest extends TestUtil {
     };
 
     double[][] exp = new double[][] {
-      ard(1.0, 2.0, 3.0),
-      ard(1.0, 2.0, 3.0),
-      ard(4.0, 5.0, 6.0),
-      ard(4.0, 5.2, NaN),
-      ard(NaN, NaN, 1.0),
-      ard(1.1, NaN, NaN),
-      ard(1.1, 2.1, 3.4),
+        ard(1.0, 2.0, 3.0),
+        ard(1.0, 2.0, 3.0),
+        ard(4.0, 5.0, 6.0),
+        ard(4.0, 5.2, NaN),
+        ard(NaN, NaN, 1.0),
+        ard(1.1, NaN, NaN),
+        ard(1.1, 2.1, 3.4),
     };
 
     for (char separator : SEPARATORS) {
@@ -97,6 +96,34 @@ public class ParserTest extends TestUtil {
       ParseDataset.parse(r2, k2);
       testParsed(r2,exp);
     }
+  }
+
+  @Test public void testMajorityVote() {
+    String[] data = new String[] {
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "1 0\n",
+        "2 0\n",
+        "3 0\n"
+    };
+
+    String[] dataset = getDataForSeparator(' ', data);
+    StringBuilder sb1 = new StringBuilder();
+    for( String ds : dataset ) sb1.append(ds).append("\n");
+    Key k1 = makeByteVec(sb1.toString());
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str()=="Enum");
+    fr.delete();
   }
 
   @Test public void testChunkBoundaries() {
