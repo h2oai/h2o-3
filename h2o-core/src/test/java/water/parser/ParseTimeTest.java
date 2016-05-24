@@ -121,4 +121,28 @@ public class ParseTimeTest extends TestUtil {
     //File items will be converted to ms for local timezone
     ParserTest.testParsed(dataFrame, exp, exp.length);
   }
+
+  @Test public void testDayParseNoTime() {
+    // Just yyyy-mm-dd, no time
+    String data = "Date\n"+
+      "2014-1-23\n"+
+      "2014-1-24\n"+
+      "2014-1-23\n"+
+      "2014-1-24\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str()=="Time");
+    long[] exp = new long[] {  // Date
+      1390464000000L,
+      1390550400000L,
+      1390464000000L,
+      1390550400000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
 }
