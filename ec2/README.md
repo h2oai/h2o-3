@@ -34,17 +34,17 @@ numInstancesToLaunch = 4
 instanceType = 'm3.2xlarge'
 instanceNameRoot = 'h2o-instance'
 ```
-**Note:** After following steps 1-3 (where you set up your environment) you can run the scripts within the repo using the following command: `./run-all.sh` or you can do it manually by following the steps below.
-
-- After changing the previous run the following:
-```
-./h2o-cluster-launch-instances.py
-```
+**Note:** After following steps 1-3 (where you set up your environment) you can run the scripts within the repo using the following command: `./run-all.sh` or you can do it manually by following steps 4-5.
 
 STEP 4:  Start H2O Cluster
 -------------------------------------------------
 
-- This will distribute the `h2o.jar` file to all the worker nodes, along with your AWS credentials and then start the H2O cluster. Note, the `h2o.jar` is reflective of the latest stable build from H2O.
+- After changing the previous run the following to build a cluster of EC2 instances manually:
+```
+./h2o-cluster-launch-instances.py
+```
+
+- Below will distribute the `h2o.jar` file to all the worker nodes, along with your AWS credentials and then start the H2O cluster. Note, the `h2o.jar` is reflective of the latest stable build from H2O.
 ```
 ./h2o-cluster-download-h2o.sh
 ./h2o-cluster-distribute-aws-credentials.sh
