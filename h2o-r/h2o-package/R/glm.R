@@ -22,8 +22,8 @@
 #'        \code{"poisson"}: \code{"log"}, \code{"identity"}\cr
 #'        \code{"gamma"}: \code{"inverse"}, \code{"log"}, \code{"identity"}\cr
 #'        \code{"tweedie"}: \code{"tweedie"}\cr
-#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}.
-#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}.
+#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}. Default is 0.
+#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}. Default is 1.
 #' @param alpha A numeric in [0, 1] specifying the elastic-net mixing parameter.
 #'                The elastic-net penalty is defined to be:
 #'                \deqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|]}
