@@ -1057,15 +1057,15 @@ public class GLMTest  extends TestUtil {
   @Test
   public void testAirlines() {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
-    Frame frMM = parse_test_file(Key.make("AirlinesMM"), "/Users/tomas/mydata/airlines/AirlinesTrainMM.csv.zip");
-    Frame frG = parse_test_file(Key.make("gram"), "/Users/tomas/mydata/airlines/gram_std.csv", true);
+    Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
     Vec xy = frG.remove("xy");
     frMM.remove("C1").remove();
     Vec v;
     frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(frMM._key, frMM);
-    Frame fr = parse_test_file(Key.make("Airlines"), "/Users/tomas/mydata/airlines/AirlinesTrain.csv.zip"), res = null;
+    Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
     fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
     v.remove();
     DKV.put(fr._key,fr);
