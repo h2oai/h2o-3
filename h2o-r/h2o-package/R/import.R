@@ -65,6 +65,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
+  if(is.list(col.types)) col.types <- unlist(col.types)
 
   if(length(path) > 1L) {
     destFrames <- c()
@@ -133,6 +134,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
     stop("`parse` must be TRUE or FALSE")
   if(!is.logical(progressBar) || length(progressBar) != 1L || is.na(progressBar))
     stop("`progressBar` must be TRUE or FALSE")
+  if(is.list(col.types)) col.types <- unlist(col.types)
 
   .h2o.gc()  # Clear out H2O to make space for new file
   path <- normalizePath(path, winslash = "/")
