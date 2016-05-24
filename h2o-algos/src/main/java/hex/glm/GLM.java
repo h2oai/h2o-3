@@ -663,6 +663,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state._u = l1Solver._u;
         _state.updateState(beta,gslvr.getGradient(beta));
       } else {
+        if(_state._iter == 0)
+          updateProgress(false);
         Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
           @Override
           public boolean progress(double[] beta, GradientInfo ginfo) {
@@ -935,6 +937,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] devHistory = _parms._stopping_rounds>0?new double[_parms._stopping_rounds]:null;
 
       int impcnt = 0;
+      if(!_parms._lambda_search)
+        updateProgress(false);
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
@@ -1018,6 +1022,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override public boolean progress(double [] beta, GradientInfo ginfo) {
+      _state._iter++;
       if(ginfo instanceof ProximalGradientInfo) {
         ginfo = ((ProximalGradientInfo) ginfo)._origGinfo;
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
@@ -1032,17 +1037,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           updateProgress(true);
         boolean converged = _state.converged();
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
-        return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
+        return !timeout() && !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations;
       }
     }
 
     public boolean progress(double [] beta, double likelihood) {
+      _state._iter++;
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
         updateProgress(true);
       boolean converged = _state.converged();
       if(converged) Log.info(LogMsg(_state.convergenceMsg));
-      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
+      return !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations ;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
