@@ -80,7 +80,23 @@ public class GLMTest  extends TestUtil {
       if(_weights || _offset) {
         for (int i = 0; i < chks[0]._len; ++i) {
           _m.score0(chks, w.atd(i), off.atd(i),i, tmp, predictions);
-          for (int j = 0; j < predictions.length; ++j)
+          int start = 0;
+          if(_m._parms._family == Family.binomial && Math.abs(predictions[2] - _m.defaultThreshold()) < 1e-10)
+            start = 1;
+          if(_m._parms._family == Family.multinomial) {
+            double [] maxs = new double[2];
+            for(int j = 1; j < predictions.length; ++j) {
+              if(predictions[j] > maxs[0]) {
+                if(predictions[j] > maxs[1]) {
+                  maxs[0] = maxs[1];
+                  maxs[1] = predictions[j];
+                } else maxs[0] = predictions[j];
+              }
+            }
+            if((maxs[1] - maxs[0]) < 1e-10)
+              start = 1;
+          }
+          for (int j = start; j < predictions.length; ++j)
             assertEquals("mismatch at row " + (i + chks[0].start()) + ", p = " + j + ": " + outputs[j].atd(i) + " != " + predictions[j], outputs[j].atd(i), predictions[j], 1e-6);
         }
       } else {

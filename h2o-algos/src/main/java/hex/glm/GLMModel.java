@@ -570,8 +570,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gaussian:
           return 1;
         case binomial:
-        case multinomial:
-          return mu * (1 - mu);
+          double res = mu * (1 - mu);
+          return res < 1e-6?1e-6:res;
         case poisson:
           return mu;
         case gamma:
@@ -641,7 +641,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
       double etaOff = eta + off;
       x.mu = linkInv(etaOff);
-      double var = Math.max(1e-6, variance(x.mu)); // avoid numerical problems with 0 variance
+      double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;

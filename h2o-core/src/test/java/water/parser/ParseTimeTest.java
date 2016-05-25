@@ -121,4 +121,81 @@ public class ParseTimeTest extends TestUtil {
     //File items will be converted to ms for local timezone
     ParserTest.testParsed(dataFrame, exp, exp.length);
   }
+
+  @Test public void testDayParseNoTime() {
+    // Just yyyy-mm-dd, no time
+    String data = "Date\n"+
+      "2014-1-23\n"+
+      "2014-1-24\n"+
+      "2014-1-23\n"+
+      "2014-1-24\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str()=="Time");
+    long[] exp = new long[] {  // Date
+      1390464000000L,
+      1390550400000L,
+      1390464000000L,
+      1390550400000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testTimeParseNoDate() {
+    // Just time, no date.  Parses as msec on the Unix Epoch start date, i.e. <24*60*60*1000
+    // HH:mm:ss.S          // tenths second
+    // HH:mm:ss.SSS        // milliseconds
+    // HH:mm:ss.SSSnnnnnn  // micros and nanos also
+    String data = "Time\n"+
+      "0:0:0.0\n"+
+      "0:54:13.0\n"+
+      "10:36:2.0\n"+
+      "10:36:8.0\n"+
+      "10:37:49.0\n"+
+      "11:18:48.0\n"+
+      "11:41:34.0\n"+
+      "11:4:49.0\n"+
+      "12:47:41.0\n"+
+      "3:24:19.0\n"+
+      "3:45:55.0\n"+
+      "3:45:56.0\n"+
+      "3:58:24.0\n"+
+      "6:13:55.0\n"+
+      "6:25:14.0\n"+
+      "7:0:15.0\n"+
+      "7:3:8.0\n"+
+      "8:20:8.0\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str()=="Time");
+    long[] exp = new long[] {  // Time
+      0L,                      // Notice: no TZ at all ==> GMT!
+      3253000L,
+      38162000L,
+      38168000L,
+      38269000L,
+      40728000L,
+      42094000L,
+      39889000L,
+      46061000L,
+      12259000L,
+      13555000L,
+      13556000L,
+      14304000L,
+      22435000L,
+      23114000L,
+      25215000L,
+      25388000L,
+      30008000L,
+    };
+    Vec vec = fr.vec("Time");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
 }

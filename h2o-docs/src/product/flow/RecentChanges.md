@@ -2,6 +2,43 @@
 
 ##H2O
 
+###Turchin (3.8.2.6) - 5/24/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1899'>PUBDEV-1899</a>] -         Number of active predictors is off by 1 when Intercept is included
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2942'>PUBDEV-2942</a>] -         GLM with cross-validation AIOOBE (+ Grid-Search + Multinomial, may be related)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2943'>PUBDEV-2943</a>] -         Improved accuracy for histogram_type=&quot;QuantilesGlobal&quot; for DRF/GBM
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1705'>PUBDEV-1705</a>] -         GLM needs &#39;seed&#39; argument for new (random) implementation of n-folds
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2743'>PUBDEV-2743</a>] -         Add seed argument to GLM
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2928'>PUBDEV-2928</a>] -         Remove _Dev from file name _DataScienceH2O-Dev
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2945'>PUBDEV-2945</a>] -         Clean up overly long and duplicate error message in KeyV3
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2953'>PUBDEV-2953</a>] -         Allow the user to pass column types of an existing H2OFrame during Parse/Upload in R and Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2954'>PUBDEV-2954</a>] -         Tweak Parser Heuristic
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2955'>PUBDEV-2955</a>] -         GLM improvements and fixes
+</li>
+</ul>
+
 ###Turchin (3.8.2.5) - 5/19/2016
 
 <h4>        Technical task

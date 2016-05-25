@@ -372,9 +372,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
         GLMGradientSolver gslvr = new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
+        Log.info(LogMsg("fitted intercept = " + x[0]));
         x[0] = _parms.linkInv(x[0]);
         _state._ymu = x;
-        Log.info(LogMsg("fitted intercept = " + x[0]));
       }
       if (_parms._prior > 0)
         _iceptAdjust = -Math.log(_state._ymu[0] * (1 - _parms._prior) / (_parms._prior * (1 - _state._ymu[0])));
@@ -1772,7 +1772,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_betaLB != null && _betaUB != null)
         for (int i = 0; i < _betaLB.length; ++i)
           if (!(_betaLB[i] <= _betaUB[i]))
-            throw new IllegalArgumentException("lower bounds myst be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
+            throw new IllegalArgumentException("lower bounds must be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
     }
 
     public BetaConstraint filterExpandedColumns(int[] activeCols) {

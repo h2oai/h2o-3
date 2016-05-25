@@ -22,7 +22,7 @@ public abstract class ParseTime {
   // ClassCastException deep in the SimpleDateFormat code:
   // "sun.util.calendar.Gregorian$Date cannot be cast to sun.util.calendar.JulianCalendar$Date"
 
-  public static final boolean isTime(BufferedString str) {
+  public static boolean isTime(BufferedString str) {
     return attemptTimeParse(str) != Long.MIN_VALUE;
   }
 
@@ -41,12 +41,14 @@ public abstract class ParseTime {
     {"dec".getBytes(),"december" .getBytes()}
   };
 
-  public static long attemptTimeParse( BufferedString str ) {
+  static long attemptTimeParse( BufferedString str ) {
     try {
       long t0 = attemptYearFirstTimeParse(str); // "yyyy-MM-dd" and time if present
       if( t0 != Long.MIN_VALUE ) return t0;
       long t2 = attemptDayFirstTimeParse(str); // "dd-MMM-yy" and time if present
       if( t2 != Long.MIN_VALUE ) return t2;
+      long t3 = attemptTimeOnlyParse(str); // Time if present, no date
+      if( t3 != Long.MIN_VALUE ) return t3;
     } catch( org.joda.time.IllegalFieldValueException | // Not time at all
              org.joda.time.IllegalInstantException      // Parsed as time, but falls into e.g. a daylight-savings hour hole
              ie ) { } //FIXME should collect errors and report at end of parse
@@ -59,7 +61,7 @@ public abstract class ParseTime {
     final int end = i+str.length();
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
-    if( (end-i) != 10 && (end-i) < 19 ) return Long.MIN_VALUE;
+    if( (end-i) < 8 ) return Long.MIN_VALUE;
     int yyyy=0, MM=0, dd=0;
 
     // Parse date
@@ -69,18 +71,18 @@ public abstract class ParseTime {
     yyyy = digit(yyyy,buf[i++]);
     if( buf[i++] != '-' ) return Long.MIN_VALUE;
     MM = digit(MM,buf[i++]);
-    MM = digit(MM,buf[i++]);
+    MM = buf[i]!='-' ? digit(MM,buf[i++]) : MM;
     if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
     if( buf[i++] != '-' ) return Long.MIN_VALUE;
     dd = digit(dd,buf[i++]);
-    dd = digit(dd,buf[i++]);
+    dd = i<end && buf[i]>='0' && buf[i]<='9' ? digit(dd,buf[i++]) : dd;
     if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
+    while( i<end && buf[i] == ' ' ) i++;
     if( i==end )
       return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
 
     //Parse time
-    if( buf[i++] != ' ' ) return Long.MIN_VALUE;
-    return parseTime(buf, i, end, yyyy, MM, dd);
+    return parseTime(buf, i, end, yyyy, MM, dd, false);
   }
 
   // Tries to parse "dd[-]MMM[-]yy[yy][:' '][HH:mm:ss.SSS aa]"
@@ -136,13 +138,27 @@ public abstract class ParseTime {
 
     // Parse time
     if( buf[i] != ' ' &&  buf[i] != ':') return Long.MIN_VALUE;
-    return parseTime(buf, ++i, end, yyyy, MM, dd);
+    return parseTime(buf, ++i, end, yyyy, MM, dd, false);
+  }
+
+  // Tries to parse time without any date.
+  private static long attemptTimeOnlyParse(BufferedString str) {
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
+    final int end = i+str.length();
+    while( i < end && buf[i] == ' ' ) i++;
+    if   ( i < end && buf[i] == '"' ) i++;
+    if( end-i < 5 ) return Long.MIN_VALUE;
+    long t1 = parseTime(buf,i,end,1970,1,1,true); // Unix Epoch dates
+    if( t1 == Long.MIN_VALUE ) return Long.MIN_VALUE;
+    // Remove all TZ info; return bare msec from the morning of the epoch
+    return t1+getTimezone().getOffsetFromLocal(t1);
   }
 
   /**
    * Attempts to parse time. Expects at least:
    * HH:mm:ss where : or . are accepted as delimiters
-   * Additionally the time can contain either 3 or 9 places for fractions of a second
+   * Additionally the time can contain either 1 or 3 or 9 places for fractions of a second
    * e.g. HH:mm:ss.SSS or HH:mm:ss.SSSnnnnnn
    * Note that only millisecond accuracy is stored
    * Additionally the time can end with AM|PM.
@@ -158,22 +174,26 @@ public abstract class ParseTime {
    * @return long representing time in currently timezone as milliseconds since UNIX epoch
    *         or Long.MIN_VALUE to represent failed time parse
    */
-  private static long parseTime(byte[] buf, int i, int end, int yyyy, int MM, int dd) {
-    int HH =0, mm=0, ss=0, SSS=0;
+  private static long parseTime(byte[] buf, int i, int end, int yyyy, int MM, int dd, boolean timeOnly) {
+    int HH =0, mm=0, ss=0, SSS=0, ndots=0;
     HH = digit(HH,buf[i++]);
-    HH = digit(HH,buf[i++]);
+    HH = buf[i]>='0' && buf[i]<= '9' ? digit(HH,buf[i++]) : HH;
     if(HH  < 0 || HH > 23 ) return Long.MIN_VALUE;
     if( buf[i] != ':' && buf[i] != '.' ) return Long.MIN_VALUE;
+    if( buf[i]=='.' ) ndots++;
     ++i;
     mm = digit(mm,buf[i++]);
-    mm = digit(mm,buf[i++]);
+    mm = buf[i]>='0' && buf[i]<= '9' ? digit(mm,buf[i++]) : mm;
     if( mm < 0 || mm > 59 ) return Long.MIN_VALUE;
+    if( i+2 >= buf.length ) return Long.MIN_VALUE;
     if( buf[i] != ':' && buf[i] != '.' ) return Long.MIN_VALUE;
+    if( buf[i]=='.' ) ndots++;
     ++i;
     ss = digit(ss,buf[i++]);
-    ss = digit(ss,buf[i++]);
+    ss = buf[i]>='0' && buf[i]<= '9' ? digit(ss,buf[i++]) : ss;
     if( ss < 0 || ss > 59 ) return Long.MIN_VALUE;
     if( i<end && (buf[i] == ':' || buf[i] == '.' )) {
+      if( buf[i]=='.' ) ndots++;
       i++;
       if( i<end ) SSS = digit(SSS,buf[i++]);
       if( i<end ) SSS = digit(SSS,buf[i++]);
@@ -183,8 +203,11 @@ public abstract class ParseTime {
         i += 6; // ignore
     }
     if( i<end && buf[i] == '"' ) i++;
-    if( i == end)
-      return new DateTime(yyyy,MM,dd,HH,mm,ss,getTimezone()).getMillis()+SSS;
+    if( i == end) {
+      if( timeOnly && ndots==3 )
+        return Long.MIN_VALUE; // Ambiguous: tell 1.2.3.4 apart from an IP address
+      return new DateTime(yyyy, MM, dd, HH, mm, ss, getTimezone()).getMillis() + SSS;
+    }
 
     // extract halfday of day, if present
     if( buf[i] == ' ' ) ++i;

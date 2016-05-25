@@ -43,10 +43,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         "tweedie" - "tweedie"
 
       tweedie_variance_power : int
-        numeric specifying the power for the variance function when family = "tweedie".
+        numeric specifying the power for the variance function when family = "tweedie". Default is 0.
 
       tweedie_link_power : int
-        A numeric specifying the power for the link function when family = "tweedie".
+        A numeric specifying the power for the link function when family = "tweedie". Default is 1.
 
       alpha : float
         A numeric in [0, 1] specifying the elastic-net mixing parameter.
