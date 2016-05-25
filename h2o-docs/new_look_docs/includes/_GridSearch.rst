@@ -74,7 +74,7 @@ Common Hyperparameters
 Shared Tree Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-***Note***: The Shared Tree hyperparameters apply to DRF and GBM. 
+**Note**: The Shared Tree hyperparameters apply to DRF and GBM. 
 
 -  ``balance_classes``
 -  ``class_sampling_factors``

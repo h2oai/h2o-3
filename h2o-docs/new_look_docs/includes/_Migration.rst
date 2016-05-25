@@ -145,13 +145,15 @@ arguments, and suggests replacements.
 
 **Note**: As of Slater v.3.2.0.10, this shim will no longer be available.
 
-There is also an `R Porting Guide <#PortingGuide>`__ that provides a
+You can also review the :ref:`PortingGuide` section, which provides a
 side-by-side comparison of the algorithms in the previous version of H2O
 with H2O 3.0. It outlines the new, revised, and deprecated parameters
 for each algorithm, as well as the changes to the output.
 
+.. _PortingGuide:
+
 Porting R Scripts
-=================
+~~~~~~~~~~~~~~~~~
 
 This document outlines how to port R scripts written in previous
 versions of H2O (Nunes 2.8.6.2 or prior, also known as "H2O Classic")
@@ -173,6 +175,54 @@ There is also a "shim" available that will review R scripts created with
 previous versions of H2O, identify deprecated or renamed parameters, and
 suggest replacements. For more information, refer to the repo
 `here <https://github.com/h2oai/h2o-dev/blob/d9693a97da939a2b77c24507c8b40a5992192489/h2o-r/h2o-package/R/shim.R>`__.
+
+Github Users
+------------
+
+All users who pull directly from the H2O classic repo on Github should
+be aware that this repo will be renamed. To retain access to the
+original H2O (2.8.6.2 and prior) repository:
+
+The simple way
+~~~~~~~~~~~~~~
+
+This is the easiest way to change your local repo and is recommended for
+most users.
+
+1. Enter ``git remote -v`` to view a list of your repositories.
+2. Copy the address of your H2O classic repo (refer to the text in brackets
+   below - your address will vary depending on your connection method)::
+
+		H2O_User-MBP:h2o H2O_User$ git remote -v
+		origin    https://{H2O_User@github.com}/h2oai/h2o.git (fetch)
+		origin    https://{H2O_User@github.com}/h2oai/h2o.git (push)
+
+3. Enter ``git remote set-url origin {H2O_User@github.com}:h2oai/h2o-2.git``,
+where ``{H2O_User@github.com}`` represents the address copied in the
+previous step.
+
+The more complicated way
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+This method involves editing the Github config file and should only be
+attempted by users who are confident enough with their knowledge of
+Github to do so.
+
+1. Enter ``vim .git/config``.
+2. Look for the ``[remote "origin"]`` section::
+
+		[remote "origin"]
+		url = https://H2O_User@github.com/h2oai/h2o.git
+		fetch = +refs/heads/*:refs/remotes/origin/*
+
+3. In the ``url =`` line, change ``h2o.git`` to ``h2o-2.git``. 
+4. Save the changes.
+
+The latest version of H2O is stored in the ``h2o-3`` repository. All
+previous links to this repo will still work, but if you would like to
+manually update your Github configuration, follow the instructions
+above, replacing ``h2o-2`` with ``h2o-3``.
+
 
 Changes from H2O 2.8 to H2O 3.0
 -------------------------------
@@ -979,7 +1029,7 @@ The following table provides the component name in H2O, the
 corresponding component name in H2O 3.0 (if supported), and the model
 type (binomial, multinomial, or all). Many components are now included
 in ``h2o.performance``; for more information, refer to
-`(``h2o.performance``) <#h2operf>`__.
+`h2o.performance`_.
 
 +------------------------------+----------------------------------------------+----------------+
 | H2O Classic                  | H2O 3.0                                      | Model Type     |
@@ -1229,48 +1279,3 @@ in ``h2o.performance``; for more information, refer to
 | ``@model$max_per_class_err`` | currently replaced by                                                                 | ``binomial``   |
 |                              | ``@model$training_metrics@metrics$thresholds_and_metric_scores$min_per_class_correct``|                |
 +------------------------------+---------------------------------------------------------------------------------------+----------------+
-
-Github Users
-------------
-
-All users who pull directly from the H2O classic repo on Github should
-be aware that this repo will be renamed. To retain access to the
-original H2O (2.8.6.2 and prior) repository:
-
-**The simple way**
-
-This is the easiest way to change your local repo and is recommended for
-most users.
-
-1. Enter ``git remote -v`` to view a list of your repositories.
-2. Copy the address of your H2O classic repo (refer to the text in brackets
-   below - your address will vary depending on your connection method)::
-
-		H2O_User-MBP:h2o H2O_User$ git remote -v
-		origin    https://{H2O_User@github.com}/h2oai/h2o.git (fetch)
-		origin    https://{H2O_User@github.com}/h2oai/h2o.git (push)
-
-3. Enter ``git remote set-url origin {H2O_User@github.com}:h2oai/h2o-2.git``,
-where ``{H2O_User@github.com}`` represents the address copied in the
-previous step.
-
-**The more complicated way**
-
-This method involves editing the Github config file and should only be
-attempted by users who are confident enough with their knowledge of
-Github to do so.
-
-1. Enter ``vim .git/config``.
-2. Look for the ``[remote "origin"]`` section::
-
-		[remote "origin"]
-		url = https://H2O_User@github.com/h2oai/h2o.git
-		fetch = +refs/heads/*:refs/remotes/origin/*
-
-3. In the ``url =`` line, change ``h2o.git`` to ``h2o-2.git``. 
-4. Save the changes.
-
-The latest version of H2O is stored in the ``h2o-3`` repository. All
-previous links to this repo will still work, but if you would like to
-manually update your Github configuration, follow the instructions
-above, replacing ``h2o-2`` with ``h2o-3``.
