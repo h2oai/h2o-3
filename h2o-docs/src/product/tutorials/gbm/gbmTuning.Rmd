@@ -1,5 +1,5 @@
 # H2O GBM Tuning Tutorial for R
-## Arno Candel, PhD, Chief Architect, H2O.ai
+### Arno Candel, PhD, Chief Architect, H2O.ai
 
 In this tutorial, we show how to build a well-tuned GBM model for a supervised classification task.
 This tutorial is written in Rmarkdown. You can download the source [here](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).
@@ -33,7 +33,7 @@ h2o.init(nthreads=-1)
 
 ## Import the data into H2O 
 Everything is scalable and distributed from now on. All processing is done on the fully multi-threaded and distributed H2O Java-based backend and can be scaled to large datasets on large compute clusters.
-Here, we use a small public dataset [Titanic](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html), but you can use datasets that are hundreds of GBs large.
+Here, we use a small public dataset ([Titanic](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html)), but you can use datasets that are hundreds of GBs large.
 
 ```{r message=FALSE, warning=FALSE}
 ## 'path' can point to a local file, hdfs, s3, nfs, Hive, directories, etc.
@@ -53,7 +53,7 @@ df[[response]] <- as.factor(df[[response]])
 predictors <- setdiff(names(df), c(response, "name")) 
 ```
 
-From now on, everything is generic and directly applies to most datasets.
+From now on, everything is generic and directly applies to most datasets. For multi-class problems, you can use `h2o.logloss()` or `h2o.confusionMatrix()` instead of `h2o.auc()` and for regression problems, you can use `h2o.deviance` or `h2o.mse`.
 
 ## Split the data for Machine Learning
 We split the data into three pieces: 60% for training, 20% for validation, 20% for final testing. 
