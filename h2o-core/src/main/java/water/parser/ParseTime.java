@@ -82,7 +82,7 @@ public abstract class ParseTime {
       return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
 
     //Parse time
-    return parseTime(buf, i, end, yyyy, MM, dd);
+    return parseTime(buf, i, end, yyyy, MM, dd, false);
   }
 
   // Tries to parse "dd[-]MMM[-]yy[yy][:' '][HH:mm:ss.SSS aa]"
@@ -138,7 +138,7 @@ public abstract class ParseTime {
 
     // Parse time
     if( buf[i] != ' ' &&  buf[i] != ':') return Long.MIN_VALUE;
-    return parseTime(buf, ++i, end, yyyy, MM, dd);
+    return parseTime(buf, ++i, end, yyyy, MM, dd, false);
   }
 
   // Tries to parse time without any date.
@@ -149,7 +149,7 @@ public abstract class ParseTime {
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
     if( end-i < 5 ) return Long.MIN_VALUE;
-    long t1 = parseTime(buf,i,end,1970,1,1); // Unix Epoch dates
+    long t1 = parseTime(buf,i,end,1970,1,1,true); // Unix Epoch dates
     if( t1 == Long.MIN_VALUE ) return Long.MIN_VALUE;
     // Remove all TZ info; return bare msec from the morning of the epoch
     return t1+getTimezone().getOffsetFromLocal(t1);
@@ -174,23 +174,26 @@ public abstract class ParseTime {
    * @return long representing time in currently timezone as milliseconds since UNIX epoch
    *         or Long.MIN_VALUE to represent failed time parse
    */
-  private static long parseTime(byte[] buf, int i, int end, int yyyy, int MM, int dd) {
-    int HH =0, mm=0, ss=0, SSS=0;
+  private static long parseTime(byte[] buf, int i, int end, int yyyy, int MM, int dd, boolean timeOnly) {
+    int HH =0, mm=0, ss=0, SSS=0, ndots=0;
     HH = digit(HH,buf[i++]);
     HH = buf[i]>='0' && buf[i]<= '9' ? digit(HH,buf[i++]) : HH;
     if(HH  < 0 || HH > 23 ) return Long.MIN_VALUE;
     if( buf[i] != ':' && buf[i] != '.' ) return Long.MIN_VALUE;
+    if( buf[i]=='.' ) ndots++;
     ++i;
     mm = digit(mm,buf[i++]);
     mm = buf[i]>='0' && buf[i]<= '9' ? digit(mm,buf[i++]) : mm;
     if( mm < 0 || mm > 59 ) return Long.MIN_VALUE;
     if( i+2 >= buf.length ) return Long.MIN_VALUE;
     if( buf[i] != ':' && buf[i] != '.' ) return Long.MIN_VALUE;
+    if( buf[i]=='.' ) ndots++;
     ++i;
     ss = digit(ss,buf[i++]);
     ss = buf[i]>='0' && buf[i]<= '9' ? digit(ss,buf[i++]) : ss;
     if( ss < 0 || ss > 59 ) return Long.MIN_VALUE;
     if( i<end && (buf[i] == ':' || buf[i] == '.' )) {
+      if( buf[i]=='.' ) ndots++;
       i++;
       if( i<end ) SSS = digit(SSS,buf[i++]);
       if( i<end ) SSS = digit(SSS,buf[i++]);
@@ -200,8 +203,11 @@ public abstract class ParseTime {
         i += 6; // ignore
     }
     if( i<end && buf[i] == '"' ) i++;
-    if( i == end)
-      return new DateTime(yyyy,MM,dd,HH,mm,ss,getTimezone()).getMillis()+SSS;
+    if( i == end) {
+      if( timeOnly && ndots==3 )
+        return Long.MIN_VALUE; // Ambiguous: tell 1.2.3.4 apart from an IP address
+      return new DateTime(yyyy, MM, dd, HH, mm, ss, getTimezone()).getMillis() + SSS;
+    }
 
     // extract halfday of day, if present
     if( buf[i] == ' ' ) ++i;
