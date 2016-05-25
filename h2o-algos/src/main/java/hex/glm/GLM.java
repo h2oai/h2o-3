@@ -423,7 +423,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _parms._objective_epsilon =  _parms._lambda[0] == 0?1e-6:1e-4;
       }
       if(_parms._gradient_epsilon == -1) {
-        _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-8 : 1e-6; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
+        _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
       // clone2 so that I don't change instance which is in the DKV directly
@@ -1029,7 +1029,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(false);
-        return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations;
+        return !timeout() && !_job.stop_requested() && _state._iter < _parms._max_iterations;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
         _state.updateState(beta, gginfo);
