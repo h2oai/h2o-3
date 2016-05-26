@@ -319,7 +319,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         SVDModel svd = (SVDModel)ModelCacheManager.get(parms);
         if( svd == null ) svd = new SVD(parms,_job).trainModelNested();
-        if (stop_requested()) return null;
+//        if (stop_requested()) return null;    // breaks the code here due to no null checking later.
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -359,7 +359,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         ModelCacheManager MCM = H2O.getMCM();
         KMeansModel km = (KMeansModel)MCM.get(parms);
         if( km == null ) km = new KMeans(parms,_job).trainModelNested();
-        if (stop_requested()) return null;
+//        if (stop_requested()) return null;
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist

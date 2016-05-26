@@ -65,7 +65,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       double[] alpha = new double[]{1};
       double[] expected_deviance = new double[]{25499.76};
       double[] lambda = new double[]{2.544750e-05};
-      for (Solver s : new Solver[]{Solver.IRLSM, Solver.L_BFGS}) {
+      for (Solver s : new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT, Solver.L_BFGS}) {
         System.out.println("solver = " + s);
         params._solver = s;
         for (int i = 0; i < alpha.length; ++i) {

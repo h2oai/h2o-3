@@ -372,9 +372,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
         GLMGradientSolver gslvr = new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());
         double [] x = new L_BFGS().solve(gslvr,new double[]{-_offset.mean()}).coefs;
+        Log.info(LogMsg("fitted intercept = " + x[0]));
         x[0] = _parms.linkInv(x[0]);
         _state._ymu = x;
-        Log.info(LogMsg("fitted intercept = " + x[0]));
       }
       if (_parms._prior > 0)
         _iceptAdjust = -Math.log(_state._ymu[0] * (1 - _parms._prior) / (_parms._prior * (1 - _state._ymu[0])));
@@ -423,7 +423,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _parms._objective_epsilon =  _parms._lambda[0] == 0?1e-6:1e-4;
       }
       if(_parms._gradient_epsilon == -1) {
-        _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-8 : 1e-6; // lower default objective epsilon for non-standardized problems (mostly to match classical tools)
+        _parms._gradient_epsilon = _parms._lambda[0] == 0 ? 1e-6 : 1e-4;
         if(_parms._lambda_search) _parms._gradient_epsilon *= 1e-2;
       }
       // clone2 so that I don't change instance which is in the DKV directly
@@ -663,6 +663,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _state._u = l1Solver._u;
         _state.updateState(beta,gslvr.getGradient(beta));
       } else {
+        if(_state._iter == 0)
+          updateProgress(false);
         Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
           @Override
           public boolean progress(double[] beta, GradientInfo ginfo) {
@@ -935,6 +937,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double [] devHistory = _parms._stopping_rounds>0?new double[_parms._stopping_rounds]:null;
 
       int impcnt = 0;
+      if(!_parms._lambda_search)
+        updateProgress(false);
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
         _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
@@ -963,13 +967,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
           if(_parms._stopping_rounds > 0) {
-            devHistory[i % devHistory.length] = oldDev - newDev;
+            devHistory[i % devHistory.length] = (oldDev - newDev)/oldDev;
           }
           oldDev = newDev;
           if(_parms._early_stopping && _parms._stopping_rounds > 0 && i > _parms._stopping_rounds) {
             double s = 0;
             for(double d:devHistory) s += d;
-            s = s/(devHistory.length*nullDev);
+            s /= devHistory.length;
             if(s < _parms._stopping_tolerance) {
               Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", average improvement = " + s));
               break; // started overfitting
@@ -1018,13 +1022,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override public boolean progress(double [] beta, GradientInfo ginfo) {
+      _state._iter++;
       if(ginfo instanceof ProximalGradientInfo) {
         ginfo = ((ProximalGradientInfo) ginfo)._origGinfo;
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
         _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(false);
-        return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations;
+        return !timeout() && !_job.stop_requested() && _state._iter < _parms._max_iterations;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
         _state.updateState(beta, gginfo);
@@ -1032,17 +1037,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           updateProgress(true);
         boolean converged = _state.converged();
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
-        return !timeout() && !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
+        return !timeout() && !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations;
       }
     }
 
     public boolean progress(double [] beta, double likelihood) {
+      _state._iter++;
       _state.updateState(beta,likelihood);
       if(!_parms._lambda_search)
         updateProgress(true);
       boolean converged = _state.converged();
       if(converged) Log.info(LogMsg(_state.convergenceMsg));
-      return !_job.stop_requested() && _state._iter++ < _parms._max_iterations && !converged;
+      return !_job.stop_requested() && !converged && _state._iter < _parms._max_iterations ;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
@@ -1772,7 +1778,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_betaLB != null && _betaUB != null)
         for (int i = 0; i < _betaLB.length; ++i)
           if (!(_betaLB[i] <= _betaUB[i]))
-            throw new IllegalArgumentException("lower bounds myst be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
+            throw new IllegalArgumentException("lower bounds must be <= upper bounds, " + _betaLB[i] + " !<= " + _betaUB[i]);
     }
 
     public BetaConstraint filterExpandedColumns(int[] activeCols) {

@@ -1,0 +1,351 @@
+# H2O GBM Tuning Tutorial for R
+### Arno Candel, PhD, Chief Architect, H2O.ai
+
+In this tutorial, we show how to build a well-tuned GBM model for a supervised classification task.
+This tutorial is written in Rmarkdown. You can download the source [here](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).
+
+## Installation of the H2O R Package
+Either download H2O from [H2O.ai's website](http://h2o.ai/download) or install the latest version of H2O into R with the following R code:
+
+```{r message=FALSE, warning=FALSE}
+# The following two commands remove any previously installed H2O packages for R.
+if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+
+# Next, we download packages that H2O depends on.
+pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+for (pkg in pkgs) {
+  if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }
+}
+
+# Now we download, install and initialize the H2O package for R.
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/6/R")))
+```
+
+## Launch an H2O cluster on localhost
+
+```{r message=FALSE, warning=FALSE}
+library(h2o)
+h2o.init(nthreads=-1)
+## optional: connect to a running H2O cluster
+#h2o.init(ip="mycluster", port=55555) 
+```
+
+## Import the data into H2O 
+Everything is scalable and distributed from now on. All processing is done on the fully multi-threaded and distributed H2O Java-based backend and can be scaled to large datasets on large compute clusters.
+Here, we use a small public dataset ([Titanic](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html)), but you can use datasets that are hundreds of GBs large.
+
+```{r message=FALSE, warning=FALSE}
+## 'path' can point to a local file, hdfs, s3, nfs, Hive, directories, etc.
+df <- h2o.importFile(path = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+dim(df)
+head(df)
+tail(df)
+summary(df,exact_quantiles=TRUE)
+
+## pick a response for the supervised problem
+response <- "survived"
+
+## the response variable is an integer, we will turn it into a categorical/factor for binary classification
+df[[response]] <- as.factor(df[[response]])           
+
+## use all other columns (except for the name) as predictors
+predictors <- setdiff(names(df), c(response, "name")) 
+```
+
+From now on, everything is generic and directly applies to most datasets. For multi-class problems, you can use `h2o.logloss()` or `h2o.confusionMatrix()` instead of `h2o.auc()` and for regression problems, you can use `h2o.deviance` or `h2o.mse`.
+
+## Split the data for Machine Learning
+We split the data into three pieces: 60% for training, 20% for validation, 20% for final testing. 
+Here, we use random splitting, but this assumes i.i.d. data. If this is not the case (e.g., when events span across multiple rows or data has a time structure), you'll have to sample your data non-randomly.
+
+```{r message=FALSE, warning=FALSE}
+splits <- h2o.splitFrame(
+  data = df, 
+  ratios = c(0.6,0.2),   ## only need to specify 2 fractions, the 3rd is implied
+  destination_frames = c("train.hex", "valid.hex", "test.hex"), seed = 1234
+)
+train <- splits[[1]]
+valid <- splits[[2]]
+test  <- splits[[3]]
+```
+
+## Establish baseline performance
+As the first step, we'll build some default models to see what accuracy we can expect. Let's use the [AUC metric](http://mlwiki.org/index.php/ROC_Analysis) for this demo, but you can use `h2o.logloss` and `stopping_metric="logloss"` as well.
+
+
+The first model is a default GBM, trained on the 60% training split
+
+```{r message=FALSE, warning=FALSE}
+gbm <- h2o.gbm(x = predictors, y = response, training_frame = train)
+
+## Show a detailed model summary
+gbm
+
+## Get the AUC on the validation set
+h2o.auc(h2o.performance(gbm, newdata = valid)) 
+```
+
+
+The second model is a default GBM, trained on 80% of the data (here, we combine the training and validation splits to get more training data), and cross-validated using 4 folds.
+Note that cross-validation takes longer and is not usually done for really large datasets.
+
+```{r message=FALSE, warning=FALSE}
+## h2o.rbind makes a copy here, so it's better to use splitFrame with ratios = 0.8 instead if you want 
+gbm <- h2o.gbm(x = predictors, y = response, training_frame = h2o.rbind(train, valid), nfolds = 4, seed = 0xDECAF)
+
+## Show a detailed summary of the cross validation metrics
+## This gives you an idea of the variance between the folds
+gbm@model$cross_validation_metrics_summary
+
+## Get the cross-validated AUC by scoring the combined holdout predictions.
+## (Instead of taking the average of the metrics across the folds)
+h2o.auc(h2o.performance(gbm, xval = TRUE))
+```
+
+
+Next, we train a GBM with "I feel lucky" parameters (which usually are better than defaults for realistic large datasets).
+We'll use early stopping to automatically tune the number of trees using the validation AUC. 
+We'll use a lower learning rate (lower is always better, just takes more trees to converge).
+We'll also use stochastic sampling of rows and columns to (hopefully) improve generalization.
+
+```{r message=FALSE, warning=FALSE}
+gbm <- h2o.gbm(
+  ## standard model parameters
+  x = predictors, 
+  y = response, 
+  training_frame = train, 
+  validation_frame = valid,
+  
+  ## more trees is better if the learning rate is small enough 
+  ## here, use "more than enough" trees - we have early stopping
+  ntrees = 10000,                                                            
+  
+  ## smaller learning rate is better (this is a good value for most datasets, but see below for annealing)
+  learn_rate=0.01,                                                         
+  
+  ## early stopping once the validation AUC doesn't improve by at least 0.01% for 5 consecutive scoring events
+  stopping_rounds = 5, stopping_tolerance = 1e-4, stopping_metric = "AUC", 
+  
+  ## sample 80% of rows per tree
+  sample_rate = 0.8,                                                       
+  
+  ## sample 80% of columns per split
+  col_sample_rate = 0.8,                                                   
+  
+  ## fix a random number generator seed for reproducibility
+  seed = 1234,                                                             
+  
+  ## score every 10 trees to make early stopping reproducible (it depends on the scoring interval)
+  score_tree_interval = 10                                                 
+)
+
+## Get the AUC on the validation set
+h2o.auc(h2o.performance(gbm, valid = TRUE))
+```
+
+
+Hint: Specify an invalid stopping_metric to see what other choices exist:
+
+```{r message=FALSE, warning=FALSE}
+gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, stopping_metric = "yada")
+```
+
+## Hyper-Parameter Search
+
+Next, we'll do real hyper-parameter optimization to see if we can beat the best AUC so far (around 94%).
+
+First we want to know what value of `max_depth` to use (this is dataset specific, and has a big impact on runtime).
+We'll do a quick Cartesian grid search to get a rough idea. Each model in the grid search will use early stopping to tune the number of trees using the validation set AUC, as before.
+We'll use learning rate annealing to speed up convergence without sacrificing too much accuracy.
+
+```{r message=FALSE, warning=FALSE}
+## try a broad range for max_depth (depth 20 is usually too much and takes a lot longer than 5 or 10)
+## for some datasets, however, you might need even more depth
+hyper_params = list( max_depth = c(1:20) ) 
+
+grid <- h2o.grid(
+  ## hyper parameters
+  hyper_params = hyper_params,
+  
+  ## full Cartesian hyper-parameter search
+  search_criteria = list(strategy = "Cartesian"),
+  
+  ## which algorithm to run
+  algorithm="gbm",
+  
+  ## identifier for the grid, to later retrieve it
+  grid_id="depth_grid",
+  
+  ## standard model parameters
+  x = predictors, 
+  y = response, 
+  training_frame = train, 
+  validation_frame = valid,
+  
+  ## more trees is better if the learning rate is small enough 
+  ## here, use "more than enough" trees - we have early stopping
+  ntrees = 10000,                                                            
+  
+  ## smaller learning rate is better
+  ## since we have learning_rate_annealing, we can afford to start with a bigger learning rate
+  learn_rate = 0.05,                                                         
+  
+  ## learning rate annealing: learning_rate shrinks by 1% after every tree 
+  ## (use 1.00 to disable, but then lower the learning_rate)
+  learn_rate_annealing = 0.99,                                               
+  
+  ## sample 80% of rows per tree
+  sample_rate = 0.8,                                                       
+  
+  ## sample 80% of columns per split
+  col_sample_rate = 0.8,                                                   
+  
+  ## fix a random number generator seed for reproducibility
+  seed = 1234,                                                             
+  
+  ## early stopping once the validation AUC doesn't improve by at least 0.01% for 5 consecutive scoring events
+  stopping_rounds = 5,
+  stopping_tolerance = 1e-4,
+  stopping_metric = "AUC", 
+  
+  ## score every 10 trees to make early stopping reproducible (it depends on the scoring interval)
+  score_tree_interval = 10                                                
+)
+
+## by default, display the grid search results sorted by logloss (since this is a classification task)
+grid                                                                       
+
+## sort the grid models by AUC
+sortedGrid <- h2o.getGrid("depth_grid", sort_by="auc", decreasing = TRUE)    
+sortedGrid
+
+## find the range of max_depth for the top 10 models
+top10Depths = sortedGrid@summary_table$max_depth[1:10]                       
+minDepth = min(as.numeric(top10Depths))
+maxDepth = max(as.numeric(top10Depths))
+```
+
+Now that we know a good range for max_depth, we can tune all other parameters in more detail
+We'll use random hyper-parameter search to "let the machine get luckier than the best guess of a human".
+
+```{r message=FALSE, warning=FALSE}
+hyper_params = list( 
+  ## restrict the search to the range of max_depth established above
+  max_depth = seq(minDepth,maxDepth,1),                                      
+  
+  ## search a large space of row sampling rates per tree
+  sample_rate = seq(0.3,1,0.01),                                             
+  
+  ## search a large space of column sampling rates per split
+  col_sample_rate = seq(0.3,1,0.01),                                         
+  
+  ## search a large space of column sampling rates per tree
+  col_sample_rate_per_tree = seq(0.3,1,0.01),                                
+  
+  ## search a large space of how column sampling per split should change as a function of the depth of the split
+  col_sample_rate_change_per_level = seq(0.9,1.1,0.01),                      
+  
+  ## search a large space of the number of min rows in a terminal node
+  min_rows = 2^seq(0,log2(nrow(train))-1,1),                                 
+  
+  ## search a large space of the number of bins for split-finding for continuous and integer columns
+  nbins = 2^seq(4,10,1),                                                     
+  
+  ## search a large space of the number of bins for split-finding for categorical columns
+  nbins_cats = 2^seq(4,12,1),                                                
+  
+  ## search a few minimum required relative error improvement thresholds for a split to happen
+  min_split_improvement = c(0,1e-8,1e-6,1e-4),                               
+  
+  ## try all histogram types (can be useful if there are numeric columns with extreme outliers)
+  histogram_type = c("UniformAdaptive","QuantilesGlobal","RoundRobin")       
+)
+
+search_criteria = list(
+  ## Random grid search
+  strategy = "RandomDiscrete",      
+  
+  ## limit the max runtime to 10 hours
+  max_runtime_secs = 36000,         
+  
+  ## build no more than 50 models (usually want a little more than that)
+  max_models = 50,                  
+  
+  ## random number generator seed to make sampling of parameter combinations reproducible
+  seed = 1234,                        
+  
+  ## early stopping once the leaderboard of the top 5 models is converged
+  stopping_rounds = 5,                
+  stopping_metric = "AUC",
+  stopping_tolerance = 1e-4
+)
+
+grid <- h2o.grid(
+  ## hyper parameters
+  hyper_params = hyper_params,
+  
+  ## hyper-parameter search configuration (see above)
+  search_criteria = search_criteria,
+  
+  ## which algorithm to run
+  algorithm = "gbm",
+  
+  ## identifier for the grid, to later retrieve it
+  grid_id = "final_grid", 
+  
+  ## standard model parameters
+  x = predictors, 
+  y = response, 
+  training_frame = train, 
+  validation_frame = valid,
+  
+  ## more trees is better if the learning rate is small enough
+  ## use "more than enough" trees - we have early stopping
+  ntrees = 10000,                                                            
+  
+  ## smaller learning rate is better
+  ## since we have learning_rate_annealing, we can afford to start with a bigger learning rate
+  learn_rate = 0.05,                                                         
+  
+  ## learning rate annealing: learning_rate shrinks by 1% after every tree 
+  ## (use 1.00 to disable, but then lower the learning_rate)
+  learn_rate_annealing = 0.99,                                               
+  
+  ## no model should take more than 1 hour, otherwise stop it early
+  max_runtime_secs = 3600,                                                 
+  
+  ## early stopping once the validation AUC doesn't improve by at least 0.01% for 5 consecutive scoring events
+  stopping_rounds = 5, stopping_tolerance = 1e-4, stopping_metric = "AUC", 
+  
+  ## score every 10 trees to make early stopping reproducible (it depends on the scoring interval)
+  score_tree_interval = 10,                                                
+  
+  ## base random number generator seed for each model (automatically gets incremented internally for each model)
+  seed = 1234                                                             
+)
+
+## Sort the grid models by AUC
+sortedGrid <- h2o.getGrid("final_grid", sort_by = "auc", decreasing = TRUE)    
+sortedGrid
+```
+
+We can see that the best models have even better validation AUCs than our previous best models, so the random grid search was successful!
+
+```{r message=FALSE, warning=FALSE}
+## Inspect the best 5 models from the grid search
+for (i in 1:5) {
+  gbm <- h2o.getModel(sortedGrid@model_ids[[i]])
+  print(h2o.auc(h2o.performance(gbm, valid = TRUE)))
+}
+
+## Final (one-time) testing of the best model on the held out test set
+gbm <- h2o.getModel(sortedGrid@model_ids[[1]])
+print(h2o.auc(h2o.performance(gbm, newdata = test)))
+
+## Make test set predictions
+preds <- h2o.predict(gbm, test)
+
+## Save the test set predictions to a file
+#h2o.exportFile(preds, "/tmp/preds.csv", force=TRUE)
+```

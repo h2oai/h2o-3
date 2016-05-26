@@ -211,6 +211,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.error("obj_reg","Must be positive or -1 for default");
       if(_prior != -1 && _prior <= 0 || _prior >= 1)
         glm.error("_prior","Prior must be in (exclusive) range (0,1)");
+      if(_prior != -1 && _family != Family.binomial)
+        glm.error("_prior","Prior is only allowed with family = binomial.");
       if(_family != Family.tweedie) {
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
@@ -570,8 +572,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gaussian:
           return 1;
         case binomial:
-        case multinomial:
-          return mu * (1 - mu);
+          double res = mu * (1 - mu);
+          return res < 1e-6?1e-6:res;
         case poisson:
           return mu;
         case gamma:
@@ -641,7 +643,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMWeights computeWeights(double y, double eta, double off, double w, GLMWeights x) {
       double etaOff = eta + off;
       x.mu = linkInv(etaOff);
-      double var = Math.max(1e-6, variance(x.mu)); // avoid numerical problems with 0 variance
+      double var = variance(x.mu);//Math.max(1e-5, variance(x.mu)); // avoid numerical problems with 0 variance
       double d = linkDeriv(x.mu);
       x.w = w / (var * d * d);
       x.z = eta + (y - x.mu) * d;

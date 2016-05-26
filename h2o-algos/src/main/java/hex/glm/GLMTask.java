@@ -1292,13 +1292,7 @@ public abstract class GLMTask  {
       final int numStart = _dinfo.numStart();
       double wz,w;
       if(_glmf._family == Family.multinomial) {
-//        double maxRow = r.response(2);
         y = (y == _c)?1:0;
-//        double eta = r.innerProduct(_beta) + _sparseOffset;
-//          double etaExp = Math.exp(eta-maxRow);
-//        double sumExp = r.response(1);// + etaExp;
-//        double mu = (etaExp == Double.POSITIVE_INFINITY?1:(etaExp / sumExp));
-//        double mu = etaExp/sumExp;
         double mu = r.response(1);
         double eta = r.response(2);
         double d = mu*(1-mu);
