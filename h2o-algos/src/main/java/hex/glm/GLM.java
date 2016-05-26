@@ -1112,12 +1112,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return res;
   }
 
-  private static double [] doUpdateCD(double [] grads, double [][] xx, double diff , int variable, int variable_min, int variable_max) {
-    double[] ary = xx[variable];
+  private static double [] doUpdateCD(double [] grads, double [] ary, double diff , int variable_min, int variable_max) {
     for (int i = 0; i < variable_min; i++)
       grads[i] += diff * ary[i];
     for (int i = variable_max; i < grads.length; i++)
       grads[i] += diff * ary[i];
+    return grads;
+  }
+  private static double [] doSparseUpdateCD(double [] grads, double [] ary, int[] ids, double diff , int variable_min, int variable_max) {
+    for(int i = 0; i < ids.length; ++i)
+      grads[ids[i]] += diff * ary[i];
     return grads;
   }
   public double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
@@ -1127,17 +1131,41 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);
     double [][] xx = gt._gram.getXX();
-    double [] grads = gt._xy.clone();
-    double [] beta = _state.beta().clone();
-    for(int i = 0; i < grads.length; ++i) {
-      double ip = 0;
-      for(int j = 0; j < beta.length; ++j)
-        ip += beta[j]*xx[i][j];
-      grads[i] = grads[i] - ip + beta[i]*xx[i][i];
-    }
     double [] diagInv = MemoryManager.malloc8d(xx.length);
     for(int i = 0; i < diagInv.length; ++i)
       diagInv[i] = 1.0/(xx[i][i] + l2pen);
+    int [][] nzs = new int[_state.activeData().numStart()][];
+    if(nzs.length > 1000) {
+      final int [] nzs_ary = new int[xx.length];
+      for (int i = 0; i < nzs.length; ++i) {
+        double[] x = xx[i].clone();
+        int k = 0;
+        for (int j = 0; j < x.length; ++j) {
+          if (i != j && x[j] != 0) {
+            x[k] = x[j];
+            nzs_ary[k++] = j;
+          }
+        }
+        if (k < (nzs_ary.length >> 3)) {
+          nzs[i] = Arrays.copyOf(nzs_ary, k);
+          xx[i] = Arrays.copyOf(x,k);
+        }
+      }
+    }
+    double [] grads = new double [gt._xy.length];
+    double [] beta = _state.beta().clone();
+    for(int i = 0; i < grads.length; ++i) {
+      double ip = 0;
+      if(i < nzs.length && nzs[i] != null) {
+        int [] ids = nzs[i];
+        double [] x = xx[i];
+        for(int j = 0; j < nzs[i].length; ++j)
+          ip += x[j]*beta[ids[j]];
+        grads[i] =  gt._xy[i] - ip;
+      } else {
+        grads[i] =  gt._xy[i] - ArrayUtils.innerProduct(xx[i], beta) + xx[i][i] * beta[i];
+      }
+    }
     int iter1 = 0;
     int P = gt._xy.length - 1;
     DataInfo activeData = _state.activeData();
@@ -1151,7 +1179,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double bd = beta[j] - b;
           bdiffPos = bd > bdiffPos?bd:bdiffPos;
           bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
-          doUpdateCD(grads, xx, bd, j, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
+          if(nzs[j] == null)
+            doUpdateCD(grads, xx[j], bd, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
+          else
+            doSparseUpdateCD(grads, xx[j], nzs[j], bd, activeData._catOffsets[i], activeData._catOffsets[i + 1]);
           beta[j] = b;
         }
       }
@@ -1161,13 +1192,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double bd = beta[i] - b;
         bdiffPos = bd > bdiffPos?bd:bdiffPos;
         bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
-        doUpdateCD(grads, xx, bd, i,i,i+1);
+        doUpdateCD(grads, xx[i], bd, i,i+1);
         beta[i] = b;
       }
       // intercept
       double b = grads[P] * wsumInv;
       double bd = beta[P] - b;
-      doUpdateCD(grads, xx, bd, P,P,P+1);
+      doUpdateCD(grads, xx[P], bd, P,P+1);
       bdiffPos = bd > bdiffPos?bd:bdiffPos;
       bdiffNeg = bd < bdiffNeg?bd:bdiffNeg;
       beta[P] = b;
