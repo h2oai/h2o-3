@@ -1068,7 +1068,7 @@ public class ArrayUtils {
   }
 
   public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
-    assert ary.length == ids.length;
+    assert ary.length == ids.length:"ary.length = " + ary.length + " != " + ids.length + " = ids.length";
     double [] res = MemoryManager.malloc8d(N);
     for(int i = 0; i < ids.length; ++i) res[ids[i]] = ary[i];
     return res;

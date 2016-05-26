@@ -158,16 +158,13 @@ public final class ComputationState {
       _allIn = active == P;
       if(!_allIn) {
         int [] cols = newCols;
-//        if(newlySelected != active) {
-//          cols = new int[active];
-//
-//        }
         cols[newlySelected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
         cols = Arrays.copyOf(cols, newlySelected);
         _beta = ArrayUtils.select(_beta, cols);
         if(_u != null) _u = ArrayUtils.select(_u,cols);
         _activeData = _dinfo.filterExpandedColumns(cols);
         assert _activeData.activeCols().length == _beta.length;
+        assert _u == null || _activeData.activeCols().length == _u.length;
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
