@@ -562,9 +562,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if (!firstIter && !_state._lsNeeded && !progress(t._beta, t._likelihood))
               return;
             int [] zeros = t._gram.dropZeroCols();
-            t._xy = ArrayUtils.removeIds(t._xy,zeros);
-            t._beta = ArrayUtils.removeIds(t._beta,zeros);
-            _state.removeCols(zeros);
+            if(zeros.length > 0) {
+              t._xy = ArrayUtils.removeIds(t._xy, zeros);
+              t._beta = ArrayUtils.removeIds(t._beta, zeros);
+              _state.removeCols(zeros);
+            }
             betaCnd = solveGram(s,t);
           }
           firstIter = false;

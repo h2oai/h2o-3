@@ -140,10 +140,9 @@ public final class ComputationState {
     _activeData = _activeData != null?_activeData:_dinfo;
     _allIn = _allIn || _parms._alpha[0]*lambdaNew == 0 || _activeBC.hasBounds();
     if (!_allIn) {
-      final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
+      final double rhs = Math.max(0,_alpha * (2 * lambdaNew - lambdaOld));
       int [] newCols = MemoryManager.malloc4(P);
       int j = 0;
-
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
       for (int i = 0; i < P; ++i) {
         if (j < oldActiveCols.length && i == oldActiveCols[j]) {
