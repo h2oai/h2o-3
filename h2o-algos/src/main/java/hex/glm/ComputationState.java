@@ -357,6 +357,8 @@ public final class ComputationState {
     int [] activeCols = ArrayUtils.removeIds(_activeData.activeCols(),cols);
     if(_beta != null)
       _beta = ArrayUtils.removeIds(_beta,cols);
+    if(_u != null)
+      _u = ArrayUtils.removeIds(_u,cols);
     if(_ginfo != null && _ginfo._gradient != null)
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
