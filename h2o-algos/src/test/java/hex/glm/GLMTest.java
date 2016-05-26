@@ -61,50 +61,51 @@ public class GLMTest  extends TestUtil {
 
     public TestScore0(GLMModel m, boolean w, boolean o) {_m = m; _weights = w; _offset = o;}
 
+    private void checkScore(long rid, double [] predictions, double [] outputs){
+      int start = 0;
+      if(_m._parms._family == Family.binomial && Math.abs(predictions[2] - _m.defaultThreshold()) < 1e-10)
+        start = 1;
+      if(_m._parms._family == Family.multinomial) {
+        double [] maxs = new double[2];
+        for(int j = 1; j < predictions.length; ++j) {
+          if(predictions[j] > maxs[0]) {
+            if(predictions[j] > maxs[1]) {
+              maxs[0] = maxs[1];
+              maxs[1] = predictions[j];
+            } else maxs[0] = predictions[j];
+          }
+        }
+        if((maxs[1] - maxs[0]) < 1e-10)
+          start = 1;
+      }
+      for (int j = start; j < predictions.length; ++j)
+        assertEquals("mismatch at row " + (rid) + ", p = " + j + ": " + outputs[j] + " != " + predictions[j] + ", predictions = " + Arrays.toString(predictions) + ", output = " + Arrays.toString(outputs), outputs[j], predictions[j], 1e-6);
+    }
     @Override public void map(Chunk [] chks) {
-      int nout = _m._parms._family == Family.multinomial?_m._output.nclasses()+1:_m._parms._family == Family.binomial?3:1;
-      Chunk [] outputs = Arrays.copyOfRange(chks,chks.length-nout,chks.length);
-      chks = Arrays.copyOf(chks,chks.length-nout);
-      Chunk off = new C0DChunk(0,chks[0]._len);
-      Chunk w = new C0DChunk(1,chks[0]._len);
-      double [] tmp = new double[_m._output._dinfo._cats + _m._output._dinfo._nums];
-      double [] predictions = new double [nout];
-      if(_offset) {
+      int nout = _m._parms._family == Family.multinomial ? _m._output.nclasses() + 1 : _m._parms._family == Family.binomial ? 3 : 1;
+      Chunk[] outputChks = Arrays.copyOfRange(chks, chks.length - nout, chks.length);
+      chks = Arrays.copyOf(chks, chks.length - nout);
+      Chunk off = new C0DChunk(0, chks[0]._len);
+      Chunk w = new C0DChunk(1, chks[0]._len);
+      double[] tmp = new double[_m._output._dinfo._cats + _m._output._dinfo._nums];
+      double[] predictions = new double[nout];
+      double[] outputs = new double[nout];
+      if (_offset) {
         off = chks[chks.length - 1];
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
-      if(_weights) {
+      if (_weights) {
         w = chks[chks.length - 1];
         chks = Arrays.copyOf(chks, chks.length - 1);
       }
-      if(_weights || _offset) {
-        for (int i = 0; i < chks[0]._len; ++i) {
-          _m.score0(chks, w.atd(i), off.atd(i),i, tmp, predictions);
-          int start = 0;
-          if(_m._parms._family == Family.binomial && Math.abs(predictions[2] - _m.defaultThreshold()) < 1e-10)
-            start = 1;
-          if(_m._parms._family == Family.multinomial) {
-            double [] maxs = new double[2];
-            for(int j = 1; j < predictions.length; ++j) {
-              if(predictions[j] > maxs[0]) {
-                if(predictions[j] > maxs[1]) {
-                  maxs[0] = maxs[1];
-                  maxs[1] = predictions[j];
-                } else maxs[0] = predictions[j];
-              }
-            }
-            if((maxs[1] - maxs[0]) < 1e-10)
-              start = 1;
-          }
-          for (int j = start; j < predictions.length; ++j)
-            assertEquals("mismatch at row " + (i + chks[0].start()) + ", p = " + j + ": " + outputs[j].atd(i) + " != " + predictions[j], outputs[j].atd(i), predictions[j], 1e-6);
-        }
-      } else {
-        for (int i = 0; i < chks[0]._len; ++i) {
+      for (int i = 0; i < chks[0]._len; ++i) {
+        if (_weights || _offset)
+          _m.score0(chks, w.atd(i), off.atd(i), i, tmp, predictions);
+        else
           _m.score0(chks, i, tmp, predictions);
-          for (int j = 0; j < predictions.length; ++j)
-            assertEquals("mismatch at row " + (i + chks[0].start()) + ", p = " + j + ": " + outputs[j].atd(i) + " != " + predictions[j] + ", preds = " + Arrays.toString(predictions), outputs[j].atd(i), predictions[j], 1e-6);
-        }
+        for (int j = 0; j < predictions.length; ++j)
+          outputs[j] = outputChks[j].atd(i);
+        checkScore(i + chks[0].start(), predictions, outputs);
       }
     }
   }
