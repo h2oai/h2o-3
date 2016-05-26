@@ -151,12 +151,12 @@ class H2OGridSearch(object):
   def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     #same api as estimator_base train
     algo_params = locals()
-
     parms = self._parms.copy()
     parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
     parms["search_criteria"] = self.search_criteria
     parms["hyper_parameters"] = self.hyper_params  # unique to grid search
     parms.update({k:v for k,v in list(self.model._parms.items()) if v is not None})  # unique to grid search
+    parms.update(params)
     if '__class__' in parms:  # FIXME: hackt for PY3
       del parms['__class__']
     y = algo_params["y"]
@@ -233,7 +233,7 @@ class H2OGridSearch(object):
                                                 _rest_version=kwargs['_rest_version'])['models'][0]
       self._resolve_grid(grid.dest_key, grid_json, first_model_json)
     else:
-      raise ValueError("Gridsearch returns no model due to bad parameter values.")
+      raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
 
   def _resolve_grid(self, grid_id, grid_json, first_model_json):
     model_class = H2OGridSearch._metrics_class(first_model_json)

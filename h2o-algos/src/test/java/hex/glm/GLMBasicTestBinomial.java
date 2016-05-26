@@ -139,7 +139,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         try {
           params._solver = s;
           System.out.println("SOLVER = " + s);
-          model = new GLM(params).trainModel().get();
+          model = new GLM(params,Key.make("testOffset_" + s)).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
@@ -181,10 +181,10 @@ public class GLMBasicTestBinomial extends TestUtil {
           Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i),CD?1e-3:1e-6);
+          GLMTest.testScoring(model,fTrain);
         } finally {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
-
           if (scoreTest != null)  scoreTest.delete();
         }
       }
@@ -217,6 +217,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     GLMModel m = null;
     try {
       m = new GLM(parms).trainModel().get();
+      GLMTest.testScoring(m,_abcd);
       System.out.println(m.coefficients());
     } finally {
       if(m != null) m.delete();
@@ -371,6 +372,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(model._output._validation_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
+          GLMTest.testScoring(model,fTest);
           // test the actual predictions
           Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)

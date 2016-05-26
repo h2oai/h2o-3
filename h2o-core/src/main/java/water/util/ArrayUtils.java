@@ -634,6 +634,15 @@ public class ArrayUtils {
       if( elem==ls[i] ) return i;
     return -1;
   }
+  // behaves like Arrays.binarySearch, but is slower -> Just good for tiny arrays (length<20)
+  public static int linearSearch(double[] vals, double v) {
+    final int N=vals.length;
+    for (int i=0; i<N; ++i) {
+      if (vals[i]==v) return i;
+      if (vals[i]>v) return -i-1;
+    }
+    return -1;
+  }
 
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
@@ -1308,5 +1317,77 @@ public class ArrayUtils {
     if(id == ary.length-1) return Arrays.copyOf(ary,id);
     if(id == 0) return Arrays.copyOfRange(ary,id,ary.length);
     return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id,ary.length));
+  }
+
+  public static double[] padUniformly(double[] origPoints, int newLength) {
+    int origLength = origPoints.length;
+    if (newLength <= origLength || origLength<=1) return origPoints;
+    int extraPoints = newLength - origLength;
+    int extraPointsPerBin = extraPoints/(origLength-1);
+    double[] res = new double[newLength];
+
+    int pos=0;
+    int rem = extraPoints - extraPointsPerBin*(origLength-1);
+    for (int i=0;i<origLength-1;++i) {
+      double startPos = origPoints[i];
+      double delta = origPoints[i+1]-startPos;
+      int ext = extraPointsPerBin + (i<rem ? 1 : 0);
+      res[pos++] = startPos;
+      for (int j=0;j<ext;++j)
+        res[pos++] = startPos + (j+0.5) / ext * delta;
+    }
+    res[pos] = origPoints[origLength-1];
+    return res;
+  }
+
+  // See HistogramTest JUnit for tests
+  public static double[] makeUniqueAndLimitToRange(double[] splitPoints, double min, double maxEx) {
+    double last= splitPoints[0];
+    double[] uniqueValidPoints = new double[splitPoints.length+2];
+    int count=0;
+    // keep all unique points that are minimally overlapping with min..maxEx
+    for (int i = 0; i< splitPoints.length; ++i) {
+      double pos = splitPoints[i];
+      // first one
+      if (pos >= min && count==0) {
+        uniqueValidPoints[count++]= min;
+        if (pos> min) uniqueValidPoints[count++]=pos;
+        last=pos;
+        continue;
+      }
+      //last one
+      else if (pos > maxEx) {
+        break;
+      }
+      // regular case: add to uniques
+      else if (pos > min && pos < maxEx && (i==0 || pos != last)) {
+        uniqueValidPoints[count++] = pos;
+        last = pos;
+      }
+    }
+    if (count==0) {
+      return new double[]{min};
+    }
+    return Arrays.copyOfRange(uniqueValidPoints,0,count);
+  }
+
+  // See HistogramTest JUnit for tests
+  public static double[] limitToRange(double[] sortedSplitPoints, double min, double maxEx) {
+    int start=Arrays.binarySearch(sortedSplitPoints, min);
+    if (start<0) start=-start-1;
+    // go back one more to return at least one value
+    if (start==sortedSplitPoints.length) start--;
+    // go back one more to include the min (inclusive)
+    if (sortedSplitPoints[start] > min && start>0) start--;
+    assert(start>=0);
+    assert(sortedSplitPoints[start] <= min);
+
+    int end=Arrays.binarySearch(sortedSplitPoints, maxEx);
+    if (end<0) end=-end-1;
+    assert(end>0 && end<= sortedSplitPoints.length);
+    assert(end>=start);
+    assert(sortedSplitPoints[end-1] < maxEx);
+
+    return Arrays.copyOfRange(sortedSplitPoints,start,end);
   }
 }

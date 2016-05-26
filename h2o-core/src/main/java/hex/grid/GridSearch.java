@@ -5,6 +5,7 @@ import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.AtomicUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -114,10 +115,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
     long gridWork=0;
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
-      while (it.hasNext(model)) {
+      int count=0;
+      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
         try {
           Model.Parameters parms = it.nextModelParameters(model);
-          gridWork += (parms._nfolds > 1 ? (parms._nfolds+2/*pre+post-fold workd*/) : 1) *parms.progressUnits();
+          gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
         }
@@ -134,7 +136,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         gridSearch(grid);
         tryComplete();
       }
-    }, gridWork);
+    }, gridWork, it.max_runtime_secs());
   }
 
   /**
@@ -172,12 +174,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       int counter = grid.getModelCount();
       while (it.hasNext(model)) {
         if(_job.stop_requested() ) return;  // Handle end-user cancel request
-        double time_remaining_secs = it.time_remaining_secs();
         double max_runtime_secs = it.max_runtime_secs();
 
-        if (time_remaining_secs < 0) {
-          Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
-          return;
+        double time_remaining_secs = Double.MAX_VALUE;
+        if (max_runtime_secs > 0) {
+          time_remaining_secs = it.time_remaining_secs();
+          if (time_remaining_secs < 0) {
+            Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
+            return;
+          }
         }
 
         MP params;
@@ -189,7 +194,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // exception up, just mark combination of model parameters as wrong
 
           // Do we need to limit the model build time?
-          if (max_runtime_secs < Double.MAX_VALUE) {
+          if (max_runtime_secs > 0) {
             Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
             double scale = params._nfolds > 0 ? params._nfolds+1 : 1; //remaining time per cv model is less
             if (params._max_runtime_secs == 0) { // unlimited

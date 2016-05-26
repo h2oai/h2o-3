@@ -6,6 +6,7 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.FrameCreator;
+import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.util.Random;
@@ -76,6 +77,7 @@ public class CreateFrame extends Iced {
       if (value != 0)
         throw new IllegalArgumentException("Cannot set data to a constant value if randomize=true.");
     }
+    Log.info("Generated seed: " + seed);
 
     FrameCreator fc = new FrameCreator(this);
     return _job.start(fc,fc.nChunks()*7);      // And start FrameCreator

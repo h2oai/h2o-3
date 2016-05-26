@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.tree.SharedTreeModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -228,7 +229,7 @@ public class GBMTest extends TestUtil {
       double auc = mm._auc._auc;
       Assert.assertTrue(0.83 <= auc && auc < 0.87); // Sanely good model
       double[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ard(ard(316, 77), ard(26, 81)), cm);
+      Assert.assertArrayEquals(ard(ard(322, 71), ard(31, 76)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -611,7 +612,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21971359753455724, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21971340929271474, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -668,7 +669,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21971359753455724, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21971340929271474, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1635,6 +1636,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "C55";
       parms._seed = 1234;
+      parms._auto_rebalance = false;
       parms._col_sample_rate_per_tree = 0.5f;
       parms._col_sample_rate = 0.3f;
       parms._ntrees = 5;
@@ -1721,7 +1723,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.79259) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.65668) < 1e-4);
 
     } finally {
       parms._train.remove();
@@ -1861,7 +1863,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void randomizeSplitPoints() {
+  @Test public void histoTypes() {
     Frame tfr = null;
     Key[] ksplits = null;
     GBMModel gbm = null;
@@ -1877,8 +1879,8 @@ public class GBMTest extends TestUtil {
       // Invoke the job
       sf.exec().get();
       ksplits = sf._destination_frames;
-      boolean[] randomize = new boolean[]{false, true};
-      final int N = randomize.length;
+      SharedTreeModel.SharedTreeParameters.HistogramType[] histoType = SharedTreeModel.SharedTreeParameters.HistogramType.values();
+      final int N = histoType.length;
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
@@ -1887,22 +1889,23 @@ public class GBMTest extends TestUtil {
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
         parms._learn_rate = 0.05f;
-        parms._random_split_points = randomize[i];
-        parms._ntrees = 20;
+        parms._histogram_type = histoType[i];
+        parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 5;
+        parms._seed = 0xDECAFFEE;
 
         GBM job = new GBM(parms);
         gbm = job.trainModel().get();
         loglosses[i] = gbm._output._scored_valid[gbm._output._scored_valid.length - 1]._logloss;
         if (gbm!=null) gbm.delete();
       }
-      for (int i = 0; i < randomize.length; ++i) {
-        Log.info("randomize: " + randomize[i] + " -> validation logloss: " + loglosses[i]);
+      for (int i = 0; i < histoType.length; ++i) {
+        Log.info("histoType: " + histoType[i] + " -> validation logloss: " + loglosses[i]);
       }
       int idx = ArrayUtils.minIndex(loglosses);
-      Log.info("Optimal randomization: " + randomize[idx]);
-      //assertTrue(1 == idx);
+      Log.info("Optimal randomization: " + histoType[idx]);
+      assertTrue(4 == idx);
     } finally {
       if (gbm!=null) gbm.delete();
       if (tfr!=null) tfr.delete();

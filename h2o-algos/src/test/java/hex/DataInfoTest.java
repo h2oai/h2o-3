@@ -387,9 +387,9 @@ public class DataInfoTest extends TestUtil {
             if( j>=di.numStart() ) { // finish scaling the sparse value
               sparseDoubleScaled -= (standardize?(di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]):0);
             }
-            if( r.bad || sparseRows[i].bad ) {
-              if( sparseRows[i].bad && r.bad ) continue;  // both bad OK
-              throw new RuntimeException("dense row was "+(r.bad?"bad":"not bad") + "; but sparse row was "+(sparseRows[i].bad?"bad":"not bad"));
+            if( r.isBad() || sparseRows[i].isBad() ) {
+              if( sparseRows[i].isBad() && r.isBad() ) continue;  // both bad OK
+              throw new RuntimeException("dense row was "+(r.isBad()?"bad":"not bad") + "; but sparse row was "+(sparseRows[i].isBad()?"bad":"not bad"));
             }
             if( Math.abs(r.get(j)-sparseDoubleScaled) > 1e-14 ) {
               printVals(di,r,sparseRows[i]);

@@ -14,7 +14,7 @@ class GroupBy:
          >>> my_frame = ...  # some existing H2OFrame
          >>> grouped = my_frame.group_by(by=["C1","C2"])
          >>> grouped.sum(col="X1",na="all").mean(col="X5",na="all").max()
-         >>> grouped.get_frame
+         >>> grouped.get_frame()
 
   Any number of aggregations may be chained together in this manner.
 

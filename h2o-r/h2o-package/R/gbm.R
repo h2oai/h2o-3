@@ -23,7 +23,7 @@
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.
 #' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
-#' @param learn_rate_annealing Scale down the learning rate by this factor after every tree
+#' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
 #' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
 #' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
 #' @param col_sample_rate Column sample rate per split (from \code{0.0} to \code{1.0})
@@ -48,8 +48,9 @@
 #'        fewer cpus used.  Suitable for small datasets.
 #' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo".
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
+#'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will 
+#'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param score_each_iteration Attempts to score each tree.
@@ -66,7 +67,8 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
-#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
+#' @param histogram_type What type of histogram to use for finding optimal split points
+#'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
@@ -112,7 +114,7 @@ h2o.gbm <- function(x, y, training_frame,
                     build_tree_one_node = FALSE,
                     nfolds = 0,
                     fold_column = NULL,
-                    fold_assignment = c("AUTO","Random","Modulo"),
+                    fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     score_each_iteration = FALSE,
@@ -124,7 +126,7 @@ h2o.gbm <- function(x, y, training_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     min_split_improvement,
-                    random_split_points=FALSE,
+                    histogram_type=c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin"),
                     max_abs_leafnode_pred
                     )
 {
@@ -220,7 +222,7 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
-  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
+  if(!missing(histogram_type)) parms$histogram_type <- histogram_type
   if(!missing(max_abs_leafnode_pred)) parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
 
   .h2o.modelJob('gbm', parms)

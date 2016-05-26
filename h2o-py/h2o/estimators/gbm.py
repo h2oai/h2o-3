@@ -69,8 +69,10 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Number of folds for cross-validation. If nfolds >= 2, then validation must
     remain empty.
   fold_assignment : str
-    Cross-validation fold assignment scheme, if fold_column is not specified.
-    Must be "AUTO", "Random" or "Modulo"
+    Cross-validation fold assignment scheme, if fold_column is not
+    specified, must be "AUTO", "Random",  "Modulo", or "Stratified". 
+    The Stratified option will stratify the folds based on the response 
+    variable, for classification problems.
   keep_cross_validation_predictions : bool
     Whether to keep the predictions of the cross-validation models
   keep_cross_validation_fold_assignment : bool
@@ -91,8 +93,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
   min_split_improvement : float
     Minimum relative improvement in squared error reduction for a split to happen
-  random_split_points : boolean
-    Whether to use random split points for histograms (to pick the best split from).
+  histogram_type : str
+    What type of histogram to use for finding optimal split points.
+    Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
   max_abs_leafnode_pred : float
     Maximum absolute value of a leaf node prediction.
 
@@ -110,7 +113,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                keep_cross_validation_fold_assignment=None,
                stopping_rounds=None, stopping_metric=None, stopping_tolerance=None,
                score_each_iteration=None, score_tree_interval=None, checkpoint=None,
-               min_split_improvement=None, random_split_points=None, max_abs_leafnode_pred=None):
+               min_split_improvement=None, histogram_type=None, max_abs_leafnode_pred=None):
     super(H2OGradientBoostingEstimator, self).__init__()
     self._parms = locals()
     self._parms = {k:v for k,v in self._parms.items() if k!="self"}
@@ -372,12 +375,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
       self._parms["min_split_improvement"] = value
 
   @property
-  def random_split_points(self):
-    return self._parms["random_split_points"]
+  def histogram_type(self):
+    return self._parms["histogram_type"]
 
-  @random_split_points.setter
-  def random_split_points(self, value):
-    self._parms["random_split_points"] = value
+  @histogram_type.setter
+  def histogram_type(self, value):
+    self._parms["histogram_type"] = value
 
   @property
   def max_abs_leafnode_pred(self):

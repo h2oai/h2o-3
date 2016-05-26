@@ -16,7 +16,7 @@ def javamunge_assembly():
     print("Import and Parse data")
     types = {"int_rate":"String", "revol_util":"String", "emp_length":"String"}
     data = h2o.import_file(path=train, col_types=types)
-    test = h2o.import_file(path=test,  col_types=types)
+    test = h2o.import_file(path=test,  col_types=data.types) ## use the same data types as the training set for the test set
     test = test[[1,5,19,23,45,66,99,590,8903,9999,10001,23892,23893,50123],:]
     test = h2o.assign(test,"test")
 

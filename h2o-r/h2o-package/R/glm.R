@@ -22,8 +22,8 @@
 #'        \code{"poisson"}: \code{"log"}, \code{"identity"}\cr
 #'        \code{"gamma"}: \code{"inverse"}, \code{"log"}, \code{"identity"}\cr
 #'        \code{"tweedie"}: \code{"tweedie"}\cr
-#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}.
-#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}.
+#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}. Default is 0.
+#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}. Default is 1.
 #' @param alpha A numeric in [0, 1] specifying the elastic-net mixing parameter.
 #'                The elastic-net penalty is defined to be:
 #'                \deqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|]}
@@ -48,8 +48,9 @@
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo".
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
+#'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will
+#'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param intercept Logical, include constant term (intercept) in the model.
@@ -124,7 +125,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     lambda_min_ratio = -1.0,
                     nfolds = 0,
                     fold_column = NULL,
-                    fold_assignment = c("AUTO","Random","Modulo"),
+                    fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     beta_constraints = NULL,

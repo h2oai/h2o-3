@@ -8,16 +8,17 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.TestUtil;
+import water.*;
 
 import water.fvec.*;
 import water.util.FrameUtils;
 
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -64,13 +65,14 @@ public class GLMBasicTestMultinomial extends TestUtil {
       double[] alpha = new double[]{1};
       double[] expected_deviance = new double[]{25499.76};
       double[] lambda = new double[]{2.544750e-05};
-      for (Solver s : new Solver[]{Solver.IRLSM, Solver.L_BFGS}) {
+      for (Solver s : new Solver[]{Solver.IRLSM, Solver.COORDINATE_DESCENT, Solver.L_BFGS}) {
         System.out.println("solver = " + s);
         params._solver = s;
         for (int i = 0; i < alpha.length; ++i) {
           params._alpha[0] = alpha[i];
           params._lambda[0] = lambda[i];
           model = new GLM(params).trainModel().get();
+//          GLMTest.testScoring(model,_covtype);
           System.out.println(model._output._training_metrics);
           System.out.println(model._output._validation_metrics);
           assertTrue(model._output._training_metrics.equals(model._output._validation_metrics));
@@ -78,7 +80,6 @@ public class GLMBasicTestMultinomial extends TestUtil {
           preds = model.score(_covtype);
           ModelMetricsMultinomialGLM mmTrain = (ModelMetricsMultinomialGLM) hex.ModelMetricsMultinomial.getFromDKV(model, _covtype);
           assertTrue(model._output._training_metrics.equals(mmTrain));
-          model.testJavaScoring(_covtype, preds, 1e-5);
           model.delete();
           model = null;
           preds.delete();

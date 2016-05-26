@@ -319,7 +319,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
 
         SVDModel svd = (SVDModel)ModelCacheManager.get(parms);
         if( svd == null ) svd = new SVD(parms,_job).trainModelNested();
-        if (stop_requested()) return null;
+//        if (stop_requested()) return null;    // breaks the code here due to no null checking later.
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -359,7 +359,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         ModelCacheManager MCM = H2O.getMCM();
         KMeansModel km = (KMeansModel)MCM.get(parms);
         if( km == null ) km = new KMeans(parms,_job).trainModelNested();
-        if (stop_requested()) return null;
+//        if (stop_requested()) return null;
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist
@@ -675,7 +675,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model.update(_job);
       } finally {
         _parms.read_unlock_frames(_job);
-        if (model != null) model.unlock(_job);
+
+        List<Key> keep = new ArrayList<>();
+        if (model != null) {
+          Frame loadingFrm = DKV.getGet(model._output._representation_key);
+          if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
+
+          model.unlock(_job);
+        }
         if (tinfo != null) tinfo.remove();
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
@@ -689,9 +696,7 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
           }
         }
-        List<Key> keep = new ArrayList<>();
-        Frame loadingFrm = DKV.getGet(model._output._representation_key);
-        if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
+
         Scope.exit(keep.toArray(new Key[0]));
       }
       tryComplete();

@@ -44,8 +44,6 @@ public class Dropout {
   public void randomlySparsifyActivation(Storage.Vector a, long seed) {
     if (a instanceof Storage.DenseVector)
       randomlySparsifyActivation((Storage.DenseVector) a, seed);
-    else if (a instanceof Storage.SparseVector)
-      randomlySparsifyActivation((Storage.SparseVector)a, seed);
     else throw new UnsupportedOperationException("randomlySparsifyActivation not implemented for this type: " + a.getClass().getSimpleName());
   }
 
@@ -55,13 +53,6 @@ public class Dropout {
     setSeed(seed);
     for( int i = 0; i < a.size(); i++ )
       if (_rand.nextFloat() < _rate) a.set(i, 0);
-  }
-
-  private void randomlySparsifyActivation(Storage.SparseVector a, long seed) {
-    if (_rate == 0) return;
-    setSeed(seed);
-    for (Storage.SparseVector.Iterator it=a.begin(); !it.equals(a.end()); it.next())
-      if (_rand.nextFloat() < _rate) it.setValue(0f);
   }
 
   // for hidden layers

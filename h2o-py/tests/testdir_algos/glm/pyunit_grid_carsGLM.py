@@ -43,16 +43,17 @@ def grid_cars_GLM():
             valid[response_col] = valid[response_col].asfactor()
 
     #grid_space.update({"lambda":[0.1,0.05,0.01]})
-    grid_space.pop('family')
+    family = grid_space.pop('family')[0]
     print("Grid space: {0}".format(grid_space))
     print("Constructing the grid of glm models...")
+    print("family = ",family)
     cars_glm_grid = H2OGridSearch(H2OGeneralizedLinearEstimator, hyper_params=grid_space)
     if validation_scheme == 1:
-        cars_glm_grid.train(x=predictors,y=response_col,training_frame=train)
+        cars_glm_grid.train(x=predictors,y=response_col,training_frame=train, family=family)
     elif validation_scheme == 2:
-        cars_glm_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+        cars_glm_grid.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds, family=family)
     else:
-        cars_glm_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+        cars_glm_grid.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid, family=family)
 
     for model in cars_glm_grid:
       assert isinstance(model, H2OGeneralizedLinearEstimator)
@@ -76,11 +77,11 @@ def grid_cars_GLM():
     print("Constructing the new grid of glm models...")
     cars_glm_grid2 = H2OGridSearch(H2OGeneralizedLinearEstimator, hyper_params=new_grid_space)
     if validation_scheme == 1:
-        cars_glm_grid2.train(x=predictors,y=response_col,training_frame=train)
+        cars_glm_grid2.train(x=predictors,y=response_col,training_frame=train, family=family)
     elif validation_scheme == 2:
-        cars_glm_grid2.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds)
+        cars_glm_grid2.train(x=predictors,y=response_col,training_frame=train,nfolds=nfolds, family=family)
     else:
-        cars_glm_grid2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid)
+        cars_glm_grid2.train(x=predictors,y=response_col,training_frame=train,validation_frame=valid, family=family)
     actual_size2 = len(cars_glm_grid2)
     assert actual_size == actual_size2, "Expected duplicates to be ignored. Without dups grid size: {0}. With dups " \
                                         "size: {1}".format(actual_size, actual_size2)

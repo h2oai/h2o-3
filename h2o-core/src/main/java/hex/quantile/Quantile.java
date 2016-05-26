@@ -80,7 +80,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         for( int n=0; n<_ncols; n++ ) {
           if( stop_requested() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
-          if (vec.isBad()) {
+          if (vec.isBad() || vec.isCategorical() || vec.isString() || vec.isTime() || vec.isUUID()) {
             model._output._quantiles[n] = new double[_parms._probs.length];
             Arrays.fill(model._output._quantiles[n], Double.NaN);
             continue;

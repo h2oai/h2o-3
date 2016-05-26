@@ -5,6 +5,7 @@ import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsRegression;
 import hex.SplitFrame;
+import hex.tree.SharedTreeModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -31,8 +32,6 @@ public class DRFTest extends TestUtil {
   abstract static class PrepData { abstract int prep(Frame fr); }
 
   static String[] s(String...arr)  { return arr; }
-  static long[]   a(long ...arr)   { return arr; }
-  static long[][] a(long[] ...arr) { return arr; }
 
   @Test public void testClassIris1() throws Throwable {
 
@@ -616,6 +615,7 @@ public class DRFTest extends TestUtil {
       parms._response_column = "C55";
       parms._ntrees = 10;
       parms._seed = 1234;
+      parms._auto_rebalance = false;
 
       // Build a first model; all remaining models should be equal
       DRF job = new DRF(parms);
@@ -1520,7 +1520,7 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
-  @Test public void randomizeSplitPoints() {
+  @Test public void histoTypes() {
     Frame tfr = null;
     Key[] ksplits = null;
     DRFModel drf = null;
@@ -1536,8 +1536,8 @@ public class DRFTest extends TestUtil {
       // Invoke the job
       sf.exec().get();
       ksplits = sf._destination_frames;
-      boolean[] randomize = new boolean[]{false, true};
-      final int N = randomize.length;
+      SharedTreeModel.SharedTreeParameters.HistogramType[] histoType = SharedTreeModel.SharedTreeParameters.HistogramType.values();
+      final int N = histoType.length;
       double[] loglosses = new double[N];
       for (int i = 0; i < N; ++i) {
         // Load data, hack frames
@@ -1545,25 +1545,25 @@ public class DRFTest extends TestUtil {
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
         parms._response_column = tfr.names()[resp];
-        parms._random_split_points = randomize[i];
+        parms._histogram_type = histoType[i];
         parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 10;
         parms._seed = 12345;
-        parms._nbins = 10;
-        parms._nbins_top_level = 10;
+        parms._nbins = 20;
+        parms._nbins_top_level = 20;
 
         DRF job = new DRF(parms);
         drf = job.trainModel().get();
         loglosses[i] = drf._output._scored_valid[drf._output._scored_valid.length - 1]._logloss;
         if (drf!=null) drf.delete();
       }
-      for (int i = 0; i < randomize.length; ++i) {
-        Log.info("randomize: " + randomize[i] + " -> validation logloss: " + loglosses[i]);
+      for (int i = 0; i < histoType.length; ++i) {
+        Log.info("histoType: " + histoType[i] + " -> validation logloss: " + loglosses[i]);
       }
       int idx = ArrayUtils.minIndex(loglosses);
-      Log.info("Optimal randomization: " + randomize[idx]);
-//      Assert.assertTrue(0 == idx); //this is a memorization problem, doesn't suffer from overfitting
+      Log.info("Optimal randomization: " + histoType[idx]);
+      Assert.assertTrue(4 == idx); //Quantiles are best
     } finally {
       if (drf!=null) drf.delete();
       if (tfr!=null) tfr.delete();

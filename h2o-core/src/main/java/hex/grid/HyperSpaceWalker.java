@@ -46,6 +46,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     double max_runtime_secs();
 
     /**
+     * @return the total time allowed for building this grid, in seconds.
+     */
+    int max_models();
+
+    /**
      * @return the time remaining for building this grid, in seconds.
      */
     double time_remaining_secs();
@@ -367,6 +372,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         @Override
         public double max_runtime_secs() { return Double.MAX_VALUE; }
 
+        public int max_models() { return _maxHyperSpaceSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)_maxHyperSpaceSize; }
+
         @Override
         public void modelFailed(Model failedModel) {
           // nada
@@ -482,7 +489,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
           //
           // _currentPermutationNum is 1-based
-          return (_visitedPermutationHashes.size() < _maxHyperSpaceSize && _currentPermutationNum < search_criteria().max_models());
+          return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
+                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
+          );
         }
 
         @Override
@@ -496,6 +505,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         public double max_runtime_secs() {
           return search_criteria().max_runtime_secs();
+        }
+
+        public int max_models() {
+          return search_criteria().max_models();
         }
 
         @Override

@@ -96,7 +96,7 @@ class Test_deeplearning_grid_search:
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
     hyper_params["balance_classes"] = [True, False]
-    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo"]
+    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["activation"] = ["Tanh", "TanhWithDropout"]
     hyper_params["quiet_mode"] = [True]
     hyper_params["initial_weight_distribution"] = ["Uniform", "UniformAdaptive", "Normal"]
@@ -253,6 +253,10 @@ class Test_deeplearning_grid_search:
             self.final_hyper_params["max_runtime_secs"] = self.hyper_params["max_runtime_secs"]
             len_good_time = len([x for x in self.hyper_params["max_runtime_secs"] if (x >= 0)])
             self.possible_number_models = self.possible_number_models*len_good_time
+
+        # make correction for stratified not being a legal argument
+        if "fold_assignment" in list(self.final_hyper_params):
+            self.possible_number_models = self.possible_number_models * 3/4
 
         # write out the hyper-parameters used into json files.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,

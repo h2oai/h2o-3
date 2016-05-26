@@ -29,4 +29,13 @@ public class TreeStats extends Iced {
   }
 
   public void setNumTrees(int i) { _num_trees = i; }
+
+  @Override
+  public String toString() {
+    return "TreeStats{" +
+           "_min_depth=" + _min_depth +
+           ", _max_depth=" + _max_depth +
+           ", _mean_depth=" + _mean_depth +
+           '}';
+  }
 }

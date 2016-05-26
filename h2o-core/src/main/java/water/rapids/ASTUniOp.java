@@ -115,6 +115,39 @@ class ASTIsNA  extends ASTPrim {
   double op(double d) { return Double.isNaN(d)?1:0; }
 }
 
+/**
+ * Remove rows with NAs from the H2OFrame
+ * Note: Current implementation is NOT in place replacement
+ */
+class ASTNAOmit extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override
+  public String str() { return "na.omit"; }
+  @Override int nargs() { return 1+1; }
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    return new ValFrame(new MRTask() {
+      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+        for(int i=0;i<cs.length;++i) {
+          if( cs[i] instanceof CStrChunk ) ncs[i].addStr(cs[i],row);
+          else if( cs[i] instanceof C16Chunk ) ncs[i].addUUID(cs[i],row);
+          else if( cs[i].hasFloat() ) ncs[i].addNum(cs[i].atd(row));
+          else ncs[i].addNum(cs[i].at8(row),0);
+        }
+      }
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        int col;
+        for(int row=0;row<cs[0]._len;++row) {
+          for( col = 0; col < cs.length; ++col)
+            if( cs[col].isNA(row) ) break;
+          if( col==cs.length ) copyRow(row,cs,ncs);
+        }
+      }
+    }.doAll(fr.types(),fr).outputFrame(Key.make(), fr.names(), fr.domains()));
+  }
+}
+
 class ASTRunif extends ASTPrim {
   @Override
   public String[] args() { return new String[]{"ary", "seed"}; }

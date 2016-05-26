@@ -107,8 +107,9 @@ public abstract class GLMTask  {
     @Override
     public void chunkInit() {
       _sparseOffsets = MemoryManager.malloc8d(_nclasses);
-      for(int c = 0; c < _nclasses; ++c)
-        _sparseOffsets[c] = GLM.sparseOffset(_beta[c],_dinfo);
+      if(_sparse)
+        for(int c = 0; c < _nclasses; ++c)
+          _sparseOffsets[c] = GLM.sparseOffset(_beta[c],_dinfo);
     }
     @Override
     protected void processRow(Row r) {
@@ -465,13 +466,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo._catModes[cid]);
+          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catMode(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) etas[ids[i]] += _beta[id];
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo._catModes[cid]);
+          c.getIntegers(ids, 0, c._len,_dinfo.catMode(cid));
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) etas[i] += _beta[id];
@@ -485,13 +486,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo._catModes[cid]);
+          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catMode(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) _gradient[id] += etas[ids[i]];
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo._catModes[cid]);
+          c.getIntegers(ids, 0, c._len,_dinfo.catMode(cid));
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)ids[i]);
             if(id >=0) _gradient[id] += etas[i];
@@ -730,13 +731,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo._catModes[cid]);
+          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catMode(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0)ArrayUtils.add(etas[ids[i]],_beta[id]);
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo._catModes[cid]);
+          c.getIntegers(ids, 0, c._len,_dinfo.catMode(cid));
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) ArrayUtils.add(etas[i],_beta[id]);
@@ -750,13 +751,13 @@ public abstract class GLMTask  {
       for(int cid = 0; cid < _dinfo._cats; ++cid){
         Chunk c = chks[cid];
         if(c.isSparseZero()) {
-          int nvals = c.asSparseDoubles(vals,ids,_dinfo._catModes[cid]);
+          int nvals = c.asSparseDoubles(vals,ids,_dinfo.catMode(cid));
           for(int i = 0; i < nvals; ++i){
             int id = _dinfo.getCategoricalId(cid,(int)vals[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[ids[i]]);
           }
         } else {
-          c.getIntegers(ids, 0, c._len,_dinfo._catModes[cid]);
+          c.getIntegers(ids, 0, c._len,_dinfo.catMode(cid));
           for(int i = 0; i < ids.length; ++i){
             int id = _dinfo.getCategoricalId(cid,ids[i]);
             if(id >=0) ArrayUtils.add(_gradient[id],etas[i]);
@@ -1285,19 +1286,13 @@ public abstract class GLMTask  {
 
     @Override
     protected void processRow(Row r) { // called for every row in the chunk
-      if(r.bad || r.weight == 0) return;
+      if(r.isBad() || r.weight == 0) return;
       ++_nobs;
       double y = r.response(0);
       final int numStart = _dinfo.numStart();
       double wz,w;
       if(_glmf._family == Family.multinomial) {
-//        double maxRow = r.response(2);
         y = (y == _c)?1:0;
-//        double eta = r.innerProduct(_beta) + _sparseOffset;
-//          double etaExp = Math.exp(eta-maxRow);
-//        double sumExp = r.response(1);// + etaExp;
-//        double mu = (etaExp == Double.POSITIVE_INFINITY?1:(etaExp / sumExp));
-//        double mu = etaExp/sumExp;
         double mu = r.response(1);
         double eta = r.response(2);
         double d = mu*(1-mu);
@@ -1656,7 +1651,7 @@ public abstract class GLMTask  {
       Row r = _dinfo.newDenseRow();
       for(int i = 0; i < chunks[0]._len; ++i) {
         _dinfo.extractDenseRow(chunks,i,r);
-        if (r.bad || r.weight == 0) {
+        if (r.isBad() || r.weight == 0) {
           wChunk.set(i,0);
           zChunk.set(i,0);
           zTilda.set(i,0);

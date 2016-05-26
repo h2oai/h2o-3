@@ -7,9 +7,9 @@ import static hex.pca.PCAModel.*;
 import water.api.API;
 import water.api.ModelParametersSchema;
 
-public class AggregatorV3 extends ModelBuilderSchema<Aggregator,AggregatorV3,AggregatorV3.AggregatorParametersV3> {
+public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,AggregatorV99.AggregatorParametersV99> {
 
-  public static final class AggregatorParametersV3 extends ModelParametersSchema<AggregatorModel.AggregatorParameters, AggregatorParametersV3> {
+  public static final class AggregatorParametersV99 extends ModelParametersSchema<AggregatorModel.AggregatorParameters, AggregatorParametersV99> {
     static public String[] fields = new String[] {
             "model_id",
             "training_frame",

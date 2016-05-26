@@ -98,6 +98,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_predictions = false;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
+    public boolean _auto_rebalance = true;
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
@@ -1267,6 +1268,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         Class clz = JCodeGen.compile(modelName,java_text);
         genmodel = (GenModel)clz.newInstance();
       } catch (Exception e) {
+        e.printStackTrace();
         throw H2O.fail("Internal POJO compilation failed",e);
       }
 

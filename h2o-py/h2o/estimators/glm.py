@@ -43,10 +43,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         "tweedie" - "tweedie"
 
       tweedie_variance_power : int
-        numeric specifying the power for the variance function when family = "tweedie".
+        numeric specifying the power for the variance function when family = "tweedie". Default is 0.
 
       tweedie_link_power : int
-        A numeric specifying the power for the link function when family = "tweedie".
+        A numeric specifying the power for the link function when family = "tweedie". Default is 1.
 
       alpha : float
         A numeric in [0, 1] specifying the elastic-net mixing parameter.
@@ -92,8 +92,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         remain empty.
 
       fold_assignment : str
-        Cross-validation fold assignment scheme, if fold_column is not specified Must be
-        "AUTO", "Random" or "Modulo"
+        Cross-validation fold assignment scheme, if fold_column is not
+        specified, must be "AUTO", "Random",  "Modulo", or "Stratified". 
+        The Stratified option will stratify the folds based on the response 
+        variable, for classification problems.
 
       keep_cross_validation_predictions : bool
         Whether to keep the predictions of the cross-validation models
