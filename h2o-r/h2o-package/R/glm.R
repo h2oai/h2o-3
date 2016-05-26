@@ -34,6 +34,7 @@
 #'               The default prior is the observational frequency of class 1. Must be from (0,1) exclusive range or NULL (no prior).
 #' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
 #'                      \code{lambda} is interpreted as lambda min.
+#' @param early_stopping A logical value indicating whether to stop early when doing lambda search. H2O will stop the computation at the moment when the likelihood stops changing or gets  (on the validation data).
 #' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}.
 #' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number

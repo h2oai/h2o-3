@@ -887,6 +887,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long scoringTime = System.currentTimeMillis() - t1;
       _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
     }
+
     @Override
     public void computeImpl() {
       init(true);
@@ -917,15 +918,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sumExp += Math.exp(nb[i*N + P] - maxRow);
         _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
       }
-      double testDevOld = Double.NaN;
 
-      double oldDev = _validDinfo != null?nullDevTest:nullDevTrain;
-      final double nullDev = oldDev;
-      double newDev;
 
-      double [] devHistory = _parms._stopping_rounds>0?new double[_parms._stopping_rounds]:null;
+      double oldDevTrain = nullDevTrain;
+      double oldDevTest = nullDevTest;
 
-      int impcnt = 0;
+      double [] devHistoryTrain = new double[5];
+      double [] devHistoryTest = new double[5];
+
       if(!_parms._lambda_search)
         updateProgress(false);
       // lambda search loop
@@ -944,31 +944,37 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
 
         if(_parms._lambda_search) {  // compute train and test dev
-          double trainDev = newDev = _parms._family == Family.multinomial
+          double trainDev = _parms._family == Family.multinomial
             ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,_state.beta(), _nclass).doAll(_state._dinfo._adaptedFrame)._likelihood*2
             :new GLMResDevTask(_job._key, _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
           double testDev = -1;
-          if(_validDinfo != null)
-            newDev = testDev = _parms._family == Family.multinomial
-              ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,_dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
-              :new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
+          devHistoryTrain[i % devHistoryTrain.length] = (oldDevTrain - trainDev)/oldDevTrain;
+          oldDevTrain = trainDev;
+
+          if(_validDinfo != null) {
+            testDev = _parms._family == Family.multinomial
+                ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood * 2
+                : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
+            devHistoryTest[i % devHistoryTest.length] = (oldDevTest - testDev)/oldDevTest;
+            oldDevTest = testDev;
+          }
           Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
           _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
-          if(_parms._stopping_rounds > 0) {
-            devHistory[i % devHistory.length] = (oldDev - newDev)/oldDev;
-          }
-          oldDev = newDev;
-          if(_parms._early_stopping && _parms._stopping_rounds > 0 && i > _parms._stopping_rounds) {
-            double s = 0;
-            for(double d:devHistory) s += d;
-            s /= devHistory.length;
-            if(s < _parms._stopping_tolerance) {
-              Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", average improvement = " + s));
+          if(_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
+            double s = ArrayUtils.maxValue(devHistoryTrain);
+            if(s < 1e-4) {
+              Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on train = " + s));
               break; // started overfitting
             }
+            if(_validDinfo != null) {
+              s = ArrayUtils.maxValue(devHistoryTrain);
+              if(s < 1e-4) {
+                Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on test = " + s));
+                break; // started overfitting
+              }
+            }
           }
-          testDevOld = testDev;
           if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
               scoreAndUpdateModel(); // update partial results
           _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "exp.dev.ratio trn/tst= " + devFormatter.format(1 - trainDev/nullDevTrain) + "/" + devFormatter.format(1.0 - testDev/nullDevTest) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
