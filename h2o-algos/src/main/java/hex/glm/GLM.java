@@ -967,13 +967,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
           _model.update(_state.beta(), trainDev, testDev, _state._iter);
           if(_parms._stopping_rounds > 0) {
-            devHistory[i % devHistory.length] = oldDev - newDev;
+            devHistory[i % devHistory.length] = (oldDev - newDev)/oldDev;
           }
           oldDev = newDev;
           if(_parms._early_stopping && _parms._stopping_rounds > 0 && i > _parms._stopping_rounds) {
             double s = 0;
             for(double d:devHistory) s += d;
-            s = s/(devHistory.length*nullDev);
+            s /= devHistory.length;
             if(s < _parms._stopping_tolerance) {
               Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", average improvement = " + s));
               break; // started overfitting
