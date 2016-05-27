@@ -392,8 +392,25 @@ sortedGrid
 
 We can see that the best models have even better validation AUCs than our previous best models, so the random grid search was successful!
 
+```
+Hyper-Parameter Search Summary: ordered by decreasing auc
+   histogram_type sample_rate nbins_cats nbins min_rows col_sample_rate_change_per_level min_split_improvement max_depth col_sample_rate
+1 QuantilesGlobal        0.39         32   128        8                             1.07                 1e-06        26            0.86
+2      RoundRobin        0.92       4096  1024        4                             1.05                 1e-04        20            0.37
+3      RoundRobin        0.79         16  1024        8                                1                 1e-06        24            0.59
+4 QuantilesGlobal        0.72        256    16        1                             0.94                 1e-06        23            0.41
+5 UniformAdaptive        0.58         32  1024        4                             1.03                 1e-06        20            0.31
+  col_sample_rate_per_tree            model_ids               auc
+1                        1  final_grid_model_46 0.971400394477318
+2                     0.94  final_grid_model_93 0.970442378134686
+3                     0.74   final_grid_model_1  0.97032967032967
+4                      0.7 final_grid_model_149 0.970273316427163
+5                     0.96 final_grid_model_177 0.969991546914624
+```
+
+We can inspect the best 5 models from the grid search explicitly:
+
 ```{r message=FALSE, warning=FALSE}
-## Inspect the best 5 models from the grid search
 for (i in 1:5) {
   gbm <- h2o.getModel(sortedGrid@model_ids[[i]])
   print(h2o.auc(h2o.performance(gbm, valid = TRUE)))
@@ -471,10 +488,11 @@ We now have a blended probability of survival for each person on the Titanic.
 We can bring those ensemble predictions to our R session's memory space and use other R packages.
 
 ```{r message=FALSE, warning=FALSE}
-predsOnLaptop <- as.data.frame(prob)
+probInR  <- as.vector(prob)
+labelInR <- as.vector(as.numeric(test[[response]]))
 if (! ("cvAUC" %in% rownames(installed.packages()))) { install.packages("cvAUC") }
 library(cvAUC)
-cvAUC::AUC(as.vector(prob), as.vector(as.numeric(test[[response]])))
+cvAUC::AUC(probInR, labelInR)
 ```
 
 This simple blended ensemble test set prediction has an even higher AUC than the best single model!
