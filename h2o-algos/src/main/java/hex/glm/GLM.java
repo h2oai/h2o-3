@@ -1025,7 +1025,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         return !timeout() && !_job.stop_requested() && _state._iter < _parms._max_iterations;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-        _state.updateState(beta, gginfo);
+        if(gginfo._gradient == null)
+          _state.updateState(beta,gginfo._likelihood);
+        else
+          _state.updateState(beta, gginfo);
         if (!_parms._lambda_search)
           updateProgress(true);
         boolean converged = _state.converged();
