@@ -453,7 +453,7 @@ prob <- prob/k
 head(prob)
 ```
 
-We now have a blended probability for survival for each observation.
+We now have a blended probability of survival for each person on the Titanic.
 
 ```
 > head(prob)
