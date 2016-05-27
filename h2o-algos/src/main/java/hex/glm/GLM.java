@@ -492,7 +492,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           xy = ArrayUtils.removeIds(xy,collinear_cols);
         }
         chol.solve(xy);
-      } else { // todo add switch between COD and ADMM
+      } else {
         GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(),_state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _chol = slvr._chol;
         if(_state.l1pen() == 0 && !_state.activeBC().hasBounds()) {
@@ -1063,15 +1063,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
-    if(_parms._family == Family.multinomial && _parms._alpha[0] == 0)
-      s = Solver.L_BFGS; // multinomial does better with lbfgs
-    else if(_state.activeData().fullN() >= 5000) // cutoff has to be somewhere
+    if(_state.activeData().fullN() >= 5000) // cutoff has to be somewhere
       s = Solver.L_BFGS;
     else if(_parms._lambda_search && _parms._alpha[0] > 0) { // lambda search prefers coordinate descent
       // l1 lambda search is better with coordinate descent!
       s = Solver.COORDINATE_DESCENT;
-    } else if(_parms._lambda_search && _parms._alpha[0] > 0) s = Solver.COORDINATE_DESCENT;
-    Log.info(LogMsg("picked solver " + s));
+    } else if(_state.activeBC().hasBounds()) {
+      s = Solver.COORDINATE_DESCENT;
+    } else if(_parms._family == Family.multinomial && _parms._alpha[0] == 0)
+      s = Solver.L_BFGS; // multinomial does better with lbfgs
+    else
+      Log.info(LogMsg("picked solver " + s));
     _parms._solver = s;
     return s;
   }
