@@ -92,7 +92,7 @@ predictors <- setdiff(names(df), c(response, "name"))
  NA's   :911      NA's   :1188    NA                  :564 
 ```
 
-From now on, everything is generic and directly applies to most datasets. For multi-class problems, you can use `h2o.logloss()` or `h2o.confusionMatrix()` instead of `h2o.auc()` and for regression problems, you can use `h2o.deviance()` or `h2o.mse()`.
+From now on, everything is generic and directly applies to most datasets. We assume that all feature engineering is done at this stage and focus on model tuning. For multi-class problems, you can use `h2o.logloss()` or `h2o.confusionMatrix()` instead of `h2o.auc()` and for regression problems, you can use `h2o.deviance()` or `h2o.mse()`.
 
 ## Split the data for Machine Learning
 We split the data into three pieces: 60% for training, 20% for validation, 20% for final testing. 
