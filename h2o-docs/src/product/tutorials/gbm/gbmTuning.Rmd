@@ -713,6 +713,7 @@ h2o.exportFile(preds, "/tmp/bestPreds.csv", force=TRUE)
 ```
 
 The model can also be exported as a plain old Java object (POJO) for H2O-independent (standalone/Storm/Kafka/UDF) scoring in any Java environment.
+
 ```{r message=FALSE, warning=FALSE}
 h2o.download_pojo(gbm)
 ```
