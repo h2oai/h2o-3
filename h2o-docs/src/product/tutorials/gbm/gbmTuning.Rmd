@@ -665,7 +665,7 @@ auc 0.96724236 0.004884431 0.96428573  0.9557143 0.96811223  0.9753724  0.972727
 
 The avid reader might have noticed that we just implicitly did further parameter tuning using the "final" test set (which is part of the entire dataset `df`), which is not good practice - one is not supposed to use the "final" test set more than once. Hence, we're not going to pick a different "best" model, but we're just learning about the variance in AUCs. It turns out, for this tiny dataset, that the variance is rather large, which is not surprising.
 
-Keeping the same best model, we can make test set predictions as follows:
+Keeping the same "best" model, we can make test set predictions as follows:
 
 ```{r message=FALSE, warning=FALSE}
 gbm <- h2o.getModel(sortedGrid@model_ids[[1]])
@@ -700,7 +700,7 @@ Maximum Metrics: Maximum metrics at their respective thresholds
 9 max min_per_class_accuracy  0.227744 0.917160 110
 ```
 
-You can also see the best model in more detail in [Flow](http://localhost:54321/):
+You can also see the "best" model in more detail in [Flow](http://localhost:54321/):
 ![alt text](./best_gbm1.png "Best GBM from Grid Search in Flow")
 ![alt text](./best_gbm2.png "Best GBM from Grid Search in Flow")
 
