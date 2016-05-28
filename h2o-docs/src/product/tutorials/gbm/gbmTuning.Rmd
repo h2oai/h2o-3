@@ -1,7 +1,8 @@
 # H2O GBM Tuning Tutorial for R
 ### Arno Candel, PhD, Chief Architect, H2O.ai
 
-In this tutorial, we show how to build a well-tuned GBM model for a supervised classification task.
+In this tutorial, we show how to build a well-tuned H2O GBM model for a supervised classification task. We specifically don't focus on feature engineering and use a small dataset to allow you to reproduce these results in a few minutes on a laptop. This script can be directly transferred to datasets that are hundreds of GBs large and H2O clusters with dozens of compute nodes.
+
 This tutorial is written in Rmarkdown. You can download the source [here](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).
 
 ## Installation of the H2O R Package
