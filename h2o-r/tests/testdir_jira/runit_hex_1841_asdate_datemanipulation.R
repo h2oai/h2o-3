@@ -38,7 +38,7 @@ datetest <- function(){
   print(h2o.getTimezone())
   Log.info('uploading date testing dataset')
   # Data file is 10 columns of dates, each column in a different format
-  hdf <- h2o.importFile(normalizePath(locate('smalldata/jira/v-11.csv')))
+  hdf <- h2o.importFile(normalizePath(locate('smalldata/jira/v-11-euro.csv')))
 
   Log.info('data as loaded into h2o:')
   Log.info(head(hdf))
@@ -86,7 +86,7 @@ datetest <- function(){
   ldf <- as.data.frame( hdf )
 
   # build the truth using R internal date fns
-  rdf <- read.csv(locate('smalldata/jira/v-11.csv'))
+  rdf <- read.csv(locate('smalldata/jira/v-11-euro.csv'))
   rdf$ds1 <- as.Date(rdf$ds1, origin='1970-01-01')
   rdf$ds2 <- as.Date(rdf$ds2, format='%Y-%m-%d')
   rdf$ds3 <- as.Date(rdf$ds3, format='%d-%b-%y')
