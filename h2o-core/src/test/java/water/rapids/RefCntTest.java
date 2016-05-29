@@ -24,11 +24,11 @@ public class RefCntTest extends TestUtil {
     Vec.VectorGroup vg = crimes.anyVec().group();
 
     // Expect to compute and update crimes.hex "Date" column in-place, but the
-    // result is called py_1.  Exactly 1 new vector is made (result of as.Date)
+    // result is called py_1.  Exactly 1 new vector is made (result of +)
     int key1 = DKV.<Vec.VectorGroup>getGet(vg._key).len(); // Pull latest value from DKV (no caching allowed)
-    Assert.assertTrue(crimes.vec("Date").isString());
-    Exec.exec("(tmp= py_1 (:= chicagoCrimes10k.hex (as.Date (cols_py chicagoCrimes10k.hex \"Date\") \"%m/%d/%Y %I:%M:%S %p\") 2 []))",session);
-    Assert.assertTrue(crimes.vec("Date").isString());// User named frame is unchanged
+    Assert.assertTrue(crimes.vec("Date").isTime());
+    Exec.exec("(tmp= py_1 (:= chicagoCrimes10k.hex (+ (cols_py chicagoCrimes10k.hex \"Date\") 1) 2 []))",session);
+    Assert.assertTrue(crimes.vec("Date").isTime());// User named frame is unchanged
     Frame py_1 = DKV.getGet(Key.make("py_1"));
     Assert.assertTrue(py_1.vec("Date").isNumeric()); // tmp= py_1 holds the changed column
     Assert.assertTrue(py_1.vec("Date").mean() > 1300000000L); // msec since epoch is generally >1.3b msec
