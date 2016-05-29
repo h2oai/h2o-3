@@ -6,7 +6,7 @@ from tests import pyunit_utils
 
 
 def test_as_data():
-  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11-euro.csv"))
+  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11-eurodate.csv"))
   print(hdf.head())
 
   # NB: columns 1,5 are currently unsupported as date types
@@ -55,7 +55,7 @@ def test_as_data():
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf2 = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11-euro.csv"))
+  hdf2 = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11-eurodate.csv"))
   hdf2["ds9"] = hdf2["ds9"].asfactor()
 
   hdf5 = hdf2["ds5"]
