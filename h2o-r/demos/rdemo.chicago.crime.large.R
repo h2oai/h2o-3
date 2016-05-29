@@ -17,8 +17,11 @@ locate_source <- function(s) {
 # "Season", "HourOfDay"
 ComputeDateCols <- function(col, datePattern, dateTimeZone = "Etc/UTC") {
   if(nzchar(dateTimeZone) > 0) h2o.setTimezone(dateTimeZone)
-  # d <- as.Date(col, format = datePattern)
-  d <- col  # As of 5/29/2016 H2O now parses as a date
+
+  ## it's now already auto-detected as date, no need to convert to a date column
+  ## d <- as.Date(col, format = datePattern)
+  d <- col
+
   ds <- c(Day = h2o.day(d), Month = h2o.month(d), Year = h2o.year(d), WeekNum = h2o.week(d),
     WeekDay = h2o.dayOfWeek(d), HourOfDay = h2o.hour(d))
 
