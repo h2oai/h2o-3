@@ -53,8 +53,9 @@ datetest <- function(){
   # you need to call as.Date to convert the values to dates
   hdf$ds5 <- as.Date(hdf$ds5, "%d/%m/%y %H:%M")
   hdf$ds6 <- as.Date(hdf$ds6, "%d/%m/%Y %H:%M:%S")
-  hdf$ds7 <- as.Date(hdf$ds7, "%m/%d/%y")
-  hdf$ds8 <- as.Date(hdf$ds8, "%m/%d/%Y")
+  ## these two are now detected as date
+  #hdf$ds7 <- as.Date(hdf$ds7, "%m/%d/%y")
+  #hdf$ds8 <- as.Date(hdf$ds8, "%m/%d/%Y")
   hdf$ds9 <- as.Date(as.factor(hdf$ds9), "%Y%m%d")
   hdf$ds10 <- as.Date(hdf$ds10, "%Y_%m_%d")
 
