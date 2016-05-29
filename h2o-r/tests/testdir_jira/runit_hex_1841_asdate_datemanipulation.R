@@ -51,8 +51,8 @@ datetest <- function(){
   Log.info('Converting columns 5-10 to date columns')
   # h2o automagically recognizes and if it doesn't recognize,
   # you need to call as.Date to convert the values to dates
-  hdf$ds5 <- as.Date(hdf$ds5, "%d/%m/%y %H:%M")
-  hdf$ds6 <- as.Date(hdf$ds6, "%d/%m/%Y %H:%M:%S")
+  hdf$ds5 <- as.Date(hdf$ds5, "%d.%m.%y %H:%M")
+  hdf$ds6 <- as.Date(hdf$ds6, "%d.%m.%Y %H:%M:%S")
   hdf$ds7 <- as.Date(hdf$ds7, "%m/%d/%y")
   hdf$ds8 <- as.Date(hdf$ds8, "%m/%d/%Y")
   hdf$ds9 <- as.Date(as.factor(hdf$ds9), "%Y%m%d")
@@ -90,8 +90,8 @@ datetest <- function(){
   rdf$ds2 <- as.Date(rdf$ds2, format='%Y-%m-%d')
   rdf$ds3 <- as.Date(rdf$ds3, format='%d-%b-%y')
   rdf$ds4 <- as.Date(rdf$ds4, format='%d-%B-%Y')
-  rdf$ds5 <- as.Date(rdf$ds5, format='%d/%m/%y %H:%M')
-  rdf$ds6 <- as.Date(rdf$ds6, format='%d/%m/%Y %H:%M:%S')
+  rdf$ds5 <- as.Date(rdf$ds5, format='%d.%m.%y %H:%M')
+  rdf$ds6 <- as.Date(rdf$ds6, format='%d.%m.%Y %H:%M:%S')
   rdf$ds7 <- as.Date(rdf$ds7, format='%m/%d/%y')
   rdf$ds8 <- as.Date(rdf$ds8, format='%m/%d/%Y')
   rdf$ds9 <- as.Date(as.factor(rdf$ds9), format='%Y%m%d')

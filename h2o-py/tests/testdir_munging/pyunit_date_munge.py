@@ -7,7 +7,7 @@ from tests import pyunit_utils
 
 
 def refine_date_col(data, col, pattern):
-  data[col]         = data[col].as_date(pattern)
+  # data[col]         = data[col].as_date(pattern) # As of 5/29/2016 H2O recognizes as a date
   data["Day"]       = data[col].day()
   data["Month"]     = data[col].month() + 1    # Since H2O indexes from 0
   data["Year"]      = data[col].year() + 1900  # Start of epoch is 1900

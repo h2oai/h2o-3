@@ -12,15 +12,15 @@ def test_as_data():
   # NB: columns 1,5 are currently unsupported as date types
   # that is, h2o cannot understand:
   # 1 integer days since epoch (or since any other date);
-  # 2 dates formatted as %d/%m/%y (in strptime format strings)
+  # 2 dates formatted as %d.%m.%y (in strptime format strings)
   print(hdf.summary())
 
   print('adding date columns')
   # NB: h2o automagically recognizes and if it doesn't recognize, you're out of luck
-  hdf["ds5"] = hdf["ds5"].as_date("%d/%m/%y %H:%M")
-  hdf["ds6"] = hdf["ds6"].as_date("%d/%m/%Y %H:%M:%S")
-  hdf["ds7"] = hdf["ds7"].as_date("%m/%d/%y")
-  hdf["ds8"] = hdf["ds8"].as_date("%m/%d/%Y")
+  hdf["ds5"] = hdf["ds5"].as_date("%d.%m.%y %H:%M")
+  hdf["ds6"] = hdf["ds6"].as_date("%d.%m.%Y %H:%M:%S")
+  #hdf["ds7"] = hdf["ds7"].as_date("%m/%d/%y") # As of 5/29/2106 parses as a date directly
+  #hdf["ds8"] = hdf["ds8"].as_date("%m/%d/%Y") # As of 5/29/2106 parses as a date directly
   hdf["ds9"] = hdf["ds9"].asfactor().as_date("%Y%m%d")
   hdf["ds10"] = hdf["ds10"].as_date("%Y_%m_%d")
 
@@ -64,10 +64,10 @@ def test_as_data():
   hdf9 = hdf2["ds9"]
   hdf10 = hdf2["ds10"]
 
-  print(hdf5.as_date("%d/%m/%y %H:%M"))
-  print(hdf6.as_date("%d/%m/%Y %H:%M:%S"))
-  print(hdf7.as_date("%m/%d/%y"))
-  print(hdf8.as_date("%m/%d/%Y"))
+  print(hdf5.as_date("%d.%m.%y %H:%M"))
+  print(hdf6.as_date("%d.%m.%Y %H:%M:%S"))
+  print(hdf7) # As of 5/29/2106 parses as a date directly
+  print(hdf8) # As of 5/29/2106 parses as a date directly
   print(hdf9.as_date("%Y%m%d"))
   print(hdf10.as_date("%Y_%m_%d"))
 
