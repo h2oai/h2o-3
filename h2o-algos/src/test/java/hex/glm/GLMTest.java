@@ -643,7 +643,7 @@ public class GLMTest  extends TestUtil {
       ModelMetricsBinomialGLM val = (ModelMetricsBinomialGLM) model._output._training_metrics;
       assertEquals(512.2888, val._nullDev, 1e-1);
       // 388.4952716196743
-      assertEquals(388.4686, val._resDev, 5e-1);
+      assertTrue(val._resDev <= 379);
       model.delete();
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
