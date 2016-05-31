@@ -5,7 +5,7 @@ apply plugin: 'java'
 // Common constants
 def runner = new File("$rootDir/scripts/run.py").canonicalPath
 def binDir = file("bin")
-def srcGenBindingsDir = file("src-gen/main/java")
+def srcGenBindingsDir = file("src-gen/main")
 
 // Configuration for code generator
 configurations {
@@ -33,7 +33,7 @@ idea {
 sourceSets {
   main {
     java {
-      srcDir srcGenBindingsDir
+      srcDir "$srcGenBindingsDir/java"
     }
   }
 }
@@ -53,7 +53,28 @@ task runGenerateRESTAPIBindingsSrc(type: Exec) {
                 '--baseport', '48000', 
                 '--numclouds', '1', 
                 '--jvm.xmx', '4g', 
-                '--test', "generate_java_bindings.py"
+                '--test', "gen_java.py"
+
+}
+
+task runGenerateRESTAPICSharpBindingsSrc(type: Exec) {
+    workingDir binDir
+    commandLine 'python', runner,
+            '--wipeall',
+            '--baseport', '48000',
+            '--numclouds', '1',
+            '--jvm.xmx', '4g',
+            '--test', "gen_csharp.py"
+}
+
+task runGenerateRESTAPIThriftBindingsSrc(type: Exec) {
+    workingDir binDir
+    commandLine 'python', runner,
+            '--wipeall',
+            '--baseport', '48000',
+            '--numclouds', '1',
+            '--jvm.xmx', '4g',
+            '--test', "gen_thrift.py"
 }
 
 task cleanGenerateRESTAPIBindings(type: Delete) {
