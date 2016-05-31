@@ -80,8 +80,8 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
       this.type = FieldMetadata.consType(schema, f.getType(), f.getName(), annotation);
 
       if (null != annotation) {
-        String l = annotation.label();
-        this.label = (null == l || l.isEmpty() ? f.getName() : l);
+        // String l = annotation.label();
+        // this.label = (null == l || l.isEmpty() ? f.getName() : l);
         this.help = annotation.help();
         this.required = annotation.required();
 
