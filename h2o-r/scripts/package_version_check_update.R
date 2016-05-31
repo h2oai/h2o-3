@@ -10,7 +10,7 @@ JENKINS.R.PKG.VER.REQS.OSX <- paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/package_version
 JENKINS.R.PKG.VER.REQS.LIN <- paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/package_version_requirements.linux")
 JENKINS.R.PKG.VER.REQS.WIN <- paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/package_version_requirements.windows")
 JENKINS.R.VERSION.MAJOR <- "3"
-JENKINS.R.VERSION.MINOR <- "2.2"
+JENKINS.R.VERSION.MINOR <- "3.0"
 
 #'
 #' Given a dataframe of required packages, reorder the rows to satisfy package interdependencies
