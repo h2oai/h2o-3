@@ -6,21 +6,22 @@ from tests import pyunit_utils
 
 
 def test_as_data():
-  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
-  hdf.head()
+  hdf = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11-eurodate.csv"))
+  print(hdf.head())
 
   # NB: columns 1,5 are currently unsupported as date types
   # that is, h2o cannot understand:
   # 1 integer days since epoch (or since any other date);
-  # 2 dates formatted as %d/%m/%y (in strptime format strings)
+  # 2 dates formatted as %d.%m.%y (in strptime format strings)
   print(hdf.summary())
 
   print('adding date columns')
   # NB: h2o automagically recognizes and if it doesn't recognize, you're out of luck
-  hdf["ds5"] = hdf["ds5"].as_date("%d/%m/%y %H:%M")
-  hdf["ds6"] = hdf["ds6"].as_date("%d/%m/%Y %H:%M:%S")
-  hdf["ds7"] = hdf["ds7"].as_date("%m/%d/%y")
-  hdf["ds8"] = hdf["ds8"].as_date("%m/%d/%Y")
+  hdf["ds5"] = hdf["ds5"].as_date("%d.%m.%y %H:%M")
+  hdf["ds6"] = hdf["ds6"].as_date("%d.%m.%Y %H:%M:%S")
+  ## these two cols are now detected as dates
+#  hdf["ds7"] = hdf["ds7"].as_date("%m/%d/%y")
+#  hdf["ds8"] = hdf["ds8"].as_date("%m/%d/%Y")
   hdf["ds9"] = hdf["ds9"].asfactor().as_date("%Y%m%d")
   hdf["ds10"] = hdf["ds10"].as_date("%Y_%m_%d")
 
@@ -54,7 +55,7 @@ def test_as_data():
   hdf["idx10"] = hdf["ds10"].year() * 12 + hdf["ds10"].month()
 
   # frames
-  hdf2 = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11.csv"))
+  hdf2 = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/v-11-eurodate.csv"))
   hdf2["ds9"] = hdf2["ds9"].asfactor()
 
   hdf5 = hdf2["ds5"]
@@ -64,10 +65,10 @@ def test_as_data():
   hdf9 = hdf2["ds9"]
   hdf10 = hdf2["ds10"]
 
-  print(hdf5.as_date("%d/%m/%y %H:%M"))
-  print(hdf6.as_date("%d/%m/%Y %H:%M:%S"))
-  print(hdf7.as_date("%m/%d/%y"))
-  print(hdf8.as_date("%m/%d/%Y"))
+  print(hdf5.as_date("%d.%m.%y %H:%M"))
+  print(hdf6.as_date("%d.%m.%Y %H:%M:%S"))
+  print(hdf7)
+  print(hdf8)
   print(hdf9.as_date("%Y%m%d"))
   print(hdf10.as_date("%Y_%m_%d"))
 

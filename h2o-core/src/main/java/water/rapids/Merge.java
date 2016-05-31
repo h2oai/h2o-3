@@ -221,13 +221,16 @@ public class Merge {
     }
     System.out.println("... took: " + (System.nanoTime() - t0) / 1e9);
 
-    int queueSize = Math.max(H2O.CLOUD.size() * 10, 40);  // TODO: remove and let thread pool take care of it once GC issue alleviated
-    // int queueSize = 175;  // 1, 10, 100 and finally 300
+    int queueSize = bmList.size();
+    // Now that gc issues resolved, it seems ok to send them all at once.
+    // No longer floods the cluster it seems
+    System.out.println("Dispatching in queue size of "+queueSize+". H2O.NUMCPUS="+H2O.NUMCPUS + " H2O.CLOUD.size()="+H2O.CLOUD.size());
+    
     t0 = System.nanoTime();
-    if (queueSize > bmList.size()) {
-      System.out.println("Small number of MSB joins (" + bmList.size() + ") means we won't get full parallelization benefit");
-      queueSize = bmList.size();
-    }
+    //if (queueSize > bmList.size()) {
+    //  System.out.println("Small number of MSB joins (" + bmList.size() + ") means we won't get full parallelization benefit");
+    //  queueSize = bmList.size();
+    //}
     System.out.println("Sending "+bmList.size()+" BinaryMerge async RPC calls in a queue of " + queueSize + " ... ");
     // need to do our own queue it seems, otherwise floods the cluster
 

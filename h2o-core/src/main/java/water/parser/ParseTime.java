@@ -45,23 +45,25 @@ public abstract class ParseTime {
     try {
       long t0 = attemptYearFirstTimeParse(str); // "yyyy-MM-dd" and time if present
       if( t0 != Long.MIN_VALUE ) return t0;
-      long t2 = attemptDayFirstTimeParse(str); // "dd-MMM-yy" and time if present
+      long t2 = attemptDayFirstTimeParse1(str); // "dd-MMM-yy" and time if present
       if( t2 != Long.MIN_VALUE ) return t2;
       long t3 = attemptTimeOnlyParse(str); // Time if present, no date
       if( t3 != Long.MIN_VALUE ) return t3;
+      long t4 = attemptDayFirstTimeParse2(str); // "dd/MM/yy" and time if present; note that this format is ambiguous
+      if( t4 != Long.MIN_VALUE ) return t4;     // Cant tell which date: 3/2/10 is
     } catch( org.joda.time.IllegalFieldValueException | // Not time at all
              org.joda.time.IllegalInstantException      // Parsed as time, but falls into e.g. a daylight-savings hour hole
              ie ) { } //FIXME should collect errors and report at end of parse
     return Long.MIN_VALUE;
   }
-  // Tries to parse "yyyy-MM-dd [HH:mm:ss.SSS aa]"
+  // Tries to parse "yyyy-MM[-dd] [HH:mm:ss.SSS aa]"
   private static long attemptYearFirstTimeParse(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     final int end = i+str.length();
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
-    if( (end-i) < 8 ) return Long.MIN_VALUE;
+    if( (end-i) < 6 ) return Long.MIN_VALUE;
     int yyyy=0, MM=0, dd=0;
 
     // Parse date
@@ -71,13 +73,15 @@ public abstract class ParseTime {
     yyyy = digit(yyyy,buf[i++]);
     if( buf[i++] != '-' ) return Long.MIN_VALUE;
     MM = digit(MM,buf[i++]);
-    MM = buf[i]!='-' ? digit(MM,buf[i++]) : MM;
+    MM = i<end && buf[i]!='-' ? digit(MM,buf[i++]) : MM;
     if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
-    if( buf[i++] != '-' ) return Long.MIN_VALUE;
-    dd = digit(dd,buf[i++]);
-    dd = i<end && buf[i]>='0' && buf[i]<='9' ? digit(dd,buf[i++]) : dd;
-    if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
-    while( i<end && buf[i] == ' ' ) i++;
+    if( (end-i)>=2 ) {
+      if( buf[i++] != '-' ) return Long.MIN_VALUE;
+      dd = digit(dd, buf[i++]);
+      dd = i < end && buf[i] >= '0' && buf[i] <= '9' ? digit(dd, buf[i++]) : dd;
+      if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
+    } else dd=1; // no day
+    while( i < end && buf[i] == ' ' ) i++;
     if( i==end )
       return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
 
@@ -87,7 +91,7 @@ public abstract class ParseTime {
 
   // Tries to parse "dd[-]MMM[-]yy[yy][:' '][HH:mm:ss.SSS aa]"
   // where MMM is a text representation of the month (e.g. Jul or July)
-  private static long attemptDayFirstTimeParse(BufferedString str) {
+  private static long attemptDayFirstTimeParse1(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     final int end = i+str.length();
@@ -132,13 +136,58 @@ public abstract class ParseTime {
       else
         yyyy += 2000;
     }
+    while( i<end && buf[i] == ' ' ) i++;
     if( i<end && buf[i] == '"' ) i++;
     if( i==end )
       return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
 
     // Parse time
-    if( buf[i] != ' ' &&  buf[i] != ':') return Long.MIN_VALUE;
-    return parseTime(buf, ++i, end, yyyy, MM, dd, false);
+    if( buf[i] == ':') i++;
+    return parseTime(buf, i, end, yyyy, MM, dd, false);
+  }
+
+  // Tries to parse "MM/dd/yy[yy][:' '][HH:mm:ss.SSS aa]" where MM is a value
+  // from 1 to 12, and the separator is required.  Note that this is ambiguous
+  // and is defaulting to American, not European time.  Example: 3/2/10 parses
+  // as March 2, 2010 and NOT February 3, 2010.
+  private static long attemptDayFirstTimeParse2(BufferedString str) {
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
+    final int end = i+str.length();
+    while( i < end && buf[i] == ' ' ) i++;
+    if   ( i < end && buf[i] == '"' ) i++;
+    if( (end-i) < 6 ) return Long.MIN_VALUE;
+    int yyyy=0, MM=0, dd=0;
+
+    // Parse date
+    MM = digit(MM,buf[i++]);
+    if( isDigit(buf[i]) ) MM = digit(MM,buf[i++]);
+    if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
+    byte sep = buf[i++];
+    if( sep != '-' && sep != '/' ) return Long.MIN_VALUE;
+    dd = digit(dd,buf[i++]);
+    if( isDigit(buf[i]) ) dd = digit(dd,buf[i++]);
+    if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
+    if( sep != buf[i++] ) return Long.MIN_VALUE;
+    yyyy = digit(yyyy,buf[i++]);    // 2-digit year
+    yyyy = digit(yyyy,buf[i++]);
+    if( end-i>=2 && isDigit(buf[i]) ) {
+      yyyy = digit(yyyy,buf[i++]);  // 4-digit year
+      yyyy = digit(yyyy,buf[i++]);
+    } else { //POSIX 2004 & 2008 says 69-99 -> 1900s, 00-68 -> 2000s
+      if (yyyy >= 69)
+        yyyy += 1900;
+      else
+        yyyy += 2000;
+    }
+    while( i<end && buf[i] == ' ' ) i++;
+    if( i<end && buf[i] == '"' ) i++;
+    if( i==end )
+      return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
+
+    // Parse time
+    if( buf[i] == ':') i++;
+    return parseTime(buf, i, end, yyyy, MM, dd, false);
   }
 
   // Tries to parse time without any date.
