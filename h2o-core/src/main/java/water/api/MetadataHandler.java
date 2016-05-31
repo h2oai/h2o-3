@@ -71,14 +71,24 @@ public class MetadataHandler extends Handler {
     }
 
     Schema sinput, soutput;
-    if( route._handler_class.equals(water.api.ModelBuilderHandler.class) ) {
+    if( route._handler_class.equals(water.api.ModelBuilderHandler.class) ||
+        route._handler_class.equals(water.api.GridSearchHandler.class)) {
+      // GridSearchHandler uses the same logic as ModelBuilderHandler because there are no separate
+      // ${ALGO}GridSearchParametersV3 classes, instead each field in ${ALGO}ParametersV3 is marked as either gridable
+      // or not.
       String ss[] = route._url_pattern_raw.split("/");
       String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
-      int version2 = Integer.valueOf(ss[1]);
       String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
       String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
-      String inputSchemaName = schemaDir+algoName+"V"+version2;  // hex.schemas.GBMV3
-      sinput = (Schema)TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
+      int version2 = Integer.valueOf(ss[1]);
+      try {
+        String inputSchemaName = schemaDir + algoName + "V" + version2;  // hex.schemas.GBMV3
+        sinput = (Schema) TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
+      } catch (java.lang.RuntimeException e) {
+        // Not very pretty, but for some routes such as /99/Grid/glm we want to map to GLMV3 (because GLMV99 does not
+        // exist), yet for others such as /99/Grid/svd we map to SVDV99 (because SVDV3 does not exist).
+        sinput = (Schema) TypeMap.theFreezable(TypeMap.onIce(schemaDir + algoName + "V3"));
+      }
       sinput.init_meta();
       soutput = sinput;
     } else {
