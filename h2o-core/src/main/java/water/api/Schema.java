@@ -196,6 +196,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       return schema_type;
     }
 
+    public String toString() {
+      if (Objects.equals(schema_name, schema_type + "V" + schema_version)) return schema_name;
+      return schema_name + " (type:" + schema_type + ", version: " + schema_version + ")";
+    }
+
     /** Set the simple name of the H2O type that this Schema represents, for example Key&lt;Frame&gt;. NOTE: using this is a hack and should be avoided. */
     protected void setSchema_type(String schema_type) {
       this.schema_type = schema_type;
