@@ -6,8 +6,7 @@ from tests import pyunit_utils
 
 
 
-def refine_date_col(data, col, pattern):
-  data[col]         = data[col].as_date(pattern)
+def refine_date_col(data, col):
   data["Day"]       = data[col].day()
   data["Month"]     = data[col].month() + 1    # Since H2O indexes from 0
   data["Year"]      = data[col].year() + 1900  # Start of epoch is 1900
@@ -28,7 +27,7 @@ def date_munge():
   crimes = h2o.import_file(path=crimes_path)
   crimes.describe()
 
-  refine_date_col(crimes, "Date", "%m/%d/%Y %I:%M:%S %p")
+  refine_date_col(crimes, "Date")
   crimes = crimes.drop("Date")
   crimes.describe()
 

@@ -60,7 +60,7 @@ h2o.impute(data = airlines.hex, column = "Distance", by = c("Origin","Dest"))
 scatter_plot(airlines.hex, "Distance", "TravelTime")
 
 ## Clean weather dataset, convert dates column to multiple year, month, day columns
-weather.hex$Date <- as.Date(weather.hex$Date, format = "%m/%d/%Y")
+#weather.hex$Date <- as.Date(weather.hex$Date, format = "%m/%d/%Y") #no longer needed, parser got it right
 weather.hex$Year <- h2o.year(weather.hex$Date) + 1900
 weather.hex$Month <- h2o.month(weather.hex$Date)
 weather.hex$DayofMonth <- h2o.day(weather.hex$Date)

@@ -175,7 +175,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       _o[msb][b] = new long[lastSize];
       _x[msb][b] = new byte[lastSize * _keySize];
     }
-    System.out.println("done in " + (System.nanoTime() - t0 / 1e9));
+    System.out.println("done in " + (System.nanoTime() - t0) / 1e9);
 
     // TO DO: otherwise, expand width. Once too wide (and interestingly large width may not be a problem since small buckets won't impact cache),
     // start rolling up bins (maybe into pairs or even quads)
@@ -830,7 +830,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     Key linkTwoMRTask = Key.make();
     SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _biggestBit[0], keySize, batchSize, _bytesUsed, _colMin, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
-    System.out.print(tmp.profString());
+    System.out.println(tmp.profString());
 
     t0 = System.nanoTime();
     new SendSplitMSB(linkTwoMRTask).doAllNodes();

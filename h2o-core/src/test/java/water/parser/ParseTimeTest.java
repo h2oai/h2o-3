@@ -122,7 +122,7 @@ public class ParseTimeTest extends TestUtil {
     ParserTest.testParsed(dataFrame, exp, exp.length);
   }
 
-  @Test public void testDayParseNoTime() {
+  @Test public void testDayParseNoTime1() {
     // Just yyyy-mm-dd, no time
     String data = "Date\n"+
       "2014-1-23\n"+
@@ -132,12 +132,58 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str()=="Time");
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
     long[] exp = new long[] {  // Date
       1390464000000L,
       1390550400000L,
       1390464000000L,
       1390550400000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testDayParseNoTime2() {
+    // Just mm/dd/yyyy, no time
+    String data = "Date\n"+
+      "1/23/2014  \n"+ // Note evil trailing blanks
+      "1/24/2014  \n"+
+      "1/23/2014 \n"+
+      "1/24/2014\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+            1390464000000L,
+            1390550400000L,
+            1390464000000L,
+            1390550400000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testDayParseNoTime3() {
+    // Just yyyy-mm, no time no day
+    String data = "Date\n"+
+      "2014-1\n"+
+      "2014-2\n"+
+      "2014-3\n"+
+      "2014-4\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+      1388563200000L,
+      1391241600000L,
+      1393660800000L,
+      1396335600000L,
     };
     Vec vec = fr.vec("Date");
     for (int i=0; i < exp.length; i++ )
@@ -172,7 +218,7 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str()=="Time");
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
     long[] exp = new long[] {  // Time
       0L,                      // Notice: no TZ at all ==> GMT!
       3253000L,
