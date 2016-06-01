@@ -374,15 +374,16 @@ class H2OGridSearch(object):
     """
     return {model.model_id:model.catoffsets() for model in self.models}
 
-  def model_performance(self, test_data=None, train=False, valid=False):
+  def model_performance(self, test_data=None, train=False, valid=False, xval=False):
     """Generate model metrics for this model on test_data.
 
-    :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
-    :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
-    :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
+    :param test_data: Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are ignored if test_data is not None.
+    :param train: Report the training metrics for the model.
+    :param valid: Report the validation metrics for the model.
+    :param xval: Report the validation metrics for the model.
     :return: An object of class H2OModelMetrics.
     """
-    return {model.model_id:model.model_performance(test_data, train, valid) for model in self.models}
+    return {model.model_id:model.model_performance(test_data, train, valid, xval) for model in self.models}
 
   def scoring_history(self):
     """Retrieve Model Score History
