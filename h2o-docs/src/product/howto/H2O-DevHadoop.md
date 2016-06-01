@@ -55,18 +55,7 @@ Tutorial
 The following tutorial will walk the user through the download or build of H2O and the parameters involved in launching H2O from the command line.
 
 
-0. Download the latest H2O release for your version of Hadoop:
-
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
-    	wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
-	    wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
-		wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
-		
-	**Note**: Enter only one of the above commands.
+0. Download the latest H2O release for your version of Hadoop. Refer to the <a href="http://www.h2o.ai/download/h2o/hadoop">H2O on Hadoop Download page</a>.
 
 0. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
