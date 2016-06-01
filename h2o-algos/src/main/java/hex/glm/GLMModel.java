@@ -738,7 +738,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     DataInfo _dinfo;
     String[] _coefficient_names;
     public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
-    public int _lambda_lse = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
+    public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
+    public double lambda_best(){return _submodels[_best_lambda_idx].lambda_value;}
+    public double lambda_1se(){return _lambda_1se == -1?-1:_submodels[_lambda_1se].lambda_value;}
     double[] _global_beta;
     private double[] _zvalues;
     private double _dispersion;
@@ -993,7 +995,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     int lambdaSearch = 0;
     if (_parms._lambda_search) {
       lambdaSearch = 1;
-      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", best_lambda = " + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4) + (_output._lambda_lse == -1?"":", lambda.lse = " +  MathUtils.roundToNDigits(_parms._lambda[_output._lambda_lse], 4)));
+      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", best_lambda = " + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4) + (_output._lambda_1se == -1?"":", lambda.lse = " +  MathUtils.roundToNDigits(_parms._lambda[_output._lambda_1se], 4)));
     }
     int intercept = _parms._intercept ? 1 : 0;
     if(_output.nclasses() > 2) {

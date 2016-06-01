@@ -90,6 +90,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       int j = _parms._lambda.length-1;
       while(j > 0 && _parms._lambda[j-1] < lambdaCVEstimate)j--;
       _lambdaCVEstimate = _parms._lambda[j];
+      _model._output._lambda_1se = j;
       if(_parms._early_stopping) _parms._lambda = Arrays.copyOf(_parms._lambda,j+1);
       _xval_test_deviances = new double[j+1];
       for(int i = 0; i < cvModelBuilders.length; ++i) {
