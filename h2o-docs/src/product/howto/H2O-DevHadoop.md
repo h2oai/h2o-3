@@ -5,12 +5,17 @@ Currently supported versions:
 - CDH 5.2
 - CDH 5.3
 - CDH 5.4.2
+- CDH 5.5.3
+- CDH 5.6.0
+- CDH 5.7.0
 - HDP 2.1
 - HDP 2.2
 - HDP 2.3
+- HDP 2.4
 - MapR 3.1.1
 - MapR 4.0.1
 - MapR 5.0
+- MapR 5.1
 
 **Important Points to Remember**: 
 
