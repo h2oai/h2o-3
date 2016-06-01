@@ -1218,6 +1218,12 @@ h2o.maxPerClassError <- function(object, thresholds){
 
 #' @rdname h2o.metric
 #' @export
+h2o.meanPerClassError <- function(object, thresholds){
+  1.0-h2o.metric(object, thresholds, "mean_per_class_accuracy")
+}
+
+#' @rdname h2o.metric
+#' @export
 h2o.mcc <- function(object, thresholds){
   h2o.metric(object, thresholds, "absolute_MCC")
 }

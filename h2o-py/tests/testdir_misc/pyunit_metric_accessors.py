@@ -375,6 +375,16 @@ def metric_accessors():
     max_per_class_error = gbm.max_per_class_error(train=False, valid=False, xval=False) # default: return training metrics
     max_per_class_error = gbm.max_per_class_error(train=False, valid=True,  xval=True)
 
+    #   mean_per_class_error
+    mean_per_class_error1 = gbm.mean_per_class_error(train=True,  valid=False, xval=False)
+    mean_per_class_error2 = gbm.mean_per_class_error(train=False, valid=True,  xval=False)
+    mean_per_class_error3 = gbm.mean_per_class_error(train=False, valid=False, xval=True)
+    mean_per_class_error = gbm.mean_per_class_error(train=True,  valid=True,  xval=False)
+    mean_per_class_error = gbm.mean_per_class_error(train=True,  valid=False, xval=True)
+    mean_per_class_error = gbm.mean_per_class_error(train=True,  valid=True,  xval=True)
+    mean_per_class_error = gbm.mean_per_class_error(train=False, valid=False, xval=False) # default: return training metrics
+    mean_per_class_error = gbm.mean_per_class_error(train=False, valid=True,  xval=True)
+
     #   confusion_matrix
     confusion_matrix1 = gbm.confusion_matrix(train=True,  valid=False, xval=False)
     confusion_matrix2 = gbm.confusion_matrix(train=False, valid=True,  xval=False)
@@ -531,6 +541,15 @@ def metric_accessors():
     hit_ratio_table = gbm.hit_ratio_table(train=False, valid=False, xval=False) # default: return training metrics
     hit_ratio_table = gbm.hit_ratio_table(train=False, valid=True,  xval=True)
 
+    #   mean_per_class_error
+    mean_per_class_error1 = gbm.mean_per_class_error(train=True,  valid=False, xval=False)
+    mean_per_class_error2 = gbm.mean_per_class_error(train=False, valid=True,  xval=False)
+    mean_per_class_error3 = gbm.mean_per_class_error(train=False, valid=False, xval=True)
+    mean_per_class_error = gbm.mean_per_class_error(train=True,  valid=True,  xval=False)
+    mean_per_class_error = gbm.mean_per_class_error(train=True,  valid=False, xval=True)
+    mean_per_class_error = gbm.mean_per_class_error(train=True,  valid=True,  xval=True)
+    mean_per_class_error = gbm.mean_per_class_error(train=False, valid=False, xval=False) # default: return training metrics
+    mean_per_class_error = gbm.mean_per_class_error(train=False, valid=True,  xval=True)
 
     # clustering
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))

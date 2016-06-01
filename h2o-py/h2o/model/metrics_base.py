@@ -65,6 +65,10 @@ class MetricsBase(object):
       print("Mean Residual Deviance: "                        + str(self.mean_residual_deviance()))
     if metric_type in types_w_logloss:
       print("LogLoss: "                                       + str(self.logloss()))
+    if metric_type == 'ModelMetricsBinomial':
+      print("Mean Per-Class Error: "                          + str(self.mean_per_class_error()[0][1])) ## second element for first threshold is the actual mean per class error
+    if metric_type == 'ModelMetricsMultinomial':
+      print("Mean Per-Class Error: "                          + str(self.mean_per_class_error()))
     if metric_type in types_w_glm:
       print("Null degrees of freedom: "                       + str(self.null_degrees_of_freedom()))
       print("Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom()))
@@ -167,6 +171,12 @@ class MetricsBase(object):
       return self._metric_json["null_degrees_of_freedom"]
     return None
 
+  def mean_per_class_error(self):
+    """
+    Retrieve the mean per class error
+    """
+    return self._metric_json['mean_per_class_error']
+
 class H2ORegressionModelMetrics(MetricsBase):
   """
   This class provides an API for inspecting the metrics returned by a regression model.
@@ -220,7 +230,6 @@ class H2OMultinomialModelMetrics(MetricsBase):
     Retrieve the Hit Ratios
     """
     return self._metric_json['hit_ratio_table']
-
 
 class H2OBinomialModelMetrics(MetricsBase):
   """
@@ -361,6 +370,13 @@ class H2OBinomialModelMetrics(MetricsBase):
     """
     return 1-self.metric("min_per_class_accuracy", thresholds=thresholds)
 
+  def mean_per_class_error(self, thresholds=None):
+    """
+    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
+    :return: Return mean_per_class_error
+    """
+    return [[x[0],1-x[1]] for x in self.metric("mean_per_class_accuracy", thresholds=thresholds)]
+
   def metric(self, metric, thresholds=None):
     """
     :param metric: The desired metric
@@ -435,7 +451,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     """
     Get the confusion matrix for the specified metric
 
-    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
+    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
     :param thresholds: A value (or list of values) between 0 and 1
     :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix (if there is only one)
     """
@@ -455,8 +471,8 @@ class H2OBinomialModelMetrics(MetricsBase):
             not all(t >= 0 or t <= 1 for t in thresholds_list):
       raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
 
-    if not all(m in ["min_per_class_accuracy", "absolute_MCC", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1"] for m in metrics_list):
-      raise ValueError("The only allowable metrics are min_per_class_accuracy, absolute_MCC, precision, accuracy, f0point5, f2, f1")
+    if not all(m in ["min_per_class_accuracy", "absolute_MCC", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
+      raise ValueError("The only allowable metrics are min_per_class_accuracy, absolute_MCC, precision, accuracy, f0point5, f2, f1, mean_per_class_accuracy")
 
     # make one big list that combines the thresholds and metric-thresholds
     metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
@@ -469,10 +485,10 @@ class H2OBinomialModelMetrics(MetricsBase):
     for t in thresholds_list:
       idx = self.find_idx_by_threshold(t)
       row = thresh2d.cell_values[idx]
-      tns = row[10]
-      fns = row[11]
-      fps = row[12]
-      tps = row[13]
+      tns = row[11]
+      fns = row[12]
+      fps = row[13]
+      tps = row[14]
       p = tps + fns
       n = tns + fps
       c0  = n - fps
@@ -489,7 +505,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
   def find_threshold_by_max_metric(self,metric):
     """
-    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1"}
+    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"}
     :return: the threshold at which the given metric is maximum.
     """
     crit2d = self._metric_json['max_criteria_and_metric_scores']
