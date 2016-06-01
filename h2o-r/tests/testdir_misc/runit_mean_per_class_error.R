@@ -16,10 +16,13 @@ test.mean_per_class_error <- function() {
   model = h2o.gbm(x=predictors,y=response,distribution = "bernoulli",training_frame=train,
                   ntrees=2,max_depth=3,min_rows=1,learn_rate=0.01,nbins=20)
 
-  ## Get LogLoss from the model on training set
+  ## Get mean per class error from the model on training set
   mpce1 <- h2o.performance(model, train)@metrics$mean_per_class_error
+  expect_true(mpce1==h2o.mean_per_class_error(model, train=TRUE))
+  expect_true(mpce1==h2o.mean_per_class_error(h2o.performance(model, train=TRUE)))
+  expect_true(mpce1==h2o.mean_per_class_error(h2o.performance(model, newdata=train)))
 
-  ## Get LogLoss from model metrics after predicting on test set (same as training set)
+  ## Get mean per class error from model metrics after predicting on test set (same as training set)
   mpce2 <- h2o.performance(model, test)@metrics$mean_per_class_error
 
   MeanPerClassError <- function(cm) {
@@ -47,11 +50,11 @@ test.mean_per_class_error <- function() {
   model = h2o.gbm(x=predictors,y=response,distribution = "multinomial",training_frame=train,
                   ntrees=2,max_depth=3,min_rows=1,learn_rate=0.01,nbins=20)
 
-  ## Get LogLoss from the model on training set
-  mpce1 <- h2o.performance(model, train)@metrics$mean_per_class_error
+  ## Get mean per class error from the model on training set
+  mpce1 <- h2o.mean_per_class_error(h2o.performance(model, train))
 
-  ## Get LogLoss from model metrics after predicting on test set (same as training set)
-  mpce2 <- h2o.performance(model, test)@metrics$mean_per_class_error
+  ## Get mean per class error from model metrics after predicting on test set (same as training set)
+  mpce2 <- h2o.mean_per_class_error(h2o.performance(model, test))
 
 
   test3 = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), destination_frame="test3")
