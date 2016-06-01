@@ -56,6 +56,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     init(false);
   }
 
+  private transient GLMDriver _driver;
   public boolean isSupervised() {
     return true;
   }
@@ -69,6 +70,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   private double _lambdaCVEstimate = Double.NaN;
+  private boolean _doInit = true;
+  private double [] _xval_test_deviances;
   @Override
   public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
     if(_parms._lambda_search) {
@@ -76,16 +79,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double lambdaSE = 0;
       for (int i = 0; i < cvModelBuilders.length; ++i)
         lambdaAvg += ((GLM) cvModelBuilders[i])._model._output.bestSubmodel().lambda_value;
+
       lambdaAvg /= cvModelBuilders.length;
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         double diff = lambdaAvg - ((GLM) cvModelBuilders[i])._model._output.bestSubmodel().lambda_value;
         lambdaSE += diff * diff;
       }
       lambdaSE = lambdaAvg / ((cvModelBuilders.length - 1) * Math.sqrt(cvModelBuilders.length));
-      _lambdaCVEstimate = lambdaAvg + lambdaSE;
-      _parms._early_stopping = false;
+      double lambdaCVEstimate = lambdaAvg + lambdaSE;
+      int j = _parms._lambda.length-1;
+      while(j > 0 && _parms._lambda[j-1] < lambdaCVEstimate)j--;
+      _lambdaCVEstimate = _parms._lambda[j];
+      if(_parms._early_stopping) _parms._lambda = Arrays.copyOf(_parms._lambda,j+1);
+      _xval_test_deviances = new double[j+1];
+      for(int i = 0; i < cvModelBuilders.length; ++i) {
+        GLM g = (GLM)cvModelBuilders[i];
+        for(int k = 0; k <= j; ++k) {
+          double l = _parms._lambda[k];
+          if (g._model._output.getSubmodel(l) == null)
+            g._driver.computeSubmodel(k,l);
+          _xval_test_deviances[k] += g._model._output.getSubmodel(l).devianceTest;
+        }
+        g._model._output.setSubmodel(_lambdaCVEstimate);
+        DKV.put(g._model);
+      }
       Log.info("lambdaCV avg = " + lambdaAvg + ", standard error = " + lambdaSE + ", " + "lambdaEstimate = " + _lambdaCVEstimate);
     }
+    _parms._early_stopping = false;
+    _doInit = false;
   }
 
   @Override
@@ -157,24 +178,41 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private ArrayList<Integer> _lambdaIters = new ArrayList<>();
     private ArrayList<Integer> _lambdaPredictors = new ArrayList<>();
     private ArrayList<Double> _lambdaDevTrain = new ArrayList<>();
-    private ArrayList<Double> _lambdaDevTest = new ArrayList<>();
+    private ArrayList<Double> _lambdaDevTest;
+    private ArrayList<Double> _lambdaDevXval;
 
-    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, double devRatioTest) {
+    public LambdaSearchScoringHistory(boolean hasTest, boolean hasXval) {
+      if(hasTest || true)_lambdaDevTest = new ArrayList<>();
+      if(hasXval)_lambdaDevXval = new ArrayList<>();
+
+    }
+
+    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, double devRatioTest, double devRatioXval) {
       _scoringTimes.add(System.currentTimeMillis());
       _lambdaIters.add(iter);
       _lambdas.add(lambda);
       _lambdaPredictors.add(predictors);
       _lambdaDevTrain.add(devRatioTrain);
-      _lambdaDevTest.add(devRatioTest);
+      if(_lambdaDevTest != null)_lambdaDevTest.add(devRatioTest);
+      if(_lambdaDevXval != null)_lambdaDevXval.add(devRatioXval);
     }
-
-
-
-
     public synchronized TwoDimTable to2dTable() {
-      String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "Explained Deviance (train)", "Explained Deviance (test)"};
-      String[] ctypes = new String[]{"string", "string", "int", "string","int", "double","double"};
-      String[] cformats = new String[]{"%s", "%s", "%d","%s", "%d", "%.3f","%.3f"};
+
+      String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "Explained Deviance (train)"};
+      if(_lambdaDevTest != null)
+        cnames = ArrayUtils.append(cnames,"Explained Deviance (test)");
+      if(_lambdaDevXval != null)
+        cnames = ArrayUtils.append(cnames,"Explained Deviance (xval)");
+      String[] ctypes = new String[]{"string", "string", "int", "string","int", "double"};
+      if(_lambdaDevTest != null)
+        ctypes = ArrayUtils.append(ctypes,"double");
+      if(_lambdaDevXval != null)
+        ctypes = ArrayUtils.append(ctypes,"double");
+      String[] cformats = new String[]{"%s", "%s", "%d","%s", "%d", "%.3f"};
+      if(_lambdaDevTest != null)
+        cformats = ArrayUtils.append(cformats,"%.3f");
+      if(_lambdaDevXval != null)
+        cformats = ArrayUtils.append(cformats,"%.3f");
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_lambdaIters.size()], cnames, ctypes, cformats, "");
       int j = 0;
       DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -186,8 +224,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res.set(i, col++, lambdaFormatter.format(_lambdas.get(i)));
         res.set(i, col++, _lambdaPredictors.get(i));
         res.set(i, col++, _lambdaDevTrain.get(i));
-        if(_lambdaDevTest.size() > i)
+        if(_lambdaDevTest != null && _lambdaDevTest.size() > i)
           res.set(i, col++, _lambdaDevTest.get(i));
+        if(_lambdaDevXval != null && _lambdaDevXval.size() > i)
+          res.set(i, col++, _lambdaDevXval.get(i));
       }
       return res;
     }
@@ -308,7 +348,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _parms._alpha = new double[]{_parms._solver == Solver.L_BFGS ? 0 : .5};
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
           _parms._nlambdas = _parms._alpha[0] == 0?30:100; // fewer lambdas needed for ridge
-      _lsc = new LambdaSearchScoringHistory();
+      _lsc = new LambdaSearchScoringHistory(_parms._valid != null,_parms._nfolds > 1);
       _sc = new ScoringHistory();
       _train.bulkRollups(); // make sure we have all the rollups computed in parallel
       _sc = new ScoringHistory();
@@ -434,7 +474,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   protected static final long WORK_TOTAL = 1000000;
 
-  @Override protected GLMDriver trainModelImpl() { return new GLMDriver(); }
+  @Override protected GLMDriver trainModelImpl() { return _driver = new GLMDriver(); }
 
   private final double lmax(double[] grad) {
     return Math.max(ArrayUtils.maxValue(grad), -ArrayUtils.minValue(grad)) / Math.max(1e-2, _parms._alpha[0]);
@@ -888,20 +928,51 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
     }
 
+
+    protected Submodel computeSubmodel(int i,double lambda) {
+      _model.addSubmodel(_state.beta(),lambda,_state._iter);
+      _state.setLambda(lambda);
+      checkMemoryFootPrint(_state.activeData());
+      do {
+        if(_parms._family == Family.multinomial)
+          for(int c = 0; c < _nclass; ++c)
+            Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+        else
+          Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
+        fitModel();
+      } while(!_state.checkKKTs());
+      Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
+      if(_parms._lambda_search) {  // need train and test deviance, only "the best" submodel will be fully scored
+        double trainDev = _state.deviance();
+        double testDev = -1;
+        if(_validDinfo != null){
+          testDev = _parms._family == Family.multinomial
+              ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood * 2
+              : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
+        }
+        Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
+        double xvalDev = _xval_test_deviances == null?-1:_xval_test_deviances[i];
+        _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/_nullDevTrain, 1.0 - testDev/_nullDevTest, xvalDev == -1?-1:1.0 - xvalDev/_nullDevTrain);
+        _model.update(_state.beta(), trainDev, testDev, _state._iter);
+      } else // model is gonna be scored subsequently anyways
+        _model.update(_state.beta(), -1, -1, _state._iter);
+      return _model._output.getSubmodel(lambda);
+    }
+
+    private transient double _nullDevTrain = Double.NaN;
+    private transient double _nullDevTest = Double.NaN;
     @Override
     public void computeImpl() {
-      init(true);
-      if (error_count() > 0) {
+      if(_doInit)
+        init(true);
+      if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
-      }
-      double nullDevTrain = Double.NaN;
-      double nullDevTest = Double.NaN;
       if(_parms._lambda_search) {
-        nullDevTrain =  _parms._family == Family.multinomial
+        _nullDevTrain =  _parms._family == Family.multinomial
           ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame)._likelihood*2
           :new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame)._resDev;
         if(_validDinfo != null)
-          nullDevTest = _parms._family == Family.multinomial
+          _nullDevTest = _parms._family == Family.multinomial
             ?new GLMResDevTaskMultinomial(_job._key,_validDinfo,getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood*2
             :new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame)._resDev;
         _workPerIteration = WORK_TOTAL/_parms._nlambdas;
@@ -918,68 +989,39 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sumExp += Math.exp(nb[i*N + P] - maxRow);
         _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
       }
-
-
-      double oldDevTrain = nullDevTrain;
-      double oldDevTest = nullDevTest;
-
+      double oldDevTrain = _nullDevTrain;
+      double oldDevTest = _nullDevTest;
       double [] devHistoryTrain = new double[5];
       double [] devHistoryTest = new double[5];
 
       if(!_parms._lambda_search)
         updateProgress(false);
       // lambda search loop
-      for (int i = 0; i < _parms._lambda.length; ++i) { // lambda search
-        _model.addSubmodel(_state.beta(),_parms._lambda[i],_state._iter);
-        _state.setLambda(_parms._lambda[i]);
-        checkMemoryFootPrint(_state.activeData());
-        do {
-          if(_parms._family == Family.multinomial)
-            for(int c = 0; c < _nclass; ++c)
-              Log.info(LogMsg("Class " + c + " got " + _state.activeDataMultinomial(c).fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-          else
-            Log.info(LogMsg("Got " + _state.activeData().fullN() + " active columns out of " + _state._dinfo.fullN() + " total"));
-          fitModel();
-        } while(!_state.checkKKTs());
-        Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
-
-        if(_parms._lambda_search) {  // compute train and test dev
-          double trainDev = _parms._family == Family.multinomial
-            ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,_state.beta(), _nclass).doAll(_state._dinfo._adaptedFrame)._likelihood*2
-            :new GLMResDevTask(_job._key, _state._dinfo, _parms, _state.beta()).doAll(_state._dinfo._adaptedFrame)._resDev;
-          double testDev = -1;
-          devHistoryTrain[i % devHistoryTrain.length] = (oldDevTrain - trainDev)/oldDevTrain;
-          oldDevTrain = trainDev;
-
-          if(_validDinfo != null) {
-            testDev = _parms._family == Family.multinomial
-                ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, _dinfo.denormalizeBeta(_state.beta()), _nclass).doAll(_validDinfo._adaptedFrame)._likelihood * 2
-                : new GLMResDevTask(_job._key, _validDinfo, _parms, _dinfo.denormalizeBeta(_state.beta())).doAll(_validDinfo._adaptedFrame)._resDev;
-            devHistoryTest[i % devHistoryTest.length] = (oldDevTest - testDev)/oldDevTest;
-            oldDevTest = testDev;
+      for (int i = 0; i < _parms._lambda.length; ++i) {  // lambda search
+        Submodel sm = computeSubmodel(i,_parms._lambda[i]);
+        double trainDev = sm.devianceTrain;
+        double testDev = sm.devianceTest;
+        devHistoryTest[i % devHistoryTest.length] = (oldDevTest - testDev)/oldDevTest;
+        oldDevTest = testDev;
+        devHistoryTrain[i % devHistoryTrain.length] = (oldDevTrain - trainDev)/oldDevTrain;
+        oldDevTrain = trainDev;
+        if(_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
+          double s = ArrayUtils.maxValue(devHistoryTrain);
+          if(s < 1e-4) {
+            Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on train = " + s));
+            break; // started overfitting
           }
-          Log.info(LogMsg("train deviance = " + trainDev + ", test deviance = " + testDev));
-          _lsc.addLambdaScore(_state._iter,ArrayUtils.countNonzeros(_state.beta()), _state.lambda(),1 - trainDev/nullDevTrain, 1.0 - testDev/nullDevTest);
-          _model.update(_state.beta(), trainDev, testDev, _state._iter);
-          if(_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
-            double s = ArrayUtils.maxValue(devHistoryTrain);
+          if(_validDinfo != null) {
+            s = ArrayUtils.maxValue(devHistoryTrain);
             if(s < 1e-4) {
-              Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on train = " + s));
+              Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on test = " + s));
               break; // started overfitting
             }
-            if(_validDinfo != null) {
-              s = ArrayUtils.maxValue(devHistoryTrain);
-              if(s < 1e-4) {
-                Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + ", improvement on test = " + s));
-                break; // started overfitting
-              }
-            }
           }
-          if(_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)
-              scoreAndUpdateModel(); // update partial results
-          _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "exp.dev.ratio trn/tst= " + devFormatter.format(1 - trainDev/nullDevTrain) + "/" + devFormatter.format(1.0 - testDev/nullDevTest) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
-        } else
-          _model.update(_state.beta(), -1, -1, _state._iter);
+        }
+        if(_parms._lambda_search && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval))
+          scoreAndUpdateModel(); // update partial results
+        _job.update(_workPerIteration,"iter=" + _state._iter + " lmb=" + lambdaFormatter.format(_state.lambda()) + "exp.dev.ratio trn/tst= " + devFormatter.format(1 - trainDev/_nullDevTrain) + "/" + devFormatter.format(1.0 - testDev/_nullDevTest) + " P=" + ArrayUtils.countNonzeros(_state.beta()));
       }
       if(_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
@@ -1835,6 +1877,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res._betaStart = ArrayUtils.select(_betaStart, activeCols);
       return res;
     }
+  }
 
+  /**
+   * GLM implementation of N-fold cross-validation.
+   * GLM needs its own implementation when running in lambda search, it needs the following extra steps:
+   *   1. compute lambdas of the main model (we want to be comparing models at same lambda values)
+   *   2. after modesl are built, pick global best lambda and compute a model for it in each fold.
+   * @return Cross-validation Job
+   * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
+   */
+  @Override
+  public void computeCrossValidation() {
+    init(true);
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+    // init computes global list of lambdas
+    // 2. is handled in modifyParams...
+    super.computeCrossValidation();
   }
 }

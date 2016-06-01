@@ -87,7 +87,6 @@ public final class ComputationState {
   public BetaConstraint activeBC(){return _activeBC;}
   public double likelihood() {return _likelihood;}
 
-
   public DataInfo activeData(){
     if(_activeClass != -1)
       return activeDataMultinomial(_activeClass);
@@ -218,6 +217,8 @@ public final class ComputationState {
   }
 
   public void setActiveClass(int activeClass) {_activeClass = activeClass;}
+
+  public double deviance() {return 2*likelihood();}
 
   public static class GLMSubsetGinfo extends GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;
