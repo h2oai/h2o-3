@@ -56,8 +56,10 @@ class H2OConnection(object):
     :param license: If not None, is a path to a license file.
     :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
     -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. This value is only used when Python starts H2O.
-    :param max_mem_size: Maximum heap size (jvm option Xmx) in gigabytes.
-    :param min_mem_size: Minimum heap size (jvm option Xms) in gigabytes.
+    :param max_mem_size: Maximum heap size (jvm option Xmx). String specifying the maximum size, in bytes, of the memory allocation pool to H2O.
+    This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.
+    :param min_mem_size: Minimum heap size (jvm option Xms). String specifying the minimum size, in bytes, of the memory allocation pool to H2O.
+    This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
     :param strict_version_check: Setting this to False is unsupported and should only be done when advised by technical support.
     :param proxy: A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
@@ -293,8 +295,8 @@ class H2OConnection(object):
       print()
 
     vm_opts = []
-    if mmin: vm_opts += ["-Xms{}g".format(mmin)]
-    if mmax: vm_opts += ["-Xmx{}g".format(mmax)]
+    if mmin: vm_opts += ["-Xms{}".format(mmin)]
+    if mmax: vm_opts += ["-Xmx{}".format(mmax)]
     if ea:   vm_opts += ["-ea"]
 
     h2o_opts = ["-verbose:gc",

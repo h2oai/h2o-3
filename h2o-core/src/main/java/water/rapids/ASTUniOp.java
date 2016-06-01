@@ -127,7 +127,7 @@ class ASTNAOmit extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    return new ValFrame(new MRTask() {
+    Frame fr2 = new MRTask() {
       private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
         for(int i=0;i<cs.length;++i) {
           if( cs[i] instanceof CStrChunk ) ncs[i].addStr(cs[i],row);
@@ -144,7 +144,8 @@ class ASTNAOmit extends ASTPrim {
           if( col==cs.length ) copyRow(row,cs,ncs);
         }
       }
-    }.doAll(fr.types(),fr).outputFrame(Key.make(), fr.names(), fr.domains()));
+    }.doAll(fr.types(),fr).outputFrame(fr.names(),fr.domains());
+    return new ValFrame(fr2);
   }
 }
 
