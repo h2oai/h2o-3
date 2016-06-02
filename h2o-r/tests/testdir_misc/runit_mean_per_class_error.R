@@ -121,7 +121,7 @@ test.mean_per_class_error <- function() {
       ## limit the runtime to 10 minutes
       max_runtime_secs = 600,
 
-      ## build no more than 5 models
+      ## build no more than 10 models
       max_models = 10,
 
       ## random number generator seed to make sampling of parameter combinations reproducible
