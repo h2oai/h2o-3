@@ -44,6 +44,8 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteriaV99 search_criteria;
 
+  @API(help="Validation frame", direction=API.Direction.INOUT, gridable = true)
+  public KeyV3.FrameKeyV3 _valid;
   //
   // Outputs
   //
@@ -61,7 +63,15 @@ public class GridSearchSchema<G extends Grid<MP>,
       for (Map.Entry<String, Object> e : m.entrySet()) {
         Object o = e.getValue();
         Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
-        hyper_parameters.put(e.getKey(),o2);
+
+        // residue from Cliff. . . confirm the names
+        String key = e.getKey();
+        if ("validation_frame".equals(key))
+          hyper_parameters.put("_valid",o2);
+        else if ("training_frame".equals(key))
+          hyper_parameters.put("_train",o2);
+        else
+          hyper_parameters.put(key,o2);
       }
       parms.remove("hyper_parameters");
     }
