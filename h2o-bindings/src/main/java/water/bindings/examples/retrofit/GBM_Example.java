@@ -1,7 +1,8 @@
-package water.bindings.proxies.retrofit;
+package water.bindings.examples.retrofit;
 
+import okhttp3.OkHttpClient;
 import water.bindings.pojos.*;
-import water.bindings.proxies.*;
+import water.bindings.proxies.retrofit.*;
 import com.google.gson.*;
 import retrofit2.*;
 import retrofit2.http.*;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class GBM_Example {
 
@@ -37,9 +39,9 @@ public class GBM_Example {
             catch (IOException e) {
                 System.err.println("Caught exception: " + e);
             }
-            if (! jobs_response.isSuccessful())
+            if (jobs_response == null || !jobs_response.isSuccessful())
                 if (retries-- > 0)
-                   continue;
+                    continue;
                 else
                     throw new RuntimeException("/3/Jobs/{job_id} failed 3 times.");
 
@@ -52,15 +54,21 @@ public class GBM_Example {
     }
 
     public static void gbm_example_flow() {
-        GsonBuilder builder = new GsonBuilder();
-        builder.registerTypeAdapter(KeyV3.class, new KeySerializer());
-//        builder.registerTypeAdapter(ColSpecifierV3.class, new ColSpecifierSerializer());
-        Gson gson = builder.create();
+        Gson gson = new GsonBuilder()
+            .registerTypeAdapter(KeyV3.class, new KeySerializer())
+            .create();
+
+        OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-        .baseUrl("http://localhost:54321/") // note trailing slash for Retrofit 2
-        .addConverterFactory(GsonConverterFactory.create(gson))
-        .build();
+            .client(client)
+            .baseUrl("http://localhost:54321/") // note trailing slash for Retrofit 2
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build();
 
         ImportFiles importService = retrofit.create(ImportFiles.class);
         ParseSetup parseSetupService = retrofit.create(ParseSetup.class);
@@ -74,7 +82,9 @@ public class GBM_Example {
 
         try {
             // STEP 1: import raw file
-            ImportFilesV3 importBody = importService.importFiles("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null).execute().body();
+            ImportFilesV3 importBody = importService.importFiles(
+                "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null
+            ).execute().body();
             System.out.println("import: " + importBody);
 
             // STEP 2: parse setup
