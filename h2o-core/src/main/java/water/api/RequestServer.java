@@ -225,7 +225,7 @@ public class RequestServer extends NanoHTTPD {
     register("/3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict", null,
       "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
     
-    register("/4/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predict2", null,
+    register("/4/Predictions/models/(?<model>.*)/frames/(?<frame>.*)"     ,"POST"  ,ModelMetricsHandler.class, "predictAsync", null,
             "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
     
     register("/3/WaterMeterCpuTicks/(?<nodeidx>.*)"                       ,"GET"   ,WaterMeterCpuTicksHandler.class, "fetch", null,
