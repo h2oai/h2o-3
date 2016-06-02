@@ -84,7 +84,7 @@ test.mean_per_class_error <- function() {
 
   hyper_params = list(
       ## restrict the search to the range of max_depth established above
-      max_depth = seq(1,3,1),
+      max_depth = seq(1,10,1),
 
       ## search a large space of row sampling rates per tree
       sample_rate = seq(0.2,1,0.01),
@@ -99,7 +99,7 @@ test.mean_per_class_error <- function() {
       col_sample_rate_change_per_level = seq(0.9,1.1,0.01),
 
       ## search a large space of the number of min rows in a terminal node
-      min_rows = 2^seq(0,log2(nrow(train))-1,1),
+      min_rows = 2^seq(0,log2(nrow(train))-2,1),
 
       ## search a large space of the number of bins for split-finding for continuous and integer columns
       nbins = 2^seq(4,10,1),
@@ -122,14 +122,14 @@ test.mean_per_class_error <- function() {
       max_runtime_secs = 600,
 
       ## build no more than 5 models
-      max_models = 5,
+      max_models = 10,
 
       ## random number generator seed to make sampling of parameter combinations reproducible
       seed = 1234,
 
-      ## early stopping once the leaderboard of the top 5 models is converged to 0.1% relative difference
+      ## early stopping once the leaderboard of the top 5 models is converged to 0.1% relative difference in mean_per_class_error
       stopping_rounds = 5,
-      stopping_metric = "AUC",
+      stopping_metric = "mean_per_class_error",
       stopping_tolerance = 1e-3
     )
 
@@ -138,8 +138,11 @@ test.mean_per_class_error <- function() {
                          distribution="multinomial",
                          seed=1234,
                          training_frame = train,
+                         nfolds=3, # for early stopping
                          ntrees=1000,
                          hyper_params = hyper_params,
+                         #each model stops early based on logloss
+                         stopping_rounds = 10, stopping_metric = "logloss", stopping_tolerance=1e-3,
                          search_criteria = search_criteria)
 
     print(grid)

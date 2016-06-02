@@ -75,6 +75,7 @@ public class ScoringInfo extends Iced {
       case r2:                { return cross_validation ? scored_xval._r2 : validation ? scored_valid._r2 : scored_train._r2; }
       case misclassification: { return cross_validation ? scored_xval._classError : validation ? scored_valid._classError : scored_train._classError; }
       case lift_top_group:    { return cross_validation ? scored_xval._lift : validation ? scored_valid._lift : scored_train._lift; }
+      case mean_per_class_error: { return cross_validation ? scored_xval._mean_per_class_error : validation ? scored_valid._mean_per_class_error : scored_train._mean_per_class_error; }
       default:                throw H2O.unimpl("Undefined stopping criterion: " + criterion);
     }
   }
