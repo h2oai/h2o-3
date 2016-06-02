@@ -62,6 +62,18 @@ public class ConfusionMatrix extends Iced {
 
   public final int size() { return _cm.length; }
 
+  public final double mean_per_class_error() {
+    double err = 0;
+    for( int d = 0; d < _cm.length; ++d )
+      err += class_error(d); //can be 0 if no actuals, but we're still dividing by the total count of classes
+    return err / _cm.length;
+  }
+
+  // mean(accuracy) = mean(1-error) = 1-mean(error)
+  public final double mean_per_class_accuracy() {
+    return 1-mean_per_class_error();
+  }
+
   public final double class_error(int c) {
     double s = ArrayUtils.sum(_cm[c]);
     if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer

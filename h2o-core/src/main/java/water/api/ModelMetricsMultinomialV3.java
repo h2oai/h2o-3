@@ -18,6 +18,9 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
   @API(help="The logarithmic loss for this scoring run.", direction=API.Direction.OUTPUT)
   public double logloss;
 
+  @API(help="The mean misclassification error per class.", direction=API.Direction.OUTPUT)
+  public double mean_per_class_error;
+
   @Override public ModelMetricsMultinomialV3 fillFromImpl(ModelMetricsMultinomial modelMetrics) {
     super.fillFromImpl(modelMetrics);
     logloss = modelMetrics._logloss;

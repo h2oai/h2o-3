@@ -5,6 +5,8 @@ In this tutorial, we show how to build a well-tuned H2O GBM model for a supervis
 
 This tutorial is written in [R Markdown](http://rmarkdown.rstudio.com). You can download the source [from H2O's github repository](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).
 
+A port to a [Python Jupyter Notebook version](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb) is available as well.
+
 ## Installation of the H2O R Package
 Either download H2O from [H2O.ai's website](http://h2o.ai/download) or install the latest version of H2O into R with the following R code:
 
@@ -201,7 +203,7 @@ This model doesn't seem to be much better than the previous models:
 [1] 0.939335
 ```
 
-For this small dataset, dropping 20% of observations per tree seems too aggresive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.
+For this small dataset, dropping 20% of observations per tree seems too aggressive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.
 
 Note: To see what other `stopping_metric` parameters you can specify, simply pass an invalid option:
 
