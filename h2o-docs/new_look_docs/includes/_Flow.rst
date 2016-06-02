@@ -1469,7 +1469,6 @@ prediction from the drop-down **Frame:** menu, then click the
    :alt: Making Predictions
 
 
---------------
 
 Viewing Predictions
 ^^^^^^^^^^^^^^^^^^^
@@ -1484,6 +1483,49 @@ prediction, click the **View** button to the right of the model name.
 
 You can also view predictions by clicking the drop-down **Score** menu
 and selecting **List All Predictions**.
+
+
+Intepreting the Gains/Lift Chart
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Gains/Lift chart evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response (class) labels. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used. 
+
+This information is particularly useful for direct marketing applications, for example. The gains/lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model.
+
+By default, H2O reports the Gains/Lift for all binary classification models if the following requirements are met:
+
+- The training frame dataset must contain actual binary class labels.
+- The prediction column used as the response must contain probabilities.
+- For GLM, the visualization displays only when using ``nfolds`` (for example, ``nfolds=2``).
+- The model type cannot be K-means or PCA.
+
+How the Gains/Lift Chart is Built
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. Note that the default number of groups is 20; if there are fewer than 20 unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. For binning, H2O computes exact ventiles. (Weighted cases are in development.) ``h2o.quantile(x, probs=seq(0,1,0.05))`` is used for cut points, similar to R's ``quantile()`` method. 
+
+For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets). 
+
+.. figure:: ../images/GainsLift.png
+   :alt: Gains/Lift Chart
+
+**Note**: During the Gains/Lift calculations, all rows containing missing values ("NAs") in either the label (response) or the prediction probability are ignored. 
+
+In addition to the chart, a Gains/Lift table is also available. This table reports the following for each group:
+
+- Threshold probability value
+- Cumulative data fractions
+- Response rates (proportion of observations that are events in a group)
+- Cumulative response rate
+- Event capture rate
+- Cumulative capture rate
+- Gain (difference in percentages between the overall proportion of events and the observed proportion of observations that are events in the group)
+- Cumulative gain
+
+.. figure:: ../images/GainsLiftTable.png
+   :alt: Gains/Lift Table
+
+The *response_rate* column lists the likelihood of response, the *lift* column lists the lift rate, and the *cumulative_lift* column provides the percentage of increase in response based on the lift.
 
 --------------
 

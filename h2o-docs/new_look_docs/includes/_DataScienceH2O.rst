@@ -440,6 +440,8 @@ Defining a GLM Model
    predictors during computation. This value is used as a stopping
    criterium to prevent expensive model building with many predictors.
 
+-  **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+
 Interpreting a GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -847,12 +849,13 @@ Defining a DRF Model
 
 -  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
--  **histogram_type**: By default DRF bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+-  **histogram_type**: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
-   - AUTO
-   - UniformAdaptive
-   - Random
-   - QuantilesGlobal
+	- AUTO
+	- UniformAdaptive
+	- Random
+	- QuantilesGlobal
+	- RoundRobin
 
 -  **keep\_cross\_validation\_predictions**: Enable this option to keep the
    cross-validation prediction.
@@ -1623,12 +1626,13 @@ Defining a GBM Model
 
 -  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
--  **histogram_type**: By default GBM bins from min...max in steps of (max-min)/N. Use this option to specify the type of histogram to use for finding optimal split points:
+-  **histogram_type**: By default (AUTO) GBM bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
 	- AUTO
 	- UniformAdaptive
 	- Random
 	- QuantilesGlobal
+	- RoundRobin
 
 -  **score\_each\_iteration**: (Optional) Specify whether to score
    during each iteration of the model training.

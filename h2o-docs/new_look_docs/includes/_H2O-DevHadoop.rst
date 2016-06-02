@@ -8,12 +8,17 @@ Currently supported versions:
 -  CDH 5.2
 -  CDH 5.3
 -  CDH 5.4.2
+-  CDH 5.5.3
+-  CDH 5.6.0
+-  CDH 5.7.0
 -  HDP 2.1
 -  HDP 2.2
 -  HDP 2.3
+-  HDP 2.4
 -  MapR 3.1.1
 -  MapR 4.0.1
 -  MapR 5.0
+-  MapR 5.1
 
 **Important Points to Remember**:
 
@@ -32,7 +37,7 @@ Prerequisite: Open Communication Paths
 --------------------------------------
 
 H2O communicates using two communication paths. Verify these are open
-and available for use by H2O.
+and available for use by H2O. 
 
 **Path 1: mapper to driver**
 
@@ -68,20 +73,7 @@ Walkthrough
 The following steps show you how to download or build H2O with Hadoop
 and the parameters involved in launching H2O from the command line.
 
-1. Download the latest H2O release for your version of Hadoop:
-
-   ::
-
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
-       wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
-
-   **Note**: Enter only one of the above commands.
+1. Download the latest H2O release for your version of Hadoop. Refer to the H2O on Hadoop `Download <http://www.h2o.ai/download/h2o/hadoop>`__ page.
 
 2. Prepare the job input on the Hadoop Node by unzipping the build file
    and changing to the directory with the Hadoop and H2O's driver jar
