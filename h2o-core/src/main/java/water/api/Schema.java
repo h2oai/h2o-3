@@ -299,6 +299,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *  the latest_version.  */
   public static int getHighestSupportedVersion() { return HIGHEST_SUPPORTED_VERSION; }
 
+  /** Combines the previous two. */
+  public static int getLatestOrHighestSupportedVersion() {
+    return LATEST_VERSION == -1? HIGHEST_SUPPORTED_VERSION : LATEST_VERSION;
+  }
+
   /** Get the experimental schema version, which indicates that a schema is not
    *  guaranteed stable between H2O releases.  */
   public static int getExperimentalVersion() { return EXPERIMENTAL_VERSION; }

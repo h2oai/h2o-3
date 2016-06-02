@@ -32,7 +32,7 @@ import java.util.zip.ZipOutputStream;
  * the request URI and whose HTTP method (GET, POST, DELETE...) matches the
  * request's method.  If none is found an HTTP 404 is returned.
  * <p>
- * A Handler class is parameterized by the kind of Schema that it accepts
+ * A Handler class is parametrized by the kind of Schema that it accepts
  * for request handling, as well as the internal implementation class (Iced
  * class) that the Schema translates from and to.  Handler methods are allowed to
  * return other Schema types than in the  type parameter if that makes
@@ -72,7 +72,7 @@ public class RequestServer extends NanoHTTPD {
 
   private static Pattern version_pattern = null;
   private static Pattern getVersionPattern() {
-    if (null == version_pattern) version_pattern = Pattern.compile("^/(\\d+|EXPERIMENTAL)/(.*)");
+    if (version_pattern == null) version_pattern = Pattern.compile("^/(\\d+|EXPERIMENTAL|LATEST)/(.*)");
     return version_pattern;
   }
 
@@ -514,28 +514,18 @@ public class RequestServer extends NanoHTTPD {
   //   version:      2
   //   requestType:  ".html"
   //   path:         "GBM/crunk"
-  //   parms:        "{hex-->some_hex}"
-  @Override public Response serve( String uri, String method, Properties header, Properties parms ) {
+  //   parms:        {"hex": "some_hex"}
+  @Override
+  public Response serve(String uri, String method, Properties header, Properties parms) {
     // Jack priority for user-visible requests
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
-
-    // determine version: if /LATEST then use the highest version of any schema (or the highest supported version, if we don't know yet).
-    if (uri.startsWith("/LATEST")) {
-      if (-1 == Schema.getLatestVersion()) {
-        // Not yet initialized, and we might be in bootstrap
-        uri = "/" + Schema.getHighestSupportedVersion() + uri.substring("/latest".length());
-      } else {
-        uri = "/" + Schema.getLatestVersion() + uri.substring("/latest".length());
-      }
-    }
 
     // determine the request type
     RequestType type = RequestType.requestType(uri);
 
     // Blank response used by R's uri.exists("/")
     if (uri.equals("/") && method.equals("HEAD")) {
-        Response r = new Response(HTTP_OK, MIME_PLAINTEXT, "");
-        return r;
+      return new Response(HTTP_OK, MIME_PLAINTEXT, "");
     }
 
     String versioned_path = uri;
@@ -544,10 +534,16 @@ public class RequestServer extends NanoHTTPD {
 
     Matcher m = getVersionPattern().matcher(uri);
     if (m.matches()) {
-      if ("EXPERIMENTAL".equals(m.group(1))) {
-        version = 99;
-      } else {
-        version = Integer.valueOf(m.group(1));
+      switch (m.group(1)) {
+        case "LATEST":
+          version = Schema.getLatestOrHighestSupportedVersion();
+          break;
+        case "EXPERIMENTAL":
+          version = 99;
+          break;
+        default:
+          version = Integer.valueOf(m.group(1));
+          break;
       }
       String uripath = "/" + m.group(2);
       path = type.requestName(uripath); // Strip suffix type from middle of URI
@@ -583,7 +579,7 @@ public class RequestServer extends NanoHTTPD {
       Route route = lookup(method, versioned_path);
 
       // if the request is not known, treat as resource request, or 404 if not found
-      if( route == null) {
+      if (route == null) {
         if (method.equals("GET")) {
           return getResource(type, uri);
         } else {
