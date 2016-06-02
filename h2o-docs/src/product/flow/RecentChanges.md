@@ -2,6 +2,33 @@
 
 ##H2O
 
+###Turchin (3.8.2.7) - 6/2/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2985'>PUBDEV-2985</a>] -         Make Random grid search consistent between clients for same parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2987'>PUBDEV-2987</a>] -         Allow learn_rate_annealing to be passed to H2OGBMEstimator constructor in Python API
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2979'>PUBDEV-2979</a>] -         Add a new metric: mean misclassification error for classification models
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2972'>PUBDEV-2972</a>] -         No longer print negative R^2 values - show NaN instead
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2984'>PUBDEV-2984</a>] -         Add xval=True/False as an option to model_performance() in Python API
+</li>
+</ul>
+
 ###Turchin (3.8.2.6) - 5/24/2016
 
 <h4>        Bug
