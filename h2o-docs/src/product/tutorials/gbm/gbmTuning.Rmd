@@ -203,7 +203,7 @@ This model doesn't seem to be much better than the previous models:
 [1] 0.939335
 ```
 
-For this small dataset, dropping 20% of observations per tree seems too aggresive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.
+For this small dataset, dropping 20% of observations per tree seems too aggressive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.
 
 Note: To see what other `stopping_metric` parameters you can specify, simply pass an invalid option:
 
