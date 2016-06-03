@@ -10,7 +10,7 @@ interest, select a learning path from the sidebar.
 
 We're glad you're interested in learning more about H2O - if you have
 any questions or need general support, please email them to our Google
-Group, `h2ostream <mailto:h2ostream@googlegroups.com>`__ or post them on
+Group, `h2ostream <mailto:h2ostream@googlegroups.com>`__, or post them on
 our Google groups forum, h2ostream. This is a public forum, so your
 question will be visible to other users.
 
@@ -83,16 +83,11 @@ learn more:
    -  `Kmeans <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/kmeans/kmeans.md>`_
    -  `Distributed Random Forest (DRF) <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/rf/rf.md>`_
 
-
 -  `Getting Started with Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/flow/README.md>`_: This document describes our new intuitive
    web interface, Flow. This interface is similar to IPython notebooks,
    and allows you to create a visual workflow to share with others.
 
--  `Launch from the command line <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`_: This document describes some of the
-   additional options that you can configure when launching H2O (for
-   example, to specify a different directory for saved Flow data,
-   allocate more memory, or use a flatfile for quick configuration of a
-   cluster).
+-  `Launch from the command line <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`_: This document describes some of the additional options that you can configure when launching H2O (for example, to specify a different directory for saved Flow data, allocate more memory, or use a flatfile for quick configuration of a cluster).
 
 -  `Algorithms <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md>`_: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
@@ -448,18 +443,3 @@ test process, they will cloud up and run the multi-node JUnit tests.
    our list of Jiras that contributors can work on and how to contact
    us. **Note**: To access this link, you must have an `Atlassian
    account <https://id.atlassian.com/signup?application=mac&tenant=&continue=https%3A%2F%2Fmy.atlassian.com>`__.
-
---------------
-
-Downloading H2O
-===============
-
--  `Download page for this
-   build <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html>`__
--  `h2o.ai main download page <http://www.h2o.ai/download>`__
-
-To download H2O, go to our `downloads
-page <http://www.h2o.ai/download>`__. Select a build type (bleeding edge
-or latest alpha), then select an installation method
-(`standalone <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html>`__, `R <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#R>`__, `Python <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Python>`__, `Hadoop <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Hadoop>`__, or `Maven <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Maven>`__) by clicking the tabs at the top of the page. Follow the instructions in
-the tab to install H2O.

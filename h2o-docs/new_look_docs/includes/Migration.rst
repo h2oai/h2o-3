@@ -302,7 +302,7 @@ following commands are now supported:
 -  ``h2o.saveModel``
 -  ``h2o.loadModel``
 
-**Table of Contents**
+**Algorithm Updates**
 
 -  `GBM`_
 -  `GLM`_

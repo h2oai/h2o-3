@@ -9,43 +9,23 @@ Welcome to H2O 3!
 .. toctree::
    :maxdepth: 3
    
-   includes/_SiteIntro
-   includes/_Architecture
-   includes/_Download
-   includes/_StartH2O
-   includes/_H2O-DevS3Creds
-   includes/_H2O-DevHadoop   
-   includes/_H2O-DevDocker
-   includes/_Flow
-   includes/_DataScienceH2O
-   includes/_CrossValidation
-   includes/_GridSearch
-   includes/_POJO_QuickStart
-   includes/_H2O-DevLogs
-   includes/_Migration
-   includes/_Security
-   includes/_FAQ
-   includes/_glossary
+   includes/SiteIntro
+   includes/Architecture
+   includes/Download
+   includes/StartH2O
+   includes/H2O-DevS3Creds
+   includes/H2O-DevHadoop   
+   includes/H2O-DevDocker
+   includes/Flow
+   includes/DataScienceH2O
+   includes/CrossValidation
+   includes/GridSearch
+   includes/POJO_QuickStart
+   includes/H2O-DevLogs
+   includes/Migration
+   includes/Security
+   includes/FAQ
+   includes/glossary
+   includes/Videos
+   API-Reference
 
-
-API Reference
-================
-
-Find API documentation for R, Python, Scala, Java
-
-.. todo:: link out to the api docs
-
-- R
-- Python
-- Scala
-- REST
-- Java Core
-- Java Algorithms
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
