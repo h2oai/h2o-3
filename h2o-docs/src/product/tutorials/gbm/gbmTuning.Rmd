@@ -619,7 +619,7 @@ recall                    0.8831476  0.025172591 0.85714287   0.8958333  0.90816
 specificity              0.94994324  0.016345335  0.9806452   0.9257143     0.93125   0.9371069      0.975
 ```
 
-Ouch! So it looks like we overfit quite a bit on the validation set as the mean AUC on the 5 folds is "only" 96.55% +/- 0.5%. So we cannot always expect AUCs of 97% with these parameters on this dataset. So to get a better estimate of model performance, the Random hyper-parameter search could have used `nfolds = 5` (or 10, or similar) in combination with 80% of the data for training (i.e., not holding out a validation set, but only the final test set). However, this would take more time, as `nfolds+1` models will be built for every set of parameters.
+Ouch! So it looks like we overfit quite a bit on the validation set as the mean AUC on the 5 folds is "only" 96.06% +/- 0.67%. So we cannot always expect AUCs of 97% with these parameters on this dataset. So to get a better estimate of model performance, the Random hyper-parameter search could have used `nfolds = 5` (or 10, or similar) in combination with 80% of the data for training (i.e., not holding out a validation set, but only the final test set). However, this would take more time, as `nfolds+1` models will be built for every set of parameters.
 
 Instead, to save time, let's just scan through the top 5 models and cross-validated their parameters with `nfolds=5` on the entire dataset:
 
