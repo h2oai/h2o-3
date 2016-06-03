@@ -22,7 +22,7 @@ public class ScoreKeeper extends Iced {
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
   public double _classError = Double.NaN;
-  public double _meanClassError = Double.NaN;
+  public double _mean_per_class_error = Double.NaN;
   public float[] _hitratio;
   public double _lift = Double.NaN; //Lift in top group
 
@@ -76,7 +76,7 @@ public class ScoreKeeper extends Iced {
       if (((ModelMetricsBinomial)m)._auc != null) {
         _AUC = ((ModelMetricsBinomial) m)._auc._auc;
         _classError = ((ModelMetricsBinomial) m)._auc.defaultErr();
-        _meanClassError = ((ModelMetricsBinomial)m).mean_per_class_error();
+        _mean_per_class_error = ((ModelMetricsBinomial)m).mean_per_class_error();
       }
       GainsLift gl = ((ModelMetricsBinomial)m)._gainsLift;
       if (gl != null && gl.response_rates != null && gl.response_rates.length > 0) {
@@ -86,7 +86,7 @@ public class ScoreKeeper extends Iced {
     else if (m instanceof ModelMetricsMultinomial) {
       _logloss = ((ModelMetricsMultinomial)m)._logloss;
       _classError = ((ModelMetricsMultinomial)m)._cm.err();
-      _meanClassError = ((ModelMetricsMultinomial)m).mean_per_class_error();
+      _mean_per_class_error = ((ModelMetricsMultinomial)m).mean_per_class_error();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
     }
   }
@@ -157,7 +157,7 @@ public class ScoreKeeper extends Iced {
             val = skj._classError;
             break;
           case mean_per_class_error:
-            val = skj._meanClassError;
+            val = skj._mean_per_class_error;
             break;
           case lift_top_group:
             val = skj._lift;
@@ -212,7 +212,7 @@ public class ScoreKeeper extends Iced {
             && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
             && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
-            && MathUtils.compare(_meanClassError, o._meanClassError, 1e-6, 1e-6)
+            && MathUtils.compare(_mean_per_class_error, o._mean_per_class_error, 1e-6, 1e-6)
             && MathUtils.compare(_lift, o._lift, 1e-6, 1e-6);
   }
 
@@ -264,7 +264,7 @@ public class ScoreKeeper extends Iced {
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._meanClassError - o2._meanClassError); // lessIsBetter
+            return (int)Math.signum(o1._mean_per_class_error - o2._mean_per_class_error); // lessIsBetter
           }
         };
       case lift_top_group:
@@ -288,7 +288,7 @@ public class ScoreKeeper extends Iced {
         ", _logloss=" + _logloss +
         ", _AUC=" + _AUC +
         ", _classError=" + _classError +
-        ", _meanClassError=" + _meanClassError +
+        ", _mean_per_class_error=" + _mean_per_class_error +
         ", _hitratio=" + Arrays.toString(_hitratio) +
         ", _lift=" + _lift +
         '}';

@@ -105,7 +105,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     A new H2OGradientBoostedEstimator object.
   """
   def __init__(self, model_id=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
-               max_depth=None, min_rows=None, learn_rate=None, nbins=None,
+               max_depth=None, min_rows=None, learn_rate=None, learn_rate_annealing=None, nbins=None,
                sample_rate=None, sample_rate_per_class=None, col_sample_rate=None,
                col_sample_rate_change_per_level=None, col_sample_rate_per_tree=None,
                nbins_top_level=None, nbins_cats=None, balance_classes=None, class_sampling_factors=None,
@@ -208,12 +208,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     self._parms["col_sample_rate"] = value
 
   @property
-  def col_sample_rate_change_per_tree(self):
-    return self._parms["col_sample_rate_change_per_tree"]
+  def col_sample_rate_change_per_level(self):
+    return self._parms["col_sample_rate_change_per_level"]
 
-  @col_sample_rate_change_per_tree.setter
-  def col_sample_rate_change_per_tree(self, value):
-    self._parms["col_sample_rate_change_per_tree"] = value
+  @col_sample_rate_change_per_level.setter
+  def col_sample_rate_change_per_level(self, value):
+    self._parms["col_sample_rate_change_per_level"] = value
 
   @property
   def col_sample_rate_per_tree(self):

@@ -114,12 +114,12 @@ class H2ORandomForestEstimator(H2OEstimator):
     self._parms["mtries"] = value
 
   @property
-  def col_sample_rate_change_per_tree(self):
-    return self._parms["col_sample_rate_change_per_tree"]
+  def col_sample_rate_change_per_level(self):
+    return self._parms["col_sample_rate_change_per_level"]
 
-  @col_sample_rate_change_per_tree.setter
-  def col_sample_rate_change_per_tree(self, value):
-    self._parms["col_sample_rate_change_per_tree"] = value
+  @col_sample_rate_change_per_level.setter
+  def col_sample_rate_change_per_level(self, value):
+    self._parms["col_sample_rate_change_per_level"] = value
 
   @property
   def sample_rate(self):
