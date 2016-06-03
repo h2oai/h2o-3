@@ -197,7 +197,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     }
 
     public String toString() {
-      if (Objects.equals(schema_name, schema_type + "V" + schema_version)) return schema_name;
+      if (PojoUtils.equals(schema_name, schema_type + "V" + schema_version)) return schema_name;
       return schema_name + " (type:" + schema_type + ", version: " + schema_version + ")";
     }
 
