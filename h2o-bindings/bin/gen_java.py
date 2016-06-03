@@ -1,4 +1,4 @@
-#!/usr/bin/env python  
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 import re
 import bindings as bi
@@ -37,11 +37,24 @@ def get_java_value(field):
     if h2o_type.startswith("Key"): return "null"  # TODO: handle Key
     return value
 
+def translate_name(name):
+    """
+    Converts names with underscores into camelcase. For example:
+        "num_rows" => "numRows"
+        "very_long_json_name" => "veryLongJsonName"
+        "build_GBM_model" => "buildGbmModel"
+        "KEY" => "key"
+    """
+    parts = name.split("_")
+    parts[0] = parts[0].lower()
+    for i in range(1, len(parts)):
+        parts[i] = parts[i].capitalize()
+    return "".join(parts)
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # Generate a Schema POJO
 # -----------------------------------------------------------------------------------------------------------------------
-
 def generate_schema(class_name, schema):
     """
     Generate schema POJO file.
@@ -53,7 +66,9 @@ def generate_schema(class_name, schema):
     has_inherited = False
     for field in schema["fields"]:
         if field["name"] == "__meta": continue
-        if field["is_inherited"]: has_inherited = True
+        if field["is_inherited"]:
+            has_inherited = True
+            continue
         if field["type"].startswith("Map"): has_map = True
         if field["name"] == "can_build": is_model_builder = True
 
@@ -69,7 +84,7 @@ def generate_schema(class_name, schema):
         # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the
         # parameters schema class...
         if is_model_builder and field["name"] == "parameters":
-            fields.append(("parameters", "null", "ModelParameterSchemaV3", field["help"], field["is_inherited"]))
+            fields.append(("parameters", "null", "ModelParameterSchemaV3[]", field["help"], field["is_inherited"]))
         else:
             fields.append((field["name"], java_value, java_type, field["help"], field["is_inherited"]))
 
@@ -80,6 +95,7 @@ def generate_schema(class_name, schema):
     yield "package water.bindings.pojos;"
     yield ""
     yield "import com.google.gson.Gson;"
+    yield "import com.google.gson.annotations.*;"
     yield "import java.util.Map;" if has_map else None
     yield ""
     yield ""
@@ -87,10 +103,12 @@ def generate_schema(class_name, schema):
     yield ""
     for name, value, ftype, fhelp, inherited in fields:
         if inherited: continue
+        ccname = translate_name(name)
         yield "    /**"
         yield bi.wrap(fhelp, indent="     * ")
         yield "     */"
-        yield "    public %s %s;" % (ftype, name)
+        yield "    @SerializedName(\"%s\")" % name  if name != ccname else None
+        yield "    public %s %s;" % (ftype, ccname)
         yield ""
     if has_inherited:
         yield ""
@@ -101,7 +119,7 @@ def generate_schema(class_name, schema):
         for name, value, ftype, fhelp, inherited in fields:
             if not inherited: continue
             yield bi.wrap(fhelp, "    // ")
-            yield "    public %s %s = %s;" % (ftype, name, value)
+            yield "    public %s %s;" % (ftype, translate_name(name))
             yield ""
         yield "    */"
         yield ""
@@ -111,7 +129,8 @@ def generate_schema(class_name, schema):
     yield "    public %s() {" % class_name
     for name, value, _, _, _ in fields:
         if name == "parameters": continue
-        yield "        %s = %s;" % (name, value)
+        if value == "null": continue
+        yield "        %s = %s;" % (translate_name(name), value)
     yield "    }"
     yield ""
     yield "    /**"
@@ -211,7 +230,7 @@ def generate_proxy(classname, endpoints, schemas_map):
             pieces = path.split("/")
             assert len(pieces) >= 4, "Expected to see algo name in the path: " + path
             algo = pieces[3]
-            method = method + "_" + algo  # e.g. train_glm()
+            method = method + algo.capitalize()  # e.g. trainGlm()
             for field in input_schema["fields"]:
                 if field["name"] == "parameters":
                     input_schema_name = field["schema_name"]
@@ -223,6 +242,7 @@ def generate_proxy(classname, endpoints, schemas_map):
         param_infos = []
 
         # Include path parms first
+        j = 1
         for parm in path_params:
             # find the metadata for the field from the input schema:
             fields = [field for field in input_schema["fields"] if field["name"] == parm]
@@ -236,7 +256,8 @@ def generate_proxy(classname, endpoints, schemas_map):
             if ptype == "ColSpecifierV3": ptype = "String"
             # TODO: brackets
 
-            param_strs.append("@Path(\"{parm}\") {ptype} {parm}".format(**locals()))
+            param_strs.append("@Path(\"{parm}\") {ptype} v{j}".format(**locals()))
+            j += 1
 
         # Then POST body params
         for field in input_schema["fields"]:
@@ -251,7 +272,8 @@ def generate_proxy(classname, endpoints, schemas_map):
             if ptype.endswith("KeyV3[]"): ptype = "String[]"
             if ptype == "ColSpecifierV3": ptype = "String"
 
-            param_strs.append("@Field(\"{parm}\") {ptype} {parm}".format(**locals()))
+            param_strs.append("@Field(\"{parm}\") {ptype} v{j}".format(**locals()))
+            j += 1
 
         # check for conflicts:
         method_with_args = (method, tuple(param_strs))
@@ -285,15 +307,16 @@ def generate_proxy(classname, endpoints, schemas_map):
                                         outer_class=classname))
             helper_class.append("      return z.{method}(".format(method=method))
             for pname, ptype in param_infos:
+                ccname = translate_name(pname)
                 if ptype.endswith("KeyV3"):
-                    s = "(p.{parm} == null? null : p.{parm}.name)".format(parm=pname)
+                    s = "(p.{parm} == null? null : p.{parm}.name)".format(parm=ccname)
                 elif ptype.endswith("KeyV3[]"):
                     found_key_array_parameter = True
-                    s = "(p.{parm} == null? null : key_array_to_string_array(p.{parm}))".format(parm=pname)
+                    s = "(p.{parm} == null? null : keyArrayToStringArray(p.{parm}))".format(parm=ccname)
                 elif ptype.startswith("ColSpecifier"):
-                    s = "(p.{parm} == null? null : p.{parm}.column_name)".format(parm=pname)
+                    s = "(p.{parm} == null? null : p.{parm}.columnName)".format(parm=ccname)
                 else:
-                    s = "p." + pname
+                    s = "p." + ccname
                 if pname != param_infos[-1][0]:
                     s += ","
                 helper_class.append("        " + s)
@@ -310,7 +333,7 @@ def generate_proxy(classname, endpoints, schemas_map):
             yield "    /**"
             yield "     * Return an array of Strings for an array of keys."
             yield "     */"
-            yield "    public static String[] key_array_to_string_array(KeyV3[] keys) {"
+            yield "    public static String[] keyArrayToStringArray(KeyV3[] keys) {"
             yield "      if (keys == null) return null;"
             yield "      String[] ids = new String[keys.length];"
             yield "      int i = 0;"
