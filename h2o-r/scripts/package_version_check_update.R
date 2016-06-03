@@ -10,7 +10,7 @@ JENKINS.R.PKG.VER.REQS.OSX <- paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/package_version
 JENKINS.R.PKG.VER.REQS.LIN <- paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/package_version_requirements.linux")
 JENKINS.R.PKG.VER.REQS.WIN <- paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/package_version_requirements.windows")
 JENKINS.R.VERSION.MAJOR <- "3"
-JENKINS.R.VERSION.MINOR <- "3.0"
+JENKINS.R.VERSION.MINOR <- "2.2"
 
 #'
 #' Given a dataframe of required packages, reorder the rows to satisfy package interdependencies
@@ -91,15 +91,13 @@ function(args) {
 
     # check R version
     return_val <- 0
-    sysRMajor <- R.version$major
-    sysRMinor <- R.version$minor
-    wrong_r <- !(sysRMajor == JENKINS.R.VERSION.MAJOR && sysRMinor == JENKINS.R.VERSION.MINOR)
-    if (wrong_r) {
-        write("",stdout())
-        write(paste0("ERROR: Jenkins has R version ",JENKINS.R.VERSION.MAJOR,".",JENKINS.R.VERSION.MINOR,
-                     ", but this system's R version is ",sysRMajor,".",sysRMinor),stdout())
-        write(paste0("ERROR: Manually update your R version to match Jenkins'"),stdout())
-        q("no",1,FALSE)
+    sysRVersion <- paste0(R.version$major, ".", R.version$minor)
+    jenRVersion <- paste0(JENKINS.R.VERSION.MAJOR, ".", JENKINS.R.VERSION.MINOR)
+    if (sysRVersion < jenRVersion) {
+        write("", stdout())
+        write(paste("ERROR: Jenkins has R version", jenRVersion, "but this system has", sysRVersion), stdout())
+        write(paste("ERROR: Please upgrade your R version to match Jenkins'"), stdout())
+        q("no", 1, FALSE)
     }
 
     rLibsUser <- Sys.getenv("R_LIBS_USER")
