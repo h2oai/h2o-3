@@ -22,7 +22,7 @@ for (pkg in pkgs) {
 }
 
 # Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/7/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/8/R")))
 ```
 
 ## Launch an H2O cluster on localhost
@@ -39,7 +39,7 @@ Starting H2O JVM and connecting: . Connection successful!
 
 R is connected to the H2O cluster: 
     H2O cluster uptime:         1 seconds 248 milliseconds 
-    H2O cluster version:        3.8.2.7 
+    H2O cluster version:        3.8.2.8 
     H2O cluster name:           H2O_started_from_R_arno_wyu958 
     H2O cluster total nodes:    1 
     H2O cluster total memory:   3.56 GB 
