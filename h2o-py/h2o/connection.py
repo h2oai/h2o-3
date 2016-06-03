@@ -295,8 +295,22 @@ class H2OConnection(object):
       print()
 
     vm_opts = []
-    if mmin: vm_opts += ["-Xms{}".format(mmin)]
-    if mmax: vm_opts += ["-Xmx{}".format(mmax)]
+    if mmin:
+      if type(mmin) == int:
+        warnings.warn("User specified min_mem_size should have a trailing letter indicating byte type.\n"
+                      "`m` or `M` indicate megabytes & `g` or `G` indicate gigabytes.\nWill default to gigabytes as byte type.")
+        vm_opts += ["-Xms{}g".format(mmin)]
+      else:
+        vm_opts += ["-Xms{}".format(mmin)]
+
+    if mmax:
+      if type(mmax) == int:
+        warnings.warn("User specified max_mem_size should have a trailing letter indicating byte type.\n"
+                      "`m` or `M` indicate megabytes & `g` or `G` indicate gigabytes.\nWill default to gigabytes as byte type.")
+        vm_opts += ["-Xmx{}g".format(mmax)]
+      else:
+        vm_opts += ["-Xmx{}".format(mmax)]
+
     if ea:   vm_opts += ["-ea"]
 
     h2o_opts = ["-verbose:gc",
