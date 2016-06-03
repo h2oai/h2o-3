@@ -5,6 +5,8 @@ In this tutorial, we show how to build a well-tuned H2O GBM model for a supervis
 
 This tutorial is written in [R Markdown](http://rmarkdown.rstudio.com). You can download the source [from H2O's github repository](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).
 
+A port to a [Python Jupyter Notebook version](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb) is available as well.
+
 ## Installation of the H2O R Package
 Either download H2O from [H2O.ai's website](http://h2o.ai/download) or install the latest version of H2O into R with the following R code:
 
@@ -20,7 +22,7 @@ for (pkg in pkgs) {
 }
 
 # Now we download, install and initialize the H2O package for R.
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/6/R")))
+install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/8/R")))
 ```
 
 ## Launch an H2O cluster on localhost
@@ -37,7 +39,7 @@ Starting H2O JVM and connecting: . Connection successful!
 
 R is connected to the H2O cluster: 
     H2O cluster uptime:         1 seconds 248 milliseconds 
-    H2O cluster version:        3.8.2.6 
+    H2O cluster version:        3.8.2.8 
     H2O cluster name:           H2O_started_from_R_arno_wyu958 
     H2O cluster total nodes:    1 
     H2O cluster total memory:   3.56 GB 
@@ -201,7 +203,7 @@ This model doesn't seem to be much better than the previous models:
 [1] 0.939335
 ```
 
-For this small dataset, dropping 20% of observations per tree seems too aggresive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.
+For this small dataset, dropping 20% of observations per tree seems too aggressive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.
 
 Note: To see what other `stopping_metric` parameters you can specify, simply pass an invalid option:
 
@@ -377,11 +379,11 @@ search_criteria = list(
   ## Random grid search
   strategy = "RandomDiscrete",      
   
-  ## limit the runtime to 10 minutes
-  max_runtime_secs = 600,         
+  ## limit the runtime to 60 minutes
+  max_runtime_secs = 3600,         
   
-  ## build no more than 1000 models
-  max_models = 1000,                  
+  ## build no more than 100 models
+  max_models = 100,                  
   
   ## random number generator seed to make sampling of parameter combinations reproducible
   seed = 1234,                        
@@ -445,18 +447,18 @@ We can see that the best models have even better validation AUCs than our previo
 
 ```
 Hyper-Parameter Search Summary: ordered by decreasing auc
-   histogram_type sample_rate nbins_cats nbins min_rows col_sample_rate_change_per_level min_split_improvement max_depth col_sample_rate col_sample_rate_per_tree
-1 QuantilesGlobal        0.39         32   128        8                             1.07                 1e-06        26            0.86                        1
-2      RoundRobin        0.92       4096  1024        4                             1.05                 1e-04        20            0.37                     0.94
-3      RoundRobin        0.79         16  1024        8                                1                 1e-06        24            0.59                     0.74
-4 QuantilesGlobal        0.72        256    16        1                             0.94                 1e-06        23            0.41                      0.7
-5 UniformAdaptive        0.58         32  1024        4                             1.03                 1e-06        20            0.31                     0.96
-             model_ids               auc
-1  final_grid_model_46 0.971400394477318
-2  final_grid_model_93 0.970442378134686
-3   final_grid_model_1  0.97032967032967
-4 final_grid_model_149 0.970273316427163
-5 final_grid_model_177 0.969991546914624
+  col_sample_rate col_sample_rate_change_per_level col_sample_rate_per_tree  histogram_type max_depth
+1            0.49                             1.04                     0.94 QuantilesGlobal        28
+2            0.92                             0.93                     0.56 QuantilesGlobal        27
+3            0.35                             1.09                     0.83 QuantilesGlobal        29
+4            0.42                             0.98                     0.53 UniformAdaptive        24
+5             0.7                             1.02                     0.56 UniformAdaptive        25
+  min_rows min_split_improvement nbins nbins_cats sample_rate           model_ids               auc
+1        2                     0    32        256        0.86 final_grid_model_68 0.974049027895182
+2        4                     0   128        128        0.93 final_grid_model_96 0.971400394477318
+3        4                 1e-08    64        128        0.69 final_grid_model_38 0.968864468864469
+4        1                 1e-04    64         16        0.69 final_grid_model_55 0.967793744716822
+5        2                 1e-08    32        256        0.34 final_grid_model_22 0.966553958861651
 ```
 
 We can inspect the best 5 models from the grid search explicitly, and query their validation AUC:
@@ -469,11 +471,11 @@ for (i in 1:5) {
 ```
 
 ```
+[1] 0.974049
 [1] 0.9714004
-[1] 0.9704424
-[1] 0.9703297
-[1] 0.9702733
-[1] 0.9699915
+[1] 0.9688645
+[1] 0.9677937
+[1] 0.966554
 ```
 
 You can also see the results of the grid search in [Flow](http://localhost:54321/):
@@ -491,7 +493,7 @@ print(h2o.auc(h2o.performance(gbm, newdata = test)))
 Good news. It does as well on the test set as on the validation set, so it looks like our best GBM model generalizes well to the unseen test set:
 
 ```
-[1] 0.9746927
+[1] 0.9712568
 ```
 
 We can inspect the winning model's parameters:
@@ -503,7 +505,7 @@ gbm@parameters
 ```
 > gbm@parameters
 $model_id
-[1] "final_grid_model_46"
+[1] "final_grid_model_68"
 
 $training_frame
 [1] "train.hex"
@@ -518,16 +520,16 @@ $ntrees
 [1] 10000
 
 $max_depth
-[1] 26
+[1] 28
 
 $min_rows
-[1] 8
+[1] 2
 
 $nbins
-[1] 128
+[1] 32
 
 $nbins_cats
-[1] 32
+[1] 256
 
 $stopping_rounds
 [1] 5
@@ -539,7 +541,7 @@ $stopping_tolerance
 [1] 1e-04
 
 $max_runtime_secs
-[1] 486.524
+[1] 3414.017
 
 $seed
 [1] 1234
@@ -554,22 +556,23 @@ $distribution
 [1] "bernoulli"
 
 $sample_rate
-[1] 0.39
-
-$col_sample_rate
 [1] 0.86
 
-$col_sample_rate_change_per_level
-[1] 1.07
+$col_sample_rate
+[1] 0.49
 
-$min_split_improvement
-[1] 1e-06
+$col_sample_rate_change_per_level
+[1] 1.04
+
+$col_sample_rate_per_tree
+[1] 0.94
 
 $histogram_type
 [1] "QuantilesGlobal"
 
 $x
- [1] "pclass"    "sex"       "age"       "sibsp"     "parch"     "ticket"    "fare"      "cabin"     "embarked"  "boat"      "body"      "home.dest"
+ [1] "pclass"    "sex"       "age"       "sibsp"     "parch"     "ticket"    "fare"      "cabin"    
+ [9] "embarked"  "boat"      "body"      "home.dest"
 
 $y
 [1] "survived"
@@ -595,26 +598,28 @@ model@model$cross_validation_metrics_summary
 ```
 > model@model$cross_validation_metrics_summary
 Cross-Validation Metrics Summary: 
-                          mean           sd cv_1_valid cv_2_valid cv_3_valid  cv_4_valid  cv_5_valid
-F0point5             0.9395557  0.010641036 0.94512194  0.9404762  0.9199134  0.96385545  0.92841166
-F1                  0.89948714  0.005619115 0.89855075  0.8926554  0.8994709   0.9142857   0.8924731
-F2                  0.86290234 0.0075566345  0.8563536  0.8494624  0.8799172   0.8695652  0.85921323
-accuracy             0.9282638 0.0049496097 0.92134833  0.9298893  0.9263566   0.9409449   0.9227799
-auc                 0.96281415 0.0060868403  0.9595622 0.96407735  0.9617347   0.9776233   0.9510732
-err                  0.0717362 0.0049496097 0.07865169  0.0701107 0.07364341  0.05905512 0.077220075
-err_count                 18.8    1.4422206         21         19         19          15          20
-lift_top_group       2.6258688  0.099894695  2.3839285  2.8229167   2.632653   2.6736841   2.6161616
-logloss             0.21673803  0.016949996 0.23891868 0.21772578  0.2252261   0.1708519  0.23096764
-max_per_class_error 0.15977803  0.010674632 0.16964285 0.17708333 0.13265306  0.15789473  0.16161616
-mcc                 0.84948605  0.010109034 0.84258187   0.847847 0.84293115   0.8772172   0.8368532
-mse                 0.06211443  0.005217255 0.06900168 0.06351357 0.06352279 0.047944285 0.066589825
-precision           0.96846896   0.01594691 0.97894734 0.97530866 0.93406594           1    0.954023
-r2                   0.7365102  0.021031002   0.716644  0.7223512   0.730336  0.79522187  0.71799797
-recall              0.84022194  0.010674632 0.83035713  0.8229167 0.86734694  0.84210527  0.83838385
-specificity         0.98263365  0.009057611  0.9870968  0.9885714     0.9625           1       0.975
+                               mean           sd cv_1_valid  cv_2_valid  cv_3_valid  cv_4_valid cv_5_valid
+F0point5                  0.9082877  0.017469764  0.9448819  0.87398374   0.8935743   0.9034908  0.9255079
+F1                        0.8978795  0.008511053  0.9099526   0.8820513   0.8989899   0.9119171  0.8864865
+F2                        0.8886758  0.016845208  0.8775137  0.89026916   0.9044715  0.92050207  0.8506224
+accuracy                  0.9236877  0.004604631 0.92883897   0.9151291  0.92248064  0.93307084  0.9189189
+auc                       0.9606385  0.006671454 0.96647465   0.9453869    0.959375  0.97371733 0.95823866
+err                     0.076312296  0.004604631 0.07116105 0.084870845  0.07751938  0.06692913 0.08108108
+err_count                        20    1.4142135         19          23          20          17         21
+lift_top_group            2.6258688  0.099894695  2.3839285   2.8229167    2.632653   2.6736841  2.6161616
+logloss                  0.23430987  0.019006629 0.23624699  0.26165685  0.24543843  0.18311584 0.24509121
+max_per_class_error      0.11685239  0.025172591 0.14285715 0.104166664 0.091836736  0.07368421 0.17171717
+mcc                       0.8390522  0.011380583  0.8559271  0.81602895  0.83621955   0.8582395  0.8288459
+mean_per_class_accuracy  0.91654545 0.0070778215   0.918894   0.9107738  0.91970664   0.9317114  0.9016414
+mean_per_class_error     0.08345456 0.0070778215 0.08110599 0.089226194 0.080293365  0.06828865 0.09835859
+mse                      0.06535896  0.004872401 0.06470373   0.0717801   0.0669676 0.052562267 0.07078109
+precision                 0.9159663   0.02743855   0.969697  0.86868685        0.89   0.8979592 0.95348835
+r2                        0.7223932  0.021921812  0.7342935  0.68621415   0.7157123   0.7754977 0.70024836
+recall                    0.8831476  0.025172591 0.85714287   0.8958333  0.90816325   0.9263158 0.82828283
+specificity              0.94994324  0.016345335  0.9806452   0.9257143     0.93125   0.9371069      0.975
 ```
 
-Ouch! So it looks like we overfit quite a bit on the validation set as the mean AUC on the 5 folds is "only" 96.28%, with a standard deviation of 0.6% (absolute). So we cannot always expect AUCs of 97% with these parameters on this dataset. So to get a better estimate of model performance, the Random hyper-parameter search could have used `nfolds = 5` (or 10, or similar) in combination with 80% of the data for training (i.e., not holding out a validation set, but only the final test set). However, this would take more time, as `nfolds+1` models will be built for every set of parameters.
+Ouch! So it looks like we overfit quite a bit on the validation set as the mean AUC on the 5 folds is "only" 96.06% +/- 0.67%. So we cannot always expect AUCs of 97% with these parameters on this dataset. So to get a better estimate of model performance, the Random hyper-parameter search could have used `nfolds = 5` (or 10, or similar) in combination with 80% of the data for training (i.e., not holding out a validation set, but only the final test set). However, this would take more time, as `nfolds+1` models will be built for every set of parameters.
 
 Instead, to save time, let's just scan through the top 5 models and cross-validated their parameters with `nfolds=5` on the entire dataset:
 
@@ -638,30 +643,26 @@ for (i in 1:5) {
 ```
 
 ```
-[1] "final_grid_model_46"
-Cross-Validation Metrics Summary: 
-          mean           sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
-auc 0.96281415 0.0060868403  0.9595622 0.96407735  0.9617347  0.9776233  0.9510732
-
-[1] "final_grid_model_93"
+[1] "final_grid_model_68"
 Cross-Validation Metrics Summary: 
          mean          sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
-auc 0.9628911 0.011417386  0.9561636  0.9350893 0.96741074 0.98060244  0.9751894
-
-[1] "final_grid_model_1"
+auc 0.9606385 0.006671454 0.96647465  0.9453869   0.959375 0.97371733 0.95823866
+[1] "final_grid_model_96"
 Cross-Validation Metrics Summary: 
-          mean          sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
-auc 0.96810323 0.003568085 0.96296084 0.96208334 0.96894133   0.975571  0.9709596
-
-[1] "final_grid_model_149"
+          mean           sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
+auc 0.96491456 0.0052218214  0.9631913  0.9597024  0.9742985  0.9723933 0.95498735
+[1] "final_grid_model_38"
+Cross-Validation Metrics Summary: 
+         mean          sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
+auc 0.9638506 0.004603204 0.96134794  0.9573512   0.971301 0.97192985 0.95732325
+[1] "final_grid_model_55"
 Cross-Validation Metrics Summary: 
          mean           sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
-auc 0.9632027 0.0077777305 0.96647465  0.9528869  0.9582908  0.9831844  0.9551768
-
-[1] "final_grid_model_177"
+auc 0.9657447 0.0062724343  0.9562212 0.95428574  0.9686862 0.97490895 0.97462124
+[1] "final_grid_model_22"
 Cross-Validation Metrics Summary: 
-          mean          sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
-auc 0.96724236 0.004884431 0.96428573  0.9557143 0.96811223  0.9753724  0.9727273
+         mean           sd cv_1_valid cv_2_valid cv_3_valid cv_4_valid cv_5_valid
+auc 0.9648925 0.0065437974 0.96633065 0.95285714  0.9557398  0.9736511 0.97588384
 ```
 
 The avid reader might have noticed that we just implicitly did further parameter tuning using the "final" test set (which is part of the entire dataset `df`), which is not good practice - one is not supposed to use the "final" test set more than once. Hence, we're not going to pick a different "best" model, but we're just learning about the variance in AUCs. It turns out, for this tiny dataset, that the variance is rather large, which is not surprising.
@@ -675,30 +676,30 @@ head(preds)
 gbm@model$validation_metrics@metrics$max_criteria_and_metric_scores
 ```
 
-Note that the label (survived or not) is predicted as well (in the first `predict` column), and it uses the threshold with the highest F1 score (here: 0.499315) to make labels from the probabilities for survival (`p1`). The probability for death (`p0`) is given for convenience, as it is just `1-p1`.
+Note that the label (survived or not) is predicted as well (in the first `predict` column), and it uses the threshold with the highest F1 score (here: 0.528098) to make labels from the probabilities for survival (`p1`). The probability for death (`p0`) is given for convenience, as it is just `1-p1`.
 
 ```
 > head(preds)
-  predict          p0          p1
-1       0 0.981141347 0.018858653
-2       0 0.993733585 0.006266415
-3       0 0.821958380 0.178041620
-4       1 0.006090404 0.993909596
-5       1 0.006697847 0.993302153
-6       0 0.853214204 0.146785796
-
+  predict         p0         p1
+1       0 0.98055935 0.01944065
+2       0 0.98051200 0.01948800
+3       0 0.81430963 0.18569037
+4       1 0.02121241 0.97878759
+5       1 0.02528104 0.97471896
+6       0 0.92056020 0.07943980
 > gbm@model$validation_metrics@metrics$max_criteria_and_metric_scores
 Maximum Metrics: Maximum metrics at their respective thresholds
-                      metric threshold    value idx
-1                     max f1  0.499315 0.940000  94
-2                     max f2  0.360546 0.921305 100
-3               max f0point5  0.499315 0.969072  94
-4               max accuracy  0.499315 0.956204  94
-5              max precision  0.994462 1.000000   0
-6                 max recall  0.009720 1.000000 260
-7            max specificity  0.994462 1.000000   0
-8           max absolute_MCC  0.499315 0.908465  94
-9 max min_per_class_accuracy  0.227744 0.917160 110
+                        metric threshold    value idx
+1                       max f1  0.528098 0.920792  96
+2                       max f2  0.170853 0.926966 113
+3                 max f0point5  0.767931 0.959488  90
+4                 max accuracy  0.767931 0.941606  90
+5                max precision  0.979449 1.000000   0
+6                   max recall  0.019425 1.000000 206
+7              max specificity  0.979449 1.000000   0
+8             max absolute_MCC  0.767931 0.878692  90
+9   max min_per_class_accuracy  0.204467 0.928994 109
+10 max mean_per_class_accuracy  0.252473 0.932319 106
 ```
 
 You can also see the "best" model in more detail in [Flow](http://localhost:54321/):
@@ -723,39 +724,52 @@ h2o.download_pojo(gbm)
   Licensed under the Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0.html
 
-  AUTOGENERATED BY H2O at 2016-05-27T22:11:18.485-07:00
-  3.8.2.6
+  AUTOGENERATED BY H2O at 2016-06-02T17:06:34.382-07:00
+  3.9.1.99999
   
-  Standalone prediction code with sample test data for GBMModel named final_grid_model_46
+  Standalone prediction code with sample test data for GBMModel named final_grid_model_68
 
   How to download, compile and execute:
       mkdir tmpdir
       cd tmpdir
-      curl http://127.0.0.1:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
-      curl http://127.0.0.1:54321/3/Models.java/final_grid_model_46 > final_grid_model_46.java
-      javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m final_grid_model_46.java
+      curl http://172.16.2.75:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+      curl http://172.16.2.75:54321/3/Models.java/final_grid_model_68 > final_grid_model_68.java
+      javac -cp h2o-genmodel.jar -J-Xmx2g -J-XX:MaxPermSize=128m final_grid_model_68.java
 
      (Note:  Try java argument -XX:+PrintCompilation to show runtime JIT compiler behavior.)
 */
+import java.util.Map;
+import hex.genmodel.GenModel;
+import hex.genmodel.annotations.ModelPojo;
+
 ...
-class final_grid_model_46_Tree_289_class_0 {
+class final_grid_model_68_Tree_0_class_0 {
   static final double score0(double[] data) {
-    double pred =      (!Double.isNaN(data[9]) && data[9 /* boat */] != 12.0f ? 
-         (data[9 /* boat */] <13.003977f ? 
-             (data[9 /* boat */] <11.504464f ? 
-                 (data[1 /* sex */] <0.5f ? 
-                     (data[6 /* fare */] <24.978184f ? 
-                        0.0027945167f : 
-                         (data[11 /* home.dest */] <132.0f ? 
-                            0.0027875851f : 
-                             (data[11 /* home.dest */] <265.5f ? 
-                                 (data[6 /* fare */] <49.690052f ? 
-                                    0.002784563f : 
-                                    0.0027828787f) : 
-                                0.0027856496f))) : 
-                    0.002798641f) : 
-                0.0028186426f) : 
-            0.00350058f) : 
+    double pred =      (data[9 /* boat */] <14.003472f ? 
+         (!Double.isNaN(data[9]) && data[9 /* boat */] != 12.0f ? 
+            0.13087687f : 
+             (data[3 /* sibsp */] <7.3529413E-4f ? 
+                0.13087687f : 
+                0.024317414f)) : 
+         (data[5 /* ticket */] <2669.5f ? 
+             (data[5 /* ticket */] <2665.5f ? 
+                 (data[10 /* body */] <287.5f ? 
+                    -0.08224204f : 
+                     (data[2 /* age */] <14.2421875f ? 
+                        0.13087687f : 
+                         (data[4 /* parch */] <4.892368E-4f ? 
+                             (data[6 /* fare */] <39.029896f ? 
+                                 (data[1 /* sex */] <0.5f ? 
+                                     (data[5 /* ticket */] <2659.5f ? 
+                                        0.13087687f : 
+                                        -0.08224204f) : 
+                                    -0.08224204f) : 
+                                0.08825309f) : 
+                            0.13087687f))) : 
+                0.13087687f) : 
+             (data[9 /* boat */] <15.5f ? 
+                0.13087687f : 
+                 (!GenModel.bitSetContains(GRPSPLIT0, 42, data[7 
 ...
 ```
 
@@ -780,12 +794,12 @@ We now have a blended probability of survival for each person on the Titanic.
 ```
 > head(prob)
           p1
-1 0.01911810
-2 0.01066529
-3 0.12971459
-4 0.98946897
-5 0.99042868
-6 0.14567000
+1 0.02258923
+2 0.01615957
+3 0.15837298
+4 0.98565663
+5 0.98792208
+6 0.17941366
 ```
 
 We can bring those ensemble predictions to our R session's memory space and use other R packages.
@@ -799,10 +813,10 @@ cvAUC::AUC(probInR, labelInR)
 ```
 
 ```
-[1] 0.9764107
+[1] 0.977534
 ```
 
-This simple blended ensemble test set prediction has an even higher AUC than the best single model, so we can assume that this would hold true using cross-validation as well. We leave this as an exercise for the reader - take the parameters of the top `10` models, retrain them with `nfolds=5` on the full dataset, set `keep_holdout_predictions=TRUE` and sum up their predicted probabilities in `h2o.getFrame(cvgbm[i]@model$cross_validation_holdout_predictions_frame_id)`, then score that with cvAUC as shown above).
+This simple blended ensemble test set prediction has an even higher AUC than the best single model, but we need to do more validation studies, ideally using cross-validation. We leave this as an exercise for the reader - take the parameters of the top `10` models, retrain them with `nfolds=5` on the full dataset, set `keep_holdout_predictions=TRUE` and average the predicted probabilities in `h2o.getFrame(cvgbm[i]@model$cross_validation_holdout_predictions_frame_id)`, then score that with `cvAUC` as shown above).
 
 For more sophisticated ensembling approaches, such as stacking via a superlearner, we refer to the [H2O Ensemble](https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble) github page.
 

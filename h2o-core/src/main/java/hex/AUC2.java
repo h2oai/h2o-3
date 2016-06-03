@@ -67,6 +67,9 @@ public class AUC2 extends Iced {
     min_per_class_accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
         return Math.min(tp/(tp+fn),tn/(tn+fp));
       } },
+    mean_per_class_accuracy(false) { @Override double exec( double tp, double fp, double fn, double tn ) {
+      return 0.5*(tp/(tp+fn) + tn/(tn+fp));
+    } },
     tns(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return tn; } },
     fns(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return fn; } },
     fps(true ) { @Override double exec( double tp, double fp, double fn, double tn ) { return fp; } },

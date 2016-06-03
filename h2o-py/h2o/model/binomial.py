@@ -525,6 +525,36 @@ class H2OBinomialModel(ModelBase):
     for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else [[mpca[0],1-mpca[1]] for mpca in v.metric("min_per_class_accuracy", thresholds=thresholds)]
     return list(m.values())[0] if len(m) == 1 else m
 
+  def mean_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
+    """
+    Get the mean per class error for a set of thresholds.
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    Parameters
+    ----------
+      thresholds : list, optional
+        If None, then the thresholds in this set of metrics will be used.
+
+      train : bool, optional
+        If True, return the mean_per_class_error value for the training data.
+
+      valid : bool, optional
+        If True, return the mean_per_class_error value for the validation data.
+
+      xval : bool, optional
+        If True, return the mean_per_class_error value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The mean_per_class_error values for the specified key(s).
+    """
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else [[mpca[0],1-mpca[1]] for mpca in v.metric("mean_per_class_accuracy", thresholds=thresholds)]
+    return list(m.values())[0] if len(m) == 1 else m
+
   def metric(self, metric, thresholds=None, train=False, valid=False, xval=False):
     """
     Get the metric value for a set of thresholds.

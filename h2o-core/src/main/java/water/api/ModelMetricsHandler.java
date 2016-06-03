@@ -233,7 +233,7 @@ class ModelMetricsHandler extends Handler {
    * Score a frame with the given model and return the metrics AND the prediction frame.
    */
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public JobV3 predict2(int version, final ModelMetricsListSchemaV3 s) {
+  public JobV3 predictAsync(int version, final ModelMetricsListSchemaV3 s) {
     // parameters checking:
     if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
     if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);

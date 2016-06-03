@@ -15,10 +15,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * A generic grid search handler implementing launch of grid search.
@@ -79,6 +76,8 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Get actual parameters
     MP params = (MP) gss.parameters.createAndFillImpl();
 
+    Map<String,Object[]> sortedMap = new TreeMap<>(gss.hyper_parameters);
+
     // Get/create a grid for given frame
     // FIXME: Grid ID is not pass to grid search builder!
     Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
@@ -86,7 +85,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
                                                  params,
-                                                 gss.hyper_parameters,
+                                                 sortedMap,
                                                  new DefaultModelParametersBuilderFactory<MP, P>(),
                                                  (HyperSpaceSearchCriteria)gss.search_criteria.createAndFillImpl());
 
