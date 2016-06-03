@@ -4,7 +4,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 
 import java.util.*;
-import water.fvec.Vec;
 
 /** A "scope" for tracking Key lifetimes; an experimental API.
  *
@@ -93,4 +92,5 @@ public class Scope {
     HashSet<Key> xkeys = scope._keys.peek();
     for( Key<Vec> key : keys ) xkeys.remove(key); // Untrack key
   }
+
 }

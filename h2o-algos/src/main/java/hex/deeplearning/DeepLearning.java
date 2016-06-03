@@ -190,25 +190,16 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
 
   public class DeepLearningDriver extends Driver {
-    @Override public void compute2() {
-      try {
-        Scope.enter();
-        long cs = _parms.checksum();
-        init(true);
-        // Read lock input
-        _parms.read_lock_frames(_job);
-        // Something goes wrong
-        if (error_count() > 0)
-          throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
-        buildModel();
-        //check that _parms isn't changed during DL model training
-        long cs2 = _parms.checksum();
-        assert(cs == cs2);
-      } finally {
-        _parms.read_unlock_frames(_job);
-        Scope.exit();
-      }
-      tryComplete();
+    @Override public void computeImpl() {
+      long cs = _parms.checksum();
+      init(true);
+      // Something goes wrong
+      if (error_count() > 0)
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
+      buildModel();
+      //check that _parms isn't changed during DL model training
+      long cs2 = _parms.checksum();
+      assert(cs == cs2);
     }
 
     /**

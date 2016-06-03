@@ -1196,8 +1196,8 @@ final public class H2O {
 
     public void compute1() { compute2(); }
 
-    /** Override to specify actual work to do */
-    public abstract void compute2();
+    /** Override compute3() with actual work without having to worry about tryComplete() */
+    public void compute2() {}
 
     // In order to prevent deadlock, threads that block waiting for a reply
     // from a remote node, need the remote task to run at a higher priority

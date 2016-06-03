@@ -175,14 +175,12 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
     // Main worker thread
     @Override
-    public void compute2() {
+    public void computeImpl() {
       PCAModel model = null;
       DataInfo dinfo = null;
 
       try {
-        Scope.enter();
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -291,12 +289,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         }
         model.update(_job);
       } finally {
-        _parms.read_unlock_frames(_job);
         if (model != null) model.unlock(_job);
         if (dinfo != null) dinfo.remove();
-        Scope.exit();
       }
-      tryComplete();
     }
   }
 }

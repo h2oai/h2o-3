@@ -60,11 +60,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   // ----------------------
   private class QuantileDriver extends Driver {
 
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       QuantileModel model = null;
       try {
-        Scope.enter();
-        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -112,10 +110,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         }
       } finally {
         if( model != null ) model.unlock(_job);
-        _parms.read_unlock_frames(_job);
-        Scope.exit(model == null ? null : model._key);
       }
-      tryComplete();
     }
   }
 
