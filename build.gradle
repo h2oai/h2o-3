@@ -8,6 +8,9 @@
 //
 apply from: 'gradle/java.gradle'
 
+apply plugin: 'java'
+compileJava {options.encoding = "UTF-8"}
+
 // For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
 if (project.hasProperty("doRelease")) {
     apply from: 'gradle/release.gradle'
