@@ -369,8 +369,8 @@ def hadoop_namenode():
     return None
 
 def pyunit_exec(test_name):
-    with open (test_name, "r") as t: pyunit = t.read()
-    pyunit_c = compile(pyunit, '<string>', 'exec')
+    with open(test_name, "r") as t: pyunit = t.read()
+    pyunit_c = compile(pyunit, test_name, 'exec')
     p = {}
     exec(pyunit_c, p)
 
