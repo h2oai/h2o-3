@@ -50,20 +50,11 @@ class Test_PUBDEV_2981_kmeans:
         h2o.cluster_info()
 
         good_params_list = {'seed': 1464837706, 'max_iterations': 50, 'init': 'Furthest', 'k': 5}
-        good_model_params = {'max_runtime_secs': 0.005857068399999999}
+        good_model_params = {'max_runtime_secs': 0.001}
         good_model = H2OKMeansEstimator(**good_params_list)
         good_model.train(x=self.x_indices, training_frame=self.training1_data, **good_model_params)
 
-        bad_params_list = {'seed': 1464837574, 'max_iterations': 10, 'k': 10, 'init': 'Furthest'}
-        bad_model_params= {'max_runtime_secs': 0.00519726792}
-        bad_model = H2OKMeansEstimator(**bad_params_list)
-        bad_model.train(x=self.x_indices, training_frame=self.training1_data, **bad_model_params)
-
-        print("good_model._model_json['output']['model_summary'] type is {0}.  "
-              "bad_model._model_json['output']['model_summary'] type is "
-              "{1}".format(type(good_model._model_json['output']['model_summary']),
-                           type(bad_model._model_json['output']['model_summary'])))
-        print("They are not equal for some reason....")
+        print("Finished.")
 
 
 def test_PUBDEV_2980_for_kmeans():
