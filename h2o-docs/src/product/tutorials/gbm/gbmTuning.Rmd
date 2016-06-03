@@ -676,7 +676,7 @@ head(preds)
 gbm@model$validation_metrics@metrics$max_criteria_and_metric_scores
 ```
 
-Note that the label (survived or not) is predicted as well (in the first `predict` column), and it uses the threshold with the highest F1 score (here: 0.499315) to make labels from the probabilities for survival (`p1`). The probability for death (`p0`) is given for convenience, as it is just `1-p1`.
+Note that the label (survived or not) is predicted as well (in the first `predict` column), and it uses the threshold with the highest F1 score (here: 0.528098) to make labels from the probabilities for survival (`p1`). The probability for death (`p0`) is given for convenience, as it is just `1-p1`.
 
 ```
 > head(preds)
