@@ -551,13 +551,14 @@ DRF no longer has a special-cased histogram for classification or regression (cl
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    - **AUTO**: Logloss for classification, deviance for regression
+    - **AUTO**: Logloss for classification; deviance for regression
     - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
-    - **misclassification** 
+    - **misclassification**
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -1203,13 +1204,14 @@ There was some code cleanup and refactoring to support the following features:
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification; deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
-    - **misclassification** 
+    - **misclassification**
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -1494,13 +1496,14 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification; deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
     - **misclassification** 
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
