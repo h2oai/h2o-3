@@ -264,6 +264,7 @@ The GLM suite includes:
 
 - **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a GLM Model
 
@@ -473,7 +474,7 @@ The current version of DRF is fundamentally the same as in previous versions of 
 
 - Improved ability to train on categorical variables (using the `nbins_cats` parameter)
 - Minor changes in histogramming logic for some corner cases
-- By default, DRF now builds half as many trees for binomial problems, similar to GBM: one tree to estimate class 0, probability p0, class 1 probability is 1-p0. 
+- By default, DRF builds half as many trees for binomial problems, similar to GBM: it uses a single tree to estimate class 0 (probability "p0"), and then computes the probability of class 0 as ``1.0 - p0``. For multiclass problems, a tree is used to estimate the probability of each class separately. 
 
 There was some code cleanup and refactoring to support the following features:
 
