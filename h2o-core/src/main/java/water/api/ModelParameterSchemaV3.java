@@ -24,9 +24,6 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
   @API(help="name in the JSON, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
   public String name;
 
-  @API(help="label in the UI, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
-  public String label;
-
   @API(help="help for the UI, e.g. \"regularization multiplier, typically used for foo bar baz etc.\"", direction=API.Direction.OUTPUT)
   public String help;
 
@@ -131,7 +128,6 @@ public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3>
    */
   public final AutoBuffer writeJSON_impl(AutoBuffer ab) {
     ab.putJSONStr("name", name);                                    ab.put1(',');
-    ab.putJSONStr("label", label);                                  ab.put1(',');
     ab.putJSONStr("help", help);                                    ab.put1(',');
     ab.putJSONStrUnquoted("required", required ? "true" : "false"); ab.put1(',');
     ab.putJSONStr("type", type);                                    ab.put1(',');

@@ -120,7 +120,6 @@ This example shows the *model_id* field returned by a model builder call:
                     },
                     "default_value": null,
                     "help": "Destination id for this model; auto-generated if not specified",
-                    "label": "model_id",
                     "level": "critical",
                     "name": "model_id",
                     "required": false,
@@ -745,7 +744,6 @@ GBMV3 gbmBody = (GBMV3)ModelBuilders.Helper.train_gbm(modelBuildersService, gbm_
         "schema_type": "Iced"
       },
       "name": "model_id",
-      "label": "model_id",
       "help": "Destination id for this model; auto-generated if not specified",
       "required": false,
       "type": "Key<Model>",

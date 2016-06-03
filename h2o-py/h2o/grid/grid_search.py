@@ -223,7 +223,8 @@ class H2OGridSearch(object):
             print("failure_details: {0}\nfailure_stack_traces: "
                   "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
           error_index += 1
-    else:                              grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
+    else:
+      grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
 
