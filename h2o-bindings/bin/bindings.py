@@ -10,7 +10,10 @@
 #
 from __future__ import print_function
 from __future__ import division
+from __future__ import unicode_literals
+from __future__ import absolute_import
 from collections import defaultdict
+from builtins import range
 import argparse
 import atexit
 import codecs
@@ -48,7 +51,7 @@ class TypeTranslator:
     def translate(self, h2o_type, schema):
         if config["verbose"]:
             self._mem.add((h2o_type, schema))
-        if h2o_type.endswith("[][]"): 
+        if h2o_type.endswith("[][]"):
             return self.make_array2(self.translate(h2o_type[:-4], schema))
         if h2o_type.endswith("[]"):
             return self.make_array(self.translate(h2o_type[:-2], schema))
@@ -82,9 +85,9 @@ def init(language, output_dir, clear_dir=True):
     correctness.
       :param language -- name of the target language (used to show the command-line description).
       :param output_dir -- folder where the bindings files will be generated. If the folder does
-        not exist, it will be created. If it does exist, it will be cleared first. This folder is 
+        not exist, it will be created. If it does exist, it will be cleared first. This folder is
         relative to ../src-gen/main/.
-      :param clear_dir -- if True (default), the target folder will be cleared before any new 
+      :param clear_dir -- if True (default), the target folder will be cleared before any new
         files created in it.
     """
     config["start_time"] = time.time()
@@ -97,7 +100,7 @@ def init(language, output_dir, clear_dir=True):
     # Parse command-line options
     parser = argparse.ArgumentParser(
         description="""
-        Generate %s REST API bindings (with docs) and write them to the filesystem.  
+        Generate %s REST API bindings (with docs) and write them to the filesystem.
         Must attach to a running H2O instance to query the interface.""" % language,
     )
     parser.add_argument("-v", "--verbose", help="Verbose output", action="store_true")
@@ -107,7 +110,7 @@ def init(language, output_dir, clear_dir=True):
     parser.add_argument("--dest", metavar="DIR", default=default_output_dir,
                         help="Destination directory for generated bindings")
     args = parser.parse_args()
-    
+
     # Post-process the options
     base_url = args.usecloud
     if not(base_url.startswith("http://") or base_url.startswith("https://")):
@@ -154,7 +157,7 @@ def init(language, output_dir, clear_dir=True):
     for e in json["entries"]:
         vprint(e["name"] + ":" + " "*(1+l1 - len(e["name"])) + e["value"])
     vprint("-"*ll)
-    
+
 
 def vprint(msg, pretty=False):
     """
@@ -202,7 +205,6 @@ def endpoint_groups():
     """
     Return endpoints, grouped by the class which handles them
     """
-    classname_pattern = re.compile(r"/(?:\d+|LATEST)/(\w+)")
     groups = defaultdict(list)
     for e in endpoints():
         mm = classname_pattern.match(e["url_pattern"])
@@ -277,11 +279,23 @@ def write_to_file(filename, content):
             print("Error %d: %s" % (e.errno, e.strerror))
             sys.exit(6)
     with codecs.open(abs_filename, "w", "utf-8") as out:
-        if type(content) in (str, unicode): content = [content]
+        if isinstance(content, str): content = [content]
         for line in content:
             if line is not None:
                 out.write(line)
                 out.write("\n")
+
+
+def rename_endpoint(route):
+    mm = classname_pattern.match(route["url_pattern"])
+    assert mm, "Cannot determine class name in URL " + route["url_pattern"]
+    classname = mm.group(1)
+    method = route["handler_method"]
+    qualname = classname + "." + method
+    if qualname in endpoints_map1:
+        return endpoints_map1
+    print("Cannot translate %s for endpoint %s" % (qualname, route["url_pattern"]))
+    return method
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -291,7 +305,13 @@ config = defaultdict(bool)  # will be populated during the init() stage
 pp = pprint.PrettyPrinter(indent=4).pprint  # pretty printer
 wrapper = textwrap.TextWrapper()
 requests_memo = {}  # Simple memoization, so that we don't fetch same data more than once
+classname_pattern = re.compile(r"/(?:\d+|LATEST|EXPERIMENTAL)/(\w+)")
 
+endpoints_map1 = {
+    "About.get": "about",
+    "CreateFrame.run": "createFrame",
+    "SplitFrame.run": "splitFrame",
+}
 
 def _request_or_exit(endpoint):
     """

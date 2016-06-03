@@ -1,7 +1,9 @@
-#!/usr/bin/env python  
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-import bindings as bi
+from __future__ import unicode_literals
+from builtins import range
 from collections import OrderedDict
+import bindings as bi
 
 # Thrift reserved words.  We can't use these as field names.  :-(
 thrift_reserved_words = set(["from", "type", "exception", "lambda", "required"])
@@ -71,7 +73,7 @@ def generate_thrift(ordered_schemas):
     yield "  8: string string_field"
     yield "}"
     yield ""
-    for name, v in ordered_schemas.iteritems():
+    for name, v in ordered_schemas.items():
         generator = generate_enum if type(v) is list else generate_struct
         for line in generator(name, v):
             yield line
@@ -113,7 +115,7 @@ if __name__ == "__main__":
 
     schemas_map = bi.schemas_map()
     ordered_schemas = OrderedDict()
-    for name, schema in schemas_map.iteritems():
+    for name, schema in schemas_map.items():
         add_schema_to_dependency_array(schema, ordered_schemas, schemas_map)
 
     bi.write_to_file("water/bindings/structs/H2O.thrift", generate_thrift(ordered_schemas))
