@@ -478,7 +478,7 @@ class H2OFrame(object):
   def __div__(self, i):  return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __truediv__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i), cache=self._ex._cache)
-  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i), cache=self._ex._cache)
+  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("%",   self,i), cache=self._ex._cache)
   def __or__  (self, i): return H2OFrame._expr(expr=ExprNode("|",   self,i), cache=self._ex._cache)
   def __and__ (self, i): return H2OFrame._expr(expr=ExprNode("&",   self,i), cache=self._ex._cache)
   def __ge__  (self, i): return H2OFrame._expr(expr=ExprNode(">=",  self,i), cache=self._ex._cache)
@@ -494,7 +494,7 @@ class H2OFrame(object):
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
-  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
+  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("%",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
   def __rsub__(self, i): return H2OFrame._expr(expr=ExprNode("-",i,  self), cache=self._ex._cache)
   def __rand__(self, i): return self.__and__(i)
