@@ -43,19 +43,19 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
 
    @Override public int hashCode(){
      int hash = 0;
-     int n = getOffset() + length();
-     for (int i = getOffset(); i < n; ++i)
-       hash = 31 * hash + getBuffer()[i];
+     int n = _off + _len;
+     for (int i = _off; i < n; ++i) // equivalent to String.hashCode
+       hash = 31 * hash + (char)_buf[i];
      return hash;
    }
 
    void addChar(){_len++;}
 
    void addBuff(byte [] bits){
-     byte [] buf = new byte[length()];
-     int l1 = getBuffer().length- getOffset();
-     System.arraycopy(getBuffer(), getOffset(), buf, 0, l1);
-     System.arraycopy(bits, 0, buf, l1, length()-l1);
+     byte [] buf = new byte[_len];
+     int l1 = _buf.length- _off;
+     System.arraycopy(_buf, _off, buf, 0, l1);
+     System.arraycopy(bits, 0, buf, l1, _len-l1);
      _off = 0;
      _buf = buf;
    }
@@ -132,21 +132,26 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   @Override public boolean equals(Object o){
     if(o instanceof BufferedString) {
       BufferedString str = (BufferedString) o;
-      if (str.length() != _len) return false;
+      if (str._len != _len) return false;
       for (int i = 0; i < _len; ++i)
-        if (getBuffer()[getOffset() + i] != str.getBuffer()[str.getOffset() + i]) return false;
+        if (_buf[_off + i] != str._buf[str._off + i]) return false;
       return true;
     } // FIXME: Called in NA_String detection during CsvParser, UTF-8 sensitive
      else if (o instanceof String) {
       String str = (String) o;
-      if (str.length() != length()) return false;
-      for (int i = 0; i < length(); ++i)
-        if (getBuffer()[getOffset() + i] != str.charAt(i)) return false;
+      if (str.length() != _len) return false;
+      for (int i = 0; i < _len; ++i)
+        if (_buf[_off + i] != str.charAt(i)) return false;
       return true;
     }
     return false; //FIXME find out if this is required for some case or if an exception can be thrown
   }
-  public final byte [] getBuffer() {return _buf;}
+  // Thou Shalt Not use accessors in performance critical code - because it
+  // obfuscates the code's cost model.  All file-local uses of the accessors
+  // has been stripped, please do not re-insert them.  In particular, the
+  // hashcode and equals calls are made millions (billions?) of times a second
+  // when parsing categoricals.
+  public final byte [] getBuffer() {return _buf;} 
   public final int getOffset() {return _off;}
   public final int length() {return _len;}
 

@@ -1,6 +1,5 @@
 package water.nbhm;
 import sun.misc.Unsafe;
-import water.util.Log;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -116,6 +115,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
     int h = key.hashCode();     // The real hashCode call
     h ^= (h>>>20) ^ (h>>>12);
     h ^= (h>>> 7) ^ (h>>> 4);
+    h += h<<7; // smear low bits up high, for hashcodes that only differ by 1
     return h;
   }
 
