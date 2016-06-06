@@ -1302,6 +1302,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       @Override public boolean remove  ( Object k ) { return NonBlockingHashMap.this.remove  (k) != null; }
       @Override public Iterator<TypeK> iterator()   { return new SnapshotK(); }
       // This is an efficient implementation of toArray instead of the standard
+      // one.  In particular it uses a smart iteration over the NBHM.
       @Override public <T> T[] toArray(T[] a) {
         Object[] kvs = raw_array();
         // Estimate size of array; be prepared to see more or fewer elements
