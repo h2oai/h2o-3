@@ -11,6 +11,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    private byte [] _buf;
    private int _off;
    private int _len;
+   private int _hash;           // One-time monotonic transition from 0 to not-zero
 
    BufferedString(byte[] buf, int off, int len) { _buf = buf;  _off = off;  _len = len; }
    BufferedString(byte[] buf) { this(buf,0,buf.length); }
@@ -42,11 +43,12 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    }
 
    @Override public int hashCode(){
-     int hash = 0;
+     int hash = _hash;
+     if( hash != 0 ) return hash;
      int n = _off + _len;
      for (int i = _off; i < n; ++i) // equivalent to String.hashCode
        hash = 31 * hash + (char)_buf[i];
-     return hash;
+     return (_hash=hash);       // Racey monotonic write
    }
 
    void addChar(){_len++;}
@@ -132,6 +134,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   @Override public boolean equals(Object o){
     if(o instanceof BufferedString) {
       BufferedString str = (BufferedString) o;
+      if( str._hash != _hash && _hash != 0 ) return false;
       if (str._len != _len) return false;
       for (int i = 0; i < _len; ++i)
         if (_buf[_off + i] != str._buf[str._off + i]) return false;
