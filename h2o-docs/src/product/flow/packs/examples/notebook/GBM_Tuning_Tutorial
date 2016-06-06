@@ -103,7 +103,7 @@
     },
     {
       "type": "md",
-      "input": "To see the auc performance of your grid search click on the `View` button. Within the next cell click on `Inspect Grid Summary`, which will show each grid sorted by the log loss. \n\nIf, however, you'd like to see the grid results sorted by auc, add `, sort_by:\"auc\", decreasing:true` within the CS cell.\n\n![auc](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/GMB_Tuning_final_grid_auc)\n"
+      "input": "To see the auc performance of your grid search click on the `View` button. Within the next cell click on `Inspect Grid Summary`, which will show each grid sorted by the log loss. \n\nIf, however, you'd like to see the grid results sorted by auc, add `, sort_by:\"auc\", decreasing:true` within the CS cell.\n\n![auc](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/GMB_Tuning_final_grid_auc.png)"
     },
     {
       "type": "md",
