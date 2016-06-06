@@ -42,7 +42,7 @@ public class MetadataHandler extends Handler {
 
       builder.tableRow(
               route._http_method,
-              route._url_pattern.toString().replace("(?<", "{").replace(">.*)", "}"),
+              route._url_pattern.toString().replace("(?<", "{").replace(">[0-9]+)", "}").replace(">.*)", "}"),
               Handler.getHandlerMethodInputSchema(route._handler_method).getSimpleName(),
               Handler.getHandlerMethodOutputSchema(route._handler_method).getSimpleName(),
               route._summary);
