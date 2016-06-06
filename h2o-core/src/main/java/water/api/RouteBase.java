@@ -24,9 +24,6 @@ public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schem
   @API(help="", direction=API.Direction.OUTPUT)
   public String output_schema;
 
-  @API(help="", direction=API.Direction.OUTPUT)
-  public String doc_method;
-
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
   @API(help="", direction=API.Direction.OUTPUT)
   public String[] path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
@@ -41,7 +38,6 @@ public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schem
     this.handler_method = impl._handler_method.getName();
     this.input_schema = Handler.getHandlerMethodInputSchema(impl._handler_method).getSimpleName();
     this.output_schema = Handler.getHandlerMethodOutputSchema(impl._handler_method).getSimpleName();
-    this.doc_method = (impl._doc_method == null ? "" : impl._doc_method.toString());
     return this;
   }
 }

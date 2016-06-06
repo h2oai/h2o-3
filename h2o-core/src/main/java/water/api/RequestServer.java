@@ -51,7 +51,8 @@ import java.util.zip.ZipOutputStream;
  *
  * @see water.api.Handler a class which contains HTTP request handler methods and other helpers
  * @see water.api.Schema a class which provides a stable external representation for entities and request parameters
- * @see #register(String, String, Class, String, String, String) registers a specific handler method for the supplied URI pattern and HTTP method (GET, POST, DELETE, PUT)
+ * @see #register(String, String, Class, String, String, HandlerFactory) registers a specific handler method for the
+ *      supplied URI pattern and HTTP method (GET, POST, DELETE, PUT)
  */
 public class RequestServer extends NanoHTTPD {
   // Returned in REST API responses as X-h2o-rest-api-version
@@ -293,13 +294,17 @@ public class RequestServer extends NanoHTTPD {
         "Return all the saved scoring metrics.");
 
     register("POST /3/ModelMetrics/models/(?<model>.*)/frames/(?<frame>.*)", ModelMetricsHandler.class, "score",
-        "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame will be generated and the metrics will be returned.");
+        "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been " +
+        "scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame " +
+        "will be generated and the metrics will be returned.");
 
     register("POST /3/Predictions/models/(?<model>.*)/frames/(?<frame>.*)", ModelMetricsHandler.class, "predict",
-        "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
+        "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
+        "predictions and the metrics will be returned.");
 
     register("POST /4/Predictions/models/(?<model>.*)/frames/(?<frame>.*)", ModelMetricsHandler.class, "predict2",
-        "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of predictions and the metrics will be returned.");
+        "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
+        "predictions and the metrics will be returned.");
 
     register("GET /3/WaterMeterCpuTicks/(?<nodeidx>.*)", WaterMeterCpuTicksHandler.class, "fetch",
         "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
@@ -392,7 +397,8 @@ public class RequestServer extends NanoHTTPD {
         "Explicitly call System.gc().");
 
     register("GET /99/Sample", CloudHandler.class, "status",
-        "Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at any moment.");
+        "Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at " +
+        "any moment.");
   }
 
   /**
@@ -404,19 +410,18 @@ public class RequestServer extends NanoHTTPD {
    * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
-   * @param doc_method name of a method which returns GitHub Flavored Markdown documentation for the request
    * @param summary help string which explains the functionality of this endpoint
    * @param handler_factory factory to create instance of handler
    * @see Route
    * @see water.api.RequestServer
    * @return the Route for this request
    */
-  public static Route register(String http_method, String uri_pattern_raw, Class<? extends Handler> handler_class, String handler_method, String doc_method, String summary, HandlerFactory handler_factory) {
+  public static Route register(String http_method, String uri_pattern_raw, Class<? extends Handler> handler_class, String handler_method, String summary, HandlerFactory handler_factory) {
     // Swap method/URL fields if they were passed in the wrong order
     if (!getMethods().contains(http_method)) {
       if (!getMethods().contains(uri_pattern_raw))
         throw new AssertionError("http_method should be one of GET|POST|HEAD|DELETE");
-      return register(uri_pattern_raw, http_method, handler_class, handler_method, doc_method, summary, handler_factory);
+      return register(uri_pattern_raw, http_method, handler_class, handler_method, summary, handler_factory);
     }
     assert uri_pattern_raw.startsWith("/");
 
@@ -425,33 +430,22 @@ public class RequestServer extends NanoHTTPD {
     Method doc_meth = null;
 
     // TODO: move to ReflectionUtils:
-    try {
-      for (Method m : handler_class.getMethods()) {
-        if (! m.getName().equals(handler_method)) continue;
+    for (Method m : handler_class.getMethods()) {
+      if (! m.getName().equals(handler_method)) continue;
 
-        Class[] params = m.getParameterTypes();
-        if (null == params || params.length != 2) continue;
-        if (params[0] != Integer.TYPE) continue;
-        if (! Schema.class.isAssignableFrom(params[1])) continue;
+      Class[] params = m.getParameterTypes();
+      if (null == params || params.length != 2) continue;
+      if (params[0] != Integer.TYPE) continue;
+      if (! Schema.class.isAssignableFrom(params[1])) continue;
 
-        meth = m;
-        break;
-      }
-
-      if (null != doc_method)
-        doc_meth = handler_class.getMethod(doc_method, new Class[]{int.class, StringBuffer.class});
-    }
-    catch (NoSuchMethodException e) {
-      // ignore: H2O.fail below
+      meth = m;
+      break;
     }
 
     if (null == meth)
       throw H2O.fail("Failed to find handler method: " + handler_method + " for handler class: " + handler_class);
-    if (null != doc_method && null == doc_meth)
-      throw H2O.fail("Failed to find doc method: " + doc_method + " for handler class: " + handler_class);
 
-
-    if (! "/".equals(uri_pattern_raw)) {
+    if (!"/".equals(uri_pattern_raw)) {
       Matcher m = getVersionPattern().matcher(uri_pattern_raw);
       if (!m.matches())
         throw H2O.fail("Route URL pattern must begin with a version: " + uri_pattern_raw);
@@ -482,33 +476,10 @@ public class RequestServer extends NanoHTTPD {
                             uri_pattern_raw,
                             uri_pattern, summary,
                             handler_class, meth,
-                            doc_meth,
                             params_list.toArray(new String[params_list.size()]),
                             handler_factory);
     _routes.put(uri_pattern.pattern(), route);
     return route;
-  }
-
-  /**
-   * Register an HTTP request handler method for a given URL pattern, with parameters extracted from the URI.
-   * <p>
-   * URIs which match this pattern will have their parameters collected from the path and from the query params
-   *
-   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
-   * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
-   * @param handler_class class which contains the handler method
-   * @param handler_method name of the handler method
-   * @param doc_method name of a method which returns GitHub Flavored Markdown documentation for the request
-   * @param summary help string which explains the functionality of this endpoint
-   * @see Route
-   * @see water.api.RequestServer
-   * @return the Route for this request
-   */
-  public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String doc_method, String summary) {
-    return register(http_method, uri_pattern_raw, handler_class, handler_method, doc_method, summary, HandlerFactory.DEFAULT);
-  }
-  public static Route register(String uri_pattern_raw, String http_method, Class<? extends Handler> handler_class, String handler_method, String summary) {
-    return register(http_method, uri_pattern_raw, handler_class, handler_method, null, summary, HandlerFactory.DEFAULT);
   }
 
   /**
@@ -527,8 +498,9 @@ public class RequestServer extends NanoHTTPD {
   public static Route register(String method_uri, Class<? extends Handler> handler_class, String handler_method, String summary) {
     String[] spl = method_uri.split(" ");
     assert spl.length == 2 : "Unexpected method_uri parameter: " + method_uri;
-    return register(spl[0], spl[1], handler_class, handler_method, null, summary, HandlerFactory.DEFAULT);
+    return register(spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
   }
+
 
   // Lookup the method/url in the register list, and return a matching Method
   protected static Route lookup( String http_method, String uri ) {
@@ -575,7 +547,6 @@ public class RequestServer extends NanoHTTPD {
                                   fallback._summary,
                                   fallback._handler_class,
                                   fallback._handler_method,
-                                  fallback._doc_method,
                                   fallback._path_params,
                                   fallback._handler_factory);
       _fallbacks.put(fallback_route_pattern.pattern(), generated);

@@ -24,18 +24,29 @@ public class Register extends water.api.AbstractRegister {
     for( ModelBuilder algo : algos ) {
       String base = algo.getClass().getSimpleName();
       String lbase = base.toLowerCase();
-      Class bh_clz = water.api.ModelBuilderHandler.class;
+      Class<? extends water.api.Handler> bh_clz = water.api.ModelBuilderHandler.class;
       int version = 3;
       if( base.equals("SVD") ) version = 99;  // SVD is experimental still
       if( base.equals("Aggregator") ) version = 99;  // Aggregator is experimental still
 
-      H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase              , bh_clz, "train"              , "Train a "          +base+" model.");
-      H2O.registerPOST("/"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters", "Validate a set of "+base+" model builder parameters.");
+      H2O.register("POST /"+version+"/ModelBuilders/"+lbase, bh_clz, "train",
+          "Train a " + base + " model.");
+
+      H2O.register("POST /"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters",
+          "Validate a set of " + base + " model builder parameters.");
+
       // Grid search is experimental feature
-      H2O.registerPOST("/99/Grid/"+lbase, GridSearchHandler.class, "train", "Run grid search for "+base+" model.");
+      H2O.register("POST /99/Grid/"+lbase, GridSearchHandler.class, "train",
+          "Run grid search for "+base+" model.");
     }
-    H2O.registerPOST("/3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make a new GLM model based on existing one");
-    H2O.registerGET("/3/GetGLMRegPath", MakeGLMModelHandler.class, "extractRegularizationPath", "get full regularization path");
-    H2O.registerPOST("/3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "test only");
+
+    H2O.register("POST /3/MakeGLMModel", MakeGLMModelHandler.class, "make_model",
+        "Make a new GLM model based on existing one");
+
+    H2O.register("GET /3/GetGLMRegPath", MakeGLMModelHandler.class, "extractRegularizationPath",
+        "Get full regularization path");
+
+    H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame",
+        "Test only");
   }
 }

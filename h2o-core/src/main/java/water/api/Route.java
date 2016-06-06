@@ -24,7 +24,6 @@ final class Route extends Iced {
   public String _summary;
   public Class<? extends Handler> _handler_class;
   public Method _handler_method;
-  public Method  _doc_method;
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
   public String[] _path_params; // list of params we capture from the url pattern, e.g. for /17/MyComplexObj/(.*)/(.*)
   public Handler _handler;
@@ -46,7 +45,6 @@ final class Route extends Iced {
                String summary,
                Class<? extends Handler> handler_class,
                Method handler_method,
-               Method doc_method,
                String[] path_params,
                HandlerFactory handler_factory) {
     assert http_method != null && url_pattern != null && handler_class != null && handler_method != null && path_params != null;
@@ -57,7 +55,6 @@ final class Route extends Iced {
     _summary = summary;
     _handler_class = handler_class;
     _handler_method = handler_method;
-    _doc_method = doc_method;
     _path_params = path_params;
     _handler_factory = handler_factory;
     try {
@@ -92,7 +89,6 @@ final class Route extends Iced {
     Route route = (Route) o;
     if( !_handler_class .equals(route._handler_class )) return false;
     if( !_handler_method.equals(route._handler_method)) return false;
-    if( !_doc_method.equals(route._doc_method)) return false;
     if( !_http_method.equals(route._http_method)) return false;
     if( !_url_pattern_raw.equals(route._url_pattern_raw)) return false;
     if( !Arrays.equals(_path_params, route._path_params)) return false;
@@ -105,7 +101,6 @@ final class Route extends Iced {
     result = 31 * result + _url_pattern_raw.hashCode();
     result = 31 * result + _handler_class.hashCode();
     result = 31 * result + _handler_method.hashCode();
-    result = 31 * result + _doc_method.hashCode();
     result = 31 * result + Arrays.hashCode(_path_params);
     return (int)result;
   }
@@ -120,7 +115,6 @@ final class Route extends Iced {
             ", _handler_method=" + _handler_method +
             ", _input_schema=" + Handler.getHandlerMethodInputSchema(_handler_method) +
             ", _output_schema=" + Handler.getHandlerMethodOutputSchema(_handler_method) +
-            ", _doc_method=" + _doc_method +
             ", _path_params=" + Arrays.toString(_path_params) +
             '}';
   }
