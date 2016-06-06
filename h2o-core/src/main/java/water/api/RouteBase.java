@@ -31,7 +31,7 @@ public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schem
   @API(help="", direction=API.Direction.OUTPUT)
   public String markdown;
 
-  @Override public RouteBase fillFromImpl(Route impl) {
+  @Override public RouteBase<I,S> fillFromImpl(Route impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"url_pattern", "handler_class", "handler_method", "doc_method"} );
     this.url_pattern = impl._url_pattern.namedPattern();
     this.handler_class = impl._handler_class.toString();
