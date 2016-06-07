@@ -30,7 +30,7 @@ There are many different ways to measure model quality.  If you don't know which
 
 ### Overfitting
 
-[Overfitting](https://en.m.wikipedia.org/wiki/Overfitting) is the phenomenon of fitting a model so thoroughly to your training data that it beings to memorize the fine details of that specific data, rather than finding general characteristics of that data which will also apply to future data on which you want to make predictions.
+[Overfitting](https://en.m.wikipedia.org/wiki/Overfitting) is the phenomenon of fitting a model so thoroughly to your training data that it begins to memorize the fine details of that specific data, rather than finding general characteristics of that data which will also apply to future data on which you want to make predictions.
 
 Overfitting not only applies to the model training process, but also to the *model selection* process.  During the process of tuning the hyperparameters and selecting the best model you should avoid overfitting them to your training data.  Otherwise, the hyperparameter values that you choose will be too highly tuned to your selection data, and will not generalize as well as they could to new data.  Note that this is the same principle as, but subtly different from, overfitting during model training. Ideally you should use [cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics)) or a [validation set](https://en.wikipedia.org/wiki/Test_set#Validation_set) during training and then a final holdout *test* ([validation](https://en.wikipedia.org/wiki/Test_set#Validation_set)) dataset for model selection.  As Bergstra and Bengio write on p. 290, 
 
