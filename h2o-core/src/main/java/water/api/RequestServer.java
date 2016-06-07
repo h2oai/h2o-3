@@ -225,18 +225,16 @@ public class RequestServer extends NanoHTTPD {
         "GET /3/Find", FindHandler.class, "find",
         "Find a value within a Frame.");
 
-    register("export",
-        "GET /3/Frames/{frame_id}/export/{path}/overwrite/{force}", FramesHandler.class,
-        "exportFrame_deprecated",
+    register("exportFrame_deprecated",
+        "GET /3/Frames/{frame_id}/export/{path}/overwrite/{force}", FramesHandler.class, "export",
         "[DEPRECATED] Export a Frame to the given path with optional overwrite.");
 
     register("exportFrame",
         "POST /3/Frames/{frame_id}/export", FramesHandler.class, "export",
         "Export a Frame to the given path with optional overwrite.");
 
-    register("columnSummary",
-        "GET /3/Frames/{frame_id}/columns/{column}/summary", FramesHandler.class,
-        "frameColumnSummary",
+    register("frameColumnSummary",
+        "GET /3/Frames/{frame_id}/columns/{column}/summary", FramesHandler.class, "columnSummary",
         "Return the summary metrics for a column, e.g. min, max, mean, sigma, percentiles, etc.");
 
     register("frameColumnDomain",
@@ -329,32 +327,33 @@ public class RequestServer extends NanoHTTPD {
         "GET /3/ModelBuilders", ModelBuildersHandler.class, "list",
         "Return the Model Builder metadata for all available algorithms.");
 
+
     // TODO: filtering isn't working for these first four; we get all results:
-    register(null,
+    register("mmFetch1",
         "GET /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register(null,
+    register("mmDelete1",
         "DELETE /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "delete",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register(null,
+    register("mmFetch2",
         "GET /3/ModelMetrics/models/{model}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model.");
 
-    register(null,
+    register("mmFetch3",
         "GET /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register(null,
+    register("mmDelete2",
         "DELETE /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "delete",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register(null,
+    register("mmFetch4",
         "GET /3/ModelMetrics/frames/{frame}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Frame.");
 
-    register(null,
+    register("mmFetch5",
         "GET /3/ModelMetrics", ModelMetricsHandler.class, "fetch",
         "Return all the saved scoring metrics.");
 
@@ -387,11 +386,11 @@ public class RequestServer extends NanoHTTPD {
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
     // Node persistent storage
-    register(null,
+    register("npsExists1",
         "GET /3/NodePersistentStorage/categories/{category}/names/{name}/exists", NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
-    register(null,
+    register("npsExists2",
         "GET /3/NodePersistentStorage/categories/{category}/exists", NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
@@ -680,8 +679,10 @@ public class RequestServer extends NanoHTTPD {
     throw H2O.fail();
   }
 
-    // Log all requests except the overly common ones
-  boolean maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
+  /**
+   *  Log all requests except the overly common ones
+   */
+  private boolean maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
     if (uri.endsWith(".css") ||
         uri.endsWith(".js") ||
         uri.endsWith(".png") ||

@@ -1452,7 +1452,7 @@ final public class H2O {
       String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
   ) {
     if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.register(method_url, hclass, method, apiName, summary);
+    RequestServer.register(apiName, method_url, hclass, method, summary);
   }
 
   public static void registerResourceRoot(File f) {
