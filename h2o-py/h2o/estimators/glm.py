@@ -12,6 +12,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         The unique id assigned to the resulting model. If none is given, an id will
         automatically be generated.
 
+      ignore_const_cols : bool
+        Ignore constant columns (no information can be gained anyway)
+
       max_iterations : int
         A non-negative integer specifying the maximum number of iterations.
 
@@ -130,7 +133,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
       model metrics including MSE, AUC (for logistic regression), degrees of freedom, and
       confusion matrices.
     """
-  def __init__(self, model_id=None, max_iterations=None, beta_epsilon=None, solver=None,
+  def __init__(self, model_id=None,ignore_const_cols=None, max_iterations=None, beta_epsilon=None, solver=None,
                standardize=None, family=None, link=None, tweedie_variance_power=None,
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
@@ -368,6 +371,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @missing_values_handling.setter
   def missing_values_handling(self, value):
     self._parms["missing_values_handling"] = value
+
+  @property
+  def ignore_const_cols(self):
+    return self._parms["ignore_const_cols"]
+
+  @ignore_const_cols.setter
+  def ignore_const_cols(self, value):
+    self._parms["ignore_const_cols"] = value
 
   """
   Extract full regularization path explored during lambda search from glm model.

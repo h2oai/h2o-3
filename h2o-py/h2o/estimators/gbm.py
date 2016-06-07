@@ -13,6 +13,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   model_id : str, optional
     The unique id assigned to the resulting model. If none is given, an id will
     automatically be generated.
+  ignore_const_cols : bool
+    Ignore constant columns (no information can be gained anyway)
   distribution : str
      The distribution function of the response. Must be "AUTO", "bernoulli",
      "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile" or "gaussian"
@@ -104,7 +106,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   -------
     A new H2OGradientBoostedEstimator object.
   """
-  def __init__(self, model_id=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
+  def __init__(self, model_id=None,ignore_const_cols=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
                max_depth=None, min_rows=None, learn_rate=None, learn_rate_annealing=None, nbins=None,
                sample_rate=None, sample_rate_per_class=None, col_sample_rate=None,
                col_sample_rate_change_per_level=None, col_sample_rate_per_tree=None,
@@ -390,3 +392,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @max_abs_leafnode_pred.setter
   def max_abs_leafnode_pred(self, value):
     self._parms["max_abs_leafnode_pred"] = value
+
+  @property
+  def ignore_const_cols(self):
+    return self._parms["ignore_const_cols"]
+
+  @ignore_const_cols.setter
+  def ignore_const_cols(self, value):
+    self._parms["ignore_const_cols"] = value
