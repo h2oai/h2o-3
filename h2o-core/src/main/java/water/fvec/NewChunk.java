@@ -1036,8 +1036,7 @@ public class NewChunk extends Chunk {
     if(lemin < 0 && lemax >= (Long.MAX_VALUE + lemin))
       return Long.MAX_VALUE; // if overflow return 64 as the max possible value
     long res = lemax - lemin;
-    assert res >= 0;
-    return res;
+    return res < 0 ? 0 /*happens for rare FP roundoff computation of min & max */: res;
   }
 
   private Chunk compress2() {
