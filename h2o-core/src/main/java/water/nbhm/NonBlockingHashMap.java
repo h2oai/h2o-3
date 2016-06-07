@@ -1,6 +1,5 @@
 package water.nbhm;
 import sun.misc.Unsafe;
-import water.util.Log;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -116,6 +115,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
     int h = key.hashCode();     // The real hashCode call
     h ^= (h>>>20) ^ (h>>>12);
     h ^= (h>>> 7) ^ (h>>> 4);
+    h += h<<7; // smear low bits up high, for hashcodes that only differ by 1
     return h;
   }
 
@@ -1301,6 +1301,35 @@ public class NonBlockingHashMap<TypeK, TypeV>
       @Override public boolean contains( Object k ) { return NonBlockingHashMap.this.containsKey(k); }
       @Override public boolean remove  ( Object k ) { return NonBlockingHashMap.this.remove  (k) != null; }
       @Override public Iterator<TypeK> iterator()   { return new SnapshotK(); }
+      // This is an efficient implementation of toArray instead of the standard
+      // one.  In particular it uses a smart iteration over the NBHM.
+      @Override public <T> T[] toArray(T[] a) {
+        Object[] kvs = raw_array();
+        // Estimate size of array; be prepared to see more or fewer elements
+        int sz = size();
+        T[] r = a.length >= sz ? a :
+          (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), sz);
+        // Fast efficient element walk.
+        int j=0;
+        for( int i=0; i<len(kvs); i++ ) {
+          Object K = key(kvs,i);
+          Object V = Prime.unbox(val(kvs,i));
+          if( K != null && K != TOMBSTONE && V != null && V != TOMBSTONE ) {
+            if( j >= r.length ) {
+              int sz2 = (int)Math.min(Integer.MAX_VALUE-8,((long)j)<<1);
+              if( sz2<=r.length ) throw new OutOfMemoryError("Required array size too large");
+              r = Arrays.copyOf(r,sz2);
+            }
+            r[j++] = (T)K;
+          }
+        }
+        if( j <= a.length ) {   // Fit in the original array?
+          if( a!=r ) System.arraycopy(r,0,a,0,j);
+          if( j<a.length ) r[j++]=null; // One final null not in the spec but in the default impl
+          return a;             // Return the original
+        }
+        return Arrays.copyOf(r,j);
+      }
     };
   }
 

@@ -41,7 +41,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   public Aggregator.Exemplar[] _exemplars;
   public long[] _counts;
-  public Key _exemplar_assignment_vec_key;
+  public Key<Vec> _exemplar_assignment_vec_key;
 
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
 
@@ -71,7 +71,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     for (int i=0;i<keep.length;++i)
       keep[i]=_exemplars[i].gid;
 
-    Vec exAssignment = (Vec)_exemplar_assignment_vec_key.get();
+    Vec exAssignment = _exemplar_assignment_vec_key.get();
     // preserve the original row order
     Vec booleanCol = new MRTask() {
       @Override
@@ -111,7 +111,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
         for (int i=0;i<c._len;++i)
           nc.addNum(c.at8(i)==_exemplars[exemplarIdx].gid ? 1 : 0,0);
       }
-    }.doAll(Vec.T_NUM, new Frame(new Vec[]{(Vec)_exemplar_assignment_vec_key.get()})).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, new Frame(new Vec[]{_exemplar_assignment_vec_key.get()})).outputFrame().anyVec();
 
     Frame orig = _parms.train();
     Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
@@ -134,7 +134,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       exemplarGIDs[i] = this._exemplars[i].gid;
     long[] counts = new long[this._exemplars.length];
     for (int i = 0; i < _parms.train().numRows(); ++i) {
-      long ass = ((Vec)_exemplar_assignment_vec_key.get()).at8(i);
+      long ass = (_exemplar_assignment_vec_key.get()).at8(i);
       for (int j = 0; j < exemplarGIDs.length; ++j) {
         if (exemplarGIDs[j] == ass) {
           counts[j]++;

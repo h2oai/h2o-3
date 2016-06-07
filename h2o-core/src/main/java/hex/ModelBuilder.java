@@ -156,6 +156,26 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     @Override public void onCompletion(CountedCompleter caller) {
       try { dest().get()._output.stopClock(); } catch(Throwable t) {}
     }
+    // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
+    // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
+    // 2) Train/Valid frame locking and unlocking
+    // 3) calling tryComplete()
+    public void compute2() {
+      boolean exceptional=false;
+      try {
+        Scope.enter();
+        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
+        computeImpl();
+      } catch(Throwable t) {
+        exceptional=true;
+        throw t;
+      } finally {
+        _parms.read_unlock_frames(_job);
+        Scope.exit();
+      }
+      if (!exceptional) tryComplete();
+    }
+    public abstract void computeImpl();
   }
   
   /** Method to launch training of a Model, based on its parameters. */

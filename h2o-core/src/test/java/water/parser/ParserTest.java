@@ -14,7 +14,7 @@ public class ParserTest extends TestUtil {
   private final char[] SEPARATORS = new char[] {',', ' '};
 
   // Make a ByteVec with the specific Chunks
-  public static Key makeByteVec(String... data) {
+  static Key makeByteVec(String... data) {
     Futures fs = new Futures();
     long[] espc  = new long[data.length+1];
     for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
@@ -29,7 +29,7 @@ public class ParserTest extends TestUtil {
     return k;
   }
 
-  public static boolean compareDoubles(double a, double b, double threshold) {
+  private static boolean compareDoubles(double a, double b, double threshold) {
     if( a==b ) return true;
     if( ( Double.isNaN(a) && !Double.isNaN(b)) ||
         (!Double.isNaN(a) &&  Double.isNaN(b)) ) return false;
@@ -122,7 +122,7 @@ public class ParserTest extends TestUtil {
     Key k1 = makeByteVec(sb1.toString());
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str()=="Enum");
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Enum"));
     fr.delete();
   }
 
@@ -293,6 +293,18 @@ public class ParserTest extends TestUtil {
       testParsed(r, expDouble);
     }
   }
+
+  @Test public void testMajoritySep() {
+    String data = 
+      "a,b,c,d,e,f,g,h,i,j,k,space 1,l,space 2,m,space 3,n,o,p,q,r,s,t,u,v,w,x,y,z\n"+ // 26+3 cols, exactly 3 spaces
+      "1,2,3,4,5,6,7,8,9,0,1,catag 1,2,catag 2,3,catag 3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9\n"; // a few extra cols, exactly 3 spaces
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.numCols()==26+3);
+    fr.delete();
+  }
+
  @Test public void testMultipleNondecimalColumns() {
     String data[] = {
         "foo| 2|one\n"
@@ -331,7 +343,6 @@ public class ParserTest extends TestUtil {
       testParsed(r, expDouble);
     }
   }
-
 
   // Test if the empty column is correctly handled.
   // NOTE: this test makes sense only for comma separated columns
@@ -405,10 +416,10 @@ public class ParserTest extends TestUtil {
     }
   }
 
-  public static String[] getDataForSeparator(char sep, String[] data) {
+  static String[] getDataForSeparator(char sep, String[] data) {
     return getDataForSeparator('|', sep, data);
   }
-  static String[] getDataForSeparator(char placeholder, char sep, String[] data) {
+  private static String[] getDataForSeparator(char placeholder, char sep, String[] data) {
     String[] result = new String[data.length];
     for (int i = 0; i < data.length; i++) {
       result[i] = data[i].replace(placeholder, sep);

@@ -454,12 +454,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } catch(Throwable t){
         // nada
       }
-      try {
-        _parms.read_unlock_frames(_job);
-      } catch (Throwable t) {
-        // nada
-      }
-      Scope.exit(_keys2Keep.values().toArray(new Key[0]));
     }
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
@@ -868,8 +862,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private long _lastScore = System.currentTimeMillis();
     private long timeSinceLastScoring(){return System.currentTimeMillis() - _lastScore;}
 
-    private transient HashMap<String,Key> _keys2Keep = new HashMap<>();
-
     private void scoreAndUpdateModel(){
       // compute full validation on train and test
       Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
@@ -881,12 +873,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long t2 = System.currentTimeMillis();
       Log.info(LogMsg("Training metrics computed in " + (t2-t1) + "ms"));
       Log.info(LogMsg(mtrain.toString()));
-      _keys2Keep.put("training_metrics",mtrain._key);
       if(_valid != null) {
         Frame valid = DKV.<Frame>getGet(_parms._valid);
         _model.score(valid).delete();
         _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
-        _keys2Keep.put("validation_metrics",_model._output._validation_metrics._key);
       }
       _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():_sc.to2dTable();
       _model.update(_job._key);
@@ -896,10 +886,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
     }
     @Override
-    public void compute2() {
-      Scope.enter();
-      _keys2Keep.put("dest",dest());
-      _parms.read_lock_frames(_job);
+    public void computeImpl() {
       init(true);
       if (error_count() > 0) {
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
@@ -1002,11 +989,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.update(_job._key);
       }
       doCleanup();
-      tryComplete();
     }
 
     @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
-      _keys2Keep.clear();
       doCleanup();
       return true;
     }

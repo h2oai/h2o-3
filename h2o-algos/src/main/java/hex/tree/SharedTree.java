@@ -144,14 +144,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Top-level tree-algo driver
   abstract protected class Driver extends ModelBuilder<M,P,O>.Driver {
 
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       _model = null;            // Resulting model!
       try {
-        Scope.enter();          // Cleanup temp keys
         init(true);             // Do any expensive tests & conversions now
-        // Do lock even before checking the errors, since this block is finalized by unlock
-        // (not the best solution, but the code is more readable)
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if( error_count() > 0 )
           throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SharedTree.this);
 
@@ -293,12 +289,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         scoreAndBuildTrees(doOOBScoring());
 
       } finally {
-        _parms.read_unlock_frames(_job);
         if( _model!=null ) _model.unlock(_job);
-        Scope.exit( _model==null ? null : new Key[]{_model._key, ModelMetrics.buildKey(_model,_parms.train()), ModelMetrics.buildKey(_model,_parms.valid())});
         for (Key k : getGlobalQuantilesKeys()) if (k!=null) k.remove();
       }
-      tryComplete();
     }
 
     // Abstract classes implemented by the tree builders
