@@ -69,6 +69,7 @@ public class MetadataHandler extends Handler {
       // something similarly bad.
       docs.routes = new RouteBase[]{(RouteBase)Schema.schema(version, Route.class).fillFromImpl(route)};
     }
+    if (route == null) return null;
 
     Schema sinput, soutput;
     if( route._handler_class.equals(water.api.ModelBuilderHandler.class) ||
@@ -83,8 +84,8 @@ public class MetadataHandler extends Handler {
       int version2 = Integer.valueOf(ss[1]);
       try {
         String inputSchemaName = schemaDir + algoName + "V" + version2;  // hex.schemas.GBMV3
-        sinput = (Schema) TypeMap.theFreezable(TypeMap.onIce(inputSchemaName));
-      } catch (java.lang.RuntimeException e) {
+        sinput = (Schema) TypeMap.getTheFreezableOrThrow(TypeMap.onIce(inputSchemaName));
+      } catch (java.lang.ClassNotFoundException e) {
         // Not very pretty, but for some routes such as /99/Grid/glm we want to map to GLMV3 (because GLMV99 does not
         // exist), yet for others such as /99/Grid/svd we map to SVDV99 (because SVDV3 does not exist).
         sinput = (Schema) TypeMap.theFreezable(TypeMap.onIce(schemaDir + algoName + "V3"));
