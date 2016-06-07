@@ -65,6 +65,7 @@ public abstract class GLMTask  {
     final GLMWeightsFun _glmf;
     final double [] _beta;
     double _resDev = 0;
+    long _nobs;
     double _likelihood;
 
     public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta) {
@@ -83,17 +84,20 @@ public abstract class GLMTask  {
     }
     @Override
     protected void processRow(Row r) {
-      _glmf.computeWeights(r.response(0),r.innerProduct(_beta) + _sparseOffset,r.offset,r.weight,_glmw);
+      _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + _sparseOffset, r.offset, r.weight, _glmw);
       _resDev += _glmw.dev;
       _likelihood += _glmw.l;
+      ++_nobs;
     }
-    @Override public void reduce(GLMResDevTask gt) {_resDev += gt._resDev; _likelihood += gt._likelihood;}
+    @Override public void reduce(GLMResDevTask gt) {_nobs += gt._nobs; _resDev += gt._resDev; _likelihood += gt._likelihood;}
+    public double avgDev(){return _resDev/_nobs;}
   }
 
   static class GLMResDevTaskMultinomial extends FrameTask2<GLMResDevTaskMultinomial> {
     final double [][] _beta;
     double _likelihood;
     final int _nclasses;
+    long _nobs;
 
     public GLMResDevTaskMultinomial(Key jobKey, DataInfo dinfo, double [] beta, int nclasses) {
       super(null,dinfo, jobKey);
@@ -113,13 +117,16 @@ public abstract class GLMTask  {
     }
     @Override
     protected void processRow(Row r) {
+      _nobs++;
       double sumExp = 0;
       for(int c = 0; c < _nclasses; ++c)
         sumExp += Math.exp(r.innerProduct(_beta[c]) + _sparseOffsets[c]);
       int c = (int)r.response(0);
       _likelihood -= r.weight * ((r.innerProduct(_beta[c]) + _sparseOffsets[c]) - Math.log(sumExp));
     }
-    @Override public void reduce(GLMResDevTaskMultinomial gt) {_likelihood += gt._likelihood;}
+    @Override public void reduce(GLMResDevTaskMultinomial gt) {_nobs += gt._nobs; _likelihood += gt._likelihood;}
+
+    public double avgDev(){return _likelihood*2/_nobs;}
   }
 
  static class WeightedSDTask extends MRTask<WeightedSDTask> {

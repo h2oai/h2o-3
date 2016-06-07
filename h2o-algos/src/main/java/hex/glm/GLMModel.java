@@ -739,8 +739,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     String[] _coefficient_names;
     public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
+    public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public double lambda_best(){return _submodels[_best_lambda_idx].lambda_value;}
     public double lambda_1se(){return _lambda_1se == -1?-1:_submodels[_lambda_1se].lambda_value;}
+    public double lambda_selected(){return _submodels[_selected_lambda_idx].lambda_value;}
     double[] _global_beta;
     private double[] _zvalues;
     private double _dispersion;
@@ -772,7 +774,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _binomial;
     public boolean _multinomial;
 
-    public int rank() { return _submodels[_best_lambda_idx].rank();}
+    public int rank() { return _submodels[_selected_lambda_idx].rank();}
 
     public boolean isStandardized() {
       return _dinfo._predictor_transform == TransformType.STANDARDIZE;
@@ -874,10 +876,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return best;
     }
 
-    public double[] getNormBeta() {return _submodels[_best_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
+    public double[] getNormBeta() {return _submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
 
     public double[][] getNormBetaMultinomial() {
-      return getNormBetaMultinomial(_best_lambda_idx);
+      return getNormBetaMultinomial(_selected_lambda_idx);
     }
 
     public double[][] getNormBetaMultinomial(int idx) {
@@ -898,7 +900,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
 
     public void setSubmodelIdx(int l){
-      _best_lambda_idx = l;
+      _selected_lambda_idx = l;
       if(_multinomial) {
         _global_beta_multinomial = getNormBetaMultinomial(l);
         for(int i = 0; i < _global_beta_multinomial.length; ++i)
@@ -989,13 +991,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         regularization = "Lasso (lambda = ";
       else
         regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[0], 4) + ", lambda = ";
-      regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._best_lambda_idx], 4) + " )";
+      regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._selected_lambda_idx], 4) + " )";
     }
     _output._model_summary.set(0, 2, regularization);
     int lambdaSearch = 0;
     if (_parms._lambda_search) {
       lambdaSearch = 1;
-      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", best_lambda = " + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4) + (_output._lambda_1se == -1?"":", lambda.lse = " +  MathUtils.roundToNDigits(_parms._lambda[_output._lambda_1se], 4)));
+      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda.max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", lambda.min = "  + MathUtils.roundToNDigits(_output.lambda_best(), 4) + ", lambda.1se = " +  MathUtils.roundToNDigits(_output.lambda_1se(), 4));
     }
     int intercept = _parms._intercept ? 1 : 0;
     if(_output.nclasses() > 2) {
