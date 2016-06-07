@@ -22,6 +22,7 @@ final class Route extends Iced {
   public String _url_pattern_raw;
   public Pattern _url_pattern;
   public String _summary;
+  public String _api_name;
   public Class<? extends Handler> _handler_class;
   public Method _handler_method;
   // NOTE: Java 7 captures and lets you look up subpatterns by name but won't give you the list of names, so we need this redundant list:
@@ -43,6 +44,7 @@ final class Route extends Iced {
                String url_pattern_raw,
                Pattern url_pattern,
                String summary,
+               String api_name,
                Class<? extends Handler> handler_class,
                Method handler_method,
                String[] path_params,
@@ -53,6 +55,7 @@ final class Route extends Iced {
     _url_pattern_raw = url_pattern_raw;
     _url_pattern = url_pattern;
     _summary = summary;
+    _api_name = api_name;
     _handler_class = handler_class;
     _handler_method = handler_method;
     _path_params = path_params;
@@ -60,8 +63,7 @@ final class Route extends Iced {
     try {
       _handler = _handler_factory.create(_handler_class);
     } catch (Exception ie) {
-      H2O.fail("failed to register handler " + handler_class.getSimpleName() + "." + handler_method
-          .getName(), ie);
+      throw H2O.fail("failed to register handler " + handler_class.getSimpleName() + "." + handler_method.getName(), ie);
     }
   }
 
@@ -84,25 +86,20 @@ final class Route extends Iced {
 
   @Override
   public boolean equals(Object o) {
-    if( this == o ) return true;
-    if( !(o instanceof Route) ) return false;
+    if (o == this) return true;
+    if (!(o instanceof Route)) return false;
     Route route = (Route) o;
-    if( !_handler_class .equals(route._handler_class )) return false;
-    if( !_handler_method.equals(route._handler_method)) return false;
-    if( !_http_method.equals(route._http_method)) return false;
-    if( !_url_pattern_raw.equals(route._url_pattern_raw)) return false;
-    if( !Arrays.equals(_path_params, route._path_params)) return false;
-    return true;
+    return _api_name.equals(route._api_name) &&
+           _handler_class .equals(route._handler_class) &&
+           _handler_method.equals(route._handler_method) &&
+           _http_method.equals(route._http_method) &&
+           _url_pattern_raw.equals(route._url_pattern_raw) &&
+           Arrays.equals(_path_params, route._path_params);
   }
 
   @Override
   public int hashCode() {
-    long result = _http_method.hashCode();
-    result = 31 * result + _url_pattern_raw.hashCode();
-    result = 31 * result + _handler_class.hashCode();
-    result = 31 * result + _handler_method.hashCode();
-    result = 31 * result + Arrays.hashCode(_path_params);
-    return (int)result;
+    return _api_name.hashCode();
   }
 
   @Override
@@ -111,6 +108,7 @@ final class Route extends Iced {
             "_http_method='" + _http_method + '\'' +
             ", _url_pattern=" + _url_pattern_raw +
             ", _summary='" + _summary + '\'' +
+            ", _api_name='" + _api_name + "'" +
             ", _handler_class=" + _handler_class +
             ", _handler_method=" + _handler_method +
             ", _input_schema=" + Handler.getHandlerMethodInputSchema(_handler_method) +

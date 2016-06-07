@@ -51,8 +51,8 @@ import java.util.zip.ZipOutputStream;
  *
  * @see water.api.Handler a class which contains HTTP request handler methods and other helpers
  * @see water.api.Schema a class which provides a stable external representation for entities and request parameters
- * @see #register(String, String, Class, String, String, HandlerFactory) registers a specific handler method for the
- *      supplied URI pattern and HTTP method (GET, POST, DELETE, PUT)
+ * @see #register(String, String, String, Class, String, String, HandlerFactory) registers a specific handler method for
+ *      the supplied URI pattern and HTTP method (GET, POST, DELETE, PUT)
  */
 public class RequestServer extends NanoHTTPD {
   // Returned in REST API responses as X-h2o-rest-api-version
@@ -87,6 +87,7 @@ public class RequestServer extends NanoHTTPD {
     }
     return methods;
   }
+  private static Set<String> seenApiNames = new HashSet<>();
 
 
   // NOTE!
@@ -94,250 +95,328 @@ public class RequestServer extends NanoHTTPD {
   // (e.g., /foo/baz and /foo) you MUST register them in decreasing order of specificity.
   static {
     // Data
-    register("POST /3/CreateFrame", CreateFrameHandler.class, "run",
+    register("createFrame",
+        "POST /3/CreateFrame", CreateFrameHandler.class, "run",
         "Create a synthetic H2O Frame.");
 
-    register("POST /3/SplitFrame", SplitFrameHandler.class, "run",
+    register("splitFrame",
+        "POST /3/SplitFrame", SplitFrameHandler.class, "run",
         "Split an H2O Frame.");
 
-    register("POST /3/Interaction", InteractionHandler.class, "run",
+    register(null,
+        "POST /3/Interaction", InteractionHandler.class, "run",
         "Create interactions between categorical columns.");
 
-    register("POST /3/MissingInserter", MissingInserterHandler.class, "run",
+    register(null,
+        "POST /3/MissingInserter", MissingInserterHandler.class, "run",
         "Insert missing values.");
 
-    register("POST /99/DCTTransformer", DCTTransformerHandler.class, "run",
+    register(null,
+        "POST /99/DCTTransformer", DCTTransformerHandler.class, "run",
         "Row-by-row discrete cosine transforms in 1D, 2D and 3D.");
 
-    register("POST /99/Tabulate", TabulateHandler.class, "run",
+    register(null,
+        "POST /99/Tabulate", TabulateHandler.class, "run",
         "Tabulate one column vs another.");
 
-    register("GET /3/ImportFiles", ImportFilesHandler.class, "importFiles",
+    register("importFiles_deprecated",
+        "GET /3/ImportFiles", ImportFilesHandler.class, "importFiles",
+        "[DEPRECATED] Import raw data files into a single-column H2O Frame.");
+
+    register("importFiles",
+        "POST /3/ImportFiles", ImportFilesHandler.class, "importFiles",
         "Import raw data files into a single-column H2O Frame.");
 
-    register("POST /3/ImportFiles", ImportFilesHandler.class, "importFiles",
-        "Import raw data files into a single-column H2O Frame.");
-
-    register("POST /99/ImportSQLTable", ImportSQLTableHandler.class, "importSQLTable",
+    register("importSqlTable",
+        "POST /99/ImportSQLTable", ImportSQLTableHandler.class, "importSQLTable",
         "Import SQL table into an H2O Frame.");
 
-    register("POST /3/ParseSetup", ParseSetupHandler.class, "guessSetup",
+    register(null,
+        "POST /3/ParseSetup", ParseSetupHandler.class, "guessSetup",
         "Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
 
-    register("POST /3/Parse", ParseHandler.class, "parse",
+    register(null,
+        "POST /3/Parse", ParseHandler.class, "parse",
         "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
-    register("POST /3/ParseSVMLight", ParseHandler.class, "parseSVMLight",
+    register("parseSvmLight",
+        "POST /3/ParseSVMLight", ParseHandler.class, "parseSVMLight",
         "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
     // Admin
-    register("GET /3/Cloud", CloudHandler.class, "status",
+    register("cloudStatus",
+        "GET /3/Cloud", CloudHandler.class, "status",
         "Determine the status of the nodes in the H2O cloud.");
 
-    register("HEAD /3/Cloud", CloudHandler.class, "head",
+    register(null,
+        "HEAD /3/Cloud", CloudHandler.class, "head",
         "Determine the status of the nodes in the H2O cloud.");
 
-    register("GET /3/Jobs", JobsHandler.class, "list",
+    register("jobs",
+        "GET /3/Jobs", JobsHandler.class, "list",
         "Get a list of all the H2O Jobs (long-running actions).");
 
-    register("GET /3/Timeline", TimelineHandler.class, "fetch",
+    register("timeline",
+        "GET /3/Timeline", TimelineHandler.class, "fetch",
         "Debugging tool that provides information on current communication between nodes.");
 
-    register("GET /3/Profiler", ProfilerHandler.class, "fetch",
+    register("profiler",
+        "GET /3/Profiler", ProfilerHandler.class, "fetch",
         "Report real-time profiling information for all nodes (sorted, aggregated stack traces).");
 
-    register("GET /3/JStack", JStackHandler.class, "fetch",
+    register("stacktraces",
+        "GET /3/JStack", JStackHandler.class, "fetch",
         "Report stack traces for all threads on all nodes.");
 
-    register("GET /3/NetworkTest", NetworkTestHandler.class, "fetch",
+    register("testNetwork",
+        "GET /3/NetworkTest", NetworkTestHandler.class, "fetch",
         "Run a network test to measure the performance of the cluster interconnect.");
 
-    register("POST /3/UnlockKeys", UnlockKeysHandler.class, "unlock",
+    register("unlockAllKeys",
+        "POST /3/UnlockKeys", UnlockKeysHandler.class, "unlock",
         "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
 
-    register("POST /3/Shutdown", ShutdownHandler.class, "shutdown",
+    register("shutdownCluster",
+        "POST /3/Shutdown", ShutdownHandler.class, "shutdown",
         "Shut down the cluster.");
 
     // REST only, no html:
-    register("GET /3/About", AboutHandler.class, "get",
+    register("about",
+        "GET /3/About", AboutHandler.class, "get",
         "Return information about this H2O cluster.");
 
-    register("GET /3/Metadata/endpoints/(?<num>[0-9]+)", MetadataHandler.class, "fetchRoute",
+    register("endpointByIndex",
+        "GET /3/Metadata/endpoints/(?<num>[0-9]+)", MetadataHandler.class, "fetchRoute",
         "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
 
-    register("GET /3/Metadata/endpoints/{path}", MetadataHandler.class, "fetchRoute",
+    register("endpoint",
+        "GET /3/Metadata/endpoints/{path}", MetadataHandler.class, "fetchRoute",
         "Return the REST API endpoint metadata, including documentation, for the endpoint specified by path.");
 
-    register("GET /3/Metadata/endpoints", MetadataHandler.class, "listRoutes",
+    register("endpoints",
+        "GET /3/Metadata/endpoints", MetadataHandler.class, "listRoutes",
         "Return a list of all the REST API endpoints.");
 
-    register("GET /3/Metadata/schemaclasses/{classname}", MetadataHandler.class, "fetchSchemaMetadataByClass",
+    register("schemaForClass",
+        "GET /3/Metadata/schemaclasses/{classname}", MetadataHandler.class, "fetchSchemaMetadataByClass",
         "Return the REST API schema metadata for specified schema class.");
 
-    register("GET /3/Metadata/schemas/{schemaname}", MetadataHandler.class, "fetchSchemaMetadata",
+    register("schema",
+        "GET /3/Metadata/schemas/{schemaname}", MetadataHandler.class, "fetchSchemaMetadata",
         "Return the REST API schema metadata for specified schema.");
 
-    register("GET /3/Metadata/schemas", MetadataHandler.class, "listSchemas",
+    register("schemas",
+        "GET /3/Metadata/schemas", MetadataHandler.class, "listSchemas",
         "Return list of all REST API schemas.");
 
-    register("GET /3/Typeahead/files", TypeaheadHandler.class, "files",
-        "Typehead hander for filename completion.");
+    register("typeaheadFileSuggestions",
+        "GET /3/Typeahead/files", TypeaheadHandler.class, "files",
+        "Typeahead hander for filename completion.");
 
-    register("GET /3/Jobs/{job_id}", JobsHandler.class, "fetch",
+    register("job",
+        "GET /3/Jobs/{job_id}", JobsHandler.class, "fetch",
         "Get the status of the given H2O Job (long-running action).");
 
-    register("POST /3/Jobs/{job_id}/cancel", JobsHandler.class, "cancel",
+    register("cancelJob",
+        "POST /3/Jobs/{job_id}/cancel", JobsHandler.class, "cancel",
         "Cancel a running job.");
 
-    register("GET /3/Find", FindHandler.class, "find",
+    register(null,
+        "GET /3/Find", FindHandler.class, "find",
         "Find a value within a Frame.");
 
-    register("GET /3/Frames/{frame_id}/export/{path}/overwrite/{force}", FramesHandler.class, "export",
+    register("export",
+        "GET /3/Frames/{frame_id}/export/{path}/overwrite/{force}", FramesHandler.class,
+        "exportFrame_deprecated",
         "[DEPRECATED] Export a Frame to the given path with optional overwrite.");
 
-    register("POST /3/Frames/{frame_id}/export", FramesHandler.class, "export",
+    register("exportFrame",
+        "POST /3/Frames/{frame_id}/export", FramesHandler.class, "export",
         "Export a Frame to the given path with optional overwrite.");
 
-    register("GET /3/Frames/{frame_id}/columns/{column}/summary", FramesHandler.class, "columnSummary",
-        "Return the summary metrics for a column, e.g. mins, maxes, mean, sigma, percentiles, etc.");
+    register("columnSummary",
+        "GET /3/Frames/{frame_id}/columns/{column}/summary", FramesHandler.class,
+        "frameColumnSummary",
+        "Return the summary metrics for a column, e.g. min, max, mean, sigma, percentiles, etc.");
 
-    register("GET /3/Frames/{frame_id}/columns/{column}/domain" , FramesHandler.class, "columnDomain",
-        "Return the domains for the specified column. \"null\" if the column is not a categorical.");
+    register("frameColumnDomain",
+        "GET /3/Frames/{frame_id}/columns/{column}/domain", FramesHandler.class, "columnDomain",
+        "Return the domains for the specified categorical column (\"null\" if the column is not a categorical).");
 
-    register("GET /3/Frames/{frame_id}/columns/{column}", FramesHandler.class, "column",
+    register("frameColumn",
+        "GET /3/Frames/{frame_id}/columns/{column}", FramesHandler.class, "column",
         "Return the specified column from a Frame.");
 
-    register("GET /3/Frames/{frame_id}/columns", FramesHandler.class, "columns",
+    register("frameColumns",
+        "GET /3/Frames/{frame_id}/columns", FramesHandler.class, "columns",
         "Return all the columns from a Frame.");
 
-    register("GET /3/Frames/{frame_id}/summary", FramesHandler.class, "summary",
+    register("frameSummary",
+        "GET /3/Frames/{frame_id}/summary", FramesHandler.class, "summary",
         "Return a Frame, including the histograms, after forcing computation of rollups.");
 
-    register("GET /3/Frames/{frame_id}", FramesHandler.class, "fetch",
+    register("frame",
+        "GET /3/Frames/{frame_id}", FramesHandler.class, "fetch",
         "Return the specified Frame.");
 
-    register("GET /3/Frames", FramesHandler.class, "list",
+    register("frames",
+        "GET /3/Frames", FramesHandler.class, "list",
         "Return all Frames in the H2O distributed K/V store.");
 
-    register("DELETE /3/Frames/{frame_id}", FramesHandler.class, "delete",
+    register("deleteFrame",
+        "DELETE /3/Frames/{frame_id}", FramesHandler.class, "delete",
         "Delete the specified Frame from the H2O distributed K/V store.");
 
-    register("DELETE /3/Frames", FramesHandler.class, "deleteAll",
+    register("deleteAllFrames",
+        "DELETE /3/Frames", FramesHandler.class, "deleteAll",
         "Delete all Frames from the H2O distributed K/V store.");
 
     // Handle models
-    register("GET /3/Models/{model_id}", ModelsHandler.class, "fetch",
+    register("model",
+        "GET /3/Models/{model_id}", ModelsHandler.class, "fetch",
         "Return the specified Model from the H2O distributed K/V store, optionally with the list of compatible Frames.");
 
-    register("GET /3/Models", ModelsHandler.class, "list",
+    register("models",
+        "GET /3/Models", ModelsHandler.class, "list",
         "Return all Models from the H2O distributed K/V store.");
 
-    register("DELETE /3/Models/{model_id}", ModelsHandler.class, "delete",
+    register("deleteModel",
+        "DELETE /3/Models/{model_id}", ModelsHandler.class, "delete",
         "Delete the specified Model from the H2O distributed K/V store.");
 
-    register("DELETE /3/Models", ModelsHandler.class, "deleteAll",
+    register("deleteAllModels",
+        "DELETE /3/Models", ModelsHandler.class, "deleteAll",
         "Delete all Models from the H2O distributed K/V store.");
 
     // Get java code for models as
-    register("GET /3/Models.java/{model_id}/preview", ModelsHandler.class, "fetchPreview",
+    register(null,
+        "GET /3/Models.java/{model_id}/preview", ModelsHandler.class, "fetchPreview",
         "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
 
     // Register resource also with .java suffix since we do not want to break API
-    // FIXME: remove in new REST API version
-    register("GET /3/Models.java/{model_id}", ModelsHandler.class, "fetchJavaCode",
-        "Return the stream containing model implementation in Java code.");
+    register(null,
+        "GET /3/Models.java/{model_id}", ModelsHandler.class, "fetchJavaCode",
+        "[DEPRECATED] Return the stream containing model implementation in Java code.");
 
     // Model serialization - import/export calls
-    register("POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",
+    register("importModel",
+        "POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",
         "Import given binary model into H2O.");
 
-    register("GET /99/Models.bin/{model_id}", ModelsHandler.class, "exportModel",
+    register("exportModel",
+        "GET /99/Models.bin/{model_id}", ModelsHandler.class, "exportModel",
         "Export given model.");
 
 
-    register("GET /99/Grids/{grid_id}", GridsHandler.class, "fetch",
+    register("grid",
+        "GET /99/Grids/{grid_id}", GridsHandler.class, "fetch",
         "Return the specified grid search result.");
 
-    register("GET /99/Grids", GridsHandler.class, "list",
+    register("grids",
+        "GET /99/Grids", GridsHandler.class, "list",
         "Return all grids from H2O distributed K/V store.");
 
 
-    register("POST /3/ModelBuilders/{algo}/model_id", ModelBuildersHandler.class, "calcModelId",
+    register("newModelId",
+        "POST /3/ModelBuilders/{algo}/model_id", ModelBuildersHandler.class, "calcModelId",
         "Return a new unique model_id for the specified algorithm.");
 
-    register("GET /3/ModelBuilders/{algo}", ModelBuildersHandler.class, "fetch",
+    register("modelBuilder",
+        "GET /3/ModelBuilders/{algo}", ModelBuildersHandler.class, "fetch",
         "Return the Model Builder metadata for the specified algorithm.");
 
-    register("GET /3/ModelBuilders", ModelBuildersHandler.class, "list",
+    register("modelBuilders",
+        "GET /3/ModelBuilders", ModelBuildersHandler.class, "list",
         "Return the Model Builder metadata for all available algorithms.");
 
     // TODO: filtering isn't working for these first four; we get all results:
-    register("GET /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "fetch",
+    register(null,
+        "GET /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("DELETE /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "delete",
+    register(null,
+        "DELETE /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "delete",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("GET /3/ModelMetrics/models/{model}", ModelMetricsHandler.class, "fetch",
+    register(null,
+        "GET /3/ModelMetrics/models/{model}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model.");
 
-    register("GET /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "fetch",
+    register(null,
+        "GET /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("DELETE /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "delete",
+    register(null,
+        "DELETE /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "delete",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("GET /3/ModelMetrics/frames/{frame}", ModelMetricsHandler.class, "fetch",
+    register(null,
+        "GET /3/ModelMetrics/frames/{frame}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Frame.");
 
-    register("GET /3/ModelMetrics", ModelMetricsHandler.class, "fetch",
+    register(null,
+        "GET /3/ModelMetrics", ModelMetricsHandler.class, "fetch",
         "Return all the saved scoring metrics.");
 
-    register("POST /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "score",
+    register(null,
+        "POST /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "score",
         "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been " +
         "scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame " +
         "will be generated and the metrics will be returned.");
 
-    register("POST /3/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict",
+    register(null,
+        "POST /3/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
-    register("POST /4/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict2",
+    register(null,
+        "POST /4/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict2",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
-    register("GET /3/WaterMeterCpuTicks/{nodeidx}", WaterMeterCpuTicksHandler.class, "fetch",
+    register(null,
+        "GET /3/WaterMeterCpuTicks/{nodeidx}", WaterMeterCpuTicksHandler.class, "fetch",
         "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
 
-    register("GET /3/WaterMeterIo/{nodeidx}", WaterMeterIoHandler.class, "fetch",
+    register(null,
+        "GET /3/WaterMeterIo/{nodeidx}", WaterMeterIoHandler.class, "fetch",
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
-    register("GET /3/WaterMeterIo", WaterMeterIoHandler.class, "fetch_all",
+    register(null,
+        "GET /3/WaterMeterIo", WaterMeterIoHandler.class, "fetch_all",
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
     // Node persistent storage
-    register("GET /3/NodePersistentStorage/categories/{category}/names/{name}/exists", NodePersistentStorageHandler.class, "exists",
+    register(null,
+        "GET /3/NodePersistentStorage/categories/{category}/names/{name}/exists", NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
-    register("GET /3/NodePersistentStorage/categories/{category}/exists", NodePersistentStorageHandler.class, "exists",
+    register(null,
+        "GET /3/NodePersistentStorage/categories/{category}/exists", NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
-    register("GET /3/NodePersistentStorage/configured", NodePersistentStorageHandler.class, "configured",
+    register(null,
+        "GET /3/NodePersistentStorage/configured", NodePersistentStorageHandler.class, "configured",
         "Return true or false.");
 
-    register("POST /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "put_with_name",
+    register(null,
+        "POST /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "put_with_name",
         "Store a named value.");
 
-    register("GET /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "get_as_string",
+    register(null,
+        "GET /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "get_as_string",
         "Return value for a given name.");
 
-    register("DELETE /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "delete",
+    register(null,
+        "DELETE /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "delete",
         "Delete a key.");
 
-    register("POST /3/NodePersistentStorage/{category}", NodePersistentStorageHandler.class, "put",
+    register(null,
+        "POST /3/NodePersistentStorage/{category}", NodePersistentStorageHandler.class, "put",
         "Store a value.");
 
-    register("GET /3/NodePersistentStorage/{category}", NodePersistentStorageHandler.class, "list",
+    register(null,
+        "GET /3/NodePersistentStorage/{category}", NodePersistentStorageHandler.class, "list",
         "Return all keys stored for a given category.");
 
     // TODO: register("DELETE /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "delete");
@@ -349,7 +428,8 @@ public class RequestServer extends NanoHTTPD {
 
     // Log file management.
     // Note:  Hacky pre-route cutout of "/3/Logs/download" is done above in a non-json way.
-    register("GET /3/Logs/nodes/{nodeidx}/files/{name}", LogsHandler.class, "fetch",
+    register(null,
+        "GET /3/Logs/nodes/{nodeidx}/files/{name}", LogsHandler.class, "fetch",
         "Get named log file for a node.");
 
 
@@ -360,43 +440,56 @@ public class RequestServer extends NanoHTTPD {
     //   register("POST /3/ModelBuilders/{algo}", ModelBuildersHandler.class, "train", "Train {algo}");
     //
 
-    register("GET /3/KillMinus3", KillMinus3Handler.class, "killm3",
+    register("killDash3",
+        "GET /3/KillMinus3", KillMinus3Handler.class, "killm3",
         "Kill minus 3 on *this* node");
 
-    register("POST /99/Rapids", RapidsHandler.class, "exec",
+    register(null,
+        "POST /99/Rapids", RapidsHandler.class, "exec",
         "Execute an Rapids AST.");
 
-    register("GET /99/Assembly.java/{assembly_id}/{pojo_name}", AssemblyHandler.class, "toJava",
+    register(null,
+        "GET /99/Assembly.java/{assembly_id}/{pojo_name}", AssemblyHandler.class, "toJava",
         "Generate a Java POJO from the Assembly");
 
-    register("POST /99/Assembly", AssemblyHandler.class, "fit",
+    register(null,
+        "POST /99/Assembly", AssemblyHandler.class, "fit",
         "Fit an assembly to an input frame");
 
-    register("GET /3/DownloadDataset", DownloadDataHandler.class, "fetch",
+    register(null,
+        "GET /3/DownloadDataset", DownloadDataHandler.class, "fetch",
         "Download dataset as a CSV.");
 
-    register("GET /3/DownloadDataset.bin", DownloadDataHandler.class, "fetchStreaming",
+    register(null,
+        "GET /3/DownloadDataset.bin", DownloadDataHandler.class, "fetchStreaming",
         "Download dataset as a CSV.");
 
-    register("DELETE /3/DKV/{key}", RemoveHandler.class, "remove",
+    register("deleteKey",
+        "DELETE /3/DKV/{key}", RemoveHandler.class, "remove",
         "Remove an arbitrary key from the H2O distributed K/V store.");
 
-    register("DELETE /3/DKV", RemoveAllHandler.class, "remove",
+    register("deleteAllKeys",
+        "DELETE /3/DKV", RemoveAllHandler.class, "remove",
         "Remove all keys from the H2O distributed K/V store.");
 
-    register("POST /3/LogAndEcho", LogAndEchoHandler.class, "echo",
+    register(null,
+        "POST /3/LogAndEcho", LogAndEchoHandler.class, "echo",
         "Save a message to the H2O logfile.");
 
-    register("GET /3/InitID", InitIDHandler.class, "issue",
+    register("newSession",
+        "GET /3/InitID", InitIDHandler.class, "issue",
         "Issue a new session ID.");
 
-    register("DELETE /3/InitID", InitIDHandler.class, "endSession",
+    register("endSession",
+        "DELETE /3/InitID", InitIDHandler.class, "endSession",
         "End a session.");
 
-    register("POST /3/GarbageCollect", GarbageCollectHandler.class, "gc",
+    register("garbageCollect",
+        "POST /3/GarbageCollect", GarbageCollectHandler.class, "gc",
         "Explicitly call System.gc().");
 
-    register("GET /99/Sample", CloudHandler.class, "status",
+    register(null,
+        "GET /99/Sample", CloudHandler.class, "status",
         "Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at " +
         "any moment.");
   }
@@ -406,6 +499,7 @@ public class RequestServer extends NanoHTTPD {
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
+   * @param api_name suggested method name for this endpoint in the external API library. These names should be unique.
    * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
    * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
    * @param handler_class class which contains the handler method
@@ -416,7 +510,15 @@ public class RequestServer extends NanoHTTPD {
    * @see water.api.RequestServer
    * @return the Route for this request
    */
-  public static Route register(String http_method, String uri_pattern_raw, Class<? extends Handler> handler_class, String handler_method, String summary, HandlerFactory handler_factory) {
+  public static Route register(
+      String api_name,
+      String http_method,
+      String uri_pattern_raw,
+      Class<? extends Handler> handler_class,
+      String handler_method,
+      String summary,
+      HandlerFactory handler_factory
+  ) {
     if (!getMethods().contains(http_method))
       throw new AssertionError("http_method should be one of GET|POST|HEAD|DELETE");
     assert uri_pattern_raw.startsWith("/");
@@ -449,12 +551,18 @@ public class RequestServer extends NanoHTTPD {
         throw H2O.fail("Route version is greater than the max supported: " + uri_pattern_raw);
     }
 
+    if (api_name == null)
+      api_name = handler_class + "_" + handler_method;
+    if (seenApiNames.contains(api_name))
+      throw H2O.fail("Endpoint with api_name " + api_name + " was specified more than once.");
+    seenApiNames.add(api_name);
+
     // Convert convenience URL params into actual regex expressions: "/3/Job/{job_id}" => "/3/Job/(?<job_id>.*)"
     uri_pattern_raw = uri_pattern_raw.replaceAll("\\{(\\w+)\\}", "(?<$1>.*)");
 
     // Get the group names in the uri pattern and remove any underscores,
     // since underscores are not actually allowed in java regex group names.
-    ArrayList<String> params_list = new ArrayList<String>();
+    ArrayList<String> params_list = new ArrayList<>();
     Pattern group_pattern = Pattern.compile("\\?<(\\w+)>");
     Matcher group_matcher = group_pattern.matcher(uri_pattern_raw);
     StringBuffer new_uri_buffer = new StringBuffer();
@@ -471,6 +579,7 @@ public class RequestServer extends NanoHTTPD {
     Route route = new Route(http_method,
                             uri_pattern_raw,
                             uri_pattern, summary,
+                            api_name,
                             handler_class, method,
                             params_list.toArray(new String[params_list.size()]),
                             handler_factory);
@@ -483,6 +592,7 @@ public class RequestServer extends NanoHTTPD {
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
+   * @param api_name suggested method name for this endpoint in the external API library. These names should be unique.
    * @param method_uri combined method / url pattern of the request, e.g.: "GET /3/Jobs/{job_id}"
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
@@ -491,10 +601,12 @@ public class RequestServer extends NanoHTTPD {
    * @see water.api.RequestServer
    * @return the Route for this request
    */
-  public static Route register(String method_uri, Class<? extends Handler> handler_class, String handler_method, String summary) {
+  public static Route register(
+      String api_name, String method_uri, Class<? extends Handler> handler_class, String handler_method, String summary
+  ) {
     String[] spl = method_uri.split(" ");
     assert spl.length == 2 : "Unexpected method_uri parameter: " + method_uri;
-    return register(spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
+    return register(api_name, spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
   }
 
 
@@ -541,6 +653,7 @@ public class RequestServer extends NanoHTTPD {
                                   fallback_route_uri,
                                   fallback_route_pattern,
                                   fallback._summary,
+                                  fallback._api_name,
                                   fallback._handler_class,
                                   fallback._handler_method,
                                   fallback._path_params,
@@ -700,8 +813,7 @@ public class RequestServer extends NanoHTTPD {
         if (logged) GAUtils.logRequest(uri, header);
         Schema s = handle(type, route, version, parms);
         PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
-        Response r = wrap(s, type);
-        return r;
+        return wrap(s, type);
       }
     }
     catch (H2OFailException e) {

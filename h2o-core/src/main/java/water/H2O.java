@@ -1448,9 +1448,11 @@ final public class H2O {
   // Callbacks to add new Requests & menu items
   static private volatile boolean _doneRequests;
 
-  static public void register(String method_url, Class<? extends water.api.Handler> hclass, String method, String summary) {
+  static public void register(
+      String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
+  ) {
     if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.register(method_url, hclass, method, summary);
+    RequestServer.register(method_url, hclass, method, apiName, summary);
   }
 
   public static void registerResourceRoot(File f) {

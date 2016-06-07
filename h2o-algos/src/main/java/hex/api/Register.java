@@ -21,7 +21,7 @@ public class Register extends water.api.AbstractRegister {
       new hex.aggregator  .Aggregator  (true),
     };
     // "Word2Vec", "Example", "Grep"
-    for( ModelBuilder algo : algos ) {
+    for (ModelBuilder algo : algos) {
       String base = algo.getClass().getSimpleName();
       String lbase = base.toLowerCase();
       Class<? extends water.api.Handler> bh_clz = water.api.ModelBuilderHandler.class;
@@ -30,23 +30,27 @@ public class Register extends water.api.AbstractRegister {
       if( base.equals("Aggregator") ) version = 99;  // Aggregator is experimental still
 
       H2O.register("POST /"+version+"/ModelBuilders/"+lbase, bh_clz, "train",
+          "train_" + lbase,
           "Train a " + base + " model.");
 
       H2O.register("POST /"+version+"/ModelBuilders/"+lbase+"/parameters", bh_clz, "validate_parameters",
+          "validate_" + lbase,
           "Validate a set of " + base + " model builder parameters.");
 
       // Grid search is experimental feature
       H2O.register("POST /99/Grid/"+lbase, GridSearchHandler.class, "train",
+          "grid_search_" + lbase,
           "Run grid search for "+base+" model.");
     }
 
-    H2O.register("POST /3/MakeGLMModel", MakeGLMModelHandler.class, "make_model",
+    H2O.register("POST /3/MakeGLMModel", MakeGLMModelHandler.class, "make_model", "make_glm_model",
         "Make a new GLM model based on existing one");
 
     H2O.register("GET /3/GetGLMRegPath", MakeGLMModelHandler.class, "extractRegularizationPath",
+        "glm_regularization_path",
         "Get full regularization path");
 
-    H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame",
+    H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
   }
 }

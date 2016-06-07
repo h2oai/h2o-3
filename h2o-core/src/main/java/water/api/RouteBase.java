@@ -13,6 +13,9 @@ public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends Schem
   public String summary;
 
   @API(help="", direction=API.Direction.OUTPUT)
+  public String api_name;
+
+  @API(help="", direction=API.Direction.OUTPUT)
   public String handler_class;
 
   @API(help="", direction=API.Direction.OUTPUT)
