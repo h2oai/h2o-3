@@ -6,7 +6,6 @@ request = require 'request'
 fiction = require 'fiction'
 diecut = require 'diecut'
 marked = require 'marked'
-yaml = require 'js-yaml'
 _ = require 'lodash'
 
 EOL = "\n"
@@ -186,29 +185,9 @@ printSources = (sources) ->
     contents.join EOL
   ]
 
-print = (properties, _schemas, _routes) ->
+print = (_schemas, _routes) ->
   schemas = _.sortBy _schemas, (schema) -> schema.name
   routes = _.sortBy _routes, (route) -> route.url_pattern
-
-#  [ toc, contents ] = printSources properties.sources
-
-#  sidebar = [
-#    h2 'Contents'
-#    ul toc
-#    h2 'API Reference'
-#    ul [
-#      li link 'REST API Endpoints',  '#route-reference'
-#      li link 'REST API Schemas',    '#schema-reference'
-#      li link 'R API',               "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-r/h2o_package.pdf"
-#      li link 'Python API',          "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-py/docs/index.html"
-#      li link 'h2o-core Javadoc',    "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-core/javadoc/index.html"
-#      li link 'h2o-algos Javadoc',   "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-algos/javadoc/index.html"
-#      li link 'POJO Model Javadoc',  "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-genmodel/javadoc/index.html"
-#      li link 'h2o-scala Scaladoc',  "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/docs-website/h2o-scala/scaladoc/index.html"
-#      li link 'Sparkling Water API', 'https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md'
-#      li link 'Build page',          "http://h2o-release.s3.amazonaws.com/h2o/#{argv.branch_name}/#{argv.build_number}/index.html"
-#    ]
-#  ].join EOL
 
   body = [
     # contents
@@ -227,8 +206,6 @@ print = (properties, _schemas, _routes) ->
     switch key
       when 'version'
         argv.project_version or ''
-#      when 'toc'
-#        sidebar
       when 'content'
         body
 
@@ -237,17 +214,15 @@ print = (properties, _schemas, _routes) ->
   cpn (locate 'template', 'stylesheets', 'swirl.png'), (locate 'web', 'stylesheets', 'swirl.png')
   cp (locate 'template', 'stylesheets', 'styles.css'), (locate 'web', 'stylesheets', 'styles.css')
 
-  for asset in properties.assets
-    fs.copySync (locate asset.source), (locate 'web', asset.target)
   return
 
-main = (args, properties) ->
+main = (args) ->
   schemas_json = locate 'schemas.json'
   routes_json = locate 'routes.json'
   if (fs.lstatSync schemas_json).isFile() and (fs.lstatSync routes_json).isFile()
-    print properties, (JSON.parse read schemas_json).schemas, (JSON.parse read routes_json).routes
+    print (JSON.parse read schemas_json).schemas, (JSON.parse read routes_json).routes
   else
     throw new Error 'Could not locate API JSON documents.'
 
-main argv, yaml.safeLoad read locate 'index.yml'
+main argv
 
