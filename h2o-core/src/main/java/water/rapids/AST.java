@@ -168,6 +168,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTTable());
     init(new ASTUnique());
     init(new ASTVariance());
+    init(new ASTCorrelation());
 
     // Generic data mungers
     init(new ASTAnyFactor());
