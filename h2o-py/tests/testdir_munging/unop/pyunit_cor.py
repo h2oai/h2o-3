@@ -29,16 +29,16 @@ def cor_test():
     cor_diff = abs(cor_h2o - cor_np)
 
     print("Correlation matrix with H2O: ")
-    print cor_h2o
+    print(cor_h2o)
 
     print("Correlation matrix with Numpy: ")
-    print cor_np
+    print(cor_np)
 
     print("Correlation differences between H2O and Numpy: ")
-    print cor_diff
+    print(cor_diff)
 
     print("Max difference in correlation calculation between H2O and Numpy: ")
-    print cor_diff.max()
+    print(cor_diff.max())
 
     max = cor_diff.max()
     assert max < .006, "expected equal correlations"
