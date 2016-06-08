@@ -1,7 +1,6 @@
 package water.util;
 
 import water.AutoBuffer;
-import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 
@@ -235,6 +234,8 @@ public class TwoDimTable extends Iced {
       cellValues[row][col] = new IcedWrapper(new Integer(o.toString()));
     else if (colTypes[col].equals("long"))
       cellValues[row][col] = new IcedWrapper(new Long(o.toString()));
+    else if (colTypes[col].equals("string"))
+      cellValues[row][col] = new IcedWrapper(new String(o.toString()));
     else
       cellValues[row][col] = new IcedWrapper(o);
   }
@@ -309,6 +310,9 @@ public class TwoDimTable extends Iced {
             break;
           case "long":
             cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
+            break;
+          case "string":
+            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (String)cellValues[r][c].get());
             break;
           default:
             if( get(r,c) != null )

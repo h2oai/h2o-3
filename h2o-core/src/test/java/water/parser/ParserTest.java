@@ -723,6 +723,26 @@ public class ParserTest extends TestUtil {
     testParsed(r1,pows10_exp);
   }
 
+  // Comparing a column with just 1399008600149269883L and 1399008600149269880L
+  // (differ by 3 in the lowest digit), converting to a double or scaling up
+  // and down by 10 and converting inverts the size:
+  //  ((double)1399008600149269883L) < ((double)139900860014926988L*10.0)
+  // i.e., the larger long converts to the smaller double.
+  @Test public void testParseManyDigits5() {
+    String pows10 =
+      "1399008600149269883\n"+
+      "1399008600149269880\n"+
+      "";
+    double[][] pows10_exp = new double[][] {
+      ard(1399008600149269883L),
+      ard(1399008600149269880L),
+    };
+    Key k = makeByteVec(pows10);
+    Key r1 = Key.make("r1");
+    ParseDataset.parse(r1, k);
+    testParsed(r1,pows10_exp);
+  }
+
   // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an categorical column
   @Test @Ignore public void testBinaryWithNA() {
     String[] data = new String[] {
