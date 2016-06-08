@@ -125,7 +125,7 @@ test.GLM.Gaussian.Grid.Test1.SyntheticData <- function() {
 # generateHyperparameterError will deliberately introduce errors in hyper_parameters
 # depending on the error_number.  Hence, depending on the error_number, the following
 # errors will be introduced into hyper_parameters:
-# error_number = 0: insert a bad value into a parameter lis
+# error_number = 0: insert a bad value into a parameter list
 # error_number = 1: change the name of the hyper_parameter
 # error_number = 2: replace parameter list with an empty list
 #
