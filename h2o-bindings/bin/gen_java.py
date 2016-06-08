@@ -55,7 +55,7 @@ def translate_name(name):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# Generate a Schema POJO
+# Generate Schema POJOs
 # -----------------------------------------------------------------------------------------------------------------------
 def generate_schema(class_name, schema):
     """
@@ -147,7 +147,7 @@ def generate_schema(class_name, schema):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# Generate Enum class
+# Generate Enum classes
 # -----------------------------------------------------------------------------------------------------------------------
 def generate_enum(name, values):
     yield "/**"
@@ -163,10 +163,9 @@ def generate_enum(name, values):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-#  Generate a Retrofit proxy class
+#  Generate Retrofit proxy classes
 # -----------------------------------------------------------------------------------------------------------------------
-# NOTE: not complete yet
-def generate_proxy(classname, endpoints, schemas_map):
+def generate_proxy(classname, endpoints):
     """
     Retrofit interfaces look like this:
         public interface GitHubService {
@@ -175,13 +174,11 @@ def generate_proxy(classname, endpoints, schemas_map):
         }
       :param classname: name of the class
       :param endpoints: list of endpoints served by this class
-      :param schemas_map: dictionary schema_name => schema_info
     """
 
     # Replace path vars like (?<schemaname>.*) with {schemaname} for Retrofit's annotation
-    var_pattern = re.compile(r"\(\?<(\w+)>.*?\)")
+    var_pattern = re.compile(r"\{(\w+)\}")
 
-    methods = set()
     helper_class = []
     found_key_array_parameter = False
 
@@ -197,129 +194,59 @@ def generate_proxy(classname, endpoints, schemas_map):
     yield "import java.util.Map;"
     yield ""
     yield "public interface " + classname + " {"
+    yield ""
 
     for e in endpoints:
-        path = e["url_pattern"]
-        path_params = e["path_params"]
-        summary = e["summary"]
-        http_method = e["http_method"]
-        input_schema_name = e["input_schema"]
-        output_schema_name = e["output_schema"]
         method = e["handler_method"]
-        input_schema = schemas_map[input_schema_name]
-        is_post = (http_method == "POST")
 
-        # These redundant paths cause conflicts:
-        if path == "/3/ModelMetrics/frames/(?<frame>.*)/models/(?<model>.*)": continue
-        if path == "/3/ModelMetrics/frames/(?<frame>.*)": continue
-        assert "\\" not in path, "Your path contains backslashes. Seriously? " + path
-
-        # For whatever reason parameter names match only up to underscores, so we need to fix that.
-        def translator(m):
-            name = path_params[translator.i]
-            assert name.replace("_", "") == m.group(1), "Unexpected name %s for param <%s>" % (name, m.group(1))
-            translator.i += 1
-            return "{%s}" % name
-
-        translator.i = 0
-        retrofit_path = var_pattern.sub(translator, path)
-
-        # For certain endpoints we need to unique-ify method names, e.g. endpoints such as /3/Grid/glm and /3/Grid/pca
-        # both call method train(). We also store the "algo" variable for later use.
-        algo = None
-        if (classname, method) in [("Grid", "train"), ("ModelBuilders", "train"),
-                                   ("ModelBuilders", "validate_parameters")]:
-            pieces = path.split("/")
-            assert len(pieces) >= 4, "Expected to see algo name in the path: " + path
-            algo = pieces[3]
-            method = method + algo.capitalize()  # e.g. trainGlm()
-            for field in input_schema["fields"]:
-                if field["name"] == "parameters":
-                    input_schema_name = field["schema_name"]
-                    input_schema = schemas_map[input_schema_name]
-                    break
-
-        # TODO: handle query parameters from RequestSchema
         param_strs = []
-        param_infos = []
-
-        # Include path parms first
-        j = 1
-        for parm in path_params:
-            # find the metadata for the field from the input schema:
-            fields = [field for field in input_schema["fields"] if field["name"] == parm]
-            assert len(fields) == 1, "Failed to find parameter: %s for endpoint: %r" % (parm, e)
-            field = fields[0]
-            if field["direction"] == "OUTPUT": continue
-
+        for field in e["input_params"]:
+            fname = field["name"]
+            ftype = "Path" if field["is_path_param"] else "Field"
             ptype = translate_type(field["type"], field["schema_name"])
-            if ptype.endswith("KeyV3"): ptype = "String"
+            if ptype.endswith("KeyV3") or ptype == "ColSpecifierV3": ptype = "String"
             if ptype.endswith("KeyV3[]"): ptype = "String[]"
-            if ptype == "ColSpecifierV3": ptype = "String"
-            # TODO: brackets
-
-            param_strs.append("@Path(\"{parm}\") {ptype} v{j}".format(**locals()))
-            j += 1
-
-        # Then POST body params
-        for field in input_schema["fields"]:
-            if not is_post: break
-            if field["direction"] == "OUTPUT": continue
-            if field["name"] in path_params: continue
-            parm = field["name"]
-
-            ptype = translate_type(field["type"], field["schema_name"])
-            param_infos.append((parm, ptype))
-            if ptype.endswith("KeyV3"): ptype = "String"
-            if ptype.endswith("KeyV3[]"): ptype = "String[]"
-            if ptype == "ColSpecifierV3": ptype = "String"
-
-            param_strs.append("@Field(\"{parm}\") {ptype} v{j}".format(**locals()))
-            j += 1
-
-        # check for conflicts:
-        method_with_args = (method, tuple(param_strs))
-        assert method_with_args not in methods, "ERROR: duplicate method in classname " + classname + ": " + method
-        methods.add(method_with_args)
+            param_strs.append("@{ftype}(\"{fname}\") {ptype} {fname}".format(**locals()))
 
         yield u"  /** "
-        yield bi.wrap(summary, indent="   * ")
+        yield bi.wrap(e["summary"], indent="   * ")
         yield u"   */"
-        yield u"  @FormUrlEncoded" if is_post else None
-        yield u"  @%(method)s(\"%(path)s\")" % {"method": http_method, "path": retrofit_path}
+        yield u"  @FormUrlEncoded" if e["http_method"] == "POST" else None
+        yield u"  @{method}(\"{path}\")".format(method=e["http_method"], path=e["url_pattern"])
         if len(param_strs) <= 1:
             args = param_strs[0] if param_strs else ""
-            yield "  Call<{schema}> {method}({args});".format(schema=output_schema_name, method=method, args=args)
+            yield "  Call<{schema}> {method}({args});".format(schema=e["output_schema"], method=method, args=args)
         else:
-            yield "  Call<{schema}> {method}(".format(schema=output_schema_name, method=method)
+            yield "  Call<{schema}> {method}(".format(schema=e["output_schema"], method=method)
             for arg in param_strs:
                 yield "    " + arg + ("" if arg == param_strs[-1] else ",")
             yield "  );"
         yield ""
 
         # Make special static Helper class for Grid and ModelBuilders.
-        if algo:
+        if "algo" in e:
             # We make two train_ and validate_ methods.  One (built here) takes the parameters schema, the other
             # (built above) takes each parameter.
             helper_class.append("    /**")
-            helper_class.append(bi.wrap(summary, indent="     * "))
+            helper_class.append(bi.wrap(e["summary"], indent="     * "))
             helper_class.append("     */")
             helper_class.append("    public static Call<{oschema}> {method}({outer_class} z, {ischema} p) {{"
-                                .format(ischema=input_schema_name, oschema=output_schema_name, method=method,
+                                .format(ischema=e["input_schema"], oschema=e["output_schema"], method=method,
                                         outer_class=classname))
             helper_class.append("      return z.{method}(".format(method=method))
-            for pname, ptype in param_infos:
-                ccname = translate_name(pname)
+            for field in e["input_params"]:
+                ptype = translate_type(field["type"], field["schema_name"])
+                pname = translate_name(field["name"])
                 if ptype.endswith("KeyV3"):
-                    s = "(p.{parm} == null? null : p.{parm}.name)".format(parm=ccname)
+                    s = "(p.{parm} == null? null : p.{parm}.name)".format(parm=pname)
                 elif ptype.endswith("KeyV3[]"):
                     found_key_array_parameter = True
-                    s = "(p.{parm} == null? null : keyArrayToStringArray(p.{parm}))".format(parm=ccname)
+                    s = "(p.{parm} == null? null : keyArrayToStringArray(p.{parm}))".format(parm=pname)
                 elif ptype.startswith("ColSpecifier"):
-                    s = "(p.{parm} == null? null : p.{parm}.columnName)".format(parm=ccname)
+                    s = "(p.{parm} == null? null : p.{parm}.columnName)".format(parm=pname)
                 else:
-                    s = "p." + ccname
-                if pname != param_infos[-1][0]:
+                    s = "p." + pname
+                if field != e["input_params"][-1]:
                     s += ","
                 helper_class.append("        " + s)
             helper_class.append("      );")
@@ -351,7 +278,7 @@ def generate_proxy(classname, endpoints, schemas_map):
 # -----------------------------------------------------------------------------------------------------------------------
 #  Generate main Retrofit interface class
 # -----------------------------------------------------------------------------------------------------------------------
-def generate_main_class(endpoints):
+def generate_main_class(endpoints, schemas_map):
     yield "/**"
     yield " * This file is auto-generated by h2o-3/h2o-bindings/bin/gen_java.py"
     yield " * Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)"
@@ -364,16 +291,14 @@ def generate_main_class(endpoints):
     yield "import retrofit2.converter.gson.GsonConverterFactory;"
     yield "import com.google.gson.*;"
     yield "import okhttp3.OkHttpClient;"
+    yield "import java.io.IOException;"
     yield "import java.lang.reflect.Type;"
     yield "import java.util.concurrent.TimeUnit;"
     yield ""
     yield "public class H2oApi {"
     yield ""
     yield "  public H2oApi() {}"
-    yield ""
-    yield "  public H2oApi(String url) {"
-    yield "    this.url = url;"
-    yield "  }"
+    yield "  public H2oApi(String url) { this.url = url; }"
     yield ""
     yield "  public void setUrl(String s) {"
     yield "    url = s;"
@@ -386,11 +311,39 @@ def generate_main_class(endpoints):
     yield "  }"
     yield ""
 
-    # for route in endpoints:
-    #     newname = bi.rename_endpoint(route)
-    #     input_schema = route["input_schema"]
-    #     output_schema = route["output_schema"]
-    #     yield "  public {outtype} {method}();".format(outtype=output_schema, method=newname)
+    for route in endpoints:
+        newname = route["api_name"]
+        class_name = route["class_name"]
+        input_schema_name = route["input_schema"]
+        output_schema_name = route["output_schema"]
+        input_schema = schemas_map[input_schema_name]
+        input_fields = [field  for field in input_schema["fields"]
+                               if field["direction"] != "OUTPUT"]
+        good_input_fields = [field  for field in input_fields if field["name"] != "_exclude_fields"]
+        yield "  /**"
+        yield bi.wrap(route["summary"], indent="   * ")
+        yield "   */"
+        if len(good_input_fields) == 0:
+            yield "  public {type} {method}() throws IOException {{".\
+                  format(type=output_schema_name, method=newname)
+            yield "    return {method}(\"\");".format(method=newname)
+            yield "  }"
+            yield "  public {type} {method}(String[] excluded_fields) throws IOException {{".\
+                  format(type=output_schema_name, method=newname)
+            yield "    return {method}(String.join(\",\", excluded_fields));".format(method=newname)
+            yield "  }"
+            yield "  public {type} {method}(String excluded_fields) throws IOException {{".\
+                  format(type=output_schema_name, method=newname)
+            yield "    {clazz} s = getRetrofit().create({clazz}.class);".format(clazz=class_name)
+            yield "    return s.{method}(excluded_fields).execute().body();".format(method=route["handler_method"])
+            yield "  }"
+            yield ""
+        # elif len(good_input_fields) <= 2:
+        #
+        else:
+            yield "  // %s -> %d fields: %s" % (newname, len(input_fields), [f["name"] for f in input_fields])
+            #yield "  public {outtype} {method}();".format(outtype=output_schema_name, method=newname)
+            yield ""
 
     yield ""
     yield "  //--------- PRIVATE ----------------------------------------------------------"
@@ -453,10 +406,10 @@ def main():
     sm = bi.schemas_map()
     for name, endpoints in bi.endpoint_groups().items():
         bi.vprint("Generating proxy: " + name)
-        bi.write_to_file("water/bindings/proxies/retrofit/%s.java" % name, generate_proxy(name, endpoints, sm))
+        bi.write_to_file("water/bindings/proxies/retrofit/%s.java" % name, generate_proxy(name, endpoints))
 
     bi.vprint("Generating H2oApi.java")
-    bi.write_to_file("water/bindings/H2oApi.java", generate_main_class(bi.endpoints()))
+    # bi.write_to_file("water/bindings/H2oApi.java", generate_main_class(bi.endpoints(), sm))
 
     type_adapter.vprint_translation_map()
 

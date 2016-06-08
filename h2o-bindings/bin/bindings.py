@@ -188,17 +188,84 @@ def wrap(msg, indent, indent_first=True):
     return msg if indent_first else msg[len(indent):]
 
 
-def endpoints(full=False):
+def endpoints(raw=False):
     """
-    Return the list of REST API endpoints.
-      :param full: if True, then the complete response to .../endpoints is returned (including the metadata)
+    Return the list of REST API endpoints. The data is enriched with the following fields:
+      class_name: which back-end class handles this endpoint (the class is derived from the URL);
+      ischema: input schema object (input_schema is the schema's name)
+      oschema: output schema object (output_schema is the schema's name)
+      algo: for special-cased calls (ModelBuilders/train and Grid/train) -- name of the ML algo requested
+      input_params: list of all input parameters (first path parameters, then all the others). The parameters are
+            given as objects, not just names. There is a flag "is_path_param" on each field.
+    Additionally certain buggy/deprecated endpoints are removed.
+    For Grid/train and ModelBuilders/train endpoints we fix the method name and parameters info (there is some mangling
+    of those on the server side).
+
+      :param raw: if True, then the complete untouched response to .../endpoints is returned (including the metadata)
     """
     json = _request_or_exit("/LATEST/Metadata/endpoints")
-    if full:
+    schmap = schemas_map()
+    if raw:
         return json
     else:
         assert "routes" in json, "Unexpected result from /LATEST/Metadata/endpoints call"
-        return json["routes"]
+        for e in json["routes"]:
+            path = e["url_pattern"]
+            method = e["handler_method"]
+
+            # These redundant paths cause conflicts, remove them:
+            if path in ["/3/ModelMetrics/frames/{frame}/models/{model}", "/3/ModelMetrics/frames/{frame}"] \
+               or e["api_name"].endswith("_deprecated"):
+                e["ignore"] = True
+                continue
+
+            # Find the class_name (first part of the URL after the version: "/3/About" => "About")
+            mm = classname_pattern.match(path)
+            assert mm, "Cannot determine class name in URL " + path
+            e["class_name"] = mm.group(1)
+
+            # Resolve input/output schemas into actual objects
+            assert e["input_schema"] in schmap, "Encountered unknown schema %s in %s" % (e["input_schema"], path)
+            assert e["output_schema"] in schmap, "Encountered unknown schema %s in %s" % (e["output_schema"], path)
+            e["ischema"] = schmap[e["input_schema"]]
+            e["oschema"] = schmap[e["output_schema"]]
+
+            # For these special cases, the actual input schema is not the one reported by the endpoint, but the schema
+            # of the 'parameters' field (which is fake).
+            if (e["class_name"], method) in set([("Grid", "train"), ("ModelBuilders", "train"),
+                                                 ("ModelBuilders", "validate_parameters")]):
+                pieces = path.split("/")
+                assert len(pieces) >= 4, "Expected to see algo name in the path: " + path
+                e["algo"] = pieces[3]
+                method = method + e["algo"].capitalize()  # e.g. trainGlm()
+                e["handler_method"] = method
+                for field in e["ischema"]["fields"]:
+                    if field["name"] == "parameters":
+                        e["input_schema"] = field["schema_name"]
+                        e["ischema"] = schmap[e["input_schema"]]
+                        break
+
+            # Create the list of input_params (as objects, not just names)
+            e["input_params"] = []
+            for parm in e["path_params"]:
+                # find the metadata for the field from the input schema:
+                fields = [field for field in e["ischema"]["fields"] if field["name"] == parm]
+                assert len(fields) == 1, "Failed to find parameter: %s for endpoint: %r" % (parm, e)
+                field = fields[0].copy()
+                schema = field["schema_name"] or ""
+                ftype = field["type"]
+                assert ftype == "string" or ftype == "int" or schema.endswith("KeyV3") or schema == "ColSpecifierV3", \
+                    "Unexpected param %s of type %s (schema %s)" % (field["name"], field["type"], field["schema_name"])
+                assert field["direction"] != "OUTPUT"
+                field["is_path_param"] = True
+                e["input_params"].append(field)
+            for parm in e["ischema"]["fields"]:
+                if parm["direction"] == "OUTPUT" or parm["name"] in e["path_params"]: continue
+                field = parm.copy()
+                field["is_path_param"] = False
+                e["input_params"].append(field)
+
+        return [e  for e in json["routes"] if "ignore" not in e]
 
 
 def endpoint_groups():
@@ -207,20 +274,17 @@ def endpoint_groups():
     """
     groups = defaultdict(list)
     for e in endpoints():
-        mm = classname_pattern.match(e["url_pattern"])
-        assert mm, "Cannot determine class name in URL " + e["url_pattern"]
-        classname = mm.group(1)
-        groups[classname].append(e)
+        groups[e["class_name"]].append(e)
     return groups
 
 
-def schemas(full=False):
+def schemas(raw=False):
     """
     Return the list of H₂O schemas.
-      :param full: if True, then the complete response to .../schemas is returned (including the metadata)
+      :param raw: if True, then the complete response to .../schemas is returned (including the metadata)
     """
     json = _request_or_exit("/LATEST/Metadata/schemas")
-    if full:
+    if raw:
         return json
     else:
         assert "schemas" in json, "Unexpected result from /LATEST/Metadata/schemas call"
@@ -286,17 +350,6 @@ def write_to_file(filename, content):
                 out.write("\n")
 
 
-def rename_endpoint(route):
-    mm = classname_pattern.match(route["url_pattern"])
-    assert mm, "Cannot determine class name in URL " + route["url_pattern"]
-    classname = mm.group(1)
-    method = route["handler_method"]
-    qualname = classname + "." + method
-    if qualname in endpoints_map1:
-        return endpoints_map1
-    print("Cannot translate %s for endpoint %s" % (qualname, route["url_pattern"]))
-    return method
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 #   Private
@@ -307,11 +360,6 @@ wrapper = textwrap.TextWrapper()
 requests_memo = {}  # Simple memoization, so that we don't fetch same data more than once
 classname_pattern = re.compile(r"/(?:\d+|LATEST|EXPERIMENTAL)/(\w+)")
 
-endpoints_map1 = {
-    "About.get": "about",
-    "CreateFrame.run": "createFrame",
-    "SplitFrame.run": "splitFrame",
-}
 
 def _request_or_exit(endpoint):
     """
