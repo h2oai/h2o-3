@@ -73,7 +73,7 @@ final class Route extends Iced {
   public StringBuffer markdown(Schema sinput, Schema soutput) {
     MarkdownBuilder builder = new MarkdownBuilder();
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
-    builder.heading1(_http_method, _url_pattern_raw.replace("(?<", "{").replace(">.*)", "}"));
+    builder.heading1(_http_method, _url_pattern_raw);
     builder.hline();
     builder.paragraph(_summary);
     // parameters and output tables

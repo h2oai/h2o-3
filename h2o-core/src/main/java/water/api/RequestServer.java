@@ -97,7 +97,9 @@ public class RequestServer extends NanoHTTPD {
     // Data
     register("createFrame",
         "POST /3/CreateFrame", CreateFrameHandler.class, "run",
-        "Create a synthetic H2O Frame.");
+        "Create a synthetic H2O Frame with random data. You can specify the number of rows/columns, as well as column" +
+        " types: integer, real, boolean, time, string, categorical. The frame may also have a dedicated \"response\" " +
+        "column, and some of the entries in the dataset may be created missing.");
 
     register("splitFrame",
         "POST /3/SplitFrame", SplitFrameHandler.class, "run",
@@ -386,35 +388,35 @@ public class RequestServer extends NanoHTTPD {
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
     // Node persistent storage
-    register("npsExists1",
+    register("npsContains",
         "GET /3/NodePersistentStorage/categories/{category}/names/{name}/exists", NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
-    register("npsExists2",
+    register("npsExistsCategory",
         "GET /3/NodePersistentStorage/categories/{category}/exists", NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
-    register(null,
+    register("npsEnabled",
         "GET /3/NodePersistentStorage/configured", NodePersistentStorageHandler.class, "configured",
         "Return true or false.");
 
-    register(null,
+    register("npsPut",
         "POST /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "put_with_name",
         "Store a named value.");
 
-    register(null,
+    register("npsGet",
         "GET /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "get_as_string",
         "Return value for a given name.");
 
-    register(null,
+    register("npsRemove",
         "DELETE /3/NodePersistentStorage/{category}/{name}", NodePersistentStorageHandler.class, "delete",
         "Delete a key.");
 
-    register(null,
+    register("npsCreateCategory",
         "POST /3/NodePersistentStorage/{category}", NodePersistentStorageHandler.class, "put",
         "Store a value.");
 
-    register(null,
+    register("npsKeys",
         "GET /3/NodePersistentStorage/{category}", NodePersistentStorageHandler.class, "list",
         "Return all keys stored for a given category.");
 
@@ -557,13 +559,13 @@ public class RequestServer extends NanoHTTPD {
     seenApiNames.add(api_name);
 
     // Convert convenience URL params into actual regex expressions: "/3/Job/{job_id}" => "/3/Job/(?<job_id>.*)"
-    uri_pattern_raw = uri_pattern_raw.replaceAll("\\{(\\w+)\\}", "(?<$1>.*)");
+    String uri_pattern_str = uri_pattern_raw.replaceAll("\\{(\\w+)\\}", "(?<$1>.*)");
 
     // Get the group names in the uri pattern and remove any underscores,
     // since underscores are not actually allowed in java regex group names.
     ArrayList<String> params_list = new ArrayList<>();
     Pattern group_pattern = Pattern.compile("\\?<(\\w+)>");
-    Matcher group_matcher = group_pattern.matcher(uri_pattern_raw);
+    Matcher group_matcher = group_pattern.matcher(uri_pattern_str);
     StringBuffer new_uri_buffer = new StringBuffer();
     while (group_matcher.find()) {
       String group = group_matcher.group(1);
@@ -571,10 +573,10 @@ public class RequestServer extends NanoHTTPD {
       group_matcher.appendReplacement(new_uri_buffer, "?<" + group.replace("_", "") + ">");
     }
     group_matcher.appendTail(new_uri_buffer);
-    uri_pattern_raw = new_uri_buffer.toString();
+    uri_pattern_str = new_uri_buffer.toString();
 
-    assert lookup(handler_method, uri_pattern_raw)==null; // Not shadowed
-    Pattern uri_pattern = Pattern.compile(uri_pattern_raw);
+    assert lookup(handler_method, uri_pattern_str)==null; // Not shadowed
+    Pattern uri_pattern = Pattern.compile(uri_pattern_str);
     Route route = new Route(http_method,
                             uri_pattern_raw,
                             uri_pattern, summary,
@@ -682,7 +684,7 @@ public class RequestServer extends NanoHTTPD {
   /**
    *  Log all requests except the overly common ones
    */
-  private boolean maybeLogRequest(String method, String uri, String pattern, Properties parms, Properties header) {
+  private boolean maybeLogRequest(String method, String uri, String pattern, Properties parms) {
     if (uri.endsWith(".css") ||
         uri.endsWith(".js") ||
         uri.endsWith(".png") ||
@@ -778,12 +780,12 @@ public class RequestServer extends NanoHTTPD {
       boolean logged;
       // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
       if (method.equals("GET") && uri.equals("/")) {
-        logged = maybeLogRequest(method, uri, "", parms, header);
+        logged = maybeLogRequest(method, uri, "", parms);
         if (logged) GAUtils.logRequest(uri, header);
         return redirectToFlow();
       }
       if (method.equals("GET") && uri.endsWith("/Logs/download")) {
-        logged = maybeLogRequest(method, uri, "", parms, header);
+        logged = maybeLogRequest(method, uri, "", parms);
         if (logged) GAUtils.logRequest(uri, header);
         return downloadLogs();
       }
@@ -810,7 +812,7 @@ public class RequestServer extends NanoHTTPD {
         }
       } else {
         capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms, header);
+        logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms);
         if (logged) GAUtils.logRequest(uri, header);
         Schema s = handle(type, route, version, parms);
         PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
