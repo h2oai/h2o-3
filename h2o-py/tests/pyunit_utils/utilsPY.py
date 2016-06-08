@@ -750,6 +750,69 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
     np.savetxt(csv_filename, np.concatenate((x_mat, response_y), axis=1), delimiter=",")
 
 
+def generate_clusters(cluster_center_list, cluster_pt_number_list, cluster_radius_list):
+    """
+    This function is used to generate clusters of points around cluster_centers listed in
+    cluster_center_list.  The radius of the cluster of points are specified by cluster_pt_number_list.
+    The size of each cluster could be different and it is specified in cluster_radius_list.
+
+    :param cluster_center_list: list of coordinates of cluster centers
+    :param cluster_pt_number_list: number of points to generate for each cluster center
+    :param cluster_radius_list: list of size of each cluster
+    :return: list of sample points that belong to various clusters
+    """
+
+    k = len(cluster_pt_number_list)     # number of clusters to generate clusters for
+
+    if (not(k == len(cluster_center_list))) or (not(k == len(cluster_radius_list))):
+        print("Length of list cluster_center_list, cluster_pt_number_list, cluster_radius_list must be the same!")
+        sys.exit(1)
+
+    training_sets = []
+    for k_ind in range(k):
+        new_cluster_data = generate_one_cluster(cluster_center_list[k_ind], cluster_pt_number_list[k_ind],
+                                                cluster_radius_list[k_ind])
+        if k_ind > 0:
+            training_sets = np.concatenate((training_sets, new_cluster_data), axis=0)
+        else:
+            training_sets = new_cluster_data
+
+    # want to shuffle the data samples so that the clusters are all mixed up
+    map(np.random.shuffle, training_sets)
+
+    return training_sets
+
+
+def generate_one_cluster(cluster_center, cluster_number, cluster_size):
+    """
+    This function will generate a full cluster wither cluster_number points centered on cluster_center
+    with maximum radius cluster_size
+
+    :param cluster_center: python list denoting coordinates of cluster center
+    :param cluster_number: integer denoting number of points to generate for this cluster
+    :param cluster_size: float denoting radius of cluster
+    :return: np matrix denoting a cluster
+    """
+
+    pt_dists = np.random.uniform(0, cluster_size, [cluster_number, 1])
+    coord_pts = len(cluster_center)     # dimension of each cluster point
+    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=np.float)
+
+    for p_ind in range(cluster_number):
+        coord_indices = list(range(coord_pts))
+        random.shuffle(coord_indices)  # randomly determine which coordinate to generate
+        left_radius = pt_dists[p_ind]
+
+        for c_ind in range(coord_pts):
+            coord_index = coord_indices[c_ind]
+            one_cluster_data[p_ind, coord_index] = random.uniform(-1*left_radius+cluster_center[coord_index],
+                                                                  left_radius+cluster_center[coord_index])
+            left_radius = math.sqrt(pow(left_radius, 2)-pow((one_cluster_data[p_ind, coord_index]-
+                                                             cluster_center[coord_index]), 2))
+
+    return one_cluster_data
+
+
 def remove_negative_response(x_mat, response_y):
     """
     Recall that when the user chooses to generate a data set for multinomial or binomial using the 'threshold' method,
@@ -1901,7 +1964,11 @@ def get_gridables(params_in_json):
         if each_param['gridable']:
             gridable_parameters.append(str(each_param["name"]))
             gridable_types.append(each_param["type"])
-            gridable_defaults.append(each_param["default_value"])
+
+            if type(each_param["default_value"]) == 'unicode':    # hyper-parameters cannot be unicode
+                gridable_defaults.append(str(each_param["default_value"]))
+            else:
+                gridable_defaults.append(each_param["default_value"])
 
     return gridable_parameters, gridable_types, gridable_defaults
 
@@ -2429,7 +2496,7 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
         else:
             param_len = len(hyper_params[param])
 
-        if (param_len > 0) and ((total_model*param_len) <= max_grid_model):
+        if (param_len >= 0) and ((total_model*param_len) <= max_grid_model):
             total_model *= param_len
             final_hyper_params[param] = hyper_params[param]
         elif (total_model*param_len) > max_grid_model:
@@ -2458,3 +2525,5 @@ def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     # save hyper-parameter file in sandbox
     with open(os.path.join(dir2, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
+
+
