@@ -99,7 +99,7 @@ public class RequestServer extends NanoHTTPD {
         "POST /3/CreateFrame", CreateFrameHandler.class, "run",
         "Create a synthetic H2O Frame with random data. You can specify the number of rows/columns, as well as column" +
         " types: integer, real, boolean, time, string, categorical. The frame may also have a dedicated \"response\" " +
-        "column, and some of the entries in the dataset may be created missing.");
+        "column, and some of the entries in the dataset may be created as missing.");
 
     register("splitFrame",
         "POST /3/SplitFrame", SplitFrameHandler.class, "run",
@@ -825,9 +825,7 @@ public class RequestServer extends NanoHTTPD {
       Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
 
       // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      H2O.fail(wrap(new H2OErrorV3().fillFromImpl(error), type).toString());
-      // unreachable, but the compiler doesn't know it:
-      return null;
+      throw H2O.fail(wrap(new H2OErrorV3().fillFromImpl(error), type).toString());
     }
     catch (H2OModelBuilderIllegalArgumentException e) {
       H2OModelBuilderError error = e.toH2OError(uri);
