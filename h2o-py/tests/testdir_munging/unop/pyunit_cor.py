@@ -28,16 +28,16 @@ def cor_test():
     cor_h2o = iris_h2o[0:4].cor()
     cor_diff = abs(cor_h2o - cor_np)
 
-    print "Correlation matrix with H2O: "
+    print("Correlation matrix with H2O: ")
     print cor_h2o
 
-    print "Correlation matrix with Numpy: "
+    print("Correlation matrix with Numpy: ")
     print cor_np
 
-    print "Correlation differences between H2O and Numpy: "
+    print("Correlation differences between H2O and Numpy: ")
     print cor_diff
 
-    print "Max difference in correlation calculation between H2O and Numpy: "
+    print("Max difference in correlation calculation between H2O and Numpy: ")
     print cor_diff.max()
 
     max = cor_diff.max()
