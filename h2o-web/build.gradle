@@ -159,7 +159,7 @@ task compileAndInstallDocFiles(type: Exec) {
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
-    commandLine = getOsSpecificCommandLine(['.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee', 'help.coffee',
+    commandLine = getOsSpecificCommandLine(['.' + File.separator + 'node_modules' + File.separator + '.bin' + File.separator + 'coffee', 'rest-api-reference.coffee',
                                             "--project_version=" + projectVersion,
                                             "--branch_name=" + branchName,
                                             "--build_number=" + buildNumber,

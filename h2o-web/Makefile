@@ -31,5 +31,8 @@ coverage:
 doc:
 	$B/coffee help.coffee
 
+rest:
+	$B/coffee rest-api-reference.coffee
+
 .PHONY: default watch clean unit-test test-raw test coverage launch 
 
