@@ -3,7 +3,6 @@ from __future__ import print_function
 import sys
 import random
 import os
-import math
 from builtins import range
 import time
 import json
@@ -23,17 +22,16 @@ class Test_naivebayes_grid_search:
     performed here.
 
     Test Descriptions:
-    test_naivebayes_grid_search_over_params the following:
         a. grab all truely griddable parameters and randomly or manually set the parameter values.
         b. Next, build H2O naivebayes models using grid search.  Count and make sure models
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O naivebayes model.  Logloss are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their metrics
+           that model and manually build a H2O naivebayes model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
            differ by too much, print a warning message but don't fail the test.
         d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
 
     Note that for hyper-parameters containing all legal parameter names and parameter value lists with legal
     and illegal values, grid-models should be built for all combinations of legal parameter values.  For
@@ -44,11 +42,11 @@ class Test_naivebayes_grid_search:
     """
 
     # parameters set by users, change with care
-    max_grid_model = 30           # maximum number of grid models generated before adding max_runtime_secs
+    max_grid_model = 100           # maximum number of grid models generated before adding max_runtime_secs
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
+    seed = round(time.time())
 
-    random.seed(round(time.time()))
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = "smalldata/gridsearch/multinomial_training1_set.csv"
     json_filename = "gridsearch_naivebayes_hyper_parameter_" + curr_time + ".json"
@@ -62,11 +60,11 @@ class Test_naivebayes_grid_search:
 
     # following parameters are used to generate hyper-parameters
     max_int_val = 10            # maximum size of random integer values
-    min_int_val = 0           # minimum size of random integer values
+    min_int_val = -2           # minimum size of random integer values
     max_int_number = 5          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
-    min_real_val = 0           # minimum size of random float values
+    min_real_val = -0.1           # minimum size of random float values
     max_real_number = 5         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
@@ -102,7 +100,7 @@ class Test_naivebayes_grid_search:
     params_zero_one = ['min_prob', 'eps_prob']
     params_more_than_zero = []
     params_more_than_one = []
-    params_zero_positive = ['max_runtime_secs']       # >= 0
+    params_zero_positive = ['max_runtime_secs', 'laplace']       # >= 0
 
     final_hyper_params = dict()     # store the final hyper-parameters that we are going to use
     gridable_parameters = []    # store griddable parameter names
@@ -129,14 +127,6 @@ class Test_naivebayes_grid_search:
 
         # create and clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-        #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.max_real_number = 1
-        # self.max_int_number = 1
-        # end DEBUGGING
-
-        # This is used to generate data set for regression or classification.  Nothing to do
-        # with setting the distribution family in this case
 
         # preload data sets
         self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename))
@@ -257,11 +247,11 @@ class Test_naivebayes_grid_search:
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O naivebayes model.  Logloss are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their metrics
+           that model and manually build a H2O naivebayes model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
            differ by too much, print a warning message but don't fail the test.
         d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
         """
         print("*******************************************************************************************")
         print("test_naivebayes_grid_search_over_params for naivebayes ")
@@ -342,18 +332,20 @@ class Test_naivebayes_grid_search:
                     true_run_time_limits += max_runtime
 
                     # compute and compare test metrics between the two models
-                    test_grid_model_metrics = \
+                    grid_model_metrics = \
                         each_model.model_performance(test_data=self.training1_data)._metric_json[self.training_metric]
-                    test_manual_model_metrics = \
+                    manual_model_metrics = \
                         manual_model.model_performance(test_data=self.training1_data)._metric_json[self.training_metric]
 
                     # just compare the mse in this case within tolerance:
-                    if abs(test_grid_model_metrics - test_manual_model_metrics) > self.allowed_diff:
-                        print("test_naivebayes_grid_search_over_params for naivebayes WARNING\ngrid search model {0}: "
-                              "{1}, time taken to build (secs): {2}\n and manually built H2O model {3}: {4}, "
-                              "time taken to build (secs): {5}\ndiffer too much!"
-                              "".format(self.training_metric, test_grid_model_metrics, each_model_runtime,
-                                        self.training_metric, test_manual_model_metrics, model_runtime))
+                    if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
+                        if (abs(grid_model_metrics) > 0) \
+                            and (abs(grid_model_metrics - manual_model_metrics)/grid_model_metrics > self.allowed_diff):
+                            print("test_naivebayes_grid_search_over_params for naivebayes WARNING\ngrid search model "
+                                  "{0}: {1}, time taken to build (secs): {2}\n and manually built H2O model {3}: {4}, "
+                                  "time taken to build (secs): {5}\ndiffer too much!"
+                                  "".format(self.training_metric, grid_model_metrics, each_model_runtime,
+                                            self.training_metric, manual_model_metrics, model_runtime))
 
                 print("Time taken for gridsearch to build all models (sec): {0}\n Time taken to manually build all "
                       "models (sec): {1}, total run time limits (sec): "
@@ -364,14 +356,16 @@ class Test_naivebayes_grid_search:
                 # make sure the max_runtime_secs is working to restrict model built time
                 if not(manual_run_runtime <= total_run_time_limits):
                     self.test_failed += 1
-                    print("test_naivebayes_grid_search_over_params for naivebayes failed: time taken to manually build models is {0}."
-                          "  Maximum allowed time is {1}".format(manual_run_runtime, total_run_time_limits))
+                    print("test_naivebayes_grid_search_over_params for naivebayes failed: time taken to manually build "
+                          "models is {0}.  Maximum allowed time "
+                          "is {1}".format(manual_run_runtime, total_run_time_limits))
 
                 if self.test_failed == 0:
                     print("test_naivebayes_grid_search_over_params for naivebayes has passed!")
         except:
             if self.possible_number_models > 0:
-                print("test_naivebayes_grid_search_over_params for naivebayes failed: exception was thrown for no reason.")
+                print("test_naivebayes_grid_search_over_params for naivebayes failed: exception was thrown for "
+                      "no reason.")
                 self.test_failed += 1
 
 

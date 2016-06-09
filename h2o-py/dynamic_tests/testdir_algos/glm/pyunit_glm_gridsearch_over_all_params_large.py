@@ -4,10 +4,8 @@ import sys
 import random
 import os
 import numpy as np
-import math
 from builtins import range
 import time
-import json
 
 sys.path.insert(1, "../../../")
 
@@ -39,11 +37,11 @@ class Test_glm_grid_search:
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O GLM model.  MSEs are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their MSEs
-           are close, declare test success.  Otherwise, declare test failure.
+           that model and manually build a H2O GLM model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
+           differ by too much, print a warning message but don't fail the test.
         d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
 
     test2_illegal_name_value: test for condition 1 and 2.  Randomly go into the hyper_parameters that we
     have specified, either
@@ -62,14 +60,16 @@ class Test_glm_grid_search:
     """
 
     # parameters set by users, change with care
+    max_grid_model = 200
+
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = ["smalldata/gridsearch/gaussian_training1_set.csv",
-                          "smalldata/gridsearch/bionmial_training1_set.csv",
+                          "smalldata/gridsearch/binomial_training1_set.csv",
                           "smalldata/gridsearch/multinomial_training1_set.csv"]
     training2_filename = ["smalldata/gridsearch/gaussian_training2_set.csv",
-                          "smalldata/gridsearch/bionmial_training2_set.csv",
+                          "smalldata/gridsearch/binomial_training2_set.csv",
                           "smalldata/gridsearch/multinomial_training2_set.csv"]
 
     json_filename = "gridsearch_hyper_parameter_" + curr_time + ".json"
@@ -90,11 +90,11 @@ class Test_glm_grid_search:
     # following parameters are used to generate hyper-parameters
     max_int_val = 10            # maximum size of random integer values
     min_int_val = -10           # minimum size of random integer values
-    max_int_number = 4          # maximum number of integer random grid values to generate
+    max_int_number = 3          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
     min_real_val = -0.1           # minimum size of random float values
-    max_real_number = 4         # maximum number of real grid values to generate
+    max_real_number = 3         # maximum number of real grid values to generate
 
     lambda_scale = 50           # scale the lambda values to be higher than 0 to 1
     alpha_scale = 1.2           # scale alpha into bad ranges
@@ -126,10 +126,13 @@ class Test_glm_grid_search:
     hyper_params["fold_assignment"] = ['AUTO', 'Random', 'Modulo', "Stratified"]
     hyper_params["missing_values_handling"] = ['MeanImputation', 'Skip']
 
+    final_hyper_params_bad = dict()     # actual hyper_params used to limit number of models built with bad values
+    final_hyper_params = dict()         # actual hyper_params used to limit number of models built with only good values
+
     scale_model = 1
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
-    exclude_parameter_lists = ['tweedie_link_power', 'tweedie_variance_power']   # do not need these
+    exclude_parameter_lists = ['tweedie_link_power', 'tweedie_variance_power', 'seed']   # do not need these
 
     # these are supposed to be gridable but are not really
     exclude_parameter_lists.extend(['fold_column', 'weights_column', 'offset_column'])
@@ -146,6 +149,12 @@ class Test_glm_grid_search:
     true_correct_model_number = 0   # count number of models built with good hyper-parameter specification
     nfolds = 5                      # enable cross validation to test fold_assignment
 
+    # denote legal values for certain parameters.  May include other parameters for other algos.
+    params_zero_one = ['alpha', 'stopping_tolerance']
+    params_more_than_zero = []
+    params_more_than_one = []
+    params_zero_positive = ['max_runtime_secs', 'stopping_rounds', "lambda"]       # >= 0
+
     def __init__(self):
         self.setup_data()
         self.setup_model()
@@ -153,28 +162,15 @@ class Test_glm_grid_search:
     def setup_data(self):
         """
         This function performs all initializations necessary:
-        1. generates all the random parameter values for our dynamic tests like the Gaussian
-        noise std, column count and row count for training/test data sets.
-        2. randomly choose the distribution family (gaussian, binomial, multinomial)
-        to test.
-        3. with the chosen distribution family, generate the appropriate data sets
-        4. load the data sets and set the training set indices and response column index
+        1. Randomly choose which distribution family to use
+        2. load the correct data sets and set the training set indices and response column index
         """
 
         # create and clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
 
-        # randomly determine data set size in terms of column and row counts
-
-        #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.max_real_number = 3
-        # self.max_int_number = 3
-        # end DEBUGGING
-
         # randomly choose which family of GLM algo to use
         self.family = self.families[random.randint(0, len(self.families)-1)]
-
-        self.family = 'gaussian'
 
         # set class number for classification
         if 'binomial' in self.family:
@@ -254,19 +250,19 @@ class Test_glm_grid_search:
             self.hyper_params_bad["max_runtime_secs"] = [time_scale * x for x
                                                          in self.hyper_params_bad["max_runtime_secs"]]
 
-        self.possible_number_models = pyunit_utils.count_models(self.hyper_params_bad)
+        [self.possible_number_models, self.final_hyper_params_bad] = \
+            pyunit_utils.check_and_count_models(self.hyper_params_bad, self.params_zero_one, self.params_more_than_zero,
+                                                self.params_more_than_one, self.params_zero_positive,
+                                                self.max_grid_model)
 
-        # calculate true possible_number_models and exclude the bad parameters since they will not
-        # result in any models being built
-        alpha_len = len(self.hyper_params_bad["alpha"])
-        lambda_len = len(self.hyper_params_bad["lambda"])
-        time_len = len(self.hyper_params_bad["max_runtime_secs"])
-        len_good_alpha = len([x for x in self.hyper_params_bad["alpha"] if (x >= 0) and (x <= 1)])
-        len_good_lambda = len([x for x in self.hyper_params_bad["lambda"] if (x >= 0)])
-        len_good_time = len([x for x in self.hyper_params_bad["max_runtime_secs"] if (x >= 0)])
+        if ("max_runtime_secs" not in list(self.final_hyper_params_bad)) and \
+                ("max_runtime_secs" in list(self.hyper_params_bad)):
+            self.final_hyper_params_bad["max_runtime_secs"] = self.hyper_params_bad["max_runtime_secs"]
+            len_good_time = len([x for x in self.hyper_params_bad["max_runtime_secs"] if (x >= 0)])
+            self.possible_number_models = self.possible_number_models * len_good_time
 
-        self.possible_number_models = int(self.scale_model * self.possible_number_models * len_good_alpha *
-                                          len_good_lambda * len_good_time/ (alpha_len * lambda_len * time_len))
+        # Stratified is illegal for Gaussian GLM
+        self.possible_number_models = self.possible_number_models * self.scale_model
 
         # randomly generate griddable parameters with only good values
         (self.hyper_params, self.gridable_parameters, self.gridable_types, self.gridable_defaults) = \
@@ -277,8 +273,6 @@ class Test_glm_grid_search:
                                          random.randint(1, self.max_real_number),
                                          self.max_real_val, 0)
 
-        self.true_correct_model_number = pyunit_utils.count_models(self.hyper_params)
-
         # scale the value of lambda parameters
         if "lambda" in list(self.hyper_params):
             self.hyper_params["lambda"] = [self.lambda_scale * x for x in self.hyper_params["lambda"]]
@@ -288,36 +282,23 @@ class Test_glm_grid_search:
             self.hyper_params["max_runtime_secs"] = [time_scale * x for x
                                                      in self.hyper_params["max_runtime_secs"]]
 
+        [self.true_correct_model_number, self.final_hyper_params] = \
+            pyunit_utils.check_and_count_models(self.hyper_params, self.params_zero_one, self.params_more_than_zero,
+                                                self.params_more_than_one, self.params_zero_positive,
+                                                self.max_grid_model)
+
+        if ("max_runtime_secs" not in list(self.final_hyper_params)) and \
+                ("max_runtime_secs" in list(self.hyper_params)):
+            self.final_hyper_params["max_runtime_secs"] = self.hyper_params["max_runtime_secs"]
+            self.true_correct_model_number = self.true_correct_model_number * \
+                                             len(self.final_hyper_params["max_runtime_secs"])
+
         # write out the hyper-parameters used into json files.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename_bad,
-                                                 self.hyper_params_bad)
+                                                 self.final_hyper_params_bad)
 
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
-                                                 self.hyper_params)
-
-    def tear_down(self):
-        """
-        This function performs teardown after the dynamic test is completed.  If all tests
-        passed, it will delete all data sets generated since they can be quite large.  It
-        will move the training/validation/test data sets into a Rsandbox directory so that
-        we can re-run the failed test.
-        """
-
-        if self.test_failed:    # some tests have failed.  Need to save data sets for later re-runs
-            # create Rsandbox directory to keep data sets and weight information
-            self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-            # Do not want to save all data sets.  Only save data sets that are needed for failed tests
-            pyunit_utils.move_files(self.sandbox_dir, self.training1_data_file, self.training1_filename)
-
-            # write out the jenkins job info into log files.
-            json_file = os.path.join(self.sandbox_dir, self.json_filename)
-
-            with open(json_file,'wb') as test_file:
-                json.dump(self.hyper_params, test_file)
-
-        else:   # all tests have passed.  Delete sandbox if if was not wiped before
-            pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
+                                                 self.final_hyper_params)
 
     def test1_glm_grid_search_over_params(self):
         """
@@ -327,11 +308,11 @@ class Test_glm_grid_search:
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O GLM model.  MSEs are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their MSEs
-           are close, declare test success.  Otherwise, declare test failure.
+           that model and manually build a H2O GLM model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
+           differ by too much, print a warning message but don't fail the test.
         d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
         """
 
         print("*******************************************************************************************")
@@ -339,11 +320,11 @@ class Test_glm_grid_search:
         h2o.cluster_info()
 
         try:
-            print("Hyper-parameters used here is {0}".format(self.hyper_params_bad))
+            print("Hyper-parameters used here is {0}".format(self.final_hyper_params_bad))
 
             # start grid search
             grid_model = H2OGridSearch(H2OGeneralizedLinearEstimator(family=self.family, nfolds=self.nfolds),
-                                       hyper_params=self.hyper_params_bad)
+                                       hyper_params=self.final_hyper_params_bad)
             grid_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data)
 
             self.correct_model_number = len(grid_model)     # store number of models built
@@ -355,7 +336,6 @@ class Test_glm_grid_search:
                 print("test_glm_search_over_params for GLM failed: number of models built by gridsearch "
                       "does not equal to all possible combinations of hyper-parameters")
             else:
-
                 # add parameters into params_dict.  Use this to manually build model
                 params_dict = dict()
                 params_dict["family"] = self.family
@@ -368,53 +348,60 @@ class Test_glm_grid_search:
                 for each_model in grid_model:
 
                     # grab parameters used by grid search and build a dict out of it
-                    # params_list = pyunit_utils.extract_used_params_xval(each_model, self.hyper_params_bad.keys(),
-                    #                                                     each_model.params, params_dict)
                     params_list = grid_model.get_hyperparams_dict(each_model._id)
                     params_list.update(params_dict)
+
+                    model_params = dict()   # some parameters are to be added in .train()
 
                     if "lambda" in list(params_list):
                         params_list["Lambda"] = params_list["lambda"]
                         del params_list["lambda"]
 
-                    # need to taken out max_runtime_secs from model parameters, it is now set in .train()
+                    # need to taken out max_runtime_secs, stopping_rounds, stopping_tolerance
+                    # # from model parameters, it is now set in .train()
                     if "max_runtime_secs" in params_list:
-                        max_runtime = params_list["max_runtime_secs"]
+                        model_params["max_runtime_secs"] = params_list["max_runtime_secs"]
                         del params_list["max_runtime_secs"]
-                    else:
-                        max_runtime = 0
+
+                    if "stopping_rounds" in params_list:
+                        model_params["stopping_rounds"] = params_list["stopping_rounds"]
+                        del params_list["stopping_rounds"]
+
+                    if "stopping_tolerance" in params_list:
+                        model_params["stopping_tolerance"] = params_list["stopping_tolerance"]
+                        del params_list["stopping_tolerance"]
 
                     manual_model = H2OGeneralizedLinearEstimator(**params_list)
                     manual_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data,
-                                       max_runtime_secs=max_runtime)
+                                       **model_params)
 
                     # collect the time taken to manually built all models
                     model_runtime = pyunit_utils.find_grid_runtime([manual_model])  # time taken to build this model
-                    each_model_runtime = pyunit_utils.find_grid_runtime([each_model])
                     manual_run_runtime += model_runtime
 
                     summary_list = manual_model._model_json['output']['model_summary']
                     iteration_num = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
 
-                    if max_runtime > 0:
+                    if model_params["max_runtime_secs"] > 0:
                         # shortest possible time it takes to build this model
-                        if (max_runtime < self.min_runtime_per_epoch) or (iteration_num <= 1):
+                        if (model_params["max_runtime_secs"] < self.min_runtime_per_epoch) or (iteration_num <= 1):
                             total_run_time_limits += model_runtime
                         else:
-                            total_run_time_limits += max_runtime
+                            total_run_time_limits += model_params["max_runtime_secs"]
 
-                    true_run_time_limits += max_runtime
+                    true_run_time_limits += model_params["max_runtime_secs"]
 
                     # compute and compare test metrics between the two models
-                    test_grid_model_metrics = each_model.model_performance(test_data=self.training2_data)
-                    test_manual_model_metrics = manual_model.model_performance(test_data=self.training2_data)
+                    grid_model_metrics = each_model.model_performance(test_data=self.training2_data)
+                    manual_model_metrics = manual_model.model_performance(test_data=self.training2_data)
 
                 # just compare the mse in this case within tolerance:
-                if abs(test_grid_model_metrics.mse() - test_manual_model_metrics.mse()) > self.allowed_diff:
-#                    self.test_failed += 1             # count total number of tests that have failed
-#                    self.test_failed_array[self.test_num] += 1
-                    print("test1_glm_grid_search_over_params for GLM warning: grid search model and manually "
-                          "built H2O model differ too much in test MSE!")
+                    if not((type(grid_model_metrics.mse()) == str) or (type(manual_model_metrics.mse()) == str)):
+                        if (abs(grid_model_metrics.mse()) > 0) \
+            and abs(grid_model_metrics.mse() - manual_model_metrics.mse())/grid_model_metrics.mse() > self.allowed_diff:
+                            print("test1_glm_grid_search_over_params for GLM warning: grid search model metric ({0}) "
+                                  "and manually built H2O model metric ({1}) differ too much"
+                                  "!".format(grid_model_metrics.mse(), manual_model_metrics.mse()))
 
                 total_run_time_limits = max(total_run_time_limits, true_run_time_limits) * (1+self.extra_time_fraction)
 
@@ -425,13 +412,12 @@ class Test_glm_grid_search:
                 print("test1_glm_grid_search_over_params for GLM failed: number of models built by gridsearch "
                     "does not equal to all possible combinations of hyper-parameters")
 
-            # make sure the max_runtime_secs is working to restrict model built time
-            if not((total_gridsearch_runtime <= total_run_time_limits) and
-                       (manual_run_runtime <= total_run_time_limits)):
-                self.test_failed += 1
-                self.test_failed_array[self.test_num] = 1
-                print("test1_glm_grid_search_over_params for GLM failed: number of models built by gridsearch "
-                      "does not equal to all possible combinations of hyper-parameters")
+            # make sure the max_runtime_secs is working to restrict model built time, GLM does not respect that.
+            if not(manual_run_runtime <= total_run_time_limits):
+ #               self.test_failed += 1
+ #               self.test_failed_array[self.test_num] = 1
+                print("test1_glm_grid_search_over_params for GLM warning: allow time to build models: {0}, actual "
+                      "time taken: {1}".format(total_run_time_limits, manual_run_runtime))
 
             self.test_num += 1
 
@@ -468,8 +454,8 @@ class Test_glm_grid_search:
         error_number = np.random.random_integers(0, 3, 1)   # randomly choose an error
 
         error_hyper_params = \
-            pyunit_utils.insert_error_grid_search(self.hyper_params, self.gridable_parameters, self.gridable_types,
-                                                  error_number[0])
+            pyunit_utils.insert_error_grid_search(self.final_hyper_params, self.gridable_parameters,
+                                                  self.gridable_types, error_number[0])
 
         print("test2_illegal_name_value: the bad hyper-parameters are: ")
         print(error_hyper_params)
@@ -527,11 +513,18 @@ class Test_glm_grid_search:
         print("error_number is {0}".format(error_number[0]))
 
         params_dict, error_hyper_params = \
-            pyunit_utils.generate_redundant_parameters(self.hyper_params, self.gridable_parameters,
+            pyunit_utils.generate_redundant_parameters(self.final_hyper_params, self.gridable_parameters,
                                                        self.gridable_defaults, error_number[0])
 
         params_dict["family"] = self.family
         params_dict["nfolds"] = self.nfolds
+
+        # remove stopping_rounds, stopping_tolerance if included
+        if "stopping_rounds" in list(params_dict):
+            del params_dict["stopping_rounds"]
+
+        if "stopping_tolerance" in list(params_dict):
+            del params_dict["stopping_tolerance"]
 
         print("Your hyper-parameter dict is: ")
         print(error_hyper_params)

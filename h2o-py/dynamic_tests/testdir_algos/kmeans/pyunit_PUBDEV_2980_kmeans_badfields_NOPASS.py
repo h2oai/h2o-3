@@ -62,8 +62,9 @@ class Test_PUBDEV_2980_kmeans:
         print("*******************************************************************************************")
         h2o.cluster_info()
 
-        good_params_list = {'init': 'Furthest', 'seed': 1464887902, 'max_iterations': 10, 'k': 10}
-        good_model_params = {'max_runtime_secs': 0.04326415543999999}
+
+        good_params_list = {'max_iterations': 20, 'k': 6, 'init': 'Furthest', 'seed': 1464891169}
+        good_model_params = {'max_runtime_secs': 0.014673351}
         good_model = H2OKMeansEstimator(**good_params_list)
         good_model.train(x=self.x_indices, training_frame=self.training1_data,
                            **good_model_params)
@@ -74,11 +75,17 @@ class Test_PUBDEV_2980_kmeans:
         bad_model.train(x=self.x_indices, training_frame=self.training1_data,
                                        **bad_model_params)
 
+        good_model_type = type(good_model._model_json['output']['model_summary'])
+        bad_model_type = type(bad_model._model_json['output']['model_summary'])
         print("good_model._model_json['output']['model_summary'] type is {0}.  "
               "bad_model._model_json['output']['model_summary'] type is "
-              "{1}".format(type(good_model._model_json['output']['model_summary']),
-                           type(bad_model._model_json['output']['model_summary'])))
-        print("They are not equal for some reason....")
+              "{1}".format(good_model_type, bad_model_type))
+
+        if not(good_model_type == bad_model_type):
+            print("They are not equal for some reason....")
+            self.test_failed = 1
+        else:
+            print("The fields are of the same type.")
 
 
 def test_PUBDEV_2980_for_kmeans():

@@ -77,7 +77,7 @@ test.GLM.Gaussian.Grid.Test2.SyntheticData <- function() {
   
   # introduce randomly more errors into hyper-parameter list
   error_number = round(runif(1, 0, 1))
-  
+
   # need to take out the bad argument values like negative values or values exceeding 1
   if (error_number == 0) {
     alpha_length = length(hyper_parameters[['alpha']])
