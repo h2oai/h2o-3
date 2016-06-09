@@ -47,6 +47,9 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
+#' @param seeds (Optional) Specify the random number generator (RNG) seed for algorithm components dependent on randomization.
+#'        The seed is consistent for each H2O instance so that you can create models with the same starting conditions
+#'        in alternative configurations.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
 #'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will
@@ -124,6 +127,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
                     nfolds = 0,
+                    seed = NULL,
                     fold_column = NULL,
                     fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                     keep_cross_validation_predictions = FALSE,
@@ -188,6 +192,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(intercept) )                 parms$intercept              <- intercept
+  if( !missing(seed))                       parms$seed                   <- seed
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
