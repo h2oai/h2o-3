@@ -46,11 +46,22 @@ def translate_name(name):
         "very_long_json_name" => "veryLongJsonName"
         "build_GBM_model" => "buildGbmModel"
         "KEY" => "key"
+        "middle___underscores" => "middleUnderscores"
+        "_exclude_fields" => "_excludeFields" (retain initial/trailing underscores)
+        "__http_status__" => "__httpStatus__"
     """
     parts = name.split("_")
-    parts[0] = parts[0].lower()
-    for i in range(1, len(parts)):
-        parts[i] = parts[i].capitalize()
+    i = 0
+    while parts[i] == "":
+        parts[i] = "_"
+        i += 1
+    parts[i] = parts[i].lower()
+    for j in range(i+1, len(parts)):
+        parts[j] = parts[j].capitalize()
+    i = len(parts) - 1
+    while parts[i] == "":
+        parts[i] = "_"
+        i -= 1
     return "".join(parts)
 
 
@@ -85,7 +96,7 @@ def generate_schema(class_name, schema):
 
         # hackery: we flatten the parameters up into the ModelBuilder schema, rather than nesting them in the
         # parameters schema class...
-        if is_model_builder and field["name"] == "parameters":
+        if False and is_model_builder and field["name"] == "parameters":
             fields.append(("parameters", "null", "ModelParameterSchemaV3[]", field["help"], field["is_inherited"]))
         else:
             fields.append((field["name"], java_value, java_type, field["help"], field["is_inherited"]))
@@ -101,7 +112,8 @@ def generate_schema(class_name, schema):
     yield "import java.util.Map;" if has_map else None
     yield ""
     yield ""
-    yield "public class %s extends %s {" % (class_name, superclass)
+    yield "public class %s extends %s {" % (class_name, superclass) if superclass != "Object" else None
+    yield "public class %s {" % (class_name) if superclass == "Object" else None
     yield ""
     for name, value, ftype, fhelp, inherited in fields:
         if inherited: continue
@@ -191,7 +203,6 @@ def generate_proxy(classname, endpoints):
     yield "import water.bindings.pojos.*;"
     yield "import retrofit2.*;"
     yield "import retrofit2.http.*;"
-    yield "import java.util.Map;"
     yield ""
     yield "public interface " + classname + " {"
     yield ""
@@ -200,28 +211,39 @@ def generate_proxy(classname, endpoints):
         method = e["handler_method"]
 
         param_strs = []
+        required_param_strs = []
         for field in e["input_params"]:
             fname = field["name"]
             ftype = "Path" if field["is_path_param"] else "Field"
             ptype = translate_type(field["type"], field["schema_name"])
             if ptype.endswith("KeyV3") or ptype == "ColSpecifierV3": ptype = "String"
             if ptype.endswith("KeyV3[]"): ptype = "String[]"
-            param_strs.append("@{ftype}(\"{fname}\") {ptype} {fname}".format(**locals()))
+            param_str = "@{ftype}(\"{fname}\") {ptype} {fname}".format(**locals())
+            param_strs.append(param_str)
+            if field["required"]:
+                required_param_strs.append(param_str)
+        if len(param_strs) == len(required_param_strs): required_param_strs = None
 
         yield u"  /** "
         yield bi.wrap(e["summary"], indent="   * ")
+        for field in e["input_params"]:
+            s = "   *   @param %s " % field["name"]
+            yield s + bi.wrap(field["help"], indent="   *"+" "*(len(s)-4), indent_first=False)
         yield u"   */"
-        yield u"  @FormUrlEncoded" if e["http_method"] == "POST" else None
-        yield u"  @{method}(\"{path}\")".format(method=e["http_method"], path=e["url_pattern"])
-        if len(param_strs) <= 1:
-            args = param_strs[0] if param_strs else ""
-            yield "  Call<{schema}> {method}({args});".format(schema=e["output_schema"], method=method, args=args)
-        else:
-            yield "  Call<{schema}> {method}(".format(schema=e["output_schema"], method=method)
-            for arg in param_strs:
-                yield "    " + arg + ("" if arg == param_strs[-1] else ",")
-            yield "  );"
-        yield ""
+        # Create 2 versions of each call: first with all input parameters present, and then only with required params
+        for params in [param_strs, required_param_strs]:
+            if params is None: continue
+            yield u"  @FormUrlEncoded" if e["http_method"] == "POST" else None
+            yield u"  @{method}(\"{path}\")".format(method=e["http_method"], path=e["url_pattern"])
+            if len(params) <= 1:
+                args = params[0] if params else ""
+                yield "  Call<{schema}> {method}({args});".format(schema=e["output_schema"], method=method, args=args)
+            else:
+                yield "  Call<{schema}> {method}(".format(schema=e["output_schema"], method=method)
+                for arg in params:
+                    yield "    " + arg + ("" if arg == params[-1] else ",")
+                yield "  );"
+            yield ""
 
         # Make special static Helper class for Grid and ModelBuilders.
         if "algo" in e:
@@ -255,7 +277,7 @@ def generate_proxy(classname, endpoints):
 
     if helper_class:
         yield ""
-        yield "  public static class Helper {"
+        yield "  class Helper {"
         for line in helper_class:
             yield line
         if found_key_array_parameter:
@@ -312,41 +334,73 @@ def generate_main_class(endpoints, schemas_map):
     yield ""
 
     for route in endpoints:
-        newname = route["api_name"]
+        apiname = route["api_name"]
         class_name = route["class_name"]
-        input_schema_name = route["input_schema"]
-        output_schema_name = route["output_schema"]
-        input_schema = schemas_map[input_schema_name]
-        input_fields = [field  for field in input_schema["fields"]
-                               if field["direction"] != "OUTPUT"]
-        good_input_fields = [field  for field in input_fields if field["name"] != "_exclude_fields"]
+        outtype = route["output_schema"]
+        input_fields = route["input_params"]
+        required_fields = [field  for field in input_fields if field["required"]]
+        input_fields_wo_excluded = [field  for field in input_fields if field["name"] != "_exclude_fields"]
+
         yield "  /**"
         yield bi.wrap(route["summary"], indent="   * ")
         yield "   */"
-        if len(good_input_fields) == 0:
-            yield "  public {type} {method}() throws IOException {{".\
-                  format(type=output_schema_name, method=newname)
-            yield "    return {method}(\"\");".format(method=newname)
+        # Make several versions of each API call:
+        #  (1) Only the required parameters
+        #  (2) All parameters except the _excluded_fields
+        #  (3) All parameters
+        li = len(input_fields)
+        le = len(input_fields_wo_excluded)
+        lr = len(required_fields)
+        assert lr <= 3, "Too many required fields in method " + apiName
+        if lr == li:
+            # The set of required fields is the same as the set of input fields. No need for (2) and (3).
+            input_fields = None
+            input_fields_wo_excluded = None
+        elif le == li or le == lr or li >= 4:
+            # If set (2) coincides with either (1) or (3), then we will not generate code for it.
+            # Additionally, if there are too many input params so that we will put them into a container class,
+            # then there will be no need for separate case (2) either.
+            input_fields_wo_excluded = None
+
+        for fields in [required_fields, input_fields_wo_excluded, input_fields]:
+            if fields is None: continue
+            use_schema_param = (len(fields) >= 4)
+            value_field_strs = []
+            typed_field_strs = []
+            for field in fields:
+                ftype = translate_type(field["type"], field["schema_name"])
+                fname = translate_name(field["name"])
+                typed_field_strs.append("%s %s" % (ftype, fname))
+                if use_schema_param: fname = "params." + fname
+                if ftype.endswith("KeyV3"):
+                    s = "keyToString(%s)" % fname
+                elif ftype.endswith("KeyV3[]"):
+                    s = "keyArrayToStringArray(%s)" % fname
+                elif ftype.startswith("ColSpecifier"):
+                    s = "colToString(%s)" % fname
+                else:
+                    s = fname
+                value_field_strs.append(s)
+
+            if use_schema_param:
+                args = route["input_schema"] + " params"
+                values = "\n      " + ",\n      ".join(value_field_strs) + "\n    "
+            else:
+                args = ", ".join(typed_field_strs)
+                values = ", ".join(value_field_strs)
+                if fields == input_fields_wo_excluded:
+                    values += ", \"\""
+
+            yield "  public {type} {method}({args}) throws IOException {{".\
+                  format(type=outtype, method=apiname, args=args)
+            yield "    {clazz} s = getService({clazz}.class);".format(clazz=class_name)
+            yield "    return s.{method}({values}).execute().body();".\
+                  format(method=route["handler_method"], values=values);
             yield "  }"
-            yield "  public {type} {method}(String[] excluded_fields) throws IOException {{".\
-                  format(type=output_schema_name, method=newname)
-            yield "    return {method}(String.join(\",\", excluded_fields));".format(method=newname)
-            yield "  }"
-            yield "  public {type} {method}(String excluded_fields) throws IOException {{".\
-                  format(type=output_schema_name, method=newname)
-            yield "    {clazz} s = getRetrofit().create({clazz}.class);".format(clazz=class_name)
-            yield "    return s.{method}(excluded_fields).execute().body();".format(method=route["handler_method"])
-            yield "  }"
-            yield ""
-        # elif len(good_input_fields) <= 2:
-        #
-        else:
-            yield "  // %s -> %d fields: %s" % (newname, len(input_fields), [f["name"] for f in input_fields])
-            #yield "  public {outtype} {method}();".format(outtype=output_schema_name, method=newname)
-            yield ""
+        yield ""
 
     yield ""
-    yield "  //--------- PRIVATE ----------------------------------------------------------"
+    yield "  //--------- PRIVATE " + "-"*98
     yield ""
     yield "  private Retrofit retrofit;"
     yield "  private String url = \"http://localhost/54321/\";"
@@ -355,6 +409,7 @@ def generate_main_class(endpoints, schemas_map):
     yield "  private void initializeRetrofit() {"
     yield "    Gson gson = new GsonBuilder()"
     yield "      .registerTypeAdapter(KeyV3.class, new KeySerializer())"
+    yield "      .registerTypeAdapter(ColSpecifierV3.class, new ColSerializer())"
     yield "      .create();"
     yield ""
     yield "    OkHttpClient client = new OkHttpClient.Builder()"
@@ -375,6 +430,10 @@ def generate_main_class(endpoints, schemas_map):
     yield "    return retrofit;"
     yield "  }"
     yield ""
+    yield "  private <T> T getService(Class<T> clazz) {"
+    yield "    return getRetrofit().create(clazz);"
+    yield "  }"
+    yield ""
     yield ""
     yield "  /**"
     yield "   * Keys get sent as Strings and returned as objects also containing the type and URL,"
@@ -385,6 +444,37 @@ def generate_main_class(endpoints, schemas_map):
     yield "      return new JsonPrimitive(key.name);"
     yield "    }"
     yield "  }"
+    yield "  private static class ColSerializer implements JsonSerializer<ColSpecifierV3> {"
+    yield "    public JsonElement serialize(ColSpecifierV3 col, Type typeOfCol, JsonSerializationContext context) {"
+    yield "      return new JsonPrimitive(col.columnName);"
+    yield "    }"
+    yield "  }"
+    yield ""
+    yield "  /**"
+    yield "   * Return an array of Strings for an array of keys."
+    yield "   */"
+    yield "  private static String[] keyArrayToStringArray(KeyV3[] keys) {"
+    yield "    if (keys == null) return null;"
+    yield "    String[] ids = new String[keys.length];"
+    yield "    int i = 0;"
+    yield "    for (KeyV3 key : keys) ids[i++] = key.name;"
+    yield "    return ids;"
+    yield "  }"
+    yield ""
+    yield "  /**"
+    yield "   *"
+    yield "   */"
+    yield "  private static String keyToString(KeyV3 key) {"
+    yield "    return key == null? null : key.name;"
+    yield "  }"
+    yield ""
+    yield "  /**"
+    yield "   *"
+    yield "   */"
+    yield "  private static String colToString(ColSpecifierV3 col) {"
+    yield "    return col == null? null : col.columnName;"
+    yield "  }"
+    yield ""
     yield "}"
 
 
@@ -409,7 +499,7 @@ def main():
         bi.write_to_file("water/bindings/proxies/retrofit/%s.java" % name, generate_proxy(name, endpoints))
 
     bi.vprint("Generating H2oApi.java")
-    # bi.write_to_file("water/bindings/H2oApi.java", generate_main_class(bi.endpoints(), sm))
+    bi.write_to_file("water/bindings/H2oApi.java", generate_main_class(bi.endpoints(), sm))
 
     type_adapter.vprint_translation_map()
 

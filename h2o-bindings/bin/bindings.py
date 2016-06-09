@@ -31,7 +31,7 @@ import time
 class TypeTranslator:
     """
     Helper class to assist translating H2O types into native types of your target languages. Typically the user extends
-    this class, providing the types dictionary, as well as overwriting any lambda-functions.
+    this class, providing the types dictionary, as well as overwriting any type-conversion lambda-functions.
     """
     def __init__(self):
         # This is a conversion dictionary for simple types that have no schema
@@ -85,8 +85,8 @@ def init(language, output_dir, clear_dir=True):
     correctness.
       :param language -- name of the target language (used to show the command-line description).
       :param output_dir -- folder where the bindings files will be generated. If the folder does
-        not exist, it will be created. If it does exist, it will be cleared first. This folder is
-        relative to ../src-gen/main/.
+        not exist, it will be created. This folder is relative to ../src-gen/main/. The user may
+        specify a different output dir through the commandline argument.
       :param clear_dir -- if True (default), the target folder will be cleared before any new
         files created in it.
     """
@@ -105,7 +105,7 @@ def init(language, output_dir, clear_dir=True):
     )
     parser.add_argument("-v", "--verbose", help="Verbose output", action="store_true")
     parser.add_argument("--usecloud", metavar="IP:PORT", default="localhost:54321",
-                        help="Address of an H2O server (defaults to localhost:54321)")
+                        help="Address of an H2O server (defaults to http://localhost:54321/)")
     # Note: Output folder should be in build directory, however, Idea has problems to recognize them
     parser.add_argument("--dest", metavar="DIR", default=default_output_dir,
                         help="Destination directory for generated bindings")
@@ -147,8 +147,8 @@ def init(language, output_dir, clear_dir=True):
             print("Unable to remove file %s: %r" % (filepath, e))
             sys.exit(9)
 
-    # Check that the provided server is accessible, then print its status (if in --verbose mode).
-    json = _request_or_exit("LATEST/About")
+    # Check that the provided server is accessible; then print its status (if in --verbose mode).
+    json = _request_or_exit("/LATEST/About")
     l1 = max(len(e["name"]) for e in json["entries"])
     l2 = max(len(e["value"]) for e in json["entries"])
     ll = max(29 + len(config["baseurl"]), l1 + l2 + 2)
@@ -204,20 +204,31 @@ def endpoints(raw=False):
       :param raw: if True, then the complete untouched response to .../endpoints is returned (including the metadata)
     """
     json = _request_or_exit("/LATEST/Metadata/endpoints")
+    if raw: return json
+
     schmap = schemas_map()
-    if raw:
-        return json
-    else:
-        assert "routes" in json, "Unexpected result from /LATEST/Metadata/endpoints call"
+    apinames = {}  # Used for checking for api name duplicates
+    assert "routes" in json, "Unexpected result from /LATEST/Metadata/endpoints call"
+    re_api_name = re.compile(r"^\w+$")
+    def gen_rich_route():
         for e in json["routes"]:
             path = e["url_pattern"]
             method = e["handler_method"]
+            apiname = e["api_name"]
+            assert apiname not in apinames, "Duplicate api name %s (for %s and %s)" % (apiname, apinames[apiname], path)
+            assert re_api_name.match(apiname), "Bad api name %s" % apiname
+            apinames[apiname] = path
 
-            # These redundant paths cause conflicts, remove them:
-            if path in ["/3/ModelMetrics/frames/{frame}/models/{model}", "/3/ModelMetrics/frames/{frame}"] \
-               or e["api_name"].endswith("_deprecated"):
-                e["ignore"] = True
-                continue
+            # These redundant paths cause conflicts, remove them
+            if path == "/3/NodePersistentStorage/categories/{category}/exists": continue
+            if path == "/3/ModelMetrics/frames/{frame}/models/{model}": continue
+            if path == "/3/ModelMetrics/frames/{frame}": continue
+            if path == "/3/ModelMetrics/models/{model}": continue
+            if path == "/3/ModelMetrics": continue
+            if apiname.endswith("_deprecated"): continue
+
+            # Resolve one name conflict
+            if path == "/3/DKV": e["handler_method"] = "removeAll"
 
             # Find the class_name (first part of the URL after the version: "/3/About" => "About")
             mm = classname_pattern.match(path)
@@ -252,20 +263,22 @@ def endpoints(raw=False):
                 fields = [field for field in e["ischema"]["fields"] if field["name"] == parm]
                 assert len(fields) == 1, "Failed to find parameter: %s for endpoint: %r" % (parm, e)
                 field = fields[0].copy()
-                schema = field["schema_name"] or ""
+                schema = field["schema_name"] or ""   # {schema} is null for primitive types
                 ftype = field["type"]
                 assert ftype == "string" or ftype == "int" or schema.endswith("KeyV3") or schema == "ColSpecifierV3", \
-                    "Unexpected param %s of type %s (schema %s)" % (field["name"], field["type"], field["schema_name"])
-                assert field["direction"] != "OUTPUT"
+                    "Unexpected param %s of type %s (schema %s)" % (field["name"], ftype, schema)
+                assert field["direction"] != "OUTPUT", "A path param %s cannot be of type OUTPUT" % field["name"]
                 field["is_path_param"] = True
+                field["required"] = True
                 e["input_params"].append(field)
             for parm in e["ischema"]["fields"]:
                 if parm["direction"] == "OUTPUT" or parm["name"] in e["path_params"]: continue
                 field = parm.copy()
                 field["is_path_param"] = False
                 e["input_params"].append(field)
+            yield e
 
-        return [e  for e in json["routes"] if "ignore" not in e]
+    return list(gen_rich_route())
 
 
 def endpoint_groups():
@@ -284,11 +297,26 @@ def schemas(raw=False):
       :param raw: if True, then the complete response to .../schemas is returned (including the metadata)
     """
     json = _request_or_exit("/LATEST/Metadata/schemas")
-    if raw:
-        return json
-    else:
-        assert "schemas" in json, "Unexpected result from /LATEST/Metadata/schemas call"
-        return json["schemas"]
+    if raw: return json
+    assert "schemas" in json, "Unexpected result from /LATEST/Metadata/schemas call"
+
+    # Simplify names of some horribly sounding enums
+    pattern0 = re.compile(r"^\w+(V\d+)\D\w+$")
+    pattern1 = re.compile(r"^(\w{3,})(\1)Model\1Parameters(\w+)$", re.IGNORECASE)
+    pattern2 = re.compile(r"^(\w{3,})(\1)(\w+)$", re.IGNORECASE)
+    def translate_name(name):
+        if name is None: return
+        if name == "ApiTimelineV3EventV3EventType": return "ApiTimelineEventTypeV3"
+        assert not pattern0.match(name), "Bad schema name %s (version number in the middle)" % name
+        mm = pattern1.match(name) or pattern2.match(name)
+        if mm: return mm.group(2) + mm.group(3)
+        return name
+    for schema in json["schemas"]:
+        schema["name"] = translate_name(schema["name"])
+        for field in schema["fields"]:
+            field["schema_name"] = translate_name(field["schema_name"])
+
+    return json["schemas"]
 
 
 def schemas_map():
