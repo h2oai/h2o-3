@@ -3,10 +3,8 @@ from __future__ import print_function
 import sys
 import random
 import os
-import math
 from builtins import range
 import time
-import json
 
 sys.path.insert(1, "../../../")
 
@@ -23,17 +21,16 @@ class Test_rf_grid_search:
     performed here.
 
     Test Descriptions:
-    test_rf_grid_search_over_params performs the following:
         a. grab all truely griddable parameters and randomly or manually set the parameter values.
         b. Next, build H2O random forest models using grid search.  Count and make sure models
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O random forest model.  Logloss are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their metrics
-           are close, declare test success.  Otherwise, declare test failure.
+           that model and manually build a H2O random forest model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
+           differ by too much, print a warning message but don't fail the test.
         d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
 
     Note that for hyper-parameters containing all legal parameter names and parameter value lists with legal
     and illegal values, grid-models should be built for all combinations of legal parameter values.  For
@@ -44,7 +41,7 @@ class Test_rf_grid_search:
     """
 
     # parameters set by users, change with care
-    max_grid_model = 30           # maximum number of grid models generated before adding max_runtime_secs
+    max_grid_model = 50           # maximum number of grid models generated before adding max_runtime_secs
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
     seed = round(time.time())
@@ -71,7 +68,7 @@ class Test_rf_grid_search:
     max_real_number = 3         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
-    extra_time_fraction = 0.1   # since timing is never perfect, give some extra time on top of maximum runtime limit
+    extra_time_fraction = 0.25   # since timing is never perfect, give some extra time on top of maximum runtime limit
     min_runtime_per_tree = 0    # minimum run time found.  Determined later
     model_run_time = 0.0        # time taken to run a vanilla random forest model.  Determined later.
     allowed_runtime_diff = 0.05     # run time difference between random forest manually built and gridsearch models
@@ -125,19 +122,11 @@ class Test_rf_grid_search:
     def setup_data(self):
         """
         This function performs all initializations necessary:
-        1. generates all the random parameter values for our dynamic tests like the Gaussian
-        noise std, column count and row count for training/test data sets.
-        2. with the chosen distribution family, generate the appropriate data sets
-        4. load the data sets and set the training set indices and response column index
+        load the data sets and set the training set indices and response column index
         """
 
         # create and clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-        #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.max_real_number = 1
-        # self.max_int_number = 1
-        # end DEBUGGING
 
         # preload data sets
         self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename))
@@ -216,60 +205,34 @@ class Test_rf_grid_search:
             len_good_time = len([x for x in self.hyper_params["max_runtime_secs"] if (x >= 0)])
             self.possible_number_models = self.possible_number_models*len_good_time
 
+        self.final_hyper_params["seed"] = [self.seed]     # added see to make test more repeatable
+
         # write out the hyper-parameters used into json files.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
                                                  self.final_hyper_params)
 
-    def tear_down(self):
-        """
-        This function performs teardown after the dynamic test is completed.  If all tests
-        passed, it will delete all data sets generated since they can be quite large.  It
-        will move the training/validation/test data sets into a Rsandbox directory so that
-        we can re-run the failed test.
-        """
-
-        if self.test_failed:    # some tests have failed.  Need to save data sets for later re-runs
-            # create Rsandbox directory to keep data sets and weight information
-            self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-            # Do not want to save all data sets.  Only save data sets that are needed for failed tests
-            pyunit_utils.move_files(self.sandbox_dir, self.training1_data_file, self.training1_filename)
-
-            # write out the jenkins job info into log files.
-            json_file = os.path.join(self.sandbox_dir, self.json_filename)
-
-            with open(json_file,'wb') as test_file:
-                json.dump(self.hyper_params, test_file)
-        else:   # all tests have passed.  Delete sandbox if if was not wiped before
-            pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
-
-        # remove any csv files left in test directory
-        pyunit_utils.remove_csv_files(self.current_dir, ".csv")
-        pyunit_utils.remove_csv_files(self.current_dir, ".json")
-
     def test_rf_grid_search_over_params(self):
         """
-        test_rf_grid_search_over_params performs the following:
+        test_rf_gridsearch_sorting_metrics performs the following:
         a. build H2O random forest models using grid search.  Count and make sure models
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         b. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O random forest model.  Logloss are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their metrics
-           are close, declare test success.  Otherwise, declare test failure.
+           that model and manually build a H2O random forest model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
+           differ by too much, print a warning message but don't fail the test.
         c. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
         """
         print("*******************************************************************************************")
-        print("test_rf_grid_search_over_params for random forest ")
+        print("test_rf_gridsearch_sorting_metrics for random forest ")
         h2o.cluster_info()
 
         try:
             print("Hyper-parameters used here is {0}".format(self.final_hyper_params))
 
             # start grid search
-            grid_model = H2OGridSearch(H2ORandomForestEstimator(nfolds=self.nfolds, seed=self.seed,
-                                                                score_tree_interval=0),
+            grid_model = H2OGridSearch(H2ORandomForestEstimator(nfolds=self.nfolds, score_tree_interval=0),
                                        hyper_params=self.final_hyper_params)
             grid_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data)
 
@@ -278,13 +241,12 @@ class Test_rf_grid_search:
             # make sure the correct number of models are built by gridsearch
             if not (self.correct_model_number == self.possible_number_models):  # wrong grid model number
                 self.test_failed += 1
-                print("test_rf_grid_search_over_params for random forest failed: number of models built by "
+                print("test_rf_gridsearch_sorting_metrics for random forest failed: number of models built by "
                       "gridsearch does not equal to all possible combinations of hyper-parameters")
             else:
                 # add parameters into params_dict.  Use this to manually build model
                 params_dict = dict()
                 params_dict["nfolds"] = self.nfolds
-                params_dict["seed"] = self.seed
                 params_dict["score_tree_interval"] = 0
                 total_run_time_limits = 0.0   # calculate upper bound of max_runtime_secs
                 true_run_time_limits = 0.0
@@ -334,32 +296,32 @@ class Test_rf_grid_search:
                     true_run_time_limits += max_runtime
 
                     # compute and compare test metrics between the two models
-                    test_grid_model_metrics = each_model.model_performance()._metric_json[self.training_metric]
-                    test_manual_model_metrics = manual_model.model_performance()._metric_json[self.training_metric]
+                    grid_model_metrics = each_model.model_performance()._metric_json[self.training_metric]
+                    manual_model_metrics = manual_model.model_performance()._metric_json[self.training_metric]
 
                     # just compare the mse in this case within tolerance:
-                    if (each_model_runtime > 0) and \
-                            (abs(model_runtime - each_model_runtime)/each_model_runtime < self.allowed_runtime_diff) \
-                            and (abs(test_grid_model_metrics - test_manual_model_metrics) > self.allowed_diff):
-#                        self.test_failed += 1             # count total number of tests that have failed
-                        print("test_rf_grid_search_over_params for random forest warning: grid search model metric "
-                              "({0}) and manually built H2O model metric ({1}) differ too "
-                              "much.".format(test_grid_model_metrics, test_manual_model_metrics))
-                        break
+                    if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
+                        if (abs(grid_model_metrics) > 0) and \
+                                (abs(grid_model_metrics - manual_model_metrics)/grid_model_metrics > self.allowed_diff):
+                            print("test_rf_gridsearch_sorting_metrics for random forest warning: grid search model "
+                                  "metric ({0}) and manually built H2O model metric ({1}) differ too "
+                                  "much.".format(grid_model_metrics, manual_model_metrics))
 
                 total_run_time_limits = max(total_run_time_limits, true_run_time_limits) * (1+self.extra_time_fraction)
 
                 # make sure the max_runtime_secs is working to restrict model built time
                 if not(manual_run_runtime <= total_run_time_limits):
                     self.test_failed += 1
-                    print("test_rf_grid_search_over_params for random forest failed: time taken to manually build models is {0}."
-                          "  Maximum allowed time is {1}".format(manual_run_runtime, total_run_time_limits))
+                    print("test_rf_gridsearch_sorting_metrics for random forest failed: time taken to manually build"
+                          " models is {0}.  Maximum allowed time is"
+                          " {1}".format(manual_run_runtime, total_run_time_limits))
 
                 if self.test_failed == 0:
-                    print("test_rf_grid_search_over_params for random forest has passed!")
+                    print("test_rf_gridsearch_sorting_metrics for random forest has passed!")
         except:
             if self.possible_number_models > 0:
-                print("test_rf_grid_search_over_params for random forest failed: exception was thrown for no reason.")
+                print("test_rf_gridsearch_sorting_metrics for random forest failed: exception was thrown for no"
+                      " reason.")
                 self.test_failed += 1
 
 
