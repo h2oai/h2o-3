@@ -3,11 +3,8 @@ from __future__ import print_function
 import sys
 import random
 import os
-import numpy as np
-import math
 from builtins import range
 import time
-import pickle
 import json
 
 sys.path.insert(1, "../../../")
@@ -46,7 +43,6 @@ class Test_glm_random_grid_search:
     training1_filename = "smalldata/gridsearch/binomial_training1_set.csv"
     json_filename = "random_gridsearch_GLM_binomial_hyper_parameter_" + curr_time + ".json"
 
-    ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed
     allowed_diff = 0.1   # error tolerance allowed
     allowed_time_diff = 1e-1    # fraction of max_runtime_secs allowed for max run time stopping criteria
 
@@ -58,11 +54,11 @@ class Test_glm_random_grid_search:
 
     max_int_val = 1000          # maximum size of random integer values
     min_int_val = 0             # minimum size of random integer values
-    max_int_number = 4          # maximum number of integer random grid values to generate
+    max_int_number = 3          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
     min_real_val = 0.0          # minimum size of random float values
-    max_real_number = 4         # maximum number of real grid values to generate
+    max_real_number = 3         # maximum number of real grid values to generate
 
     lambda_scale = 100          # scale lambda value to be from 0 to 100 instead of 0 to 1
     max_runtime_scale = 3       # scale the max runtime to be different from 0 to 1
@@ -76,7 +72,7 @@ class Test_glm_random_grid_search:
     allowed_scaled_time = 1       # scale back time
     allowed_scaled_model_number = 1.5   # used to set max_model_number as
     # possible_number_models * allowed_scaled_model_number
-    max_stopping_rounds = 10            # maximum stopping rounds allowed to be used for early stopping metric
+    max_stopping_rounds = 5            # maximum stopping rounds allowed to be used for early stopping metric
     max_tolerance = 0.01                # maximum tolerance to be used for early stopping metric
 
     family = 'binomial'     # set gaussian as default
@@ -127,18 +123,11 @@ class Test_glm_random_grid_search:
     def setup_data(self):
         """
         This function performs all initializations necessary:
-        1. generates all the random values for our dynamic tests like the Gaussian
-        noise std, column count and row count for training/test data sets.
-        2. generate the appropriate data sets.
+        load the data sets and set the training set indices and response column index
         """
 
         # clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-        #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.max_real_number = 1
-        # self.max_int_number = 1
-        # end DEBUGGING
 
         # preload data sets
         self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename))
@@ -407,7 +396,7 @@ class Test_glm_random_grid_search:
         print("GLM Binomial grid search_criteria: {0}".format(search_criteria))
 
         # add max_runtime_secs back into hyper-parameters to limit model runtime.
-        self.hyper_params["max_runtime_secs"] = [0.3]   # arbitrarily set to 0.1 second
+        self.hyper_params["max_runtime_secs"] = [0.3]   # arbitrarily set
 
         # fire off random grid-search
         grid_model = \
@@ -439,14 +428,12 @@ def test_random_grid_search_for_glm():
     """
 
     # randomize grid search for Binomial
-    start_time = time.clock()
     test_glm_binomial_random_grid = Test_glm_random_grid_search("binomial")
     test_glm_binomial_random_grid.test1_glm_random_grid_search_model_number("logloss(xval=True)")
     test_glm_binomial_random_grid.test2_glm_random_grid_search_max_model()
     test_glm_binomial_random_grid.test3_glm_random_grid_search_max_runtime_secs()
     test_glm_binomial_random_grid.test4_glm_random_grid_search_metric("logloss", False)
     test_glm_binomial_random_grid.test4_glm_random_grid_search_metric("AUC", True)
-    print("Binomial randomized gridsearch run time is {0}".format(time.clock() - start_time))
 #    test_glm_binomial_random_grid.tear_down()
 
     # exit with error if any tests have failed
