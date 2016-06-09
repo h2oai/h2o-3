@@ -47,7 +47,7 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
-#' @param seeds (Optional) Specify the random number generator (RNG) seed for algorithm components dependent on randomization.
+#' @param seed (Optional) Specify the random number generator (RNG) seed for algorithm components dependent on randomization.
 #'        The seed is consistent for each H2O instance so that you can create models with the same starting conditions
 #'        in alternative configurations.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
