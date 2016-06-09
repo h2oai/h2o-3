@@ -553,7 +553,7 @@ public class RequestServer extends NanoHTTPD {
     }
 
     if (api_name == null)
-      api_name = handler_class + "_" + handler_method;
+      api_name = handler_class.getSimpleName() + "_" + handler_method;
     if (seenApiNames.contains(api_name))
       throw H2O.fail("Endpoint with api_name " + api_name + " was specified more than once.");
     seenApiNames.add(api_name);
