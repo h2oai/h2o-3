@@ -10,7 +10,7 @@
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
 #' @param validation_frame An H2OFrame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
-#' @param checkpoint "Model checkpoint (provide mydl@model_id) to resume training with."
+#' @param checkpoint "Model checkpoint (provide the model_id) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param pretrained_autoencoder Pretrained autoencoder (either key or H2ODeepLearningModel) to initialize the model state of a supervised DL model with.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
