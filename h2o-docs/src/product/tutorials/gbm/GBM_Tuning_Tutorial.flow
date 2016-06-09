@@ -118,16 +118,8 @@
       "input": "To see how your best model performed on the held out test set run the code snippet below in a new cell, but change replace the best model id with yours\n\n```predict model: \"Grid_GBM_titanic_training.hex_0.60_model_Mozilla_1465244132568_1216_model_7\", frame: \"titanic_testing.hex_0.20\", predictions_frame: \"predict_1\"```\n\nThen in `Model` field enter the best model id found in the grid summary table, in the `Frame` field select \"titanic_testing.hex_0.20\" to predict on, and set prediction_frame to \"predict_1\"\n\n![predict_1](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/GBM_Tuning_Tutorial_predict_1.png)"
     },
     {
-      "type": "cs",
-      "input": "predict model: \"Grid_GBM_titanic_training.hex_0.60_model_Mozilla_1465244132568_1216_model_7\", frame: \"titanic_testing.hex_0.20\", predictions_frame: \"predict_1\""
-    },
-    {
       "type": "md",
       "input": "Good news. It does as well on the test set as on the validation set, so it looks like our best GBM model generalizes well to the unseen test set:\n\n```AUC\t0.970750```\n\nWe can inspect the winning model’s parameters:\nreplace the code snippet below with your model_id and then click on `MODEL PARAMETERS` to expand and view the model parameters\n\n```getModel \"Grid_GBM_titanic_training.hex_0.60_model_Mozilla_1465244132568_1216_model_7\"```\n\n![predict_params](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/images/GBM_Tuning_Tutorial_predict_params.png)"
-    },
-    {
-      "type": "cs",
-      "input": "getModel \"Grid_GBM_titanic_training.hex_0.60_model_Mozilla_1465244132568_1216_model_7\""
     },
     {
       "type": "md",
