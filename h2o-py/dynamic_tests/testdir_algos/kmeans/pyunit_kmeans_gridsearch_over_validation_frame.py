@@ -46,7 +46,7 @@ class Test_kmeans_grid_search:
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
     hyper_params['init'] = ["Random"]
-    hyper_params["max_runtime_secs"] = [100]     # 10 seconds
+    hyper_params["max_runtime_secs"] = [0]     # 10 seconds
     hyper_params["max_iterations"] = [50]
     hyper_params["k"] = [8]
     hyper_params["seed"] = [seed]     # added see to make test more repeatable
