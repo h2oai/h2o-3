@@ -1,17 +1,13 @@
 package water.api;
 
-import com.google.code.regexp.Matcher;
-import com.google.code.regexp.Pattern;
 import water.*;
 import water.exceptions.*;
-import water.fvec.Frame;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.util.*;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -55,44 +51,26 @@ import java.util.zip.ZipOutputStream;
  *      the supplied URI pattern and HTTP method (GET, POST, DELETE, PUT)
  */
 public class RequestServer extends NanoHTTPD {
+
   // Returned in REST API responses as X-h2o-rest-api-version
   public static final int H2O_REST_API_VERSION = 3;
 
-  static public RequestServer SERVER;
+  // RequestServer singleton
+  public static RequestServer SERVER;
   private RequestServer() {}
 
+  private static RouteTree routesTree = new RouteTree("");
+  private static ArrayList<Route> routesList = new ArrayList<>(150);
+  private static boolean registrationOpen = true;
 
-  // Handlers ------------------------------------------------------------
-
-  // An array of regexs-over-URLs and handling Methods.
-  // The list is searched in-order, first match gets dispatched.
-  private static final LinkedHashMap<java.util.regex.Pattern,Route> _routes = new LinkedHashMap<>();   // explicit routes registered below
-  private static final LinkedHashMap<java.util.regex.Pattern,Route> _fallbacks= new LinkedHashMap<>(); // routes that are version fallbacks (e.g., we asked for v5 but v2 is the latest)
-  public static int numRoutes() { return _routes.size(); }
-  public static Collection<Route> routes() { return _routes.values(); }
-
-  private static Pattern version_pattern = null;
-  private static Pattern getVersionPattern() {
-    if (version_pattern == null) version_pattern = Pattern.compile("^/(\\d+|EXPERIMENTAL|LATEST)/(.*)");
-    return version_pattern;
-  }
-  private static Set<String> methods = null;
-  private static Set<String> getMethods() {
-    if (methods == null) {
-      methods = new HashSet<>(4);
-      methods.add("HEAD");
-      methods.add("GET");
-      methods.add("POST");
-      methods.add("DELETE");
-    }
-    return methods;
-  }
-  private static Set<String> seenApiNames = new HashSet<>();
+  public static int numRoutes() { return routesList.size(); }
+  public static ArrayList<Route> routes() { return routesList; }
+  public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
 
 
-  // NOTE!
-  // URL patterns are searched in order.  If you have two patterns that can match on the same URL
-  // (e.g., /foo/baz and /foo) you MUST register them in decreasing order of specificity.
+
+  //------ Route Registration ------------------------------------------------------------------------------------------
+
   static {
     // Data
     register("createFrame",
@@ -105,19 +83,19 @@ public class RequestServer extends NanoHTTPD {
         "POST /3/SplitFrame", SplitFrameHandler.class, "run",
         "Split an H2O Frame.");
 
-    register(null,
+    register("_interaction_run",
         "POST /3/Interaction", InteractionHandler.class, "run",
         "Create interactions between categorical columns.");
 
-    register(null,
+    register("_missingInserter_run",
         "POST /3/MissingInserter", MissingInserterHandler.class, "run",
         "Insert missing values.");
 
-    register(null,
+    register("_dctTransformer_run",
         "POST /99/DCTTransformer", DCTTransformerHandler.class, "run",
         "Row-by-row discrete cosine transforms in 1D, 2D and 3D.");
 
-    register(null,
+    register("_tabulate_run",
         "POST /99/Tabulate", TabulateHandler.class, "run",
         "Tabulate one column vs another.");
 
@@ -133,11 +111,11 @@ public class RequestServer extends NanoHTTPD {
         "POST /99/ImportSQLTable", ImportSQLTableHandler.class, "importSQLTable",
         "Import SQL table into an H2O Frame.");
 
-    register(null,
+    register("_parseSetup_guessSetup",
         "POST /3/ParseSetup", ParseSetupHandler.class, "guessSetup",
         "Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
 
-    register(null,
+    register("_parse_parse",
         "POST /3/Parse", ParseHandler.class, "parse",
         "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
@@ -150,7 +128,7 @@ public class RequestServer extends NanoHTTPD {
         "GET /3/Cloud", CloudHandler.class, "status",
         "Determine the status of the nodes in the H2O cloud.");
 
-    register(null,
+    register("_cloud_head",
         "HEAD /3/Cloud", CloudHandler.class, "head",
         "Determine the status of the nodes in the H2O cloud.");
 
@@ -187,17 +165,13 @@ public class RequestServer extends NanoHTTPD {
         "GET /3/About", AboutHandler.class, "get",
         "Return information about this H2O cluster.");
 
-    register("endpointByIndex",
-        "GET /3/Metadata/endpoints/(?<num>[0-9]+)", MetadataHandler.class, "fetchRoute",
-        "Return the REST API endpoint metadata, including documentation, for the endpoint specified by number.");
+    register("endpoints",
+        "GET /3/Metadata/endpoints", MetadataHandler.class, "listRoutes",
+        "Return the list of (almost) all REST API endpoints.");
 
     register("endpoint",
         "GET /3/Metadata/endpoints/{path}", MetadataHandler.class, "fetchRoute",
-        "Return the REST API endpoint metadata, including documentation, for the endpoint specified by path.");
-
-    register("endpoints",
-        "GET /3/Metadata/endpoints", MetadataHandler.class, "listRoutes",
-        "Return a list of all the REST API endpoints.");
+        "Return the REST API endpoint metadata, including documentation, for the endpoint specified by path or index.");
 
     register("schemaForClass",
         "GET /3/Metadata/schemaclasses/{classname}", MetadataHandler.class, "fetchSchemaMetadataByClass",
@@ -223,7 +197,7 @@ public class RequestServer extends NanoHTTPD {
         "POST /3/Jobs/{job_id}/cancel", JobsHandler.class, "cancel",
         "Cancel a running job.");
 
-    register(null,
+    register("_find_find",
         "GET /3/Find", FindHandler.class, "find",
         "Find a value within a Frame.");
 
@@ -289,12 +263,12 @@ public class RequestServer extends NanoHTTPD {
         "Delete all Models from the H2O distributed K/V store.");
 
     // Get java code for models as
-    register(null,
+    register("_models_fetchPreview",
         "GET /3/Models.java/{model_id}/preview", ModelsHandler.class, "fetchPreview",
         "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
 
     // Register resource also with .java suffix since we do not want to break API
-    register(null,
+    register("_models_fetchJavaCode",
         "GET /3/Models.java/{model_id}", ModelsHandler.class, "fetchJavaCode",
         "[DEPRECATED] Return the stream containing model implementation in Java code.");
 
@@ -331,65 +305,66 @@ public class RequestServer extends NanoHTTPD {
 
 
     // TODO: filtering isn't working for these first four; we get all results:
-    register("mmFetch1",
+    register("_mmFetch1",
         "GET /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("mmDelete1",
+    register("_mmDelete1",
         "DELETE /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "delete",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("mmFetch2",
+    register("_mmFetch2",
         "GET /3/ModelMetrics/models/{model}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model.");
 
-    register("mmFetch3",
+    register("_mmFetch3",
         "GET /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("mmDelete2",
+    register("_mmDelete2",
         "DELETE /3/ModelMetrics/frames/{frame}/models/{model}", ModelMetricsHandler.class, "delete",
         "Return the saved scoring metrics for the specified Model and Frame.");
 
-    register("mmFetch4",
+    register("_mmFetch4",
         "GET /3/ModelMetrics/frames/{frame}", ModelMetricsHandler.class, "fetch",
         "Return the saved scoring metrics for the specified Frame.");
 
-    register("mmFetch5",
+    register("_mmFetch5",
         "GET /3/ModelMetrics", ModelMetricsHandler.class, "fetch",
         "Return all the saved scoring metrics.");
 
-    register(null,
+    register("_mm_score",
         "POST /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "score",
         "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been " +
         "scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame " +
         "will be generated and the metrics will be returned.");
 
-    register(null,
+    register("_predictions_predict1",
         "POST /3/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
-    register(null,
+    register("_predictions_predict2",
         "POST /4/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict2",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
-    register(null,
+    register("_waterMeterCpuTicks_fetch",
         "GET /3/WaterMeterCpuTicks/{nodeidx}", WaterMeterCpuTicksHandler.class, "fetch",
         "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
 
-    register(null,
+    register("_waterMeterIo_fetch",
         "GET /3/WaterMeterIo/{nodeidx}", WaterMeterIoHandler.class, "fetch",
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
-    register(null,
+    register("_waterMeterIo_fetchAll",
         "GET /3/WaterMeterIo", WaterMeterIoHandler.class, "fetch_all",
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
     // Node persistent storage
     register("npsContains",
-        "GET /3/NodePersistentStorage/categories/{category}/names/{name}/exists", NodePersistentStorageHandler.class, "exists",
+        "GET /3/NodePersistentStorage/categories/{category}/names/{name}/exists",
+        NodePersistentStorageHandler.class, "exists",
         "Return true or false.");
 
     register("npsExistsCategory",
@@ -429,7 +404,7 @@ public class RequestServer extends NanoHTTPD {
 
     // Log file management.
     // Note:  Hacky pre-route cutout of "/3/Logs/download" is done above in a non-json way.
-    register(null,
+    register("_logs_fetch",
         "GET /3/Logs/nodes/{nodeidx}/files/{name}", LogsHandler.class, "fetch",
         "Get named log file for a node.");
 
@@ -445,23 +420,23 @@ public class RequestServer extends NanoHTTPD {
         "GET /3/KillMinus3", KillMinus3Handler.class, "killm3",
         "Kill minus 3 on *this* node");
 
-    register(null,
+    register("_rapids_exec",
         "POST /99/Rapids", RapidsHandler.class, "exec",
         "Execute an Rapids AST.");
 
-    register(null,
+    register("_assembly_toJava",
         "GET /99/Assembly.java/{assembly_id}/{pojo_name}", AssemblyHandler.class, "toJava",
         "Generate a Java POJO from the Assembly");
 
-    register(null,
+    register("_assembly_fit",
         "POST /99/Assembly", AssemblyHandler.class, "fit",
         "Fit an assembly to an input frame");
 
-    register(null,
+    register("_downloadDataset_fetch",
         "GET /3/DownloadDataset", DownloadDataHandler.class, "fetch",
         "Download dataset as a CSV.");
 
-    register(null,
+    register("_downloadDataset_fetchStreaming",
         "GET /3/DownloadDataset.bin", DownloadDataHandler.class, "fetchStreaming",
         "Download dataset as a CSV.");
 
@@ -473,7 +448,7 @@ public class RequestServer extends NanoHTTPD {
         "DELETE /3/DKV", RemoveAllHandler.class, "remove",
         "Remove all keys from the H2O distributed K/V store.");
 
-    register(null,
+    register("_logAndEcho_echo",
         "POST /3/LogAndEcho", LogAndEchoHandler.class, "echo",
         "Save a message to the H2O logfile.");
 
@@ -489,7 +464,7 @@ public class RequestServer extends NanoHTTPD {
         "POST /3/GarbageCollect", GarbageCollectHandler.class, "gc",
         "Explicitly call System.gc().");
 
-    register(null,
+    register("_sample_status",
         "GET /99/Sample", CloudHandler.class, "status",
         "Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at " +
         "any moment.");
@@ -500,100 +475,8 @@ public class RequestServer extends NanoHTTPD {
    * <p>
    * URIs which match this pattern will have their parameters collected from the path and from the query params
    *
-   * @param api_name suggested method name for this endpoint in the external API library. These names should be unique.
-   * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
-   * @param uri_pattern_raw regular expression which matches the URL path for this request handler; parameters that are embedded in the path must be captured with &lt;code&gt;(?&lt;parm&gt;.*)&lt;/code&gt; syntax
-   * @param handler_class class which contains the handler method
-   * @param handler_method name of the handler method
-   * @param summary help string which explains the functionality of this endpoint
-   * @param handler_factory factory to create instance of handler
-   * @see Route
-   * @see water.api.RequestServer
-   * @return the Route for this request
-   */
-  public static Route register(
-      String api_name,
-      String http_method,
-      String uri_pattern_raw,
-      Class<? extends Handler> handler_class,
-      String handler_method,
-      String summary,
-      HandlerFactory handler_factory
-  ) {
-    if (!getMethods().contains(http_method))
-      throw new AssertionError("http_method should be one of GET|POST|HEAD|DELETE");
-    assert uri_pattern_raw.startsWith("/");
-
-    // Search handler_class and all its superclasses for the method.
-    Method method = null;
-
-    // TODO: move to ReflectionUtils:
-    for (Method m : handler_class.getMethods()) {
-      if (!m.getName().equals(handler_method)) continue;
-
-      Class[] params = m.getParameterTypes();
-      if (params == null || params.length != 2) continue;
-      if (params[0] != Integer.TYPE) continue;
-      if (!Schema.class.isAssignableFrom(params[1])) continue;
-
-      method = m;
-      break;
-    }
-    if (method == null)
-      throw H2O.fail("Failed to find handler method: " + handler_method + " for handler class: " + handler_class);
-
-    if (!uri_pattern_raw.equals("/")) {
-      Matcher m = getVersionPattern().matcher(uri_pattern_raw);
-      if (!m.matches())
-        throw H2O.fail("Route URL pattern must begin with a version: " + uri_pattern_raw);
-
-      int version = Integer.valueOf(m.group(1));
-      if (version > Schema.getHighestSupportedVersion() && version != Schema.getExperimentalVersion())
-        throw H2O.fail("Route version is greater than the max supported: " + uri_pattern_raw);
-    }
-
-    if (api_name == null)
-      api_name = handler_class.getSimpleName() + "_" + handler_method;
-    if (seenApiNames.contains(api_name))
-      throw H2O.fail("Endpoint with api_name " + api_name + " was specified more than once.");
-    seenApiNames.add(api_name);
-
-    // Convert convenience URL params into actual regex expressions: "/3/Job/{job_id}" => "/3/Job/(?<job_id>.*)"
-    String uri_pattern_str = uri_pattern_raw.replaceAll("\\{(\\w+)\\}", "(?<$1>.*)");
-
-    // Get the group names in the uri pattern and remove any underscores,
-    // since underscores are not actually allowed in java regex group names.
-    ArrayList<String> params_list = new ArrayList<>();
-    Pattern group_pattern = Pattern.compile("\\?<(\\w+)>");
-    Matcher group_matcher = group_pattern.matcher(uri_pattern_str);
-    StringBuffer new_uri_buffer = new StringBuffer();
-    while (group_matcher.find()) {
-      String group = group_matcher.group(1);
-      params_list.add(group);
-      group_matcher.appendReplacement(new_uri_buffer, "?<" + group.replace("_", "") + ">");
-    }
-    group_matcher.appendTail(new_uri_buffer);
-    uri_pattern_str = new_uri_buffer.toString();
-
-    assert lookup(handler_method, uri_pattern_str)==null; // Not shadowed
-    Pattern uri_pattern = Pattern.compile(uri_pattern_str);
-    Route route = new Route(http_method,
-                            uri_pattern_raw,
-                            uri_pattern, summary,
-                            api_name,
-                            handler_class, method,
-                            params_list.toArray(new String[params_list.size()]),
-                            handler_factory);
-    _routes.put(uri_pattern.pattern(), route);
-    return route;
-  }
-
-  /**
-   * Register an HTTP request handler method for a given URL pattern, with parameters extracted from the URI.
-   * <p>
-   * URIs which match this pattern will have their parameters collected from the path and from the query params
-   *
-   * @param api_name suggested method name for this endpoint in the external API library. These names should be unique.
+   * @param api_name suggested method name for this endpoint in the external API library. These names should be
+   *                 unique. If null, the api_name will be created from the class name and the handler method name.
    * @param method_uri combined method / url pattern of the request, e.g.: "GET /3/Jobs/{job_id}"
    * @param handler_class class which contains the handler method
    * @param handler_method name of the handler method
@@ -611,62 +494,46 @@ public class RequestServer extends NanoHTTPD {
   }
 
 
-  // Lookup the method/url in the register list, and return a matching Method
-  protected static Route lookup( String http_method, String uri ) {
-    if (null == http_method || null == uri)
-      return null;
-
-    // Search the explicitly registered routes:
-    for( Route r : _routes.values() )
-      if (r._url_pattern.matcher(uri).matches())
-        if (http_method.equals(r._http_method))
-          return r;
-
-    // Search the fallbacks cache:
-    for( Route r : _fallbacks.values() )
-      if (r._url_pattern.matcher(uri).matches())
-        if (http_method.equals(r._http_method))
-          return r;
-
-    // Didn't find a registered route and didn't find a cached fallback, so do a backward version search and cache if we find a match:
-    Matcher m = getVersionPattern().matcher(uri);
-    if (! m.matches()) return null;
-
-    // Ok then. . .  Try to fall back to a previous version.
-    int version = Integer.valueOf(m.group(1));
-    if (version == Route.MIN_VERSION) return null; // don't go any lower
-
-    String lower_uri = "/" + (version - 1) + "/" + m.group(2);
-    Route fallback = lookup(http_method, lower_uri);
-
-    if (null == fallback) return null;
-
-    // Store the route fallback for later.
-    Matcher route_m = version_pattern.matcher(fallback._url_pattern_raw);
-    if (! route_m.matches()) throw H2O.fail("Found a fallback route that doesn't have a version: " + fallback);
-
-    // register fallbacks for all the versions <= the one in URI we were originally given and >  the one in the fallback route:
-    int route_version = Integer.valueOf(route_m.group(1));
-    for (int i = version; i > route_version && i >= Route.MIN_VERSION; i--) {
-      String fallback_route_uri = "/" + i + "/" + route_m.group(2);
-      Pattern fallback_route_pattern = Pattern.compile(fallback_route_uri);
-      Route generated = new Route(fallback._http_method,
-                                  fallback_route_uri,
-                                  fallback_route_pattern,
-                                  fallback._summary,
-                                  fallback._api_name,
-                                  fallback._handler_class,
-                                  fallback._handler_method,
-                                  fallback._path_params,
-                                  fallback._handler_factory);
-      _fallbacks.put(fallback_route_pattern.pattern(), generated);
+  /**
+   * @param api_name suggested method name for this endpoint in the external API library. These names should be
+   *                 unique. If null, the api_name will be created from the class name and the handler method name.
+   * @param http_method HTTP verb (GET, POST, DELETE) this handler will accept
+   * @param url url path, possibly containing placeholders in curly braces, e.g: "/3/DKV/{key}"
+   * @param handler_class class which contains the handler method
+   * @param handler_method name of the handler method
+   * @param summary help string which explains the functionality of this endpoint
+   * @param handler_factory factory to create instance of handler (used by Sparkling Water)
+   * @return the Route for this request
+   */
+  public static Route register(
+      String api_name,
+      String http_method,
+      String url,
+      Class<? extends Handler> handler_class,
+      String handler_method,
+      String summary,
+      HandlerFactory handler_factory
+  ) {
+    assert registrationOpen : "finalizeRegistration() has been called, cannot register any additional routes";
+    assert api_name != null : "api_name should not be null";
+    try {
+      RequestUri uri = new RequestUri(http_method, url);
+      Route route = new Route(uri, api_name, summary, handler_class, handler_method, handler_factory);
+      routesTree.add(uri, route);
+      routesList.add(route);
+      return route;
+    } catch (MalformedURLException e) {
+      throw H2O.fail(e.getMessage());
     }
-
-    // Better be there in the _fallbacks cache now!
-    return lookup(http_method, uri);
   }
 
+  /**
+   * This method must be called after all requests have been registered.
+   */
   public static void finalizeRegistration() {
+    assert registrationOpen : "finalizeRegistration() should not be called more than once";
+    registrationOpen = false;
+
     Schema.registerAllSchemasIfNecessary();
 
     // Need a stub RequestServer to handle calls to serve() from Jetty.
@@ -676,51 +543,213 @@ public class RequestServer extends NanoHTTPD {
     H2O.getJetty().acceptRequests();
   }
 
-  public static void alwaysLogRequest(String uri, String method, Properties parms) {
-    // This is never called anymore.
-    throw H2O.fail();
+
+
+  //------ Handling Requests -------------------------------------------------------------------------------------------
+
+  /**
+   * Top-level dispatch based on the URI.
+   */
+  @Override
+  public Response serve(String url, String method, Properties header, Properties parms) {
+    try {
+      // Jack priority for user-visible requests
+      Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
+
+      RequestType type = RequestType.requestType(url);
+      RequestUri uri = new RequestUri(method, url);
+
+      // Log the request
+      maybeLogRequest(uri, header, parms);
+
+      // For certain "special" requests that produce non-JSON payloads we require special handling.
+      Response special = maybeServeSpecial(uri);
+      if (special != null) return special;
+
+      // Determine the Route corresponding to this request, and also fill in {parms} with the path parameters
+      Route route = routesTree.lookup(uri, parms);
+
+      if (route == null) {
+        // if the request is not known, treat as resource request, or 404 if not found
+        if (uri.isGetMethod())
+          return getResource(type, url);
+        else
+          return response404(method + " " + url, type);
+
+      } else {
+        Schema response = route._handler.handle(uri.getVersion(), route, parms);
+        PojoUtils.filterFields(response, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
+        return serveSchema(response, type);
+      }
+
+    }
+    catch (H2OFailException e) {
+      H2OError error = e.toH2OError(url);
+      Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
+      throw H2O.fail(serveError(error).toString());
+    }
+    catch (H2OModelBuilderIllegalArgumentException e) {
+      H2OModelBuilderError error = e.toH2OError(url);
+      Log.warn("Caught exception: " + error.toString());
+      return serveSchema(new H2OModelBuilderErrorV3().fillFromImpl(error), RequestType.json);
+    }
+    catch (H2OAbstractRuntimeException e) {
+      H2OError error = e.toH2OError(url);
+      Log.warn("Caught exception: " + error.toString());
+      return serveError(error);
+    }
+    // TODO: kill the server if someone called H2O.fail()
+    catch (Exception e) {
+      // make sure that no Exception is ever thrown out from the request
+      H2OError error = new H2OError(e, url);
+      // some special cases for which we return 400 because it's likely a problem with the client request:
+      if (e instanceof IllegalArgumentException || e instanceof FileNotFoundException || e instanceof MalformedURLException)
+        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
+      Log.err("Caught exception: " + error.toString());
+      return serveError(error);
+    }
   }
 
   /**
-   *  Log all requests except the overly common ones
+   * Log the request (unless it's an overly common one).
    */
-  private boolean maybeLogRequest(String method, String uri, String pattern, Properties parms) {
-    if (uri.endsWith(".css") ||
-        uri.endsWith(".js") ||
-        uri.endsWith(".png") ||
-        uri.endsWith(".ico")) return false;
+  private void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
+    String url = uri.getUrl();
+    if (url.endsWith(".css") ||
+        url.endsWith(".js") ||
+        url.endsWith(".png") ||
+        url.endsWith(".ico")) return;
 
-    if (uri.contains("/Cloud") ||
-        (uri.contains("/Jobs") && method.equals("GET")) ||
-        uri.contains("/Log") ||
-        uri.contains("/Progress") ||
-        uri.contains("/Typeahead") ||
-        uri.contains("/WaterMeterCpuTicks")) return false;
+    String[] path = uri.getPath();
+    if (path[2].equals("Cloud") ||
+        path[2].equals("Jobs") && uri.isGetMethod() ||
+        path[2].equals("Log") ||
+        path[2].equals("Progress") ||
+        path[2].equals("Typeahead") ||
+        path[2].equals("WaterMeterCpuTicks")) return;
 
-    String paddedMethod = String.format("%-6s", method);
-    Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + pattern + ", parms: " + parms);
-    return true;
+    Log.info(uri + ", parms: " + parms);
+    GAUtils.logRequest(url, header);
   }
 
-  private void capturePathParms(Properties parms, String path, Route route) {
-    Matcher m = route._url_pattern.matcher(path);
-    if (! m.matches()) {
-      throw H2O.fail("Routing regex error: Pattern matched once but not again for pattern: " + route._url_pattern.pattern() + " and path: " + path);
+
+
+  //------ Lookup tree for Routes --------------------------------------------------------------------------------------
+
+  private static class RouteTree {
+
+    private String root;
+    private boolean isWildcard;
+    private HashMap<String, RouteTree> branches;
+    private Route leaf;
+
+    public RouteTree(String token) {
+      isWildcard = isWildcardToken(token);
+      root = isWildcard ? "*" : token;
+      branches = new HashMap<>();
+      leaf = null;
     }
 
-    // Java doesn't allow _ in group names but we want them in field names, so remove all _ from the path params before we look up the group capture value
-    for (String key : route._path_params) {
-      String key_no_underscore = key.replace("_","");
-      String val;
-      try {
-        val = m.group(key_no_underscore);
-      }
-      catch (IllegalArgumentException e) {
-        throw H2O.fail("Missing request parameter in the URL: did not find " + key + " in the URL as expected; URL pattern: " + route._url_pattern.pattern() + " with expected parameters: " + Arrays.toString(route._path_params) + " for URL: " + path);
-      }
-      if (null != val)
-        parms.put(key, val);
+    public void add(RequestUri uri, Route route) {
+      String[] path = uri.getPath();
+      addByPath(path, 0, route);
     }
+
+    public Route lookup(RequestUri uri, Properties parms) {
+      String[] path = uri.getPath();
+      ArrayList<String> path_params = new ArrayList<>(3);
+
+      Route route = this.lookupByPath(path, 0, path_params);
+
+      // Fill in the path parameters
+      if (parms != null && route != null) {
+        String[] param_names = route._path_params;
+        assert path_params.size() == param_names.length;
+        for (int i = 0; i < param_names.length; i++)
+          parms.put(param_names[i], path_params.get(i));
+      }
+      return route;
+    }
+
+    private void addByPath(String[] path, int index, Route route) {
+      if (index + 1 < path.length) {
+        String nextToken = isWildcardToken(path[index+1])? "*" : path[index+1];
+        if (!branches.containsKey(nextToken))
+          branches.put(nextToken, new RouteTree(nextToken));
+        branches.get(nextToken).addByPath(path, index + 1, route);
+      } else {
+        assert leaf == null : "Duplicate path encountered: " + Arrays.toString(path);
+        leaf = route;
+      }
+    }
+
+    private Route lookupByPath(String[] path, int index, ArrayList<String> path_params) {
+      assert isWildcard || root.equals(path[index]);
+      if (index + 1 < path.length) {
+        String nextToken = path[index+1];
+        // First attempt an exact match
+        if (branches.containsKey(nextToken)) {
+          Route route = branches.get(nextToken).lookupByPath(path, index+1, path_params);
+          if (route != null) return route;
+        }
+        // Then match against a wildcard
+        if (branches.containsKey("*")) {
+          path_params.add(path[index]);
+          Route route = branches.get("*").lookupByPath(path, index + 1, path_params);
+          if (route != null) return route;
+          path_params.remove(path_params.size() - 1);
+        }
+        // If we are at the deepest level of the tree and no match was found, attempt to look for alternative versions.
+        // For example, if the user requests /4/About, and we only have /3/About, then we should deliver that version
+        // instead.
+        if (index == path.length - 2) {
+          int v = Integer.parseInt(nextToken);
+          for (String key : branches.keySet()) {
+            if (Integer.parseInt(key) <= v) {
+              // We also create a new branch in the tree to memorize this new route path.
+              RouteTree newBranch = new RouteTree(nextToken);
+              newBranch.leaf = branches.get(key).leaf;
+              branches.put(nextToken, newBranch);
+              return newBranch.leaf;
+            }
+          }
+        }
+      } else {
+        return leaf;
+      }
+      return null;
+    }
+
+    private static boolean isWildcardToken(String token) {
+      return token.equals("*") || token.startsWith("{") && token.endsWith("}");
+    }
+  }
+
+
+  //------ Handling of Responses ---------------------------------------------------------------------------------------
+
+  /**
+   * Handle any URLs that bypass the standard route approach.  This is stuff that has abnormal non-JSON response
+   * payloads.
+   * @param uri RequestUri object of the incoming request.
+   * @return Response object, or null if the request does not require any special handling.
+   */
+  private Response maybeServeSpecial(RequestUri uri) {
+    assert uri != null;
+
+    if (uri.isHeadMethod()) {
+      // Blank response used by R's uri.exists("/")
+      if (uri.getUrl().equals("/"))
+        return new Response(HTTP_OK, MIME_PLAINTEXT, "");
+    }
+    if (uri.isGetMethod()) {
+      // url "/3/Foo/bar" => path ["", "GET", "Foo", "bar", "3"]
+      String[] path = uri.getPath();
+      if (path[2].equals("")) return redirectToFlow();
+      if (path[2].equals("Logs") && path[3].equals("download")) return downloadLogs();
+      if (path[2].equals("NodePersistentStorage.bin") && path.length == 6) return downloadNps(path[3], path[4]);
+    }
+    return null;
   }
 
   private Response response404(String what, RequestType type) {
@@ -731,155 +760,10 @@ public class RequestServer extends NanoHTTPD {
     Log.warn(error._values.toJsonString());
     Log.warn((Object[]) error._stacktrace);
 
-    return wrap(new H2OErrorV3().fillFromImpl(error), type);
+    return serveError(error);
   }
 
-  // Top-level dispatch based on the URI.  Break down URI into parts;
-  // e.g. /2/GBM.html/crunk?hex=some_hex breaks down into:
-  //   version:      2
-  //   requestType:  ".html"
-  //   path:         "GBM/crunk"
-  //   parms:        {"hex": "some_hex"}
-  @Override
-  public Response serve(String uri, String method, Properties header, Properties parms) {
-    // Jack priority for user-visible requests
-    Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
-
-    // determine the request type
-    RequestType type = RequestType.requestType(uri);
-
-    // Blank response used by R's uri.exists("/")
-    if (uri.equals("/") && method.equals("HEAD")) {
-      return new Response(HTTP_OK, MIME_PLAINTEXT, "");
-    }
-
-    String versioned_path = uri;
-    String path = uri;
-    int version = 1;
-
-    Matcher m = getVersionPattern().matcher(uri);
-    if (m.matches()) {
-      switch (m.group(1)) {
-        case "LATEST":
-          version = Schema.getLatestOrHighestSupportedVersion();
-          break;
-        case "EXPERIMENTAL":
-          version = 99;
-          break;
-        default:
-          version = Integer.valueOf(m.group(1));
-          break;
-      }
-      String uripath = "/" + m.group(2);
-      path = type.requestName(uripath); // Strip suffix type from middle of URI
-      versioned_path = "/" + version + path;
-    }
-
-    // Load resources, or dispatch on handled requests
-    try {
-      boolean logged;
-      // Handle any URLs that bypass the route approach.  This is stuff that has abnormal non-JSON response payloads.
-      if (method.equals("GET") && uri.equals("/")) {
-        logged = maybeLogRequest(method, uri, "", parms);
-        if (logged) GAUtils.logRequest(uri, header);
-        return redirectToFlow();
-      }
-      if (method.equals("GET") && uri.endsWith("/Logs/download")) {
-        logged = maybeLogRequest(method, uri, "", parms);
-        if (logged) GAUtils.logRequest(uri, header);
-        return downloadLogs();
-      }
-      if (method.equals("GET")) {
-        Pattern p2 = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
-        Matcher m2 = p2.matcher(uri);
-        boolean b2 = m2.matches();
-        if (b2) {
-          String categoryName = m2.group(1);
-          String keyName = m2.group(2);
-          return downloadNps(categoryName, keyName);
-        }
-      }
-
-      // Find handler for url
-      Route route = lookup(method, versioned_path);
-
-      // if the request is not known, treat as resource request, or 404 if not found
-      if (route == null) {
-        if (method.equals("GET")) {
-          return getResource(type, uri);
-        } else {
-          return response404(method + " " + uri, type);
-        }
-      } else {
-        capturePathParms(parms, versioned_path, route); // get any parameters like /Frames/<key>
-        logged = maybeLogRequest(method, uri, route._url_pattern.namedPattern(), parms);
-        if (logged) GAUtils.logRequest(uri, header);
-        Schema s = handle(type, route, version, parms);
-        PojoUtils.filterFields(s, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
-        return wrap(s, type);
-      }
-    }
-    catch (H2OFailException e) {
-      H2OError error = e.toH2OError(uri);
-
-      Log.fatal("Caught exception (fatal to the cluster): " + error.toString());
-
-      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      throw H2O.fail(wrap(new H2OErrorV3().fillFromImpl(error), type).toString());
-    }
-    catch (H2OModelBuilderIllegalArgumentException e) {
-      H2OModelBuilderError error = e.toH2OError(uri);
-
-      Log.warn("Caught exception: " + error.toString());
-
-      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(new H2OModelBuilderErrorV3().fillFromImpl(error), type);
-    }
-    catch (H2OAbstractRuntimeException e) {
-      H2OError error = e.toH2OError(uri);
-
-      Log.warn("Caught exception: " + error.toString());
-
-      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(new H2OErrorV3().fillFromImpl(error), type);
-    }
-    // TODO: kill the server if someone called H2O.fail()
-    catch( Exception e ) { // make sure that no Exception is ever thrown out from the request
-      H2OError error = new H2OError(e, uri);
-
-      // some special cases for which we return 400 because it's likely a problem with the client request:
-      if (e instanceof IllegalArgumentException)
-        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      else if (e instanceof FileNotFoundException)
-        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-      else if (e instanceof MalformedURLException)
-        error._http_status = HttpResponseStatus.BAD_REQUEST.getCode();
-
-      Log.err("Caught exception: " + error.toString());
-
-      // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-      return wrap(new H2OErrorV3().fillFromImpl(error), type);
-    }
-  }
-
-  // Handling ------------------------------------------------------------------
-  private Schema handle( RequestType type, Route route, int version, Properties parms ) throws Exception {
-    switch( type ) {
-    case html: // These request-types only dictate the response-type;
-    case java: // the normal action is always done.
-    case json:
-    case xml: {
-      Handler h = route._handler;
-      return h.handle(version,route,parms); // Can throw any Exception the handler throws
-    }
-    case query:
-    case help:
-    default:
-      throw H2O.unimpl("Unknown type: " + type.toString());
-    }
-  }
-
-  private Response wrap( Schema s, RequestType type ) {
+  private Response serveSchema(Schema s, RequestType type) {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
 
@@ -890,162 +774,58 @@ public class RequestServer extends NanoHTTPD {
 
     // If we've gotten an error always return the error as JSON
     if (s instanceof SpecifiesHttpResponseCode && HttpResponseStatus.OK.getCode() != ((SpecifiesHttpResponseCode) s).httpStatus()) {
-        type = RequestType.json;
+      type = RequestType.json;
     }
 
-    switch( type ) {
-    case html: // return JSON for html requests
-    case json:
-      return new Response(http_response_header, MIME_JSON, s.toJsonString());
-    case xml:
-      //return new Response(http_code, MIME_XML , new String(S.writeXML (new AutoBuffer()).buf()));
-      throw H2O.unimpl("Unknown type: " + type.toString());
-    case java:
-      if (s instanceof H2OErrorV3) {
+    switch (type) {
+      case html: // return JSON for html requests
+      case json:
         return new Response(http_response_header, MIME_JSON, s.toJsonString());
-      }
-      if (s instanceof AssemblyV99) {
-        Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
-        Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
-        r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
-        return r;
-      } else if (s instanceof StreamingSchema) {
-        StreamingSchema ss = (StreamingSchema) s;
-        Response r = new StreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
-        // Needed to make file name match class name
-        r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
-        return r;
-      } else {
-        throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());
-      }
-    default:
-      throw H2O.unimpl("Unknown type to wrap(): " + type);
+      case xml:
+        throw H2O.unimpl("Unknown type: " + type.toString());
+      case java:
+        if (s instanceof H2OErrorV3) {
+          return new Response(http_response_header, MIME_JSON, s.toJsonString());
+        }
+        if (s instanceof AssemblyV99) {
+          Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
+          Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
+          r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
+          return r;
+        } else if (s instanceof StreamingSchema) {
+          StreamingSchema ss = (StreamingSchema) s;
+          Response r = new StreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
+          // Needed to make file name match class name
+          r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
+          return r;
+        } else {
+          throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());
+        }
+      default:
+        throw H2O.unimpl("Unknown type to serveSchema(): " + type);
     }
   }
 
+  private Response serveError(H2OError error) {
+    // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
+    H2OErrorV3<H2OError, ?> schema = new H2OErrorV3<>();
+    return serveSchema(schema.fillFromImpl(error), RequestType.json);
+  }
 
-  // Resource loading ----------------------------------------------------------
-  // cache of all loaded resources
-  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
-  // Returns the response containing the given uri with the appropriate mime type.
-  private Response getResource(RequestType request_type, String uri) {
-    byte[] bytes = _cache.get(uri);
-    if( bytes == null ) {
-      // Try-with-resource
-      try (InputStream resource = water.init.JarHash.getResource2(uri)) {
-          if( resource != null ) {
-            try { bytes = toByteArray(resource); }
-            catch( IOException e ) { Log.err(e); }
-
-            // PP 06-06-2014 Disable caching for now so that the browser
-            //  always gets the latest sources and assets when h2o-client is rebuilt.
-            // TODO need to rethink caching behavior when h2o-dev is merged into h2o.
-            //
-            // if( bytes != null ) {
-            //  byte[] res = _cache.putIfAbsent(uri,bytes);
-            //  if( res != null ) bytes = res; // Racey update; take what is in the _cache
-            //}
-            //
-
-          }
-        } catch( IOException ignore ) { }
-    }
-    if( bytes == null || bytes.length == 0 ) // No resource found?
-      return response404("Resource " + uri, request_type);
-
-    String mime = MIME_DEFAULT_BINARY;
-    if( uri.endsWith(".css") )
-      mime = "text/css";
-    else if( uri.endsWith(".html") )
-      mime = "text/html";
-    Response res = new Response(HTTP_OK,mime,new ByteArrayInputStream(bytes));
-    res.addHeader("Content-Length", Long.toString(bytes.length));
+  private Response redirectToFlow() {
+    Response res = new Response(HTTP_REDIRECT, MIME_PLAINTEXT, "");
+    res.addHeader("Location", "/flow/index.html");
     return res;
   }
 
-  // Convenience utility
-  private static byte[] toByteArray(InputStream is) throws IOException {
-    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-        byte[] buffer = new byte[0x2000];
-        for( int len; (len = is.read(buffer)) != -1; )
-          os.write(buffer, 0, len);
-        return os.toByteArray();
-      }
-  }
-
-  // Return URLs for things that want to appear Frame-inspection page
-  static String[] frameChoices( int version, Frame fr ) {
-    ArrayList<String> al = new ArrayList<>();
-    for( java.util.regex.Pattern p : _routes.keySet() ) {
-      try {
-        Method meth = _routes.get(p)._handler_method;
-        Class clz0 = meth.getDeclaringClass();
-        Class<Handler> clz = (Class<Handler>)clz0;
-        Handler h = clz.newInstance(); // TODO: we don't need to create new instances; handler is stateless
-      }
-      catch( InstantiationException | IllegalArgumentException | IllegalAccessException ignore ) { }
-    }
-    return al.toArray(new String[al.size()]);
-  }
-
-  // ---------------------------------------------------------------------
-  // Download logs support
-  // ---------------------------------------------------------------------
-
-  private String getOutputLogStem() {
-    String pattern = "yyyyMMdd_hhmmss";
-    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
-    String now = formatter.format(new Date());
-
-    return "h2ologs_" + now;
-  }
-
-  private byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
-    int l = 0;
-    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
-    for (int i = 0; i<results.length;l+=results[i++].length);
-    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
-
-    // Add top-level directory.
-    ZipOutputStream zos = new ZipOutputStream(baos);
-    {
-      ZipEntry zde = new ZipEntry (topDir + File.separator);
-      zos.putNextEntry(zde);
-    }
-
-    try {
-      // Add zip directory from each cloud member.
-      for (int i =0; i<results.length; i++) {
-        String filename =
-                topDir + File.separator +
-                        "node" + i + "_" +
-                        H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
-                        ".zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(results[i]);
-        zos.closeEntry();
-      }
-
-      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
-      if (clientResult != null) {
-        String filename =
-                topDir + File.separator +
-                        "driver.zip";
-        ZipEntry ze = new ZipEntry(filename);
-        zos.putNextEntry(ze);
-        zos.write(clientResult);
-        zos.closeEntry();
-      }
-
-      // Close the top-level directory.
-      zos.closeEntry();
-    } finally {
-      // Close the full zip file.
-      zos.close();
-    }
-
-    return baos.toByteArray();
+  private Response downloadNps(String categoryName, String keyName) {
+    NodePersistentStorage nps = H2O.getNPS();
+    AtomicLong length = new AtomicLong();
+    InputStream is = nps.get(categoryName, keyName, length);
+    Response res = new Response(HTTP_OK, MIME_DEFAULT_BINARY, is);
+    res.addHeader("Content-Length", Long.toString(length.get()));
+    res.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
+    return res;
   }
 
   private Response downloadLogs() {
@@ -1073,13 +853,11 @@ public class RequestServer extends NanoHTTPD {
       catch (Exception e) {
         bytes = e.toString().getBytes();
       }
-
       perNodeZipByteArray[i] = bytes;
     }
 
     if (H2O.ARGS.client) {
       byte[] bytes;
-
       try {
         GetLogsFromNode g = new GetLogsFromNode();
         g.nodeidx = -1;
@@ -1089,7 +867,6 @@ public class RequestServer extends NanoHTTPD {
       catch (Exception e) {
         bytes = e.toString().getBytes();
       }
-
       clientNodeByteArray = bytes;
     }
 
@@ -1102,31 +879,115 @@ public class RequestServer extends NanoHTTPD {
       finalZipByteArray = e.toString().getBytes();
     }
 
-    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK,NanoHTTPD.MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
+    Response res = new Response(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
     res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
-    res.addHeader("Content-Disposition", "attachment; filename="+outputFileStem + ".zip");
+    res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + ".zip");
     return res;
   }
 
+  private String getOutputLogStem() {
+    String pattern = "yyyyMMdd_hhmmss";
+    SimpleDateFormat formatter = new SimpleDateFormat(pattern);
+    String now = formatter.format(new Date());
+    return "h2ologs_" + now;
+  }
 
-  // ---------------------------------------------------------------------
-  // Download NPS support
-  // ---------------------------------------------------------------------
+  private byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
+    int l = 0;
+    assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
+    for (byte[] result : results) l += result.length;
+    ByteArrayOutputStream baos = new ByteArrayOutputStream(l);
 
-  private Response downloadNps(String categoryName, String keyName) {
-    NodePersistentStorage nps = H2O.getNPS();
-    AtomicLong length = new AtomicLong();
-    InputStream is = nps.get(categoryName, keyName, length);
-    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_OK, NanoHTTPD.MIME_DEFAULT_BINARY, is);
-    res.addHeader("Content-Length", Long.toString(length.get()));
-    res.addHeader("Content-Disposition", "attachment; filename="+keyName + ".flow");
+    // Add top-level directory.
+    ZipOutputStream zos = new ZipOutputStream(baos);
+    {
+      ZipEntry zde = new ZipEntry (topDir + File.separator);
+      zos.putNextEntry(zde);
+    }
+
+    try {
+      // Add zip directory from each cloud member.
+      for (int i =0; i<results.length; i++) {
+        String filename =
+            topDir + File.separator +
+                "node" + i + "_" +
+                H2O.CLOUD._memary[i].getIpPortString().replace(':', '_').replace('/', '_') +
+                ".zip";
+        ZipEntry ze = new ZipEntry(filename);
+        zos.putNextEntry(ze);
+        zos.write(results[i]);
+        zos.closeEntry();
+      }
+
+      // Add zip directory from the client node.  Name it 'driver' since that's what Sparking Water users see.
+      if (clientResult != null) {
+        String filename =
+            topDir + File.separator +
+                "driver.zip";
+        ZipEntry ze = new ZipEntry(filename);
+        zos.putNextEntry(ze);
+        zos.write(clientResult);
+        zos.closeEntry();
+      }
+
+      // Close the top-level directory.
+      zos.closeEntry();
+    } finally {
+      // Close the full zip file.
+      zos.close();
+    }
+
+    return baos.toByteArray();
+  }
+
+  // cache of all loaded resources
+  @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") // remove this once TO-DO below is addressed
+  private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
+
+  // Returns the response containing the given uri with the appropriate mime type.
+  private Response getResource(RequestType request_type, String url) {
+    byte[] bytes = _cache.get(url);
+    if (bytes == null) {
+      // Try-with-resource
+      try (InputStream resource = water.init.JarHash.getResource2(url)) {
+        if( resource != null ) {
+          try { bytes = toByteArray(resource); }
+          catch (IOException e) { Log.err(e); }
+
+          // PP 06-06-2014 Disable caching for now so that the browser
+          //  always gets the latest sources and assets when h2o-client is rebuilt.
+          // TODO need to rethink caching behavior when h2o-dev is merged into h2o.
+          //
+          // if (bytes != null) {
+          //  byte[] res = _cache.putIfAbsent(url, bytes);
+          //  if (res != null) bytes = res; // Racey update; take what is in the _cache
+          //}
+          //
+
+        }
+      } catch( IOException ignore ) { }
+    }
+    if (bytes == null || bytes.length == 0) // No resource found?
+      return response404("Resource " + url, request_type);
+
+    String mime = MIME_DEFAULT_BINARY;
+    if (url.endsWith(".css"))
+      mime = "text/css";
+    else if (url.endsWith(".html"))
+      mime = "text/html";
+    Response res = new Response(HTTP_OK, mime, new ByteArrayInputStream(bytes));
+    res.addHeader("Content-Length", Long.toString(bytes.length));
     return res;
   }
 
-  private Response redirectToFlow() {
-    StringBuilder sb = new StringBuilder();
-    NanoHTTPD.Response res = new Response(NanoHTTPD.HTTP_REDIRECT, NanoHTTPD.MIME_PLAINTEXT, sb.toString());
-    res.addHeader("Location", "/flow/index.html");
-    return res;
+  // Convenience utility
+  private static byte[] toByteArray(InputStream is) throws IOException {
+    try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+      byte[] buffer = new byte[0x2000];
+      for (int len; (len = is.read(buffer)) != -1; )
+        os.write(buffer, 0, len);
+      return os.toByteArray();
+    }
   }
+
 }

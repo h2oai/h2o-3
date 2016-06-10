@@ -5,17 +5,18 @@ import water.Iced;
 import water.TypeMap;
 import water.util.MarkdownBuilder;
 
+import java.net.MalformedURLException;
 import java.util.Map;
 
-/*
+/**
  * Docs REST API handler, which provides endpoint handlers for the autogeneration of
  * Markdown (and in the future perhaps HTML and PDF) documentation for REST API endpoints
  * and payload entities (aka Schemas).
  */
 public class MetadataHandler extends Handler {
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return a list of all REST API Routes and a Markdown Table of Contents. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 listRoutes(int version, MetadataV3 docs) {
     MarkdownBuilder builder = new MarkdownBuilder();
     builder.comment("Preview with http://jbt.github.io/markdown-editor");
@@ -27,22 +28,23 @@ public class MetadataHandler extends Handler {
     docs.routes = new RouteBase[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
-      docs.routes[i] = (RouteBase)Schema.schema(version, Route.class).fillFromImpl(route);
+      RouteBase schema = schemaForRoute(version, route);
+      docs.routes[i] = schema;
 
       // ModelBuilder input / output schema hackery
       MetadataV3 look = new MetadataV3();
       look.routes = new RouteBase[1];
-      look.routes[0] = docs.routes[i];
-      look.path = route._url_pattern.toString();
+      look.routes[0] = schema;
+      look.path = route._url;
       look.http_method = route._http_method;
-      look = fetchRoute(version, look);
+      fetchRoute(version, look);
 
-      docs.routes[i].input_schema = look.routes[0].input_schema;
-      docs.routes[i].output_schema = look.routes[0].output_schema;
+      schema.input_schema = look.routes[0].input_schema;
+      schema.output_schema = look.routes[0].output_schema;
 
       builder.tableRow(
               route._http_method,
-              route._url_pattern_raw,
+              route._url,
               Handler.getHandlerMethodInputSchema(route._handler_method).getSimpleName(),
               Handler.getHandlerMethodOutputSchema(route._handler_method).getSimpleName(),
               route._summary);
@@ -53,12 +55,16 @@ public class MetadataHandler extends Handler {
     return docs;
   }
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return the metadata for a REST API Route, specified either by number or path. */
+  // Also called through reflection by RequestServer
   public MetadataV3 fetchRoute(int version, MetadataV3 docs) {
     Route route = null;
     if (null != docs.path && null != docs.http_method) {
-      route = RequestServer.lookup(docs.http_method, docs.path);
+      try {
+        route = RequestServer.lookupRoute(new RequestUri(docs.http_method, docs.path));
+      } catch (MalformedURLException e) {
+        route = null;
+      }
     } else {
       // Linear scan for the route, plus each route is asked for in-order
       // during doc-gen leading to an O(n^2) execution cost.
@@ -77,7 +83,7 @@ public class MetadataHandler extends Handler {
       // GridSearchHandler uses the same logic as ModelBuilderHandler because there are no separate
       // ${ALGO}GridSearchParametersV3 classes, instead each field in ${ALGO}ParametersV3 is marked as either gridable
       // or not.
-      String ss[] = route._url_pattern_raw.split("/");
+      String ss[] = route._url.split("/");
       String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
       String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
       String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
@@ -102,9 +108,9 @@ public class MetadataHandler extends Handler {
     return docs;
   }
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  @Deprecated
   /** Fetch the metadata for a Schema by its full internal classname, e.g. "hex.schemas.DeepLearningV2.DeepLearningParametersV2".  TODO: Do we still need this? */
+  @Deprecated
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
     docs.schemas = new SchemaMetadataBase[1];
     // NOTE: this will throw an exception if the classname isn't found:
@@ -113,8 +119,8 @@ public class MetadataHandler extends Handler {
     return docs;
   }
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for a Schema by its simple Schema name (e.g., "DeepLearningParametersV2"). */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 fetchSchemaMetadata(int version, MetadataV3 docs) {
     if ("void".equals(docs.schemaname)) {
       docs.schemas = new SchemaMetadataBase[0];
@@ -137,8 +143,8 @@ public class MetadataHandler extends Handler {
     return docs;
   }
 
-  @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Fetch the metadata for all the Schemas. */
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 listSchemas(int version, MetadataV3 docs) {
     Map<String, Class<? extends Schema>> ss = Schema.schemas();
     docs.schemas = new SchemaMetadataBase[ss.size()];
@@ -161,5 +167,11 @@ public class MetadataHandler extends Handler {
       docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
     }
     return docs;
+  }
+
+
+  private RouteBase schemaForRoute(int version, Route route) {
+    Schema<Route, ?> schema = Schema.schema(version, Route.class);
+    return (RouteBase) schema.fillFromImpl(route);
   }
 }

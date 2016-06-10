@@ -44,7 +44,7 @@ public class GridSearchHandler<G extends Grid<MP>,
       throw water.H2O.unimpl();
 
     // Peek out the desired algo from the URL
-    String ss[] = route._url_pattern_raw.split("/");
+    String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{99}/{Grid}/{gbm}/
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
