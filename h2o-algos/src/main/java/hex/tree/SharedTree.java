@@ -338,14 +338,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // During first iteration model contains 0 trees, then 1-tree, ...
         // No need to score a checkpoint with no extra trees added
         if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
-          double training_r2 = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-          if( training_r2 >= _parms._r2_stopping ) {
+          boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
+          if( ((ModelMetricsSupervised)_model._output._training_metrics).r2()  >= _parms._r2_stopping ) {
             doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
             _job.update(_ntrees-_model._output._ntrees); //finish
             return;             // Stop when approaching round-off error
           }
-          if (!Double.isNaN(training_r2)  //HACK to detect whether we scored at all
-                  && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+          if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
             doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
             _job.update(_ntrees-_model._output._ntrees); //finish
             return;
@@ -540,8 +539,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   transient long _timeLastScoreStart, _timeLastScoreEnd, _firstScore;
-  protected final double doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
-    double training_r2 = Double.NaN; // Training R^2 value, if computed
+  protected final boolean doScoringAndSaveModel(boolean finalScoring, boolean oob, boolean build_tree_one_node ) {
     long now = System.currentTimeMillis();
     if( _firstScore == 0 ) _firstScore=now;
     long sinceLastScore = now-_timeLastScoreStart;
@@ -566,7 +564,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // If validation is specified we use a model for scoring, so we need to
       // update it!  First we save model with trees (i.e., make them available
       // for scoring) and then update it with resulting error
-      _model.update(_job);  updated = true;
+      _model.update(_job);
+      updated = true;
 
       Log.info("============================================================== ");
       SharedTreeModel.SharedTreeOutput out = _model._output;
@@ -581,7 +580,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
-      training_r2 = ((ModelMetricsSupervised)mm).r2();
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
       out._scored_train[out._ntrees].fillFrom(mm);
 
@@ -607,7 +605,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     // Double update - after either scoring or variable importance
     if( updated ) _model.update(_job);
-    return training_r2;
+    return updated;
   }
 
   static int counter = 0;

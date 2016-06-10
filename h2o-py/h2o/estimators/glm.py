@@ -94,6 +94,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Number of folds for cross-validation. If nfolds >= 2, then validation must
         remain empty.
 
+      seed : int, optional
+        Specify the random number generator (RNG) seed for algorithm components dependent on randomization.
+        The seed is consistent for each H2O instance so that you can create models with the same starting conditions
+        in alternative configurations.
+
       fold_assignment : str
         Cross-validation fold assignment scheme, if fold_column is not
         specified, must be "AUTO", "Random",  "Modulo", or "Stratified". 
@@ -137,7 +142,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                standardize=None, family=None, link=None, tweedie_variance_power=None,
                tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
-               fold_assignment=None, keep_cross_validation_predictions=None,
+               seed = None, fold_assignment=None, keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
                intercept=None, Lambda=None, max_active_predictors=None, checkpoint=None,
                objective_epsilon=None, gradient_epsilon=None, non_negative=False,
@@ -379,6 +384,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @ignore_const_cols.setter
   def ignore_const_cols(self, value):
     self._parms["ignore_const_cols"] = value
+
+  @property
+  def seed(self):
+    return self._parms["seed"]
+
+  @seed.setter
+  def seed(self, value):
+    self._parms["seed"] = value
 
   """
   Extract full regularization path explored during lambda search from glm model.

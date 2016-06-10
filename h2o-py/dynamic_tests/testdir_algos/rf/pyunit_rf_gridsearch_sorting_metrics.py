@@ -55,11 +55,11 @@ class Test_rf_gridsearch_sorting_metrics:
 
     # following parameters are used to generate hyper-parameters
     max_int_val = 10            # maximum size of random integer values
-    min_int_val = -2           # minimum size of random integer values
+    min_int_val = 0           # minimum size of random integer values
     max_int_number = 2          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
-    min_real_val = -0.1           # minimum size of random float values
+    min_real_val = 0           # minimum size of random float values
     max_real_number = 2         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
@@ -206,11 +206,13 @@ class Test_rf_gridsearch_sorting_metrics:
            values.  We should instead get a warning/error message printed out.
         c. Check and make sure that the models are returned sorted with the correct cross-validation metrics.
         """
-        print("*******************************************************************************************")
-        print("test_rf_gridsearch_sorting_metrics for random forest ")
-        h2o.cluster_info()
 
-        try:
+        if self.possible_number_models > 0:
+            print("*******************************************************************************************")
+            print("test_rf_gridsearch_sorting_metrics for random forest ")
+            h2o.cluster_info()
+
+
             print("Hyper-parameters used here is {0}".format(self.final_hyper_params))
 
             # start grid search
@@ -229,7 +231,7 @@ class Test_rf_gridsearch_sorting_metrics:
 
             # grab performance metric for each model of grid_model and collect correct sorting metrics by hand
             for each_model in grid_model:
-                grid_model_metric = result_table.cell_values[model_index][stopping_metric_index]
+                grid_model_metric = float(result_table.cell_values[model_index][stopping_metric_index])
                 grid_model_metrics.append(grid_model_metric)
 
                 manual_metric = each_model._model_json["output"]["cross_validation_metrics"]._metric_json["logloss"]
@@ -249,11 +251,7 @@ class Test_rf_gridsearch_sorting_metrics:
 
             if self.test_failed == 0:
                 print("test_rf_gridsearch_sorting_metrics for random forest has passed!")
-        except:
-            if self.possible_number_models > 0:
-                print("test_rf_gridsearch_sorting_metrics for random forest failed: exception was thrown for "
-                      "no reason.")
-                self.test_failed += 1
+
 
 
 def test_gridsearch_sorting_metrics():

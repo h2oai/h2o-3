@@ -3,8 +3,6 @@ from __future__ import print_function
 import sys
 import random
 import os
-import numpy as np
-import math
 from builtins import range
 import time
 import json
@@ -16,6 +14,7 @@ from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.grid.grid_search import H2OGridSearch
 
+
 class Test_gbm_grid_search:
     """
     PUBDEV-1843: Grid testing.  Subtask 2.
@@ -24,17 +23,16 @@ class Test_gbm_grid_search:
     here.
 
     Test Descriptions:
-    test_gbm_grid_search_over_params performs the following:
         a. grab all truely griddable parameters and randomly or manually set the parameter values.
         b. Next, build H2O GBM models using grid search.  Count and make sure models
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
         c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O GBM model.  MSEs are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their MSEs
-           are close, declare test success.  Otherwise, declare test failure.
+           that model and manually build a H2O GBM model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
+           differ by too much, print a warning message but don't fail the test.
         d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
 
     Note that for hyper-parameters containing all legal parameter names and parameter value lists with legal
     and illegal values, grid-models should be built for all combinations of legal parameter values.  For
@@ -113,9 +111,10 @@ class Test_gbm_grid_search:
 
     params_zero_one = ['col_sample_rate', 'learn_rate_annealing', 'learn_rate', 'col_sample_rate_per_tree',
                        'sample_rate']
-    params_more_than_zero = ['min_rows', 'max_depth',  "max_after_balance_size"]
+    params_more_than_zero = ['min_rows', 'max_depth',  "max_after_balance_size", "max_abs_leafnode_pred"]
     params_more_than_one = ['nbins_cats', 'nbins']
-    params_zero_positive = ['max_runtime_secs', 'stopping_rounds', 'ntrees', 'stopping_tolerance']       # >= 0
+    params_zero_positive = ['max_runtime_secs', 'stopping_rounds', 'ntrees', 'stopping_tolerance',
+                            'min_split_improvement']       # >= 0
 
     final_hyper_params = dict()     # store the final hyper-parameters that we are going to use
     gridable_parameters = []    # store griddable parameter names
@@ -134,29 +133,16 @@ class Test_gbm_grid_search:
     def setup_data(self):
         """
         This function performs all initializations necessary:
-        1. generates all the random parameter values for our dynamic tests like the Gaussian
-        noise std, column count and row count for training/test data sets.
-        2. randomly choose the distribution family (gaussian, binomial, multinomial)
-        to test.
-        3. with the chosen distribution family, generate the appropriate data sets
-        4. load the data sets and set the training set indices and response column index
+        load the data sets and set the training set indices and response column index
         """
 
         # create and clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-        #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.max_real_number = 1
-        # self.max_int_number = 1
-        # end DEBUGGING
-
-        # This is used to generate dataset for regression or classification.  Nothing to do
-        # with setting the distribution family in this case
         
         # randomly choose which family of GBM algo to use
         self.family = self.families[random.randint(0, len(self.families)-1)]
 
-        # set class number for classification
+        # preload datasets, set x_indices, y_index and change response to factor for classification
         if 'multinomial' in self.family:
             self.training_metric = 'logloss'
             self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filenames[1]))
@@ -166,9 +152,7 @@ class Test_gbm_grid_search:
             self.scale_model = 1
 
         else:
-            # preload data sets
             self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filenames[0]))
-            # set data set indices for predictors and response
             self.y_index = self.training1_data.ncol-1
             self.x_indices = list(range(self.y_index))
             self.scale_model = 0.75
@@ -242,6 +226,8 @@ class Test_gbm_grid_search:
         if "fold_assignment" in list(self.final_hyper_params):
             self.possible_number_models = self.possible_number_models * self.scale_model
 
+        self.final_hyper_params["seed"] = [self.seed]     # added see to make test more repeatable
+
         # write out the hyper-parameters used into json files.
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
                                                  self.final_hyper_params)
@@ -275,17 +261,16 @@ class Test_gbm_grid_search:
 
     def test_gbm_grid_search_over_params(self):
         """
-        test_gbm_grid_search_over_params: test for condition 1 and performs the following:
-        a. grab all truely griddable parameters and randomly or manually set the parameter values.
-        b. Next, build H2O GBM models using grid search.  Count and make sure models
+        test_gbm_grid_search_over_params performs the following:
+        a. Next, build H2O GBM models using grid search.  Count and make sure models
            are only built for hyper-parameters set to legal values.  No model is built for bad hyper-parameters
            values.  We should instead get a warning/error message printed out.
-        c. For each model built using grid search, we will extract the parameters used in building
-           that model and manually build a H2O GBM model.  MSEs are calculated from a test set
-           to compare the performance of grid search model and our manually built model.  If their MSEs
-           are close, declare test success.  Otherwise, declare test failure.
-        d. we will check and make sure the models are built within the max_runtime_secs time limit that was set
-           for it as well.  If max_runtime_secs was exceeded, declare test failure as well.
+        b. For each model built using grid search, we will extract the parameters used in building
+           that model and manually build a H2O GBM model.  Training metrics are calculated from the
+           gridsearch model and the manually built model.  If their metrics
+           differ by too much, print a warning message but don't fail the test.
+        c. we will check and make sure the models are built within the max_runtime_secs time limit that was set
+           for it as well.  If max_runtime_secs was exceeded, declare test failure.
         """
 
         print("*******************************************************************************************")
@@ -296,8 +281,7 @@ class Test_gbm_grid_search:
             print("Hyper-parameters used here is {0}".format(self.final_hyper_params))
 
             # start grid search
-            grid_model = H2OGridSearch(H2OGradientBoostingEstimator(distribution=self.family, nfolds=self.nfolds,
-                                                                    seed=self.seed),
+            grid_model = H2OGridSearch(H2OGradientBoostingEstimator(distribution=self.family, nfolds=self.nfolds),
                                        hyper_params=self.final_hyper_params)
             grid_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data)
 
@@ -313,7 +297,6 @@ class Test_gbm_grid_search:
                 params_dict = dict()
                 params_dict["distribution"] = self.family
                 params_dict["nfolds"] = self.nfolds
-                params_dict["seed"] = self.seed
                 total_run_time_limits = 0.0   # calculate upper bound of max_runtime_secs
                 true_run_time_limits = 0.0
                 manual_run_runtime = 0.0
@@ -370,17 +353,17 @@ class Test_gbm_grid_search:
                     true_run_time_limits += max_runtime
 
                     # compute and compare test metrics between the two models
-                    test_grid_model_metrics = each_model.model_performance()._metric_json[self.training_metric]
-                    test_manual_model_metrics = manual_model.model_performance()._metric_json[self.training_metric]
+                    grid_model_metrics = each_model.model_performance()._metric_json[self.training_metric]
+                    manual_model_metrics = manual_model.model_performance()._metric_json[self.training_metric]
 
                     # just compare the mse in this case within tolerance:
-                    if (each_model_runtime > 0) and \
-                            (abs(model_runtime - each_model_runtime)/each_model_runtime < self.allowed_runtime_diff) \
-                            and (abs(test_grid_model_metrics - test_manual_model_metrics) > self.allowed_diff):
-#                        self.test_failed += 1             # count total number of tests that have failed
-                        print("test_gbm_grid_search_over_params for GBM warning: grid search model mdetric ({0}) and "
-                              "manually built H2O model metric ({1}) differ too much"
-                              "!".format(test_grid_model_metrics, test_manual_model_metrics))
+                    if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
+                        if (abs(grid_model_metrics) > 0) and \
+                                (abs(grid_model_metrics - manual_model_metrics)/grid_model_metrics > self.allowed_diff):
+
+                            print("test_gbm_grid_search_over_params for GBM warning: grid search model mdetric ({0}) "
+                                  "and manually built H2O model metric ({1}) differ too much"
+                                  "!".format(grid_model_metrics, manual_model_metrics))
 
                 total_run_time_limits = max(total_run_time_limits, true_run_time_limits) * (1+self.extra_time_fraction)
 

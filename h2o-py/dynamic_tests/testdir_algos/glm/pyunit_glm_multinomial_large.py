@@ -1302,7 +1302,7 @@ def test_glm_multinomial():
     test_glm_multinomial.test5_missing_values()
     test_glm_multinomial.test6_enum_missing_values()
     test_glm_multinomial.test7_missing_enum_values_lambda_search()
-    test_glm_multinomial.tear_down()
+#    test_glm_multinomial.tear_down()
 
     sys.stdout.flush()
 
