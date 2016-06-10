@@ -336,9 +336,9 @@ public class TestCase {
       mmMap.put("AUC", ((ModelMetricsBinomial) mm).auc());
       mmMap.put("Gini", ((ModelMetricsBinomial) mm)._auc._gini);
       mmMap.put("Logloss", ((ModelMetricsBinomial) mm).logloss());
-      mmMap.put("F1", ((ModelMetricsBinomial) mm).cm().F1());
-      mmMap.put("F2", ((ModelMetricsBinomial) mm).cm().F2());
-      mmMap.put("F0point5", ((ModelMetricsBinomial) mm).cm().F0point5());
+      mmMap.put("F1", ((ModelMetricsBinomial) mm).cm().f1());
+      mmMap.put("F2", ((ModelMetricsBinomial) mm).cm().f2());
+      mmMap.put("F0point5", ((ModelMetricsBinomial) mm).cm().f0point5());
       mmMap.put("Accuracy", ((ModelMetricsBinomial) mm).cm().accuracy());
       mmMap.put("Error", ((ModelMetricsBinomial) mm).cm().err());
       mmMap.put("Precision", ((ModelMetricsBinomial) mm).cm().precision());

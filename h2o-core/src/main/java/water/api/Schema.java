@@ -370,7 +370,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
             continue;
 
           // TODO: remove after we move these into a TwoDimTable:
-          if ("F0point5".equals(name) || "F0point5_for_criteria".equals(name) || "F1_for_criteria".equals(name) || "F2_for_criteria".equals(name))
+          if ("f0point5".equals(name) || "f0point5_for_criteria".equals(name) || "f1_for_criteria".equals(name) || "f2_for_criteria".equals(name))
             continue;
 
           if (name.startsWith("_"))
@@ -714,8 +714,18 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       return KeyV3.make(fclz, Key.make(s.startsWith("\"") ? s.substring(1, s.length() - 1) : s)); // If the key name is in an array we need to trim surrounding quotes.
     }
 
-    if (Enum.class.isAssignableFrom(fclz))
-      return Enum.valueOf(fclz, s); // TODO: try/catch needed!
+    // Enums can match either 1:1 or all lower or all upper case
+    if (Enum.class.isAssignableFrom(fclz)) {
+      try {
+        return Enum.valueOf(fclz, s);
+      } catch (Throwable t1) {
+        try {
+          return Enum.valueOf(fclz, s.toLowerCase());
+        } catch (Throwable t2) {
+          return Enum.valueOf(fclz, s.toUpperCase());
+        }
+      }
+    }
 
     // TODO: these can be refactored into a single case using the facilities in Schema:
     if (FrameV3.class.isAssignableFrom(fclz)) {
