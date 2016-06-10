@@ -135,7 +135,7 @@ public final class DefaultParserProviders {
           }
         } catch( Throwable ignore ) {
           /*ignore failed parse attempt*/
-          Log.trace("Guesser failed for paser type", pp.info(), ignore);
+          Log.trace("Guesser failed for parser type", pp.info(), ignore);
         }
       }
       throw new ParseDataset.H2OParseException("Cannot determine file type.");
