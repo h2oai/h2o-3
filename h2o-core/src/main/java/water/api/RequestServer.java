@@ -806,10 +806,10 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
+  @SuppressWarnings(value = "unchecked")
   private Response serveError(H2OError error) {
     // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
-    H2OErrorV3<H2OError, ?> schema = new H2OErrorV3<>();
-    return serveSchema(schema.fillFromImpl(error), RequestType.json);
+    return serveSchema(new H2OErrorV3().fillFromImpl(error), RequestType.json);
   }
 
   private Response redirectToFlow() {
