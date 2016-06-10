@@ -104,13 +104,6 @@ rm -fr h2o
 cd ../..
 openssl dgst target/Rjar/h2o.jar | sed 's/.*= //' > target/Rjar/h2o.jar.md5
 
-# Add h2o-docs sphinx new_look_docs to target.
-mkdir -p target/new_look_docs
-cd h2o-docs/new_look_docs
-sphinx-build -b html -d _build/doctrees . _build/html
-cd ../..
-rsync -a h2o-docs/new_look_docs/_build/html/ target/new_look_docs
-
 # Add Python dist to target.
 mkdir -p target/Python
 
@@ -133,6 +126,11 @@ cp -p h2o-java-rest-bindings/build/libs/*.jar target/bindings/java
 mkdir target/maven
 cp -rp build/repo target/maven
 
+# Build main h2o sphinx documentation.
+cd h2o-docs/new_look_docs
+sphinx-build -b html -d _build/doctrees . _build/html
+cd ../..
+
 # Add documentation to target.
 mkdir target/docs-website
 mkdir target/docs-website/h2o-docs
@@ -143,6 +141,7 @@ mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 mkdir target/docs-website/h2o-genmodel
 mkdir target/docs-website/h2o-scala
+cp -rp h2o-docs/new_look_docs/_build/html/* target/docs-website/h2o-docs
 cp -rp h2o-docs/web/* target/docs-website/h2o-docs
 cp -p h2o-docs/src/booklets/v2_2015/source/*.pdf target/docs-website/h2o-docs/booklets
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
