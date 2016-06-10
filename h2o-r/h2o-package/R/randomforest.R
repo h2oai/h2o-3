@@ -13,7 +13,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param validation_frame An H2OFrame object containing the variables in the model.  Default is NULL.
-#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+#' @param checkpoint "Model checkpoint (provide the model_id) to resume training with."
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,

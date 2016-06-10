@@ -73,11 +73,18 @@ class Test_PUBDEV_2980_deeplearning:
         bad_model = H2ODeepLearningEstimator(**bad_params_list)
         bad_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data, **bad_model_params)
 
+        good_model_len = len(good_model._model_json['output']['scoring_history'].cell_values)
+        bad_model_len = len(bad_model._model_json['output']['scoring_history'].cell_values)
+
         print("good_model._model_json['output']['scoring_history'].cell_values length is {0}.  "
               "bad_model._model_json['output']['scoring_history'].cell_values length is "
-              "{1}".format(len(good_model._model_json['output']['scoring_history'].cell_values),
-                           len(bad_model._model_json['output']['scoring_history'].cell_values)))
-        print("They are not equal for some reason....")
+              "{1}".format(good_model_len, bad_model_len))
+
+        if not(good_model_len == bad_model_len):
+            self.test_failed = 1
+            print("They are not equal for some reason....")
+        else:
+            print("They are equal.  Good.")
 
         print("Good model cell values is:\n {0}\n  Bad model cell values is:\n "
               "{1}\n".format(good_model._model_json['output']['scoring_history'].cell_values,
