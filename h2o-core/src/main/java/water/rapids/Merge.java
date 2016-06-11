@@ -155,7 +155,7 @@ public class Merge {
       // deal with the range of the left keys that fall outside the range of the right, if any
       // create NA matches for all key values in the left less than the right's minimum
 
-      leftMSBfrom = (int)((rightIndex._colMin[0] - leftIndex._colMin[0]) >> leftShift);
+      leftMSBfrom = (int)((rightIndex._colMin[0] - leftIndex._colMin[0] + 1) >> leftShift);    // +1 because NA is stored first
       if (leftMSBfrom>255) {
         // The left range ends before the right range starts.  So every left row is a no-match to the right
         leftMSBfrom = 256;  // so that the loop below runs for all MSBs (0-255) to fetch the left rows only
@@ -173,8 +173,8 @@ public class Merge {
       }
     }
 
-    if ((leftIndex._colMin[0] + 255<<leftShift) > (rightIndex._colMin[0] + 255<<rightShift)) {
-      leftMSBto = (int)((((rightIndex._colMin[0] + 255<<rightShift) - leftIndex._colMin[0])) >> leftShift);
+    if ((leftIndex._colMin[0] + 256<<leftShift) > (rightIndex._colMin[0] + 256<<rightShift)) {
+      leftMSBto = (int)(((rightIndex._colMin[0] + 256<<rightShift) - leftIndex._colMin[0]) >> leftShift);  // No need for +1 for NA here because the 256<< is already one after the last bin
       if (leftMSBto<0) {
         // The left range starts after the right range ends.  So every left row is a no-match to the right
         leftMSBto = -1;  // all MSBs (1-255) need to fetch the left rows only
@@ -197,12 +197,12 @@ public class Merge {
 //      if (leftLen > 0) {
       // int rightMSBBase = leftMSB >> bitShift;  // could be positive or negative, or most commonly and ideally bitShift==0
 
-      long leftFrom = (leftMSB << leftShift) + leftIndex._colMin[0];
+      long leftFrom = (leftMSB << leftShift) -1 + leftIndex._colMin[0];  // -1 to cater for leading NA spot
       //TO DELETE: leftFrom = Math.max(1, leftFrom);
-      long leftTo = ((leftMSB+1) << leftShift) + leftIndex._colMin[0] - 1;
+      long leftTo = ((leftMSB+1) << leftShift) + leftIndex._colMin[0] - 1 - 1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
-      int rightMSBfrom = (int)((leftFrom - rightIndex._colMin[0]) >> rightShift);
-      int rightMSBto = (int)((leftTo - rightIndex._colMin[0]) >> rightShift);
+      int rightMSBfrom = (int)((leftFrom - rightIndex._colMin[0] + 1) >> rightShift);
+      int rightMSBto = (int)((leftTo - rightIndex._colMin[0] + 1) >> rightShift);
 
       for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
         //int rightMSB = rightMSBBase +k;

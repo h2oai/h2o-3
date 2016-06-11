@@ -162,10 +162,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     // Find key value extents
     assert _leftMSB>=0 && _rightMSB>=0;
-    long leftMin = (((long)_leftMSB) << _leftShift) + _leftColMins[0];  // the first key possible in this bucket
-    long leftMax = (((long)_leftMSB+1) << _leftShift) + _leftColMins[0] - 1;    // the last key possible in this bucket
-    long rightMin = (((long)_rightMSB) << _rightShift) + _rightColMins[0];
-    long rightMax = (((long)_rightMSB+1) << _rightShift) + _rightColMins[0] - 1;
+    long leftMin = (((long)_leftMSB) << _leftShift) + _leftColMins[0]-1;  // the first key possible in this bucket
+    long leftMax = (((long)_leftMSB+1) << _leftShift) + _leftColMins[0] - 2;    // the last key possible in this bucket
+    long rightMin = (((long)_rightMSB) << _rightShift) + _rightColMins[0]-1;
+    long rightMax = (((long)_rightMSB+1) << _rightShift) + _rightColMins[0] - 2;
 
     long leftTo;
     if (_overLapType==-1) {
@@ -479,7 +479,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // _retFirst and _retLen are the same shape
     long prevf = -1, prevl = -1;
     long resultLoc=0;  // sweep upwards through the final result, filling it in
-    long leftLoc=-1;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
+    long leftLoc=_leftFrom;  // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
     for (int jb=0; jb<_retFirst.length; ++jb) {              // jb = j batch
       for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset
         leftLoc++;  // to save jb*_retFirst[0].length + jo;
