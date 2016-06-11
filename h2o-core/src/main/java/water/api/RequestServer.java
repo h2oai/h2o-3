@@ -656,6 +656,7 @@ public class RequestServer extends NanoHTTPD {
     }
 
     public Route lookup(RequestUri uri, Properties parms) {
+      if (!uri.isApiUrl()) return null;
       String[] path = uri.getPath();
       ArrayList<String> path_params = new ArrayList<>(3);
 
@@ -694,7 +695,7 @@ public class RequestServer extends NanoHTTPD {
         }
         // Then match against a wildcard
         if (branches.containsKey("*")) {
-          path_params.add(path[index]);
+          path_params.add(path[index+1]);
           Route route = branches.get("*").lookupByPath(path, index + 1, path_params);
           if (route != null) return route;
           path_params.remove(path_params.size() - 1);
