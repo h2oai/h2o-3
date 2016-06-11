@@ -175,7 +175,7 @@ public class ConfusionMatrix extends Iced {
    * Returns the F-measure which combines precision and recall. <br>
    * C.f. end of http://en.wikipedia.org/wiki/Precision_and_recall.
    */
-  public double F1() {
+  public double f1() {
     final double precision = precision();
     final double recall = recall();
     return 2. * (precision * recall) / (precision + recall);
@@ -185,7 +185,7 @@ public class ConfusionMatrix extends Iced {
    * Returns the F-measure which combines precision and recall and weights recall higher than precision. <br>
    * See <a href="http://en.wikipedia.org/wiki/F1_score.">F1_score</a>
    */
-  public double F2() {
+  public double f2() {
     final double precision = precision();
     final double recall = recall();
     return 5. * (precision * recall) / (4. * precision + recall);
@@ -195,7 +195,7 @@ public class ConfusionMatrix extends Iced {
    * Returns the F-measure which combines precision and recall and weights precision higher than recall. <br>
    * See <a href="http://en.wikipedia.org/wiki/F1_score.">F1_score</a>
    */
-  public double F0point5() {
+  public double f0point5() {
     final double precision = precision();
     final double recall = recall();
     return 1.25 * (precision * recall) / (.25 * precision + recall);
