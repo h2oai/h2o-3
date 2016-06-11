@@ -692,7 +692,7 @@ def download_all_logs(dirname=".", filename=None):
   -------
     Path of logs written.
   """
-  url = 'http://{}:{}/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
+  url = 'http://{}:{}/3/Logs/download'.format(H2OConnection.ip(),H2OConnection.port())
   opener = urlopen()
   response = opener(url)
 
