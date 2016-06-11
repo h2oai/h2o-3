@@ -2,7 +2,7 @@ Package: h2o
 Version: SUBST_PROJECT_VERSION
 Type: Package
 Title: R Interface for H2O
-Date: 2015-11-18
+Date: SUBST_PROJECT_DATE
 Author: Spencer Aiello, Tom Kraljevic and Petr Maj, with contributions from the H2O.ai team
 Maintainer: Tom Kraljevic <tomk@0xdata.com>
 Description: R scripting functionality for H2O, the open source
