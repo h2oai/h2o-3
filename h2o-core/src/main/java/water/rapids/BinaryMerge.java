@@ -88,7 +88,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }*/
 
     SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/false, _rightMSB));
-    if (_rightMSB==-1) assert _allLeft && rightSortedOXHeader == null; // i.e. it's known nothing on right can join
+    //if (_rightMSB==-1) assert _allLeft && rightSortedOXHeader == null; // i.e. it's known nothing on right can join
     if (rightSortedOXHeader == null) {
       if (_allLeft == false) { tryComplete(); return; }
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
