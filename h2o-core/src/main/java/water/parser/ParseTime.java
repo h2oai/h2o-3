@@ -45,7 +45,9 @@ public abstract class ParseTime {
     try {
       long t0 = attemptYearFirstTimeParse(str); // "yyyy-MM-dd" and time if present
       if( t0 != Long.MIN_VALUE ) return t0;
-      long t2 = attemptDayFirstTimeParse1(str); // "dd-MMM-yy" and time if present
+      long t1 = attemptDayFirstTimeParse1(str); // "dd-MMM-yy" and time if present
+      if( t1 != Long.MIN_VALUE ) return t1;
+      long t2 = attemptYearMonthTimeParse(str); // "yy-MMM", not ambiguous with dd-MMM-yy because of trailing "-yy"
       if( t2 != Long.MIN_VALUE ) return t2;
       long t3 = attemptTimeOnlyParse(str); // Time if present, no date
       if( t3 != Long.MIN_VALUE ) return t3;
@@ -89,52 +91,42 @@ public abstract class ParseTime {
     return parseTime(buf, i, end, yyyy, MM, dd, false);
   }
 
-  // Tries to parse "dd[-]MMM[-]yy[yy][:' '][HH:mm:ss.SSS aa]"
-  // where MMM is a text representation of the month (e.g. Jul or July)
+  // Tries to parse "[dd[-]]MMM[-]yy[yy][:' '][HH:mm:ss.SSS aa]" where MMM is a
+  // text representation of the month (e.g. Jul or July).  Day is optional.
   private static long attemptDayFirstTimeParse1(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     final int end = i+str.length();
     while( i < end && buf[i] == ' ' ) i++;
     if   ( i < end && buf[i] == '"' ) i++;
-    if( (end-i) < 8 ) return Long.MIN_VALUE;
+    if( (end-i) < 5 ) return Long.MIN_VALUE;
     int yyyy=0, MM=0, dd=0;
 
-    // Parse date
-    dd = digit(dd,buf[i++]);
-    if( isDigit(buf[i]) ) dd = digit(dd,buf[i++]);
-    if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
-    if( buf[i] == '-' ) i++;
+    // Parse day
+    if( isDigit(buf[i]) ) {
+      dd = digit(dd,buf[i++]);
+      if( isDigit(buf[i]) ) dd = digit(dd,buf[i++]);
+      if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
+      if( buf[i] == '-' ) i++;
+    } else dd = 1;              // No date, assume 1st
     if( !isChar(buf[i]) ) return Long.MIN_VALUE;
-    //convert MMM or full month name to MM
-    byte[] MMM = null;
-    OUTER: for( ; MM<MMS.length; MM++ ) {
-      byte[][] mss = MMS[MM];
-      INNER:
-      for (byte[] ms : mss) {
-        MMM = ms;
-        if (MMM == null) continue;
-        if (i + MMM.length >= end) continue INNER;
-        for (int j = 0; j < MMM.length; j++)
-          if (MMM[j] != Character.toLowerCase(buf[i + j]))
-            continue INNER;
-        if (buf[i + MMM.length] == '-' || isDigit(buf[i + MMM.length])) break OUTER;
-      }
-    }
-    if( MM == MMS.length ) return Long.MIN_VALUE; // No matching month
-    i += MMM.length;             // Skip month bytes
-    MM++;                       // 1-based month
-    if( buf[i] == '-' ) i++;
+
+    // Parse month
+    MM = parseMonth(buf,i,end);
+    if( MM == -1 ) return Long.MIN_VALUE; // No matching month
+    i += (MM>>4);               // Skip parsed month bytes
+    MM &= 0xF;                  // 1-based month in low nybble
+    if( end-i>=1 && buf[i] == '-' ) i++;
+    if( end-i < 2 ) return Long.MIN_VALUE;
+
+    // Parse year
     yyyy = digit(yyyy,buf[i++]);    // 2-digit year
     yyyy = digit(yyyy,buf[i++]);
     if( end-i>=2 && buf[i] != '"' && buf[i] != ' ' && buf[i] != ':') {
       yyyy = digit(yyyy,buf[i++]);  // 4-digit year
       yyyy = digit(yyyy,buf[i++]);
     } else { //POSIX 2004 & 2008 says 69-99 -> 1900s, 00-68 -> 2000s
-      if (yyyy >= 69)
-        yyyy += 1900;
-      else
-        yyyy += 2000;
+      yyyy += (yyyy >= 69) ? 1900 : 2000;
     }
     while( i<end && buf[i] == ' ' ) i++;
     if( i<end && buf[i] == '"' ) i++;
@@ -175,10 +167,7 @@ public abstract class ParseTime {
       yyyy = digit(yyyy,buf[i++]);  // 4-digit year
       yyyy = digit(yyyy,buf[i++]);
     } else { //POSIX 2004 & 2008 says 69-99 -> 1900s, 00-68 -> 2000s
-      if (yyyy >= 69)
-        yyyy += 1900;
-      else
-        yyyy += 2000;
+      yyyy += (yyyy >= 69) ? 1900 : 2000;
     }
     while( i<end && buf[i] == ' ' ) i++;
     if( i<end && buf[i] == '"' ) i++;
@@ -188,6 +177,33 @@ public abstract class ParseTime {
     // Parse time
     if( buf[i] == ':') i++;
     return parseTime(buf, i, end, yyyy, MM, dd, false);
+  }
+
+  // Tries to parse "yy-MMM".  Note that this is not ambiguous with dd-MMM-yy
+  // which requires a trailing "-yy" year.
+  private static long attemptYearMonthTimeParse(BufferedString str) {
+    final byte[] buf = str.getBuffer();
+    int i=str.getOffset();
+    final int end = i+str.length();
+    while( i < end && buf[i] == ' ' ) i++;
+    if   ( i < end && buf[i] == '"' ) i++;
+    if( (end-i) < 6 ) return Long.MIN_VALUE;
+    int yyyy=0, MM=0;
+
+    // Parse year
+    yyyy = digit(yyyy,buf[i++]);
+    yyyy = digit(yyyy,buf[i++]);
+    if( buf[i++] != '-' ) return Long.MIN_VALUE;
+    yyyy += (yyyy >= 69) ? 1900 : 2000; //POSIX 2004 & 2008 says 69-99 -> 1900s, 00-68 -> 2000s
+
+    // Parse month
+    MM = parseMonth(buf,i,end);
+    if( MM == -1 ) return Long.MIN_VALUE; // No matching month
+    i += (MM>>4);               // Skip parsed month bytes
+    MM &= 0xF;                  // 1-based month in low nybble
+    while( i < end && buf[i] == ' ' ) i++;
+    if( i==end ) return new DateTime(yyyy,MM,1,0,0,0, getTimezone()).getMillis();
+    return Long.MIN_VALUE;      // Something odd
   }
 
   // Tries to parse time without any date.
@@ -202,6 +218,34 @@ public abstract class ParseTime {
     if( t1 == Long.MIN_VALUE ) return Long.MIN_VALUE;
     // Remove all TZ info; return bare msec from the morning of the epoch
     return t1+getTimezone().getOffsetFromLocal(t1);
+  }
+
+  /** Parse textual (not numeric) month
+   * @param buf - byte buffer containing text to parse
+   * @param i - index of expected start of time string in buffer
+   * @return -1 if failed parse, or (bytes_parsed<<4)|(month).  One-based month
+   * is returned in the low nybble.
+   */
+  private static int parseMonth(byte[] buf, int i, int end) {
+    int MM=0;
+    byte[] MMM = null;
+    OUTER: for( ; MM<MMS.length; MM++ ) {
+      byte[][] mss = MMS[MM];
+      INNER:
+      for (byte[] ms : mss) {
+        MMM = ms;
+        if (MMM == null) continue;
+        if (i + MMM.length > end) 
+          continue INNER;
+        for (int j = 0; j < MMM.length; j++)
+          if (MMM[j] != Character.toLowerCase(buf[i + j]))
+            continue INNER;
+        if (i+MMM.length==end || buf[i + MMM.length] == '-' || isDigit(buf[i + MMM.length])) break OUTER;
+      }
+    }
+    if( MM == MMS.length ) return -1; // No matching month
+    MM++;                       // 1-based month
+    return (MMM.length<<4)|MM;  // Return two values; skip in upper bytes, month in low nybble
   }
 
   /**
@@ -279,10 +323,7 @@ public abstract class ParseTime {
     if( x < 0 || c < '0' || c > '9' ) return -1;
     return x*10+(c-'0');
   }
-  private static boolean isDigit(byte b) {
-    if (b < '0' || b > '9') return false;
-    else return true;
-  }
+  private static boolean isDigit(byte b) { return (b >= '0' && b <= '9'); }
   private static boolean isChar(byte b) {
     if (b < 'A' || (b >'Z' && b < 'a')  || b > 'z') return false;
     else return true;
