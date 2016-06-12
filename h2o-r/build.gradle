@@ -106,7 +106,7 @@ task setPackageFiles << {
     def txt = ""
     def today = new Date()
     txt = DESC_TEMP.text
-    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
+    txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.format("YYYY-MM-dd"))
     DESCRIPTION.write(txt)
     txt = h2oRd_TEMP.text
     txt = txt.replaceAll("SUBST_PROJECT_VERSION", PROJECT_VERSION).replaceAll("SUBST_PROJECT_BRANCH", BUILD_BRANCH).replaceAll("SUBST_PROJECT_DATE", today.toString())
@@ -149,12 +149,9 @@ task buildPKG(type: Exec) { commandLine getOsSpecificCommandLine(['R', 'CMD', 'b
 task cpToR << {
     new File([T, "R", "src", "contrib"].join(File.separator)).mkdirs()
     copyFile([T, "README.md"], [T, "R", "README.md"])
-    copyFile([T, "h2o-package", "DESCRIPTION"], [T, "PACKAGES"])
-    copyFile([T, "PACKAGES"], [T, "R", "src", "contrib", "PACKAGES"])
-    gzip(new File([T,"PACKAGES"].join(File.separator)).text, [T,"PACKAGES.gz"].join(File.separator))
-    copyFile([T, "PACKAGES.gz"], [T, "R", "src", "contrib", "PACKAGES.gz"])
     copyFile([T, H2O_R_SOURCE_FILE], [T, "R", "src", "contrib", H2O_R_SOURCE_FILE])
 }
+task publishPKG(type: Exec) { commandLine getOsSpecificCommandLine(['Rscript', "-e", "tools::write_PACKAGES('R/src/contrib')"]) }
 
 
 task cleanUp << {
@@ -200,7 +197,8 @@ genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
 buildPKG.dependsOn cpPDF
 cpToR.dependsOn buildPKG
-untar.dependsOn cpToR
+publishPKG.dependsOn cpToR
+untar.dependsOn publishPKG
 cleaner.dependsOn untar
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o
