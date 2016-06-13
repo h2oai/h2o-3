@@ -245,6 +245,7 @@ public class RequestServer extends NanoHTTPD {
         "DELETE /3/Frames", FramesHandler.class, "deleteAll",
         "Delete all Frames from the H2O distributed K/V store.");
 
+
     // Handle models
     register("model",
         "GET /3/Models/{model_id}", ModelsHandler.class, "fetch",
@@ -579,15 +580,57 @@ public class RequestServer extends NanoHTTPD {
       // to represent booleans creates ambiguities: should I write "true", "True", "TRUE", or perhaps "1"?
       //
       // TODO These should be removed as soon as possible...
-      if (url.startsWith("/3/Frames/") && (url.toLowerCase().endsWith("/overwrite/true") || url.toLowerCase()
-          .endsWith("/overwrite/false")) && url.contains("/export/")) {
-        // /3/Frames/{frameid}/export/{path}/overwrite/{force}
-        int i = url.indexOf("/export/");
-        boolean force = url.toLowerCase().endsWith("true");
-        parms.put("frame_id", url.substring(10, i));
-        parms.put("path", url.substring(i+8, url.length()-15-(force?0:1)));
-        parms.put("force", force);
-        route = findRouteByApiName("exportFrame_deprecated");
+      if (url.startsWith("/3/Frames/")) {
+        // /3/Frames/{frame_id}/export/{path}/overwrite/{force}
+        if ((url.toLowerCase().endsWith("/overwrite/true") || url.toLowerCase().endsWith("/overwrite/false")) && url.contains("/export/")) {
+          int i = url.indexOf("/export/");
+          boolean force = url.toLowerCase().endsWith("true");
+          parms.put("frame_id", url.substring(10, i));
+          parms.put("path", url.substring(i+8, url.length()-15-(force?0:1)));
+          parms.put("force", force);
+          route = findRouteByApiName("exportFrame_deprecated");
+        }
+        // /3/Frames/{frame_id}/export
+        else if (url.endsWith("/export")) {
+          parms.put("frame_id", url.substring(10, url.length()-7));
+          route = findRouteByApiName("exportFrame");
+        }
+        // /3/Frames/{frame_id}/columns/{column}/summary
+        else if (url.endsWith("/summary") && url.contains("/columns/")) {
+          int i = url.indexOf("/columns/");
+          parms.put("frame_id", url.substring(10, i));
+          parms.put("column", url.substring(i+9, url.length()-8));
+          route = findRouteByApiName("frameColumnSummary");
+        }
+        // /3/Frames/{frame_id}/columns/{column}/domain
+        else if (url.endsWith("/domain") && url.contains("/columns/")) {
+          int i = url.indexOf("/columns/");
+          parms.put("frame_id", url.substring(10, i));
+          parms.put("column", url.substring(i+9, url.length()-7));
+          route = findRouteByApiName("frameColumnDomain");
+        }
+        // /3/Frames/{frame_id}/columns/{column}
+        else if (url.contains("/columns/")) {
+          int i = url.indexOf("/columns/");
+          parms.put("frame_id", url.substring(10, i));
+          parms.put("column", url.substring(i+9));
+          route = findRouteByApiName("frameColumn");
+        }
+        // /3/Frames/{frame_id}/summary
+        else if (url.endsWith("/summary")) {
+          parms.put("frame_id", url.substring(10, url.length()-8));
+          route = findRouteByApiName("frameSummary");
+        }
+        // /3/Frames/{frame_id}/columns
+        else if (url.endsWith("/columns")) {
+          parms.put("frame_id", url.substring(10, url.length()-8));
+          route = findRouteByApiName("frameColumns");
+        }
+        // /3/Frames/{frame_id}
+        else {
+          parms.put("frame_id", url.substring(10));
+          route = findRouteByApiName(method.equals("DELETE")? "deleteFrame" : "frame");
+        }
       }
       //------------------------------------------
 
