@@ -110,7 +110,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     // If not, show all possible metrics
     if (modelKeys.size() > 0 && sort_by != null) {
       Set<String> possibleMetrics = ModelMetrics.getAllowedMetrics(modelKeys.get(0));
-      if (!possibleMetrics.contains(sort_by)) {
+      if (!possibleMetrics.contains(sort_by.toLowerCase())) {
         throw new H2OIllegalArgumentException("Invalid argument for sort_by specified. Must be one of: " + Arrays.toString(possibleMetrics.toArray(new String[0])));
       }
     }
