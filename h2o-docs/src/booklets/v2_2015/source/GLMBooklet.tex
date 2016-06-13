@@ -1271,6 +1271,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+\item \texttt{seed}: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 \end{itemize}
 %Additional: 
 %Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 
