@@ -587,7 +587,7 @@ public class RequestServer extends NanoHTTPD {
           boolean force = url.toLowerCase().endsWith("true");
           parms.put("frame_id", url.substring(10, i));
           parms.put("path", url.substring(i+8, url.length()-15-(force?0:1)));
-          parms.put("force", force);
+          parms.put("force", force? "true" : "false");
           route = findRouteByApiName("exportFrame_deprecated");
         }
         // /3/Frames/{frame_id}/export
