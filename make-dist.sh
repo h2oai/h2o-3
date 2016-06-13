@@ -24,7 +24,7 @@ function make_zip_common {
   cp h2o-py/dist/*whl $IMAGEDIR/python
 
   mkdir -p $IMAGEDIR/bindings/java
-  cp h2o-bindings/build/libs/h2o-java-rest-bindings-*.jar $IMAGEDIR/bindings/java
+  cp h2o-bindings/build/libs/h2o-bindings-*.jar $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
@@ -120,7 +120,7 @@ cd ..
 
 # Add Java bindings Jar to target.
 mkdir -p target/bindings/java
-cp -p h2o-java-rest-bindings/build/libs/*.jar target/bindings/java
+cp -p h2o-bindings/build/libs/*.jar target/bindings/java
 
 # Add Maven repo to target.
 mkdir target/maven

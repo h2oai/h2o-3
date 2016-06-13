@@ -301,13 +301,13 @@ This section reproduces the Flow example *GBM_Example.flow* using three language
  * *curl*, and 
  * *Java* (making REST API calls from an external Java program).
 
-The Java code uses the bindings found in H2O's *h2o-java-rest-bindings.jar*, which use the *Retrofit* REST API library from Square: [http://square.github.io/retrofit/](http://square.github.io/retrofit/).  
+The Java code uses the bindings found in H2O's *h2o-bindings.jar*, which use the *Retrofit* REST API library from Square: [http://square.github.io/retrofit/](http://square.github.io/retrofit/).  
 
 If you use Java / Retrofit you'll get the results back from the server as Java objects.  For brevity these are not shown here.  
 
 The source files for the payload schemas and for the endpoint proxies are documented with help text for the fields and Javadoc for the methods, and the default constructors set each field to its default value.  Each payload schema class includes a *toString()* method to ease debugging.
 
-If you have downloaded H2O as a zip file you'll find the Java Retrofit bindings in *bindings/java/h2o-java-rest-bindings-{version}.jar* and the sources in *bindings/java/h2o-java-rest-bindings-sources.jar*.  If you have built H2O from source you'll find them in *h2o-java-rest-bindings/build/libs/h2o-java-rest-bindings.jar* and the sources in *h2o-java-rest-bindings/build/src-gen/main/java/water/bindings/*.
+If you have downloaded H2O as a zip file you'll find the Java Retrofit bindings in *bindings/java/h2o-bindings-{version}.jar* and the sources in *bindings/java/h2o-bindings-sources.jar*.  If you have built H2O from source you'll find them in *h2o-bindings/build/libs/h2o-bindings.jar* and the sources in *h2o-bindings/build/src-gen/main/java/water/bindings/*.
 
 ### GBM_Example.flow, Step 1: Import
 In Flow:
