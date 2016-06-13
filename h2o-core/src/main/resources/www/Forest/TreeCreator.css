@@ -1,9 +1,4 @@
-        .node circle{
-        stroke: red;
-        stroke-width: 1.5px;
-        }
-
-        .node{
+		.node{
         font-size:13px;
         font-family:Times;
 		font-weight: bold;
@@ -17,13 +12,6 @@
         stroke: yellow;
         }
 
-
-        .link{
-        fill: none;
-        stroke: grey;
-        stroke-width: 1.5px;
-        }
-
         #sidebar{
         float:right;
         border: 2px dashed grey;
@@ -35,6 +23,7 @@
         padding-top: 10px;
 		margin-right: 0px;
         }
+
 		#topPage{
 			border-top: solid 5px yellow;
 			padding: 0px;
@@ -49,6 +38,7 @@
 			link-style: none;
 			color: grey;
 		}
+
 		a:hover{
 			background-color: yellow;
 			color: grey;
@@ -58,19 +48,23 @@
 			display:inline;
 			padding-right: 20px;
 		}
+
 		#logo{
 			font-size:40px;
 			color:grey;
 		}
+
 		#tinyMenu{
 			border-bottom: solid 2px yellow;
 			font-family: Helvetica;
 			font-size:12px;
 			color:gray;
 		}
+
 		#nameTree{
 			font-size:20px;
 		}
+
 		#saveMenu{
 			margin-top: 20px;
 
@@ -78,4 +72,10 @@
 		#otherTopPage{
 		float: right;
 		margin-bottom: 40px;
+		}
+
+		#otherInput{
+			float: right;
+           	margin-bottom: 40px;
+           	padding: 20px;
 		}
