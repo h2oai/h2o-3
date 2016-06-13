@@ -569,6 +569,28 @@ public class RequestServer extends NanoHTTPD {
       // Determine the Route corresponding to this request, and also fill in {parms} with the path parameters
       Route route = routesTree.lookup(uri, parms);
 
+      //----- DEPRECATED API handling ------------
+      // These APIs are broken, because they lead users to create invalid URLs. For example the endpoint
+      //   /3/Frames/{frameid}/export/{path}/overwrite/{force}
+      // is invalid, because it leads to URLs like this:
+      //   /3/Frames/predictions_9bd5_GLM_model_R_1471148_36_on_RTMP_sid_afec_27/export//tmp/pred.csv/overwrite/TRUE
+      // Here both the {frame_id} and {path} usually contain "/" (making them non-tokens), they may contain other
+      // special characters not valid within URLs (for example if filename is not in ASCII); finally the use of strings
+      // to represent booleans creates ambiguities: should I write "true", "True", "TRUE", or perhaps "1"?
+      //
+      // TODO These should be removed as soon as possible...
+      if (url.startsWith("/3/Frames/") && (url.toLowerCase().endsWith("/overwrite/true") || url.toLowerCase()
+          .endsWith("/overwrite/false")) && url.contains("/export/")) {
+        // /3/Frames/{frameid}/export/{path}/overwrite/{force}
+        int i = url.indexOf("/export/");
+        boolean force = url.toLowerCase().endsWith("true");
+        parms.put("frame_id", url.substring(10, i));
+        parms.put("path", url.substring(i+8, url.length()-15-(force?0:1)));
+        parms.put("force", force);
+        route = findRouteByApiName("exportFrame_deprecated");
+      }
+      //------------------------------------------
+
       if (route == null) {
         // if the request is not known, treat as resource request, or 404 if not found
         if (uri.isGetMethod())
@@ -726,6 +748,13 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
+  private Route findRouteByApiName(String apiName) {
+    for (Route route : routesList) {
+      if (route._api_name.equals(apiName))
+        return route;
+    }
+    return null;
+  }
 
   //------ Handling of Responses ---------------------------------------------------------------------------------------
 
