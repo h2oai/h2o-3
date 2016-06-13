@@ -346,7 +346,7 @@ public class RequestServer extends NanoHTTPD {
         "predictions and the metrics will be returned.");
 
     register("_predictions_predict2",
-        "POST /4/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict2",
+        "POST /4/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predictAsync",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
