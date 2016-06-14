@@ -202,13 +202,13 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
           gl.exec(m._output._job);
         }
       }
-      metrics = new ModelMetricsBinomialGLM(m, f, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), gl);
+      metrics = new ModelMetricsBinomialGLM(m, f, metrics._nobs, metrics._MSE, _domain, metricsBinommial._sigma, metricsBinommial._auc, metricsBinommial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF(), gl);
     } else if( _glmf._family == Family.multinomial) {
       ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) metrics;
-      metrics = new ModelMetricsMultinomialGLM(m, f, metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF());
+      metrics = new ModelMetricsMultinomialGLM(m, f, metricsMultinomial._nobs,metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm, metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(), null_devince, _aic, nullDOF(), resDOF());
     } else {
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
-      metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), residualDeviance()/_wcount, null_devince, _aic, nullDOF(), resDOF());
+      metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._nobs, metricsRegression._MSE, metricsRegression._sigma, residualDeviance(), residualDeviance()/_wcount, null_devince, _aic, nullDOF(), resDOF());
     }
     return gm._output.addModelMetrics(metrics); // Update the metrics in-place with the GLM version
   }

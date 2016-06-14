@@ -7,8 +7,8 @@ import water.util.ArrayUtils;
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public double residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
-  public ModelMetricsRegression(Model model, Frame frame, double mse, double sigma, double meanResidualDeviance) {
-    super(model, frame, mse, null, sigma);
+  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double meanResidualDeviance) {
+    super(model, frame, nobs, mse, null, sigma);
     _mean_residual_deviance = meanResidualDeviance;
   }
 
@@ -63,7 +63,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = _sumsqe / _wcount;
       double meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, mse, weightedSigma(), meanResDeviance));
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, _count, mse, weightedSigma(), meanResDeviance));
     }
 
     public String toString() {return " mse = " + _sumsqe / _wcount;}

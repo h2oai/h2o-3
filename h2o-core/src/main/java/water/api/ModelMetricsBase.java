@@ -45,6 +45,9 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
   @API(help = "The Mean Squared Error of the prediction for this scoring run.", direction = API.Direction.OUTPUT)
   public double MSE;
 
+  @API(help="Number of observations.")
+  public long nobs;
+
   @Override public S fillFromImpl(ModelMetrics modelMetrics) {
     // If we're copying in a Model we need a ModelSchema of the right class to fill into.
     Model m = modelMetrics.model();

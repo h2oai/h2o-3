@@ -12,8 +12,8 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression implements
   public final double _nullDev;
   public final double _AIC;
 
-  public ModelMetricsRegressionGLM(Model model, Frame frame, double mse, double sigma, double resDev, double meanResDev, double nullDev, double aic, long nDof, long rDof) {
-    super(model, frame, mse, sigma, meanResDev);
+  public ModelMetricsRegressionGLM(Model model, Frame frame, long nobs, double mse, double sigma, double resDev, double meanResDev, double nullDev, double aic, long nDof, long rDof) {
+    super(model, frame, nobs, mse, sigma, meanResDev);
     _resDev = resDev;
     _nullDev = nullDev;
     _AIC = aic;

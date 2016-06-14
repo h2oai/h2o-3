@@ -15,6 +15,7 @@ def reg_path_glm():
     dev1 = r['explained_deviance_train'][10]
     p = m2.model_performance(d)
     dev2 = 1-p.residual_deviance()/p.null_deviance()
+    print(dev1," =?= ",dev2)
     assert abs(dev1 - dev2) < 1e-6
     for l in range(0,len(r['lambdas'])):
         m = glm(family='binomial',lambda_search=False,Lambda=r['lambdas'][l],solver='COORDINATE_DESCENT')
