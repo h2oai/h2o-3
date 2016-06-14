@@ -221,6 +221,11 @@ public class TypeMap {
       Icer f = goForGold(id);
       return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) {
-      throw Log.throwErr(e); }
+      throw Log.throwErr(e);
+    }
+  }
+  public static Freezable getTheFreezableOrThrow(int id) throws ClassNotFoundException {
+    Icer f = goForGold(id);
+    return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
   }
 }

@@ -403,8 +403,9 @@ public class NanoHTTPD
 
           if (contentType.equalsIgnoreCase("multipart/form-data"))
           {
+            // Presumably this entire block is never called anymore.
             // Handle multipart/form-data
-            if ( !st.hasMoreTokens())
+            if (!st.hasMoreTokens())
               sendError( HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but boundary missing. Usage: GET /example/file.html" );
             String boundaryExp = st.nextToken();
             st = new StringTokenizer( boundaryExp , "=" );
@@ -414,7 +415,7 @@ public class NanoHTTPD
             String boundary = st.nextToken();
             String paddedMethod = String.format("%-6s", method);
             Log.info("Method: " + paddedMethod, ", URI: " + uri + ", route: " + "(special case)" + ", parms: " + parms);
-            RequestServer.alwaysLogRequest(uri, "POST", parms);
+            // RequestServer.alwaysLogRequest(uri, "POST", parms);  <-- this was throwing H2O.fail()
             boolean handled = fileUpload(boundary, is, parms, uri);
             if (handled) {
               return;

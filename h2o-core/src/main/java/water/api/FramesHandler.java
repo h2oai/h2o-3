@@ -216,12 +216,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return s;
   }
 
-  /** Docs for column summary. */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public StringBuffer columnSummaryDocs(int version, StringBuffer docs) {
-    return null; // doc(this, version, docs, "docs/columnSummary.md");
-  }
-
   // TODO: return everything but the second level of rollups (histograms); currently mins and maxes are missing
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer

@@ -19,7 +19,7 @@ import java.io.*;
  * <p>
  * During startup time the Weaver creates a parallel set of classes called
  * (classname)$Icer.  These provide bytestream and JSON serializers
- * and deserializers which get called by AutoBuffer.write* and AutoBugger.read*.
+ * and deserializers which get called by AutoBuffer.write* and AutoBuffer.read*.
  * <p>
  * To debug the automagic serialization code create a transient field in your Iced
  * class called DEBUG_WEAVER.  The generated source code will get written to STDOUT:
