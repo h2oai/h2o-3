@@ -360,9 +360,9 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
-    version = schema.get__meta().getSchema_version();
-    name = schema.get__meta().getSchema_name();
-    type = schema.get__meta().getSchema_type();
+    version = schema.get__meta().getSchemaVersion();
+    name = schema.get__meta().getSchemaName();
+    type = schema.get__meta().getSchemaType();
 
     superclass = schema.getClass().getSuperclass().getSimpleName();
     // Get metadata of all annotated fields
