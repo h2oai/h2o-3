@@ -2,6 +2,6 @@ package water.api;
 
 import water.Iced;
 
-public class UnlockKeysV3 extends RequestSchema<Iced, UnlockKeysV3> {
+public class UnlockKeysV3 extends SchemaV3<Iced, UnlockKeysV3> {
 
 }

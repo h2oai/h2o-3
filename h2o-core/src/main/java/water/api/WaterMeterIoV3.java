@@ -3,7 +3,7 @@ package water.api;
 import water.util.PojoUtils;
 import water.util.WaterMeterIo;
 
-public class WaterMeterIoV3 extends RequestSchema<WaterMeterIo, WaterMeterIoV3> {
+public class WaterMeterIoV3 extends SchemaV3<WaterMeterIo, WaterMeterIoV3> {
   @API(help="Index of node to query ticks for (0-based)", direction = API.Direction.INPUT)
   public int nodeidx;
 

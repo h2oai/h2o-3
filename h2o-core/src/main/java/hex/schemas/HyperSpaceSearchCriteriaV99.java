@@ -3,14 +3,15 @@ package hex.schemas;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria;
 import water.api.API;
-import water.api.Schema;
+import water.api.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 
 /**
  * Search criteria for a hyperparameter search including directives for how to search and
  * when to stop the search.
  */
-public class HyperSpaceSearchCriteriaV99<I, S> extends Schema<HyperSpaceSearchCriteria, HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99> {
+public class HyperSpaceSearchCriteriaV99<I, S>
+    extends SchemaV3<HyperSpaceSearchCriteria, HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99> {
 
   @API(help = "Hyperparameter space search strategy.", required = true, values = { "Unknown", "Cartesian", "RandomDiscrete" }, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteria.Strategy strategy;

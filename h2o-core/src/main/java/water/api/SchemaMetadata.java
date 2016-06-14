@@ -272,7 +272,7 @@ public final class SchemaMetadata extends Iced {
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        if (clz == Schema.Meta.class) {
+        if (clz == SchemaV3.Meta.class) {
           // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
           return "Schema.Meta";
         } else {
@@ -360,9 +360,9 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
-    version = schema.get__meta().getSchemaVersion();
-    name = schema.get__meta().getSchemaName();
-    type = schema.get__meta().getSchemaType();
+    version = schema.getSchemaVersion();
+    name = schema.getSchemaName();
+    type = schema.getSchemaType();
 
     superclass = schema.getClass().getSuperclass().getSimpleName();
     // Get metadata of all annotated fields

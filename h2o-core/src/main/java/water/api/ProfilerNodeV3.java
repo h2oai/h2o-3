@@ -2,8 +2,9 @@ package water.api;
 
 import water.Iced;
 
-public class ProfilerNodeV3 extends Schema<Iced, ProfilerNodeV3> {
-  public static class ProfilerNodeEntryV3 extends Schema<Iced, ProfilerNodeEntryV3> {
+public class ProfilerNodeV3 extends SchemaV3<Iced, ProfilerNodeV3> {
+
+  public static class ProfilerNodeEntryV3 extends SchemaV3<Iced, ProfilerNodeEntryV3> {
     @API(help="Stack trace", direction=API.Direction.OUTPUT)
     public String stacktrace;
 

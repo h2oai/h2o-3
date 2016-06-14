@@ -3,7 +3,7 @@ package water.api;
 import water.api.KeyV3.FrameKeyV3;
 import water.util.Tabulate;
 
-public class TabulateV3 extends RequestSchema<Tabulate, TabulateV3> {
+public class TabulateV3 extends SchemaV3<Tabulate, TabulateV3> {
   // INPUT
   @API(help="Dataset", required = true)
   public FrameKeyV3 dataset;

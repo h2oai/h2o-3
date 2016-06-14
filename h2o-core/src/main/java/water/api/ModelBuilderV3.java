@@ -9,7 +9,7 @@ import hex.schemas.ModelBuilderSchema;
  * these will come from init(true); others may after the model build really begins.
  * @see H2OModelBuilderErrorV3
  */
-public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, S>> extends Schema<J, S> {
+public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, S>> extends SchemaV3<J, S> {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
   public ModelParametersSchema parameters;
   

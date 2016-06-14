@@ -5,7 +5,7 @@ import water.util.FrameUtils;
 
 import java.util.Random;
 
-public class MissingInserterV3 extends RequestSchema<FrameUtils.MissingInserter, MissingInserterV3> {
+public class MissingInserterV3 extends SchemaV3<FrameUtils.MissingInserter, MissingInserterV3> {
   @API(help="dataset", required = true)
   public FrameKeyV3 dataset;
 

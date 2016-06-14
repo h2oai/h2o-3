@@ -14,7 +14,7 @@ import water.api.KeyV3.FrameKeyV3;
  * </ul>
  *
  */
-public class ModelSchemaBase<M extends water.Iced, S extends Schema<M, S>> extends Schema<M, S> {
+public class ModelSchemaBase<M extends water.Iced, S extends SchemaV3<M, S>> extends SchemaV3<M, S> {
   public ModelSchemaBase() { }
 
   // Input fields

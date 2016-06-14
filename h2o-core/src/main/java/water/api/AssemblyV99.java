@@ -4,7 +4,7 @@ package water.api;
 import water.Iced;
 
 /** FIXME: comments please! */
-public class AssemblyV99 extends RequestSchema<Iced, AssemblyV99>  {
+public class AssemblyV99 extends SchemaV3<Iced, AssemblyV99>  {
 
   // input fields
   @API(help="A list of steps describing the assembly line.") String[] steps;

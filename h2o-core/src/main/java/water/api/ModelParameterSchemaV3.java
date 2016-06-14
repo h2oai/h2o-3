@@ -17,7 +17,7 @@ import water.util.PojoUtils;
  * TODO: add a superclass.
  * TODO: refactor this into with FieldMetadataBase.
  */
-public class ModelParameterSchemaV3 extends Schema<Iced, ModelParameterSchemaV3> {
+public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV3> {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
