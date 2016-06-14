@@ -520,10 +520,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient L1Solver _lslvr;
 
     private double [] solveGram(Solver s, GLMIterationTask t) {
-      int [] zeros = t._gram.dropZeroCols();
+      int [] zeros = t._gram.findZeroCols();
       if(zeros.length > 0) {
+        t._gram.dropCols(zeros);
         t._xy = ArrayUtils.removeIds(t._xy, zeros);
-        t._beta = ArrayUtils.removeIds(t._beta, zeros);
+        if(t._beta != null)
+          t._beta = ArrayUtils.removeIds(t._beta, zeros);
         _state.removeCols(zeros);
       }
       t._gram.mul(_parms._obj_reg);
@@ -553,6 +555,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
           _state.removeCols(collinear_cols);
+          gram.dropCols(collinear_cols);
           xy = ArrayUtils.removeIds(xy,collinear_cols);
         }
         xy = xy.clone();
@@ -566,7 +569,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
-          if(_state._u == null && _parms._family != Family.multinomial) _state._u = MemoryManager.malloc8d(_state.activeData().P()+1);
+          if(_state._u == null && _parms._family != Family.multinomial) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
             (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         }
       }
@@ -1308,7 +1311,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _betaEps = betaEps;
       _xy = xy;
       double[] rhos = MemoryManager.malloc8d(xy.length);
-      computeCholesky(gram, rhos, lmax * 1e-8);
+      computeCholesky(gram, rhos, lmax * 1e-8,intercept);
       _addedL2 = rhos[0] != 0;
       _rho = _addedL2 ? rhos : null;
     }
@@ -1347,7 +1350,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // Here we compute the rho for each coordinate by using equation for computing coefficient for single coordinate and then making the two penalties equal.
       //
       int ii = intercept ? 1 : 0;
-      int icptCol = xy.length - 1;
+      int icptCol = gram.fullN()-1;
       double[] rhos = MemoryManager.malloc8d(xy.length);
       double min = Double.POSITIVE_INFINITY;
       for (int i = 0; i < xy.length - ii; ++i) {
@@ -1376,37 +1379,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < xy.length; ++i)
           xy[i] += proxPen[i] * beta_given[i];
       }
-      computeCholesky(gram, rhos, 1e-5);
-      _rho = rhos;
       _xy = xy;
+      _rho = rhos;
+      computeCholesky(gram, rhos, 1e-5,intercept);
     }
 
-    private void computeCholesky(Gram gram, double[] rhos, double rhoAdd) {
+    private void computeCholesky(Gram gram, double[] rhos, double rhoAdd, boolean intercept) {
       gram.addDiag(rhos);
+      if(!intercept) {
+        gram.dropIntercept();
+        _xy[_xy.length-1] = 0;
+      }
       _chol = gram.cholesky(null, true, null);
       if (!_chol.isSPD()) { // make sure rho is big enough
         gram.addDiag(ArrayUtils.mult(rhos, -1));
-        ArrayUtils.mult(rhos, -1);
-        for (int i = 0; i < rhos.length; ++i)
-          rhos[i] += rhoAdd;//1e-5;
-        Log.info("Got NonSPD matrix with original rho, re-computing with rho = " + rhos[0]);
-        _gram.addDiag(rhos);
+        gram.addDiag(rhoAdd,!intercept);
+        Log.info("Got NonSPD matrix with original rho, re-computing with rho = " + (_rho[0]+rhoAdd));
         _chol = gram.cholesky(null, true, null);
         int cnt = 0;
+        double rhoAddSum = rhoAdd;
         while (!_chol.isSPD() && cnt++ < 5) {
-          gram.addDiag(ArrayUtils.mult(rhos, -1));
-          ArrayUtils.mult(rhos, -1);
-          for (int i = 0; i < rhos.length; ++i)
-            rhos[i] *= 100;
-          Log.warn("Still NonSPD matrix, re-computing with rho = " + rhos[0]);
-          _gram.addDiag(rhos);
+          gram.addDiag(rhoAdd,!intercept);
+          rhoAddSum += rhoAdd;
+          Log.warn("Still NonSPD matrix, re-computing with rho = " + (rhos[0] + rhoAddSum));
           _chol = gram.cholesky(null, true, null);
         }
         if (!_chol.isSPD())
           throw new NonSPDMatrixException();
       }
-      gram.addDiag(ArrayUtils.mult(rhos, -1));
-      ArrayUtils.mult(rhos, -1);
     }
 
     @Override

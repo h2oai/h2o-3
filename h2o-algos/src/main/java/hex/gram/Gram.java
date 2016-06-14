@@ -40,6 +40,16 @@ public final class Gram extends Iced<Gram> {
     _hasIntercept = false;
     --_fullN;
   }
+
+  public Gram deep_clone(){
+    Gram res = clone();
+    if(_xx != null)
+      res._xx = ArrayUtils.deepClone(_xx);
+    if(_diag != null)
+      res._diag = res._diag.clone();
+    return res;
+  }
+
   public final int fullN(){return _fullN;}
   public double _diagAdded;
 
@@ -253,34 +263,25 @@ public final class Gram extends Iced<Gram> {
   }
 
 
-  public int [] dropZeroCols(){
-    ArrayList<Integer> zeros = new ArrayList<>();
-    if(_diag != null)
-      for(int i = 0; i < _diag.length; ++i)
-        if(_diag[i] == 0)zeros.add(i);
-    int diagZeros = zeros.size();
-    for(int i = 0; i < _xx.length; ++i)
-      if(_xx[i][_xx[i].length-1] == 0)
-        zeros.add(_xx[i].length-1);
-    if(zeros.size() == 0) return new int[0];
-    int [] ary = new int[zeros.size() + 1];
-    ary[ary.length-1] = -1;
-    for(int i = 0; i < zeros.size(); ++i)
-      ary[i] = zeros.get(i);
+  public void dropCols(int[] cols) {
+    int diagCols = 0;
+    for(int i =0; i < cols.length; ++i)
+      if(cols[i] < _diagN) ++diagCols;
+      else break;
     int j = 0;
-    if(diagZeros > 0) {
-      double [] diag = MemoryManager.malloc8d(_diagN - diagZeros);
+    if(diagCols > 0) {
+      double [] diag = MemoryManager.malloc8d(_diagN - diagCols);
       int k = 0;
       for(int i = 0; i < _diagN; ++i)
-        if (ary[j] == i) {
+        if (j < cols.length && cols[j] == i) {
           ++j;
         } else  diag[k++] = _diag[i];
       _diag = diag;
     }
-    double [][] xxNew = new double[_xx.length-ary.length+diagZeros+1][];
+    double [][] xxNew = new double[_xx.length-cols.length+diagCols][];
     int iNew = 0;
     for(int i = 0; i < _xx.length; ++i) {
-      if((_diagN + i) == ary[j]){
+      if(j < cols.length && (_diagN + i) == cols[j]){
         ++j; continue;
       }
       if(j == 0) {
@@ -290,7 +291,7 @@ public final class Gram extends Iced<Gram> {
       int l = 0,m = 0;
       double [] x = MemoryManager.malloc8d(_xx[i].length-j);
       for(int k = 0; k < _xx[i].length; ++k)
-        if(k == ary[l]) {
+        if(l < cols.length && k == cols[l]) {
           ++l;
         } else
           x[m++] = _xx[i][k];
@@ -299,13 +300,30 @@ public final class Gram extends Iced<Gram> {
     _xx = xxNew;
     _diagN = _diag.length;
     _fullN = _xx[_xx.length-1].length;
-    return Arrays.copyOf(ary,ary.length-1);
+  }
+
+  public int[] findZeroCols(){
+    ArrayList<Integer> zeros = new ArrayList<>();
+    if(_diag != null)
+      for(int i = 0; i < _diag.length; ++i)
+        if(_diag[i] == 0)zeros.add(i);
+    for(int i = 0; i < _xx.length; ++i)
+      if(_xx[i][_xx[i].length-1] == 0)
+        zeros.add(_xx[i].length-1);
+    if(zeros.size() == 0) return new int[0];
+    int [] ary = new int[zeros.size()];
+    for(int i = 0; i < zeros.size(); ++i)
+      ary[i] = zeros.get(i);
+    return ary;
   }
 
   public String toString(){
     if(_fullN >= 1000) return "Gram(" + _fullN + ")";
     else return ArrayUtils.pprint(getXX(true,false));
   }
+
+
+
   static public class InPlaceCholesky {
     final double _xx[][];             // Lower triangle of the symmetric matrix.
     private boolean _isSPD;
