@@ -133,9 +133,13 @@ import java.util.*;
  * <pre>
  * S schema = MySchemaClass(version).fillFromImpl(schema.createImpl()).fillFromParms(parms);
  * </pre>
- * @see Meta#getSchema_version()
- * @see Meta#getSchema_name()
- * @see Meta#getSchema_type()
+ * @param <I> "implementation" (Iced) class for this schema
+ * @param <S> reference to self: this should always be the same class as being declared. For example:
+ *                public class TimelineV3 extends Schema<Timeline, TimelineV3>
+ *
+ * @see Meta#getSchemaVersion()
+ * @see Meta#getSchemaName()
+ * @see Meta#getSchemaType()
  * @see water.api.API
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
@@ -149,10 +153,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    * the /Metadata/schemas REST API endpoint for the purposes of REST service discovery.
    */
   public static final class Meta extends Iced {
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version, meaning that
      * there are no stability guarantees between H2O versions.
@@ -182,17 +182,17 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
      * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version,
      * meaning that there are no stability guarantees between H2O versions.
      */
-    public int getSchema_version() {
+    public int getSchemaVersion() {
       return schema_version;
     }
 
     /** Get the simple schema (class) name, for example DeepLearningParametersV3. */
-    public String getSchema_name() {
+    public String getSchemaName() {
       return schema_name;
     }
 
     /** Get the simple name of the H2O type that this Schema represents, for example DeepLearningParameters. */
-    public String getSchema_type() {
+    public String getSchemaType() {
       return schema_type;
     }
 
@@ -201,7 +201,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       return schema_name + " (type:" + schema_type + ", version: " + schema_version + ")";
     }
 
-    /** Set the simple name of the H2O type that this Schema represents, for example Key&lt;Frame&gt;. NOTE: using this is a hack and should be avoided. */
+    /**
+     * Set the simple name of the H2O type that this Schema represents, for example Key&lt;Frame&gt;. NOTE: using
+     * this is a hack and should be avoided.
+     */
     protected void setSchema_type(String schema_type) {
       this.schema_type = schema_type;
     }
@@ -242,10 +245,10 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Default constructor; triggers lazy schema registration.
    *  @throws water.exceptions.H2OFailException if there is a name collision or
-   *  there is more than one schema which maps to the same Iced class */
+   *          there is more than one schema which maps to the same Iced class */
   public Schema() {
     String name = this.getClass().getSimpleName();
-    int version = extractVersion(name);
+    int version = extractVersionFromSchemaName(name);
     String type = getImplClass().getSimpleName();
     init_meta();
 
@@ -271,14 +274,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected void init_meta() {
     if( __meta != null ) return;
     String name = this.getClass().getSimpleName();
-    int version = extractVersion(name);
+    int version = extractVersionFromSchemaName(name);
     String type = getImplClass().getSimpleName();
     __meta = new Meta(version, name, type);
   }
 
   /** Extract the version number from the schema class name.  Returns -1 if
    *  there's no version number at the end of the classname. */
-  private static int extractVersion(String clz_name) {
+  private static int extractVersionFromSchemaName(String clz_name) {
     int idx = clz_name.lastIndexOf('V');
     if( idx == -1 ) return -1;
     try { return Integer.valueOf(clz_name.substring(idx+1)); }
@@ -340,7 +343,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         throw H2O.fail("Found a Schema that does not have a parameterized superclass.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
       }
 
-      int version = extractVersion(clz.getSimpleName());
+      int version = extractVersionFromSchemaName(clz.getSimpleName());
       if (version > getHighestSupportedVersion() && version != EXPERIMENTAL_VERSION)
         throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
 
