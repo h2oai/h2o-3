@@ -66,9 +66,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._coefficients_std[i] = rp._coefficients[i];
         rp._coefficients[i] = _output._dinfo.denormalizeBeta(rp._coefficients_std[i]);
       }
-      rp._explained_deviance_train[i] = 1 - sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
+      rp._explained_deviance_train[i] = 1 - _output._training_metrics._nobs*sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
       if (rp._explained_deviance_valid != null)
-        rp._explained_deviance_valid[i] = 1 - sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
+        rp._explained_deviance_valid[i] = 1 - _output._validation_metrics._nobs*sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
     }
     return rp;
   }
