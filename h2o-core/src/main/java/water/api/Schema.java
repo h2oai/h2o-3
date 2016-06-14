@@ -272,7 +272,7 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       } while (Iced.class.isAssignableFrom(clz.getSuperclass()));
     }
     catch (SecurityException e) {
-        throw H2O.fail("Exception accessing field: " + current + " in class: " + this.getClass() + ": " + e);
+      throw H2O.fail("Exception accessing field: " + current + " in class: " + this.getClass() + ": " + e);
     }
 
     for( String key : parms.stringPropertyNames() ) {
@@ -287,8 +287,8 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         if( Modifier.isTransient(mods) || Modifier.isStatic(mods) ) {
           // Attempting to set a transient or static; treat same as junk fieldname
           throw new H2OIllegalArgumentException(
-                  "Bad parameter for field: " + key + " for class: " + this.getClass().toString(),
-                  "Bad parameter definition for field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was declared static or transient)");
+              "Bad parameter for field: " + key + " for class: " + this.getClass().toString(),
+              "Bad parameter definition for field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was declared static or transient)");
         }
         // Only support a single annotation which is an API, and is required
         Annotation[] apis = f.getAnnotations();
@@ -297,8 +297,8 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         // Must have one of these set to be an input field
         if( api.direction() == API.Direction.OUTPUT ) {
           throw new H2OIllegalArgumentException(
-                  "Attempting to set output field: " + key + " for class: " + this.getClass().toString(),
-                  "Attempting to set output field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was annotated as API.Direction.OUTPUT)");
+              "Attempting to set output field: " + key + " for class: " + this.getClass().toString(),
+              "Attempting to set output field: " + key + " in fillFromParms for class: " + this.getClass().toString() + " (field was annotated as API.Direction.OUTPUT)");
         }
         // Parse value and set the field
         setField(this, f, key, parms.getProperty(key), api.required(), thisSchemaClass);
@@ -564,7 +564,7 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       throw H2O.fail("Cannot parse expression as " + return_type.getSimpleName() + " (Illegal Access)");
     }
   }
-  
+
   static private int read( String s, int x, char c, Class fclz ) {
     if( peek(s,x,c) ) return x+1;
     throw new IllegalArgumentException("Expected '"+c+"' while reading a "+fclz.getSimpleName()+", but found "+s);
@@ -662,16 +662,16 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
               first = false;
             }
             builder.tableRow(
-                    field_meta.name,
-                    String.valueOf(field_meta.required),
-                    field_meta.level.name(),
-                    field_meta.type,
-                    String.valueOf(field_meta.is_schema),
-                    field_meta.is_schema ? field_meta.schema_name : "", (null == field_meta.value ? "(null)" : field_meta.value.toString()), // Something better for toString()?
-                    field_meta.help,
-                    (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
-                    (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
-                    (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
+                field_meta.name,
+                String.valueOf(field_meta.required),
+                field_meta.level.name(),
+                field_meta.type,
+                String.valueOf(field_meta.is_schema),
+                field_meta.is_schema ? field_meta.schema_name : "", (null == field_meta.value ? "(null)" : field_meta.value.toString()), // Something better for toString()?
+                field_meta.help,
+                (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with))
             );
           }
         }
@@ -689,15 +689,15 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
               first = false;
             }
             builder.tableRow(
-                    field_meta.name,
-                    field_meta.type,
-                    String.valueOf(field_meta.is_schema),
-                    field_meta.is_schema ? field_meta.schema_name : "",
-                    (null == field_meta.value ? "(null)" : field_meta.value.toString()), // something better than toString()?
-                    field_meta.help,
-                    (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
-                    (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
-                    (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
+                field_meta.name,
+                field_meta.type,
+                String.valueOf(field_meta.is_schema),
+                field_meta.is_schema ? field_meta.schema_name : "",
+                (null == field_meta.value ? "(null)" : field_meta.value.toString()), // something better than toString()?
+                field_meta.help,
+                (field_meta.values == null || field_meta.values.length == 0 ? "" : Arrays.toString(field_meta.values)),
+                (field_meta.is_member_of_frames == null ? "[]" : Arrays.toString(field_meta.is_member_of_frames)),
+                (field_meta.is_mutually_exclusive_with == null ? "[]" : Arrays.toString(field_meta.is_mutually_exclusive_with)));
           }
         }
         if (first)
@@ -711,8 +711,8 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       values.put("schema", this);
       // TODO: This isn't quite the right exception type:
       throw new H2OIllegalArgumentException("Caught exception using reflection on schema: " + this,
-                                            "Caught exception using reflection on schema: " + this + ": " + e,
-                                            values);
+          "Caught exception using reflection on schema: " + this + ": " + e,
+          values);
     }
     return builder.stringBuffer();
   }
