@@ -66,7 +66,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     }
 
     try {
-      Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+      Class<? extends ModelParametersSchema> parameters_class = ReflectionUtils.findActualClassParameter(this.getClass(), 2);
       return (P)parameters_class.newInstance();
     }
     catch (Exception e) {

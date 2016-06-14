@@ -145,7 +145,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     // (Only) if we're a subclass of KeyV1 the Keyed class is type parameter 2.
     if (clz == KeyV3.class)
       return Keyed.class;
-    return (Class<? extends Keyed>) ReflectionUtils.findActualClassParameter(clz, 2);
+    return ReflectionUtils.findActualClassParameter(clz, 2);
   }
 
   public Class<? extends Keyed> getKeyedClass() {
