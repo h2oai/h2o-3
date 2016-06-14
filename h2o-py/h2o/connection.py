@@ -572,6 +572,8 @@ class H2OConnection(object):
           x += ','
         x = x[:-1]
         x += ']'
+      elif isinstance(v, dict) and "__meta" in v and v["__meta"]["schema_name"].endswith("KeyV3"):
+        x = v["name"]
       else:
         x = str(v) if PY3 else str(v).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
       query_string += k+"="+quote(x)+"&"

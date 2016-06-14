@@ -16,7 +16,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   @Override S handle(int version, Route route, Properties parms) throws Exception {
     // Peek out the desired algo from the URL
-    String ss[] = route._url_pattern_raw.split("/");
+    String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);

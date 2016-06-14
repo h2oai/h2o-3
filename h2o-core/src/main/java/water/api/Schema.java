@@ -196,6 +196,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       return schema_type;
     }
 
+    public String toString() {
+      if (PojoUtils.equals(schema_name, schema_type + "V" + schema_version)) return schema_name;
+      return schema_name + " (type:" + schema_type + ", version: " + schema_version + ")";
+    }
+
     /** Set the simple name of the H2O type that this Schema represents, for example Key&lt;Frame&gt;. NOTE: using this is a hack and should be avoided. */
     protected void setSchema_type(String schema_type) {
       this.schema_type = schema_type;
@@ -293,6 +298,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *  for a schema if we haven't yet registered all schemas and don't yet know
    *  the latest_version.  */
   public static int getHighestSupportedVersion() { return HIGHEST_SUPPORTED_VERSION; }
+
+  /** Combines the previous two. */
+  public static int getLatestOrHighestSupportedVersion() {
+    return LATEST_VERSION == -1? HIGHEST_SUPPORTED_VERSION : LATEST_VERSION;
+  }
 
   /** Get the experimental schema version, which indicates that a schema is not
    *  guaranteed stable between H2O releases.  */

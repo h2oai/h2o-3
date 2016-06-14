@@ -31,49 +31,76 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Parameters common to all models:
-  @API(help="Destination id for this model; auto-generated if not specified", required = false, direction=API.Direction.INOUT)
+  @API(level = API.Level.critical, direction = API.Direction.INOUT, required = false,
+      help="Destination id for this model; auto-generated if not specified.")
   public ModelKeyV3 model_id;
 
-  @API(help="Training frame", direction=API.Direction.INOUT /* Not required, to allow initial params validation: , required=true */)
+  @API(level = API.Level.critical, direction = API.Direction.INOUT,
+      help = "Id of the training data frame (Not required, to allow initial validation of model parameters).")
   public FrameKeyV3 training_frame;
 
-  @API(help="Validation frame", direction=API.Direction.INOUT, gridable = true)
+  @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
+      help = "Id of the validation data frame.")
   public FrameKeyV3 validation_frame;
 
-  @API(help="Number of folds for N-fold cross-validation", level = API.Level.critical, direction= API.Direction.INOUT)
+  @API(level = API.Level.critical, direction = API.Direction.INOUT,
+      help = "Number of folds for N-fold cross-validation (0 to disable or ≥ 2).")
   public int nfolds;
 
-  @API(help="Keep cross-validation model predictions", level = API.Level.expert, direction=API.Direction.INOUT)
+  @API(level = API.Level.expert, direction = API.Direction.INOUT,
+      help = "Whether to keep the predictions of the cross-validation models.")
   public boolean keep_cross_validation_predictions;
 
-  @API(help="Keep cross-validation fold assignment", level = API.Level.expert, direction=API.Direction.INOUT)
+  @API(level = API.Level.expert, direction = API.Direction.INOUT,
+      help = "Whether to keep the cross-validation fold assignment.")
   public boolean keep_cross_validation_fold_assignment;
 
   @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
   public boolean parallelize_cross_validation;
 
-  @API(help = "Response column", is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns"}, direction = API.Direction.INOUT, gridable = true)
+  @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
+      is_member_of_frames = {"training_frame", "validation_frame"},
+      is_mutually_exclusive_with = {"ignored_columns"},
+      help = "Response variable column.")
   public FrameV3.ColSpecifierV3 response_column;
 
-  @API(help = "Column with observation weights", level = API.Level.secondary, is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column"}, direction = API.Direction.INOUT, gridable = true)
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+      is_member_of_frames = {"training_frame", "validation_frame"},
+      is_mutually_exclusive_with = {"ignored_columns", "response_column"},
+      help = "Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it" +
+          " from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice." +
+          " Negative weights are not allowed.")
   public FrameV3.ColSpecifierV3 weights_column;
 
-  @API(help = "Offset column", level = API.Level.secondary, is_member_of_frames = {"training_frame", "validation_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"}, direction = API.Direction.INOUT, gridable = true)
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+      is_member_of_frames = {"training_frame", "validation_frame"},
+      is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"},
+      help = "Offset column. This will be added to the combination of columns before applying the link function.")
   public FrameV3.ColSpecifierV3 offset_column;
 
-  @API(help = "Column with cross-validation fold index assignment per observation", level = API.Level.secondary, is_member_of_frames = {"training_frame"}, is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column", "offset_column"}, direction = API.Direction.INOUT, gridable = true)
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+      is_member_of_frames = {"training_frame"},
+      is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column", "offset_column"},
+      help = "Column with cross-validation fold index assignment per observation.")
   public FrameV3.ColSpecifierV3 fold_column;
 
-  @API(help="Cross-validation fold assignment scheme, if fold_column is not specified", values = {"AUTO", "Random", "Modulo", "Stratified"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+      values = {"AUTO", "Random", "Modulo", "Stratified"},
+      help = "Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will " +
+          "stratify the folds based on the response variable, for classification problems.")
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
-  @API(help="Ignored columns", is_member_of_frames={"training_frame", "validation_frame"}, direction=API.Direction.INOUT)
-  public String[] ignored_columns;         // column names to ignore for training
+  @API(level = API.Level.critical, direction = API.Direction.INOUT,
+      is_member_of_frames = {"training_frame", "validation_frame"},
+      help = "Names of columns to ignore for training.")
+  public String[] ignored_columns;
 
-  @API(help="Ignore constant columns", direction=API.Direction.INOUT)
+  @API(level = API.Level.critical, direction = API.Direction.INOUT,
+      help = "Ignore constant columns.")
   public boolean ignore_const_cols;
 
-  @API(help="Whether to score during each iteration of model training", direction=API.Direction.INOUT, level = API.Level.secondary)
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT,
+      help = "Whether to score during each iteration of model training.")
   public boolean score_each_iteration;
 
   /**
@@ -81,7 +108,8 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
    * model. This option allows users to build a new model as a
    * continuation of a previously generated model (e.g., by a grid search).
    */
-  @API(help = "Model checkpoint to resume training with", level = API.Level.secondary, direction=API.Direction.INOUT)
+  @API(level = API.Level.secondary, direction=API.Direction.INOUT,
+      help = "Model checkpoint to resume training with.")
   public ModelKeyV3 checkpoint;
 
   /**

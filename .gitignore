@@ -17,6 +17,7 @@ sandbox
 syn_datasets
 build/
 lib/
+classes/
 h2o-web/src/main/resources/www/steam
 h2o-web/src/main/resources/www/flow
 h2o-web/src/main/resources/www/3/h2o-genmodel.jar
