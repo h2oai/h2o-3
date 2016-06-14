@@ -209,8 +209,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
       this.schema_type = schema_type;
     }
 
-    // TODO: make private in Iced:
-    /** Override the JSON serializer to prevent a recursive loop in AutoBuffer.  User code should not call this, and soon it should be made protected. */
+    /** Override the JSON serializer to prevent a recursive loop in AutoBuffer.  User code should not call this, and
+     soon it should be made protected. */
 //    public final water.AutoBuffer writeJSON_impl(water.AutoBuffer ab) {
 //      // Overridden because otherwise we get in a recursive loop trying to serialize this$0.
 //      ab.putJSON4("schema_version", schema_version)
@@ -247,32 +247,33 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *  @throws water.exceptions.H2OFailException if there is a name collision or
    *          there is more than one schema which maps to the same Iced class */
   public Schema() {
-    String name = this.getClass().getSimpleName();
-    int version = extractVersionFromSchemaName(name);
-    String type = getImplClass().getSimpleName();
     init_meta();
+    String name = __meta.getSchemaName();
+    int version = __meta.getSchemaVersion();
+    String type = __meta.getSchemaType();
 
-    if (null == schema_to_iced.get(name)) {
-      Log.debug("Registering schema: " + name + " schema_version: " + version + " with Iced class: " + _impl_class.toString());
-      if (null != schemas.get(name))
-        throw H2O.fail("Found a duplicate schema name in two different packages: " + schemas.get(name) + " and: " + this.getClass().toString());
+    if (schema_to_iced.get(name) == null) {
+      Log.debug("Registering schema: " + name + " version: " + version + " with Iced class: " + _impl_class.toString());
+      if (schemas.get(name) != null)
+        throw H2O.fail("Found a duplicate schema name in: " + schemas.get(name) + " and: " + this.getClass());
 
       schemas.put(name, this.getClass());
       schema_to_iced.put(name, _impl_class);
 
       if (_impl_class != Iced.class) {
-        Pair versioned = new Pair(type, version);
+        Pair<String, Integer> versioned = new Pair<>(type, version);
         // Check for conflicts
-        if (null != iced_to_schema.get(versioned)) {
-          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " + iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to version: " + version + " of Iced class: " + _impl_class);
-        }
+        if (iced_to_schema.get(versioned) != null)
+          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " +
+                         iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to " +
+                         "version: " + version + " of Iced class: " + _impl_class);
         iced_to_schema.put(versioned, this.getClass());
       }
     }
   }
 
   protected void init_meta() {
-    if( __meta != null ) return;
+    if (__meta != null) return;
     String name = this.getClass().getSimpleName();
     int version = extractVersionFromSchemaName(name);
     String type = getImplClass().getSimpleName();
@@ -283,7 +284,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *  there's no version number at the end of the classname. */
   private static int extractVersionFromSchemaName(String clz_name) {
     int idx = clz_name.lastIndexOf('V');
-    if( idx == -1 ) return -1;
+    if (idx == -1) return -1;
     try { return Integer.valueOf(clz_name.substring(idx+1)); }
     catch( NumberFormatException ex) { return -1; }
   }
@@ -442,14 +443,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   protected S fillFromImpl(I impl, String[] fieldsToSkip) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, fieldsToSkip);
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, fieldsToSkip);  // TODO: make field names in the impl classes consistent and remove
-    return (S)this;
+    //noinspection unchecked  (parameter <S> should be the derived class itself)
+    return (S) this;
   }
 
   /** Return the class of the implementation type parameter I for the
    *  given Schema class. Used by the metadata facilities and the
    *  reflection-base field-copying magic in PojoUtils. */
   public static Class<? extends Iced> getImplClass(Class<? extends Schema> clz) {
-    Class<? extends Iced> impl_class = (Class<? extends Iced>)ReflectionUtils.findActualClassParameter(clz, 0);
+    Class<? extends Iced> impl_class = ReflectionUtils.findActualClassParameter(clz, 0);
     if (null == impl_class)
       Log.warn("Failed to find an impl class for Schema: " + clz);
     return impl_class;
@@ -459,7 +461,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *  Used by generic code which deals with arbitrary schemas and their backing
    *  impl classes.  Never returns null. */
   public Class<I> getImplClass() {
-    return _impl_class != null ? _impl_class : (_impl_class = (Class<I>) ReflectionUtils.findActualClassParameter(this.getClass(), 0));
+    return _impl_class != null ? _impl_class : (_impl_class = ReflectionUtils.findActualClassParameter(this.getClass(), 0));
   }
 
   /**
@@ -579,6 +581,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         }
       }
     }
+    //noinspection unchecked  (parameter <S> should be the derived class itself)
     return (S) this;
   }
 
@@ -819,8 +822,8 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   // since using a regex blow the stack on long column counts
   // TODO: detect and complain about malformed JSON
   private static String[] splitArgs(String argStr) {
-    StringBuffer sb = new StringBuffer (argStr);
-    StringBuffer arg = new StringBuffer ();
+    StringBuilder sb = new StringBuilder(argStr);
+    StringBuilder arg = new StringBuilder();
     List<String> splitArgList = new ArrayList<String> ();
     boolean inDoubleQuotes = false;
     boolean inSquareBrackets = false; // for arrays of arrays
@@ -916,13 +919,13 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   public static Class<? extends Schema> schemaClass(int version, String type) {
     if (version < 1) return null;
 
-    Class<? extends Schema> clz = iced_to_schema.get(new Pair(type, version));
+    Class<? extends Schema> clz = iced_to_schema.get(new Pair<>(type, version));
 
-    if (null != clz) return clz; // found!
+    if (clz != null) return clz; // found!
 
-    clz = schemaClass(version - 1, type);
+    clz = schemaClass(version==EXPERIMENTAL_VERSION? HIGHEST_SUPPORTED_VERSION : version-1, type);
 
-    if (null != clz) iced_to_schema.put(new Pair(type, version), clz); // found a lower-numbered schema: cache
+    if (clz != null) iced_to_schema.put(new Pair<>(type, version), clz); // found a lower-numbered schema: cache
     return clz;
   }
 

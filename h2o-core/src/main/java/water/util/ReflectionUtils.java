@@ -9,7 +9,7 @@ public class ReflectionUtils {
   /**
    * Reflection helper which returns the actual class for a type parameter, even if itself is parameterized.
    */
-  public static Class findActualClassParameter(Class clz, int parm) {
+  public static <T> Class<T> findActualClassParameter(Class clz, int parm) {
     Class parm_class = null;
 
     if (clz.getGenericSuperclass() instanceof ParameterizedType) {
@@ -37,7 +37,7 @@ public class ReflectionUtils {
       // Superclass is not a ParameterizedType, so we just have Iced.
       parm_class = Iced.class; // If the handler isn't parameterized on the Iced class then this has to be Iced.
     }
-    return parm_class;
+    return (Class<T>) parm_class;
   }
 
   /**
