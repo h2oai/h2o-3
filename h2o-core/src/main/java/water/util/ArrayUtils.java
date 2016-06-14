@@ -51,6 +51,19 @@ public class ArrayUtils {
       result += x[i] * y[i];
     return result;
   }
+
+  public static double [] mmul(double [][] M, double [] V) {
+    double [] res = new double[M.length];
+    for(int i = 0; i < M.length; ++i) {
+      double d = 0;
+      for (int j = 0; j < V.length; ++j) {
+        d += M[i][j] * V[j];
+      }
+      res[i] = d;
+    }
+    return res;
+  }
+
   public static double[][] outerProduct(double[] x, double[] y){
     double[][] result = new double[x.length][y.length];
     for(int i = 0; i < x.length; i++) {
@@ -1113,6 +1126,7 @@ public class ArrayUtils {
     subtract(a,b,c);
     return c;
   }
+
   public static double[] subtract (double [] a, double [] b, double [] c) {
     for(int i = 0; i < a.length; ++i)
       c[i] = a[i] - b[i];
@@ -1389,5 +1403,12 @@ public class ArrayUtils {
     assert(sortedSplitPoints[end-1] < maxEx);
 
     return Arrays.copyOfRange(sortedSplitPoints,start,end);
+  }
+
+  public static double[] extractCol(int i, double[][] ary) {
+    double [] res = new double[ary.length];
+    for(int j = 0; j < ary.length; ++j)
+      res[j] = ary[j][i];
+    return res;
   }
 }

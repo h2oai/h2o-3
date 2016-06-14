@@ -520,17 +520,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient L1Solver _lslvr;
 
     private double [] solveGram(Solver s, GLMIterationTask t) {
+      int [] zeros = t._gram.dropZeroCols();
+      if(zeros.length > 0) {
+        t._xy = ArrayUtils.removeIds(t._xy, zeros);
+        t._beta = ArrayUtils.removeIds(t._beta, zeros);
+        _state.removeCols(zeros);
+      }
+      t._gram.mul(_parms._obj_reg);
+      ArrayUtils.mult(t._xy, _parms._obj_reg);
       return (s == Solver.COORDINATE_DESCENT)?COD_solve(t,_state._alpha,_state.lambda()):ADMM_solve(t._gram, t._xy);
     }
 
     private double[] ADMM_solve(Gram gram, double [] xy) {
-      if(!_parms._intercept) {
-        gram.dropIntercept();
-        xy = Arrays.copyOf(xy, xy.length - 1);
-      }
-      gram.mul(_parms._obj_reg);
-      ArrayUtils.mult(xy, _parms._obj_reg);
       if(_parms._remove_collinear_columns || _parms._compute_p_values) {
+        if(!_parms._intercept) throw H2O.unimpl();
         ArrayList<Integer> ignoredCols = new ArrayList<>();
         Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols, _parms._standardize):gram.cholesky(null));
         if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
@@ -552,19 +555,22 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state.removeCols(collinear_cols);
           xy = ArrayUtils.removeIds(xy,collinear_cols);
         }
+        xy = xy.clone();
         chol.solve(xy);
       } else {
+        gram = gram.deep_clone();
+        xy = xy.clone();
         GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(),_state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _chol = slvr._chol;
         if(_state.l1pen() == 0 && !_state.activeBC().hasBounds()) {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
-          if(_state._u == null && _parms._family != Family.multinomial) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
+          if(_state._u == null && _parms._family != Family.multinomial) _state._u = MemoryManager.malloc8d(_state.activeData().P()+1);
             (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         }
       }
-      return _parms._intercept?xy:Arrays.copyOf(xy,xy.length+1);
+      return xy;
     }
 
     private void fitIRLSM_multinomial(Solver s){
@@ -601,10 +607,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitLSM(Solver s){
       GLMIterationTask t = new GLMTask.GLMIterationTask(_job._key, _state.activeData(), new GLMWeightsFun(_parms), null).doAll(_state.activeData()._adaptedFrame);
-      int [] zeros = t._gram.dropZeroCols();
-      t._xy = ArrayUtils.removeIds(t._xy,zeros);
-      _state.removeCols(zeros);
-      _state.updateState(solveGram(s,t), -1);
+      double [] beta = solveGram(s,t);
+      // compute mse
+      double [] x = t._gram.mul(beta);
+      for(int i = 0; i < x.length; ++i)
+        x[i] = (x[i] - 2*t._xy[i]);
+      double l = .5*(ArrayUtils.innerProduct(x,beta)/_parms._obj_reg + t._yy );
+      _state.updateState(beta, l);
     }
 
     private void fitIRLSM(Solver s) {
@@ -622,12 +631,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(t._beta, t._likelihood))
               return;
-            int [] zeros = t._gram.dropZeroCols();
-            if(zeros.length > 0) {
-              t._xy = ArrayUtils.removeIds(t._xy, zeros);
-              t._beta = ArrayUtils.removeIds(t._beta, zeros);
-              _state.removeCols(zeros);
-            }
             betaCnd = solveGram(s,t);
           }
           firstIter = false;
@@ -1197,8 +1200,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return grads;
   }
   public double [] COD_solve(GLMIterationTask gt, double alpha, double lambda) {
-    gt._gram.mul(_parms._obj_reg);
-    ArrayUtils.mult(gt._xy,_parms._obj_reg);
     double wsumInv = 1.0/(gt.wsum*_parms._obj_reg);
     double l1pen = lambda * alpha;
     double l2pen = lambda*(1-alpha);

@@ -11,14 +11,11 @@ import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import water.H2O;
 import water.Job;
-import water.Key;
 import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Arrays;
 
 public final class ComputationState {
@@ -427,7 +424,7 @@ public final class ComputationState {
   public double [] expandBeta(double [] beta) {
     if(_activeData._activeCols == null)
       return beta;
-    return ArrayUtils.expandAndScatter(beta, _dinfo.fullN() + 1 * _nclasses,_activeData._activeCols);
+    return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
   }
 
 }

@@ -7,7 +7,6 @@ import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
-import org.apache.commons.lang.*;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
@@ -15,7 +14,6 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
@@ -218,6 +216,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
       }
+      if(_remove_collinear_columns && !_intercept)
+        glm.error("_intercept","Remove colinear columns option is currently not supported without intercept");
       if(_beta_constraints != null) {
         if(_family == Family.multinomial)
           glm.error("beta_constraints","beta constraints are not supported for family = multionomial");
@@ -867,7 +867,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       Submodel best = _submodels[0];
       for(int i = 1; i < _submodels.length; ++i) {
         Submodel sm = _submodels[i];
-        if((sm.devianceTest != -1 && sm.devianceTest < best.devianceTest) || (sm.devianceTest == best.devianceTest && sm.devianceTrain < best.devianceTrain)){
+        if(!(sm.devianceTest > best.devianceTest) && sm.devianceTrain < best.devianceTrain){
           bestId = i;
           best = sm;
         }

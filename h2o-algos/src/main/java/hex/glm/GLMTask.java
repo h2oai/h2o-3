@@ -1252,6 +1252,7 @@ public abstract class GLMTask  {
     double []_beta;
     protected Gram  _gram; // wx%*%x
     double [] _xy; // wx^t%*%z,
+    double _yy;
 
     final double [] _ymu;
 
@@ -1296,6 +1297,7 @@ public abstract class GLMTask  {
       if(r.isBad() || r.weight == 0) return;
       ++_nobs;
       double y = r.response(0);
+      _yy += y*y;
       final int numStart = _dinfo.numStart();
       double wz,w;
       if(_glmf._family == Family.multinomial) {
@@ -1340,6 +1342,7 @@ public abstract class GLMTask  {
       wsumu += git.wsumu;
       _likelihood += git._likelihood;
       _sumsqe += git._sumsqe;
+      _yy += git._yy;
       super.reduce(git);
     }
 
