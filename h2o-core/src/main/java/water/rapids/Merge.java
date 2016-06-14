@@ -106,36 +106,15 @@ public class Merge {
 
     // TODO: start merging before all indexes had been created. Use callback?
 
-    // TODO: Thomas showed this method which takes 'true' argument to H2OCountedCompleter directly.  Not sure how that
+    // TODO: Tomas showed this method which takes 'true' argument to H2OCountedCompleter directly.  Not sure how that
     // relates to new of RadixOrder which itself extends H2OCountedCompleter.  That true argument isn't available that way.
-    // H2O.submitTask(new H2O.H2OCountedCompleter(true) {   // true just to bump priority and prevent deadlock (no different to speed, in theory - Thomas) in case this Merge ever called from within another counted completer
+    // H2O.submitTask(new H2O.H2OCountedCompleter(true) {   // true just to bump priority and prevent deadlock (no different to speed, in theory - Tomas) in case
+    // this Merge ever called from within another counted completer
     // @Override
     // protected void compute2() {
     //   RadixOrder.compute(leftFrame, /*left=*/true, leftCols);  // when RadixOrder had just a static compute() method
     //   tryComplete();
     // }
-
-    // Align MSB locations between the two keys
-    // If the 1st join column has range < 256 (e.g. test cases) then <=8 bits are used and there's a floor of 8 to the shift.
-    /*int bitShift = Math.max(8, rightIndex._biggestBit[0]) - Math.max(8, leftIndex._biggestBit[0]);
-    int leftExtent = 256, rightExtent = 1;
-    if (bitShift < 0) {
-      // The biggest keys in left table are larger than the biggest in right table
-      // Therefore those biggest ones don't have a match and we can instantly ignore them
-      // The only msb's that can match are the smallest in left table ...
-      leftExtent >>= -bitShift;
-      // and those could join to multiple msb in the right table, one-to-many ...
-      rightExtent <<= -bitShift;
-    }*/
-    // else if bitShift > 0
-    //   The biggest keys in right table are larger than the largest in left table
-    //   The msb values in left table need to be reduced in magnitude and will then join to the smallest of the right key's msb values
-    //   Many left msb might join to the same (smaller) right msb
-    //   Leave leftExtent at 256 and rightExtent at 1.
-    //   The positive bitShift will reduce jbase below to common right msb's,  many-to-one
-    // else bitShift == 0
-    //   We hope most common case. Common width keys (e.g. ids, codes, enums, integers, etc) both sides over similar range
-    //   Left msb will match exactly to right msb one-to-one, without any alignment needed
 
     long ansN = 0;
     int numChunks = 0;
@@ -151,6 +130,7 @@ public class Merge {
     int rightShift = Math.max(8, rightIndex._biggestBit[0])-8;
     int leftMSBfrom = 0, leftMSBto = 255;  // NA (if any) are included in MSB 0.  TODO: test
 
+    // deal with the left range below the right minimum, if any
     if (leftIndex._colMin[0] < rightIndex._colMin[0]) {   // colMin[0] is really the MSB base.  TODO: rename variable and change bases to be aligned somehow to avoid small misalignment
       // deal with the range of the left keys that fall outside the range of the right, if any
       // create NA matches for all key values in the left less than the right's minimum
@@ -173,6 +153,7 @@ public class Merge {
       }
     }
 
+    // deal with the left range above the right maximum, if any
     if ((leftIndex._colMin[0] + 256<<leftShift) > (rightIndex._colMin[0] + 256<<rightShift)) {
       leftMSBto = (int)(((rightIndex._colMin[0] + 256<<rightShift) - leftIndex._colMin[0]) >> leftShift);  // No need for +1 for NA here because the 256<< is already one after the last bin
       if (leftMSBto<0) {
@@ -192,116 +173,54 @@ public class Merge {
       }
     }
 
-    for (int leftMSB=leftMSBfrom; leftMSB<=leftMSBto; leftMSB++) { // each of left msb values. NAs (0) aren't joined currently but could be
-//      long leftLen = leftIndex._MSBhist[i];
-//      if (leftLen > 0) {
-      // int rightMSBBase = leftMSB >> bitShift;  // could be positive or negative, or most commonly and ideally bitShift==0
+    // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
+    for (int leftMSB=leftMSBfrom; leftMSB<=leftMSBto; leftMSB++) {
 
+      // calculate the key values at the bin extents:  [leftFrom,leftTo] in terms of keys
       long leftFrom = (leftMSB << leftShift) -1 + leftIndex._colMin[0];  // -1 to cater for leading NA spot
-      //TO DELETE: leftFrom = Math.max(1, leftFrom);
       long leftTo = ((leftMSB+1) << leftShift) + leftIndex._colMin[0] - 1 - 1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
-      int rightMSBfrom = (int)((leftFrom - rightIndex._colMin[0] + 1) >> rightShift);
+      // which right bins do these left extents occur in (could span multiple, and fall in the middle)
+      int rightMSBfrom = (int)((leftFrom - rightIndex._colMin[0] + 1) >> rightShift);   // +1 again for the leading NA spot
       int rightMSBto = (int)((leftTo - rightIndex._colMin[0] + 1) >> rightShift);
 
       for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
-        //int rightMSB = rightMSBBase +k;
-//          long rightLen = rightIndex._MSBhist[j];
-//          if (rightLen > 0) {
-        //System.out.print(i + " left " + lenx + " => right " + leny);
-        // TO DO: when go distributed, move the smaller of lenx and leny to the other one's node
-        //        if 256 are distributed across 10 nodes in order with 1-25 on node 1, 26-50 on node 2 etc, then most already will be on same node.
-//        H2ONode leftNode = MoveByFirstByte.ownerOfMSB(leftMSB);
-        //int rightShift = 0;
-        //long rightFrom = (rightMSB << () + rightIndex._colMin[0];
-        //long rightTo = ((rightMSB+1) << (Math.max(8, rightIndex._biggestBit[0])-8)) + rightIndex._colMin[0] - 1;
 
-        //if  ( ((leftMSB-1) << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] !=
-        //      ((rightMSB-1) << (Math.max(8, rightIndex._biggestBit[0])-8)) + rightIndex._colMin[0] )
-        //  continue;
+        H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);
+        // TODO: choose the bigger side to execute on (where that side of index already is) to minimize transfer
 
-        /*
-        long tt = (((long)leftMSB) << (Math.max(8, leftIndex._biggestBit[0])-8)) + leftIndex._colMin[0] - rightIndex._colMin[0];
-        if (tt<0) continue;  // The left MSB values represent a range less than the right minimum value, so cannot match.
-        tt >>= (Math.max(8, rightIndex._biggestBit[0])-8);
-        if (tt != rightMSB) continue;  // including possibly tt greater than 256 for left values greater than the right's max
-        */
-
-        //if (rightTo < leftFrom || rightFrom >= leftTo) continue;
-
-        //howManyMatch++;
-
-        // A naive loop through 1:65536 is considered easier to read. Could get fancy and loop inner loop through relevant lower and upper bound only but trying hurt my brain too much and had too high risk of bugs.
-        // The loops are started at 1, then 1 taken off again, to remind us about NA.
-
-        H2ONode rightNode = SplitByMSBLocal.ownerOfMSB(rightMSB);  // TODO: ensure that that owner has that part of the index locally.
-        //if (leftMSB!=73 || rightMSB!=73) continue;
         System.out.println("Calling BinaryMerge for " + leftMSB + " " + rightMSB + " on node " + rightNode.index());
 
+        // within BinaryMerge it will recalculate the extents in terms of keys and bsearch for them within the (then local) both sides
         bmList.add(new RPC<>(rightNode,
-                new BinaryMerge(leftFrame, rightFrame,
-                        leftMSB, rightMSB,
-                        0, // overlapType
-                        leftShift, rightShift,
-                        //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
-                        leftIndex._bytesUsed,   // field sizes for each column in the key
-                        rightIndex._bytesUsed,
-                        leftIndex._colMin,
-                        rightIndex._colMin,
-                        allLeft
-                )
+          new BinaryMerge(leftFrame, rightFrame,
+                  leftMSB, rightMSB,
+                  0, // overlapType
+                  leftShift, rightShift,
+                  //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
+                  leftIndex._bytesUsed,   // field sizes for each column in the key
+                  rightIndex._bytesUsed,
+                  leftIndex._colMin,
+                  rightIndex._colMin,
+                  allLeft
+          )
         ));
-        //System.out.println("Made RPC to node " + rightNode.index() + " for MSB" + leftMSB + "/" + rightMSB);
       }
-      /*if (howManyMatch>1) {
-        // TODO: construct test with small left range and large right range to trigger this
-        throw new IllegalArgumentException("Internal not yet implemented: left MSB matches to multiple right MSB.");
-      }*/
-      /*
-      if (howManyMatch==0 && allLeft) {
-        // Temp workaround for situation that hasn't arisen in real data yet.
-        // Currently, BinaryMerge() generates the result rows. TODO: Perhaps change BinaryMerge to only find the matches and then
-        // add a new method that runs once per leftMSB goes and fetches the (possible multiple) right MSB results.
-        // Or perhaps BinaryMerge could know where each rightMSB ends in the left so as to only generate rows for that part of leftMSB. That
-        // would still leave the howManyMatch==0 problem though.
-        // TODO: ... NO LONGER NEED THIS, RIGHT?
-        RPC bm = new RPC<>(SplitByMSBLocal.ownerOfMSB(0),
-                new BinaryMerge(leftFrame, rightFrame,
-                        leftMSB, 0,
-                        //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
-                        leftIndex._bytesUsed,   // field sizes for each column in the key
-                        rightIndex._bytesUsed,
-                        leftIndex._colMin,
-                        rightIndex._colMin,
-                        allLeft
-                )
-        );
-        bmList.add(bm);
-      }*/
     }
     System.out.println("... took: " + (System.nanoTime() - t0) / 1e9);
 
     int queueSize = bmList.size();
     // Now that gc issues resolved, it seems ok to send them all at once.
     // No longer floods the cluster it seems
+    // TODO: can remove manual queuing now and save risk of waitMS slowing unnecessarily
     System.out.println("Dispatching in queue size of "+queueSize+". H2O.NUMCPUS="+H2O.NUMCPUS + " H2O.CLOUD.size()="+H2O.CLOUD.size());
     
     t0 = System.nanoTime();
-    //if (queueSize > bmList.size()) {
-    //  System.out.println("Small number of MSB joins (" + bmList.size() + ") means we won't get full parallelization benefit");
-    //  queueSize = bmList.size();
-    //}
     System.out.println("Sending "+bmList.size()+" BinaryMerge async RPC calls in a queue of " + queueSize + " ... ");
-    // need to do our own queue it seems, otherwise floods the cluster
 
-    //int nbatch = 1+ (bmList.size()-1)/queueSize;
-    //int lastSize = bmList.size() - (nbatch-1) * queueSize;
-    //int bmCount = 0, batchStart = 0;
     int queue[] = new int[queueSize];
     BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];
 
-    //for (int b=1; b<=nbatch; b++) {      // to save flooding the cluster and RAM usage
-    //  int thisBatchSize = b==nbatch ? lastSize : queueSize;
     int nextItem;
     for (nextItem=0; nextItem<queueSize; nextItem++) {
       queue[nextItem] = nextItem;
