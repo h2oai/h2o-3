@@ -2,7 +2,7 @@ package water.api;
 
 import water.Iced;
 
-public class MetadataBase<I extends Iced, S extends MetadataBase<I, S>> extends RequestSchema<I, MetadataBase<I, S>> {
+public class MetadataBase<I extends Iced, S extends MetadataBase<I, S>> extends SchemaV3<I, MetadataBase<I, S>> {
   @API(help="Number for specifying an endpoint", json=false)
   public int num;
 

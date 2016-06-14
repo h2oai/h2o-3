@@ -10,7 +10,6 @@ import water.fvec.Vec;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
 
 /**
  * <p>
@@ -22,7 +21,7 @@ import java.util.Arrays;
  * Iced type we pass up to Schema must be Iced, so that a lookup for a Schema for Key<T>
  * doesn't get an arbitrary subclass of KeyV1.
  */
-public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> extends Schema<I, S> {
+public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> extends SchemaV3<I, KeyV3<I,S,K>> {
   @API(help="Name (string representation) for this Key.", direction = API.Direction.INOUT)
   public String name;
 
@@ -35,7 +34,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public KeyV3() {
     // NOTE: this is a bit of a hack; without this we won't have the type parameter.
     // We'll be able to remove this once we have proper typed Key subclasses, like FrameKey.
-    get__meta().setSchema_type("Key<" + getKeyedClassType() + ">");
+    __meta.schema_type = "Key<" + getKeyedClassType() + ">";
   }
 
   // need versioned

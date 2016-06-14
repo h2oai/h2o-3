@@ -27,7 +27,7 @@ class ModelBuildersHandler extends Handler {
     return m;
   }
 
-  public static class ModelIdV3 extends Schema<Iced, ModelIdV3>{
+  public static class ModelIdV3 extends SchemaV3<Iced, ModelIdV3>{
     @API(help="Model ID", direction = API.Direction.OUTPUT)
     String model_id;
   }

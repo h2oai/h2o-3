@@ -137,94 +137,15 @@ import java.util.*;
  * @param <S> reference to self: this should always be the same class as being declared. For example:
  *                public class TimelineV3 extends Schema<Timeline, TimelineV3>
  *
- * @see Meta#getSchemaVersion()
- * @see Meta#getSchemaName()
- * @see Meta#getSchemaType()
  * @see water.api.API
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private transient Class<I> _impl_class;
+  private transient int _schema_version;
+  private transient String _schema_name;
+  private transient String _schema_type;
   private static final int HIGHEST_SUPPORTED_VERSION = 4;
   private static final int EXPERIMENTAL_VERSION = 99;
-
-  /**
-   * Metadata for a Schema, including the version, name and type.  This information is included in all REST API
-   * responses as a field in the Schema so that the payloads are self-describing, and it is also available through
-   * the /Metadata/schemas REST API endpoint for the purposes of REST service discovery.
-   */
-  public static final class Meta extends Iced {
-    /**
-     * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version, meaning that
-     * there are no stability guarantees between H2O versions.
-     */
-    @API(help="Version number of this Schema.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
-    private int schema_version;
-
-    /** Get the simple schema (class) name, for example DeepLearningParametersV3.  Must not be changed after creation (treat as final).  */
-    @API(help="Simple name of this Schema.  NOTE: the schema_names form a single namespace.", direction=API.Direction.OUTPUT)
-    private String schema_name;
-
-    /** Get the simple name of H2O type that this Schema represents, for example DeepLearningParameters. */
-    @API(help="Simple name of H2O type that this Schema represents.  Must not be changed after creation (treat as final).", direction=API.Direction.OUTPUT)
-    private String schema_type; // subclasses can redefine this
-
-    /** Default constructor used only for newInstance() in generic reflection-based code. */
-    public Meta() {}
-
-    /** Standard constructor which supplies all the fields.  The fields should be treated as immutable once set. */
-    public Meta(int version, String name, String type) {
-      this.schema_version = version;
-      this.schema_name = name;
-      this.schema_type = type;
-    }
-
-    /**
-     * Get the version number of this schema, for example 3 or 99. Note that 99 is the "experimental" version,
-     * meaning that there are no stability guarantees between H2O versions.
-     */
-    public int getSchemaVersion() {
-      return schema_version;
-    }
-
-    /** Get the simple schema (class) name, for example DeepLearningParametersV3. */
-    public String getSchemaName() {
-      return schema_name;
-    }
-
-    /** Get the simple name of the H2O type that this Schema represents, for example DeepLearningParameters. */
-    public String getSchemaType() {
-      return schema_type;
-    }
-
-    public String toString() {
-      if (PojoUtils.equals(schema_name, schema_type + "V" + schema_version)) return schema_name;
-      return schema_name + " (type:" + schema_type + ", version: " + schema_version + ")";
-    }
-
-    /**
-     * Set the simple name of the H2O type that this Schema represents, for example Key&lt;Frame&gt;. NOTE: using
-     * this is a hack and should be avoided.
-     */
-    protected void setSchema_type(String schema_type) {
-      this.schema_type = schema_type;
-    }
-
-    /** Override the JSON serializer to prevent a recursive loop in AutoBuffer.  User code should not call this, and
-     soon it should be made protected. */
-//    public final water.AutoBuffer writeJSON_impl(water.AutoBuffer ab) {
-//      // Overridden because otherwise we get in a recursive loop trying to serialize this$0.
-//      ab.putJSON4("schema_version", schema_version)
-//        .put1(',').putJSONStr("schema_name", schema_name)
-//        .put1(',').putJSONStr("schema_type", schema_type);
-//      return ab;
-//    }
-  }
-
-  @API(help="Metadata on this schema instance, to make it self-describing.", direction=API.Direction.OUTPUT)
-  private Meta __meta;
-
-  /** Get the metadata for this schema instance which makes it self-describing when serialized to JSON. */
-  protected Meta get__meta() { return __meta; }
 
   // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
   // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
@@ -248,36 +169,31 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
    *          there is more than one schema which maps to the same Iced class */
   public Schema() {
     init_meta();
-    String name = __meta.getSchemaName();
-    int version = __meta.getSchemaVersion();
-    String type = __meta.getSchemaType();
+    if (schema_to_iced.get(_schema_name) == null) {
+      Log.debug("Registering schema: " + _schema_name + " version: " + _schema_version + " with Iced class: " + _impl_class.toString());
+      if (schemas.get(_schema_name) != null)
+        throw H2O.fail("Found a duplicate schema name in: " + schemas.get(_schema_name) + " and: " + this.getClass());
 
-    if (schema_to_iced.get(name) == null) {
-      Log.debug("Registering schema: " + name + " version: " + version + " with Iced class: " + _impl_class.toString());
-      if (schemas.get(name) != null)
-        throw H2O.fail("Found a duplicate schema name in: " + schemas.get(name) + " and: " + this.getClass());
-
-      schemas.put(name, this.getClass());
-      schema_to_iced.put(name, _impl_class);
+      schemas.put(_schema_name, this.getClass());
+      schema_to_iced.put(_schema_name, _impl_class);
 
       if (_impl_class != Iced.class) {
-        Pair<String, Integer> versioned = new Pair<>(type, version);
+        Pair<String, Integer> versioned = new Pair<>(_schema_type, _schema_version);
         // Check for conflicts
         if (iced_to_schema.get(versioned) != null)
           throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " +
                          iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to " +
-                         "version: " + version + " of Iced class: " + _impl_class);
+                         "version: " + _schema_version + " of Iced class: " + _impl_class);
         iced_to_schema.put(versioned, this.getClass());
       }
     }
   }
 
   protected void init_meta() {
-    if (__meta != null) return;
-    String name = this.getClass().getSimpleName();
-    int version = extractVersionFromSchemaName(name);
-    String type = getImplClass().getSimpleName();
-    __meta = new Meta(version, name, type);
+    if (_schema_name != null) return;
+    _schema_name = this.getClass().getSimpleName();
+    _schema_version = extractVersionFromSchemaName(_schema_name);
+    _schema_type = getImplClass().getSimpleName();
   }
 
   /** Extract the version number from the schema class name.  Returns -1 if
@@ -292,7 +208,11 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   /** Get the version number of this schema, for example 3 or 99. Note that 99
    *  is the "experimental" version, meaning that there are no stability
    *  guarantees between H2O versions.  */
-  public int getSchemaVersion() { return __meta.schema_version; }
+  public int getSchemaVersion() { return _schema_version; }
+
+  public String getSchemaName() { return _schema_name; }
+
+  public String getSchemaType() { return _schema_type; }
 
   private volatile static int LATEST_VERSION = -1;
   /** Get the highest schema version number that we've encountered during schema registration.  */
@@ -559,20 +479,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
         if (Modifier.isTransient(mods) || Modifier.isStatic(mods))
           continue;             // Ignore transient & static
         try {
-          API
-              api =
-              (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
+          API api = (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
           if (api.required()) {
             if (parms.getProperty(f.getName()) == null) {
-              IcedHashMap.IcedHashMapStringObject
-                  values =
-                  new IcedHashMap.IcedHashMapStringObject();
+              IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
               values.put("schema", this.getClass().getSimpleName());
               values.put("argument", f.getName());
               throw new H2OIllegalArgumentException(
                   "Required field " + f.getName() + " not specified",
-                  "Required field " + f.getName() + " not specified for schema class: " + this
-                      .getClass(),
+                  "Required field " + f.getName() + " not specified for schema class: " + this.getClass(),
                   values);
             }
           }

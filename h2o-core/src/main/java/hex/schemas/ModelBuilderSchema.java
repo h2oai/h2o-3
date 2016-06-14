@@ -11,7 +11,8 @@ import water.api.ValidationMessageBase;
 import water.util.*;
 import java.util.Properties;
 
-public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends RequestSchema<B,S> implements SpecifiesHttpResponseCode {
+public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends
+    ModelParametersSchema> extends SchemaV3<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
@@ -81,7 +82,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
-    return ModelBuilder.make(get__meta().getSchemaType(), null, null);
+    return ModelBuilder.make(getSchemaType(), null, null);
   }
 
   @Override public B fillImpl(B impl) {

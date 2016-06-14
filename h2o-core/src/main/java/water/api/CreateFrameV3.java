@@ -4,7 +4,7 @@ import hex.CreateFrame;
 import water.Key;
 import water.fvec.Frame;
 
-class CreateFrameV3 extends RequestSchema<CreateFrame, CreateFrameV3> {
+class CreateFrameV3 extends SchemaV3<CreateFrame, CreateFrameV3> {
   @API(help="destination key", direction=API.Direction.INOUT)
   public KeyV3.FrameKeyV3 dest;
 

@@ -20,7 +20,7 @@ import java.util.Set;
  * FIXME: Grid should contain also grid definition - model parameters
  * and definition of hyper parameters.
  */
-public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
+public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   //
   // Inputs
   //

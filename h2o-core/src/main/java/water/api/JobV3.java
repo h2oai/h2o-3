@@ -8,7 +8,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 /** Schema for a single Job. */
-public class JobV3 extends RequestSchema<Job, JobV3> {
+public class JobV3 extends SchemaV3<Job, JobV3> {
 
   // Input fields
   @API(help="Job Key")

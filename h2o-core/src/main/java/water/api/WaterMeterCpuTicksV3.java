@@ -3,7 +3,7 @@ package water.api;
 import water.util.PojoUtils;
 import water.util.WaterMeterCpuTicks;
 
-public class WaterMeterCpuTicksV3 extends RequestSchema<WaterMeterCpuTicks, WaterMeterCpuTicksV3> {
+public class WaterMeterCpuTicksV3 extends SchemaV3<WaterMeterCpuTicks, WaterMeterCpuTicksV3> {
   @API(help="Index of node to query ticks for (0-based)", required = true, direction = API.Direction.INPUT)
   public int nodeidx;
 

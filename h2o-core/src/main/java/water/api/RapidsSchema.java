@@ -3,7 +3,7 @@ package water.api;
 import water.Iced;
 import water.fvec.Frame;
 
-class RapidsSchema<I extends Iced,R extends RapidsSchema<I,R>> extends Schema<I, R> {
+class RapidsSchema<I extends Iced,R extends RapidsSchema<I,R>> extends SchemaV3<I, R> {
   // Input fields
   @API(help="An Abstract Syntax Tree.", direction=API.Direction.INPUT) String ast;
   @API(help="Key name to assign Frame results", direction=API.Direction.INPUT) String id;

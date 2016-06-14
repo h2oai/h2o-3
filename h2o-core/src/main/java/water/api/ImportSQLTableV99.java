@@ -3,7 +3,7 @@ package water.api;
 
 import water.Iced;
 
-public class ImportSQLTableV99 extends RequestSchema<Iced,ImportSQLTableV99> {
+public class ImportSQLTableV99 extends SchemaV3<Iced,ImportSQLTableV99> {
   
   //Input fields
   @API(help="connection_url", required = true)

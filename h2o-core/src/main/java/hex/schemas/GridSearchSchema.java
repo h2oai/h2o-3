@@ -27,7 +27,7 @@ import java.util.Properties;
 public class GridSearchSchema<G extends Grid<MP>,
     S  extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
-    P  extends ModelParametersSchema> extends Schema<G, S> {
+    P  extends ModelParametersSchema> extends SchemaV3<G, S> {
 
   //
   // Inputs

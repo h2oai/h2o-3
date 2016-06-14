@@ -3,7 +3,7 @@ package water.api;
 import water.Iced;
 import water.api.KeyV3.FrameKeyV3;
 
-public class ParseV3 extends RequestSchema<Iced, ParseV3> {
+public class ParseV3 extends SchemaV3<Iced, ParseV3> {
   // Input fields
   @API(help="Final frame name",required=true)
   FrameKeyV3 destination_frame;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist yet.
