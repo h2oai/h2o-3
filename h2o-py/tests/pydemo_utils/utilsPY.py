@@ -1,7 +1,8 @@
 import json
+import codecs
 
 def ipy_notebook_exec(path, save_and_norun=None):
-    notebook = json.load(open(path))
+    notebook = json.load(codecs.open(path, "r", "utf-8"))
     program = ''
     for block in ipy_code_blocks(notebook):
         for line in ipy_valid_lines(block):
