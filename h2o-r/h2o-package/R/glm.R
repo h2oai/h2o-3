@@ -47,6 +47,7 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
+#' @param seed (Optional) Specify the random number generator (RNG) seed for cross-validation folds.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
 #'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will
@@ -63,8 +64,6 @@
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
 #' @param missing_values_handling (Optional) Controls handling of missing values. Can be either "MeanImputation" or "Skip". MeanImputation replaces missing values with mean for numeric and most frequent level for categorical,  Skip ignores observations with any missing value. Applied both during model training *AND* scoring.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#' @param ... (Currently Unimplemented)
-#'        coefficients.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -115,8 +114,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     standardize = TRUE,
                     family = c("gaussian", "binomial", "poisson", "gamma", "tweedie","multinomial"),
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
-                    tweedie_variance_power = NaN,
-                    tweedie_link_power = NaN,
+                    tweedie_variance_power = 0,
+                    tweedie_link_power = 1,
                     alpha = 0.5,
                     prior = NULL,
                     lambda = 1e-05,
@@ -124,6 +123,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
                     nfolds = 0,
+                    seed = NULL,
                     fold_column = NULL,
                     fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                     keep_cross_validation_predictions = FALSE,
@@ -133,7 +133,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     weights_column = NULL,
                     intercept = TRUE,
                     max_active_predictors = -1,
-                    interactions=NULL,
+                    interactions = NULL,
                     objective_epsilon = -1,
                     gradient_epsilon = -1,
                     non_negative = FALSE,
@@ -188,6 +188,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(intercept) )                 parms$intercept              <- intercept
+  if( !missing(seed))                       parms$seed                   <- seed
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions

@@ -22,6 +22,9 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The Gini score for this scoring run.", direction=API.Direction.OUTPUT)
   public double Gini;
 
+  @API(help="The mean misclassification error per class.", direction=API.Direction.OUTPUT)
+  public double mean_per_class_error;
+
   @API(help="The class labels of the response.", direction=API.Direction.OUTPUT)
   public String[] domain;
 
@@ -43,6 +46,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
 //    sigma = modelMetrics._sigma;
     r2 = modelMetrics.r2();
     logloss = modelMetrics._logloss;
+    mean_per_class_error = modelMetrics._mean_per_class_error;
 
     AUC2 auc = modelMetrics._auc;
     if (null != auc) {
@@ -55,7 +59,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         thresholds[i] = Double.toString(auc._ths[i]);
       AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
       String[] colHeaders = new String[crits.length+2];
-      String[] colHeadersMax = new String[9];
+      String[] colHeadersMax = new String[crits.length-8/*drop npr tpr etc.*/];
       String[] types      = new String[crits.length+2];
       String[] formats    = new String[crits.length+2];
       colHeaders[0] = "Threshold";

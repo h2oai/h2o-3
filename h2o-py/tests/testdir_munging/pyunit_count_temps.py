@@ -17,12 +17,6 @@ def date_munge():
   # /3/Parse
   crimes = h2o.import_file(path=crimes_path)
 
-  # /3/Frames/chicagoCrimes10k.hex - head 10 rows, basic stats
-  # /99/Rapids, parms: {ast=(tmp= py_1 (:= chicagoCrimes10k.hex (as.Date (cols_py chicagoCrimes10k.hex "Date") "%m/%d/%Y %I:%M:%S %p") 2 []))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=chicagoCrimes10k.hex}
-  # /3/Frames/py_1, route: /3/Frames/(?<frameid>.*), parms: {frame_id=py_1, row_count=10}
-  crimes["Date"]      = crimes["Date"].as_date("%m/%d/%Y %I:%M:%S %p")
-
   # /99/Rapids, parms: {ast=(tmp= py_2 (append py_1 (day (cols_py py_1 "Date")) "Day"))}
   # DELETE /3/DKV/(?<key>.*), parms: {key=py_1}
   # /3/Frames/(?<frameid>.*), parms: {frame_id=py_2, row_count=10}

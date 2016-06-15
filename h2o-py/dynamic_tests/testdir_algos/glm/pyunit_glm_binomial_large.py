@@ -1448,7 +1448,7 @@ def test_glm_binomial():
     test_glm_binomial.test5_missing_values()
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()
-    test_glm_binomial.teardown()
+#    test_glm_binomial.teardown()
 
     sys.stdout.flush()
 

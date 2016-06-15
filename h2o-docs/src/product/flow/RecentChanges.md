@@ -2,6 +2,91 @@
 
 ##H2O
 
+###Turchin (3.8.2.9) - 6/10/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2920'>PUBDEV-2920</a>] -         Python apply() doesn&#39;t recognize % (modulo) within lambda function
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2940'>PUBDEV-2940</a>] -         Documentation: Add RoundRobin histogram_type to GBM/DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2957'>PUBDEV-2957</a>] -         Add &quot;seed&quot; option to GLM in documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2973'>PUBDEV-2973</a>] -         Documentation: Update supported Hadoop versions
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2981'>PUBDEV-2981</a>] -         Models hang when max_runtime_secs is too small
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2982'>PUBDEV-2982</a>] -         Default min/max_mem_size to gigabytes in h2o.init
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2997'>PUBDEV-2997</a>] -         Add &quot;ignore_const_cols&quot; argument to glm and gbm for Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2999'>PUBDEV-2999</a>] -         AIOOBE in GBM if no nodes are split during tree building
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3004'>PUBDEV-3004</a>] -         Negative R^2 (now NaN) can prevent early stopping
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3011'>PUBDEV-3011</a>] -         Two grid sorting methods in Py API - only one works sometimes
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2743'>PUBDEV-2743</a>] -         Add seed argument to GLM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2917'>PUBDEV-2917</a>] -         Add cor() function to Rapids
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3005'>PUBDEV-3005</a>] -         Verify checkpoint argument in h2o.gbm (for R)
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2040'>PUBDEV-2040</a>] -         Sync up argument names in `h2o.init` between R and Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2996'>PUBDEV-2996</a>] -         Change `getjar` to `get_jar` in h2o.download_pojo in R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2998'>PUBDEV-2998</a>] -         Change min_split_improvement default value from 0 to 1e-5 for GBM/DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3013'>PUBDEV-3013</a>] -         Allow specification of &quot;AUC&quot; or &quot;auc&quot; or &quot;Auc&quot; for stopping_metrics, sorting of grids, etc.
+</li>
+</ul>
+
+###Turchin (3.8.2.8) - 6/2/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2985'>PUBDEV-2985</a>] -         Make Random grid search consistent between clients for same parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2987'>PUBDEV-2987</a>] -         Allow learn_rate_annealing to be passed to H2OGBMEstimator constructor in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2989'>PUBDEV-2989</a>] -         Fix typo in GBM/DRF Python API for col_sample_rate_change_per_level - was misnamed and couldn&#39;t be set
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2979'>PUBDEV-2979</a>] -         Add a new metric: mean misclassification error for classification models
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2972'>PUBDEV-2972</a>] -         No longer print negative R^2 values - show NaN instead
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2984'>PUBDEV-2984</a>] -         Add xval=True/False as an option to model_performance() in Python API
+</li>
+</ul>
+
 ###Turchin (3.8.2.6) - 5/24/2016
 
 <h4>        Bug

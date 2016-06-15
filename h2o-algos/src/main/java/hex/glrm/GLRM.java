@@ -506,16 +506,14 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
     }
 
     @Override
-    public void compute2() {
+    public void computeImpl() {
       GLRMModel model = null;
       DataInfo dinfo = null, xinfo = null, tinfo = null;
       Frame fr = null;
       boolean overwriteX = false;
 
       try {
-        Scope.enter();
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -674,13 +672,10 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(_job);
       } finally {
-        _parms.read_unlock_frames(_job);
-
         List<Key> keep = new ArrayList<>();
         if (model != null) {
           Frame loadingFrm = DKV.getGet(model._output._representation_key);
           if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
-
           model.unlock(_job);
         }
         if (tinfo != null) tinfo.remove();
@@ -696,10 +691,8 @@ public class GLRM extends ModelBuilder<GLRMModel,GLRMModel.GLRMParameters,GLRMMo
             for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
           }
         }
-
-        Scope.exit(keep.toArray(new Key[0]));
+        Scope.untrack(keep.toArray(new Key[0]));
       }
-      tryComplete();
     }
 
     private TwoDimTable createModelSummaryTable(GLRMModel.GLRMOutput output) {

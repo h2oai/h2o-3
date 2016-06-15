@@ -232,15 +232,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Main worker thread
     @Override
-    public void compute2() {
-
+    public void computeImpl() {
       KMeansModel model = null;
       try {
-        Scope.enter();
         init(true);
         // Do lock even before checking the errors, since this block is finalized by unlock
         // (not the best solution, but the code is more readable)
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         // Something goes wrong
         if( error_count() > 0 ) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(KMeans.this);
         // The model to be built
@@ -295,13 +292,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._validation_metrics = ModelMetrics.getFromDKV(model,_parms.valid());
           model.update(_job); // Update model in K/V store
         }
-
       } finally {
         if( model != null ) model.unlock(_job);
-        _parms.read_unlock_frames(_job);
-        Scope.exit();
       }
-      tryComplete();
     }
 
     private TwoDimTable createModelSummaryTable(KMeansModel.KMeansOutput output) {

@@ -411,7 +411,7 @@ public class RapidsTest extends TestUtil {
 
       exec_str("(setTimeZone \"Etc/UTC\")", ses);
 
-      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (as.Date (cols crimes.hex [2]) \"%m/%d/%Y %I:%M:%S %p\")))) \"Day\"))", ses);
+      exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_6 (day (tmp= nary_op_5 (cols crimes.hex [2])))) \"Day\"))", ses);
 
       checkSaneFrame();
       exec_str("(assign crimes.hex (append crimes.hex (tmp= binary_op_31 (+ (tmp= unary_op_7 (month nary_op_5)) #1)) \"Month\"))", ses);

@@ -38,15 +38,13 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   }
 
   private class Word2VecDriver extends Driver {
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       Word2VecModel model = null;
       long start, stop, lastCnt=0;
       long tstart, tstop;
       float tDiff;
 
       try {
-        Scope.enter();
-        _parms.read_lock_frames(_job);
         init(true);
 
         //The model to be built
@@ -73,10 +71,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
         model.buildModelOutput();
       } finally {
         if( model != null ) model.unlock(_job);
-        _parms.read_unlock_frames(_job);
-        Scope.exit();
       }
-      tryComplete();
     }
   }
 }

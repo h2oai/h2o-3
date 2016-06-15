@@ -61,6 +61,7 @@ public class GridSearchSchema<G extends Grid<MP>,
       for (Map.Entry<String, Object> e : m.entrySet()) {
         Object o = e.getValue();
         Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+
         hyper_parameters.put(e.getKey(),o2);
       }
       parms.remove("hyper_parameters");

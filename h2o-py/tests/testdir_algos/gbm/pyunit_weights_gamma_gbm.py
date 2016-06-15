@@ -16,7 +16,8 @@ def weights_gamma():
                                     ntrees=20,
                                     max_depth=1,
                                     min_rows=1,
-                                    learn_rate=1)
+                                    learn_rate=1, 
+                                    min_split_improvement=0)
   hh.train(x=list(range(3)), y="medskad", training_frame=htable, weights_column="antskad")
   ph = hh.predict(htable)
 

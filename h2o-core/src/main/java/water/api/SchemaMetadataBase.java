@@ -100,6 +100,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
    * @return
    */
   public final AutoBuffer writeJSON_impl(AutoBuffer ab) {
+    boolean isOut = direction == API.Direction.OUTPUT;
     ab.putJSONStr("name", name);                                      ab.put1(',');
     ab.putJSONStr("type", type);                                      ab.put1(',');
     ab.putJSONStrUnquoted("is_schema", is_schema ? "true" : "false"); ab.put1(',');
@@ -114,12 +115,12 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
 
     ab.putJSONStr("help", help);                                      ab.put1(',');
     ab.putJSONStr("label", label);                                    ab.put1(',');
-    ab.putJSONStrUnquoted("required", required ? "true" : "false");   ab.put1(',');
+    ab.putJSONStrUnquoted("required", isOut? "null" : required ? "true" : "false");   ab.put1(',');
     ab.putJSONStr("level", level.toString());                         ab.put1(',');
     ab.putJSONStr("direction", direction.toString());                 ab.put1(',');
     ab.putJSONStrUnquoted("is_inherited", is_inherited ? "true" : "false"); ab.put1(',');
     ab.putJSONStr("inherited_from", inherited_from); ab.put1(',');
-    ab.putJSONStrUnquoted("is_gridable", is_gridable ? "true" : "false"); ab.put1(',');
+    ab.putJSONStrUnquoted("is_gridable", isOut? "null" : is_gridable ? "true" : "false"); ab.put1(',');
     ab.putJSONAStr("values", values);                                 ab.put1(',');
     ab.putJSONStrUnquoted("json", json ? "true" : "false");           ab.put1(',');
     ab.putJSONAStr("is_member_of_frames", is_member_of_frames);       ab.put1(',');

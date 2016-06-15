@@ -174,7 +174,7 @@ def validate_builder(algo, builder):
     parameters = builder['parameters']
     assert len(parameters) > 0, "FAIL: parameters list is empty: " + algo + " (" + repr(builder) + ")"
     for parameter in parameters:
-        assertKeysExist(parameter, '', ['name', 'label', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
+        assertKeysExist(parameter, '', ['name', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
 
     assert 'can_build' in builder, "FAIL: Failed to find can_build list in builder: " + algo + " (" + repr(builder) + ")"
     assert isinstance(builder['can_build'], list), "FAIL: 'can_build' element is not a list in builder: " + algo + " (" + repr(builder) + ")"
@@ -493,7 +493,7 @@ def cleanup(a_node, models=None, frames=None):
             a_node.delete_frame(frame)
             ms = a_node.frames(row_count=5)
 
-            found = False;
+            found = False
             for m in ms['frames']:
                 assert m['frame_id'] != frame, 'FAIL: Found frame that we tried to delete in the frames list: ' + frame
 

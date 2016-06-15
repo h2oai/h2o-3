@@ -948,7 +948,7 @@ def test_glm_gaussian():
     test_glm_gaussian.test5_missing_values()
     test_glm_gaussian.test6_enum_missing_values()
     test_glm_gaussian.test7_missing_enum_values_lambda_search()
-    test_glm_gaussian.tear_down()
+#    test_glm_gaussian.tear_down()
 
     sys.stdout.flush()
 

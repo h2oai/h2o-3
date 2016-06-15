@@ -10,7 +10,7 @@
 #'        none is given, an id will automatically be generated.
 #' @param overwrite_with_best_model Logical. If \code{TRUE}, overwrite the final model with the best model found during training. Defaults to \code{TRUE}.
 #' @param validation_frame An H2OFrame object indicating the validation dataset used to construct the confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
-#' @param checkpoint Model checkpoint (either key or H2ODeepLearningModel) to resume training with.
+#' @param checkpoint "Model checkpoint (provide the model_id) to resume training with."
 #' @param autoencoder Enable auto-encoder for model building.
 #' @param pretrained_autoencoder Pretrained autoencoder (either key or H2ODeepLearningModel) to initialize the model state of a supervised DL model with.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variance.
@@ -75,7 +75,7 @@
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
 #'        Can only trigger after at least 2k scoring events. Use 0 to disable.
 #' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
-#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification", or "mean_per_class_error".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
@@ -182,7 +182,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              classification_stop,
                              regression_stop,
                              stopping_rounds=5,
-                             stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
+                             stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification", "mean_per_class_error"),
                              stopping_tolerance=0,
                              max_runtime_secs=0,
                              quiet_mode,

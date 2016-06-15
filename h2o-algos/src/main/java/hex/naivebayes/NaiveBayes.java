@@ -169,34 +169,27 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     }
 
     @Override
-    public void compute2() {
+    public void computeImpl() {
       NaiveBayesModel model = null;
       DataInfo dinfo = null;
 
       try {
-        Scope.enter();
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
         dinfo = new DataInfo(_train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, _weights!=null, false, _fold!=null);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
         model.delete_and_lock(_job);
-        _train.read_lock(_job._key);
 
         _job.update(1, "Begin distributed Naive Bayes calculation");
         NBTask tsk = new NBTask(_job._key, dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         if (computeStatsFillModel(model, dinfo, tsk))
           model.update(_job);
       } finally {
-        _train.unlock(_job);
         if (model != null) model.unlock(_job);
         if (dinfo != null) dinfo.remove();
-        _parms.read_unlock_frames(_job);
-        Scope.exit();
       }
-      tryComplete();
     }
   }
 

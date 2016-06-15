@@ -294,6 +294,21 @@ class H2OBinomialGridSearch(object):
     """
     return {model.model_id:model.max_per_class_error(thresholds, train, valid, xval) for model in self.models}
 
+  def mean_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
+    """
+    Get the mean per class error for a set of thresholds.
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
+    :param train: If train is True, then return the mean_per_class_error value for the training data.
+    :param valid: If valid is True, then return the mean_per_class_error value for the validation data.
+    :param xval:  If xval is True, then return the mean_per_class_error value for the cross validation data.
+    :return: The mean_per_class_error for this binomial model.
+    """
+    return {model.model_id:model.mean_per_class_error(thresholds, train, valid, xval) for model in self.models}
+
 
   def metric(self, metric, thresholds=None, train=False, valid=False, xval=False):
     """
@@ -610,6 +625,20 @@ class H2OMultinomialGridSearch(object):
     :return: The R^2 for this regression model.
     """
     return {model.model_id:model.hit_ratio_table(train, valid, xval) for model in self.models}
+
+  def mean_per_class_error(self, train=False, valid=False, xval=False):
+    """
+    Get the mean per class error.
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    :param train: If train is True, then return the mean_per_class_error value for the training data.
+    :param valid: If valid is True, then return the mean_per_class_error value for the validation data.
+    :param xval:  If xval is True, then return the mean_per_class_error value for the cross validation data.
+    :return: The mean_per_class_error for this binomial model.
+    """
+    return {model.model_id:model.mean_per_class_error(train, valid, xval) for model in self.models}
 
 class H2ORegressionGridSearch(object):
   pass

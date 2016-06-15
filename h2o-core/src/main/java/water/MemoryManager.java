@@ -258,6 +258,12 @@ abstract public class MemoryManager {
   public static long   [] malloc8 (int size) { return (long   [])malloc(size,size*8L, 8,null,0); }
   public static float  [] malloc4f(int size) { return (float  [])malloc(size,size*4L, 5,null,0); }
   public static double [] malloc8d(int size) { return (double [])malloc(size,size*8L, 9,null,0); }
+  public static double [][] malloc8d(int m, int n) {
+    double [][] res = new double[m][];
+    for(int i = 0; i < m; ++i)
+      res[i] = malloc8d(n);
+    return res;
+  }
   public static boolean[] mallocZ (int size) { return (boolean[])malloc(size,size  , 0,null,0); }
   public static Object [] mallocObj(int size){ return (Object [])malloc(size,size*8L,10,null,0,false); }
   public static byte   [] arrayCopyOfRange(byte  [] orig, int from, int sz) { return (byte  []) malloc(sz,(sz-from)  ,-1,orig,from); }

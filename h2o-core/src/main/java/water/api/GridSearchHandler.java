@@ -15,10 +15,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * A generic grid search handler implementing launch of grid search.
@@ -47,7 +44,7 @@ public class GridSearchHandler<G extends Grid<MP>,
       throw water.H2O.unimpl();
 
     // Peek out the desired algo from the URL
-    String ss[] = route._url_pattern_raw.split("/");
+    String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{99}/{Grid}/{gbm}/
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
@@ -68,16 +65,26 @@ public class GridSearchHandler<G extends Grid<MP>,
     ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
     gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
 
-
-
     gss.fillFromParms(parms);   // Override defaults from user parms
 
     // Verify list of hyper parameters
     // Right now only names, no types
+    // note: still use _validation_frame and and _training_frame at this point.
+    // Do not change those names yet.
     validateHyperParams((P)gss.parameters, gss.hyper_parameters);
 
     // Get actual parameters
     MP params = (MP) gss.parameters.createAndFillImpl();
+
+    Map<String,Object[]> sortedMap = new TreeMap<>(gss.hyper_parameters);
+
+    // Need to change validation_frame to valid now.  HyperSpacewalker will complain
+    // if it encountered an illegal parameter name.  From now on, validation_frame,
+    // training_fame are no longer valid names.
+    if (sortedMap.containsKey("validation_frame")) {
+      sortedMap.put("valid", sortedMap.get("validation_frame"));
+      sortedMap.remove("validation_frame");
+    }
 
     // Get/create a grid for given frame
     // FIXME: Grid ID is not pass to grid search builder!
@@ -86,7 +93,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(destKey,
                                                  params,
-                                                 gss.hyper_parameters,
+                                                 sortedMap,
                                                  new DefaultModelParametersBuilderFactory<MP, P>(),
                                                  (HyperSpaceSearchCriteria)gss.search_criteria.createAndFillImpl());
 

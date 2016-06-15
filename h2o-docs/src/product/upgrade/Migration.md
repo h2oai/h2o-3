@@ -236,7 +236,7 @@ H2O Classic  | H2O 3.0
  &nbsp; | `keep_cross_validation_predictions = FALSE,`
  &nbsp; | `score_each_iteration = FALSE,`
  &nbsp; | `stopping_rounds = 0,`
- &nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
+ &nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification," "mean_per_class_error"),`
  &nbsp; | `stopping_tolerance = 0.001,`
  &nbsp; | `offset_column = NULL,`
  &nbsp; | `weights_column = NULL,`
@@ -528,7 +528,7 @@ H2O Classic  | H2O 3.0
 `classification_stop,` | `classification_stop = 0`
 `regression_stop,` | `regression_stop = 1e-6,`
 &nbsp; | `stopping_rounds = 5,`
-&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),`
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification", "mean_per_class_error"),`
 &nbsp; | `stopping_tolerance = 0,`
 `quiet_mode,` | `quiet_mode = false,`
 `max_confusion_matrix_size,` | `max_confusion_matrix_size,`
@@ -661,7 +661,7 @@ H2O Classic | H2O 3.0
 &nbsp; | `keep_cross_validation_predictions = FALSE,`
 &nbsp; | `score_each_iteration = FALSE,`
 &nbsp; | `stopping_rounds = 0,`
-&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"), `
+&nbsp; | `stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification", "mean_per_class_error"), `
 &nbsp; | `stopping_tolerance = 0.001)`
 `holdout.fraction = 0,` | 
 `max.after.balance.size = 5,` | `max_after_balance_size,` 

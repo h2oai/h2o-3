@@ -56,8 +56,10 @@ class H2OConnection(object):
     :param license: If not None, is a path to a license file.
     :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
     -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. This value is only used when Python starts H2O.
-    :param max_mem_size: Maximum heap size (jvm option Xmx) in gigabytes.
-    :param min_mem_size: Minimum heap size (jvm option Xms) in gigabytes.
+    :param max_mem_size: Maximum heap size (jvm option Xmx). String specifying the maximum size, in bytes, of the memory allocation pool to H2O.
+    This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.
+    :param min_mem_size: Minimum heap size (jvm option Xms). String specifying the minimum size, in bytes, of the memory allocation pool to H2O.
+    This value must a multiple of 1024 greater than 2MB. Append the letter m or M to indicate megabytes, or g or G to indicate gigabytes.
     :param ice_root: A temporary directory (default location is determined by tempfile.mkdtemp()) to hold H2O log files.
     :param strict_version_check: Setting this to False is unsupported and should only be done when advised by technical support.
     :param proxy: A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
@@ -298,8 +300,22 @@ class H2OConnection(object):
       print()
 
     vm_opts = []
-    if mmin: vm_opts += ["-Xms{}g".format(mmin)]
-    if mmax: vm_opts += ["-Xmx{}g".format(mmax)]
+    if mmin:
+      if type(mmin) == int:
+        warnings.warn("User specified min_mem_size should have a trailing letter indicating byte type.\n"
+                      "`m` or `M` indicate megabytes & `g` or `G` indicate gigabytes.\nWill default to gigabytes as byte type.")
+        vm_opts += ["-Xms{}g".format(mmin)]
+      else:
+        vm_opts += ["-Xms{}".format(mmin)]
+
+    if mmax:
+      if type(mmax) == int:
+        warnings.warn("User specified max_mem_size should have a trailing letter indicating byte type.\n"
+                      "`m` or `M` indicate megabytes & `g` or `G` indicate gigabytes.\nWill default to gigabytes as byte type.")
+        vm_opts += ["-Xmx{}g".format(mmax)]
+      else:
+        vm_opts += ["-Xmx{}".format(mmax)]
+
     if ea:   vm_opts += ["-ea"]
 
     h2o_opts = ["-verbose:gc",
@@ -561,6 +577,8 @@ class H2OConnection(object):
           x += ','
         x = x[:-1]
         x += ']'
+      elif isinstance(v, dict) and "__meta" in v and v["__meta"]["schema_name"].endswith("KeyV3"):
+        x = v["name"]
       else:
         x = str(v) if PY3 else str(v).encode(H2OConnection.__ENCODING__, errors=H2OConnection.__ENCODING_ERROR__)
       query_string += k+"="+quote(x)+"&"

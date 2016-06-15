@@ -76,7 +76,7 @@ def is_gradle_build_python_test(file_name):
     """
     Return True if file_name matches a regexp for on of the python test run during gradle build.  False otherwise.
     """
-    return file_name in ["generate_rest_api_docs.py", "generate_java_bindings.py", "test_gbm_prostate.py",
+    return file_name in ["gen_docs_json.py", "gen_java.py", "gen_csharp.py", "gen_thrift.py", "test_gbm_prostate.py",
                          "test_rest_api.py"]
 
 def is_javascript_test_file(file_name):
@@ -1126,13 +1126,13 @@ class TestRunner:
                 continue
 
             # http://stackoverflow.com/questions/18282370/os-walk-iterates-in-what-order
-            # os.walk() yields in each step what it will do in the next steps. 
-            # You can in each step influence the order of the next steps by sorting the 
+            # os.walk() yields in each step what it will do in the next steps.
+            # You can in each step influence the order of the next steps by sorting the
             # lists the way you want them. Quoting the 2.7 manual:
 
-            # When topdown is True, the caller can modify the dirnames list in-place 
-            # (perhaps using del or slice assignment), and walk() will only recurse into the 
-            # subdirectories whose names remain in dirnames; this can be used to prune the search, 
+            # When topdown is True, the caller can modify the dirnames list in-place
+            # (perhaps using del or slice assignment), and walk() will only recurse into the
+            # subdirectories whose names remain in dirnames; this can be used to prune the search,
             # impose a specific order of visiting
 
             # So sorting the dirNames will influence the order in which they will be visited:
@@ -1931,6 +1931,7 @@ g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                 "../h2o-py/scripts/h2o-py-test-setup.py"))
 g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+# If you get an exception in this line, then reboot your WiFi (or restart computer)
 g_machine_ip = socket.gethostbyname(socket.gethostname())
 g_ncpu = multiprocessing.cpu_count()
 g_os = platform.system()

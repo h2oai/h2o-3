@@ -1,12 +1,12 @@
 package water;
 
-import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.api.Schema;
 import water.api.TwoDimTableBase;
 import water.util.Log;
 import water.util.TwoDimTable;
+
+import static org.junit.Assert.assertTrue;
 import static water.util.TwoDimTable.emptyDouble;
 
 public class TwoDimTableTest extends TestUtil {
@@ -184,7 +184,7 @@ public class TwoDimTableTest extends TestUtil {
     Log.info(ts);
 
     assertTrue(table.get(3, 0).equals("a30"));
-    assertTrue(table.get(1, 2).equals(1.2));
+    assertTrue(table.get(1, 2).equals("1.2"));
     assertTrue(table.get(1, 3) == null);
 
     String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();

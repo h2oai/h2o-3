@@ -1036,8 +1036,7 @@ public class NewChunk extends Chunk {
     if(lemin < 0 && lemax >= (Long.MAX_VALUE + lemin))
       return Long.MAX_VALUE; // if overflow return 64 as the max possible value
     long res = lemax - lemin;
-    assert res >= 0;
-    return res;
+    return res < 0 ? 0 /*happens for rare FP roundoff computation of min & max */: res;
   }
 
   private Chunk compress2() {
@@ -1350,7 +1349,7 @@ public class NewChunk extends Chunk {
   }
   // Compute a compressed integer buffer
   private byte[] bufX( long bias, int scale, int off, int log ) {
-    byte[] bs = new byte[(_len <<log)+off];
+    byte[] bs = MemoryManager.malloc1((_len <<log)+off);
     int j = 0;
     for( int i=0; i< _len; i++ ) {
       long le = -bias;

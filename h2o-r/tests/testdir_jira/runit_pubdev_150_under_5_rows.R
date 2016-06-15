@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test_one_file <- function(fnam, mins, maxs) {
   DF <- h2o.importFile(locate(paste0("smalldata/jira/pubdev-150/",fnam,".csv")), paste0(fnam,".hex"))
-  raw_payload = .h2o.doSafeREST(urlSuffix = paste0("Frames.json/",fnam,".hex/columns/B/summary"), method = "GET")
+  raw_payload = .h2o.doSafeREST(urlSuffix = paste0("Frames/",fnam,".hex/columns/B/summary"), method = "GET")
   # print(raw_payload)
   json = .h2o.fromJSON(jsonlite::fromJSON(raw_payload,simplifyDataFrame=FALSE))
   expect_equal(as.vector(json$frames[[1]]$columns[[1]]$mins), mins)   # as.vector needs as type of $mins is matrix <5 but vector >=5

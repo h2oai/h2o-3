@@ -3,11 +3,8 @@ from __future__ import print_function
 import sys
 import random
 import os
-import numpy as np
-import math
 from builtins import range
 import time
-import pickle
 import json
 
 sys.path.insert(1, "../../../")
@@ -45,7 +42,6 @@ class Test_glm_random_grid_search:
     training1_filename = "smalldata/gridsearch/gaussian_training1_set.csv"
     json_filename = "random_gridsearch_GLM_Gaussian_hyper_parameter_" + curr_time + ".json"
 
-    ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed
     allowed_diff = 0.1   # error tolerance allowed
     allowed_time_diff = 1e-1    # fraction of max_runtime_secs allowed for max run time stopping criteria
 
@@ -57,11 +53,11 @@ class Test_glm_random_grid_search:
 
     max_int_val = 1000          # maximum size of random integer values
     min_int_val = 0             # minimum size of random integer values
-    max_int_number = 4          # maximum number of integer random grid values to generate
+    max_int_number = 3          # maximum number of integer random grid values to generate
 
     max_real_val = 1            # maximum size of random float values
     min_real_val = 0.0          # minimum size of random float values
-    max_real_number = 4         # maximum number of real grid values to generate
+    max_real_number = 3         # maximum number of real grid values to generate
 
     lambda_scale = 100          # scale lambda value to be from 0 to 100 instead of 0 to 1
     max_runtime_scale = 3       # scale the max runtime to be different from 0 to 1
@@ -75,7 +71,7 @@ class Test_glm_random_grid_search:
     allowed_scaled_time = 1       # how much to scale back max time
     allowed_scaled_model_number = 1.5   # used to set max_model_number as
     # possible_number_models * allowed_scaled_model_number
-    max_stopping_rounds = 10            # maximum stopping rounds allowed to be used for early stopping metric
+    max_stopping_rounds = 5            # maximum stopping rounds allowed to be used for early stopping metric
     max_tolerance = 0.01                   # maximum tolerance to be used for early stopping metric
 
     family = 'gaussian'     # set gaussian as default
@@ -127,18 +123,11 @@ class Test_glm_random_grid_search:
     def setup_data(self):
         """
         This function performs all initializations necessary:
-        1. generates all the random values for our dynamic tests like the Gaussian
-        noise std, column count and row count for training/test data sets.
-        2. generate the appropriate data sets.
+        load the data sets and set the training set indices and response column index
         """
 
         # clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-
-        #  DEBUGGING setup_data, remember to comment them out once done.
-        # self.max_real_number = 5
-        # self.max_int_number = 5
-        # end DEBUGGING
 
         # preload data sets
         self.training1_data = h2o.import_file(path=pyunit_utils.locate(self.training1_filename))
@@ -439,14 +428,12 @@ def test_random_grid_search_for_glm():
     :return: None
     """
     # randomize grid search for Gaussian
-    start_time = time.clock()
     test_glm_gaussian_random_grid = Test_glm_random_grid_search("gaussian")
     test_glm_gaussian_random_grid.test1_glm_random_grid_search_model_number("mse(xval=True)")   # this test must be run.
     test_glm_gaussian_random_grid.test2_glm_random_grid_search_max_model()
     test_glm_gaussian_random_grid.test3_glm_random_grid_search_max_runtime_secs()
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("MSE", False)
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("r2", True)
-    print("Gaussian randomized gridsearch run time is {0}".format(time.clock() - start_time))
 #    test_glm_gaussian_random_grid.tear_down()  # obsolete
 
     # exit with error if any tests have failed

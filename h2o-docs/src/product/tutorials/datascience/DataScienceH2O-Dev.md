@@ -264,6 +264,7 @@ The GLM suite includes:
 
 - **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a GLM Model
 
@@ -473,7 +474,7 @@ The current version of DRF is fundamentally the same as in previous versions of 
 
 - Improved ability to train on categorical variables (using the `nbins_cats` parameter)
 - Minor changes in histogramming logic for some corner cases
-- By default, DRF now builds half as many trees for binomial problems, similar to GBM: one tree to estimate class 0, probability p0, class 1 probability is 1-p0. 
+- By default, DRF builds half as many trees for binomial problems, similar to GBM: it uses a single tree to estimate class 0 (probability "p0"), and then computes the probability of class 0 as ``1.0 - p0``. For multiclass problems, a tree is used to estimate the probability of each class separately. 
 
 There was some code cleanup and refactoring to support the following features:
 
@@ -550,13 +551,14 @@ DRF no longer has a special-cased histogram for classification or regression (cl
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    - **AUTO**: Logloss for classification, deviance for regression
+    - **AUTO**: Logloss for classification; deviance for regression
     - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
-    - **misclassification** 
+    - **misclassification**
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -1202,13 +1204,14 @@ There was some code cleanup and refactoring to support the following features:
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification; deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
-    - **misclassification** 
+    - **misclassification**
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -1305,11 +1308,15 @@ Trees cluster observations into leaf nodes, and this information can be useful f
   - `col_sample_rate_per_tree=0.754`
   - `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
 
-  For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
+  For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case, (0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
 - **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
 
   The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
+
+- **Are there any tutorials for GBM?**
+
+ You can find tutorials for using GBM with R, Python, and Flow at the following location: <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm" target="_blank">https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm</a>
 
 ###GBM Algorithm 
 
@@ -1493,13 +1500,14 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification; deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
     - **misclassification** 
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 

@@ -12,12 +12,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final float[] _hit_ratios;         // Hit ratios
   public final ConfusionMatrix _cm;
   public final double _logloss;
+  public final double _mean_per_class_error;
 
   public ModelMetricsMultinomial(Model model, Frame frame, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss) {
     super(model, frame, mse, domain, sigma);
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
+    _mean_per_class_error = cm==null?Double.NaN:cm.mean_per_class_error();
   }
 
   @Override
@@ -25,6 +27,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
     sb.append(" logloss: " + (float)_logloss + "\n");
+    sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
     if (cm() != null) {
       if (cm().nclasses() <= 20)
@@ -36,6 +39,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
   public double logloss() { return _logloss; }
+  public double mean_per_class_error() { return _mean_per_class_error; }
   @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() { return _hit_ratios; }
 

@@ -478,7 +478,7 @@ class H2OFrame(object):
   def __div__(self, i):  return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __truediv__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i), cache=self._ex._cache)
-  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i), cache=self._ex._cache)
+  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("%",   self,i), cache=self._ex._cache)
   def __or__  (self, i): return H2OFrame._expr(expr=ExprNode("|",   self,i), cache=self._ex._cache)
   def __and__ (self, i): return H2OFrame._expr(expr=ExprNode("&",   self,i), cache=self._ex._cache)
   def __ge__  (self, i): return H2OFrame._expr(expr=ExprNode(">=",  self,i), cache=self._ex._cache)
@@ -494,7 +494,7 @@ class H2OFrame(object):
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
-  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
+  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("%",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
   def __rsub__(self, i): return H2OFrame._expr(expr=ExprNode("-",i,  self), cache=self._ex._cache)
   def __rand__(self, i): return self.__and__(i)
@@ -1607,6 +1607,33 @@ class H2OFrame(object):
       columns).
     """
     return ExprNode("sd", self, na_rm)._eager_scalar()
+
+  def cor(self,y = None,na_rm=False,use=None):
+    """Compute the correlation matrix of one or two H2OFrames.
+
+    Parameters
+    ----------
+    y : H2OFrame, default=None
+      If y is None and self is a single column, then the correlation is computed for self.
+      If self has multiple columns, then its correlation matrix is returned. Single rows are treated as single columns.
+      If y is not None, then a correlation matrix between the columns of self and the columns of y is computed.
+    na_rm : bool, default=False
+      Remove NAs from the computation.
+    use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
+      A string indicating how to handle missing values. This must be one of the following:
+        "everything"            - outputs NaNs whenever one of its contributing observations is missing
+        "all.obs"               - presence of missing observations will throw an error
+        "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+    Returns
+    -------
+      An H2OFrame of the correlation matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
+      (if y is given). If self and y are single rows or single columns, the correlation is given as a scalar.
+    """
+    if y is None:
+      y = self
+    if use is None: use = "complete.obs" if na_rm else "everything"
+    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("cor",self,y,use)._eager_scalar()
+    return H2OFrame._expr(expr=ExprNode("cor",self,y,use))._frame()
 
   def asfactor(self):
     """

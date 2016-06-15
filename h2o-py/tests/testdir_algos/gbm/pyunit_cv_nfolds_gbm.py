@@ -15,6 +15,8 @@ def cv_nfolds_gbm():
   prostate_gbm.train(x=list(range(2,9)), y=1, training_frame=prostate)
   prostate_gbm.show()
 
+  print(prostate_gbm.model_performance(xval=True))
+
   # Can specify both nfolds >= 2 and validation data at once
   try:
     H2OGradientBoostingEstimator(nfolds=5,

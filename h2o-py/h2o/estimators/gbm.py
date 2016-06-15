@@ -13,6 +13,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   model_id : str, optional
     The unique id assigned to the resulting model. If none is given, an id will
     automatically be generated.
+  ignore_const_cols : bool
+    Ignore constant columns (no information can be gained anyway)
   distribution : str
      The distribution function of the response. Must be "AUTO", "bernoulli",
      "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile" or "gaussian"
@@ -88,7 +90,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     Can only trigger after at least 2k scoring events. Use 0 to disable.
   stopping_metric : str
     Metric to use for convergence checking, only for _stopping_rounds > 0
-    Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+    Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2",
+    "misclassification" or "mean_per_class_error".
   stopping_tolerance : float
     Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
   min_split_improvement : float
@@ -103,8 +106,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   -------
     A new H2OGradientBoostedEstimator object.
   """
-  def __init__(self, model_id=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
-               max_depth=None, min_rows=None, learn_rate=None, nbins=None,
+  def __init__(self, model_id=None,ignore_const_cols=None, distribution=None, quantile_alpha=None, tweedie_power=None, ntrees=None,
+               max_depth=None, min_rows=None, learn_rate=None, learn_rate_annealing=None, nbins=None,
                sample_rate=None, sample_rate_per_class=None, col_sample_rate=None,
                col_sample_rate_change_per_level=None, col_sample_rate_per_tree=None,
                nbins_top_level=None, nbins_cats=None, balance_classes=None, class_sampling_factors=None,
@@ -207,12 +210,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     self._parms["col_sample_rate"] = value
 
   @property
-  def col_sample_rate_change_per_tree(self):
-    return self._parms["col_sample_rate_change_per_tree"]
+  def col_sample_rate_change_per_level(self):
+    return self._parms["col_sample_rate_change_per_level"]
 
-  @col_sample_rate_change_per_tree.setter
-  def col_sample_rate_change_per_tree(self, value):
-    self._parms["col_sample_rate_change_per_tree"] = value
+  @col_sample_rate_change_per_level.setter
+  def col_sample_rate_change_per_level(self, value):
+    self._parms["col_sample_rate_change_per_level"] = value
 
   @property
   def col_sample_rate_per_tree(self):
@@ -389,3 +392,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
   @max_abs_leafnode_pred.setter
   def max_abs_leafnode_pred(self, value):
     self._parms["max_abs_leafnode_pred"] = value
+
+  @property
+  def ignore_const_cols(self):
+    return self._parms["ignore_const_cols"]
+
+  @ignore_const_cols.setter
+  def ignore_const_cols(self, value):
+    self._parms["ignore_const_cols"] = value

@@ -147,7 +147,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         stopping_metric : str
           Metric to use for convergence checking, only for _stopping_rounds > 0
           Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2",
-          "misclassification".
+          "misclassification" or "mean_per_class_error".
 
         stopping_tolerance : float
           Relative tolerance for metric-based stopping criterion (stop if relative

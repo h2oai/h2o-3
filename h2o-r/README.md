@@ -1,12 +1,12 @@
 # Using H2O from R
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/h2o)](http://cran.r-project.org/web/packages/h2o)
-[![Downloads](http://cranlogs.r-pkg.org/badges/h2o)](http://cran.rstudio.com/package=h2o)
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/h2o)](https://cran.r-project.org/package=h2o)
+[![Downloads](http://cranlogs.r-pkg.org/badges/h2o)](https://cran.rstudio.com/package=h2o)
 
 ## Downloading
 
 You can always download the latest stable version of the **h2o** R package from the following page: [http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html](http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html) 
 
-Alternatively, you can build the h2o R package from source (see below), or install the package from [CRAN](https://cran.r-project.org/web/packages/h2o/index.html).
+Alternatively, you can build the h2o R package from source (see below), or install the package from [CRAN](https://cran.r-project.org/package=h2o).
 
 
 ## Building it yourself
@@ -31,16 +31,10 @@ The output of the build is a CRAN-like layout in the R directory.
 ###  Installation from within R
 
 0. Detach any currently loaded H2O package for R.  
-`if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }`  
-
-	```
-	Removing package from ‘/Users/H2O_User/.Rlibrary’
-	(as ‘lib’ is unspecified)
-	```
+`if ("package:h2o" %in% search()) detach("package:h2o", unload=TRUE)`  
 
 0. Remove any previously installed H2O package for R.  
-`if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }`
-
+`if ("h2o" %in% rownames(installed.packages())) remove.packages("h2o")`
 
 	```
 	Removing package from ‘/Users/H2O_User/.Rlibrary’
@@ -52,23 +46,18 @@ The output of the build is a CRAN-like layout in the R directory.
    **Note**: This list may change as new capabilities are added to H2O. The commands are reproduced below, but we strongly recommend visiting the H2O download page at [h2o.ai/download](http://h2o.ai/download) for the most up-to-date list of dependencies. 
    
 	```
-  	if (! ("methods" %in% rownames(installed.packages()))) { install.packages("methods") }
-	if (! ("statmod" %in% rownames(installed.packages()))) { install.packages("statmod") }
-	if (! ("stats" %in% rownames(installed.packages()))) { install.packages("stats") }
-	if (! ("graphics" %in% rownames(installed.packages()))) { install.packages("graphics") }
-	if (! ("RCurl" %in% rownames(installed.packages()))) { install.packages("RCurl") }
-	if (! ("jsonlite" %in% rownames(installed.packages()))) { install.packages("jsonlite") }
-	if (! ("tools" %in% rownames(installed.packages()))) { install.packages("tools") }
-	if (! ("utils" %in% rownames(installed.packages()))) { install.packages("utils") }
+	pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+	new.pkgs <- setdiff(pkgs, rownames(installed.packages()))
+	if (length(new.pkgs)) install.packages(new.pkgs)
 	```
 
 0. Install the H2O R package from your build directory.  
-  `install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/****/R")))`
+`install.packages("h2o", type="source", repos="https://h2o-release.s3.amazonaws.com/h2o/rel-turchin/9/R")`
 
-   **Note**: Do not copy and paste the command above. You must replace the asterisks (*) with the current H2O build number. Refer to the H2O download page at [h2o.ai/download](http://h2o.ai/download) for latest build number. 
+   **Note**: Do not copy and paste the command above. You may need to replace `rel-turchin/9` with the current H2O build number. Refer to the H2O download page at [h2o.ai/download](http://h2o.ai/download) for latest build number. 
 
 	```
-	Installing package into ‘/Users/tomk/.Rlibrary’
+	Installing package into ‘/Users/H2O_User/.Rlibrary’
 	(as ‘lib’ is unspecified)
 	source repository is unavailable to check versions
 	

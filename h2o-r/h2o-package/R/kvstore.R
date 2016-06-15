@@ -213,7 +213,8 @@ h2o.getModel <- function(model_id) {
 #' @param model An H2OModel
 #' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to
 #'             to console. The file name will be a compilable java file name.
-#' @param getjar Whether to also download the h2o-genmodel.jar file needed to compile the POJO 
+#' @param get_jar Whether to also download the h2o-genmodel.jar file needed to compile the POJO
+#' @param getjar (DEPRECATED) Whether to also download the h2o-genmodel.jar file needed to compile the POJO. This argument is now called `get_jar`.
 #' @return If path is "", then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory.
 #' @examples
@@ -226,12 +227,12 @@ h2o.getModel <- function(model_id) {
 #' h2o.download_pojo(my_model)  # print the model to screen
 #' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working 
 #' #                                         directory, NOT RUN
-#' # h2o.download_pojo(my_model, getwd(), getjar = FALSE )  # save only the POJO to the current
+#' # h2o.download_pojo(my_model, getwd(), get_jar = FALSE )  # save only the POJO to the current
 #' #                                                           working directory, NOT RUN
 #' h2o.download_pojo(my_model, getwd())  # save to the current working directory
 #' }
 #' @export
-h2o.download_pojo <- function(model, path="", getjar=TRUE) {
+h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
   model_id <- model@model_id
   java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
 
@@ -243,7 +244,13 @@ h2o.download_pojo <- function(model, path="", getjar=TRUE) {
   if( path == "" ) cat(java)
   else {
     write(java, file=file.path)
-    if (getjar) {
+      # getjar is now deprecated and the new arg name is get_jar
+      if (!is.null(getjar)) {
+        warning("The `getjar` argument is DEPRECATED; use `get_jar` instead as `getjar` will eventually be removed")
+        get_jar = getjar
+        getjar = NULL
+      }
+    if (get_jar) {
       .__curlError = FALSE
       .__curlErrorMessage = ""
       url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")

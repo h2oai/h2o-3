@@ -55,7 +55,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__JOBS           <- "Jobs"          # Jobs/$90w3r52hfej_JOB_KEY_12389471jsdfs
 .h2o.__CLOUD          <- "Cloud?skip_ticks=true"
 .h2o.__SHUTDOWN       <- "Shutdown"
-.h2o.__DOWNLOAD_LOGS  <- "/Logs/download"
+.h2o.__DOWNLOAD_LOGS  <- "3/Logs/download"
 
 #' Removal Endpoints
 .h2o.__DKV            <- "DKV"

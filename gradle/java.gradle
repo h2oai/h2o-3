@@ -6,7 +6,8 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 compileJava { 
-  options.debug = true 
+  options.debug = true
+  options.encoding = "UTF-8"
 }
 
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {

@@ -219,10 +219,12 @@ class H2OGridSearch(object):
             for h_name in grid_json['hyper_names']:
               print("Hyper-parameter: {0}, {1}".format(h_name, grid_json['failed_params'][error_index][h_name]))
 
-          print("failure_details: {0}\nfailure_stack_traces: "
-                "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
+          if len(grid_json["failure_stack_traces"]) > error_index:
+            print("failure_details: {0}\nfailure_stack_traces: "
+                  "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
           error_index += 1
-    else:                              grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
+    else:
+      grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
 
@@ -374,15 +376,16 @@ class H2OGridSearch(object):
     """
     return {model.model_id:model.catoffsets() for model in self.models}
 
-  def model_performance(self, test_data=None, train=False, valid=False):
+  def model_performance(self, test_data=None, train=False, valid=False, xval=False):
     """Generate model metrics for this model on test_data.
 
-    :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
-    :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
-    :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
+    :param test_data: Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are ignored if test_data is not None.
+    :param train: Report the training metrics for the model.
+    :param valid: Report the validation metrics for the model.
+    :param xval: Report the validation metrics for the model.
     :return: An object of class H2OModelMetrics.
     """
-    return {model.model_id:model.model_performance(test_data, train, valid) for model in self.models}
+    return {model.model_id:model.model_performance(test_data, train, valid, xval) for model in self.models}
 
   def scoring_history(self):
     """Retrieve Model Score History

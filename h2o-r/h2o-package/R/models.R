@@ -622,6 +622,72 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+#' Retrieve the mean per class error
+#'
+#' Retrieves the mean per class error from an \linkS4class{H2OBinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training mean per class error value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of mean per class errors are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OBinomialMetrics} object.
+#' @param train Retrieve the training mean per class error
+#' @param valid Retrieve the validation mean per class error
+#' @param xval Retrieve the cross-validation mean per class error
+#' @seealso \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
+#'          various threshold metrics. See \code{\link{h2o.performance}} for
+#'          creating H2OModelMetrics objects.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.mean_per_class_error(perf)
+#' h2o.mean_per_class_error(model, train=TRUE)
+#' }
+#' @export
+h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$mean_per_class_error )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$mean_per_class_error
+      if ( !is.null(metric) ) return(metric)
+    }
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$mean_per_class_error)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$mean_per_class_error)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$mean_per_class_error)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No mean per class error for ", class(object)))
+  invisible(NULL)
+}
+
 #'
 #' Retrieve the AIC.
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training AIC value is returned. If more
@@ -1214,6 +1280,12 @@ h2o.error <- function(object, thresholds){
 #' @export
 h2o.maxPerClassError <- function(object, thresholds){
   1.0-h2o.metric(object, thresholds, "min_per_class_accuracy")
+}
+
+#' @rdname h2o.metric
+#' @export
+h2o.mean_per_class_accuracy <- function(object, thresholds){
+  h2o.metric(object, thresholds, "mean_per_class_accuracy")
 }
 
 #' @rdname h2o.metric

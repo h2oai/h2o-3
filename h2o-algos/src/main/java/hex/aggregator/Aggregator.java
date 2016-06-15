@@ -96,13 +96,12 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     // Main worker thread
     @Override
-    public void compute2() {
+    public void computeImpl() {
       AggregatorModel model = null;
 
       DataInfo di = null;
       try {
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -141,11 +140,10 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         _job.update(1, "Done.");
         model.update(_job);
       } finally {
-        _parms.read_unlock_frames(_job);
         if (model != null) model.unlock(_job);
         if (di!=null) di.remove();
+        Scope.untrack(new Key[]{model._exemplar_assignment_vec_key});
       }
-      tryComplete();
     }
   }
 
