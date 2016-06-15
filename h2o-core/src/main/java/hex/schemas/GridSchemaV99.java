@@ -17,8 +17,7 @@ import java.util.Set;
 /**
  * REST endpoint representing single grid object.
  *
- * FIXME: Grid should contain also grid definition - model parameters
- * and definition of hyper parameters.
+ * FIXME: Grid should contain also grid definition - model parameters and definition of hyper parameters.
  */
 public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   //
