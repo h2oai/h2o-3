@@ -785,7 +785,15 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     String[] packages = new String[] { "water", "hex", /* Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: "" */};
 
     // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
-    Class<? extends Schema> clzs[] = new Class[] { Schema.class, ModelBuilderSchema.class, ModelSchema.class, ModelOutputSchema.class, ModelParametersSchema.class };
+    //noinspection unchecked
+    Class<? extends Schema> clzs[] = new Class[] {
+        Schema.class,
+        SchemaV3.class,
+        ModelBuilderSchema.class,
+        ModelSchema.class,
+        ModelOutputSchema.class,
+        ModelParametersSchema.class,
+    };
 
     for (String pkg :  packages) {
       Reflections reflections = new Reflections(pkg);
