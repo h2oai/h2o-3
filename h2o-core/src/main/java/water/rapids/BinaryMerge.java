@@ -93,7 +93,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_allLeft == false) { tryComplete(); return; }
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
     }
-    // both left and right MSB have some data to match
+    // both left and right MSB have some data to match (their extents overlap when overlapType==0.  Otherwise we're doing it only when allLeft==true)
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
     _perNodeNumRightRowsToFetch = new long[H2O.CLOUD.size()];
@@ -153,9 +153,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }*/
 
 
-    // Now calculate which subset of leftMSB and which subset of rightMSB we're joining here.
-    // i) This overlap will be the full-extent of the overlap, nothing less.
-    // ii) There must be an overlap otherwise this method would not have been called.
+    // Now calculate which subset of leftMSB and which subset of rightMSB we're joining here
+    // by going into the detail of the key values present rather than the extents of the range (the extents themselves may not be present)
+    // We see where the right extents occur in the left keys present; and if there is an overlap we find the full extent of
+    // the overlap on the left side (nothing less).
     // We only _need_ do this for left outer join otherwise we'd end up with too many no-match left rows.
     // We'll waste allocating the retFirst and retLen vectors though if only a small overlap is needed, so
     // for that reason it's useful to restrict size of retFirst and retLen even for inner join too.
@@ -594,8 +595,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     grrrsLeftRPC = null;
 
     // Now loop through _retFirst and _retLen and populate
-    resultLoc=0;  // sweep upwards through the final result, filling it in
-    leftLoc=-1;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
+    resultLoc=0;   // sweep upwards through the final result, filling it in
+    leftLoc=_leftFrom;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
     prevf = -1; prevl = -1;
     for (int jb=0; jb<_retFirst.length; ++jb) {              // jb = j batch
       for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset

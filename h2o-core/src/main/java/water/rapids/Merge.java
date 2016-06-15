@@ -205,10 +205,10 @@ public class Merge {
 
       for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
 
-        H2ONode node = SplitByMSBLocal.ownerOfMSB(leftMSB);
+        H2ONode node = SplitByMSBLocal.ownerOfMSB(rightMSB);
         // TODO: choose the bigger side to execute on (where that side of index already is) to minimize transfer
 
-        System.out.println("Calling BinaryMerge for " + leftMSB + " " + rightMSB + " on node " + node.index());
+        // System.out.println("Calling BinaryMerge for " + leftMSB + " " + rightMSB + " on node " + node.index());
 
         // within BinaryMerge it will recalculate the extents in terms of keys and bsearch for them within the (then local) both sides
         bmList.add(new RPC<>(node,
@@ -253,11 +253,10 @@ public class Merge {
       } catch(InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
-      System.out.println("Sweeping queue. leftOnQueue="+leftOnQueue+" queueSize="+queueSize+" ...");
+      // System.out.println("Sweeping queue. leftOnQueue="+leftOnQueue+" queueSize="+queueSize+" ...");
       int doneInSweep = 0;
       for (int q=0; q<queueSize; q++) {
         int thisBM = queue[q];
-        System.out.print(thisBM);
         if (thisBM >= 0 && bmList.get(thisBM).isDone()) {
           BinaryMerge thisbm;
           bmResults[thisBM] = thisbm = (BinaryMerge)bmList.get(thisBM).get();
