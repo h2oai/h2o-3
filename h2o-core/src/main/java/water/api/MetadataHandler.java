@@ -59,7 +59,7 @@ public class MetadataHandler extends Handler {
   // Also called through reflection by RequestServer
   public MetadataV3 fetchRoute(int version, MetadataV3 docs) {
     Route route = null;
-    if (null != docs.path && null != docs.http_method) {
+    if (docs.path != null && docs.http_method != null) {
       try {
         route = RequestServer.lookupRoute(new RequestUri(docs.http_method, docs.path));
       } catch (MalformedURLException e) {
@@ -68,9 +68,11 @@ public class MetadataHandler extends Handler {
     } else {
       // Linear scan for the route, plus each route is asked for in-order
       // during doc-gen leading to an O(n^2) execution cost.
-      int i = 0;
-      for (Route r : RequestServer.routes())
-        if (i++ == docs.num) { route = r; break; }
+      if (docs.path != null)
+        try { docs.num = Integer.parseInt(docs.path); }
+        catch (NumberFormatException e) { /* path is not a number, it's ok */ }
+      if (docs.num >= 0 && docs.num < RequestServer.numRoutes())
+        route = RequestServer.routes().get(docs.num);
       // Crash-n-burn if route not found (old code thru an AIOOBE), so we
       // something similarly bad.
       docs.routes = new RouteBase[]{(RouteBase)Schema.schema(version, Route.class).fillFromImpl(route)};
