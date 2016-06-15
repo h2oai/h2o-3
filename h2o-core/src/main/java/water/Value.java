@@ -114,7 +114,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     if( mem != null ) return mem;
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null )          // Has the POJO, make raw bytes
-      _mem = pojo.asBytes();
+      return _mem = pojo.asBytes();
     if( _max == 0 ) return (_mem = new byte[0]);
     return (_mem = loadPersist());
   }
