@@ -191,6 +191,36 @@ public class ParseTimeTest extends TestUtil {
     fr.delete();
   }
 
+  @Test public void testMonthParseNoDay() {
+    // Just mmmyy, no time no day
+    // Just yy-mmm, no time no day
+    String data = "Date\n"+
+      "JAN14\n"+"FEB14\n"+"MAR14\n"+"APR14\n"+"MAY14\n"+"JUN14\n"+
+      "JUL14\n"+"AUG14\n"+"SEP14\n"+"OCT14\n"+"NOV14\n"+"DEC14\n"+
+      "JAN16\n"+"MAR17\n"+"JUN18\n"+"SEP19\n"+"DEC20\n"+
+      "14-JAN\n"+"14-FEB\n"+"14-MAR\n"+"14-APR\n"+"14-MAY\n"+"14-JUN\n"+
+      "14-JUL\n"+"14-AUG\n"+"14-SEP\n"+"14-OCT\n"+"14-NOV\n"+"14-DEC\n"+
+      "16-JAN\n"+"17-MAR\n"+"18-JUN\n"+"19-SEP\n"+"20-DEC\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+      1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
+      1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
+      1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
+      1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
+      1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
+      1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
+      1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
+      1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
   @Test public void testTimeParseNoDate() {
     // Just time, no date.  Parses as msec on the Unix Epoch start date, i.e. <24*60*60*1000
     // HH:mm:ss.S          // tenths second

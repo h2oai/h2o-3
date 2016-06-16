@@ -16,7 +16,7 @@ def lending_club_munging_assembly():
   # lending-club munging assembly
   print("Import and Parse data")
 
-  types = {"int_rate":"String", "revol_util":"String", "emp_length":"String"}
+  types = {"int_rate":"String", "revol_util":"String", "emp_length":"String", "earliest_cr_line":"String", "issue_d":"String", "last_credit_pull_d":"Factor"}
 
   data = h2o.import_file(path=small_test, col_types=types)
   data[["int_rate","revol_util","emp_length"]].show()

@@ -177,8 +177,14 @@ class ASTFlatten extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()!=1 || fr.numRows()!=1 ) return new ValFrame(fr); // did not flatten
     Vec vec = fr.anyVec();
-    if( vec.isNumeric() || vec.isBad() ) return new ValNum(vec.at(0));
-    return new ValStr( vec.isString() ? vec.atStr(new BufferedString(),0).toString() : vec.factor(vec.at8(0)));
+    switch (vec.get_type()) {
+      case Vec.T_BAD:
+      case Vec.T_NUM:  return new ValNum(vec.at(0));
+      case Vec.T_TIME: return new ValNum(vec.at8(0));
+      case Vec.T_STR:  return new ValStr(vec.atStr(new BufferedString(),0).toString());
+      case Vec.T_CAT:  return new ValStr(vec.factor(vec.at8(0)));
+      default: throw H2O.unimpl("The type of vector: " + vec.get_type_str() + " is not supported by " + str());
+    }
   }
 }
 

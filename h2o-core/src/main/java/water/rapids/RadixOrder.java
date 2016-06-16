@@ -219,9 +219,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       long thisx = 0;
       if (!chk[0].isNA(r)) {
         thisx = chk[0].at8(r);
-        if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;  // TODO: restore branch-free again, go by column and retain original compression with no .at8()
-        else thisx = thisx - _colMin[0] + 1;                                     //       may not be worth that as has to be global minimum so will rarely be able to use as raw, but when we can maybe can do in bulk
-        MSBvalue = (int)(thisx >> shift & 0xFFL);   // +1 leaving 0 for NA
+        if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;                   // TODO: restore branch-free again, go by column and retain original compression with no .at8()
+        else thisx = thisx - _colMin[0] + 1;    // +1 leaving 0'th offset from base to mean NA   // may not be worth that as has to be global minimum so will rarely be able to use as raw, but when we can maybe can do in bulk
+        MSBvalue = (int)(thisx >> shift & 0xFFL);   // NA are counted in the first bin
       }
       long target = myCounts[MSBvalue]++;
       int batch = (int) (target / _batchSize);
