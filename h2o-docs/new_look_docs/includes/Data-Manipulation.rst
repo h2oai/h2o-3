@@ -14,22 +14,35 @@ This section provides examples of common tasks performed when preparing data for
 Importing Data
 --------------
 
-Run the following command to load data from a machine running Python/R into the machine that is running H2O. 
+There are several ways to load data from one machine into the machine that is running H2O. 
 
 .. example-code::
    .. code-block:: h2o-r
 	
-	  library(h2o)
-	  h2o.init()
-	  airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
-	  airlines.hex = h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
+	 # To import small iris data file from H2O’s package:
+	 library(h2o)
+	 h2o.init()
+	 irisPath = system.file("extdata", "iris.csv", package="h2o")
+	 iris.hex = h2o.importFile(path = irisPath, destination_frame = iris.hex")
+ 	
+	 # To import an entire folder of files as one data object:
+	 library(h2o)
+	 h2o.init()
+	 pathToFolder = "/Users/data/airlines/"
+	 airlines.hex = h2o.importFile(path = pathToFolder, destination_frame = "airlines.hex")
+	  
+	 # To import from HDFS:
+	 library(h2o)
+	 h2o.init()
+	 airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
+	 airlines.hex = h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
 	  
    .. code-block:: h2o-python
    
-	   import h2o
-	   h2o.init()
-	   path = "data/iris/allyears2k.csv"
-	   df = h2o.import_file(path=path)
+	  import h2o
+	  h2o.init()
+	  path = "/Users/data/iris/allyears2k.csv"
+	  df = h2o.import_file(path=path)
 
 
 
@@ -56,7 +69,47 @@ Run the following command to load data that is currently on the same machine tha
 Merging Two Data Frames
 -----------------------
 
+You can merge a column from to data frames that share a common column name. 
+Note that in order for a merge to work in multinode clusters, one of the datasets must be small enough to exist in every node.  
 
+
+.. example-code::
+   .. code-block:: h2o-r
+   
+	# Currently, this function only supports `all.x = TRUE`. All other permutations will fail.
+	
+	 h2o.init()
+	 left <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','blueberry'),
+	 color = c('red','orange','yellow','yellow','red','blue'))
+	 right <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','watermelon'),
+	 citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
+	 l.hex <- as.h2o(left)
+	 r.hex <- as.h2o(right)
+	 left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
+
+   .. code-block:: h2o-python
+   
+	 # Combine the 'n' column from two datasets 
+	 
+	 h2o.init()
+	 df10 = h2o.H2OFrame.from_python({'A':['Hello', 'World', 'Welcome', 'To', 'H2O', 'World'], 'n': [0,1,2,3,4,5]})
+	 df11 = h2o.H2OFrame.from_python(np.random.randint(0,10,size=100.tolist9), column_names=['n'])
+	 df11.merge(df10)
+	 
+	 # The output is as follows:
+	 
+	    n      A
+	 0  7    NaN
+	 1  3     To
+	 2  0  Hello
+	 3  9    NaN
+	 4  9    NaN
+	 5  3     To
+	 6  4    H2O
+	 7  4    H2O
+	 8  5  World
+	 9  4    H2O
+	 
 
 Slicing Columns
 ---------------
@@ -64,7 +117,7 @@ Slicing Columns
 H2O lazily slices out columns of data and will only materialize a shared copy upon some type of triggering IO. This example shows how to slice columns from a frame of data.
 
 .. example-code::
-   .. code-block:: h2o-R
+   .. code-block:: h2o-r
 	
 	  library(h2o)
 	  path <- "data/iris/iris_wheader.csv"
@@ -108,7 +161,7 @@ Slicing Rows
 H2O lazily slices out rows of data and will only materialize a shared copy upon IO. This example shows how to slice rows from a frame of data.
 
 .. example-code::
-   .. code-block:: h2o-R
+   .. code-block:: h2o-r
    
 	library(h2o)
 	path <- "data/iris/iris_wheader.csv"
@@ -156,7 +209,7 @@ Replacing Values in a Frame
 This example shows how to replace values in a frame of data.    
 
 .. example-code::
-   .. code-block:: h2o-R
+   .. code-block:: h2o-r
    
 	library(h2o)
 	path <- "data/iris/iris_wheader.csv"
