@@ -109,6 +109,7 @@ The following hyperparameters are supported by grid search.
 - `gamma_y`
 - `max_iterations`
 - `max_updates`
+- `missing_values_handling`
 - `init_step_size`
 - `min_step_size`
 - `seed`

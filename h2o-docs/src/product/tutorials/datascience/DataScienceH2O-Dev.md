@@ -264,6 +264,8 @@ The GLM suite includes:
 
 - **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation. 
+
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a GLM Model
@@ -1548,7 +1550,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation.   
 
 - **quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
