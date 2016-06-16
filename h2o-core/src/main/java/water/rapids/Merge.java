@@ -129,7 +129,7 @@ public class Merge {
     int leftShift = Math.max(8, leftIndex._biggestBit[0])-8;
     int rightShift = Math.max(8, rightIndex._biggestBit[0])-8;
 
-    long leftMSBfrom = (rightIndex._colMin[0] - leftIndex._colMin[0] + 1) >> leftShift;  // +1 because NA is stored first
+    long leftMSBfrom = (rightIndex._colMin[0] - leftIndex._colMin[0]) >> leftShift;
 
     // deal with the left range below the right minimum, if any
     if (leftIndex._colMin[0] < rightIndex._colMin[0]) {   // colMin[0] is really the MSB base.  TODO: rename variable and change bases to be aligned somehow to avoid small misalignment
@@ -156,8 +156,8 @@ public class Merge {
       leftMSBfrom = 0;
     }
 
-    long leftMSBto = (rightIndex._colMin[0] + (256L<<rightShift) - 2 - leftIndex._colMin[0] + 1) >> leftShift;
-    // TOD .. edit comment ... No need for +1 for NA here because the 256<< is already one after the last bin
+    long leftMSBto = (rightIndex._colMin[0] + (256L<<rightShift) - 1 - leftIndex._colMin[0]) >> leftShift;
+    // -1 because the 256L<<rightShift is one after the max extent.  No need for +1 for NA here because, as for leftMSBfrom above, the NA spot is on both sides
 
     // deal with the left range above the right maximum, if any
     if ((leftIndex._colMin[0] + (256L<<leftShift)) > (rightIndex._colMin[0] + (256L<<rightShift))) {
