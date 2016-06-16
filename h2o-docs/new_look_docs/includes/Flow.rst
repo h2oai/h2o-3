@@ -1129,7 +1129,7 @@ types.
    **train\_samples\_per\_iteration** is close to the number of nodes
    times the number of rows. This option is not selected by default.
 
--  **missing\_values\_handling**: (DL) Select how to handle
+-  **missing\_values\_handling**: (DL, GLM) Select how to handle
    missing values (Skip or MeanImputation).
 
 -  **quiet\_mode**: (DL) Check this checkbox to display less

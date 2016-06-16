@@ -410,6 +410,9 @@ Defining a GLM Model
 -  **max\_hit\_ratio\_k**: (Applicable for classification only) Specify
    the maximum number (top K) of predictions to use for hit ratio
    computation. Applicable to multi-class only. To disable, enter ``0``.
+   
+-  **missing\_values\_handling**: Specify how to handle missing values
+   (Skip or MeanImputation).
 
 -  **keep\_cross\_validation\_predictions**: Specify whether to keep the
    cross-validation predictions.
