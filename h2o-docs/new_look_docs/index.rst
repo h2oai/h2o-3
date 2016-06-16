@@ -16,6 +16,7 @@ Welcome to H2O 3!
    includes/H2O-DevS3Creds
    includes/H2O-DevHadoop   
    includes/H2O-DevDocker
+   includes/Data-Manipulation
    includes/Flow
    includes/DataScienceH2O
    includes/CrossValidation
