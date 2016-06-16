@@ -36,7 +36,7 @@ public @interface API {
   /**
    * Is this field an input, output or inout?
    */
-  Direction direction() default Direction.INPUT; // TODO: should this be INOUT?
+  Direction direction() default Direction.INPUT;
 
   // The following are markers for *input* fields.
 
