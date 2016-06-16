@@ -7,9 +7,9 @@ The links below point to more detailed API/developer documentation.
 
 - REST API Schemas: This document represents the definitive guide to the H2O REST API schemas. 
 
-- `R <../h2o-r/h2o-package.pdf>`_: This document provides the list of available functions that can be used when configuring H2O through R. 
+- `R <http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html>`_: This document provides the list of available functions that can be used when configuring H2O through R. 
 	
-- `Python <../h2o-py/docs/index.html>`_: This document provides the list of available functions that can be used when configuring H2O through R. 
+- `Python <http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Pydoc.html>`_: This document provides the list of available functions that can be used when configuring H2O through R. 
 	
 - `h2o-core Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/6/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide for the core components of H2O. 
 
