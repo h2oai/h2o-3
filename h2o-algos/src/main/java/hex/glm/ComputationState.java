@@ -128,6 +128,8 @@ public final class ComputationState {
    * @return indices of expected active predictors.
    */
   protected int applyStrongRules(double lambdaNew, double lambdaOld) {
+    lambdaNew = Math.min(_lambdaMax,lambdaNew);
+    lambdaOld = Math.min(_lambdaMax,lambdaOld);
     if(_parms._family == Family.multinomial)
       return applyStrongRulesMultinomial(lambdaNew,lambdaOld);
     int P = _dinfo.fullN();

@@ -130,9 +130,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  public void addSubmodel(double[] beta, double lambda, int iter) {
-    _output._submodels = ArrayUtils.append(_output._submodels,new Submodel(lambda,beta,iter,-1,-1));
+  public GLMModel addSubmodel(Submodel sm) {
+    _output._submodels = ArrayUtils.append(_output._submodels,sm);
+    return this;
   }
+
   public void update(double [] beta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,beta,iter,devianceTrain,devianceTest);
@@ -639,7 +641,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double devianceTest;
     public final int    [] idxs;
     public final double [] beta;
-    public final double [][] betaMultinomial;
 
     public double [] getBeta(double [] beta) {
       if(idxs != null){
@@ -652,43 +653,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public int rank(){
-      if(betaMultinomial != null) {
-        int res = 0;
-        for(double [] ds:betaMultinomial)
-          for(double d:ds)
-            if(d != 0)++res;
-        return res;
-      }
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
-
-    /**
-     * Constructor for multinomial submodel
-     * @param lambda
-     * @param beta
-     * @param iteration
-     * @param devTrain
-     * @param devTest
-     */
-    public Submodel(double lambda , double [][] beta, int iteration, double devTrain, double devTest){
-      this.lambda_value = lambda;
-      this.iteration = iteration;
-      this.devianceTrain = devTrain;
-      this.devianceTest = devTest;
-      this.beta = null;
-      // grab the indeces of non-zero coefficients
-      this.betaMultinomial = beta;
-      idxs = null;
-      assert idxs == null || idxs.length == beta[0].length-1:"idxs = " + Arrays.toString(idxs) + ", beta = " + Arrays.toString(betaMultinomial[0]);
-    }
-
 
     public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
       this.lambda_value = lambda;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
       this.devianceTest = devTest;
-      this.betaMultinomial = null;
       int r = 0;
       if(beta != null){
         // grab the indeces of non-zero coefficients
