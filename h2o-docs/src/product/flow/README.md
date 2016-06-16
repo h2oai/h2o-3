@@ -624,7 +624,7 @@ The available options vary depending on the selected model. If an option is only
 
 - **shuffle\_training\_data**: ([DL](#DL)) Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **missing\_values\_handling**: ([DL](#DL)) Select how to handle missing values (Skip or MeanImputation). 
+- **missing\_values\_handling**: ([DL](#DL), [GLM](#GLM) Select how to handle missing values (Skip or MeanImputation). 
 
 - **quiet_mode**: ([DL](#DL)) Check this checkbox to display less output in the standard output. This option is not selected by default.
 
