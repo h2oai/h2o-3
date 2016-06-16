@@ -100,12 +100,19 @@ and H2O should launch successfully.
 
 --------------
 
+**I am not launching on Hadoop. How can i increase the amount of time that H2O allows for expected nodes to connect?**
+
+For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `"Locking cloud to new members, because <reason>..."`.
+
+--------------
+
+
 Algorithms
 ----------
 
-**What does it mean if the r2 value in my model is negative?**
+**What does it mean if the R^2 value in my model is negative?**
 
-The coefficient of determination (also known as r^2) can be negative if:
+The coefficient of determination (also known as R^2) can be negative if:
 
 -  linear regression is used without an intercept (constant)
 -  non-linear functions are fitted to the data
@@ -114,7 +121,7 @@ The coefficient of determination (also known as r^2) can be negative if:
 -  it is early in the build process (may self-correct as more trees are
    added)
 
-If your r2 value is negative after your model is complete, your model is
+If your R^2 value is negative after your model is complete, your model is
 likely incorrect. Make sure your data is suitable for the type of model,
 then try adding an intercept.
 
@@ -1038,6 +1045,12 @@ documentation, launch H2O using the following command:
 
 --------------
 
+**How does H2O handle UDP packet failures? Does H2O quit or retry?**
+
+ In standard settings, H2O only uses UDP for cloud forming and only if you do not provide a flat file. All other communication is done via TCP. Cloud forming with no flat file is done by repeated broadcasts that are repeated until the cloud forms.
+
+--------------
+
 **How do I import data from HDFS in R and in Flow?**
 
 To import from HDFS in R:
@@ -1083,7 +1096,7 @@ You can view the default download directory in the logs by clicking
 
 --------------
 
-**How do I access data in HDFS without launching H2O on Yarn?**
+**How do I access data in HDFS without launching H2O on YARN?**
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so
 in order to have a working HDFS connection download the h2odriver.jar
