@@ -17,83 +17,55 @@ import java.util.*;
 /**
  * Base Schema class; all REST API Schemas inherit from here.
  * <p>
- * The purpose of Schemas is to provide a stable, versioned interface to
- * the functionality in H2O, which allows the back end implementation to
- * change rapidly without breaking REST API clients such as the Web UI
- * and R and Python bindings.  Schemas also allow for functionality which exposes the
- * schema metadata to clients, allowing them to do service discovery and
- * to adapt dynamically to new H2O functionality, e.g. to be able to call
- * any ModelBuilder, even new ones written since the client was built,
- * without knowing any details about the specific algo.
+ * Schema is a primary interface of the REST APIs: all endpoints consume some schema object as an input, and produce
+ * another schema object as an output (though some endpoints may return nothing).
  * <p>
- * In most cases, Java developers who wish to expose new functionality through the
- * REST API will need only to define their schemas with the fields that they
- * wish to expose, adding @API annotations to denote the field metadata.
- * Their fields will be copied back and forth through the reflection magic in this
- * class.  If there are fields they have to adapt between the REST API representation
- * and the back end this can be done piecemeal by overriding the fill* methods, calling
- * the versions in super, and making only those changes that are absolutely necessary.
- * A lot of work has gone into avoiding boilerplate code.
+ * Schemas, as an external interface, are required to be stable: fields may not be renamed or removed, their types or
+ * meaning may not change, etc. It is allowed to add new fields to a schema, provided that they are optional, and
+ * that their default values correspond to the old behavior of the endpoint. If these requirements cannot be met,
+ * then a new version of a schema class must be created.
  * <p>
- * Schemas are versioned for stability.  When you look up the schema for a given impl
- * object or class you supply a version number.  If a schema for that version doesn't
- * exist then the versions are searched in reverse order.  For example, if you ask for
- * version 5 and the highest schema version for that impl class is 3 then V3 will be returned.
- * This allows us to move to higher versions without having to write gratuitous new schema
- * classes for the things that haven't changed in the new version.
+ * Many schemas are in direct correspondence with H2O objects. For example, JobV3 schema represents the Job object.
+ * These "representative" Iced objects are called "implementation" or "impl", and are parametrized with type I.
+ * Such representation is necessary in order to ensure stability of the interface: even as Job class evolves, the
+ * interface of JobV3 schema must not. In the simplest case, when there is 1-to-1 correspondence between fields in
+ * the impl class and in the schema, we use reflection magic to copy those fields over. The reflection magic is smart
+ * enough to perform simple field name translations, and even certain type translations (like Keyed objects into Keys).
+ * If there is no such correspondence, then special type adapters must be written. Right now this is done by
+ * overriding the {@link #fillImpl(I) fillImpl} and {@link #fillFromImpl(I) fillFromImpl} methods. Usually they will
+ * want to call super to get the default behavior, and then modify the results a bit (e.g., to map differently-named
+ * fields, or to compute field values). Transient and static fields are ignored by the reflection magic.
  * <p>
- * The current version can be found by calling
- * Schema.getHighestSupportedVersion(). For schemas that are still in flux
- * because development is ongoing we also support an EXPERIMENTAL_VERSION, which
- * indicates that there are no interface stability guarantees between H2O versions.
- * Eventually these schemas will move to a normal, stable version number.  Call
- * Schema.getExperimentalVersion() to find the experimental version number (99 as
- * of this writing).
+ * There are also schemas that do not correspond to any H2O object. These are mostly the input schemas (schemas used
+ * for inputs of api requests). Such schemas should be "implemented" by Iced.
  * <p>
- * Schema names must be unique within an application in a single namespace.  The
- * class getSimpleName() is used as the schema name.  During Schema discovery and
- * registration there are checks to ensure that the names are unique.
+ * All schemas are expected to be self-documenting, in the sense that all fields within those schemas should carry
+ * detailed documentation about their meaning, as well as any additional hints about the field's usage. These should
+ * be annotated using the {@link API @API} interface. If a schema contains a complicated object, then that object
+ * itself should derive from Schema, so that its fields can also be properly documented. However if the internal
+ * object is sufficiently simple (say, a Map), then it may be sufficient to document it as a whole and have it derived
+ * from Iced, not from Schema.
  * <p>
- * Most schemas have a 1-to-1 mapping to an Iced implementation object, aka the "impl"
- * or implementation class.  This class is specified as a type parameter to the Schema class.
- * This type parameter is used by reflection magic to avoid a large amount of boilerplate
- * code.
+ * Schema names (getSimpleName()) must be unique within an application. During Schema discovery and registration
+ * there are checks to ensure this. Also there should be at most one Schema class per implementation class per
+ * version (with the exception of schemas that are backed by Iced).
  * <p>
- * Both the Schema and the Iced object may have children, or (more often) not.
- * Occasionally, e.g. in the case of schemas used only to handle HTTP request
- * parameters, there will not be a backing impl object and the Schema will be
- * parameterized by Iced.
+ * For V3 Schemas each field had a "direction" (input / output / both), which allowed us to use the same schema as
+ * both input and output for an endpoint. This is no longer possible in V4: two separate schema classes for input /
+ * output should be created.
+ *
+ * <h1>Usage</h1>
  * <p>
- * Other than Schemas backed by Iced this 1-1 mapping is enforced: a check at Schema
- * registration time ensures that at most one Schema is registered for each Iced class.
- * This 1-1 mapping allows us to have generic code here in the Schema class which does
- * all the work for common cases.  For example, one can write code which accepts any
- * Schema instance and creates and fills an instance of its associated impl class:
- * {@code
- * I impl = schema.createAndFillImpl();
- * }
+ * {@link Handler} creates an input schema from the body/parameters of the HTTP request (using
+ * {@link #fillFromParms(Properties) fillFromParms()}, and passes it on to the corresponding handler method.
  * <p>
- * Schemas have a State section (broken into Input, Output and InOut fields)
- * and an Adapter section.  The adapter methods fill the State to and from the
- * Iced impl objects and from HTTP request parameters.  In the simple case, where
- * the backing object corresponds 1:1 with the Schema and no adapting need be
- * done, the methods here in the Schema class will do all the work based on
- * reflection.  In that case your Schema need only contain the fields you wish
- * to expose, and no adapter code.
+ * Each handler method may modify the input schema and return it as the output schema (common for V3 endpoints,
+ * should be avoided in V4).
  * <p>
- * Methods here allow us to convert from Schema to Iced (impl) and back in a
- * flexible way.  The default behaviour is to map like-named fields back and
- * forth, often with some default type conversions (e.g., a Keyed object like a
- * Model will be automagically converted back and forth to a Key).
- * Subclasses can override methods such as fillImpl or fillFromImpl to
- * provide special handling when adapting from schema to impl object and back.
- * Usually they will want to call super to get the default behavior, and then
- * modify the results a bit (e.g., to map differently-named fields, or to
- * compute field values).
- * <p>
- * Schema Fields must have a single @API annotation describing their direction
- * of operation and any other properties such as "required".  Fields are
- * API.Direction.INPUT by default.  Transient and static fields are ignored.
+ * Alternatively, a handler method may create a new output schema object from scratch, or from an existing
+ * implementation object.
+ *
+ * <h1>Internal details</h1>
  * <p>
  * Most Java developers need not be concerned with the details that follow, because the
  * framework will make these calls as necessary.
@@ -135,11 +107,10 @@ import java.util.*;
  * </pre>
  * @param <I> "implementation" (Iced) class for this schema
  * @param <S> reference to self: this should always be the same class as being declared. For example:
- *                public class TimelineV3 extends Schema<Timeline, TimelineV3>
- *
- * @see water.api.API
+ *            <pre>public class TimelineV3 extends Schema&lt;Timeline, TimelineV3&gt;</pre>
  */
 public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
+  // These fields are declared transient so that they do not get included when a schema is serialized into JSON.
   private transient Class<I> _impl_class;
   private transient int _schema_version;
   private transient String _schema_name;
