@@ -57,6 +57,11 @@ This error output indicates that your Java version is not supported. Upgrade to 
 
 ---
 
+**I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?**
+
+ For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `"Locking cloud to new members, because <reason>..."`.
+
+---
 
 
 ##Algorithms
@@ -788,6 +793,11 @@ After creating and applying the desired node labels and associating them with sp
 - `-mapperXmx 6g` launches H2O with 6g of memory
 - `-output hdfsOutputDirName` specifies the HDFS output directory as `hdfsOutputDirName`
 
+---
+
+**How does H2O handle UDP packet failures? Does H2O quit or retry?**
+
+ In standard settings, H2O only uses UDP for cloud forming and only if you do not provide a flat file. All other communication is done via TCP. Cloud forming with no flat file is done by repeated broadcasts that are repeated until the cloud forms.
 
 ---
 
@@ -825,7 +835,7 @@ When you are running H2O on Hadoop, H2O tries to determine the home HDFS directo
 
 ---
 
-**How do I access data in HDFS without launching H2O on Yarn?**
+**How do I access data in HDFS without launching H2O on YARN?**
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so in order to have a working HDFS connection download the h2odriver.jar file for your Hadoop distribution.
 
