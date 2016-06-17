@@ -13,6 +13,7 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import water.api.SchemaServer;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
@@ -175,7 +176,7 @@ public class TestCase {
       Model bestModel = null;
       String bestModelJson = null;
       try {
-        Schema.registerAllSchemasIfNecessary();
+        SchemaServer.registerAllSchemasIfNecessary();
         switch (algo) {  // TODO: Hack for PUBDEV-2812
           case "drf":
             if (!drfRegistered) {
