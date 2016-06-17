@@ -13,7 +13,7 @@ class ModelBuildersHandler extends Handler {
     m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
     for( String algo : ModelBuilder.algos() ) {
       ModelBuilder builder = ModelBuilder.make(algo, null, null);
-      m.model_builders.put(algo.toLowerCase(), (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
+      m.model_builders.put(algo.toLowerCase(), (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder));
     }
     return m;
   }
@@ -23,7 +23,7 @@ class ModelBuildersHandler extends Handler {
   public ModelBuildersV3 fetch(int version, ModelBuildersV3 m) {
     m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
     ModelBuilder builder = ModelBuilder.make(m.algo, null, null);
-    m.model_builders.put(m.algo.toLowerCase(), (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
+    m.model_builders.put(m.algo.toLowerCase(), (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder));
     return m;
   }
 

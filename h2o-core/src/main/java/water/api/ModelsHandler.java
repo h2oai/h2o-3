@@ -122,7 +122,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
   public ModelsV3 fetch(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
     s.models = new ModelSchema[1];
-    s.models[0] = (ModelSchema)Schema.schema(version, model).fillFromImpl(model);
+    s.models[0] = (ModelSchema)SchemaServer.schema(version, model).fillFromImpl(model);
 
     if (s.find_compatible_frames) {
       // TODO: refactor fetchFrameCols so we don't need this Models object
@@ -188,7 +188,7 @@ class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> 
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       InputStream is = p.open(targetUri.toString());
       Model model = (Model)Keyed.readAll(new AutoBuffer(is));
-      s.models = new ModelSchema[]{(ModelSchema) Schema.schema(version, model).fillFromImpl(model)};
+      s.models = new ModelSchema[]{(ModelSchema) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
     }

@@ -246,10 +246,10 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     ChunkSummary cs = FrameUtils.chunkSummary(f);
 
     TwoDimTable chunk_summary_table = cs.toTwoDimTableChunkTypes();
-    this.chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), chunk_summary_table).fillFromImpl(chunk_summary_table);
+    this.chunk_summary = (TwoDimTableBase)SchemaServer.schema(3, chunk_summary_table).fillFromImpl(chunk_summary_table);
 
     TwoDimTable distribution_summary_table = cs.toTwoDimTableDistribution();
-    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), distribution_summary_table).fillFromImpl(distribution_summary_table);
+    distribution_summary = (TwoDimTableBase)SchemaServer.schema(3, distribution_summary_table).fillFromImpl(distribution_summary_table);
 
     this._fr = f;
 

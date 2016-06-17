@@ -133,7 +133,7 @@ public class RequestServer extends NanoHTTPD {
     assert registrationOpen : "finalizeRegistration() should not be called more than once";
     registrationOpen = false;
 
-    Schema.registerAllSchemasIfNecessary();
+    SchemaServer.registerAllSchemasIfNecessary();
 
     // Need a stub RequestServer to handle calls to serve() from Jetty.
     // But no threads are started here anymore.

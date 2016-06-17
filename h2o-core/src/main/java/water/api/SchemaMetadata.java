@@ -159,7 +159,7 @@ public final class SchemaMetadata extends Iced {
           Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
 
           // Now see if we have a versioned schema for its Iced type:
-          Class<? extends Schema>  versioned_schema_class = Schema.schemaClass(schema.getSchemaVersion(), Schema.getImplClass(schema_class));
+          Class<? extends Schema>  versioned_schema_class = SchemaServer.schemaClass(-1, Schema.getImplClass(schema_class));
 
           // If we found a versioned schema class for its iced type use it, else fall back to the type of the field:
           if (null != versioned_schema_class) {

@@ -31,7 +31,7 @@ public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, 
     ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     this.error_count = builder.error_count();
 
-    ModelBuilderSchema s = (ModelBuilderSchema)Schema.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);
+    ModelBuilderSchema s = (ModelBuilderSchema)SchemaServer.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);
     parameters = s.parameters;
     return (S) this;
   }

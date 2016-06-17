@@ -101,7 +101,8 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
-    job = builder._job == null ? null : (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
+    job = builder._job == null ? null : (JobV3)SchemaServer.schema(this.getSchemaVersion(), Job.class).fillFromImpl
+        (builder._job);
     // In general, you can ask about a builder in-progress, and the error
     // message list can be growing - so you have to be prepared to read it
     // racily.  Common for Grid searches exploring with broken parameter

@@ -31,7 +31,7 @@ class ParseHandler extends Handler {
       srcs[i] = parse.source_frames[i].key();
 
     // TODO: add JobBase:
-    parse.job = (JobV3)Schema.schema(version, Job.class).fillFromImpl(ParseDataset.parse(parse.destination_frame.key(), srcs, parse.delete_on_done, setup, parse.blocking)._job);
+    parse.job = (JobV3)SchemaServer.schema(version, Job.class).fillFromImpl(ParseDataset.parse(parse.destination_frame.key(), srcs, parse.delete_on_done, setup, parse.blocking)._job);
     if( parse.blocking ) {
       Frame fr = DKV.getGet(parse.destination_frame.key());
       parse.rows = fr.numRows();

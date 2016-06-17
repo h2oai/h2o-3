@@ -50,7 +50,7 @@ class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends SchemaV3<
 
       int i = 0;
       for (Model model : m.models) {
-        this.models[i++] = (ModelSchema)Schema.schema(this.getSchemaVersion(), model).fillFromImpl(model);
+        this.models[i++] = (ModelSchema)SchemaServer.schema(this.getSchemaVersion(), model).fillFromImpl(model);
       }
     }
     return this;
