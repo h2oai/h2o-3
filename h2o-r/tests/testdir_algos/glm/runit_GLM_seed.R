@@ -9,6 +9,8 @@ check.glm.seed <- function() {
 
     y <- "economy_20mpg"
     x <- setdiff(names(train), y)
+    x <- setdiff(x,"economy")
+    x <- setdiff(x,"name")
     family <- "binomial"
 
     #For binary classification, response should be a factor
@@ -25,8 +27,7 @@ check.glm.seed <- function() {
                           max_iterations  = 1000,
                           nfolds  = 5,
                           seed = 1234,
-                          solver  = "IRLSM",
-                          max_active_predictors = 200)
+                          max_active_predictors = 200,lambda_min_ratio = 1e-4)
 
     fit_h2oglm2 <- h2o.glm(x = x,
                            y = y,
@@ -37,8 +38,7 @@ check.glm.seed <- function() {
                            max_iterations  = 1000,
                            nfolds  = 5,
                            seed = 1234,
-                           solver  = "IRLSM",
-                           max_active_predictors = 200)
+                           max_active_predictors = 200,lambda_min_ratio = 1e-4)
 
 
     expect_equal(h2o.coef(fit_h2oglm1) , h2o.coef(fit_h2oglm2))
@@ -53,8 +53,7 @@ check.glm.seed <- function() {
                           lambda_search = T,                      # searching for best value of Lambda
                           max_iterations  = 1000,
                           nfolds  = 5,
-                          solver  = "IRLSM",
-                          max_active_predictors = 200)
+                          max_active_predictors = 200,lambda_min_ratio = 1e-4)
 
     fit_h2oglm4 <- h2o.glm(x = x,
                            y = y,
@@ -64,8 +63,7 @@ check.glm.seed <- function() {
                            lambda_search = T,                      # searching for best value of Lambda
                            max_iterations  = 1000,
                            nfolds  = 5,
-                           solver  = "IRLSM",
-                           max_active_predictors = 200)
+                           max_active_predictors = 200,lambda_min_ratio = 1e-4)
     diff_max = max(abs(h2o.coef(fit_h2oglm3) - h2o.coef(fit_h2oglm4)))
     print(diff_max)
     expect_true(diff_max > 0)
