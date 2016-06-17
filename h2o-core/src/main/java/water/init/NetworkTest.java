@@ -161,7 +161,7 @@ public class NetworkTest extends Iced {
     rowHeaders[0] = "all - collective bcast/reduce";
     for (int i = 0; i < H2O.CLOUD.size(); ++i) {
       rowHeaders[1+i] =
-              ((H2O.SELF._key.equals(H2O.CLOUD._memary[i]._key) ? "self" : "remote") + " " + (H2O.CLOUD._memary[i]._key).toString());
+              ((H2O.SELF.equals(H2O.CLOUD._memary[i]) ? "self" : "remote") + " " + H2O.CLOUD._memary[i].toString());
     }
     String[] colHeaders = new String[msg_sizes.length];
     for (int i = 0; i < colHeaders.length; ++i) {

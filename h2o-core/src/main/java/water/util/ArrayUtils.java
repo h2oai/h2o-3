@@ -1390,4 +1390,29 @@ public class ArrayUtils {
 
     return Arrays.copyOfRange(sortedSplitPoints,start,end);
   }
+
+  public static long encodeAsLong(byte[] b) {
+    return encodeAsLong(b, 0, b.length);
+  }
+  public static long encodeAsLong(byte[] b, int off, int len) {
+    assert len <= 8 : "Cannot encode more then 8 bytes into long: len = " + len;
+    long r = 0;
+    int shift = 0;
+    for(int i = 0; i < len; i++) {
+      r |= (b[i + off] & 0xFFL) << shift;
+      shift += 8;
+    }
+    return r;
+  }
+
+  public static int encodeAsInt(byte[] b, int off, int len) {
+    assert len <= 4 : "Cannot encode more then 4 bytes into int: len = " + len;
+    int r = 0;
+    int shift = 0;
+    for(int i = 0; i < len; i++) {
+      r |= (b[i + off] & 0xFF) << shift;
+      shift += 8;
+    }
+    return r;
+  }
 }
