@@ -154,9 +154,13 @@ public class SchemaServer {
           if (name.startsWith("_"))
             Log.warn("Found schema field which violates the naming convention; name starts with underscore: " +
                      meta.name + "." + name);
-          if (!name.equals(name.toLowerCase()) && !name.equals(name.toUpperCase())) // allow AUC but not residualDeviance
-            Log.warn("Found schema field which violates the naming convention; name has mixed lowercase and " +
-                     "uppercase characters: " + meta.name + "." + name);
+          // allow AUC but not residualDeviance
+          // Note: class Word2VecParametersV3 is left as an exception, since it's already a published schema, and it
+          // is not possible to alter its field names. However no other exceptions should be created!
+          if (!name.equals(name.toLowerCase()) && !name.equals(name.toUpperCase()))
+            if (!clzname.equals("Word2VecParametersV3"))
+              Log.warn("Found schema field which violates the naming convention; name has mixed lowercase and " +
+                       "uppercase characters: " + meta.name + "." + name);
         }
       } catch (Exception e) {
         throw H2O.fail("Failed to instantiate schema class " + clzname + " because: " + e);
