@@ -1666,13 +1666,13 @@ class TestRunner:
         if g_use_xml2:
             # need to change the failure content when using new xml format.
             # first get the output file that contains the python/R output error
-            if not(failure_description==None): # for tests that fail.
+            if failure_description is not None:  # for tests that fail.
                 failure_file = failure_description.split()[1]
-                failure_message = open(failure_file,'r').read() # read the whole content in here.
+                failure_message = open(failure_file,'r').read()  # read the whole content in here.
 
                 # add the error message from Java side here, java filename is in self.clouds[].output_file_name
                 for each_cloud in self.clouds:
-                    java_errors = grab_java_message(each_cloud.nodes,testcase_name)
+                    java_errors = grab_java_message(each_cloud.nodes, testcase_name)
                     if len(java_errors) > 0:    # found java message and can quit now
                         if g_use_client:
                             failure_message += "\n##### Java message from server node #####\n"
@@ -1683,7 +1683,7 @@ class TestRunner:
                 if g_use_client:
                     # add the error message from Java side here, java filename is in self.clouds[].output_file_name
                     for each_cloud in self.clouds:
-                        java_errors = grab_java_message(each_cloud.client_nodes,testcase_name)
+                        java_errors = grab_java_message(each_cloud.client_nodes, testcase_name)
                         if len(java_errors) > 0:    # found java message and can quit now
                             failure_message += "\n\n##### Java message from client node #####\n"
                             failure_message += java_errors
@@ -1771,8 +1771,10 @@ class TestRunner:
         global __H2O_REST_API_VERSION__
         h2o_okay = False
         try:
-            http = requests.get("http://{}:{}/{}/{}".format(ip,port,__H2O_REST_API_VERSION__,"Cloud?skip_ticks=true"))
-            h2o_okay = http.json()['cloud_healthy']
+            http = requests.get("http://{}:{}/{}/Cloud?skip_ticks=true".format(ip, port, __H2O_REST_API_VERSION__))
+            json = http.json()
+            if "cloud_healthy" in json:
+                h2o_okay = json["cloud_healthy"]
         except exceptions.ConnectionError: pass
         if not h2o_okay: self._remove_cloud(ip, port)
         return h2o_okay
@@ -1789,7 +1791,7 @@ class TestRunner:
             if cloud.get_ip() == ip and cloud.get_port() == str(port):
                 found_cloud = True
                 break
-            cidx = cidx + 1
+            cidx += 1
         if found_cloud: self.clouds.pop(cidx)
         if len(self.clouds) == 0:
             self._log('NO GOOD CLOUDS REMAINING...')
