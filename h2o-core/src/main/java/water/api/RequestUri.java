@@ -82,8 +82,8 @@ public class RequestUri {
       assert path[0].isEmpty() && path.length >= 3;
 
       String ver = path[1].toUpperCase();
-      if (ver.equals("EXPERIMENTAL")) ver = ((Integer) Schema.getExperimentalVersion()).toString();
-      if (ver.equals("LATEST")) ver = ((Integer) Schema.getLatestOrHighestSupportedVersion()).toString();
+      if (ver.equals("EXPERIMENTAL")) ver = ((Integer) SchemaServer.getExperimentalVersion()).toString();
+      if (ver.equals("LATEST")) ver = ((Integer) SchemaServer.getLatestOrHighestSupportedVersion()).toString();
 
       path[1] = method;
       path[path.length - 1] = ver;

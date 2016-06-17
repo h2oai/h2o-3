@@ -8,7 +8,7 @@ import water.fvec.Frame;
  * The minimal amount of information on a Frame.
  * @see FramesHandler#list(int, FramesV3)
  */
-public class FrameBase<I extends Iced, S extends SchemaV3<I, S>> extends SchemaV3<I, S> {
+public class FrameBase<I extends Iced, S extends FrameBase<I, S>> extends SchemaV3<I, S> {
   transient Frame _fr;         // Avoid a racey update to Key; cached loaded value
 
   // Input fields

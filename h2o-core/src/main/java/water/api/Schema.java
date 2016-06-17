@@ -115,49 +115,14 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   private transient int _schema_version;
   private transient String _schema_name;
   private transient String _schema_type;
-  private static final int HIGHEST_SUPPORTED_VERSION = 4;
-  private static final int EXPERIMENTAL_VERSION = 99;
 
-  // Registry which maps a simple schema name to its class.  NOTE: the simple names form a single namespace.
-  // E.g., "DeepLearningParametersV2" -> hex.schemas.DeepLearningV2.DeepLearningParametersV2
-  private static Map<String, Class<? extends Schema>> schemas = new HashMap<>();
-
-  // Registry which maps a Schema simpleName to its Iced Class.
-  // E.g., "DeepLearningParametersV2" -> hex.deeplearning.DeepLearning.DeepLearningParameters
-  private static Map<String, Class<? extends Iced>> schema_to_iced = new HashMap<>();
-
-  // Registry which maps an Iced simpleName (type) and schema_version to its Schema Class.
-  // E.g., (DeepLearningParameters, 2) -> "DeepLearningParametersV2"
-  //
-  // Note that iced_to_schema gets lazily filled if a higher version is asked for than is
-  // available (e.g., if the highest version of Frame is FrameV2 and the client asks for
-  // the schema for (Frame, 17) then FrameV2 will be returned, and all the mappings between
-  // 17 and 3 will get added to the Map.
-  private static Map<Pair<String, Integer>, Class<? extends Schema>> iced_to_schema = new HashMap<>();
 
   /** Default constructor; triggers lazy schema registration.
    *  @throws water.exceptions.H2OFailException if there is a name collision or
    *          there is more than one schema which maps to the same Iced class */
   public Schema() {
     init_meta();
-    if (schema_to_iced.get(_schema_name) == null) {
-      Log.debug("Registering schema: " + _schema_name + " version: " + _schema_version + " with Iced class: " + _impl_class.toString());
-      if (schemas.get(_schema_name) != null)
-        throw H2O.fail("Found a duplicate schema name in: " + schemas.get(_schema_name) + " and: " + this.getClass());
-
-      schemas.put(_schema_name, this.getClass());
-      schema_to_iced.put(_schema_name, _impl_class);
-
-      if (_impl_class != Iced.class) {
-        Pair<String, Integer> versioned = new Pair<>(_schema_type, _schema_version);
-        // Check for conflicts
-        if (iced_to_schema.get(versioned) != null)
-          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " +
-                         iced_to_schema.get(versioned) + " and: " + this.getClass().toString() + " both map to " +
-                         "version: " + _schema_version + " of Iced class: " + _impl_class);
-        iced_to_schema.put(versioned, this.getClass());
-      }
-    }
+    SchemaServer.checkIfRegistered(this);
   }
 
   protected void init_meta() {
@@ -169,7 +134,7 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   /** Extract the version number from the schema class name.  Returns -1 if
    *  there's no version number at the end of the classname. */
-  private static int extractVersionFromSchemaName(String clz_name) {
+  public static int extractVersionFromSchemaName(String clz_name) {
     int idx = clz_name.lastIndexOf('V');
     if (idx == -1) return -1;
     try { return Integer.valueOf(clz_name.substring(idx+1)); }
@@ -185,107 +150,6 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
 
   public String getSchemaType() { return _schema_type; }
 
-  private volatile static int LATEST_VERSION = -1;
-  /** Get the highest schema version number that we've encountered during schema registration.  */
-  public static int getLatestVersion() { return LATEST_VERSION; }
-
-  /** Get the highest schema version that we support.  This bounds the search
-   *  for a schema if we haven't yet registered all schemas and don't yet know
-   *  the latest_version.  */
-  public static int getHighestSupportedVersion() { return HIGHEST_SUPPORTED_VERSION; }
-
-  /** Combines the previous two. */
-  public static int getLatestOrHighestSupportedVersion() {
-    return LATEST_VERSION == -1? HIGHEST_SUPPORTED_VERSION : LATEST_VERSION;
-  }
-
-  /** Get the experimental schema version, which indicates that a schema is not
-   *  guaranteed stable between H2O releases.  */
-  public static int getExperimentalVersion() { return EXPERIMENTAL_VERSION; }
-
-  /**
-   * Register the given schema class.
-   * @throws water.exceptions.H2OFailException if there is a name collision, if the type parameters are bad, or if the version is bad
-   */
-  private static void register(Class<? extends Schema> clz) {
-    synchronized(clz) {
-      // Was there a race to get here?  If so, return.
-      Class<? extends Schema> existing = schemas.get(clz.getSimpleName());
-      if (null != existing) {
-        if (clz != existing)
-          throw H2O.fail("Two schema classes have the same simpleName; this is not supported: " + clz + " and " + existing + ".");
-        return;
-      }
-
-      // Check that the Schema has the correct type parameters:
-      if (clz.getGenericSuperclass() instanceof ParameterizedType) {
-        Type[] schema_type_parms = ((ParameterizedType) (clz.getGenericSuperclass())).getActualTypeArguments();
-        if (schema_type_parms.length < 2)
-          throw H2O.fail("Found a Schema that does not pass at least two type parameters.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
-        Class parm0 = ReflectionUtils.findActualClassParameter(clz, 0);
-        if (!Iced.class.isAssignableFrom(parm0))
-          throw H2O.fail("Found a Schema with bad type parameters.  First parameter is a subclass of Iced.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm0);
-        if (Schema.class.isAssignableFrom(parm0))
-          throw H2O.fail("Found a Schema with bad type parameters.  First parameter is a subclass of Schema.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm0);
-
-        Class parm1 = ReflectionUtils.findActualClassParameter(clz, 1);
-        if (!Schema.class.isAssignableFrom(parm1))
-          throw H2O.fail("Found a Schema with bad type parameters.  Second parameter is not a subclass of Schema.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz + ".  Second parameter is of class: " + parm1);
-      } else {
-        throw H2O.fail("Found a Schema that does not have a parameterized superclass.  Each Schema needs to be parameterized on the backing class (if any, or Iced if not) and itself: " + clz);
-      }
-
-      int version = extractVersionFromSchemaName(clz.getSimpleName());
-      if (version > getHighestSupportedVersion() && version != EXPERIMENTAL_VERSION)
-        throw H2O.fail("Found a schema with a version higher than the highest supported version; you probably want to bump the highest supported version: " + clz);
-
-      // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBase, so that we can fetch the metadata for them.
-      if (version > -1 && version != EXPERIMENTAL_VERSION) {
-        // Track highest version of all schemas; only valid after all are registered at startup time.
-        if (version > HIGHEST_SUPPORTED_VERSION)
-          throw H2O.fail("Found a schema with a version greater than the highest supported version of: " + getHighestSupportedVersion() + ": " + clz);
-
-        if (version > LATEST_VERSION) {
-          synchronized (Schema.class) {
-            if (version > LATEST_VERSION) LATEST_VERSION = version;
-          }
-        }
-      }
-
-      Schema s = null;
-      try {
-        s = clz.newInstance();
-      } catch (Exception e) {
-        Log.err("Failed to instantiate schema class: " + clz + " because: " + e);
-      }
-      if (null != s) {
-        Log.debug("Registered Schema: " + clz.getSimpleName());
-
-        // Validate the fields:
-        SchemaMetadata meta = new SchemaMetadata(s);
-        for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
-          String name = field_meta.name;
-
-          if ("__meta".equals(name) || "__http_status".equals(name) || "_exclude_fields".equals(name) || "_include_fields".equals(name))
-            continue;
-          if ("Gini".equals(name)) // proper name
-            continue;
-
-          if (name.endsWith("AUC")) // trainAUC, validAUC
-            continue;
-
-          // TODO: remove after we move these into a TwoDimTable:
-          if ("f0point5".equals(name) || "f0point5_for_criteria".equals(name) || "f1_for_criteria".equals(name) || "f2_for_criteria".equals(name))
-            continue;
-
-          if (name.startsWith("_"))
-            Log.warn("Found schema field which violates the naming convention; name starts with underscore: " + meta.name + "." + name);
-          if (!name.equals(name.toLowerCase()) && !name.equals(name.toUpperCase())) // allow AUC but not residualDeviance
-            Log.warn("Found schema field which violates the naming convention; name has mixed lowercase and uppercase characters: " + meta.name + "." + name);
-        }
-      }
-    }
-  }
 
   /**
    * Create an appropriate implementation object and any child objects but does not fill them.
@@ -741,142 +605,22 @@ public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
     return splitArgList.toArray(new String[splitArgList.size()]);
   }
 
-  private static boolean schemas_registered = false;
-  /** Find all schemas using reflection and register them.  */
-  synchronized static public void registerAllSchemasIfNecessary() {
-    if (schemas_registered) return;
-    // if (!Paxos._cloudLocked) return; // TODO: It's never getting locked. . . :-(
-
-    long before = System.currentTimeMillis();
-
-    // Microhack to effect Schema.register(Schema.class), which is
-    // normally not allowed because it has no version:
-    new Schema();
-
-    String[] packages = new String[] { "water", "hex", /* Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: "" */};
-
-    // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're extremely explicit here:
-    //noinspection unchecked
-    Class<? extends Schema> clzs[] = new Class[] {
-        Schema.class,
-        SchemaV3.class,
-        ModelBuilderSchema.class,
-        ModelSchema.class,
-        ModelOutputSchema.class,
-        ModelParametersSchema.class,
-    };
-
-    for (String pkg :  packages) {
-      Reflections reflections = new Reflections(pkg);
-
-      for (Class<? extends Schema> clz : clzs) {
-        // NOTE: Reflections sees ModelOutputSchema but not ModelSchema. Another bug to work around:
-        Log.debug("Registering: " + clz.toString() + " in package: " + pkg);
-        if (!Modifier.isAbstract(clz.getModifiers()))
-          Schema.register(clz);
-
-        // Register the subclasses:
-        Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
-        for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
-          if (!Modifier.isAbstract(schema_class.getModifiers()))
-            Schema.register(schema_class);
-      }
-    }
-
-    schemas_registered = true;
-    Log.info("Registered: " + Schema.schemas().size() + " schemas in: " + (System.currentTimeMillis() - before) + "mS");
-  }
-
   /**
-   * Return an immutable Map of all the schemas: schema_name -> schema Class.
+   * Returns a new Schema instance.  Does not throw, nor returns null.
+   * @return New instance of Schema Class 'clz'.
    */
-  protected static Map<String, Class<? extends Schema>> schemas() {
-    return Collections.unmodifiableMap(new HashMap<>(schemas));
-  }
-
-  /**
-   * For a given version and Iced class return the appropriate Schema class, if any.f
-   * @see #schemaClass(int, java.lang.String)
-   */
-  protected static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
-    return schemaClass(version, impl_class.getSimpleName());
-  }
-
-  /**
-   * For a given version and type (Iced class simpleName) return the appropriate Schema
-   * class, if any.
-   * <p>
-   * If a higher version is asked for than is available (e.g., if the highest version of
-   * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
-   * be returned.  This compatibility lookup is cached.
-   */
-  public static Class<? extends Schema> schemaClass(int version, String type) {
-    if (version < 1) return null;
-
-    Class<? extends Schema> clz = iced_to_schema.get(new Pair<>(type, version));
-
-    if (clz != null) return clz; // found!
-
-    clz = schemaClass(version==EXPERIMENTAL_VERSION? HIGHEST_SUPPORTED_VERSION : version-1, type);
-
-    if (clz != null) iced_to_schema.put(new Pair<>(type, version), clz); // found a lower-numbered schema: cache
-    return clz;
-  }
-
-  /**
-   * For a given version and Iced object return an appropriate Schema instance, if any.
-   * @see #schema(int, java.lang.String)
-   */
-  public static Schema schema(int version, Iced impl) {
-    return schema(version, impl.getClass().getSimpleName());
-  }
-
-  /**
-   * For a given version and Iced class return an appropriate Schema instance, if any.
-   * @throws H2OIllegalArgumentException if Class.newInstance() throws
-   * @see #schema(int, java.lang.String)
-   */
-  public static Schema schema(int version, Class<? extends Iced> impl_class) {
-    return schema(version, impl_class.getSimpleName());
-  }
-
-  /** Returns a new Schema instance.  Does not throw, nor returns null.
-   *  @return New instance of Schema Class 'clz'.   */
   public static <T extends Schema> T newInstance(Class<T> clz) {
     try { return clz.newInstance(); }
     catch (Exception e) { throw H2O.fail("Failed to instantiate schema of class: " + clz.getCanonicalName(),e); }
   }
 
   /**
-   * For a given version and type (Iced class simpleName) return an appropriate new Schema
-   * object, if any.
-   * <p>
-   * If a higher version is asked for than is available (e.g., if the highest version of
-   * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then an instance
-   * of FrameV2 will be returned.  This compatibility lookup is cached.
-   * @throws H2ONotFoundArgumentException if an appropriate schema is not found
+   * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
-  private static Schema schema(int version, String type) {
-    Class<? extends Schema> clz = schemaClass(version, type);
-    if (null == clz)
-      clz = schemaClass(Schema.getExperimentalVersion(), type);
-
-    if (null == clz)
-      throw new H2ONotFoundArgumentException("Failed to find schema for version: " + version + " and type: " + type,
-                                             "Failed to find schema for version: " + version + " and type: " + type);
-    return Schema.newInstance(clz);
-  }
-
-  /** For a given schema_name (e.g., "FrameV2") return an appropriate new
-   *  schema object (e.g., a water.api.Framev2).
-   *  @throws H2ONotFoundArgumentException if an appropriate schema is not found */
   protected static Schema newInstance(String schema_name) {
-    Class<? extends Schema> clz = schemas.get(schema_name);
-    if (null == clz)
-      throw new H2ONotFoundArgumentException("Failed to find schema for schema_name: " + schema_name, 
-					     "Failed to find schema for schema_name: " + schema_name);
-    return Schema.newInstance(clz);
+    return Schema.newInstance(SchemaServer.getSchema(schema_name));
   }
+
 
   /**
    * Generate Markdown documentation for this Schema possibly including only the input or output fields.

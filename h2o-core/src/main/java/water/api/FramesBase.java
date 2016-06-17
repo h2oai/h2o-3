@@ -4,7 +4,7 @@ import water.api.FramesHandler.Frames;
 import water.api.KeyV3.FrameKeyV3;
 import water.fvec.Frame;
 
-class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<I, FramesBase<I, S>> {
+class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<I, S> {
   // Input fields
   @API(help="Name of Frame of interest", json=false)
   public FrameKeyV3 frame_id;
