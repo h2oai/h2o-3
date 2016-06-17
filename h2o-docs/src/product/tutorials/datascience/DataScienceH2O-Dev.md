@@ -264,6 +264,8 @@ The GLM suite includes:
 
 - **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation. 
+
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a GLM Model
@@ -1308,11 +1310,15 @@ Trees cluster observations into leaf nodes, and this information can be useful f
   - `col_sample_rate_per_tree=0.754`
   - `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
 
-  For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
+  For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case, (0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
 - **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
 
   The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
+
+- **Are there any tutorials for GBM?**
+
+ You can find tutorials for using GBM with R, Python, and Flow at the following location: <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm" target="_blank">https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm</a>
 
 ###GBM Algorithm 
 
@@ -1544,7 +1550,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation.   
 
 - **quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
@@ -1585,9 +1591,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 
 
- 
-
-
 ###Interpreting a Deep Learning Model
 
 To view the results, click the View button. The output for the Deep Learning model includes the following information for both the training and testing sets: 
@@ -1608,7 +1611,7 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
+	Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
 
 - **How does the algorithm handle missing values during testing?**
 
@@ -1689,35 +1692,39 @@ Deep Learning performs mean-imputation for missing numericals and creates a sepa
 
 - **Are there any best practices for building a model using checkpointing?**
 
-In general, to get the best possible model, we recommend building a model with `train\_samples\_per\_iteration = -2` (which is the default value for auto-tuning) and saving it. 
+ In general, to get the best possible model, we recommend building a model with `train\_samples\_per\_iteration = -2` (which is the default value for auto-tuning) and saving it. 
 
+ To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing `train\_samples\_per\_iteration`, `target\_ratio\_comm\_to\_comp`, or other parameters. 
 
-To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing `train\_samples\_per\_iteration`, `target\_ratio\_comm\_to\_comp`, or other parameters. 
+ If you don't know your model ID because it was generated by R, look it up using `h2o.ls()`. By default, Deep Learning model names start with `deeplearning_` To view the model, use `m <- h2o.getModel("my\_model\_id")` or `summary(m)`. 
 
-If you don't know your model ID because it was generated by R, look it up using `h2o.ls()`. By default, Deep Learning model names start with `deeplearning_` To view the model, use `m <- h2o.getModel("my\_model\_id")` or `summary(m)`. 
+ There are a few ways to manage checkpoint restarts: 
 
-There are a few ways to manage checkpoint restarts: 
+ *Option 1*: (Multi-node only) Leave `train\_samples\_per\_iteration = -2`, increase `target\_comm\_to\_comp` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance. 
 
-*Option 1*: (Multi-node only) Leave `train\_samples\_per\_iteration = -2`, increase `target\_comm\_to\_comp` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance. 
+ *Option 2*: (Single or multi-node) Set `train\_samples\_per\_iteration` to \(N\), where \(N\) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on \(N\) randomly-chosen rows for every iteration. The number defined as \(N\) depends on the dataset size and the model complexity. 
 
-*Option 2*: (Single or multi-node) Set `train\_samples\_per\_iteration` to \(N\), where \(N\) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on \(N\) randomly-chosen rows for every iteration. The number defined as \(N\) depends on the dataset size and the model complexity. 
-
-*Option 3*: (Single or multi-node) Change regularization parameters such as `l1, l2, max\_w2, input\_droput\_ratio` or `hidden\_dropout\_ratios`. We recommend build the first mode using `RectifierWithDropout`, `input\_dropout\_ratio = 0` (if there is suspected noise in the input), and `hidden\_dropout\_ratios=c(0,0,0)` (for the ability to enable dropout regularization later). 
+ *Option 3*: (Single or multi-node) Change regularization parameters such as `l1, l2, max\_w2, input\_droput\_ratio` or `hidden\_dropout\_ratios`. We recommend build the first mode using `RectifierWithDropout`, `input\_dropout\_ratio = 0` (if there is suspected noise in the input), and `hidden\_dropout\_ratios=c(0,0,0)` (for the ability to enable dropout regularization later). 
 
 - **How does class balancing work?**
 
-The `max\_after\_balance\_size` parameter defines the maximum size of the over-sampled dataset. For example, if `max\_after\_balance\_size = 3`, the over-sampled dataset will not be greater than three times the size of the original dataset. 
+ The `max\_after\_balance\_size` parameter defines the maximum size of the over-sampled dataset. For example, if `max\_after\_balance\_size = 3`, the over-sampled dataset will not be greater than three times the size of the original dataset. 
 
-For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using `balance\_classes = T`, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If `max\_after\_balance\_size = 3`, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total). 
+ For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using `balance\_classes = T`, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If `max\_after\_balance\_size = 3`, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total). 
 
-To specify the per-class over- or under-sampling factors, use `class\_sampling\_factors`. In the previous example, the default behavior with `balance\_classes` is equivalent to `c(1,40,40,40,40)`, while when `max\_after\_balance\_size = 3`, the results would be `c(3/5,40*3/5,40*3/5,40*3/5)`. 
+ To specify the per-class over- or under-sampling factors, use `class\_sampling\_factors`. In the previous example, the default behavior with `balance\_classes` is equivalent to `c(1,40,40,40,40)`, while when `max\_after\_balance\_size = 3`, the results would be `c(3/5,40*3/5,40*3/5,40*3/5)`. 
 
-In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
+ In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
 
 - **How is variable importance calculated for Deep Learning?**
 
-For Deep Learning, variable importance is calculated using the Gedeon method. 
+ For Deep Learning, variable importance is calculated using the Gedeon method. 
 
+- **Why do my results include a negative R^2 value?**
+
+ H2O computes the R^2 as `1 - MSE/variance`, where `MSE` is the mean squared error of the prediction, and `variance` is the (weighted) variance: `sum(w*Y*Y)/sum(w) - sum(w*Y)^2/sum(w)^2`, where `w` is the row weight (1 by default), and `Y` is the centered response.
+
+ If the MSE is greater than the variance of the response, you will see a negative R^2 value. This indicates that the model got a really bad fit, and the results are not to be trusted. 
 
 ---
 

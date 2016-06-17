@@ -109,6 +109,7 @@ The following hyperparameters are supported by grid search.
 - `gamma_y`
 - `max_iterations`
 - `max_updates`
+- `missing_values_handling`
 - `init_step_size`
 - `min_step_size`
 - `seed`
@@ -515,4 +516,5 @@ There are tests for the `RandomDiscrete` search criteria in [runit_GBMGrid_airli
 
 - <a href="http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-algos/javadoc/index.html" target="_blank">H2O Algos Java Developer Documentation</a>: The definitive Java API guide for the algorithms used by H2O. 
 
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/random%20hyperparmeter%20search%20and%20roadmap.md">Hyperparameter Optimization in H2O </a>: A guide to Grid Search and Random Search in H2O. 
 

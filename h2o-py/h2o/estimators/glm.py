@@ -95,9 +95,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         remain empty.
 
       seed : int, optional
-        Specify the random number generator (RNG) seed for algorithm components dependent on randomization.
-        The seed is consistent for each H2O instance so that you can create models with the same starting conditions
-        in alternative configurations.
+        Specify the random number generator (RNG) seed for cross-validation folds.
 
       fold_assignment : str
         Cross-validation fold assignment scheme, if fold_column is not

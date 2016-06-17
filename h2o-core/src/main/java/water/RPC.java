@@ -391,7 +391,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
           if( _client._heartbeat._client ) // Dead client will not accept a TCP ACK response?
             this.CAS_DT(dt,null);          // cancel the ACK
           try { Thread.sleep(100); } catch (InterruptedException ignore) {}
-        } catch( Exception e ) { // Custom serializer just barfed?
+        } catch( Throwable e ) { // Custom serializer just barfed?
           Log.err(e);            // Log custom serializer exception
           ab.drainClose();
         }

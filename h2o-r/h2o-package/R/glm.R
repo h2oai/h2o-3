@@ -47,9 +47,7 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
-#' @param seed (Optional) Specify the random number generator (RNG) seed for algorithm components dependent on randomization.
-#'        The seed is consistent for each H2O instance so that you can create models with the same starting conditions
-#'        in alternative configurations.
+#' @param seed (Optional) Specify the random number generator (RNG) seed for cross-validation folds.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
 #'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will
@@ -66,8 +64,6 @@
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
 #' @param missing_values_handling (Optional) Controls handling of missing values. Can be either "MeanImputation" or "Skip". MeanImputation replaces missing values with mean for numeric and most frequent level for categorical,  Skip ignores observations with any missing value. Applied both during model training *AND* scoring.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#' @param ... (Currently Unimplemented)
-#'        coefficients.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -118,8 +114,8 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     standardize = TRUE,
                     family = c("gaussian", "binomial", "poisson", "gamma", "tweedie","multinomial"),
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
-                    tweedie_variance_power = NaN,
-                    tweedie_link_power = NaN,
+                    tweedie_variance_power = 0,
+                    tweedie_link_power = 1,
                     alpha = 0.5,
                     prior = NULL,
                     lambda = 1e-05,
@@ -137,7 +133,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     weights_column = NULL,
                     intercept = TRUE,
                     max_active_predictors = -1,
-                    interactions=NULL,
+                    interactions = NULL,
                     objective_epsilon = -1,
                     gradient_epsilon = -1,
                     non_negative = FALSE,

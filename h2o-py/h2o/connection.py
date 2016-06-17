@@ -46,7 +46,7 @@ class H2OConnection(object):
   __ENCODING_ERROR__ = "replace"
 
   def __init__(self, ip, port, start_h2o, enable_assertions, license, nthreads, max_mem_size, min_mem_size, ice_root,
-               strict_version_check, proxy, https, insecure, username, password, max_mem_size_GB, min_mem_size_GB, proxies, size):
+               strict_version_check, proxy, https, insecure, username, password, cluster_name, max_mem_size_GB, min_mem_size_GB, proxies, size):
     """
     Instantiate the package handle to the H2O cluster.
     :param ip: An IP address, default is "localhost"
@@ -67,6 +67,7 @@ class H2OConnection(object):
     :param insecure: Set this to True to disable SSL certificate checking.
     :param username: Username to login with.
     :param password: Password to login with. 
+    :param cluster_name: Cluster name to login to.
     :param max_mem_size_GB: DEPRECATED. Use max_mem_size.
     :param min_mem_size_GB: DEPRECATED. Use min_mem_size.
     :param proxies: DEPRECATED. Use proxy.
@@ -101,6 +102,7 @@ class H2OConnection(object):
     self._insecure = insecure
     self._username = username
     self._password = password
+    self._cluster_name = cluster_name
     self._session_id = None
     self._rest_version = __H2O_REST_API_VERSION__
     self._child = getattr(__H2OCONN__, "_child") if hasattr(__H2OCONN__, "_child") else None
@@ -637,7 +639,8 @@ class H2OConnection(object):
     
     auth = (self._username, self._password)
     verify = not self._insecure
-    headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')}
+    cluster = self._cluster_name
+    headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n',''), 'X-Cluster': cluster}
     try:
       if method == "GET":
         return requests.get(url, headers=headers, proxies=self._proxy, auth=auth, verify=verify)

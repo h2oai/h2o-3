@@ -1110,8 +1110,7 @@ To determine the accuracy of your model, use the following guidelines:
 \item Look at the number of iterations  or scoring history to see if GLM stops early for a specific
       lambda; performing all the iterations usually means the solution is not good.  This is
       controlled by the \texttt{max\_iterations} parameter.
-\item The fewer the NA values in your training data, the better; GLM discards rows with NA values.
-     Always check degrees of freedom in the output model. Degrees of freedom is the number of observations used to train the model minus the size of the model. If this number is much smaller than expected, it is likely that too many rows have been excluded due to missing values. 
+\item The fewer the NA values in your training data, the better; GLM will either skip or mean-impute rows with NA values. Always check degrees of freedom in the output model. Degrees of freedom is the number of observations used to train the model minus the size of the model. If this number is much smaller than expected, it is likely that too many rows have been excluded due to missing values. 
 
       \begin{itemize}
       \item If you have few columns with many NAs, you might accidentally be losing all your rows, so it`s better to exclude them.
@@ -1219,11 +1218,11 @@ The cost of the coefficient update is $k*N$, where $N$ is number of predictors a
 \begin{itemize}
 \item \textbf{What if the training data contains NA values?}
 
- All rows containing any missing values are omitted form the training set. 
+ The rows with missing response are ignored during model training and validation.
 
 \item \textbf{What if the testing data contains NA values?}
 
- The prediction for that observation is NA.
+ If the missing value handling is set to skip and you are generating predictions, skipped rows will have NA (missing) prediction.
 
 \item \textbf{What if, while making predictions on testing data, a predictor column is categorical and the predictor is a level not observed during training?}
 
@@ -1254,8 +1253,8 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item {\textbf{gamma}}: inverse, log, identity
 \item {\textbf{tweedie}}: tweedie 
 	\end{itemize}
-\item \texttt{tweedie\_variance\_power}: A numeric specifying the power for the variance function when \texttt{family = "tweedie"}. 
-\item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}. 
+\item \texttt{tweedie\_variance\_power}: A numeric specifying the power for the variance function when \texttt{family = "tweedie"}.  Default is 0.
+\item \texttt{tweedie\_link\_power}: A numeric specifying the power for the link function when \texttt{family = "tweedie"}.  Default is 1.
 \item \texttt{alpha}: The elastic-net mixing parameter, which must be in $[0,1]$. The penalty is defined to be $P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|] $ so \texttt{alpha=1} is the Lasso penalty, while \texttt{alpha=0} is the ridge penalty. Default is 0.5.
 \item \texttt{prior}: (Optional) A numeric specifying the prior probability of class 1 in the response when \texttt{family = "binomial"}. The default value is the observation frequency of class 1. Must be from (0,1) exclusive range or NULL (no prior).
 \item \texttt{lambda}: A non-negative value representing the shrinkage parameter, which multiplies $P(\alpha,\beta)$ in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, regularization is disabled and ordinary generalized linear models are fit. The default is 1e-05.
@@ -1271,6 +1270,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+\item {\texttt{missing\_values\_handling}}: Handling of missing values. Either {\texttt{Skip}} or {\texttt{MeanImputation}} (default).
 \item \texttt{seed}: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 \end{itemize}
 %Additional: 

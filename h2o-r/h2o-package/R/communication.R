@@ -126,6 +126,10 @@
   beginTimeSeconds = as.numeric(proc.time())[3L]
 
   tmp <- NULL
+  header <- c('Connection' = 'close')
+  if (!is.na(conn@cluster_name)) {
+    header['X-Cluster'] = conn@cluster_name
+  }
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer(.mapUnicode = FALSE)
@@ -134,7 +138,7 @@
                                 writefunction = t$update,
                                 headerfunction = h$update,
                                 useragent=R.version.string,
-                                httpheader = c('Connection' = 'close'),
+                                httpheader = header,
                                 verbose = FALSE,
                                 timeout = timeout_secs,
                                 .opts = opts),
@@ -148,12 +152,13 @@
     stopifnot(method == "POST")
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
+    header['Expect'] = ''
     tmp = tryCatch(postForm(uri = url,
                             .params = list(fileUploadInfo = fileUploadInfo),
                             .opts=curlOptions(writefunction = t$update,
                                               headerfunction = h$update,
                                               useragent = R.version.string,
-                                              httpheader = c('Expect' = '', 'Connection' = 'close'),
+                                              httpheader = header,
                                               verbose = FALSE,
                                               timeout = timeout_secs,
                                               .opts = opts)),
@@ -166,12 +171,13 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
+    header['Expect'] = ''
     tmp = tryCatch(curlPerform(url = url,
                                postfields = postBody,
                                writefunction = t$update,
                                headerfunction = h$update,
                                useragent = R.version.string,
-                               httpheader = c('Expect' = '', 'Connection' = 'close'),
+                               httpheader = header,
                                verbose = FALSE,
                                timeout = timeout_secs,
                                .opts = opts),
