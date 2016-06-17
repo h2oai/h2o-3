@@ -46,7 +46,6 @@ public class SchemaV3<I extends Iced, S extends SchemaV3<I,S>> extends Schema<I,
   }
 
   public SchemaV3() {
-    super();
     __meta = new Meta(getSchemaVersion(), getSchemaName(), getSchemaType());
   }
 

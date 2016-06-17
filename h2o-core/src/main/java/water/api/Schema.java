@@ -150,6 +150,9 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   public String getSchemaType() { return _schema_type; }
 
+  /* Temporary hack to allow reassignment of schema_type by KeyV3 class */
+  public void setSchemaType_doNotCall(String s) { _schema_type = s; }
+
 
   /**
    * Create an appropriate implementation object and any child objects but does not fill them.

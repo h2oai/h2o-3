@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
- * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
+ * POJO utilities which cover cases similar to but not the same as Apache Commons PojoUtils.
  */
 public class PojoUtils {
   public enum FieldNaming {
