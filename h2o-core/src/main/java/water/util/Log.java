@@ -153,7 +153,7 @@ abstract public class Log {
   }
 
   // A little bit of startup buffering
-  private static ArrayList<String> INIT_MSGS = new ArrayList<String>();
+  private static ArrayList<String> INIT_MSGS = new ArrayList<>();
 
   public static void flushStdout() {
     for (String s : INIT_MSGS) {

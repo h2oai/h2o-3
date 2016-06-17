@@ -20,8 +20,12 @@ public class UDPReceiverThread extends Thread {
   static private int  _unknown_packets_per_sec = 0;
   static private long _unknown_packet_time = 0;
   static final Random RANDOM_UDP_DROP = new Random();
-  public UDPReceiverThread() {
+
+  private final DatagramChannel datagramChannel;
+
+  public UDPReceiverThread(DatagramChannel datagramChannel) {
     super("D-UDP-Recv");
+    this.datagramChannel = datagramChannel;
   }
 
   // ---
@@ -29,7 +33,7 @@ public class UDPReceiverThread extends Thread {
   @SuppressWarnings("resource")
   public void run() {
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
-    DatagramChannel sock = water.init.NetworkInit._udpSocket, errsock = null;
+    DatagramChannel sock = datagramChannel, errsock = null;
     boolean saw_error = false;
 
     while( true ) {
@@ -60,7 +64,8 @@ public class UDPReceiverThread extends Thread {
         // On any error from anybody, close all sockets & re-open
         Log.err("UDP Receiver error on port "+H2O.H2O_PORT,e);
         saw_error = true;
-        errsock  = sock ;  sock  = null; // Signal error recovery on the next loop
+        errsock  = sock ;
+        sock  = null; // Signal error recovery on the next loop
       }
     }
   }
