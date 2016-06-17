@@ -185,8 +185,8 @@ public class SchemaServer {
     // Scanning all classes (i.e. calling new Reflections("")) is prohibitively expensive -- it adds over 2s to the
     // startup time. Instead we just assume that all schemas live in one of the packages below, and scan just those.
     Reflections[] reflList = new Reflections[]{
-        new Reflections("water.api"),
-        new Reflections("hex.schemas"),
+        new Reflections("water"),
+        new Reflections("hex"),
     };
     registerSchemasOfClass(Schema.class, reflList);
 
