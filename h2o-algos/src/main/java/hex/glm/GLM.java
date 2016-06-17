@@ -38,13 +38,12 @@ import java.util.HashMap;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
-
+  protected boolean _cv; // flag signalling this is MB for one of the fold-models during cross-validation
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
 
   public static final int SCORING_INTERVAL_MSEC = 15000; // scoreAndUpdateModel every minute unless socre every iteration is set
   public String _generatedWeights = null;
-  protected boolean _cv;
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -69,11 +68,37 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     };
   }
 
-  private double _lambdaCVEstimate = Double.NaN;
-  private boolean _doInit = true;
+  private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
+  private boolean _doInit = true;  // flag setting whether or not to run init
   private double [] _xval_test_deviances;
   private double [] _xval_test_sd;
 
+  /**
+   * GLM implementation of N-fold cross-validation.
+   * We need to compute the sequence of lambdas for the main model so the folds share the same lambdas.
+   * We also want to set the _cv flag so that the dependent jobs know they're being run withing CV (so e.g. they do not unlock the models in the end)
+   * @return Cross-validation Job
+   * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
+   */
+  @Override
+  public void computeCrossValidation() {
+    // init computes global list of lambdas
+    init(true);
+    _cv = true;
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
+    super.computeCrossValidation();
+  }
+
+  /**
+   * If run with lambda search, we need to take extra action performed after cross-val models are built.
+   * Each of the folds have been computed with ots own private validation datasetd and it performed early stopping based on it.
+   * => We need to:
+   *   1. compute cross-validated lambda estimate
+   *   2. set the lambda estimate too all n-folds models (might require extra model fitting if the particular model stopped too early!)
+   *   3. compute cross-validated scoring history (cross-validated deviance standard error per lambda)
+   *   4. unlock the n-folds models (they are changed here, so the unlocking happens here)
+   */
   @Override
   public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
     if(_parms._lambda_search) {
@@ -95,11 +120,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         double testDevAvg = testDev / cvModelBuilders.length;
         double testDevSE = 0;
+        // compute deviance standard error
         for (int i = 0; i < cvModelBuilders.length; ++i) {
           GLM g = (GLM) cvModelBuilders[i];
           double x = _parms._lambda[lidx];
           if (g._model._output.getSubmodel(x) == null)
-            g._driver.computeSubmodel(lidx, x);
+            g._driver.computeSubmodel(lidx, x); // stopped too early, need to FIT extra model
           double diff = testDevAvg - (g._model._output.getSubmodel(x).devianceTest);
           testDevSE += diff*diff;
         }
@@ -109,6 +135,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           bestTestDev = testDevAvg;
           bestId = lidx;
         }
+        // early stopping - no reason to move further if we're overfitting
         if(testDevAvg > bestTestDev && ++cnt == 3) {
           lmin_max = lidx+1;
           break;
@@ -119,10 +146,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _xval_test_sd = Arrays.copyOf(_xval_test_sd, lmin_max);
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
-        g._model.unlock(_job);
+        g._model._output.setSubmodelIdx(bestId);
+        g._model.update(_job);
       }
       double bestDev = _xval_test_deviances[bestId];
-      double bestDev1se = bestDev + _xval_test_sd[bestId];///Math.sqrt((double)cvModelBuilders.length);
+      double bestDev1se = bestDev + _xval_test_sd[bestId];
       int bestId1se = bestId;
       while(bestId1se > 0 && _xval_test_deviances[bestId1se-1] <= bestDev1se)
         --bestId1se;
@@ -130,7 +158,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model._output._lambda_1se = bestId1se;
       _model._output._best_lambda_idx = bestId;
     }
+    for (int i = 0; i < cvModelBuilders.length; ++i) {
+      GLM g = (GLM) cvModelBuilders[i];
+      g._model.unlock(_job);
+    }
     _doInit = false;
+    _cv = false;
   }
 
   protected void checkMemoryFootPrint(DataInfo activeData) {
@@ -264,16 +297,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private transient double _iceptAdjust = 0;
 
-  private transient GradientInfo _ginfo;
   private double _lmax;
   private transient long _nobs;
   private transient GLMModel _model;
-  // special vecs made for irlsm
-  private static final String _wName = "__glm_irlsm_wvec";
-  private static final String _zName = "__glm_irlsm_zvec";
-  private transient Vec _w;
-  private transient Vec _z;
-  // and for multinomial irlsm
 
   @Override
   public int nclasses() {
@@ -283,22 +309,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return 2;
     return 1;
   }
-
   private transient double[] _nullBeta;
 
-
-  private double[] getNullPrediction() {
-    double [] nb = getNullBeta();
-    if(_parms._family != Family.multinomial)
-      return new double[]{_parms.linkInv(nb[nb.length-1])};
-    double [] res = new double[_nclass];
-    if(_parms._intercept) {
-      int N = _dinfo.fullN()+1;
-      for (int i = 0; i < res.length; ++i)
-        res[i] = Math.exp(nb[_dinfo.fullN() + i*N]);
-    }
-    return res;
-  }
   private double[] getNullBeta() {
     if (_nullBeta == null) {
       if (_parms._family == Family.multinomial) {
@@ -315,13 +327,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
     return _nullBeta;
-  }
-
-  private transient GLMMetricBuilder _nullValidation;
-
-  // static so I can make inner class mr task without sending whole glm over
-  private static GLMMetricBuilder getNullValidation(final GLM glm) {
-    return null;
   }
 
   protected boolean computePriorClassDistribution(){return _parms._family == Family.multinomial;}
@@ -405,7 +410,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
-        int [] coffsets = null;
 
         YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
         if (ymt.wsum() == 0)
@@ -1912,23 +1916,5 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
   }
 
-  /**
-   * GLM implementation of N-fold cross-validation.
-   * GLM needs its own implementation when running in lambda search, it needs the following extra steps:
-   *   1. compute lambdas of the main model (we want to be comparing models at same lambda values)
-   *   2. after modesl are built, pick global best lambda and compute a model for it in each fold.
-   * @return Cross-validation Job
-   * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
-   */
-  @Override
-  public void computeCrossValidation() {
-    init(true);
-    if (error_count() > 0)
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
-    // init computes global list of lambdas
-    // 2. is handled in modifyParams...
-    _cv = true;
-    super.computeCrossValidation();
-    _cv = false;
-  }
+
 }
