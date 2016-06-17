@@ -109,7 +109,7 @@ import java.util.*;
  * @param <S> reference to self: this should always be the same class as being declared. For example:
  *            <pre>public class TimelineV3 extends Schema&lt;Timeline, TimelineV3&gt;</pre>
  */
-public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
+abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   // These fields are declared transient so that they do not get included when a schema is serialized into JSON.
   private transient Class<I> _impl_class;
   private transient int _schema_version;
