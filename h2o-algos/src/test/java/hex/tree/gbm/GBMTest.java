@@ -9,9 +9,11 @@ import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import static water.fvec.FVecTest.makeByteVec;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
 import water.util.*;
 
 import java.util.Iterator;
@@ -1950,6 +1952,25 @@ public class GBMTest extends TestUtil {
       if (ksplits[1]!=null) ksplits[1].remove();
       Scope.exit();
     }
+  }
+
+  // PUBDEV-2822
+  @Test public void testNA() {
+    String xy = ",0\n1,0\n2,0\n3,0\n4,-10\n,0";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Log.info(preds);
+    preds.remove();
+    gbm.remove();
+    df.remove();
   }
 
 }
