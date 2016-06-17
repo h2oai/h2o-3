@@ -27,7 +27,7 @@ public class H2OStarter {
 
     if (! H2O.ARGS.disable_web) {
       Log.info("");
-      Log.info("Open H2O Flow in your web browser: " + H2O.getJetty().getScheme() + "://", H2O.getIpPortString() + "/");
+      Log.info("Open H2O Flow in your web browser: " + H2O.getURL(H2O.getJetty().getScheme()));
       Log.info("");
     }
   }
