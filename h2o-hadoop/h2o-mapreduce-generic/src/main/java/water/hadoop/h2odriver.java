@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import water.network.SecurityUtils;
 
 import java.io.*;
 import java.net.*;
@@ -83,6 +84,7 @@ public class h2odriver extends Configured implements Tool {
   static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
   static String jksPass = null;
+  static String sslConfig = null;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
@@ -783,6 +785,14 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         jksPass = args[i];
       }
+      else if (s.equals("-ssl_config")) {
+        if (i+1 >= args.length || args[i+1].startsWith("-")) {
+          sslConfig = "";
+        } else {
+          i++;
+          sslConfig = args[i];
+        }
+      }
       else if (s.equals("-hash_login")) {
         hashLogin = true;
       }
@@ -1072,7 +1082,7 @@ public class h2odriver extends Configured implements Tool {
 
     // Parse arguments.
     // ----------------
-    parseArgs (args);
+    parseArgs(args);
     validateArgs();
 
     // Set up callback address and port.
@@ -1117,7 +1127,7 @@ public class h2odriver extends Configured implements Tool {
       // YARN container must be sized greater than Xmx.
       // YARN will kill the application if the RSS of the process is larger than
       // mapreduce.map.memory.mb.
-      long jvmInternalMemoryMegabytes = (long) ((double)megabytes * ((double)extraMemPercent)/100.0);
+      long jvmInternalMemoryMegabytes = (long) ((double) megabytes * ((double) extraMemPercent) / 100.0);
       processTotalPhysicalMemoryMegabytes = megabytes + jvmInternalMemoryMegabytes;
       conf.set("mapreduce.job.ubertask.enable", "false");
       String mapreduceMapMemoryMb = Long.toString(processTotalPhysicalMemoryMegabytes);
@@ -1136,8 +1146,7 @@ public class h2odriver extends Configured implements Tool {
               .append((enablePrintCompilation ? " -XX:+PrintCompilation" : ""))
               .append((enableExcludeMethods ? " -XX:CompileCommand=exclude,water/fvec/NewChunk.append2slowd" : ""))
               .append((enableLog4jDefaultInitOverride ? " -Dlog4j.defaultInitOverride=true" : ""))
-              .append((enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : ""))
-              ;
+              .append((enableDebug ? " -agentlib:jdwp=transport=dt_socket,server=y,suspend=" + (enableSuspend ? "y" : "n") + ",address=" + debugPort : ""));
       for (String s : extraJvmArguments) {
         sb.append(" ").append(s);
       }
@@ -1145,7 +1154,7 @@ public class h2odriver extends Configured implements Tool {
       String mapChildJavaOpts = sb.toString();
 
       conf.set("mapreduce.map.java.opts", mapChildJavaOpts);
-      if (! usingYarn()) {
+      if (!usingYarn()) {
         conf.set("mapred.child.java.opts", mapChildJavaOpts);
         conf.set("mapred.map.child.java.opts", mapChildJavaOpts);       // MapR 2.x requires this.
       }
@@ -1157,22 +1166,22 @@ public class h2odriver extends Configured implements Tool {
     }
 
     conf.set("mapreduce.client.genericoptionsparser.used", "true");
-    if (! usingYarn()) {
+    if (!usingYarn()) {
       conf.set("mapred.used.genericoptionsparser", "true");
     }
 
     conf.set("mapreduce.map.speculative", "false");
-    if (! usingYarn()) {
+    if (!usingYarn()) {
       conf.set("mapred.map.tasks.speculative.execution", "false");
     }
 
     conf.set("mapreduce.map.maxattempts", "1");
-    if (! usingYarn()) {
+    if (!usingYarn()) {
       conf.set("mapred.map.max.attempts", "1");
     }
 
     conf.set("mapreduce.job.jvm.numtasks", "1");
-    if (! usingYarn()) {
+    if (!usingYarn()) {
       conf.set("mapred.job.reuse.jvm.num.tasks", "1");
     }
 
@@ -1199,7 +1208,7 @@ public class h2odriver extends Configured implements Tool {
     if (flowDir != null) {
       addMapperArg(conf, "-flow_dir", flowDir);
     }
-    if((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home")+"/.h2o_no_collect")).exists()) {
+    if ((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home") + "/.h2o_no_collect")).exists()) {
       addMapperArg(conf, "-ga_opt_out");
     }
     String hadoopVersion = calcHadoopVersion();
@@ -1238,6 +1247,18 @@ public class h2odriver extends Configured implements Tool {
               "};"
       ).getBytes();
       addMapperConf(conf, "-login_conf", "login.conf", krbConfData);
+    }
+
+    // SSL
+    if (null != sslConfig) {
+      if (sslConfig.isEmpty()) {
+        SecurityUtils.SSLCredentials credentials = SecurityUtils.generateSSLPair();
+        String sslConfigFile = SecurityUtils.generateSSLConfig(credentials);
+        addMapperConf(conf, "", credentials.jks.name, credentials.jks.path);
+        addMapperConf(conf, "-ssl_config", "ssl.config", sslConfigFile);
+      } else {
+        addMapperConf(conf, "-ssl_config", "ssl.config", sslConfig);
+      }
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));

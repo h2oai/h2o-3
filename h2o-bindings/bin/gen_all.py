@@ -31,7 +31,8 @@ cloud = run.H2OCloud(
     base_port=48000,
     xmx="4g",
     cp="",
-    output_dir=results_dir
+    output_dir=results_dir,
+    test_ssl=False
 )
 cloud.start()
 cloud.wait_for_cloud_to_be_up()
