@@ -1,6 +1,5 @@
 package water.api;
 
-import hex.schemas.ModelBuilderSchema;
 import org.reflections.Reflections;
 import water.H2O;
 import water.Iced;
@@ -130,7 +129,8 @@ public class SchemaServer {
         }
 
       Class<? extends Iced> impl_class = ReflectionUtils.findActualClassParameter(clz, 0);
-      Log.debug("Registering schema: " + clzname + " version: " + version + " with Iced class: " + impl_class);
+      Log.debug(String.format("Registering schema: %-40s  (v = %2d, impled by %s)",
+                              clz.getCanonicalName(), version, impl_class.getCanonicalName()));
       schemas.put(clzname, clz);
       schema_to_iced.put(clzname, impl_class);
 
@@ -171,57 +171,40 @@ public class SchemaServer {
               "version: " + version + " of Iced class: " + impl_class);
         iced_to_schema.put(versioned, clz);
       }
-
-      // Done.
-      Log.debug("Registered schema: " + clzname);
     }
   }
 
 
-  /** Find all schemas using reflection and register them.  */
+  /**
+   * Find all schemas using reflection and register them.
+   */
   synchronized static public void registerAllSchemasIfNecessary() {
     if (schemas_registered) return;
-
     long startTime = System.currentTimeMillis();
 
-    // Microhack to effect Schema.register(Schema.class), which is normally not allowed because it has no version:
-//    new Schema();
-
-    // Disallow schemas whose parent is in another package because it takes ~4s to do the getSubTypesOf call: ""
-    String[] packages = new String[] {"water", "hex"};
-
-    // For some reason when we're run under Hadoop Reflections is failing to find some of the classes unless we're
-    // extremely explicit here:
-    //noinspection unchecked
-    Class<? extends Schema> clzs[] = new Class[] {
-        SchemaV3.class,
-        ModelBuilderSchema.class,
-        ModelSchema.class,
-        ModelOutputSchema.class,
-        ModelParametersSchema.class,
+    // Scanning all classes (i.e. calling new Reflections("")) is prohibitively expensive -- it adds over 2s to the
+    // startup time. Instead we just assume that all schemas live in one of the packages below, and scan just those.
+    Reflections[] reflList = new Reflections[]{
+        new Reflections("water.api"),
+        new Reflections("hex.schemas"),
     };
+    registerSchemasOfClass(Schema.class, reflList);
 
-    for (String pkg :  packages) {
-      Reflections reflections = new Reflections(pkg);
-
-      for (Class<? extends Schema> clz : clzs) {
-        // NOTE: Reflections sees ModelOutputSchema but not ModelSchema. Another bug to work around:
-        Log.debug("Registering: " + clz.toString() + " in package: " + pkg);
-        if (!Modifier.isAbstract(clz.getModifiers()))
-          register(clz);
-
-        // Register the subclasses:
-        Log.debug("Registering subclasses of: " + clz.toString() + " in package: " + pkg);
-        for (Class<? extends Schema> schema_class : reflections.getSubTypesOf(clz))
-          if (!Modifier.isAbstract(schema_class.getModifiers()))
-            register(schema_class);
-      }
-    }
-
-    schemas_registered = true;
     Log.info("Registered: " + schemas().size() + " schemas in " + (System.currentTimeMillis() - startTime) + "ms");
+    schemas_registered = true;
   }
 
+  /**
+   * Schema registration helper, that looks schemas up recursively.
+   */
+  static private void registerSchemasOfClass(Class<? extends Schema> clz, Reflections[] reflList) {
+    if (!Modifier.isAbstract(clz.getModifiers())) {
+      register(clz);
+    }
+    for (Reflections refl : reflList)
+      for (Class<? extends Schema> schema_class : refl.getSubTypesOf(clz))
+        registerSchemasOfClass(schema_class, reflList);
+  }
 
   /**
    * Return an immutable Map of all the schemas: schema_name -> schema Class.
@@ -231,9 +214,7 @@ public class SchemaServer {
   }
 
   /**
-   *
-   * @param name
-   * @return
+   * Lookup schema by name.
    * @throws H2ONotFoundArgumentException if an appropriate schema is not found
    */
   public static Class<? extends Schema> getSchema(String name) {
