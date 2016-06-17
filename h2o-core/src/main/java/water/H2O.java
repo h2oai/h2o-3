@@ -604,6 +604,8 @@ final public class H2O {
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
+    // Flush all cached messages
+    Log.flushStdout();
 
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
