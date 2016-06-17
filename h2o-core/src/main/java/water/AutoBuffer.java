@@ -675,9 +675,9 @@ public final class AutoBuffer {
   private ByteBuffer expandByteBuffer(int sizeHint) {
     long needed = (long) sizeHint - _bb.remaining() + _bb.capacity(); // Max needed is 2G
     if (needed > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("Cannot allocate more 2G array: sizeHint="+sizeHint+", "
-                                         + "needed="+needed + ","
-                                         + "bb.remaining()=" + _bb.remaining() + "bb.capacity()="+_bb.capacity());
+      throw new IllegalArgumentException("Cannot allocate more than 2GB array: sizeHint="+sizeHint+", "
+                                         + "needed="+needed
+                                         + ", bb.remaining()=" + _bb.remaining() + ", bb.capacity()="+_bb.capacity());
     }
     if ((_h2o==null && _chan == null) || (_bb.hasArray() && needed < MTU)) {
       byte[] ary = _bb.array();

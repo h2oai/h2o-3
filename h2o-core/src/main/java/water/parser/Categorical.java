@@ -1,14 +1,11 @@
 package water.parser;
 
-import water.AutoBuffer;
-import water.H2O;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import water.Iced;
 import water.util.IcedHashMap;
 import water.util.Log;
-import water.nbhm.NonBlockingHashMap;
 import water.util.PrettyPrint;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** Class for tracking categorical (factor) columns.
  *
