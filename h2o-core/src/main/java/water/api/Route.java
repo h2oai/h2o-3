@@ -10,7 +10,7 @@ import water.util.MarkdownBuilder;
 /**
 * Routing of an http request to a handler method, with path parameter parsing.
 */
-final class Route extends Iced {
+final public class Route extends Iced {
   static final int MIN_VERSION = 1;
 
   // TODO: handlers are now stateless, so create a single instance and stash it here
@@ -63,6 +63,8 @@ final class Route extends Iced {
   }
 
   public RequestUri getUri() { return _uri; }
+
+  public int getVersion() { return _uri.getVersion(); }
 
   /**
    * Generate Markdown documentation for this Route.

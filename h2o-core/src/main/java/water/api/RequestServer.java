@@ -66,6 +66,16 @@ public class RequestServer extends NanoHTTPD {
   public static ArrayList<Route> routes() { return routesList; }
   public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
 
+  /**
+   * Calculates number of routes having the specified version.
+   */
+  public static int numRoutes(int version) {
+    int count = 0;
+    for (Route route : routesList)
+      if (route.getVersion() == version)
+        count++;
+    return count;
+  }
 
   //------ Route Registration ------------------------------------------------------------------------------------------
 

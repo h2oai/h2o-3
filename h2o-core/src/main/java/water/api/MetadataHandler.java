@@ -3,7 +3,10 @@ package water.api;
 import hex.ModelBuilder;
 import water.Iced;
 import water.TypeMap;
+import water.api.schemas4.EndpointV4;
 import water.util.MarkdownBuilder;
+import water.api.schemas4.EndpointsListV4;
+import water.api.schemas4.ListRequestV4;
 
 import java.net.MalformedURLException;
 import java.util.Map;
@@ -54,6 +57,19 @@ public class MetadataHandler extends Handler {
     docs.markdown = builder.toString();
     return docs;
   }
+
+  public EndpointsListV4 listRoutes4(int version, ListRequestV4 inp) {
+    EndpointsListV4 res = new EndpointsListV4();
+    res.endpoints = new EndpointV4[RequestServer.numRoutes(4)];
+    int i = 0;
+    for (Route route : RequestServer.routes()) {
+      if (route.getVersion() != version) continue;
+      EndpointV4 routeSchema = Schema.newInstance(EndpointV4.class).fillFromImpl(route);
+      res.endpoints[i++] = routeSchema;
+    }
+    return res;
+  }
+
 
   /** Return the metadata for a REST API Route, specified either by number or path. */
   // Also called through reflection by RequestServer
