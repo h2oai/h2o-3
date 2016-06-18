@@ -27,7 +27,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   transient boolean _oneToManyMatch = false;   // does any left row match to more than 1 right row?  If not, can allocate and loop more efficiently, and mark the resulting key'd frame with a 'unique' index.
                                                //   TODO: implement
   int _leftFieldSizes[], _rightFieldSizes[];   // the widths of each column in the key
-  long _leftColMins[], _rightColMins[];        // the col.min() of each column in the key
+  long _leftBase[], _rightBase[];        // the col.min() of each column in the key
   transient int _leftKeyNCol, _rightKeyNCol;   // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
   transient int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
   transient int _numJoinCols;
@@ -45,11 +45,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   boolean _allLeft, _allRight;
 
   Vec _leftVec, _rightVec;
-  int _overLapType;
 
   transient int _leftChunkNode[], _rightChunkNode[];  // fast lookups to save repeated calls to node.index() which calls binarysearch within it.
 
-  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int overlapType, int leftShift, int rightShift, int leftFieldSizes[], int rightFieldSizes[], long leftColMins[], long rightColMins[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
+  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftShift, int rightShift, int leftFieldSizes[], int rightFieldSizes[], long leftBase[], long rightBase[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
     _rightFrame = rightFrame;
     _leftMSB = leftMSB;
@@ -57,10 +56,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _leftShift = leftShift;
     _rightShift = rightShift;
     _leftFieldSizes = leftFieldSizes; _rightFieldSizes = rightFieldSizes;
-    _leftColMins = leftColMins; _rightColMins = rightColMins;
+    _leftBase = leftBase; _rightBase = rightBase;
     _allLeft = allLeft;
     _allRight = false;  // TODO: pass through
-    _overLapType = overlapType;  // -1 = before first (therefore allLeft==true), 0 = regular middle (allLeft==true|false), 1 = after last (therefore allLeft==true)
     // TODO: set 2 Frame and 2 int[] to NULL at the end of compute2 to save some traffic back, but should be small and insignificant
   }
 
@@ -93,7 +91,6 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       if (_allLeft == false) { tryComplete(); return; }
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
     }
-    // both left and right MSB have some data to match (their extents overlap when overlapType==0.  Otherwise we're doing it only when allLeft==true)
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
     _perNodeNumRightRowsToFetch = new long[H2O.CLOUD.size()];
@@ -161,34 +158,20 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // We'll waste allocating the retFirst and retLen vectors though if only a small overlap is needed, so
     // for that reason it's useful to restrict size of retFirst and retLen even for inner join too.
 
-    // Find key value extents
-    assert _leftMSB>=0 && _rightMSB>=0;
-    long leftMin = (((long)_leftMSB) << _leftShift) + _leftColMins[0]-1;  // the first key possible in this bucket
-    long leftMax = (((long)_leftMSB+1) << _leftShift) + _leftColMins[0] - 2;    // the last key possible in this bucket
-    long rightMin = (((long)_rightMSB) << _rightShift) + _rightColMins[0]-1;
-    long rightMax = (((long)_rightMSB+1) << _rightShift) + _rightColMins[0] - 2;
+    // Find left and right MSB extents in terms of the key boundaries they represent
+    assert 0<=_leftMSB && _leftMSB<=255 && -1<=_rightMSB && _rightMSB<=255;  // _rightMSB==-1 indicates that no right MSB should be looked at
+    if (_rightMSB==-1) assert _allLeft;
+    long leftMin = (((long)_leftMSB) << _leftShift) + _leftBase[0]-1;  // the first key possible in this bucket
+    long leftMax = (((long)_leftMSB+1) << _leftShift) + _leftBase[0] - 2;    // the last key possible in this bucket
+    long rightMin = (((long)_rightMSB) << _rightShift) + _rightBase[0]-1;    // if _rightMSB==-1 then the values in rightMin and rightMax here are redundant and not used
+    long rightMax = (((long)_rightMSB+1) << _rightShift) + _rightBase[0] - 2;
 
-    long leftTo;
-    if (_overLapType==-1) {
-      _leftFrom = -1;
-      leftTo = bsearch(rightMin, /*left*/true, /*retLow*/false);
-      // rightFrom and leftFrom are irrelevant ... nothing
-    } else if (_overLapType==1) {
-      _leftFrom = bsearch(rightMax, /*left*/true, /*retLow*/true);
-      leftTo = _leftN;
-      // rightFrom and rightTo are again irrelevant
-    } else {
-      assert _overLapType==0;
-      _leftFrom = (leftMin >= rightMin) ? -1 : bsearch(rightMin, /*left*/true, /*retLow*/true);
-      leftTo = (leftMax <= rightMax) ? _leftN : bsearch(rightMax, true, false);
-      //rightFrom = (leftMin <= rightMin) ? -1 : bsearch(leftMin, false, true);
-      //long rightTo = (overlapRight == rightMax) ? _rightN : bsearch(leftMax, false, false);
-    }
-    //long overlapLeft = Math.max(leftMin, rightMin);
-    //long overlapRight = Math.min(leftMax, rightMax);
-
-    //assert overlapLeft < overlapRight;
-
+    _leftFrom =   (_rightMSB==-1 || leftMin>=rightMin || (_allLeft && _rightMSB==0))   ? -1     : bsearch(rightMin, /*left*/true, /*retLow*/true);
+    long leftTo = (_rightMSB==-1 || leftMax<=rightMax || (_allLeft && _rightMSB==255)) ? _leftN : bsearch(rightMax, true, false);
+    // TODO since the 2nd argument to bsearch here (/*left*/) is now always true, we can remove it and simplify inside bsearch
+    // The (_allLeft && rightMSB==0) part is to include those keys in that leftMSB just below the right base. They won't be caught by rightMSBs to the left
+    // because there are no more rightMSBs below 0. Only when _allLeft do we need to create NA match for them.  They must be created in the same MSB/MSB
+    // pair along with the keys that may match the very lowest right keys, because stitching assumes unique MSB/MSB pairs.
 
     long retSize = leftTo - _leftFrom - 1;   // since leftTo and leftFrom are 1 outside the extremes
     if (retSize==0) { tryComplete(); return; }   // nothing can match, even when allLeft
@@ -256,8 +239,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       int ylen = _rightFieldSizes[i];
       xval = xbatch[xoff] & 0xFF; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFF; xlen--; } xoff++;
       yval = ybatch[yoff] & 0xFF; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFF; ylen--; } yoff++;
-      xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftColMins[i];
-      yval = yval==0 ? Long.MIN_VALUE : yval-1+_rightColMins[i];
+      xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftBase[i];
+      yval = yval==0 ? Long.MIN_VALUE : yval-1+_rightBase[i];
       i++;
     }
     long diff = xval-yval;  // could overflow even in long; e.g. joining to a prevailing NA, or very large gaps O(2^62)

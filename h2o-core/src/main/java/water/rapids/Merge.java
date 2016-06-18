@@ -118,71 +118,63 @@ public class Merge {
 
     long ansN = 0;
     int numChunks = 0;
-    System.out.println("Making BinaryMerge RPC calls ... ");
-    System.out.println("Left biggest bit: "+leftIndex._biggestBit[0]);
-    System.out.println("Left colMin[0]: "+leftIndex._colMin[0]);
-    System.out.println("Right biggest bit: "+rightIndex._biggestBit[0]);
-    System.out.println("Right colMin[0]: "+rightIndex._colMin[0]);
 
+    System.out.println("Left base[0]: "+leftIndex._base[0]);
+    System.out.println("Left shift: "+leftIndex._shift[0]);
+    System.out.println("Right base[0]: "+rightIndex._base[0]);
+    System.out.println("Right shift: "+rightIndex._shift[0]);
+
+    System.out.print("Making BinaryMerge RPC calls ... ");
     t0 = System.nanoTime();
     List<RPC> bmList = new ArrayList<>();
-    int leftShift = Math.max(8, leftIndex._biggestBit[0])-8;
-    int rightShift = Math.max(8, rightIndex._biggestBit[0])-8;
+    int leftShift = leftIndex._shift[0];
+    int rightShift = rightIndex._shift[0];
 
-    long leftMSBfrom = (rightIndex._colMin[0] - leftIndex._colMin[0]) >> leftShift;
+    long leftMSBfrom = (rightIndex._base[0] - leftIndex._base[0]) >> leftShift;  // which leftMSB does the overlap start
 
     // deal with the left range below the right minimum, if any
-    if (leftIndex._colMin[0] < rightIndex._colMin[0]) {   // colMin[0] is really the MSB base.  TODO: rename variable and change bases to be aligned somehow to avoid small misalignment
-      // deal with the range of the left keys that fall outside the range of the right, if any
-      // create NA matches for all key values in the left less than the right's minimum
+    if (leftIndex._base[0] < rightIndex._base[0]) {
+      // deal with the range of the left below the start of the right, if any
       assert leftMSBfrom >= 0;
       if (leftMSBfrom>255) {
         // The left range ends before the right range starts.  So every left row is a no-match to the right
         leftMSBfrom = 256;  // so that the loop below runs for all MSBs (0-255) to fetch the left rows only
-      } else if (allLeft) {
-        // deal with the first overlapped MSB bin. The first part of left up to the right's base can have no match
-        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, (int)leftMSBfrom, /*rightMSB*/-1, /*overlapType*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._colMin, rightIndex._colMin, allLeft
-        )));
       }
-      // run the merge for the whole lefts that end before the first right
+      // run the merge for the whole lefts that end before the first right.  The overlapping one with the right base is dealt with inside BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
         bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, leftMSB, -1, 0, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._colMin, rightIndex._colMin, allLeft
+          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, allLeft
         )));
       }
     } else {
+      // completely ignore right MSBs below the left base
       assert leftMSBfrom <= 0;
       leftMSBfrom = 0;
     }
 
-    long leftMSBto = (rightIndex._colMin[0] + (256L<<rightShift) - 1 - leftIndex._colMin[0]) >> leftShift;
+    long leftMSBto = (rightIndex._base[0] + (256L<<rightShift) - 1 - leftIndex._base[0]) >> leftShift;
     // -1 because the 256L<<rightShift is one after the max extent.  No need for +1 for NA here because, as for leftMSBfrom above, the NA spot is on both sides
 
     // deal with the left range above the right maximum, if any
-    if ((leftIndex._colMin[0] + (256L<<leftShift)) > (rightIndex._colMin[0] + (256L<<rightShift))) {
+    if ((leftIndex._base[0] + (256L<<leftShift)) > (rightIndex._base[0] + (256L<<rightShift))) {
       assert leftMSBto <= 255;
       if (leftMSBto<0) {
         // The left range starts after the right range ends.  So every left row is a no-match to the right
         leftMSBto = -1;  // all MSBs (0-255) need to fetch the left rows only
-      } else if (allLeft) {
-        // deal with the first overlapped MSB bin. The 2nd part of left after the right's endpoint can have no match
-        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, (int)leftMSBto, /*rightMSB*/-1, /*overlapType*/+1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._colMin, rightIndex._colMin, allLeft
-        )));
       }
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
         bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, leftMSB, -1, 0, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._colMin, rightIndex._colMin, allLeft
+          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, allLeft
         )));
       }
     } else {
+      // completely ignore right MSBs after the right peak
       assert leftMSBto >= 255;
       leftMSBto = 255;
     }
 
-    System.out.println("bmList.size="+bmList.size()+" before adding overlapped.");
+    System.out.print("(" + bmList.size() + " left outer outside range) ... ");
 
     // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
     for (int leftMSB=(int)leftMSBfrom; leftMSB<=leftMSBto; leftMSB++) {
@@ -191,12 +183,12 @@ public class Merge {
       assert leftMSB <= 255;
 
       // calculate the key values at the bin extents:  [leftFrom,leftTo] in terms of keys
-      long leftFrom = ((long)leftMSB << leftShift) -1 + leftIndex._colMin[0];  // -1 to cater for leading NA spot
-      long leftTo = (((long)leftMSB+1) << leftShift) + leftIndex._colMin[0] - 1 - 1;  // -1 for leading NA spot and another -1 to get last of previous bin
+      long leftFrom = ((long)leftMSB << leftShift) -1 + leftIndex._base[0];  // -1 to cater for leading NA spot
+      long leftTo = (((long)leftMSB+1) << leftShift) + leftIndex._base[0] - 1 - 1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
-      int rightMSBfrom = (int)((leftFrom - rightIndex._colMin[0] + 1) >> rightShift);   // +1 again for the leading NA spot
-      int rightMSBto = (int)((leftTo - rightIndex._colMin[0] + 1) >> rightShift);
+      int rightMSBfrom = (int)((leftFrom - rightIndex._base[0] + 1) >> rightShift);   // +1 again for the leading NA spot
+      int rightMSBto = (int)((leftTo - rightIndex._base[0] + 1) >> rightShift);
 
       if (rightMSBfrom < 0) rightMSBfrom = 0;   // the non-matching part of this region will have been dealt with above when allLeft==true
       assert rightMSBfrom <= 255;
@@ -214,19 +206,18 @@ public class Merge {
         bmList.add(new RPC<>(node,
           new BinaryMerge(leftFrame, rightFrame,
                   leftMSB, rightMSB,
-                  0, // overlapType
                   leftShift, rightShift,
                   //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                   leftIndex._bytesUsed,   // field sizes for each column in the key
                   rightIndex._bytesUsed,
-                  leftIndex._colMin,
-                  rightIndex._colMin,
+                  leftIndex._base,
+                  rightIndex._base,
                   allLeft
           )
         ));
       }
     }
-    System.out.println("... took: " + (System.nanoTime() - t0) / 1e9);
+    System.out.println("took: " + String.format("%.3f", (System.nanoTime() - t0) / 1e9));
 
     int queueSize = bmList.size();
     // Now that gc issues resolved, it seems ok to send them all at once.
