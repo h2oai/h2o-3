@@ -18,10 +18,11 @@ include 'h2o-bindings'
 include 'h2o-test-integ'
 include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
+include 'h2o-orc-parser'
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->
-  if (project.name.equals("h2o-avro-parser")) {
+  if (project.name.equals("h2o-avro-parser") || project.name.equals("h2o-orc-parser")) {
     String projectDirName = "h2o-parsers/${project.name}"
     project.projectDir = new File(settingsDir, projectDirName)
   }

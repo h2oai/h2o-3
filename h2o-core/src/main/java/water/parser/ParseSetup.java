@@ -25,7 +25,7 @@ public class ParseSetup extends Iced {
   public static final int HAS_HEADER = 1;
   public static final int GUESS_COL_CNT = -1;
 
-  ParserInfo _parse_type;     // CSV, XLS, XSLX, SVMLight, Auto, ARFF
+  ParserInfo _parse_type;     // CSV, XLS, XSLX, SVMLight, Auto, ARFF, ORC
   byte _separator;            // Field separator, usually comma ',' or TAB or space ' '
   // Whether or not single-quotes quote a field.  E.g. how do we parse:
   // raw data:  123,'Mally,456,O'Mally
@@ -540,6 +540,7 @@ public class ParseSetup extends Iced {
             || n.endsWith("xls")
             || n.endsWith("txt")
             || n.endsWith("svm")
+            || n.endsWith("orc")
             || n.endsWith("arff"))) {
       n = n.substring(0, dot);
       dot = n.lastIndexOf('.');

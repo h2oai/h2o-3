@@ -1,12 +1,10 @@
 package water.parser;
 
-import org.apache.commons.math3.analysis.function.Abs;
-
-import java.util.List;
-
 import water.Job;
 import water.Key;
 import water.util.Log;
+
+import java.util.List;
 
 /**
  * Default parsers provided by H2O.
@@ -23,7 +21,7 @@ public final class DefaultParserProviders {
   public static final ParserInfo SVMLight_INFO = new ParserInfo("SVMLight", 1000, true);
   public static final ParserInfo CSV_INFO = new ParserInfo("CSV", Integer.MAX_VALUE, true);
   public static final ParserInfo GUESS_INFO = new ParserInfo("GUESS", -10000, false);
-  /** Priority of non-core parsers shoudl begin here.*/
+  /** Priority of non-core parsers should begin here.*/
   public static final int MAX_CORE_PRIO = 10000;
 
   public final static class ArffParserProvider extends AbstractParserProvide  {

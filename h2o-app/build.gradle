@@ -9,5 +9,6 @@ dependencies {
   compile project(":h2o-core")
   compile project(":h2o-genmodel")
   compile project(":h2o-avro-parser")
+  compile project(":h2o-orc-parser")
 }
 

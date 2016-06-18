@@ -1,0 +1,23 @@
+//
+// H2O Orc Parser
+//
+description = "H2O Orc Parser"
+
+dependencies {
+  compile project(":h2o-core")
+  // Avro support
+  compile "org.apache.avro:avro:1.8.0"
+
+  testCompile "junit:junit:${junitVersion}"
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
+}
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+test {
+  dependsOn ":h2o-core:testJar"
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}

@@ -11,12 +11,13 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import static water.parser.ParserTest.makeByteVec;
 
 import java.util.Arrays;
 
+import static water.parser.ParserTest.makeByteVec;
+
 public class ParserTestARFF extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
   /**
    * Helper to check parsed column types
