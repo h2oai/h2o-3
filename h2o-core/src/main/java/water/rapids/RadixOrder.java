@@ -230,7 +230,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       byte this_x[] = _x[MSBvalue][batch];
       offset *= _keySize; //can't overflow because batchsize was chosen above to be maxByteSize/max(keysize,8)
       for (int i = _bytesUsed[0] - 1; i >= 0; i--) {   // a loop because I don't believe System.arraycopy() can copy parts of (byte[])long to byte[]
-        this_x[offset + i] = (byte) (thisx & 0xFF);
+        this_x[offset + i] = (byte) (thisx & 0xFFL);
         thisx >>= 8;
       }
       for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
@@ -240,7 +240,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         if (_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
         else thisx = thisx - _base[c] + 1;
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
-          this_x[offset + i] = (byte) (thisx & 0xFF);
+          this_x[offset + i] = (byte) (thisx & 0xFFL);
           thisx >>= 8;
         }
       }

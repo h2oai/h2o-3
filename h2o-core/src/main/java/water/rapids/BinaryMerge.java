@@ -107,6 +107,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       _leftOrder[b] = oxLeft._o;
     }
     _leftN = leftSortedOXHeader._numRows;
+    assert _leftN >= 1;
 
     // get right batches
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
@@ -166,14 +167,14 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     long rightMin = (((long)_rightMSB) << _rightShift) + _rightBase[0]-1;    // if _rightMSB==-1 then the values in rightMin and rightMax here are redundant and not used
     long rightMax = (((long)_rightMSB+1) << _rightShift) + _rightBase[0] - 2;
 
-    _leftFrom =   (_rightMSB==-1 || leftMin>=rightMin || (_allLeft && _rightMSB==0))   ? -1     : bsearch(rightMin, /*left*/true, /*retLow*/true);
-    long leftTo = (_rightMSB==-1 || leftMax<=rightMax || (_allLeft && _rightMSB==255)) ? _leftN : bsearch(rightMax, true, false);
-    // TODO since the 2nd argument to bsearch here (/*left*/) is now always true, we can remove it and simplify inside bsearch
+    _leftFrom =   (_rightMSB==-1 || leftMin>=rightMin || (_allLeft && _rightMSB==0))   ? -1     : bsearchLeft(rightMin, /*retLow*/true);
+    long leftTo = (_rightMSB==-1 || leftMax<=rightMax || (_allLeft && _rightMSB==255)) ? _leftN : bsearchLeft(rightMax, /*retLow*/false);
     // The (_allLeft && rightMSB==0) part is to include those keys in that leftMSB just below the right base. They won't be caught by rightMSBs to the left
     // because there are no more rightMSBs below 0. Only when _allLeft do we need to create NA match for them.  They must be created in the same MSB/MSB
     // pair along with the keys that may match the very lowest right keys, because stitching assumes unique MSB/MSB pairs.
 
     long retSize = leftTo - _leftFrom - 1;   // since leftTo and leftFrom are 1 outside the extremes
+    assert retSize >= 0;
     if (retSize==0) { tryComplete(); return; }   // nothing can match, even when allLeft
     _retBatchSize = 268435456;    // 2^31 / 8 since Java arrays are limited to 2^31 bytes
 
@@ -189,9 +190,6 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     _retFirst[b] = MemoryManager.malloc8(retLastSize);
     _retLen[b] = MemoryManager.malloc8(retLastSize);
-
-
-    //if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
 
     t0 = System.nanoTime();
     bmerge_r(_leftFrom, leftTo, -1, _rightN);   // always look at the whole right bucket.  Even though in types -1 and 1, we know range is outside so nothing should match
@@ -211,7 +209,6 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
 
     if (_numRowsInResult > 0) createChunksInDKV();
-    //}
 
     // TODO: recheck transients or null out here before returning
     tryComplete();
@@ -237,8 +234,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     while (i<_numJoinCols && xval==yval) {    // TO DO: pass i in to start at a later key column, when known
       int xlen = _leftFieldSizes[i];
       int ylen = _rightFieldSizes[i];
-      xval = xbatch[xoff] & 0xFF; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFF; xlen--; } xoff++;
-      yval = ybatch[yoff] & 0xFF; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFF; ylen--; } yoff++;
+      xval = xbatch[xoff] & 0xFFL; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFFL; xlen--; } xoff++;
+      yval = ybatch[yoff] & 0xFFL; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFFL; ylen--; } yoff++;
       xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftBase[i];
       yval = yval==0 ? Long.MIN_VALUE : yval-1+_rightBase[i];
       i++;
@@ -253,33 +250,18 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // The magnitude of the difference is used for limiting staleness in a rolling join, capped at Integer.MAX|(MIN+1). roll's type is chosen to be int so staleness can't be requested over int's limit.
   }
 
-  private long bsearch(long keyLong, boolean left, boolean returnLow) {
-    // binary search based on the 1st column only.   The colMin does not matter.
-    // we need to test several x[][], so best to convert fixed key value to the x[][] bytes, rather than the other way around. Since the loop through byte will likely return
-    // early on the first test
-
-    assert left==true;  // TODO simplify if works and remove left parameter
-
-    int fieldSize = left ? _leftFieldSizes[0] : _rightFieldSizes[0];
-    byte[] keyByte = new byte[fieldSize];
-    for (int i=1; i<=fieldSize; i++) {
-      keyByte[fieldSize-i] = (byte)(keyLong & 0xFF);
-      keyLong >>= 8;
-    }
-
+  private long bsearchLeft(long x, boolean returnLow) {
+    // binary search to the left MSB in the 1st column only
     long low = -1;
-    byte x[][] = left ? _leftKey : _rightKey;
-    long upp = left ? _leftN : _rightN;
-    long batchSize = left ? _leftBatchSize : _rightBatchSize;   // TODO why are these long and not int?
-    int keySize = left ? _leftKeySize : _rightKeySize;
-
+    long upp = _leftN;
     while (low < upp - 1) {
       long mid = low + (upp - low) / 2;
-      byte keyBatch[] = x[(int)(mid / batchSize)];
-      int loc = (int)(mid % batchSize) * keySize;
-      int i=0;
-      while (i<fieldSize && keyByte[i] == keyBatch[loc+i]) i++;
-      if ((returnLow && i==fieldSize) || ( i<fieldSize && (keyByte[i] & 0xFF) < (keyBatch[loc+i] & 0xFF) )) {
+      byte keyBatch[] = _leftKey[(int)(mid / _leftBatchSize)];
+      int off = (int)(mid % _leftBatchSize) * _leftKeySize;
+      int len = _leftFieldSizes[0];
+      long val = keyBatch[off] & 0xFFL; while (len>1) { val <<= 8; val |= keyBatch[++off] & 0xFFL; len--; } off++;
+      val = val==0 ? Long.MIN_VALUE : val-1+_leftBase[0];
+      if (x<val || (x==val && returnLow)) {
         upp = mid;
       } else {
         low = mid;

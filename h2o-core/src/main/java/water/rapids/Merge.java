@@ -207,7 +207,6 @@ public class Merge {
           new BinaryMerge(leftFrame, rightFrame,
                   leftMSB, rightMSB,
                   leftShift, rightShift,
-                  //leftNode.index(), //convention - right frame is local, but left frame is potentially remote
                   leftIndex._bytesUsed,   // field sizes for each column in the key
                   rightIndex._bytesUsed,
                   leftIndex._base,
