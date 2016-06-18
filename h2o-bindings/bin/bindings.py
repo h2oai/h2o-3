@@ -148,7 +148,7 @@ def init(language, output_dir, clear_dir=True):
             sys.exit(9)
 
     # Check that the provided server is accessible; then print its status (if in --verbose mode).
-    json = _request_or_exit("/LATEST/About")
+    json = _request_or_exit("/3/About")
     l1 = max(len(e["name"]) for e in json["entries"])
     l2 = max(len(e["value"]) for e in json["entries"])
     ll = max(29 + len(config["baseurl"]), l1 + l2 + 2)
@@ -203,12 +203,12 @@ def endpoints(raw=False):
 
       :param raw: if True, then the complete untouched response to .../endpoints is returned (including the metadata)
     """
-    json = _request_or_exit("/LATEST/Metadata/endpoints")
+    json = _request_or_exit("/3/Metadata/endpoints")
     if raw: return json
 
     schmap = schemas_map()
     apinames = {}  # Used for checking for api name duplicates
-    assert "routes" in json, "Unexpected result from /LATEST/Metadata/endpoints call"
+    assert "routes" in json, "Unexpected result from /3/Metadata/endpoints call"
     re_api_name = re.compile(r"^\w+$")
     def gen_rich_route():
         for e in json["routes"]:
@@ -296,9 +296,9 @@ def schemas(raw=False):
     Return the list of H₂O schemas.
       :param raw: if True, then the complete response to .../schemas is returned (including the metadata)
     """
-    json = _request_or_exit("/LATEST/Metadata/schemas")
+    json = _request_or_exit("/3/Metadata/schemas")
     if raw: return json
-    assert "schemas" in json, "Unexpected result from /LATEST/Metadata/schemas call"
+    assert "schemas" in json, "Unexpected result from /3/Metadata/schemas call"
 
     # Simplify names of some horribly sounding enums
     pattern0 = re.compile(r"^\w+(V\d+)\D\w+$")
@@ -333,8 +333,8 @@ def model_builders():
     """
     Return the list of models and their parameters.
     """
-    json = _request_or_exit("/LATEST/ModelBuilders")
-    assert "model_builders" in json, "Unexpected result from /LATEST/ModelBuilders call"
+    json = _request_or_exit("/3/ModelBuilders")
+    assert "model_builders" in json, "Unexpected result from /3/ModelBuilders call"
     return json["model_builders"]
 
 
