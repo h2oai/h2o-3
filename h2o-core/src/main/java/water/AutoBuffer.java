@@ -1559,7 +1559,7 @@ public final class AutoBuffer {
         off=i;                  // Advance the "so far" variable
       }
       // Handle remaining special cases in JSON
-      if( b[i] == '/' ) { putA1(b,off,i); put1('\\'); put1('/'); off=i+1; continue;}
+      // if( b[i] == '/' ) { putA1(b,off,i); put1('\\'); put1('/'); off=i+1; continue;}
       if( b[i] == '\b' ) { putA1(b,off,i); put1('\\'); put1('b'); off=i+1; continue;}
       if( b[i] == '\f' ) { putA1(b,off,i); put1('\\'); put1('f'); off=i+1; continue;}
       if( b[i] == '\n' ) { putA1(b,off,i); put1('\\'); put1('n'); off=i+1; continue;}
