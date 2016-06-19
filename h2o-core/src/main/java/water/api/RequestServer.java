@@ -94,12 +94,12 @@ public class RequestServer extends NanoHTTPD {
    * @see water.api.RequestServer
    * @return the Route for this request
    */
-  public static Route register(
+  public static Route registerEndpoint(
       String api_name, String method_uri, Class<? extends Handler> handler_class, String handler_method, String summary
   ) {
     String[] spl = method_uri.split(" ");
     assert spl.length == 2 : "Unexpected method_uri parameter: " + method_uri;
-    return register(api_name, spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
+    return registerEndpoint(api_name, spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
   }
 
 
@@ -114,7 +114,7 @@ public class RequestServer extends NanoHTTPD {
    * @param handler_factory factory to create instance of handler (used by Sparkling Water)
    * @return the Route for this request
    */
-  public static Route register(
+  public static Route registerEndpoint(
       String api_name,
       String http_method,
       String url,

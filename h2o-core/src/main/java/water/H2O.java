@@ -759,7 +759,7 @@ final public class H2O {
   /**
    * Register REST API routes.
    *
-   * Use reflection to find all classes that inherit from water.api.AbstractRegister
+   * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
    * and call the register() method for each.
    *
    * @param relativeResourcePath Relative path from running process working dir to find web resources.
@@ -1454,7 +1454,7 @@ final public class H2O {
       String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
   ) {
     if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.register(apiName, method_url, hclass, method, summary);
+    RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
   }
 
   public static void registerResourceRoot(File f) {
