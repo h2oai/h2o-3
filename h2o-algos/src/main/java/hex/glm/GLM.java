@@ -966,8 +966,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     protected Submodel computeSubmodel(int i,double lambda) {
       Submodel sm;
       if(lambda >= _lmax)
-        sm = new Submodel(lambda,getNullBeta(),_state._iter,_nullDevTrain,_nullDevTest);
+        _model.addSubmodel(sm = new Submodel(lambda,getNullBeta(),_state._iter,_nullDevTrain,_nullDevTest));
       else {
+        _model.addSubmodel(sm = new Submodel(lambda, _state.beta(),_state._iter,-1,-1));
         _state.setLambda(lambda);
         checkMemoryFootPrint(_state.activeData());
         do {
@@ -991,11 +992,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           double xvalDev = _xval_test_deviances == null ? -1 : _xval_test_deviances[i];
           double xvalDevSE = _xval_test_sd == null ? -1 : _xval_test_sd[i];
           _lsc.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), _state.lambda(), trainDev, testDev, xvalDev, xvalDevSE);
-          sm = new Submodel(_state.lambda(), _state.beta(), _state._iter, trainDev, testDev);
+          _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.beta(), _state._iter, trainDev, testDev));
         } else // model is gonna be scored subsequently anyways
-          sm = new Submodel(lambda, _state.beta(), _state._iter, -1, -1);
+          _model.updateSubmodel(sm = new Submodel(lambda, _state.beta(), _state._iter, -1, -1));
       }
-      _model.addSubmodel(sm).update(_job);
+      _model.update(_job);
       return sm;
     }
 
@@ -1091,15 +1092,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return true;
     }
 
-    private double betaDiff(double [] b1, double [] b2) {
-      double res = Math.abs(b1[0] - b2[0]);
-      for(int i  = 0; i < b1.length; ++i) {
-        double diff = b1[i] - b2[i];
-        if(diff > res) res = diff;
-        else if(-diff > res) res = -diff;
-      }
-      return res;
-    }
 
     @Override public boolean progress(double [] beta, GradientInfo ginfo) {
       _state._iter++;

@@ -132,6 +132,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public GLMModel addSubmodel(Submodel sm) {
     _output._submodels = ArrayUtils.append(_output._submodels,sm);
+    _output.setSubmodelIdx(_output._submodels.length-1);
+    return this;
+  }
+
+  public GLMModel updateSubmodel(Submodel sm) {
+    assert sm.lambda_value == _output._submodels[_output._submodels.length-1].lambda_value;
+    _output._submodels[_output._submodels.length-1] = sm;
     return this;
   }
 
@@ -919,25 +926,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return res;
   }
 
-  public synchronized void setSubmodel(Submodel sm) {
-    int i = 0;
-    if(_output._submodels == null) {
-      _output._submodels = new Submodel[]{sm};
-      return;
-    }
-    for(; i < _output._submodels.length; ++i)
-      if(_output._submodels[i].lambda_value <= sm.lambda_value)
-        break;
-    if(i == _output._submodels.length) {
-      _output._submodels = Arrays.copyOf(_output._submodels,_output._submodels.length+1);
-      _output._submodels[_output._submodels.length-1] = sm;
-    } else if(_output._submodels[i].lambda_value > sm.lambda_value) {
-      _output._submodels = Arrays.copyOf(_output._submodels, _output._submodels.length + 1);
-      for (int j = _output._submodels.length - 1; j > i; --j)
-        _output._submodels[j] = _output._submodels[j - 1];
-      _output._submodels[i] = sm;
-    } else  _output._submodels[i] = sm;
-  }
+
 
   // TODO: Shouldn't this be in schema? have it here for now to be consistent with others...
   /**
