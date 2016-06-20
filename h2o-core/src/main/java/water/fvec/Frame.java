@@ -1044,6 +1044,8 @@ public class Frame extends Lockable<Frame> {
 
 
   // Convert len rows starting at off to a 2-d ascii table
+  @Override public String toString( ) { return toString(0,20); }
+
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
   public TwoDimTable toTwoDimTable(long off, int len ) {
     if( off > numRows() ) off = numRows();
