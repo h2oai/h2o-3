@@ -20,7 +20,7 @@ Importing Data
 The import function is a parallelized reader and pulls information from the server from a location specified by the client. The path is a server-side path. This is a fast, scalable, highly optimized way to read data. H2O pulls the data from a data store and initiates the data transfer as a read operation.
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
 	
 	# To import small iris data file from H2O’s package:
 	> library(h2o)
@@ -34,7 +34,7 @@ The import function is a parallelized reader and pulls information from the serv
 	> airlinesURL = "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
 	> airlines.hex = h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
 	  
-   .. code-block:: h2o-python
+   .. code-block:: python
 
 	# Import a file from HDFS:
 	>>> import h2o
@@ -51,14 +51,14 @@ Unlike the import function, which is a parallelized reader, the upload function 
 Run the following command to load data that resides on the same machine that is running H2O. 
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
 	
 	> library(h2o)
 	> h2o.init()
 	> irisPath = "../../../smalldata/iris/iris_wheader.csv"
 	> iris.hex = h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 	  
-   .. code-block:: h2o-python
+   .. code-block:: python
    
 	 >>> import h2o
 	 >>> h2o.init()
@@ -74,7 +74,7 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
    
 	# Currently, this function only supports `all.x = TRUE`. All other permutations will fail.
 	> library(h2o)
@@ -122,7 +122,7 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 	
 	[6 rows x 3 columns] 
    
-   .. code-block:: h2o-python
+   .. code-block:: python
    
 	>>> h2o.init()
 	>>> import h2o
@@ -205,7 +205,7 @@ You can use the ``rbind`` function to combine two similar datasets into a single
 Note that when using ``rbind``, the two datasets must have the same set of columns.
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
    
 	> library(h2o)
 	> h2o.init()
@@ -219,7 +219,7 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 	# Combine the two datasets into a single, larger dataset
 	> ecgCombine.hex <- h2o.rbind(ecg1.hex, ecg2.hex)
 
-   .. code-block:: h2o-python
+   .. code-block:: python
 
 	>>> import h2o
 	>>> import numpy as np
@@ -286,7 +286,7 @@ Combining Columns from Two Datasets
 The ``cbind`` function allows you to combine datasets by adding columns from one dataset into another. Note that when using ``cbind``, the two datasets must have the same number of rows. In addition, if the datasets contain common column names, H2O will append the joined column with ``0``. 
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
 	
 	> library(h2o)
 	> h2o.init()
@@ -337,7 +337,7 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 	[6 rows x 4 columns]
 
 		
-   .. code-block:: h2o-python
+   .. code-block:: python
    
 	>>> import h2o
 	>>> h2o.init()
@@ -402,7 +402,7 @@ Slicing Columns
 H2O lazily slices out columns of data and will only materialize a shared copy upon some type of triggering IO. This example shows how to slice columns from a frame of data.
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
 	
 	> library(h2o)
 	> h2o.init()
@@ -421,7 +421,7 @@ H2O lazily slices out columns of data and will only materialize a shared copy up
 	# slice cols by vector of names
 	> cols_1 <- df[, c("sepal_len", "sepal_wid", "petal_len", "petal_wid")]
 
-   .. code-block:: h2o-python
+   .. code-block:: python
    
 	>>> import h2o
 	>>> h2o.init()
@@ -525,7 +525,7 @@ Slicing Rows
 H2O lazily slices out rows of data and will only materialize a shared copy upon IO. This example shows how to slice rows from a frame of data.
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
    
 	> library(h2o)
 	> path <- "data/iris/iris_wheader.csv"
@@ -546,7 +546,7 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
 	> mask <- is.na(df[,"sepal_len"])
 	> cols <- df[!mask,]
 
-   .. code-block:: h2o-python
+   .. code-block:: python
 
 	>>> import h2o
 	>>> h2o.init()
@@ -581,7 +581,7 @@ Replacing Values in a Frame
 This example shows how to replace numeric values in a frame of data. Note that it is currently not possible to replace categorical value in a column.    
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
    
 	> library(h2o)
 	> path <- "data/iris/iris_wheader.csv"
@@ -606,7 +606,7 @@ This example shows how to replace numeric values in a frame of data. Note that i
 	# alternative with ifelse
 	> df[,"sepal_len"] <- h2o.ifelse(is.na(df[,"sepal_len"]), 0, df[,"sepal_len"])
 
-   .. code-block:: h2o-python
+   .. code-block:: python
 
 	>>> import h2o
 	>>> h2o.init()
@@ -638,7 +638,7 @@ Splitting Datasets into Training/Testing/Validating
 This example shows how to split a single dataset into two datasets, one used for training and the other used for testing. 
 
 .. example-code::
-   .. code-block:: h2o-r
+   .. code-block:: r
    
 	> library(h2o)
 	> h2o.init()
@@ -671,7 +671,7 @@ This example shows how to split a single dataset into two datasets, one used for
 	3rd Qu.:0.4258
 	Max.   :0.9124 
 
-   .. code-block:: h2o-python
+   .. code-block:: python
 
 	>>> import h2o
 	>>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
@@ -707,9 +707,5 @@ This example shows how to split a single dataset into two datasets, one used for
 	        1  0.654244   0.345756
 	
 	[10 rows x 3 columns]
-
-
-
-
 
 
