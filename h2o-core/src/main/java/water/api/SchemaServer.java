@@ -143,7 +143,10 @@ public class SchemaServer {
         for (SchemaMetadata.FieldMetadata field_meta : meta.fields) {
           String name = field_meta.name;
 
-          if (name.equals("__meta") || name.equals("__http_status") || name.equals("_exclude_fields")) continue;
+          // TODO: make a new @API field "ignore_naming_rules", and set to true for the names hardcoded below:
+          //       After that these all checks could be eliminated...
+          if (name.equals("__meta") || name.equals("__http_status") || name.equals("_exclude_fields") ||
+              name.equals("__schema") || name.equals("_fields")) continue;
           if (name.equals("Gini")) continue; // proper name
           if (name.endsWith("AUC")) continue; // trainAUC, validAUC
 

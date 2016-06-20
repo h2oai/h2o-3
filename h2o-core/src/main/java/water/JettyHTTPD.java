@@ -320,8 +320,8 @@ public class JettyHTTPD {
     context.addServlet(H2oNpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile.bin");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
-    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset");
-    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset.bin");
+    context.addServlet(H2oDatasetServlet.class,  "/3/DownloadDataset");
+    context.addServlet(H2oDatasetServlet.class,  "/3/DownloadDataset.bin");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
     Handler[] handlers = {gh, rhh, authh, eh1, context};
@@ -742,7 +742,7 @@ public class JettyHTTPD {
         }
 
         // Make Nano call.
-        NanoHTTPD.Response resp = water.api.RequestServer.SERVER.serve(uri, method, headers, parms);
+        NanoHTTPD.Response resp = water.api.RequestServer.serve(uri, method, headers, parms);
 
         // Un-marshal Nano response back to Jetty.
         String choppedNanoStatus = resp.status.substring(0, 3);

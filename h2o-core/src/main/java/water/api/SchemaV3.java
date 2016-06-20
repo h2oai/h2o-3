@@ -53,7 +53,8 @@ public class SchemaV3<I extends Iced, S extends SchemaV3<I,S>> extends Schema<I,
     // Ugly hack, but sometimes I find that __meta was not initialized by now; which means that constructor was
     // somehow skipped, which means the object was created in roundabout way and then unsafely cast... Hope we'll
     // find a proper solution to this issue eventually...
-    if (__meta == null) __meta = new Meta(getSchemaVersion(), getSchemaName(), getSchemaType());
+    if (__meta == null)
+      __meta = new Meta(getSchemaVersion(), getSchemaName(), getSchemaType());
     return super.writeJSON(ab);
   }
 }

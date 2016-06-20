@@ -142,7 +142,7 @@ public class APIThrPriorTest extends TestUtil {
     serve(s,parms,status,"GET");
   }
   private void serve(String s, Properties parms, int status, String method) throws IOException {
-    NanoHTTPD.Response r = RequestServer.SERVER.serve(s,method,null,parms==null?new Properties():parms);
+    NanoHTTPD.Response r = RequestServer.serve(s,method,null,parms==null?new Properties():parms);
     int n = r.data.available();
     byte[] bs = new byte[n];
     r.data.read(bs,0,n);

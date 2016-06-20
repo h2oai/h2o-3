@@ -6,6 +6,8 @@ import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.util.*;
+import water.NanoHTTPD.Response;
+import water.NanoHTTPD.StreamResponse;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -46,26 +48,70 @@ import java.util.zip.ZipOutputStream;
  * </ol>
  *
  * @see water.api.Handler
+<<<<<<< HEAD
  * @see water.api.Schema
  * @see water.api.RegisterV3Api
+=======
+ * @see water.api.RegisterV3Api
+ * @see water.JettyHTTPD.H2oDefaultServlet
+>>>>>>> pasha_jenkins
  */
-public class RequestServer extends NanoHTTPD {
+public class RequestServer {
 
   // Returned in REST API responses as X-h2o-rest-api-version-max
   public static final int H2O_REST_API_VERSION = 3;
 
-  // RequestServer singleton
-  public static RequestServer SERVER;
-  private RequestServer() {}
-
   private static RouteTree routesTree = new RouteTree("");
   private static ArrayList<Route> routesList = new ArrayList<>(150);
-  private static boolean registrationOpen = true;
 
   public static int numRoutes() { return routesList.size(); }
   public static ArrayList<Route> routes() { return routesList; }
   public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
 
+  /**
+   * Some HTTP response status codes
+   */
+  public static final String
+      HTTP_OK = "200 OK",
+      HTTP_CREATED = "201 Created",
+      HTTP_ACCEPTED = "202 Accepted",
+      HTTP_NO_CONTENT = "204 No Content",
+      HTTP_PARTIAL_CONTENT = "206 Partial Content",
+      HTTP_RANGE_NOT_SATISFIABLE = "416 Requested Range Not Satisfiable",
+      HTTP_REDIRECT = "301 Moved Permanently",
+      HTTP_NOT_MODIFIED = "304 Not Modified",
+      HTTP_BAD_REQUEST = "400 Bad Request",
+      HTTP_UNAUTHORIZED = "401 Unauthorized",
+      HTTP_FORBIDDEN = "403 Forbidden",
+      HTTP_NOT_FOUND = "404 Not Found",
+      HTTP_BAD_METHOD = "405 Method Not Allowed",
+      HTTP_TOO_LONG_REQUEST = "414 Request-URI Too Long",
+      HTTP_TEAPOT = "418 I'm a Teapot",
+      HTTP_THROTTLE = "429 Too Many Requests",
+      HTTP_INTERNAL_ERROR = "500 Internal Server Error",
+      HTTP_NOT_IMPLEMENTED = "501 Not Implemented",
+      HTTP_SERVICE_NOT_AVAILABLE = "503 Service Unavailable";
+
+  /**
+   * Common mime types for dynamic content
+   */
+  public static final String
+      MIME_PLAINTEXT = "text/plain",
+      MIME_HTML = "text/html",
+      MIME_JSON = "application/json",
+      MIME_DEFAULT_BINARY = "application/octet-stream",
+      MIME_XML = "text/xml";
+
+  /**
+   * Calculates number of routes having the specified version.
+   */
+  public static int numRoutes(int version) {
+    int count = 0;
+    for (Route route : routesList)
+      if (route.getVersion() == version)
+        count++;
+    return count;
+  }
 
   //------ Route Registration ------------------------------------------------------------------------------------------
 
@@ -84,12 +130,12 @@ public class RequestServer extends NanoHTTPD {
    * @see water.api.RequestServer
    * @return the Route for this request
    */
-  public static Route register(
+  public static Route registerEndpoint(
       String api_name, String method_uri, Class<? extends Handler> handler_class, String handler_method, String summary
   ) {
     String[] spl = method_uri.split(" ");
     assert spl.length == 2 : "Unexpected method_uri parameter: " + method_uri;
-    return register(api_name, spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
+    return registerEndpoint(api_name, spl[0], spl[1], handler_class, handler_method, summary, HandlerFactory.DEFAULT);
   }
 
 
@@ -104,7 +150,7 @@ public class RequestServer extends NanoHTTPD {
    * @param handler_factory factory to create instance of handler (used by Sparkling Water)
    * @return the Route for this request
    */
-  public static Route register(
+  public static Route registerEndpoint(
       String api_name,
       String http_method,
       String url,
@@ -113,7 +159,6 @@ public class RequestServer extends NanoHTTPD {
       String summary,
       HandlerFactory handler_factory
   ) {
-    assert registrationOpen : "finalizeRegistration() has been called, cannot register any additional routes";
     assert api_name != null : "api_name should not be null";
     try {
       RequestUri uri = new RequestUri(http_method, url);
@@ -126,22 +171,6 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  /**
-   * This method must be called after all requests have been registered.
-   */
-  public static void finalizeRegistration() {
-    assert registrationOpen : "finalizeRegistration() should not be called more than once";
-    registrationOpen = false;
-
-    SchemaServer.registerAllSchemasIfNecessary();
-
-    // Need a stub RequestServer to handle calls to serve() from Jetty.
-    // But no threads are started here anymore.
-    SERVER = new RequestServer();
-
-    H2O.getJetty().acceptRequests();
-  }
-
 
 
   //------ Handling Requests -------------------------------------------------------------------------------------------
@@ -149,8 +178,7 @@ public class RequestServer extends NanoHTTPD {
   /**
    * Top-level dispatch based on the URI.
    */
-  @Override
-  public Response serve(String url, String method, Properties header, Properties parms) {
+  public static Response serve(String url, String method, Properties header, Properties parms) {
     try {
       // Jack priority for user-visible requests
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
@@ -261,7 +289,6 @@ public class RequestServer extends NanoHTTPD {
       Log.warn("Caught exception: " + error.toString());
       return serveError(error);
     }
-    // TODO: kill the server if someone called H2O.fail()
     catch (Exception e) {
       // make sure that no Exception is ever thrown out from the request
       H2OError error = new H2OError(e, url);
@@ -276,7 +303,7 @@ public class RequestServer extends NanoHTTPD {
   /**
    * Log the request (unless it's an overly common one).
    */
-  private void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
+  private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
     String url = uri.getUrl();
     if (url.endsWith(".css") ||
         url.endsWith(".js") ||
@@ -389,7 +416,7 @@ public class RequestServer extends NanoHTTPD {
     }
   }
 
-  private Route findRouteByApiName(String apiName) {
+  private static Route findRouteByApiName(String apiName) {
     for (Route route : routesList) {
       if (route._api_name.equals(apiName))
         return route;
@@ -405,7 +432,7 @@ public class RequestServer extends NanoHTTPD {
    * @param uri RequestUri object of the incoming request.
    * @return Response object, or null if the request does not require any special handling.
    */
-  private Response maybeServeSpecial(RequestUri uri) {
+  private static Response maybeServeSpecial(RequestUri uri) {
     assert uri != null;
 
     if (uri.isHeadMethod()) {
@@ -423,7 +450,7 @@ public class RequestServer extends NanoHTTPD {
     return null;
   }
 
-  private Response response404(String what, RequestType type) {
+  private static Response response404(String what, RequestType type) {
     H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
     H2OError error = e.toH2OError(what);
 
@@ -434,7 +461,7 @@ public class RequestServer extends NanoHTTPD {
     return serveError(error);
   }
 
-  private Response serveSchema(Schema s, RequestType type) {
+  private static Response serveSchema(Schema s, RequestType type) {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
 
@@ -478,18 +505,18 @@ public class RequestServer extends NanoHTTPD {
   }
 
   @SuppressWarnings(value = "unchecked")
-  private Response serveError(H2OError error) {
+  private static Response serveError(H2OError error) {
     // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
     return serveSchema(new H2OErrorV3().fillFromImpl(error), RequestType.json);
   }
 
-  private Response redirectToFlow() {
+  private static Response redirectToFlow() {
     Response res = new Response(HTTP_REDIRECT, MIME_PLAINTEXT, "");
     res.addHeader("Location", "/flow/index.html");
     return res;
   }
 
-  private Response downloadNps(String categoryName, String keyName) {
+  private static Response downloadNps(String categoryName, String keyName) {
     NodePersistentStorage nps = H2O.getNPS();
     AtomicLong length = new AtomicLong();
     InputStream is = nps.get(categoryName, keyName, length);
@@ -499,7 +526,7 @@ public class RequestServer extends NanoHTTPD {
     return res;
   }
 
-  private Response downloadLogs() {
+  private static Response downloadLogs() {
     Log.info("\nCollecting logs.");
 
     H2ONode[] members = H2O.CLOUD.members();
@@ -556,14 +583,14 @@ public class RequestServer extends NanoHTTPD {
     return res;
   }
 
-  private String getOutputLogStem() {
+  private static String getOutputLogStem() {
     String pattern = "yyyyMMdd_hhmmss";
     SimpleDateFormat formatter = new SimpleDateFormat(pattern);
     String now = formatter.format(new Date());
     return "h2ologs_" + now;
   }
 
-  private byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
+  private static byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
     int l = 0;
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (byte[] result : results) l += result.length;
@@ -616,7 +643,7 @@ public class RequestServer extends NanoHTTPD {
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
 
   // Returns the response containing the given uri with the appropriate mime type.
-  private Response getResource(RequestType request_type, String url) {
+  private static Response getResource(RequestType request_type, String url) {
     byte[] bytes = _cache.get(url);
     if (bytes == null) {
       // Try-with-resource
