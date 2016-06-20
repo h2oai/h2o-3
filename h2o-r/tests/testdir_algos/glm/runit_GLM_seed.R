@@ -25,7 +25,7 @@ check.glm.seed <- function() {
                           alpha  = 1.0,                    # Lasso
                           lambda_search = T,                      # searching for best value of Lambda
                           max_iterations  = 1000,
-                          nfolds  = 5,
+                          nfolds  = 3,
                           seed = 1234,
                           max_active_predictors = 200,lambda_min_ratio = 1e-4)
 
@@ -36,7 +36,7 @@ check.glm.seed <- function() {
                            alpha  = 1.0,                    # Lasso
                            lambda_search = T,                      # searching for best value of Lambda
                            max_iterations  = 1000,
-                           nfolds  = 5,
+                           nfolds  = 3,
                            seed = 1234,
                            max_active_predictors = 200,lambda_min_ratio = 1e-4)
 
@@ -52,7 +52,8 @@ check.glm.seed <- function() {
                           alpha  = 1.0,                    # Lasso
                           lambda_search = T,                      # searching for best value of Lambda
                           max_iterations  = 1000,
-                          nfolds  = 5,
+                          nfolds  = 3,
+                          seed = 55555,
                           max_active_predictors = 200,lambda_min_ratio = 1e-4)
 
     fit_h2oglm4 <- h2o.glm(x = x,
@@ -62,7 +63,8 @@ check.glm.seed <- function() {
                            alpha  = 1.0,                    # Lasso
                            lambda_search = T,                      # searching for best value of Lambda
                            max_iterations  = 1000,
-                           nfolds  = 5,
+                           nfolds  = 3,
+                           seed = 98765,
                            max_active_predictors = 200,lambda_min_ratio = 1e-4)
     diff_max = max(abs(h2o.coef(fit_h2oglm3) - h2o.coef(fit_h2oglm4)))
     print(diff_max)

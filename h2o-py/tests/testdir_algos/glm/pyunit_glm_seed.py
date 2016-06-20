@@ -25,7 +25,7 @@ def glm_seed():
           alpha  = 1.0,
           lambda_search = True,
           max_iterations  = 1000,
-          nfolds  = 5,
+          nfolds  = 3,
           seed = 1234,
           max_active_predictors = 200)
 
@@ -37,7 +37,7 @@ def glm_seed():
           alpha  = 1.0,
           lambda_search = True,
           max_iterations  = 1000,
-          nfolds  = 5,
+          nfolds  = 3,
           seed = 1234,
           max_active_predictors = 200)
 
@@ -52,7 +52,8 @@ def glm_seed():
           alpha  = 1.0,
           lambda_search = True,
           max_iterations  = 1000,
-          nfolds  = 5,
+          nfolds  = 3,
+          seed = 55555,
           max_active_predictors = 200)
 
   h2oglm_3.train(x = predictors, y = y, training_frame  = cars, family = family)
@@ -63,8 +64,10 @@ def glm_seed():
           alpha  = 1.0,
           lambda_search = True,
           max_iterations  = 1000,
-          nfolds  = 5,
+          nfolds  = 3,
+          seed = 98765,
           max_active_predictors = 200)
+
 
   h2oglm_4.train(x = predictors, y = y, training_frame  = cars, family = family)
 
