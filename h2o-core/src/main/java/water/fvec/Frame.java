@@ -1043,13 +1043,9 @@ public class Frame extends Lockable<Frame> {
   }
 
 
-
-
-  // Convert first 100 rows to a 2-d table
-  @Override public String toString( ) { return toString(0,20); }
-
   // Convert len rows starting at off to a 2-d ascii table
-  public String toString( long off, int len ) {
+  public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
+  public TwoDimTable toTwoDimTable(long off, int len ) {
     if( off > numRows() ) off = numRows();
     if( off+len > numRows() ) len = (int)(numRows()-off);
 
@@ -1109,7 +1105,7 @@ public class Frame extends Lockable<Frame> {
         throw H2O.fail();
       }
     }
-    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells).toString();
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells);
   }
 
 
