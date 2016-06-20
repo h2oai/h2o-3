@@ -4,7 +4,7 @@ import water.*;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CloudV3 extends RequestSchema<Iced, CloudV3> {
+public class CloudV3 extends SchemaV3<Iced, CloudV3> {
   /**
    * Data structure to store last tick counts from a given node.
    */
@@ -80,7 +80,7 @@ public class CloudV3 extends RequestSchema<Iced, CloudV3> {
   public NodeV3[] nodes;
 
   // Output fields one-per-JVM
-  public static class NodeV3 extends Schema<Iced, NodeV3> {
+  public static class NodeV3 extends SchemaV3<Iced, NodeV3> {
     public NodeV3() {}
 
     @API(help="IP", direction=API.Direction.OUTPUT)

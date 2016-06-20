@@ -3,7 +3,7 @@ package water.api;
 import water.Iced;
 import water.api.KeyV3.FrameKeyV3;
 
-public class DownloadDataV3 extends RequestSchema<Iced, DownloadDataV3> {
+public class DownloadDataV3 extends SchemaV3<Iced, DownloadDataV3> {
 
   // Input fields
   @API(help="Frame to download", required=true)

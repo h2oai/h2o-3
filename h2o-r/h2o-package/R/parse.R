@@ -70,9 +70,7 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
   .collapse.char(sapply(data, function (d) attr(d, "id")))
 }
 
-#' @name h2o.importFile
-#' @export
-h2o.read.svmlight <- function(path, pattern = "", destination_frame = "") {
+.h2o.readSVMLight <- function(path, pattern = "", destination_frame = "") {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)

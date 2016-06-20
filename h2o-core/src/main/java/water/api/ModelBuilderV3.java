@@ -9,7 +9,7 @@ import hex.schemas.ModelBuilderSchema;
  * these will come from init(true); others may after the model build really begins.
  * @see H2OModelBuilderErrorV3
  */
-public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, S>> extends Schema<J, S> {
+public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, S>> extends SchemaV3<J, S> {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
   public ModelParametersSchema parameters;
   
@@ -31,7 +31,7 @@ public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, 
     ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
     this.error_count = builder.error_count();
 
-    ModelBuilderSchema s = (ModelBuilderSchema)Schema.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);
+    ModelBuilderSchema s = (ModelBuilderSchema)SchemaServer.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);
     parameters = s.parameters;
     return (S) this;
   }

@@ -2,7 +2,7 @@ package water.api;
 
 import water.Iced;
 
-public class RapidsV99 extends RequestSchema<Iced, RapidsV99> {
+public class RapidsV99 extends SchemaV3<Iced, RapidsV99> {
   // Input fields
   @API(help="An Abstract Syntax Tree.", direction=API.Direction.INPUT) String ast;
 

@@ -13,7 +13,7 @@ import java.lang.reflect.Field;
  * NOTE: use subclasses, not this class directly.  It is not abstract only so that we can instantiate it to generate metadata
  * for it for the metadata API.
  */
-public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends Schema<O, S> {
+public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends SchemaV3<O, S> {
 
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;

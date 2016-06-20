@@ -6,7 +6,7 @@ import water.Iced;
 import java.util.ArrayList;
 
 public class AboutHandler extends Handler {
-  public static class AboutEntryV3 extends Schema<Iced, AboutEntryV3> {
+  public static class AboutEntryV3 extends SchemaV3<Iced, AboutEntryV3> {
 
     public AboutEntryV3() {}
     public AboutEntryV3(String n, String v) {
@@ -21,7 +21,7 @@ public class AboutHandler extends Handler {
     public String value;
   }
 
-  public static class AboutV3 extends RequestSchema<Iced, AboutV3> {
+  public static class AboutV3 extends SchemaV3<Iced, AboutV3> {
     @API(help="List of properties about this running H2O instance", direction = API.Direction.OUTPUT)
     public AboutEntryV3 entries[];
   }

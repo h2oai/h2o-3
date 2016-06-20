@@ -11,7 +11,7 @@ import java.util.ArrayList;
 /**
  * Schema for the metadata for a Schema.
  */
-public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetadataBase<I, S>> extends Schema<I, SchemaMetadataBase<I, S>> {
+public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetadataBase<I, S>> extends SchemaV3<I, SchemaMetadataBase<I, S>> {
 
   @API(help="Version number of the Schema.")
   public int version;
@@ -36,7 +36,7 @@ public class SchemaMetadataBase<I extends SchemaMetadata, S extends SchemaMetada
   /**
    * Schema for the metadata for the field of a Schema.
    */
-  public static class FieldMetadataBase<I extends FieldMetadata, S extends FieldMetadataBase<I, S>> extends Schema<I, S> {
+  public static class FieldMetadataBase<I extends FieldMetadata, S extends FieldMetadataBase<I, S>> extends SchemaV3<I, S> {
     @API(help="Field name in the Schema", direction=API.Direction.OUTPUT)
     public String name;
 

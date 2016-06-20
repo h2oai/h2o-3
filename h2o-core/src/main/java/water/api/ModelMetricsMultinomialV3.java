@@ -28,12 +28,12 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
 
     if (modelMetrics._hit_ratios != null) {
       TwoDimTable table = getHitRatioTable(modelMetrics._hit_ratios);
-      hit_ratio_table = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), table).fillFromImpl(table);
+      hit_ratio_table = (TwoDimTableBase)SchemaServer.schema(this.getSchemaVersion(), table).fillFromImpl(table);
     }
 
     if (null != modelMetrics._cm) {
       modelMetrics._cm.table();  // Fill in lazy table, for icing
-      cm = (ConfusionMatrixBase) Schema.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
+      cm = (ConfusionMatrixBase) SchemaServer.schema(this.getSchemaVersion(), modelMetrics._cm).fillFromImpl(modelMetrics._cm);
     }
 
     return this;

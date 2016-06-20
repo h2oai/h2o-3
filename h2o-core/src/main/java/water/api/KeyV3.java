@@ -10,7 +10,6 @@ import water.fvec.Vec;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
 
 /**
  * <p>
@@ -22,7 +21,7 @@ import java.util.Arrays;
  * Iced type we pass up to Schema must be Iced, so that a lookup for a Schema for Key<T>
  * doesn't get an arbitrary subclass of KeyV1.
  */
-public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> extends Schema<I, S> {
+public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> extends SchemaV3<I, KeyV3<I,S,K>> {
   @API(help="Name (string representation) for this Key.", direction = API.Direction.INOUT)
   public String name;
 
@@ -35,7 +34,10 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public KeyV3() {
     // NOTE: this is a bit of a hack; without this we won't have the type parameter.
     // We'll be able to remove this once we have proper typed Key subclasses, like FrameKey.
-    get__meta().setSchema_type("Key<" + getKeyedClassType() + ">");
+    // Set the new type both in Schema and in SchemaV3, so that they are always in sync.
+    String newType = "Key<" + getKeyedClassType() + ">";
+    __meta.schema_type = newType;
+    setSchemaType_doNotCall(newType);
   }
 
   // need versioned
@@ -126,13 +128,12 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
 
     Class<? extends Keyed> keyed_class = this.getKeyedClass();
 
-    // TODO: this is kinda hackey; the handlers should register the types they can fetch.
     if (Job.class.isAssignableFrom(keyed_class))
-      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Jobs/" + key.toString();
+      this.URL = "/3/Jobs/" + key.toString();
     else if (Frame.class.isAssignableFrom(keyed_class))
-      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Frames/" + key.toString();
+      this.URL = "/3/Frames/" + key.toString();
     else if (Model.class.isAssignableFrom(keyed_class))
-      this.URL = "/" + Schema.getHighestSupportedVersion() + "/Models/" + key.toString();
+      this.URL = "/3/Models/" + key.toString();
     else if (Vec.class.isAssignableFrom(keyed_class))
       this.URL = null;
     else
@@ -145,7 +146,7 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     // (Only) if we're a subclass of KeyV1 the Keyed class is type parameter 2.
     if (clz == KeyV3.class)
       return Keyed.class;
-    return (Class<? extends Keyed>) ReflectionUtils.findActualClassParameter(clz, 2);
+    return ReflectionUtils.findActualClassParameter(clz, 2);
   }
 
   public Class<? extends Keyed> getKeyedClass() {

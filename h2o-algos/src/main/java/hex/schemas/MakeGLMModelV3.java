@@ -5,14 +5,12 @@ import water.Key;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.KeyV3;
-import water.api.Schema;
+import water.api.SchemaV3;
 
 /**
- * Created by tomasnykodym on 8/29/14.
- *
  * End point to update a model. Creates a modified copy of the original model. Can only change coefficient values.
  */
-public class MakeGLMModelV3 extends Schema<Iced,MakeGLMModelV3> {
+public class MakeGLMModelV3 extends SchemaV3<Iced,MakeGLMModelV3> {
 
   @API(help="source model", required = true, direction = Direction.INPUT)
   public KeyV3.ModelKeyV3 model;

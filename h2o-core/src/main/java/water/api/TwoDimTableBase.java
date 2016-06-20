@@ -14,8 +14,10 @@ import water.util.TwoDimTable;
  * 3) We store all the data in String format
  *
  */
-public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase> extends Schema<I, TwoDimTableBase<I, S>> {
-  public static class ColumnSpecsBase extends Schema<Iced, ColumnSpecsBase> {
+public class TwoDimTableBase<I extends TwoDimTable, S extends TwoDimTableBase>
+    extends SchemaV3<I, TwoDimTableBase<I, S>> {
+
+  public static class ColumnSpecsBase extends SchemaV3<Iced, ColumnSpecsBase> {
     @API(help="Column Name", direction=API.Direction.OUTPUT)
     String name;
     @API(help="Column Type", direction=API.Direction.OUTPUT)

@@ -3,7 +3,7 @@ package water.api;
 import water.Iced;
 import water.Key;
 
-class FindV3 extends RequestSchema<Iced,FindV3> {
+class FindV3 extends SchemaV3<Iced, FindV3> {
 
   // Input fields
   @API(help="Frame to search",required=true)

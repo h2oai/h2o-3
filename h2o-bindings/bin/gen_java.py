@@ -86,7 +86,7 @@ def generate_schema(class_name, schema):
         if field["name"] == "can_build": is_model_builder = True
 
     superclass = schema["superclass"]
-    if superclass == "Iced": superclass = "Object"
+    if superclass == "Schema": superclass = "Object"
 
     fields = []
     for field in schema["fields"]:

@@ -5,7 +5,7 @@ import water.Iced;
 /**
  * Model import REST end-point.
  */
-public class ModelImportV3 extends RequestSchema<Iced, ModelImportV3> {
+public class ModelImportV3 extends SchemaV3<Iced, ModelImportV3> {
 
   // Input fields
   @API(help="Save imported model under given key into DKV.", json=false)

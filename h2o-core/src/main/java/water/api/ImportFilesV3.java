@@ -2,7 +2,7 @@ package water.api;
 
 import water.Iced;
 
-class ImportFilesV3 extends RequestSchema<Iced,ImportFilesV3> {
+class ImportFilesV3 extends SchemaV3<Iced,ImportFilesV3> {
 
   // Input fields
   @API(help="path", required=true)

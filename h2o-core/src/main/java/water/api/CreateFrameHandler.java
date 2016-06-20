@@ -16,6 +16,6 @@ public class CreateFrameHandler extends Handler {
 
     CreateFrame cfr = new CreateFrame(cf.dest.key());
     cf.fillImpl(cfr);
-    return (JobV3)Schema.schema(version, Job.class).fillFromImpl(cfr.execImpl());
+    return (JobV3)SchemaServer.schema(version, Job.class).fillFromImpl(cfr.execImpl());
   }
 }

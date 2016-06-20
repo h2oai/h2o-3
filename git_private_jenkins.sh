@@ -7,6 +7,7 @@ git status
 
 # Wipe out old private jenkins both locally and remotely
 git branch -D cliffc_jenkins
+# Replace 'origin' as-needed with full url+pass
 git push origin :cliffc_jenkins
 # Make the current stuff as a new cliffc_jenkins branch
 git checkout -b cliffc_jenkins

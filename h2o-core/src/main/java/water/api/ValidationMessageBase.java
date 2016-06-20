@@ -10,7 +10,8 @@ import java.util.Map;
 /**
  * Model builder parameter validation message schema.
  */
-public class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S extends ValidationMessageBase<I, S>> extends Schema<I, S> {
+public class ValidationMessageBase<I extends ModelBuilder.ValidationMessage, S extends ValidationMessageBase<I, S>>
+    extends SchemaV3<I, S> {
   @API(help = "Type of validation message (ERROR, WARN, INFO, HIDE)", direction = API.Direction.OUTPUT)
   public String message_type;
 

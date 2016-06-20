@@ -6,7 +6,8 @@ import water.util.TwoDimTable;
 
 import java.util.Arrays;
 
-public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>> extends ModelMetricsBase<I,S> {
+public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>>
+    extends ModelMetricsBase<I,S> {
 //  @API(help="The standard deviation of the training response.", direction=API.Direction.OUTPUT)
 //  public double sigma; // Belongs in a mythical ModelMetricsSupervisedV3
 
