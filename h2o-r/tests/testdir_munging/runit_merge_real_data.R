@@ -67,7 +67,8 @@ test.merge <- function() {
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.center.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.division.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.region.csv"),
-                      c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.x77.csv"))
+                      c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.x77.csv"),
+                      c("smalldata/jira/pubdev_2322_x.csv","smalldata/jira/pubdev_2322_y.csv"))
 
     for (xy in x_y_paths) {
         for (ax in c(TRUE, FALSE)) {
