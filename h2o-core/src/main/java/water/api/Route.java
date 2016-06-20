@@ -63,7 +63,6 @@ final public class Route extends Iced {
   }
 
   public RequestUri getUri() { return _uri; }
-
   public int getVersion() { return _uri.getVersion(); }
 
   /**

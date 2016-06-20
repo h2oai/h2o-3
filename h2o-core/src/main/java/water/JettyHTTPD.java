@@ -320,8 +320,8 @@ public class JettyHTTPD {
     context.addServlet(H2oNpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile.bin");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
-    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset");
-    context.addServlet(H2oDatasetServlet.class,   "/3/DownloadDataset.bin");
+    context.addServlet(H2oDatasetServlet.class,  "/3/DownloadDataset");
+    context.addServlet(H2oDatasetServlet.class,  "/3/DownloadDataset.bin");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
     Handler[] handlers = {gh, rhh, authh, eh1, context};

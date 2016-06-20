@@ -6,6 +6,8 @@ import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.util.*;
+import water.NanoHTTPD.Response;
+import water.NanoHTTPD.StreamResponse;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -46,10 +48,10 @@ import java.util.zip.ZipOutputStream;
  * </ol>
  *
  * @see water.api.Handler
- * @see water.api.Schema
  * @see water.api.RegisterV3Api
+ * @see water.JettyHTTPD.H2oDefaultServlet
  */
-public class RequestServer extends NanoHTTPD {
+public class RequestServer {
 
   // Returned in REST API responses as X-h2o-rest-api-version-max
   public static final int H2O_REST_API_VERSION = 3;
@@ -65,6 +67,40 @@ public class RequestServer extends NanoHTTPD {
   public static int numRoutes() { return routesList.size(); }
   public static ArrayList<Route> routes() { return routesList; }
   public static Route lookupRoute(RequestUri uri) { return routesTree.lookup(uri, null); }
+
+  /**
+   * Some HTTP response status codes
+   */
+  public static final String
+      HTTP_OK = "200 OK",
+      HTTP_CREATED = "201 Created",
+      HTTP_ACCEPTED = "202 Accepted",
+      HTTP_NO_CONTENT = "204 No Content",
+      HTTP_PARTIAL_CONTENT = "206 Partial Content",
+      HTTP_RANGE_NOT_SATISFIABLE = "416 Requested Range Not Satisfiable",
+      HTTP_REDIRECT = "301 Moved Permanently",
+      HTTP_NOT_MODIFIED = "304 Not Modified",
+      HTTP_BAD_REQUEST = "400 Bad Request",
+      HTTP_UNAUTHORIZED = "401 Unauthorized",
+      HTTP_FORBIDDEN = "403 Forbidden",
+      HTTP_NOT_FOUND = "404 Not Found",
+      HTTP_BAD_METHOD = "405 Method Not Allowed",
+      HTTP_TOO_LONG_REQUEST = "414 Request-URI Too Long",
+      HTTP_TEAPOT = "418 I'm a Teapot",
+      HTTP_THROTTLE = "429 Too Many Requests",
+      HTTP_INTERNAL_ERROR = "500 Internal Server Error",
+      HTTP_NOT_IMPLEMENTED = "501 Not Implemented",
+      HTTP_SERVICE_NOT_AVAILABLE = "503 Service Unavailable";
+
+  /**
+   * Common mime types for dynamic content
+   */
+  public static final String
+      MIME_PLAINTEXT = "text/plain",
+      MIME_HTML = "text/html",
+      MIME_JSON = "application/json",
+      MIME_DEFAULT_BINARY = "application/octet-stream",
+      MIME_XML = "text/xml";
 
   /**
    * Calculates number of routes having the specified version.
@@ -159,7 +195,6 @@ public class RequestServer extends NanoHTTPD {
   /**
    * Top-level dispatch based on the URI.
    */
-  @Override
   public Response serve(String url, String method, Properties header, Properties parms) {
     try {
       // Jack priority for user-visible requests
@@ -271,7 +306,6 @@ public class RequestServer extends NanoHTTPD {
       Log.warn("Caught exception: " + error.toString());
       return serveError(error);
     }
-    // TODO: kill the server if someone called H2O.fail()
     catch (Exception e) {
       // make sure that no Exception is ever thrown out from the request
       H2OError error = new H2OError(e, url);
