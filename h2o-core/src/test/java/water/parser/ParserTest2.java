@@ -2,8 +2,12 @@ package water.parser;
 
 import org.junit.*;
 
+import java.util.Random;
+import java.util.UUID;
+
 import water.*;
 import water.fvec.*;
+import water.util.PrettyPrint;
 
 import static water.parser.DefaultParserProviders.CSV_INFO;
 
@@ -233,5 +237,24 @@ public class ParserTest2 extends TestUtil {
     };
     Key k = ParserTest.makeByteVec(data);
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,33);
+  }
+
+  @Ignore
+  public void testSpeedOfCategoricalUpdate() {
+    Categorical cat = new Categorical();
+    int numOfUniqueCats = 363;
+    String values[] = new String[numOfUniqueCats];
+    for (int i = 0; i< numOfUniqueCats; i++) values[i] = UUID.randomUUID().toString();
+    int numOfIterations = 1000000000;
+    Random random = new Random(0xf267deadbabecafeL);
+    BufferedString bs = new BufferedString();
+    long startTime = System.currentTimeMillis();
+    for (int i = 0; i < numOfIterations; i++) {
+      int idx = random.nextInt(numOfUniqueCats);
+      bs.set(values[idx].getBytes());
+      cat.addKey(bs);
+      if (i % 10000000 == 0) System.out.println("Iterations: " + i);
+    }
+    System.out.println("Time: " + PrettyPrint.msecs(System.currentTimeMillis() - startTime, false));
   }
 }
