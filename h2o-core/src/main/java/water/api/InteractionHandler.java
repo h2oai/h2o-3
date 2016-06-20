@@ -1,6 +1,8 @@
 package water.api;
 
 import hex.Interaction;
+import water.api.schemas3.InteractionV3;
+import water.api.schemas3.JobV3;
 
 public class InteractionHandler extends Handler {
 

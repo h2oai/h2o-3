@@ -6,6 +6,8 @@ import hex.grid.Grid;
 import water.DKV;
 import water.Key;
 import water.api.*;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.TwoDimTable;
 

@@ -7,15 +7,20 @@ import java.util.*;
 import hex.Model;
 import water.*;
 import water.api.FramesHandler.Frames;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.ModelExportV3;
+import water.api.schemas3.ModelImportV3;
+import water.api.schemas3.ModelsV3;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 
-class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
+public class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
+
   /** Class which contains the internal representation of the models list and params. */
-  protected static final class Models extends Iced {
+  public static final class Models extends Iced {
     public Key model_id;
     public Model[] models;
     public boolean find_compatible_frames = false;

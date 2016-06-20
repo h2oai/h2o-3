@@ -9,12 +9,10 @@ import hex.schemas.GLMModelV3;
 import hex.schemas.GLMRegularizationPathV3;
 import hex.schemas.MakeGLMModelV3;
 import water.DKV;
-import water.Iced;
 import water.Key;
 import water.MRTask;
-import water.api.API;
 import water.api.Handler;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 import water.fvec.*;
 
 import java.util.Arrays;

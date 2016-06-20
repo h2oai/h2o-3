@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.schemas3.WaterMeterCpuTicksV3;
 import water.util.WaterMeterCpuTicks;
 
 public class WaterMeterCpuTicksHandler extends Handler {

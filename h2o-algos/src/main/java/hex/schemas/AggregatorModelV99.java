@@ -2,7 +2,7 @@ package hex.schemas;
 
 import hex.aggregator.AggregatorModel;
 import water.api.API;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 import water.api.ModelOutputSchema;
 import water.api.ModelSchema;
 

@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.ModelBuilder;
+import water.api.schemas3.SchemaV3;
 import water.util.Log;
 import water.util.PojoUtils;
 

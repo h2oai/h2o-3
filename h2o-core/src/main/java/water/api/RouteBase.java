@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.schemas3.SchemaV3;
 import water.util.PojoUtils;
 
 public class RouteBase<I extends Route, S extends RouteBase<I, S>> extends SchemaV3<I, S> {

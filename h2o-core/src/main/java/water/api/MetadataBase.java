@@ -1,6 +1,7 @@
 package water.api;
 
 import water.Iced;
+import water.api.schemas3.SchemaV3;
 
 public class MetadataBase<I extends Iced, S extends MetadataBase<I, S>> extends SchemaV3<I, MetadataBase<I, S>> {
   @API(help="Number for specifying an endpoint", json=false)

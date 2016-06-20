@@ -1,7 +1,9 @@
 package water.api;
 
 import water.Iced;
-import water.api.KeyV3.FrameKeyV3;
+import water.api.schemas3.KeyV3.FrameKeyV3;
+import water.api.schemas3.FramesV3;
+import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 
 /**
@@ -9,7 +11,7 @@ import water.fvec.Frame;
  * @see FramesHandler#list(int, FramesV3)
  */
 public class FrameBase<I extends Iced, S extends FrameBase<I, S>> extends SchemaV3<I, S> {
-  transient Frame _fr;         // Avoid a racey update to Key; cached loaded value
+  public transient Frame _fr;         // Avoid a racey update to Key; cached loaded value
 
   // Input fields
   @API(help="Frame ID",required=true, direction=API.Direction.INOUT)

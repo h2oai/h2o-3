@@ -3,7 +3,8 @@ package water.api;
 import hex.Model;
 import water.AutoBuffer;
 import water.H2O;
-import water.api.KeyV3.ModelKeyV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 

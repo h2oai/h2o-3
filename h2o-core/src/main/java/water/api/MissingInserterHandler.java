@@ -1,5 +1,7 @@
 package water.api;
 
+import water.api.schemas3.JobV3;
+import water.api.schemas3.MissingInserterV3;
 import water.util.FrameUtils;
 
 public class MissingInserterHandler extends Handler {

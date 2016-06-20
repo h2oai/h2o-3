@@ -2,6 +2,8 @@ package water.api;
 
 import hex.SplitFrame;
 import water.Job;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SplitFrameV3;
 
 public class SplitFrameHandler extends Handler {
 

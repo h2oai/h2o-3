@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.schemas3.TabulateV3;
 import water.util.Tabulate;
 
 public class TabulateHandler extends Handler {

@@ -1,8 +1,9 @@
 package water.api;
 
-import hex.schemas.ModelBuilderSchema;
-import org.reflections.Reflections;
 import water.*;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;

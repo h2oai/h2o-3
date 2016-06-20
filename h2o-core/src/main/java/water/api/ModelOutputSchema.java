@@ -3,6 +3,8 @@ package water.api;
 import hex.Model;
 import hex.ModelCategory;
 import water.Weaver;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 import water.util.IcedHashMap;
 import water.util.Log;
 

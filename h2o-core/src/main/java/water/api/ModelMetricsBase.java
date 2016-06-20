@@ -3,8 +3,10 @@ package water.api;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import water.api.KeyV3.FrameKeyV3;
-import water.api.KeyV3.ModelKeyV3;
+import water.api.schemas3.KeyV3.FrameKeyV3;
+import water.api.schemas3.KeyV3.ModelKeyV3;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 

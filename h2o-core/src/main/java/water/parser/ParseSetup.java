@@ -1,7 +1,7 @@
 package water.parser;
 
 import water.*;
-import water.api.ParseSetupV3;
+import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;

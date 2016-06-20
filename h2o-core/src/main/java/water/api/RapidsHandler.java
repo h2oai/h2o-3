@@ -1,13 +1,14 @@
 package water.api;
 
 import water.H2O;
+import water.api.schemas3.*;
 import water.rapids.Exec;
 import water.rapids.Session;
 import water.rapids.Val;
 import water.util.Log;
 
 class RapidsHandler extends Handler {
-  public RapidsSchema exec(int version, RapidsSchema rapids) {
+  public RapidsSchemaV3 exec(int version, RapidsSchemaV3 rapids) {
     if( rapids == null ) return null;
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
     if( rapids.session_id == null || rapids.session_id.equals("") )

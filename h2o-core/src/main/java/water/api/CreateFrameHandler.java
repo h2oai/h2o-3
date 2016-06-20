@@ -3,6 +3,9 @@ package water.api;
 import hex.CreateFrame;
 import water.Job;
 import water.Key;
+import water.api.schemas3.CreateFrameV3;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
 
 public class CreateFrameHandler extends Handler {
 

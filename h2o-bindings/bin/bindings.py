@@ -306,7 +306,7 @@ def schemas(raw=False):
     pattern2 = re.compile(r"^(\w{3,})(\1)(\w+)$", re.IGNORECASE)
     def translate_name(name):
         if name is None: return
-        if name == "ApiTimelineV3EventV3EventType": return "ApiTimelineEventTypeV3"
+        if name == "Apischemas3TimelineV3EventV3EventType": return "ApiTimelineEventTypeV3"
         assert not pattern0.match(name), "Bad schema name %s (version number in the middle)" % name
         mm = pattern1.match(name) or pattern2.match(name)
         if mm: return mm.group(2) + mm.group(3)

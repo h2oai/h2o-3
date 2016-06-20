@@ -1,8 +1,9 @@
 package water.api;
 
 import hex.Model;
-import water.api.KeyV3.ModelKeyV3;
-import water.api.KeyV3.FrameKeyV3;
+import water.api.schemas3.KeyV3.ModelKeyV3;
+import water.api.schemas3.KeyV3.FrameKeyV3;
+import water.api.schemas3.SchemaV3;
 
 /**
  * A Model schema contains all the pieces associated with a Model:

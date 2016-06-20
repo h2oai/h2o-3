@@ -5,6 +5,7 @@ import water.Iced;
 import water.IcedWrapper;
 import water.Weaver;
 import water.api.SchemaMetadataBase.FieldMetadataBase;
+import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
 import water.util.Log;

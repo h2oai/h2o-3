@@ -3,6 +3,7 @@ package water.api;
 import hex.ModelBuilder;
 import water.Iced;
 import water.TypeMap;
+import water.api.schemas3.MetadataV3;
 import water.api.schemas4.EndpointV4;
 import water.util.MarkdownBuilder;
 import water.api.schemas4.EndpointsListV4;

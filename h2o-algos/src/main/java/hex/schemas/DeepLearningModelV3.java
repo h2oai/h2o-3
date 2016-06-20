@@ -3,6 +3,7 @@ package hex.schemas;
 import hex.deeplearning.DeepLearningModel;
 import water.Key;
 import water.api.*;
+import water.api.schemas3.KeyV3;
 
 public class DeepLearningModelV3 extends ModelSchema<DeepLearningModel, DeepLearningModelV3, DeepLearningModel.DeepLearningParameters, DeepLearningV3.DeepLearningParametersV3, DeepLearningModel.DeepLearningModelOutput, DeepLearningModelV3.DeepLearningModelOutputV3> {
 

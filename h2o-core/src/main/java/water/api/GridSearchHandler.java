@@ -11,6 +11,7 @@ import water.H2O;
 import water.Job;
 import water.Key;
 import water.TypeMap;
+import water.api.schemas3.JobV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 

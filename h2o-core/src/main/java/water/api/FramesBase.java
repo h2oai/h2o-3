@@ -1,10 +1,15 @@
 package water.api;
 
 import water.api.FramesHandler.Frames;
-import water.api.KeyV3.FrameKeyV3;
+import water.api.schemas3.KeyV3.FrameKeyV3;
+import water.api.schemas3.FrameSynopsisV3;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 
-class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<I, S> {
+public class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<I, S> {
+
   // Input fields
   @API(help="Name of Frame of interest", json=false)
   public FrameKeyV3 frame_id;
@@ -38,13 +43,13 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<
 
   // Output fields
   @API(help="Frames", direction=API.Direction.OUTPUT)
-  FrameBase[] frames;
+  public FrameBase[] frames;
 
   @API(help="Compatible models", direction=API.Direction.OUTPUT)
-  ModelSchema[] compatible_models;
+  public ModelSchema[] compatible_models;
 
   @API(help="Domains", direction=API.Direction.OUTPUT)
-  String[][] domain;
+  public String[][] domain;
 
   // Non-version-specific filling into the impl
   @Override public I fillImpl(I f) {
@@ -61,7 +66,7 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<
     return f;
   }
 
-  @Override public FramesBase fillFromImpl(Frames f) {
+  @Override public S fillFromImpl(I f) {
     this.frame_id = new FrameKeyV3(f.frame_id);
     this.column = f.column; // NOTE: this is needed for request handling, but isn't really part of state
     this.find_compatible_models = f.find_compatible_models;
@@ -74,10 +79,10 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<
         this.frames[i++] = new FrameV3(frame, f.row_offset, f.row_count);
       }
     }
-    return this;
+    return (S)this;
   }
 
-  public FramesBase fillFromImplWithSynopsis(Frames f) {
+  public S fillFromImplWithSynopsis(I f) {
     this.frame_id = new FrameKeyV3(f.frame_id);
 
     if (null != f.frames) {
@@ -88,6 +93,6 @@ class FramesBase<I extends Frames, S extends FramesBase<I, S>> extends SchemaV3<
         this.frames[i++] = new FrameSynopsisV3(frame);
       }
     }
-    return this;
+    return (S)this;
   }
 }
