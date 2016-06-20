@@ -1,7 +1,0 @@
-<suite name='Accuracy Testing Suite' verbose='5'>
-  <test name='Accuracy Test Case'>
-    <classes name='water.AccuracyTestingSuite'>
-      <class name='water.AccuracyTestingSuite' />
-    </classes>
-  </test>
-</suite>
