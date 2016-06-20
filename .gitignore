@@ -70,6 +70,7 @@ smalldata/
 # Stuff created by 'gradle dist'
 h2o-dist/tmp
 target
+h2o-test-accuracy/testng.xml
 
 # stuff created by sphinx-build (python docs)
 ./h2o-py/docs/docs/_static
