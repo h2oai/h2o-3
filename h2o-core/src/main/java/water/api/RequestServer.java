@@ -56,13 +56,8 @@ public class RequestServer {
   // Returned in REST API responses as X-h2o-rest-api-version-max
   public static final int H2O_REST_API_VERSION = 3;
 
-  // RequestServer singleton
-  public static RequestServer SERVER;
-  private RequestServer() {}
-
   private static RouteTree routesTree = new RouteTree("");
   private static ArrayList<Route> routesList = new ArrayList<>(150);
-  private static boolean registrationOpen = true;
 
   public static int numRoutes() { return routesList.size(); }
   public static ArrayList<Route> routes() { return routesList; }
@@ -159,7 +154,6 @@ public class RequestServer {
       String summary,
       HandlerFactory handler_factory
   ) {
-    assert registrationOpen : "finalizeRegistration() has been called, cannot register any additional routes";
     assert api_name != null : "api_name should not be null";
     try {
       RequestUri uri = new RequestUri(http_method, url);
@@ -172,22 +166,6 @@ public class RequestServer {
     }
   }
 
-  /**
-   * This method must be called after all requests have been registered.
-   */
-  public static void finalizeRegistration() {
-    assert registrationOpen : "finalizeRegistration() should not be called more than once";
-    registrationOpen = false;
-
-    SchemaServer.registerAllSchemasIfNecessary();
-
-    // Need a stub RequestServer to handle calls to serve() from Jetty.
-    // But no threads are started here anymore.
-    SERVER = new RequestServer();
-
-    H2O.getJetty().acceptRequests();
-  }
-
 
 
   //------ Handling Requests -------------------------------------------------------------------------------------------
@@ -195,7 +173,7 @@ public class RequestServer {
   /**
    * Top-level dispatch based on the URI.
    */
-  public Response serve(String url, String method, Properties header, Properties parms) {
+  public static Response serve(String url, String method, Properties header, Properties parms) {
     try {
       // Jack priority for user-visible requests
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
@@ -320,7 +298,7 @@ public class RequestServer {
   /**
    * Log the request (unless it's an overly common one).
    */
-  private void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
+  private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
     String url = uri.getUrl();
     if (url.endsWith(".css") ||
         url.endsWith(".js") ||
@@ -433,7 +411,7 @@ public class RequestServer {
     }
   }
 
-  private Route findRouteByApiName(String apiName) {
+  private static Route findRouteByApiName(String apiName) {
     for (Route route : routesList) {
       if (route._api_name.equals(apiName))
         return route;
@@ -449,7 +427,7 @@ public class RequestServer {
    * @param uri RequestUri object of the incoming request.
    * @return Response object, or null if the request does not require any special handling.
    */
-  private Response maybeServeSpecial(RequestUri uri) {
+  private static Response maybeServeSpecial(RequestUri uri) {
     assert uri != null;
 
     if (uri.isHeadMethod()) {
@@ -467,7 +445,7 @@ public class RequestServer {
     return null;
   }
 
-  private Response response404(String what, RequestType type) {
+  private static Response response404(String what, RequestType type) {
     H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
     H2OError error = e.toH2OError(what);
 
@@ -478,7 +456,7 @@ public class RequestServer {
     return serveError(error);
   }
 
-  private Response serveSchema(Schema s, RequestType type) {
+  private static Response serveSchema(Schema s, RequestType type) {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
 
@@ -522,18 +500,18 @@ public class RequestServer {
   }
 
   @SuppressWarnings(value = "unchecked")
-  private Response serveError(H2OError error) {
+  private static Response serveError(H2OError error) {
     // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
     return serveSchema(new H2OErrorV3().fillFromImpl(error), RequestType.json);
   }
 
-  private Response redirectToFlow() {
+  private static Response redirectToFlow() {
     Response res = new Response(HTTP_REDIRECT, MIME_PLAINTEXT, "");
     res.addHeader("Location", "/flow/index.html");
     return res;
   }
 
-  private Response downloadNps(String categoryName, String keyName) {
+  private static Response downloadNps(String categoryName, String keyName) {
     NodePersistentStorage nps = H2O.getNPS();
     AtomicLong length = new AtomicLong();
     InputStream is = nps.get(categoryName, keyName, length);
@@ -543,7 +521,7 @@ public class RequestServer {
     return res;
   }
 
-  private Response downloadLogs() {
+  private static Response downloadLogs() {
     Log.info("\nCollecting logs.");
 
     H2ONode[] members = H2O.CLOUD.members();
@@ -600,14 +578,14 @@ public class RequestServer {
     return res;
   }
 
-  private String getOutputLogStem() {
+  private static String getOutputLogStem() {
     String pattern = "yyyyMMdd_hhmmss";
     SimpleDateFormat formatter = new SimpleDateFormat(pattern);
     String now = formatter.format(new Date());
     return "h2ologs_" + now;
   }
 
-  private byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
+  private static byte[] zipLogs(byte[][] results, byte[] clientResult, String topDir) throws IOException {
     int l = 0;
     assert H2O.CLOUD._memary.length == results.length : "Unexpected change in the cloud!";
     for (byte[] result : results) l += result.length;
@@ -660,7 +638,7 @@ public class RequestServer {
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
 
   // Returns the response containing the given uri with the appropriate mime type.
-  private Response getResource(RequestType request_type, String url) {
+  private static Response getResource(RequestType request_type, String url) {
     byte[] bytes = _cache.get(url);
     if (bytes == null) {
       // Try-with-resource

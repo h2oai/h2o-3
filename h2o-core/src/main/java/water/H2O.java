@@ -1443,8 +1443,7 @@ final public class H2O {
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     new TCPReceiverThread(NetworkInit._tcpSocket).start();
-    // Register the default Requests
-    Object x = water.api.RequestServer.class;
+
   }
 
   // Callbacks to add new Requests & menu items
@@ -1466,7 +1465,9 @@ final public class H2O {
   static public void finalizeRegistration() {
     if (_doneRequests) return;
     _doneRequests = true;
-    water.api.RequestServer.finalizeRegistration();
+
+    water.api.SchemaServer.registerAllSchemasIfNecessary();
+    jetty.acceptRequests();
   }
 
   // --------------------------------------------------------------------------

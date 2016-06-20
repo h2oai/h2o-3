@@ -742,7 +742,7 @@ public class JettyHTTPD {
         }
 
         // Make Nano call.
-        NanoHTTPD.Response resp = water.api.RequestServer.SERVER.serve(uri, method, headers, parms);
+        NanoHTTPD.Response resp = water.api.RequestServer.serve(uri, method, headers, parms);
 
         // Un-marshal Nano response back to Jetty.
         String choppedNanoStatus = resp.status.substring(0, 3);
