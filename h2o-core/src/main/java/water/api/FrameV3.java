@@ -57,7 +57,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)
   public TwoDimTableBase distribution_summary;
 
-  public static class ColSpecifierV3 extends Schema<VecSpecifier, ColSpecifierV3> {
+  public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> {
     public ColSpecifierV3() { }
     public ColSpecifierV3(String column_name) {
       this.column_name = column_name;
@@ -70,7 +70,7 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     public String[] is_member_of_frames;
   }
 
-  public static class ColV3 extends Schema<Vec, ColV3> {
+  public static class ColV3 extends SchemaV3<Vec, ColV3> {
 
     public ColV3() {}
 
@@ -246,10 +246,10 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     ChunkSummary cs = FrameUtils.chunkSummary(f);
 
     TwoDimTable chunk_summary_table = cs.toTwoDimTableChunkTypes();
-    this.chunk_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), chunk_summary_table).fillFromImpl(chunk_summary_table);
+    this.chunk_summary = (TwoDimTableBase)SchemaServer.schema(3, chunk_summary_table).fillFromImpl(chunk_summary_table);
 
     TwoDimTable distribution_summary_table = cs.toTwoDimTableDistribution();
-    distribution_summary = (TwoDimTableBase)Schema.schema(this.getSchemaVersion(), distribution_summary_table).fillFromImpl(distribution_summary_table);
+    distribution_summary = (TwoDimTableBase)SchemaServer.schema(3, distribution_summary_table).fillFromImpl(distribution_summary_table);
 
     this._fr = f;
 

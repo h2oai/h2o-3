@@ -2,11 +2,12 @@ package water.util;
 
 import water.*;
 import water.api.API;
-import water.api.Schema;
+import water.api.SchemaV3;
 import water.persist.PersistManager;
 
 public class WaterMeterIo extends Iced {
-  public static class IoStatsEntry extends Schema<Iced, IoStatsEntry> {
+
+  public static class IoStatsEntry extends SchemaV3<Iced, IoStatsEntry> {
     @API(help="Back end type", direction = API.Direction.OUTPUT)
     public String backend;
 

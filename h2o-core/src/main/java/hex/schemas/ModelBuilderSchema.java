@@ -11,7 +11,8 @@ import water.api.ValidationMessageBase;
 import water.util.*;
 import java.util.Properties;
 
-public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends RequestSchema<B,S> implements SpecifiesHttpResponseCode {
+public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends
+    ModelParametersSchema> extends SchemaV3<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
@@ -66,7 +67,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     }
 
     try {
-      Class<? extends ModelParametersSchema> parameters_class = (Class<? extends ModelParametersSchema>) ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+      Class<? extends ModelParametersSchema> parameters_class = ReflectionUtils.findActualClassParameter(this.getClass(), 2);
       return (P)parameters_class.newInstance();
     }
     catch (Exception e) {
@@ -81,7 +82,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
   /** Create the corresponding impl object, as well as its parameters object. */
   @Override final public B createImpl() {
-    return ModelBuilder.make(get__meta().getSchema_type(), null, null);
+    return ModelBuilder.make(getSchemaType(), null, null);
   }
 
   @Override public B fillImpl(B impl) {
@@ -100,7 +101,8 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
 
     this.can_build = builder.can_build();
     this.visibility = builder.builderVisibility();
-    job = builder._job == null ? null : (JobV3)Schema.schema(this.getSchemaVersion(), Job.class).fillFromImpl(builder._job);
+    job = builder._job == null ? null : (JobV3)SchemaServer.schema(this.getSchemaVersion(), Job.class).fillFromImpl
+        (builder._job);
     // In general, you can ask about a builder in-progress, and the error
     // message list can be growing - so you have to be prepared to read it
     // racily.  Common for Grid searches exploring with broken parameter

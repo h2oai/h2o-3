@@ -17,10 +17,9 @@ import java.util.Set;
 /**
  * REST endpoint representing single grid object.
  *
- * FIXME: Grid should contain also grid definition - model parameters
- * and definition of hyper parameters.
+ * FIXME: Grid should contain also grid definition - model parameters and definition of hyper parameters.
  */
-public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
+public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   //
   // Inputs
   //
@@ -133,10 +132,15 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
           Model.Output o = m._output;
 
           if (null != o._training_metrics)
-            training_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._training_metrics).fillFromImpl(o._training_metrics);
-          if (null != o._validation_metrics) validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._validation_metrics).fillFromImpl(o._validation_metrics);
-          if (null != o._cross_validation_metrics) cross_validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._cross_validation_metrics).fillFromImpl(o._cross_validation_metrics);
-          if (null != o._cross_validation_metrics_summary) cross_validation_metrics_summary[i] = (TwoDimTableBase) Schema.schema(3, o._cross_validation_metrics_summary).fillFromImpl(o._cross_validation_metrics_summary);
+            training_metrics[i] = (ModelMetricsBase) SchemaServer.schema(3, o._training_metrics).fillFromImpl(o
+                ._training_metrics);
+          if (null != o._validation_metrics) validation_metrics[i] = (ModelMetricsBase) SchemaServer.schema(3, o
+              ._validation_metrics).fillFromImpl(o._validation_metrics);
+          if (null != o._cross_validation_metrics) cross_validation_metrics[i] = (ModelMetricsBase) SchemaServer
+              .schema(3, o._cross_validation_metrics).fillFromImpl(o._cross_validation_metrics);
+          if (null != o._cross_validation_metrics_summary) cross_validation_metrics_summary[i] = (TwoDimTableBase)
+              SchemaServer.schema(3, o._cross_validation_metrics_summary).fillFromImpl(o
+                  ._cross_validation_metrics_summary);
         }
       }
     }
@@ -171,7 +175,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     for (int i = 0; i < modelParameters.length; i++) {
       if (modelParameters[i] != null) {
         result[i] =
-            (ModelParametersSchema) Schema.schema(Schema.getLatestVersion(), modelParameters[i])
+            (ModelParametersSchema) SchemaServer.schema(SchemaServer.getLatestVersion(), modelParameters[i])
                 .fillFromImpl(modelParameters[i]);
       } else {
         result[i] = null;

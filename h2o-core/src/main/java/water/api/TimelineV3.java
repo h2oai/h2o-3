@@ -11,7 +11,7 @@ import java.util.Date;
 /** Display of a Timeline
  *  Created by tomasnykodym on 6/5/14.
  */
-public class TimelineV3 extends RequestSchema<Timeline,TimelineV3> {
+public class TimelineV3 extends SchemaV3<Timeline,TimelineV3> {
   // This schema has no input params
   @API(help="Current time in millis.", direction=API.Direction.OUTPUT)
   private long now;
@@ -22,7 +22,7 @@ public class TimelineV3 extends RequestSchema<Timeline,TimelineV3> {
   @API(help="recorded timeline events", direction=API.Direction.OUTPUT)
   public EventV3[] events;
 
-  public static class EventV3<I, S extends EventV3<I, S>> extends Schema<Iced, S> {
+  public static class EventV3<I, S extends EventV3<I, S>> extends SchemaV3<Iced, S> {
     @API(help="Time when the event was recorded. Format is hh:mm:ss:ms")
     private final String date;
 

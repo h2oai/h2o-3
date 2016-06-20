@@ -4,7 +4,7 @@ import water.H2O;
 
 import java.io.File;
 
-public class Register extends AbstractRegister {
+public class RegisterResourceRoots extends AbstractRegister {
   @Override
   public void register(String relativeResourcePath) {
     H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));

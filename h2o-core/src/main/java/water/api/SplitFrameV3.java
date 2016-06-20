@@ -4,7 +4,7 @@ import hex.SplitFrame;
 import water.Key;
 import water.api.KeyV3.FrameKeyV3;
 
-public class SplitFrameV3 extends RequestSchema<SplitFrame, SplitFrameV3> {
+public class SplitFrameV3 extends SchemaV3<SplitFrame, SplitFrameV3> {
   @API(help="Job Key")
   public KeyV3.JobKeyV3 key;
 

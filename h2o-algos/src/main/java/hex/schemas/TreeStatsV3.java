@@ -2,9 +2,9 @@ package hex.schemas;
 
 import hex.tree.TreeStats;
 import water.api.API;
-import water.api.Schema;
+import water.api.SchemaV3;
 
-public class TreeStatsV3 extends Schema<TreeStats, TreeStatsV3> {
+public class TreeStatsV3 extends SchemaV3<TreeStats, TreeStatsV3> {
   // TODO: no CamelCase
   @API(help="minDepth")
   public int min_depth;

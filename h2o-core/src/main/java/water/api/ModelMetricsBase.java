@@ -11,7 +11,7 @@ import water.util.PojoUtils;
 /**
  * Base Schema for individual instances of ModelMetrics objects.  Note: this class should not be used directly.
  */
-public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends Schema<I, S> {
+public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends SchemaV3<I, S> {
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
   public ModelKeyV3 model;

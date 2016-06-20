@@ -49,7 +49,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
     // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
-    String algoSchemaName = Schema.schemaClass(version, algoName).getSimpleName(); // GBMV3
+    String algoSchemaName = SchemaServer.schemaClass(version, algoName).getSimpleName(); // GBMV3
     int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
 
     // TODO: this is a horrible hack which is going to cause maintenance problems:
@@ -101,7 +101,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // FIXME: right now we have to remove grid parameters which we sent back
     gss.hyper_parameters = null;
     gss.total_models = gsJob._result.get().getModelCount(); // TODO: looks like it's currently always 0
-    gss.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
+    gss.job = (JobV3) SchemaServer.schema(version, Job.class).fillFromImpl(gsJob);
 
     return gss;
   }
@@ -173,7 +173,7 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     public ModelParametersFromSchemaBuilder(MP initialParams) {
       params = initialParams;
-      paramsSchema = (PS) Schema.schema(Schema.getHighestSupportedVersion(), params.getClass());
+      paramsSchema = (PS) SchemaServer.schema(-1, params.getClass());
       fields = new ArrayList<>(7);
     }
 

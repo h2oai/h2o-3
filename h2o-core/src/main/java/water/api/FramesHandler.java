@@ -244,7 +244,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
       ((FrameV3)s.frames[0]).compatible_models = new String[compatible.length];
       int i = 0;
       for (Model m : compatible) {
-        s.compatible_models[i] = (ModelSchema)Schema.schema(version, m).fillFromImpl(m);
+        s.compatible_models[i] = (ModelSchema)SchemaServer.schema(version, m).fillFromImpl(m);
         ((FrameV3)s.frames[0]).compatible_models[i] = m._key.toString();
         i++;
       }
@@ -256,7 +256,8 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(Frame.export(fr, s.path, s.frame_id.key().toString(),s.force));
+    s.job =  (JobV3) SchemaServer.schema(version, Job.class).fillFromImpl(Frame.export(fr, s.path, s.frame_id.key()
+        .toString(),s.force));
     return s;
   }
 

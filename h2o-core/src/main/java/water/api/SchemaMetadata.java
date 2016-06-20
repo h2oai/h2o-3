@@ -159,7 +159,7 @@ public final class SchemaMetadata extends Iced {
           Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
 
           // Now see if we have a versioned schema for its Iced type:
-          Class<? extends Schema>  versioned_schema_class = Schema.schemaClass(schema.getSchemaVersion(), Schema.getImplClass(schema_class));
+          Class<? extends Schema>  versioned_schema_class = SchemaServer.schemaClass(-1, Schema.getImplClass(schema_class));
 
           // If we found a versioned schema class for its iced type use it, else fall back to the type of the field:
           if (null != versioned_schema_class) {
@@ -272,7 +272,7 @@ public final class SchemaMetadata extends Iced {
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        if (clz == Schema.Meta.class) {
+        if (clz == SchemaV3.Meta.class) {
           // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
           return "Schema.Meta";
         } else {
@@ -360,9 +360,9 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
-    version = schema.get__meta().getSchema_version();
-    name = schema.get__meta().getSchema_name();
-    type = schema.get__meta().getSchema_type();
+    version = schema.getSchemaVersion();
+    name = schema.getSchemaName();
+    type = schema.getSchemaType();
 
     superclass = schema.getClass().getSuperclass().getSimpleName();
     // Get metadata of all annotated fields

@@ -2,19 +2,12 @@ package water.parser;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.Request;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
-
-import water.H2O;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
-import water.api.ImportFilesHandler;
-import water.api.RequestServer;
 import water.fvec.Frame;
+
+import java.io.IOException;
 
 public class ClientParserTest extends TestUtil {
   //

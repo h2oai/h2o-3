@@ -3,12 +3,11 @@ package hex.schemas;
 import hex.glm.GLMModel;
 import water.api.API;
 import water.api.KeyV3;
-import water.api.Schema;
+import water.api.SchemaV3;
 
 /**
- * Created by tomas on 4/20/16.
  */
-public class GLMRegularizationPathV3  extends Schema<GLMModel.RegularizationPath,GLMRegularizationPathV3>{
+public class GLMRegularizationPathV3  extends SchemaV3<GLMModel.RegularizationPath,GLMRegularizationPathV3>{
   @API(help="source model", required = true, direction = API.Direction.INPUT)
   public KeyV3.ModelKeyV3 model;
   @API(help="Computed lambda values")
