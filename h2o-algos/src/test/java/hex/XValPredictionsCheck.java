@@ -8,6 +8,7 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import junit.framework.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -16,6 +17,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.ASTKFold;
 import water.util.ArrayUtils;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * This test is intended to corroborate the documented description of cross-validated
@@ -96,6 +99,8 @@ public class XValPredictionsCheck extends TestUtil {
   }
 
   void checkModel(Model m, Vec foldId, int nclass) {
+    if(!(m instanceof DRFModel)) // DRF does out of back instead of true training, nobs might be different
+      assertEquals(m._output._training_metrics._nobs,m._output._cross_validation_metrics._nobs);
     m.delete();
     m.deleteCrossValidationModels();
     Key[] xvalKeys = m._output._cross_validation_predictions;
