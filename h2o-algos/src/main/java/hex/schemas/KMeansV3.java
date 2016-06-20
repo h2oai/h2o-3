@@ -4,7 +4,7 @@ import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
 import water.api.API;
 import water.api.ClusteringModelParametersSchema;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 
 public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMeansV3.KMeansParametersV3> {
 

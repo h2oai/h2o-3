@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.svd.SVDModel;
 import water.api.*;
+import water.api.schemas3.KeyV3;
 
 public class SVDModelV99 extends ModelSchema<SVDModel, SVDModelV99, SVDModel.SVDParameters, SVDV99.SVDParametersV99, SVDModel.SVDOutput, SVDModelV99.SVDModelOutputV99> {
   public static final class SVDModelOutputV99 extends ModelOutputSchema<SVDModel.SVDOutput, SVDModelOutputV99> {

@@ -4,6 +4,8 @@ import water.AutoBuffer;
 import water.Iced;
 import water.IcedWrapper;
 import water.api.SchemaMetadata.FieldMetadata;
+import water.api.schemas3.FieldMetadataV3;
+import water.api.schemas3.SchemaV3;
 import water.util.PojoUtils;
 
 import java.util.ArrayList;

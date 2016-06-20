@@ -1,6 +1,8 @@
 package water.api;
 
 import water.H2O;
+import water.api.schemas3.TypeaheadV3;
+
 import java.util.ArrayList;
 
 class TypeaheadHandler extends Handler {

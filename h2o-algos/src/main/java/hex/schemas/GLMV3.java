@@ -7,7 +7,7 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
-import water.api.KeyV3.FrameKeyV3;
+import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.ModelParametersSchema;
 
 /**

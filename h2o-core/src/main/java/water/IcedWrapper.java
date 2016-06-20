@@ -1,7 +1,7 @@
 package water;
 
 import org.apache.commons.lang.ArrayUtils;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 
 import java.util.Arrays;

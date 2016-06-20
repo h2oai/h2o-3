@@ -4,6 +4,7 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
+import water.api.schemas3.SchemaV3;
 import water.util.TwoDimTable;
 
 /**

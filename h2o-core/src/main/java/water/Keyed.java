@@ -1,5 +1,6 @@
 package water;
 
+import water.api.schemas3.KeyV3;
 import water.fvec.*;
 
 /** Iced, with a Key.  Support for DKV removal. */
@@ -70,5 +71,5 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return (_checksum=x);
   }
 
-  public Class<? extends water.api.KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }
+  public Class<? extends KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }
 }

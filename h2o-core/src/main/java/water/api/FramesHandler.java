@@ -3,13 +3,15 @@ package water.api;
 import hex.Model;
 import water.*;
 import water.api.ModelsHandler.Models;
+import water.api.schemas3.FrameSynopsisV3;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.FramesV3;
+import water.api.schemas3.JobV3;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FrameUtils;
 import water.util.Log;
 
-import java.io.InputStream;
 import java.util.*;
 
 /*
@@ -47,10 +49,10 @@ import java.util.*;
  * <p> deleteAll(): Delete all Frames from the H2O distributed K/V store.
  * <p>
  */
-class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
+public class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
 
   /** Class which contains the internal representation of the frames list and params. */
-  protected static final class Frames extends Iced {
+  public static final class Frames extends Iced {
     Key frame_id;
     long row_offset;
     int row_count;

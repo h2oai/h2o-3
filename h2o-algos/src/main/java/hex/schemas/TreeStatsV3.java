@@ -2,7 +2,7 @@ package hex.schemas;
 
 import hex.tree.TreeStats;
 import water.api.API;
-import water.api.SchemaV3;
+import water.api.schemas3.SchemaV3;
 
 public class TreeStatsV3 extends SchemaV3<TreeStats, TreeStatsV3> {
   // TODO: no CamelCase

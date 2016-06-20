@@ -1,6 +1,7 @@
 package water.api;
 
 import water.Iced;
+import water.api.schemas3.SchemaV3;
 
 /**
  * Schema to represent schema.

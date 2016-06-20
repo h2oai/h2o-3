@@ -1,10 +1,13 @@
 package water.api;
 
 import hex.Model;
-import water.api.KeyV3.ModelKeyV3;
+import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.api.ModelsHandler.Models;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.ModelSynopsisV3;
+import water.api.schemas3.SchemaV3;
 
-class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends SchemaV3<I, ModelsBase<I, S>> {
+public class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends SchemaV3<I, ModelsBase<I, S>> {
   // Input fields
   @API(help="Name of Model of interest", json=false)
   public ModelKeyV3 model_id;
@@ -20,7 +23,7 @@ class ModelsBase<I extends Models, S extends ModelsBase<I, S>> extends SchemaV3<
   public ModelSchemaBase[] models;
 
   @API(help="Compatible frames", direction=API.Direction.OUTPUT)
-  FrameV3[] compatible_frames; // TODO: FrameBase
+  public FrameV3[] compatible_frames; // TODO: FrameBase
 
   // Non-version-specific filling into the impl
   @Override public I fillImpl(I m) {

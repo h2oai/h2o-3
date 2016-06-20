@@ -8,6 +8,10 @@ import water.H2O;
 import water.Job;
 import water.api.*;
 import water.api.ValidationMessageBase;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
+import water.api.schemas3.ValidationMessageV3;
 import water.util.*;
 import java.util.Properties;
 

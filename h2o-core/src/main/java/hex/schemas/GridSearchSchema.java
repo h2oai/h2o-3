@@ -5,6 +5,9 @@ import hex.grid.Grid;
 import water.H2O;
 import water.Key;
 import water.api.*;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
 

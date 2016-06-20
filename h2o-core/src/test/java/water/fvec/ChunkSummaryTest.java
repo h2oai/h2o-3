@@ -3,11 +3,8 @@ package water.fvec;
 import hex.CreateFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
-import water.api.FrameV3;
-import water.api.Schema;
 import water.api.TwoDimTableBase;
 import water.util.*;
 

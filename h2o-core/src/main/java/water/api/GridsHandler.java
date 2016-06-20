@@ -5,6 +5,7 @@ import hex.schemas.GridSchemaV99;
 import water.Key;
 import water.KeySnapshot;
 import water.Value;
+import water.api.schemas99.GridsV99;
 
 /**
  * /Grids/ end-point handler.

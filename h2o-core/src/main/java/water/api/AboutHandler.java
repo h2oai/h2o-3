@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
+import water.api.schemas3.SchemaV3;
 
 import java.util.ArrayList;
 

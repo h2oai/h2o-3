@@ -3,7 +3,6 @@ package hex.schemas;
 import hex.naivebayes.NaiveBayes;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.api.API;
-import water.api.FrameV3.ColSpecifierV3;
 import water.api.ModelParametersSchema;
 
 public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,NaiveBayesV3.NaiveBayesParametersV3> {

@@ -5,7 +5,7 @@ import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 import water.api.ModelParametersSchema;
 
 public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
