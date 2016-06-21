@@ -16,13 +16,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import water.UDPRebooted.ShutdownTsk;
+import water.api.NanoResponse;
 import water.api.schemas3.H2OErrorV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OFailException;
 import water.fvec.Frame;
 import water.fvec.UploadFileVec;
 import water.init.NodePersistentStorage;
-import water.util.FileUtils;
 import water.util.HttpResponseStatus;
 import water.util.Log;
 
@@ -742,7 +742,7 @@ public class JettyHTTPD {
         }
 
         // Make Nano call.
-        NanoHTTPD.Response resp = water.api.RequestServer.serve(uri, method, headers, parms);
+        NanoResponse resp = water.api.RequestServer.serve(uri, method, headers, parms);
 
         // Un-marshal Nano response back to Jetty.
         String choppedNanoStatus = resp.status.substring(0, 3);
@@ -760,14 +760,8 @@ public class JettyHTTPD {
           response.setHeader(key, value);
         }
 
-        OutputStream os = response.getOutputStream();
-        if (resp instanceof NanoHTTPD.StreamResponse) {
-          NanoHTTPD.StreamResponse ssr = (NanoHTTPD.StreamResponse) resp;
-          ssr.streamWriter.writeTo(os);
-        } else {
-          InputStream is = resp.data;
-          FileUtils.copyStream(is, os, 1024);
-        }
+        resp.writeTo(response.getOutputStream());
+
       } finally {
         logRequest(method, request, response);
         // Handle shutdown if it was requested.

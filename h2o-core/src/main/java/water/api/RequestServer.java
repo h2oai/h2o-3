@@ -9,8 +9,6 @@ import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.util.*;
-import water.NanoHTTPD.Response;
-import water.NanoHTTPD.StreamResponse;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -176,7 +174,7 @@ public class RequestServer {
   /**
    * Top-level dispatch based on the URI.
    */
-  public static Response serve(String url, String method, Properties header, Properties parms) {
+  public static NanoResponse serve(String url, String method, Properties header, Properties parms) {
     try {
       // Jack priority for user-visible requests
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
@@ -188,7 +186,7 @@ public class RequestServer {
       maybeLogRequest(uri, header, parms);
 
       // For certain "special" requests that produce non-JSON payloads we require special handling.
-      Response special = maybeServeSpecial(uri);
+      NanoResponse special = maybeServeSpecial(uri);
       if (special != null) return special;
 
       // Determine the Route corresponding to this request, and also fill in {parms} with the path parameters
@@ -430,13 +428,13 @@ public class RequestServer {
    * @param uri RequestUri object of the incoming request.
    * @return Response object, or null if the request does not require any special handling.
    */
-  private static Response maybeServeSpecial(RequestUri uri) {
+  private static NanoResponse maybeServeSpecial(RequestUri uri) {
     assert uri != null;
 
     if (uri.isHeadMethod()) {
       // Blank response used by R's uri.exists("/")
       if (uri.getUrl().equals("/"))
-        return new Response(HTTP_OK, MIME_PLAINTEXT, "");
+        return new NanoResponse(HTTP_OK, MIME_PLAINTEXT, "");
     }
     if (uri.isGetMethod()) {
       // url "/3/Foo/bar" => path ["", "GET", "Foo", "bar", "3"]
@@ -448,7 +446,7 @@ public class RequestServer {
     return null;
   }
 
-  private static Response response404(String what, RequestType type) {
+  private static NanoResponse response404(String what, RequestType type) {
     H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
     H2OError error = e.toH2OError(what);
 
@@ -459,7 +457,7 @@ public class RequestServer {
     return serveError(error);
   }
 
-  private static Response serveSchema(Schema s, RequestType type) {
+  private static NanoResponse serveSchema(Schema s, RequestType type) {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
 
@@ -476,21 +474,21 @@ public class RequestServer {
     switch (type) {
       case html: // return JSON for html requests
       case json:
-        return new Response(http_response_header, MIME_JSON, s.toJsonString());
+        return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
       case xml:
         throw H2O.unimpl("Unknown type: " + type.toString());
       case java:
         if (s instanceof H2OErrorV3) {
-          return new Response(http_response_header, MIME_JSON, s.toJsonString());
+          return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
         }
         if (s instanceof AssemblyV99) {
           Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
-          Response r = new Response(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
+          NanoResponse r = new NanoResponse(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
           r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
           return r;
         } else if (s instanceof StreamingSchema) {
           StreamingSchema ss = (StreamingSchema) s;
-          Response r = new StreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
+          NanoResponse r = new NanoStreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
           // Needed to make file name match class name
           r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
           return r;
@@ -503,28 +501,28 @@ public class RequestServer {
   }
 
   @SuppressWarnings(value = "unchecked")
-  private static Response serveError(H2OError error) {
+  private static NanoResponse serveError(H2OError error) {
     // Note: don't use Schema.schema(version, error) because we have to work at bootstrap:
     return serveSchema(new H2OErrorV3().fillFromImpl(error), RequestType.json);
   }
 
-  private static Response redirectToFlow() {
-    Response res = new Response(HTTP_REDIRECT, MIME_PLAINTEXT, "");
+  private static NanoResponse redirectToFlow() {
+    NanoResponse res = new NanoResponse(HTTP_REDIRECT, MIME_PLAINTEXT, "");
     res.addHeader("Location", "/flow/index.html");
     return res;
   }
 
-  private static Response downloadNps(String categoryName, String keyName) {
+  private static NanoResponse downloadNps(String categoryName, String keyName) {
     NodePersistentStorage nps = H2O.getNPS();
     AtomicLong length = new AtomicLong();
     InputStream is = nps.get(categoryName, keyName, length);
-    Response res = new Response(HTTP_OK, MIME_DEFAULT_BINARY, is);
+    NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, is);
     res.addHeader("Content-Length", Long.toString(length.get()));
     res.addHeader("Content-Disposition", "attachment; filename=" + keyName + ".flow");
     return res;
   }
 
-  private static Response downloadLogs() {
+  private static NanoResponse downloadLogs() {
     Log.info("\nCollecting logs.");
 
     H2ONode[] members = H2O.CLOUD.members();
@@ -575,7 +573,7 @@ public class RequestServer {
       finalZipByteArray = e.toString().getBytes();
     }
 
-    Response res = new Response(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
+    NanoResponse res = new NanoResponse(HTTP_OK, MIME_DEFAULT_BINARY, new ByteArrayInputStream(finalZipByteArray));
     res.addHeader("Content-Length", Long.toString(finalZipByteArray.length));
     res.addHeader("Content-Disposition", "attachment; filename=" + outputFileStem + ".zip");
     return res;
@@ -641,7 +639,7 @@ public class RequestServer {
   private static final NonBlockingHashMap<String,byte[]> _cache = new NonBlockingHashMap<>();
 
   // Returns the response containing the given uri with the appropriate mime type.
-  private static Response getResource(RequestType request_type, String url) {
+  private static NanoResponse getResource(RequestType request_type, String url) {
     byte[] bytes = _cache.get(url);
     if (bytes == null) {
       // Try-with-resource
@@ -671,7 +669,7 @@ public class RequestServer {
       mime = "text/css";
     else if (url.endsWith(".html"))
       mime = "text/html";
-    Response res = new Response(HTTP_OK, mime, new ByteArrayInputStream(bytes));
+    NanoResponse res = new NanoResponse(HTTP_OK, mime, new ByteArrayInputStream(bytes));
     res.addHeader("Content-Length", Long.toString(bytes.length));
     return res;
   }
