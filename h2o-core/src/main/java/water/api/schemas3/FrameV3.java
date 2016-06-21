@@ -193,7 +193,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   public FrameV3() { super(); }
 
   /* Key-only constructor, for the times we only want to return the key. */
-  public FrameV3(Key frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
+  public FrameV3(Key<Frame> frame_id) { this.frame_id = new FrameKeyV3(frame_id); }
 
   public FrameV3(Frame fr) {
     this(fr, 1, (int) fr.numRows(), 0, 0); // NOTE: possible row len truncation
@@ -215,8 +215,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     if( row_count == 0 ) row_count = 100;                                 // 100 rows by default
     if( column_count == 0 ) column_count = f.numCols() - column_offset; // full width by default
 
-    row_count    = (int) Math.min(   row_count,    row_offset + f.numRows());
-    column_count = (int) Math.min(column_count, column_offset + f.numCols());
+    row_count    = (int) Math.min(row_count, row_offset + f.numRows());
+    column_count = Math.min(column_count, column_offset + f.numCols());
 
     this.frame_id = new FrameKeyV3(f._key);
     this.checksum = f.checksum();
@@ -246,12 +246,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     ChunkSummary cs = FrameUtils.chunkSummary(f);
 
-    TwoDimTable chunk_summary_table = cs.toTwoDimTableChunkTypes();
-    this.chunk_summary = (TwoDimTableV3) SchemaServer.schema(3, chunk_summary_table).fillFromImpl(chunk_summary_table);
-
-    TwoDimTable distribution_summary_table = cs.toTwoDimTableDistribution();
-    distribution_summary = (TwoDimTableV3) SchemaServer.schema(3, distribution_summary_table).fillFromImpl
-        (distribution_summary_table);
+    this.chunk_summary = new TwoDimTableV3(cs.toTwoDimTableChunkTypes());
+    this.distribution_summary = new TwoDimTableV3(cs.toTwoDimTableDistribution());
 
     this._fr = f;
 

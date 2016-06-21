@@ -49,6 +49,9 @@ public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBa
   @API(help="Number of observations.")
   public long nobs;
 
+  public ModelMetricsBaseV3() {}
+  public ModelMetricsBaseV3(I impl) { super(impl); }
+
   @Override public S fillFromImpl(ModelMetrics modelMetrics) {
     // If we're copying in a Model we need a ModelSchemaV3 of the right class to fill into.
     Model m = modelMetrics.model();

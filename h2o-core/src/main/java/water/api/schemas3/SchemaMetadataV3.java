@@ -35,6 +35,10 @@ public class SchemaMetadataV3 extends SchemaV3<SchemaMetadata, SchemaMetadataV3>
   @API(help="Documentation for the schema in Markdown format with GitHub extensions", direction=API.Direction.OUTPUT)
   String markdown;
 
+
+  public SchemaMetadataV3() {}
+  public SchemaMetadataV3(SchemaMetadata impl) { super(impl); }
+
   @Override
   public SchemaMetadata createImpl() {
     return new SchemaMetadata();

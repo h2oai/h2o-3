@@ -43,6 +43,9 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
   @API(help="Table Data (col-major)", direction=API.Direction.OUTPUT)
   public IcedWrapper[][] data;
 
+  public TwoDimTableV3() {}
+  public TwoDimTableV3(TwoDimTable impl) { super(impl); }
+
   /**
    * Fill a TwoDimTable Schema from a TwoDimTable
    * @param t TwoDimTable

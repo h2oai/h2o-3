@@ -51,6 +51,9 @@ public class JobV3 extends SchemaV3<Job, JobV3> {
   //==========================
   // Custom adapters go here
 
+  public JobV3() {}
+  public JobV3(Job impl) { super(impl); }
+
   // Version&Schema-specific filling into the impl
   @SuppressWarnings("unchecked")
   @Override public Job createImpl( ) { throw H2O.fail(); } // Cannot make a new Job directly via REST
