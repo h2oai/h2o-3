@@ -255,7 +255,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "deviance_train"};
       if(_lambdaDevTest != null)
-        cnames = ArrayUtils.append(cnames,"Deviance_Test");
+        cnames = ArrayUtils.append(cnames,"deviance_test");
       if(_lambdaDevXval != null)
         cnames = ArrayUtils.append(cnames,new String[]{"deviance_xval","deviance_se"});
       String[] ctypes = new String[]{"string", "string", "int", "string","int", "double"};
