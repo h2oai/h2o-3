@@ -171,11 +171,6 @@ public class SchemaServer {
 
       if (impl_class != Iced.class) {
         Pair<String, Integer> versioned = new Pair<>(impl_class.getSimpleName(), version);
-        // Check for conflicts
-        if (iced_to_schema.containsKey(versioned))
-          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " +
-              iced_to_schema.get(versioned) + " and " + clz + " both map to " +
-              "version: " + version + " of Iced class: " + impl_class);
         iced_to_schema.put(versioned, clz);
       }
     }
