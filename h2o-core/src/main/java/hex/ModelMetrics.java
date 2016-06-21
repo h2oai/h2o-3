@@ -29,8 +29,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   private transient Frame _frame;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
+  public final long _nobs;
 
-  public ModelMetrics(Model model, Frame frame, double MSE, String desc) {
+  public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
     super(buildKey(model, frame));
     _description = desc;
     // Do not cache fields now
@@ -40,6 +41,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _model_checksum = model.checksum();
     try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
+    _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
   }
 
@@ -143,6 +145,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     excluded.add("cm");
     excluded.add("auc_obj");
     excluded.add("remove");
+    excluded.add("nobs");
     if (m!=null) {
       for (Method meth : m.getClass().getMethods()) {
         if (excluded.contains(meth.getName())) continue;

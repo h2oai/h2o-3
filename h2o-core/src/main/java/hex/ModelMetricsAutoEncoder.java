@@ -5,10 +5,10 @@ import water.fvec.Frame;
 
 public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
   public ModelMetricsAutoEncoder(Model model, Frame frame) {
-    super(model, frame, Double.NaN);
+    super(model, frame, 0, Double.NaN);
   }
-  public ModelMetricsAutoEncoder(Model model, Frame frame, double mse) {
-    super(model, frame, mse);
+  public ModelMetricsAutoEncoder(Model model, Frame frame, long nobs, double mse) {
+    super(model, frame, nobs, mse);
   }
 
   public static class MetricBuilderAutoEncoder extends MetricBuilderUnsupervised {

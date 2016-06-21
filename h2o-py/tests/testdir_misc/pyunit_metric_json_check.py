@@ -30,6 +30,7 @@ def metric_json_check():
                                     u'model',
                                     u'duration_in_ms',
                                     u'frame_checksum',
+                                    u'nobs',
                                     u'mean_residual_deviance']
     reg_metric_diff = list(set(reg_metric_json_keys_have) - set(reg_metric_json_keys_desired))
     assert not reg_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) regression " \
@@ -58,6 +59,7 @@ def metric_json_check():
                                     u'model',
                                     u'duration_in_ms',
                                     u'frame_checksum',
+                                    u'nobs',
                                     u'residual_deviance',
                                     u'mean_residual_deviance']
     reg_metric_diff = list(set(reg_metric_json_keys_have) - set(reg_metric_json_keys_desired))
@@ -92,6 +94,7 @@ def metric_json_check():
                                     u'model',
                                     u'duration_in_ms',
                                     u'frame_checksum',
+                                    u'nobs',
                                     u'domain']
     bin_metric_diff = list(set(bin_metric_json_keys_have) - set(bin_metric_json_keys_desired))
     assert not bin_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) binomial " \
@@ -108,6 +111,7 @@ def metric_json_check():
                                     u'max_criteria_and_metric_scores',
                                     u'MSE',
                                     u'frame_checksum',
+                                    u'nobs',
                                     u'AIC',
                                     u'logloss',
                                     u'Gini',
@@ -150,6 +154,7 @@ def metric_json_check():
                                     u'mean_per_class_error',
                                     u'r2',
                                     u'frame',
+                                    u'nobs',
                                     u'model_checksum',
                                     u'MSE',
                                     u'__meta',
@@ -189,6 +194,7 @@ def metric_json_check():
                                      u'model',
                                      u'duration_in_ms',
                                      u'frame_checksum',
+                                     u'nobs',
                                      u'centroid_stats']
     clus_metric_diff = list(set(clus_metric_json_keys_have) - set(clus_metric_json_keys_desired))
     assert not clus_metric_diff, "There's a difference between the current ({0}) and the desired ({1}) clustering " \

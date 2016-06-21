@@ -7,7 +7,6 @@ import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
-import org.apache.commons.lang.*;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
@@ -15,7 +14,6 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
@@ -23,6 +21,7 @@ import water.util.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -67,9 +66,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._coefficients_std[i] = rp._coefficients[i];
         rp._coefficients[i] = _output._dinfo.denormalizeBeta(rp._coefficients_std[i]);
       }
-      rp._explained_deviance_train[i] = 1 - sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
+      rp._explained_deviance_train[i] = 1 - _output._training_metrics._nobs*sm.devianceTrain/((GLMMetrics)_output._training_metrics).null_deviance();
       if (rp._explained_deviance_valid != null)
-        rp._explained_deviance_valid[i] = 1 - sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
+        rp._explained_deviance_valid[i] = 1 - _output._validation_metrics._nobs*sm.devianceTest/((GLMMetrics)_output._validation_metrics).null_deviance();
     }
     return rp;
   }
@@ -131,9 +130,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
   }
 
-  public void addSubmodel(double[] beta, double lambda, int iter) {
-    _output._submodels = ArrayUtils.append(_output._submodels,new Submodel(lambda,beta,iter,-1,-1));
+  public GLMModel addSubmodel(Submodel sm) {
+    _output._submodels = ArrayUtils.append(_output._submodels,sm);
+    _output.setSubmodelIdx(_output._submodels.length-1);
+    return this;
   }
+
+  public GLMModel updateSubmodel(Submodel sm) {
+    assert sm.lambda_value == _output._submodels[_output._submodels.length-1].lambda_value;
+    _output._submodels[_output._submodels.length-1] = sm;
+    return this;
+  }
+
   public void update(double [] beta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,beta,iter,devianceTrain,devianceTest);
@@ -217,6 +225,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.hide("_tweedie_variance_power","Only applicable with Tweedie family");
         glm.hide("_tweedie_link_power","Only applicable with Tweedie family");
       }
+      if(_remove_collinear_columns && !_intercept)
+        glm.error("_intercept","Remove colinear columns option is currently not supported without intercept");
       if(_beta_constraints != null) {
         if(_family == Family.multinomial)
           glm.error("beta_constraints","beta constraints are not supported for family = multionomial");
@@ -241,9 +251,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(!_lambda_search) {
         glm.hide("_lambda_min_ratio", "only applies if lambda search is on.");
         glm.hide("_nlambdas", "only applies if lambda search is on.");
-        glm.hide("_stopping_rounds","only applies if lambda search is on.");
-        glm.hide("_stopping_metric", "only applies if lambda search is on.");
-        glm.hide("_stopping_threshold","only applies if lambda search is on.");
+        glm.hide("_early_stopping","only applies if lambda search is on.");
       }
       if(_link != Link.family_default) { // check we have compatible link
         switch (_family) {
@@ -365,33 +373,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      return deviance((double)yr,(double)ym);
     }
 
-    public final double likelihood(double yr, double ym){
-      switch(_family){
-        case gaussian:
-          return .5 * (yr - ym) * (yr - ym);
-        case binomial:
-          if(yr == ym) return 0;
-          return .5 * deviance(yr, ym);
-//          double res = Math.log(1 + Math.exp((1 - 2*yr) * eta));
-//          assert Math.abs(res - .5 * deviance(yr,eta,ym)) < 1e-8:res + " != " + .5*deviance(yr,eta,ym) +" yr = "  + yr + ", ym = " + ym + ", eta = " + eta;
-//          return res;
-//          double res = -yr * eta - Math.log(1 - ym);
-//          return res;
-
-        case poisson:
-          if( yr == 0 ) return 2 * ym;
-          return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
-        case gamma:
-          if( yr == 0 ) return -2;
-          return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
-        case tweedie:
-          return deviance(yr,ym); //fixme: not really correct, not sure what the likelihood is right now
-        default:
-          throw new RuntimeException("unknown family " + _family);
-      }
-    }
-
-
+    public final double likelihood(double yr, double ym){ return .5 * deviance(yr,ym);}
 
     public final double linkDeriv(double x) { // note: compute an inverse of what R does
       switch(_link) {
@@ -666,7 +648,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double devianceTest;
     public final int    [] idxs;
     public final double [] beta;
-    public final double [][] betaMultinomial;
 
     public double [] getBeta(double [] beta) {
       if(idxs != null){
@@ -679,43 +660,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public int rank(){
-      if(betaMultinomial != null) {
-        int res = 0;
-        for(double [] ds:betaMultinomial)
-          for(double d:ds)
-            if(d != 0)++res;
-        return res;
-      }
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
-
-    /**
-     * Constructor for multinomial submodel
-     * @param lambda
-     * @param beta
-     * @param iteration
-     * @param devTrain
-     * @param devTest
-     */
-    public Submodel(double lambda , double [][] beta, int iteration, double devTrain, double devTest){
-      this.lambda_value = lambda;
-      this.iteration = iteration;
-      this.devianceTrain = devTrain;
-      this.devianceTest = devTest;
-      this.beta = null;
-      // grab the indeces of non-zero coefficients
-      this.betaMultinomial = beta;
-      idxs = null;
-      assert idxs == null || idxs.length == beta[0].length-1:"idxs = " + Arrays.toString(idxs) + ", beta = " + Arrays.toString(betaMultinomial[0]);
-    }
-
 
     public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
       this.lambda_value = lambda;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
       this.devianceTest = devTest;
-      this.betaMultinomial = null;
       int r = 0;
       if(beta != null){
         // grab the indeces of non-zero coefficients
@@ -764,7 +716,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
     String[] _coefficient_names;
-    public int _best_lambda_idx;
+    public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
+    public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
+    public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
+    public double lambda_best(){return _submodels[_best_lambda_idx].lambda_value;}
+    public double lambda_1se(){return _lambda_1se == -1?-1:_submodels[_lambda_1se].lambda_value;}
+    public double lambda_selected(){return _submodels[_selected_lambda_idx].lambda_value;}
     double[] _global_beta;
     private double[] _zvalues;
     private double _dispersion;
@@ -796,7 +753,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _binomial;
     public boolean _multinomial;
 
-    public int rank() { return _submodels[_best_lambda_idx].rank();}
+    public int rank() { return _submodels[_selected_lambda_idx].rank();}
 
     public boolean isStandardized() {
       return _dinfo._predictor_transform == TransformType.STANDARDIZE;
@@ -889,7 +846,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       Submodel best = _submodels[0];
       for(int i = 1; i < _submodels.length; ++i) {
         Submodel sm = _submodels[i];
-        if((sm.devianceTest != -1 && sm.devianceTest < best.devianceTest) || (sm.devianceTest == best.devianceTest && sm.devianceTrain < best.devianceTrain)){
+        if(!(sm.devianceTest > best.devianceTest) && sm.devianceTrain < best.devianceTrain){
           bestId = i;
           best = sm;
         }
@@ -898,10 +855,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return best;
     }
 
-    public double[] getNormBeta() {return _submodels[_best_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
+    public double[] getNormBeta() {return _submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
 
     public double[][] getNormBetaMultinomial() {
-      return getNormBetaMultinomial(_best_lambda_idx);
+      return getNormBetaMultinomial(_selected_lambda_idx);
     }
 
     public double[][] getNormBetaMultinomial(int idx) {
@@ -922,7 +879,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
 
     public void setSubmodelIdx(int l){
-      _best_lambda_idx = l;
+      _selected_lambda_idx = l;
       if(_multinomial) {
         _global_beta_multinomial = getNormBetaMultinomial(l);
         for(int i = 0; i < _global_beta_multinomial.length; ++i)
@@ -938,6 +895,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     public double [] beta() { return _global_beta;}
     public Submodel bestSubmodel(){ return _submodels[_best_lambda_idx];}
+
+    public void setSubmodel(double lambdaCVEstimate) {
+      for(int i = 0; i < _submodels.length; ++i)
+        if(_submodels[i] != null && _submodels[i].lambda_value == lambdaCVEstimate) {
+          setSubmodelIdx(i);
+          return;
+        }
+      throw new NoSuchElementException("has no model for lambda = " + lambdaCVEstimate);
+    }
+
+    public Submodel getSubmodel(double lambdaCVEstimate) {
+      for(int i = 0; i < _submodels.length; ++i)
+        if(_submodels[i] != null && _submodels[i].lambda_value == lambdaCVEstimate) {
+          return _submodels[i];
+        }
+      return null;
+    }
   }
 
 
@@ -952,25 +926,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return res;
   }
 
-  public synchronized void setSubmodel(Submodel sm) {
-    int i = 0;
-    if(_output._submodels == null) {
-      _output._submodels = new Submodel[]{sm};
-      return;
-    }
-    for(; i < _output._submodels.length; ++i)
-      if(_output._submodels[i].lambda_value <= sm.lambda_value)
-        break;
-    if(i == _output._submodels.length) {
-      _output._submodels = Arrays.copyOf(_output._submodels,_output._submodels.length+1);
-      _output._submodels[_output._submodels.length-1] = sm;
-    } else if(_output._submodels[i].lambda_value > sm.lambda_value) {
-      _output._submodels = Arrays.copyOf(_output._submodels, _output._submodels.length + 1);
-      for (int j = _output._submodels.length - 1; j > i; --j)
-        _output._submodels[j] = _output._submodels[j - 1];
-      _output._submodels[i] = sm;
-    } else  _output._submodels[i] = sm;
-  }
+
 
   // TODO: Shouldn't this be in schema? have it here for now to be consistent with others...
   /**
@@ -996,13 +952,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         regularization = "Lasso (lambda = ";
       else
         regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[0], 4) + ", lambda = ";
-      regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._best_lambda_idx], 4) + " )";
+      regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._selected_lambda_idx], 4) + " )";
     }
     _output._model_summary.set(0, 2, regularization);
     int lambdaSearch = 0;
     if (_parms._lambda_search) {
       lambdaSearch = 1;
-      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda_max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", best_lambda = " + MathUtils.roundToNDigits(_output.bestSubmodel().lambda_value, 4));
+      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda.max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", lambda.min = "  + MathUtils.roundToNDigits(_output.lambda_best(), 4) + ", lambda.1se = " +  MathUtils.roundToNDigits(_output.lambda_1se(), 4));
     }
     int intercept = _parms._intercept ? 1 : 0;
     if(_output.nclasses() > 2) {

@@ -25,7 +25,11 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
     @API(help="Standardized Coefficient Magnitudes")
     TwoDimTableBase standardized_coefficient_magnitudes;
 
+    @API(help="Lambda minimizing the objective value, only applicable with lambd search")
+    double lambda_best;
 
+    @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
+    double lambda_1se;
 
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
       if(impl.get_global_beta_multinomial() == null)
@@ -115,6 +119,8 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
     @Override
     public GLMModelOutputV3 fillFromImpl(GLMModel.GLMOutput impl) {
       super.fillFromImpl(impl);
+      lambda_1se = impl.lambda_1se();
+      lambda_best = impl.lambda_best();
       if(impl._multinomial)
         return fillMultinomial(impl);
       String [] names = impl.coefficientNames().clone();

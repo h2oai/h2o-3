@@ -25,7 +25,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public double betweenss() { return _betweenss; }
 
   public ModelMetricsClustering(Model model, Frame frame) {
-    super(model, frame, Double.NaN);
+    super(model, frame, 0, Double.NaN);
     _size = null;
     _withinss = null;
     _totss = _tot_withinss = _betweenss = Double.NaN;

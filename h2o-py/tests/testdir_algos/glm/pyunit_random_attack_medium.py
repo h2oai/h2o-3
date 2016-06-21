@@ -43,7 +43,7 @@ def random_attack():
         if random.randint(0,1):
             bc = []
             for n in x:
-                if train[n].isnumeric():
+                if train[n].isnumeric()[0]:
                     name = train.names[n]
                     lower_bound = random.uniform(-1,1)
                     upper_bound = lower_bound + random.random()
