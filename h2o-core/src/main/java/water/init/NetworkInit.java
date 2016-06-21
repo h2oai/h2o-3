@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
@@ -33,6 +34,7 @@ import water.H2O;
 import water.H2ONode;
 import water.JettyHTTPD;
 import water.util.Log;
+import water.util.NetworkUtils;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
@@ -175,6 +177,7 @@ public class NetworkInit {
 
     // Check for an "-ip xxxx" option and accept a valid user choice; required
     // if there are multiple valid IP addresses.
+
     if (H2O.ARGS.ip != null) {
       local = getInetAddress(H2O.ARGS.ip, ips);
     } else if (networkList.size() > 0) {
@@ -194,16 +197,19 @@ public class NetworkInit {
 
       Log.err("No interface matches the network list from the -network option.  Exiting.");
       H2O.exit(-1);
-    }
-    else {
+    } else {
       // No user-specified IP address.  Attempt auto-discovery.  Roll through
       // all the network choices on looking for a single Inet4.
       ArrayList<InetAddress> validIps = new ArrayList();
+      boolean isIPv6Preferred = NetworkUtils.isIPv6Preferred();
+      boolean isIPv4Preferred = NetworkUtils.isIPv4Preferred();
       for( InetAddress ip : ips ) {
         // make sure the given IP address can be found here
-        if( ip instanceof Inet4Address &&
-            !ip.isLoopbackAddress() &&
-            !ip.isLinkLocalAddress() ) {
+        if(!ip.isLoopbackAddress() &&
+           !ip.isLinkLocalAddress() ) {
+          // Always prefer IPv4
+          if (isIPv6Preferred && !isIPv4Preferred && ip instanceof Inet4Address) continue;
+          if (isIPv4Preferred && ip instanceof Inet6Address) continue;
           validIps.add(ip);
         }
       }
@@ -220,8 +226,10 @@ public class NetworkInit {
       try {
         Log.warn("Failed to determine IP, falling back to localhost.");
         // set default ip address to be 127.0.0.1 /localhost
-        local = InetAddress.getByName("127.0.0.1");
-      } catch( UnknownHostException e ) { 
+        local = NetworkUtils.isIPv6Preferred() && ! NetworkUtils.isIPv4Preferred()
+                ? InetAddress.getByName("::1") // IPv6 localhost
+                : InetAddress.getByName("127.0.0.1");
+      } catch (UnknownHostException e) {
         Log.throwErr(e);
       }
     }
@@ -448,6 +456,7 @@ public class NetworkInit {
       // Try next available port to bound
       H2O.API_PORT += 2;
     }
+    boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address;
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
              "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
@@ -476,16 +485,21 @@ public class NetworkInit {
     else 
       H2O.STATIC_H2OS = parseFlatFile(H2O.ARGS.flatfile);
 
-    // Multi-cast ports are in the range E1.00.00.00 to EF.FF.FF.FF
-    int hash = H2O.ARGS.name.hashCode()&0x7fffffff;
-    int port = (hash % (0xF0000000-0xE1000000))+0xE1000000;
-    byte[] ip = new byte[4];
-    for( int i=0; i<4; i++ )
-      ip[i] = (byte)(port>>>((3-i)<<3));
+    // All the machines has to agree on the same multicast address (i.e., multicast group)
+    // Hence use the cloud name to generate multicast address
+    // Note: if necessary we should permit configuration of multicast address manually
+    // Note:
+    //   - IPv4 Multicast IPs are in the range E1.00.00.00 to EF.FF.FF.FF
+    //   - IPv6 Multicast IPs are in the range
+    int hash = H2O.ARGS.name.hashCode();
     try {
-      H2O.CLOUD_MULTICAST_GROUP = InetAddress.getByAddress(ip);
-    } catch( UnknownHostException e ) { Log.throwErr(e); }
-    H2O.CLOUD_MULTICAST_PORT = (port>>>16);
+      H2O.CLOUD_MULTICAST_GROUP = isIPv6 ? NetworkUtils.getIPv6MulticastGroup(hash)
+                                         : NetworkUtils.getIPv4MulticastGroup(hash);
+    } catch (UnknownHostException e) {
+      Log.err("Cannot get multicast group address for " + H2O.SELF_ADDRESS);
+      Log.throwErr(e);
+    }
+    H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash) >>> 16;
   }
 
   // Multicast send-and-close.  Very similar to udp_send, except to the
@@ -511,7 +525,7 @@ public class NetworkInit {
             H2O.CLOUD_MULTICAST_SOCKET.setNetworkInterface(H2O.CLOUD_MULTICAST_IF);
           }
           // Make and send a packet from the buffer
-          H2O.CLOUD_MULTICAST_SOCKET.send(new DatagramPacket(buf, buf.length, H2O.CLOUD_MULTICAST_GROUP,H2O.CLOUD_MULTICAST_PORT));
+          H2O.CLOUD_MULTICAST_SOCKET.send(new DatagramPacket(buf, buf.length, H2O.CLOUD_MULTICAST_GROUP, H2O.CLOUD_MULTICAST_PORT));
         } catch( Exception e ) {  // On any error from anybody, close all sockets & re-open
           // No error on multicast fail: common occurrance for laptops coming
           // awake from sleep.

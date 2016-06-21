@@ -13,6 +13,7 @@ import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
 public class ArrayUtils {
+  private static final byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 
   // Sum elements of an array
   public static long sum(final long[] from) {
@@ -1414,5 +1415,24 @@ public class ArrayUtils {
       shift += 8;
     }
     return r;
+  }
+
+  /** Transform given long numbers into byte array.
+   * Highest 8-bits of the first long will stored in the first field of returned byte array.
+   *
+   * Example:
+   * 0xff18000000000000L -> new byte[] { 0xff, 0x18, 0, 0, 0, 0, 0, 0}
+   */
+  public static byte[] toByteArray(long ...nums) {
+    if (nums == null || nums.length == 0) return EMPTY_BYTE_ARRAY;
+    byte[] result = new byte[8*nums.length];
+    int c = 0;
+    for (long n : nums) {
+      for (int i = 0; i < 8; i++) {
+        result[c*8 + i] = (byte) ((n >>> (64 - 8 * i)) & 0xFF);
+      }
+      c++;
+    }
+    return result;
   }
 }
