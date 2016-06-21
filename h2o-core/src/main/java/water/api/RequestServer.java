@@ -52,7 +52,7 @@ import java.util.zip.ZipOutputStream;
  * @see water.api.RegisterV3Api
  * @see water.JettyHTTPD.H2oDefaultServlet
  */
-public class RequestServer {
+public class RequestServer {  // TODO: merge with H2oDefaultServlet
 
   // Returned in REST API responses as X-h2o-rest-api-version-max
   public static final int H2O_REST_API_VERSION = 3;

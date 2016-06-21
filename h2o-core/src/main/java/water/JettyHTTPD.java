@@ -306,17 +306,12 @@ public class JettyHTTPD {
   /**
    * Hook up Jetty handlers.  Do this before start() is called.
    */
-  public void registerHandlers(HandlerWrapper s) {
-    GateHandler gh = new GateHandler();
-    AddCommonResponseHeadersHandler rhh = new AddCommonResponseHeadersHandler();
-    AuthenticationHandler authh = new AuthenticationHandler();
-    ExtensionHandler1 eh1 = new ExtensionHandler1();
+  public void registerHandlers(HandlerWrapper handlerWrapper) {
 
     ServletContextHandler context = new ServletContextHandler(
-            ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
+        ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
     );
     context.setContextPath("/");
-
     context.addServlet(H2oNpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile.bin");
     context.addServlet(H2oPostFileServlet.class, "/3/PostFile");
@@ -324,69 +319,36 @@ public class JettyHTTPD {
     context.addServlet(H2oDatasetServlet.class,  "/3/DownloadDataset.bin");
     context.addServlet(H2oDefaultServlet.class,  "/");
 
-    Handler[] handlers = {gh, rhh, authh, eh1, context};
     HandlerCollection hc = new HandlerCollection();
-    hc.setHandlers(handlers);
-    s.setHandler(hc);
+    hc.setHandlers(new Handler[]{
+        new GateHandler(),
+        new AuthenticationHandler(),
+        context,
+    });
+    handlerWrapper.setHandler(hc);
   }
 
   public class GateHandler extends AbstractHandler {
-    public GateHandler() {}
-
-    public void handle( String target,
-                        Request baseRequest,
-                        HttpServletRequest request,
-                        HttpServletResponse response ) throws IOException, ServletException {
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
       startRequestLifecycle();
-
-      while (! _acceptRequests) {
-        try {
-          Thread.sleep(100);
-        }
+      while (!_acceptRequests) {
+        try { Thread.sleep(100); }
         catch (Exception ignore) {}
       }
-    }
-  }
-
-  @SuppressWarnings("unused")
-  protected void handle1(String target,
-                         Request baseRequest,
-                         HttpServletRequest request,
-                         HttpServletResponse response) throws IOException, ServletException {}
-
-  public class ExtensionHandler1 extends AbstractHandler {
-    public ExtensionHandler1() {}
-
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException, ServletException {
-      H2O.getJetty().handle1(target, baseRequest, request, response);
-    }
-  }
-
-  public class AddCommonResponseHeadersHandler extends AbstractHandler {
-    public AddCommonResponseHeadersHandler() {}
-
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException, ServletException {
       setCommonResponseHttpHeaders(response);
     }
   }
 
   public class AuthenticationHandler extends AbstractHandler {
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException, ServletException {
-      if (! (H2O.ARGS.ldap_login || H2O.ARGS.kerberos_login)) {
-        return;
-      }
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
+
+      if (!H2O.ARGS.ldap_login && !H2O.ARGS.kerberos_login) return;
 
       String loginName = request.getUserPrincipal().getName();
-      if (! loginName.equals(H2O.ARGS.user_name)) {
+      if (!loginName.equals(H2O.ARGS.user_name)) {
         Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + H2O.ARGS.user_name + ")");
         sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
         baseRequest.setHandled(true);
