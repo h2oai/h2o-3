@@ -17,6 +17,9 @@ public class SplitFrameV3 extends SchemaV3<SplitFrame, SplitFrameV3> {
   @API(help="Destination keys for each output frame split.", direction = API.Direction.INOUT)
   public FrameKeyV3[] destination_frames;
 
+  public SplitFrameV3() {}
+  public SplitFrameV3(SplitFrame impl) { super(impl); }
+
   @Override
   public SplitFrame createImpl() { return new SplitFrame(); }
 }

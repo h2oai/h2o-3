@@ -47,8 +47,11 @@ public class SchemaV3<I extends Iced, S extends SchemaV3<I,S>> extends Schema<I,
     public String toString() { return schema_name; }
   }
 
-  public SchemaV3() {
+  public SchemaV3() { this(null); }
+  public SchemaV3(I impl) {
     __meta = new Meta(getSchemaVersion(), getSchemaName(), getSchemaType());
+    if (impl != null)
+      this.fillFromImpl(impl);
   }
 
   public water.AutoBuffer writeJSON(water.AutoBuffer ab) {

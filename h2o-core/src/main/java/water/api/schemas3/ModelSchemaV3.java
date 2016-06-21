@@ -43,10 +43,7 @@ public class ModelSchemaV3<
   @API(help="Checksum for all the things that go into building the Model.", direction=API.Direction.OUTPUT)
   protected long checksum;
 
-  public ModelSchemaV3() {
-    super();
-  }
-
+  public ModelSchemaV3() {}
   public ModelSchemaV3(M m) {
     super(m);
     PojoUtils.copyProperties(this.parameters, m._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);

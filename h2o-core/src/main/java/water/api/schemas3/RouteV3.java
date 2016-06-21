@@ -38,6 +38,10 @@ public final class RouteV3 extends SchemaV3<Route, RouteV3> {
   @API(help="", direction=API.Direction.OUTPUT)
   public String markdown;
 
+
+  public RouteV3() {}
+  public RouteV3(Route impl) { super(impl); }
+
   @Override
   public RouteV3 fillFromImpl(Route impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"url_pattern", "handler_class", "handler_method"} );

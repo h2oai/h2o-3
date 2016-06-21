@@ -34,7 +34,7 @@ public class MetadataHandler extends Handler {
     docs.routes = new RouteV3[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
-      RouteV3 schema = schemaForRoute(version, route);
+      RouteV3 schema = new RouteV3(route);
       docs.routes[i] = schema;
 
       // ModelBuilder input / output schema hackery
@@ -94,7 +94,7 @@ public class MetadataHandler extends Handler {
         route = RequestServer.routes().get(docs.num);
       // Crash-n-burn if route not found (old code thru an AIOOBE), so we
       // something similarly bad.
-      docs.routes = new RouteV3[]{(RouteV3)SchemaServer.schema(version, Route.class).fillFromImpl(route)};
+      docs.routes = new RouteV3[]{new RouteV3(route)};
     }
     if (route == null) return null;
 
@@ -135,8 +135,7 @@ public class MetadataHandler extends Handler {
   public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
     docs.schemas = new SchemaMetadataV3[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataV3 meta = (SchemaMetadataV3)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl
-        (SchemaMetadata.createSchemaMetadata(docs.classname));
+    SchemaMetadataV3 meta = new SchemaMetadataV3(SchemaMetadata.createSchemaMetadata(docs.classname));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -160,8 +159,7 @@ public class MetadataHandler extends Handler {
     catch (Exception e) {
       // ignore if create fails; this can happen for abstract classes
     }
-    SchemaMetadataV3 meta = (SchemaMetadataV3)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(new
-        SchemaMetadata(schema));
+    SchemaMetadataV3 meta = new SchemaMetadataV3(new SchemaMetadata(schema));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -187,15 +185,9 @@ public class MetadataHandler extends Handler {
         // ignore if create fails; this can happen for abstract classes
       }
 
-      docs.schemas[i++] = (SchemaMetadataV3)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(new
-          SchemaMetadata(schema));
+      docs.schemas[i++] = new SchemaMetadataV3(new SchemaMetadata(schema));
     }
     return docs;
   }
 
-
-  private RouteV3 schemaForRoute(int version, Route route) {
-    Schema<Route, ?> schema = SchemaServer.schema(version, Route.class);
-    return (RouteV3) schema.fillFromImpl(route);
-  }
 }

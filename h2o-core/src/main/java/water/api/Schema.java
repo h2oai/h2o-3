@@ -127,6 +127,15 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     SchemaServer.checkIfRegistered(this);
   }
 
+  /**
+   * Create a new Schema instance from an existing impl object.
+   * @param impl
+   */
+  public Schema(I impl) {
+    this();
+    this.fillFromImpl(impl);
+  }
+
   protected void init_meta() {
     if (_schema_name != null) return;
     _schema_name = this.getClass().getSimpleName();

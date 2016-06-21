@@ -60,7 +60,6 @@ public class GridSearchSchema<G extends Grid<MP>,
   @Override public S fillFromParms(Properties parms) {
     if( parms.containsKey("hyper_parameters") ) {
       Map<String,Object> m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
-      hyper_parameters = new IcedHashMap<>();
       // Convert lists and singletons into arrays
       for (Map.Entry<String, Object> e : m.entrySet()) {
         Object o = e.getValue();

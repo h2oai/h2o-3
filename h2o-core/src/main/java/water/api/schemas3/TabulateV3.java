@@ -31,6 +31,9 @@ public class TabulateV3 extends SchemaV3<Tabulate, TabulateV3> {
   @API(help="Response table", direction = API.Direction.OUTPUT)
   public TwoDimTableV3 response_table;
 
+  public TabulateV3() {}
+  public TabulateV3(Tabulate impl) { super(impl); }
+
   @Override
   public TabulateV3 fillFromImpl(Tabulate impl) {
     super.fillFromImpl(impl);
