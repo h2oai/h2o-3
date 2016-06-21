@@ -8,6 +8,14 @@ dependencies {
   // Avro support
   compile "org.apache.avro:avro:1.8.0"
 
+  // Orc support
+  compile("org.apache.hadoop:hadoop-client:2.6.0.2.2.0.0-2041")
+  compile("org.apache.hive:hive-exec:0.14.0.2.2.0.0-2041")
+  compile("org.pentaho:pentaho-aggdesigner-algorithm:5.1.3-jhyde")
+  compile('org.apache.orc:orc-core:1.1.1')
+  compile('org.apache.crunch:crunch-core:0.14.0')
+  compile('org.apache.crunch:crunch-hive:0.14.0')
+
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
 }

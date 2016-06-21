@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 /**
  * Test suite for Avro parser.
  */
-public class ParseTestAvro extends TestUtil {
+public class ParseTestOrc extends TestUtil {
 
   private static double EPSILON = 1e-9;
 
@@ -34,7 +34,11 @@ public class ParseTestAvro extends TestUtil {
   @Test
   public void testParseSimple() {
     // Tests for basic files which are in smalldata
-    Frame hr = parse_test_file("/Users/wendycwong/h2o-3/smalldata/parser/orc/demo-11-zlib.orc");
+
+//    Frame hr2 = parse_test_file("smalldata/iris/iris2.csv");
+//    Frame hr3 = parse_test_file("smalldata/parser/avro/sequence100k.avro");
+    Frame hr = parse_test_file("smalldata/parser/orc/demo-11-zlib.orc");
+
     FrameAssertion[] assertions = new FrameAssertion[] {
         // sequence100k.avro
         new FrameAssertion("smalldata/parser/avro/sequence100k.avro", TestUtil.ari(1, 100000)) {

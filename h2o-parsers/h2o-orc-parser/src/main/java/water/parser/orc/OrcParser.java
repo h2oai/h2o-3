@@ -1,5 +1,6 @@
 package water.parser.orc;
 
+// Avro support
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.DataFileStream;
@@ -10,6 +11,15 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.util.Utf8;
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.io.orc.StripeInformation;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.ql.io.orc.Reader;
+import org.apache.hadoop.hive.ql.io.orc.OrcFile;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+
 import water.Job;
 import water.Key;
 import water.fvec.Vec;
@@ -17,6 +27,7 @@ import water.parser.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -24,17 +35,41 @@ import java.util.List;
 
 import static water.parser.orc.OrcUtil.*;
 
+// Orc support
+
 /**
- * AVRO parser for H2O distributed parsing subsystem.
+ * ORC parser for H2O distributed parsing subsystem.
+ *
+ * Basically, here is the plan:
+ * To parse an Orc file, we need to do the following in order to get the followin useful
+ * information:
+ * 1. Get a Reader rdr.
+ * 2. From the reader rdr, we can get the following pieces of information:
+ *  a. number of columns, column types and column names.  We only support parsing of primitive types;
+ *  b. Lists of StripeInformation that describes how many stripes of data that we will need to read;
+ *  c. For each stripe, we will be able to get information like how many rows per stripe, data size
+ *    in bytes, offset bytes,
+ * 3.  The plan is to read the file in parallel in whole numbers of stripes.
+ * 4.  Inside each stripe, we will read data out in batches of VectorizedRowBatch (1024 rows or less).
  */
 public class OrcParser extends Parser {
 
   /** Avro header */
   private final byte[] header;
 
+
+  /** Orc Info */
+  private final StructObjectInspector objInspector = null; // will column names/types
+  private final List<StripeInformation> stripes = null;   // get stripe info for parsing
+  private final Reader orcFileReader = null;
+  private final long stripeBlockSize = 0;
+
+
+
   OrcParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
     this.header = ((OrcParser.OrcParseSetup) setup).header;
+
   }
 
   @Override
@@ -248,14 +283,22 @@ public class OrcParser extends Parser {
     final byte[] header;
     final long blockSize;
 
+    // expand to include Orc specific fields
+    private final StructObjectInspector objInspector = null; // will column names/types
+    private final List<StripeInformation> stripes = null;   // get stripe info for parsing
+    private final Reader orcFileReader = null;
+    private final long stripeBlockSize = 0;
+
     public OrcParseSetup(int ncols,
                          String[] columnNames,
                          byte[] ctypes,
                          String[][] domains,
                          String[][] naStrings,
                          String[][] data,
-                         byte[] header,
-                         long blockSize) {
+                         StructObjectInspector inspector;
+                         List<StripeInformation> allStripes;
+                         Reader orcReader;
+                         long stripeSize) {
       super(OrcParserProvider.ORC_INFO, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data);
       this.header = header;
       this.blockSize = blockSize;
@@ -278,15 +321,18 @@ public class OrcParser extends Parser {
 
   public static ParseSetup guessSetup(byte[] bits) {
     try {
-      return runOnPreview(bits, new OrcPreviewProcessor<ParseSetup>() {
-        @Override
-        public ParseSetup process(byte[] header, GenericRecord gr, long blockCount,
-                                  long blockSize) {
-          return deriveParseSetup(header, gr, blockCount, blockSize);
-        }
-      });
+
+      String tempFile = "tempFile";
+      Configuration conf = new Configuration();
+      FileUtils.writeByteArrayToFile(new File(tempFile), bits);
+
+      Path p = new Path(tempFile);
+      Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));
+
+      return deriveParseSetup(orcFileReader);
+
     } catch (IOException e) {
-      throw new RuntimeException("Avro format was not recognized", e);
+      throw new RuntimeException("Orc format was not recognized", e);
     }
   }
 
@@ -317,55 +363,32 @@ public class OrcParser extends Parser {
     });
   }
 
-  static <T> T runOnPreview(byte[] bits, OrcPreviewProcessor<T> processor) throws IOException {
-    DatumReader<GenericRecord> datumReader = new GenericDatumReader<GenericRecord>();
-    SeekableByteArrayInput sbai = new SeekableByteArrayInput(bits);
-    DataFileReader<GenericRecord> dataFileReader = null;
-
+  /*
+   * This function will derive information like column names, types and number from
+   * the inspector.
+   */
+  private static ParseSetup deriveParseSetup(Reader orcFileReader) {
+    // Grab inspector
     try {
-      dataFileReader = new DataFileReader<>(sbai, datumReader);
-      int headerLen = (int) dataFileReader.previousSync();
-      byte[] header = Arrays.copyOf(bits, headerLen);
-      if (dataFileReader.hasNext()) {
-        GenericRecord gr = dataFileReader.next();
-        return processor.process(header, gr, dataFileReader.getBlockCount(), dataFileReader.getBlockSize());
-      } else {
-        throw new RuntimeException("Empty Avro file - cannot run preview! ");
-      }
-    } finally {
-      try { dataFileReader.close(); } catch (IOException safeToIgnore) {}
-    }
-  }
+      StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();
 
-  private static ParseSetup deriveParseSetup(byte[] header, GenericRecord gr,
-                                             long blockCount, long blockSize) {
-    // Expect flat structure
-    Schema recordSchema = gr.getSchema();
-    List<Schema.Field> fields = recordSchema.getFields();
-    int supportedFieldCnt = 0 ;
-    for (Schema.Field f : fields) if (isSupportedSchema(f.schema())) supportedFieldCnt++;
-    String[] names = new String[supportedFieldCnt];
-    byte[] types = new byte[supportedFieldCnt];
-    String[][] domains = new String[supportedFieldCnt][];
-    String[] dataPreview = new String[supportedFieldCnt];
-    int i = 0;
-    for (Schema.Field f : fields) {
-      Schema schema = f.schema();
-      if (isSupportedSchema(schema)) {
-        names[i] = f.name();
-        types[i] = schemaToColumnType(schema);
-        if (types[i] == Vec.T_CAT) {
-          domains[i] = getDomain(schema);
-        }
-        dataPreview[i] = gr.get(f.name()) != null ? gr.get(f.name()).toString() : "null";
-        i++;
-      } else {
-        Log.warn("Skipping field: " + f.name() + " because of unsupported type: " + schema.getType() + " schema: " + schema);
+      List<StructField> allColumns = (List<StructField>) insp.getAllStructFieldRefs();
+
+      int supportedFieldCnt = 0 ;
+      for (StructField oneField:allColumns) {
+        if (isSupportedSchema(oneField.getFieldObjectInspector().getTypeName())) supportedFieldCnt++;
       }
+
+      String[] names = new String[supportedFieldCnt];
+      byte[] types = new byte[supportedFieldCnt];
+      String[][] domains = new String[supportedFieldCnt][];
+
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting StructObjectInspector or accessing stipe information", e);
     }
 
     OrcParseSetup ps = new OrcParseSetup(
-        supportedFieldCnt,
+        insp,
         names,
         types,
         domains,
@@ -377,22 +400,23 @@ public class OrcParser extends Parser {
     return ps;
   }
 
-  /** Helper to represent Avro header
-   * and size of 1st block of data.
+  /** Helper to represent Orc Info
    */
   static class OrcInfo {
 
-    public OrcInfo(byte[] header, long firstBlockCount, long firstBlockSize, String[][] domains) {
-      this.header = header;
-      this.firstBlockCount = firstBlockCount;
-      this.firstBlockSize = firstBlockSize;
+    public OrcInfo(StructObjectInspector objInsp, Reader orcReader, long stripeBlockSize, String[][] domains) {
+      this.objInspector = objInsp;
+      this.orcFileReader = orcReader;
+      this.stripeBlockSize = stripeBlockSize;
       this.domains = domains;
     }
 
-    byte[] header;
-    long firstBlockCount;
-    long firstBlockSize;
+    StructObjectInspector objInspector; // will column names/types
+    List<StripeInformation> stripes;   // get stripe info for parsing
+    Reader orcFileReader;
+    long stripeBlockSize;   // stripe size, last stripe may not have this size
     String[][] domains;
+
   }
 
   private interface OrcPreviewProcessor<R> {

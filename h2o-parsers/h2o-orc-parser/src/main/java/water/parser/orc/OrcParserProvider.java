@@ -19,7 +19,7 @@ import water.parser.ParserProvider;
 public class OrcParserProvider implements ParserProvider {
 
   /* Setup for this parser */
-  static ParserInfo ORC_INFO = new ParserInfo("ORC", DefaultParserProviders.MAX_CORE_PRIO + 10, true, true);
+  static ParserInfo ORC_INFO = new ParserInfo("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true, true);
 
   @Override
   public ParserInfo info() {
