@@ -1,31 +1,12 @@
 package water.api;
 
 import water.H2O;
-import water.Iced;
-import water.api.schemas3.SchemaV3;
+import water.api.schemas3.AboutEntryV3;
+import water.api.schemas3.AboutV3;
 
 import java.util.ArrayList;
 
 public class AboutHandler extends Handler {
-  public static class AboutEntryV3 extends SchemaV3<Iced, AboutEntryV3> {
-
-    public AboutEntryV3() {}
-    public AboutEntryV3(String n, String v) {
-      name = n;
-      value = v;
-    }
-
-    @API(help="Property name", direction = API.Direction.OUTPUT)
-    public String name;
-
-    @API(help="Property value", direction = API.Direction.OUTPUT)
-    public String value;
-  }
-
-  public static class AboutV3 extends SchemaV3<Iced, AboutV3> {
-    @API(help="List of properties about this running H2O instance", direction = API.Direction.OUTPUT)
-    public AboutEntryV3 entries[];
-  }
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public AboutV3 get(int version, AboutV3 s) {
@@ -41,7 +22,7 @@ public class AboutHandler extends Handler {
       entries.add(new AboutEntryV3(ae.getName(), ae.getValue()));
     }
 
-    s.entries = entries.toArray(new AboutEntryV3[0]);
+    s.entries = entries.toArray(new AboutEntryV3[entries.size()]);
     return s;
   }
 }

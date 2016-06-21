@@ -3,7 +3,6 @@ package water.api.schemas3;
 
 import water.H2OModelBuilderError;
 import water.api.API;
-import water.api.ModelParametersSchema;
 import water.api.SpecifiesHttpResponseCode;
 
 /**
@@ -19,7 +18,7 @@ import water.api.SpecifiesHttpResponseCode;
  */
 public class H2OModelBuilderErrorV3 extends H2OErrorV3<H2OModelBuilderError, H2OModelBuilderErrorV3> implements SpecifiesHttpResponseCode {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
-  public ModelParametersSchema parameters;
+  public ModelParametersSchemaV3 parameters;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
   public ValidationMessageV3 messages[];

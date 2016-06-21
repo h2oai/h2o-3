@@ -3,11 +3,11 @@ package hex.schemas;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P extends SharedTreeV3.SharedTreeParametersV3> extends ModelBuilderSchema<B,S,P> {
 
-  public static class SharedTreeParametersV3<P extends SharedTreeParameters, S extends SharedTreeParametersV3<P, S>> extends ModelParametersSchema<P, S> {
+  public static class SharedTreeParametersV3<P extends SharedTreeParameters, S extends SharedTreeParametersV3<P, S>> extends ModelParametersSchemaV3<P, S> {
   /*Imbalanced Classes*/
     /**
      * For imbalanced data, balance training data class counts via

@@ -1,9 +1,9 @@
-package water.api;
+package water.api.schemas3;
 
 import hex.Model;
+import water.api.API;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.api.schemas3.KeyV3.FrameKeyV3;
-import water.api.schemas3.SchemaV3;
 
 /**
  * A Model schema contains all the pieces associated with a Model:
@@ -15,8 +15,7 @@ import water.api.schemas3.SchemaV3;
  * </ul>
  *
  */
-public class ModelSchemaBase<M extends water.Iced, S extends ModelSchemaBase<M, S>> extends SchemaV3<M, S> {
-  public ModelSchemaBase() { }
+public class ModelSchemaBaseV3<M extends water.Iced, S extends ModelSchemaBaseV3<M, S>> extends SchemaV3<M, S> {
 
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
@@ -38,8 +37,10 @@ public class ModelSchemaBase<M extends water.Iced, S extends ModelSchemaBase<M, 
   @API(help="Timestamp for when this model was completed", direction=API.Direction.OUTPUT)
   public long timestamp;
 
-  public ModelSchemaBase(Model m) {
-    super();
+
+  public ModelSchemaBaseV3() {}
+
+  public ModelSchemaBaseV3(Model m) {
     this.model_id = new ModelKeyV3(m._key);
     this.algo = m._parms.algoName().toLowerCase();
     this.algo_full_name = m._parms.fullName();

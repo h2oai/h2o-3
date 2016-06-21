@@ -12,6 +12,7 @@ import water.Job;
 import water.Key;
 import water.TypeMap;
 import water.api.schemas3.JobV3;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
@@ -34,7 +35,7 @@ import java.util.*;
 public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
-    P extends ModelParametersSchema> extends Handler {
+    P extends ModelParametersSchemaV3> extends Handler {
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   // TODO: why does this do its own params filling?
@@ -142,7 +143,7 @@ public class GridSearchHandler<G extends Grid<MP>,
   }
 
 
-  static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchema>
+  static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {
 
     @Override
@@ -165,7 +166,7 @@ public class GridSearchHandler<G extends Grid<MP>,
    * @param <MP> type of model parameters
    * @param <PS> type of schema representing model parameters
    */
-  public static class ModelParametersFromSchemaBuilder<MP extends Model.Parameters, PS extends ModelParametersSchema>
+  public static class ModelParametersFromSchemaBuilder<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory.ModelParametersBuilder<MP> {
 
     final private MP params;
@@ -200,7 +201,7 @@ public class GridSearchHandler<G extends Grid<MP>,
           .copyProperties(params, paramsSchema, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, null,
                           fields.toArray(new String[fields.size()]));
       // FIXME: handle these train/valid fields in different way
-      // See: ModelParametersSchema#fillImpl
+      // See: ModelParametersSchemaV3#fillImpl
       if (params._valid == null && paramsSchema.validation_frame != null) {
         params._valid = Key.make(paramsSchema.validation_frame.name);
       }

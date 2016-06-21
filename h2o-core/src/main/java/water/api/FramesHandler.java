@@ -3,10 +3,7 @@ package water.api;
 import hex.Model;
 import water.*;
 import water.api.ModelsHandler.Models;
-import water.api.schemas3.FrameSynopsisV3;
-import water.api.schemas3.FrameV3;
-import water.api.schemas3.FramesV3;
-import water.api.schemas3.JobV3;
+import water.api.schemas3.*;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -49,15 +46,15 @@ import java.util.*;
  * <p> deleteAll(): Delete all Frames from the H2O distributed K/V store.
  * <p>
  */
-public class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
+public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,S>> extends Handler {
 
   /** Class which contains the internal representation of the frames list and params. */
   public static final class Frames extends Iced {
-    Key frame_id;
-    long row_offset;
-    int row_count;
-    Frame[] frames;
-    String column;
+    public Key<Frame> frame_id;
+    public long row_offset;
+    public int row_count;
+    public Frame[] frames;
+    public String column;
     public boolean find_compatible_models = false;
 
     /**
@@ -226,7 +223,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameBase a_frame: frames.frames) {
+    for (FrameBaseV3 a_frame: frames.frames) {
       ((FrameV3)a_frame).clearBinsField();
     }
 
@@ -238,15 +235,15 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBaseV3
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
-      s.compatible_models = new ModelSchema[compatible.length];
+      s.compatible_models = new ModelSchemaV3[compatible.length];
       ((FrameV3)s.frames[0]).compatible_models = new String[compatible.length];
       int i = 0;
       for (Model m : compatible) {
-        s.compatible_models[i] = (ModelSchema)SchemaServer.schema(version, m).fillFromImpl(m);
+        s.compatible_models[i] = (ModelSchemaV3)SchemaServer.schema(version, m).fillFromImpl(m);
         ((FrameV3)s.frames[0]).compatible_models[i] = m._key.toString();
         i++;
       }

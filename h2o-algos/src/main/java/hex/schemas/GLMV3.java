@@ -8,14 +8,14 @@ import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
 import water.api.schemas3.KeyV3.FrameKeyV3;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 /**
  * Created by tomasnykodym on 8/29/14.
  */
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
-  public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
+  public static final class GLMParametersV3 extends ModelParametersSchemaV3<GLMParameters, GLMParametersV3> {
     static public String[] fields = new String[]{
             "model_id",
             "training_frame",

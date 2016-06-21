@@ -474,7 +474,7 @@ public class NanoHTTPD
             }
 
             if (contentType.equalsIgnoreCase("application/json")) {
-              parms.put("_post_body", postLine); // JSON text; we'll deserialize later, e.g. into a subclass of ModelParametersSchema
+              parms.put("_post_body", postLine); // JSON text; we'll deserialize later, e.g. into a subclass of ModelParametersSchemaV3
             } else {
               decodeParms(postLine, parms);
             }

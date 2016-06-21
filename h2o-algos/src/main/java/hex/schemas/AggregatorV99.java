@@ -5,11 +5,11 @@ import hex.aggregator.Aggregator;
 import hex.aggregator.AggregatorModel;
 import static hex.pca.PCAModel.*;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,AggregatorV99.AggregatorParametersV99> {
 
-  public static final class AggregatorParametersV99 extends ModelParametersSchema<AggregatorModel.AggregatorParameters, AggregatorParametersV99> {
+  public static final class AggregatorParametersV99 extends ModelParametersSchemaV3<AggregatorModel.AggregatorParameters, AggregatorParametersV99> {
     static public String[] fields = new String[] {
             "model_id",
             "training_frame",

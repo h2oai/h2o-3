@@ -117,7 +117,7 @@ public class SchemaServer {
       }
 
       // Check the version, and bump the LATEST_VERSION
-      // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBase, so that we can
+      // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBaseV3, so that we can
       // fetch the metadata for them.
       int version = Schema.extractVersionFromSchemaName(clzname);
       if (version > HIGHEST_SUPPORTED_VERSION && version != EXPERIMENTAL_VERSION)

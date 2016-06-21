@@ -4,7 +4,6 @@ import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.Weaver;
-import water.api.SchemaMetadataBase.FieldMetadataBase;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
@@ -281,10 +280,10 @@ public final class SchemaMetadata extends Iced {
           if (schema instanceof ModelParameterSchemaV3 && ("default_value".equals(field_name) || "actual_value".equals(field_name)))
             return "Polymorphic";
 
-          if ((schema instanceof FieldMetadataV3 || schema instanceof FieldMetadataBase) && "value".equals(field_name))
+          if ((schema instanceof FieldMetadataV3) && "value".equals(field_name))
             return "Polymorphic";
 
-          if (((schema instanceof TwoDimTableBase || schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
+          if (((schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
             return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);

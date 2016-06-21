@@ -3,12 +3,10 @@ package water.api.schemas3;
 import hex.AUC2;
 import hex.ModelMetricsBinomial;
 import water.api.API;
-import water.api.ModelMetricsBase;
-import water.api.TwoDimTableBase;
 import water.util.TwoDimTable;
 
 public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends ModelMetricsBinomialV3<I, S>>
-    extends ModelMetricsBase<I,S> {
+    extends ModelMetricsBaseV3<I,S> {
 //  @API(help="The standard deviation of the training response.", direction=API.Direction.OUTPUT)
 //  public double sigma; // Belongs in a mythical ModelMetricsSupervisedV3
 
@@ -34,13 +32,13 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
 //  public ConfusionMatrixV3 cm;
 
   @API(help = "The Metrics for various thresholds.", direction = API.Direction.OUTPUT, level = API.Level.expert)
-  public TwoDimTableBase thresholds_and_metric_scores;
+  public TwoDimTableV3 thresholds_and_metric_scores;
 
   @API(help = "The Metrics for various criteria.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
-  public TwoDimTableBase max_criteria_and_metric_scores;
+  public TwoDimTableV3 max_criteria_and_metric_scores;
 
   @API(help = "Gains and Lift table.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
-  public TwoDimTableBase gains_lift_table;
+  public TwoDimTableV3 gains_lift_table;
 
   @Override
   public S fillFromImpl(ModelMetricsBinomial modelMetrics) {

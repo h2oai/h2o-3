@@ -5,12 +5,12 @@ import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.KeyV3;
-import water.api.ModelParametersSchema;
 
 public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
 
-  public static final class GLRMParametersV3 extends ModelParametersSchema<GLRMParameters, GLRMParametersV3> {
+  public static final class GLRMParametersV3 extends ModelParametersSchemaV3<GLRMParameters, GLRMParametersV3> {
     static public String[] fields = new String[] {
 				"model_id",
 				"training_frame",

@@ -7,7 +7,6 @@ import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.api.API;
-import water.api.ModelParametersSchema;
 import water.api.SchemaMetadata.FieldMetadata;
 import water.util.PojoUtils;
 
@@ -60,7 +59,7 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
   }
 
   /** TODO: refactor using SchemaMetadata. */
-  public ModelParameterSchemaV3(ModelParametersSchema schema, ModelParametersSchema default_schema, Field f) {
+  public ModelParameterSchemaV3(ModelParametersSchemaV3 schema, ModelParametersSchemaV3 default_schema, Field f) {
     f.setAccessible(true);
     try {
       this.name = f.getName();

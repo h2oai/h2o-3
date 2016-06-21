@@ -1,16 +1,16 @@
-package water.api;
+package water.api.schemas3;
 
 import water.Iced;
+import water.api.API;
+import water.api.FramesHandler;
 import water.api.schemas3.KeyV3.FrameKeyV3;
-import water.api.schemas3.FramesV3;
-import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 
 /**
  * The minimal amount of information on a Frame.
  * @see FramesHandler#list(int, FramesV3)
  */
-public class FrameBase<I extends Iced, S extends FrameBase<I, S>> extends SchemaV3<I, S> {
+public class FrameBaseV3<I extends Iced, S extends FrameBaseV3<I, S>> extends SchemaV3<I, S> {
   public transient Frame _fr;         // Avoid a racey update to Key; cached loaded value
 
   // Input fields

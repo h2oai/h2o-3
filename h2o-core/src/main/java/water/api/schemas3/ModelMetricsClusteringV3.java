@@ -2,11 +2,9 @@ package water.api.schemas3;
 
 import hex.ModelMetricsClustering;
 import water.api.API;
-import water.api.ModelMetricsBase;
-import water.api.TwoDimTableBase;
 import water.util.TwoDimTable;
 
-public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClustering, ModelMetricsClusteringV3> {
+public class ModelMetricsClusteringV3 extends ModelMetricsBaseV3<ModelMetricsClustering, ModelMetricsClusteringV3> {
   @API(help="Within Cluster Sum of Square Error")
   public double tot_withinss;       // Total within-cluster sum-of-square error
 
@@ -17,14 +15,14 @@ public class ModelMetricsClusteringV3 extends ModelMetricsBase<ModelMetricsClust
   public double betweenss;
 
   @API(help="Centroid Statistics")
-  public TwoDimTableBase centroid_stats;
+  public TwoDimTableV3 centroid_stats;
 
   @Override
   public ModelMetricsClusteringV3 fillFromImpl(ModelMetricsClustering impl) {
     ModelMetricsClusteringV3 mm = super.fillFromImpl(impl);
     TwoDimTable tdt = impl.createCentroidStatsTable();
     if (tdt != null)
-      mm.centroid_stats = new TwoDimTableBase().fillFromImpl(tdt);
+      mm.centroid_stats = new TwoDimTableV3().fillFromImpl(tdt);
     return mm;
   }
 }

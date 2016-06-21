@@ -10,7 +10,7 @@ import hex.coxph.CoxPHModel.CoxPHParameters;
 import hex.schemas.CoxPHModelV3;
 import water.Key;
 import water.MemoryManager;
-import water.api.ModelSchema;
+import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Vec;
 
 /**
@@ -89,7 +89,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   // Default publically visible Schema is V2
-  public ModelSchema schema() { return new CoxPHModelV3(); }
+  public ModelSchemaV3 schema() { return new CoxPHModelV3(); }
 
   // @Override
   public final CoxPHParameters get_params() { return _parms; }

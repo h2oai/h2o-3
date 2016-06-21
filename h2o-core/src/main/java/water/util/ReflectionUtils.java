@@ -81,7 +81,7 @@ public class ReflectionUtils {
 
     if (-1 == which_tv) {
       // We topped out in the type heirarchy, so just use the type from f.
-      // E.g., this happens when getting the metadata for the parameters field of ModelSchema.
+      // E.g., this happens when getting the metadata for the parameters field of ModelSchemaV3.
       // It has no generic parent, so we need to use the base class.
         return f.getType();
     }
