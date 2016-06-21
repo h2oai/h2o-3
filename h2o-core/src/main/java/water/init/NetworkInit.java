@@ -184,7 +184,6 @@ public class NetworkInit {
       // Return the first match from the list, if any.
       // If there are no matches, then exit.
       Log.info("Network list was specified by the user.  Searching for a match...");
-      ArrayList<InetAddress> validIps = new ArrayList();
       for( InetAddress ip : ips ) {
         Log.info("    Considering " + ip.getHostAddress() + " ...");
         for (NetworkInit.CIDRBlock n : networkList) {
@@ -199,24 +198,38 @@ public class NetworkInit {
       H2O.exit(-1);
     } else {
       // No user-specified IP address.  Attempt auto-discovery.  Roll through
-      // all the network choices on looking for a single Inet4.
-      ArrayList<InetAddress> validIps = new ArrayList();
+      // all the network choices on looking for a single non-local address.
+      // Right now the loop up order is: site local address > link local address > fallback loopback
+      ArrayList<InetAddress> siteLocalIps = new ArrayList();
+      ArrayList<InetAddress> linkLocalIps = new ArrayList();
+      ArrayList<InetAddress> loopbackIps = new ArrayList();
+
       boolean isIPv6Preferred = NetworkUtils.isIPv6Preferred();
       boolean isIPv4Preferred = NetworkUtils.isIPv4Preferred();
       for( InetAddress ip : ips ) {
+        //System.out.println("Scoped interface: " + ip.getScopedInterface());
+        System.out.println(ip);
+        System.out.println("  IsLinkLocalAddress: " + ip.isLinkLocalAddress());
+        System.out.println("  IsSiteLocalAddress: " + ip.isSiteLocalAddress());
+        System.out.println("  IsLoopbackAddress: " + ip.isLoopbackAddress());
         // make sure the given IP address can be found here
-        if(!ip.isLoopbackAddress() &&
-           !ip.isLinkLocalAddress() ) {
+        if(!ip.isLoopbackAddress()) {
           // Always prefer IPv4
           if (isIPv6Preferred && !isIPv4Preferred && ip instanceof Inet4Address) continue;
           if (isIPv4Preferred && ip instanceof Inet6Address) continue;
-          validIps.add(ip);
+          if (ip.isSiteLocalAddress()) siteLocalIps.add(ip);
+          if (ip.isLinkLocalAddress()) linkLocalIps.add(ip);
+          if (ip.isLoopbackAddress()) loopbackIps.add(ip);
         }
       }
-      if( validIps.size() == 1 ) {
-        local = validIps.get(0);
+      // The ips were already sorted in priority based way, so use it
+      // There is only a single site local address, use it
+      if( siteLocalIps.size() == 1 ) {
+        local = siteLocalIps.get(0);
+      } else if (linkLocalIps.size() > 0) {
+        local = linkLocalIps.get(0);
       } else {
-        local = guessInetAddress(validIps);
+        local = guessInetAddress(siteLocalIps);
       }
     }
 
@@ -239,12 +252,14 @@ public class NetworkInit {
   private static InetAddress guessInetAddress(List<InetAddress> ips) {
     String m = "Multiple local IPs detected:\n";
     for(InetAddress ip : ips) m+="  " + ip;
-    m+="\nAttempting to determine correct address...\n";
+    m += "\nAttempting to determine correct address...\n";
     Socket s = null;
     try {
       // using google's DNS server as an external IP to find
-      s = new Socket("8.8.8.8", 53);
-      m+="Using " + s.getLocalAddress() + "\n";
+      s = NetworkUtils.isIPv6Preferred() && !NetworkUtils.isIPv4Preferred()
+          ? new Socket(InetAddress.getByAddress(NetworkUtils.GOOGLE_DNS_IPV6), 53)
+          : new Socket(InetAddress.getByAddress(NetworkUtils.GOOGLE_DNS_IPV4), 53);
+      m += "Using " + s.getLocalAddress() + "\n";
       return s.getLocalAddress();
     } catch( java.net.SocketException se ) {
       return null;           // No network at all?  (Laptop w/wifi turned off?)
@@ -456,7 +471,7 @@ public class NetworkInit {
       // Try next available port to bound
       H2O.API_PORT += 2;
     }
-    boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address;
+    boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address; // Is IPv6 address was assigned to this node
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);
     Log.info("Internal communication uses port: ", H2O.H2O_PORT, "\n" +
              "Listening for HTTP and REST traffic on " + H2O.getURL(H2O.getJetty().getScheme()) + "/");
@@ -490,16 +505,16 @@ public class NetworkInit {
     // Note: if necessary we should permit configuration of multicast address manually
     // Note:
     //   - IPv4 Multicast IPs are in the range E1.00.00.00 to EF.FF.FF.FF
-    //   - IPv6 Multicast IPs are in the range
+    //   - IPv6 Multicast IPs are in the range defined in NetworkUtils
     int hash = H2O.ARGS.name.hashCode();
     try {
-      H2O.CLOUD_MULTICAST_GROUP = isIPv6 ? NetworkUtils.getIPv6MulticastGroup(hash)
+      H2O.CLOUD_MULTICAST_GROUP = isIPv6 ? NetworkUtils.getIPv6MulticastGroup(hash, NetworkUtils.getIPv6Scope(H2O.SELF_ADDRESS))
                                          : NetworkUtils.getIPv4MulticastGroup(hash);
     } catch (UnknownHostException e) {
       Log.err("Cannot get multicast group address for " + H2O.SELF_ADDRESS);
       Log.throwErr(e);
     }
-    H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash) >>> 16;
+    H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash);
   }
 
   // Multicast send-and-close.  Very similar to udp_send, except to the

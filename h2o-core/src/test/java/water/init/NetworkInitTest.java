@@ -112,11 +112,7 @@ public class NetworkInitTest {
   }
 
   static byte[] toByte(int[] ary) {
-    byte[] r = new byte[ary.length];
-    for (int i = 0; i < ary.length; i++) {
-      r[i] = (byte) (ary[i] & 0xff);
-    }
-    return r;
+    return ArrayUtils.toByteArray(ary);
   }
 
   static int[] toOctects(int[] doubleOctets) {

@@ -1429,10 +1429,18 @@ public class ArrayUtils {
     int c = 0;
     for (long n : nums) {
       for (int i = 0; i < 8; i++) {
-        result[c*8 + i] = (byte) ((n >>> (64 - 8 * i)) & 0xFF);
+        result[c*8 + i] = (byte) ((n >>> (56 - 8 * i)) & 0xFF);
       }
       c++;
     }
     return result;
+  }
+
+  public static byte[] toByteArray(int[] ary) {
+    byte[] r = new byte[ary.length];
+    for (int i = 0; i < ary.length; i++) {
+      r[i] = (byte) (ary[i] & 0xff);
+    }
+    return r;
   }
 }
