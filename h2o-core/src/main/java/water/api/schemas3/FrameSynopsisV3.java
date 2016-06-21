@@ -2,7 +2,6 @@ package water.api.schemas3;
 
 import water.Iced;
 import water.api.API;
-import water.api.FrameBase;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
@@ -12,7 +11,7 @@ import water.fvec.Vec;
  * The minimal amount of information on a Frame.
  * @see water.api.FramesHandler#list(int, FramesV3)
  */
-public class FrameSynopsisV3 extends FrameBase<Iced, FrameSynopsisV3> {
+public class FrameSynopsisV3 extends FrameBaseV3<Iced, FrameSynopsisV3> {
 
   public FrameSynopsisV3() {}
 

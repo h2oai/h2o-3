@@ -4,6 +4,8 @@ import hex.ModelBuilder;
 import water.Iced;
 import water.TypeMap;
 import water.api.schemas3.MetadataV3;
+import water.api.schemas3.RouteV3;
+import water.api.schemas3.SchemaMetadataV3;
 import water.api.schemas4.EndpointV4;
 import water.util.MarkdownBuilder;
 import water.api.schemas4.EndpointsListV4;
@@ -29,15 +31,15 @@ public class MetadataHandler extends Handler {
 
     builder.tableHeader("HTTP method", "URI pattern", "Input schema", "Output schema", "Summary");
 
-    docs.routes = new RouteBase[RequestServer.numRoutes()];
+    docs.routes = new RouteV3[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
-      RouteBase schema = schemaForRoute(version, route);
+      RouteV3 schema = schemaForRoute(version, route);
       docs.routes[i] = schema;
 
       // ModelBuilder input / output schema hackery
       MetadataV3 look = new MetadataV3();
-      look.routes = new RouteBase[1];
+      look.routes = new RouteV3[1];
       look.routes[0] = schema;
       look.path = route._url;
       look.http_method = route._http_method;
@@ -92,7 +94,7 @@ public class MetadataHandler extends Handler {
         route = RequestServer.routes().get(docs.num);
       // Crash-n-burn if route not found (old code thru an AIOOBE), so we
       // something similarly bad.
-      docs.routes = new RouteBase[]{(RouteBase)SchemaServer.schema(version, Route.class).fillFromImpl(route)};
+      docs.routes = new RouteV3[]{(RouteV3)SchemaServer.schema(version, Route.class).fillFromImpl(route)};
     }
     if (route == null) return null;
 
@@ -131,9 +133,10 @@ public class MetadataHandler extends Handler {
   @Deprecated
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
-    docs.schemas = new SchemaMetadataBase[1];
+    docs.schemas = new SchemaMetadataV3[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
+    SchemaMetadataV3 meta = (SchemaMetadataV3)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl
+        (SchemaMetadata.createSchemaMetadata(docs.classname));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -142,11 +145,11 @@ public class MetadataHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 fetchSchemaMetadata(int version, MetadataV3 docs) {
     if ("void".equals(docs.schemaname)) {
-      docs.schemas = new SchemaMetadataBase[0];
+      docs.schemas = new SchemaMetadataV3[0];
       return docs;
     }
 
-    docs.schemas = new SchemaMetadataBase[1];
+    docs.schemas = new SchemaMetadataV3[1];
     // NOTE: this will throw an exception if the classname isn't found:
     Schema schema = Schema.newInstance(docs.schemaname);
     // get defaults
@@ -157,7 +160,8 @@ public class MetadataHandler extends Handler {
     catch (Exception e) {
       // ignore if create fails; this can happen for abstract classes
     }
-    SchemaMetadataBase meta = (SchemaMetadataBase)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
+    SchemaMetadataV3 meta = (SchemaMetadataV3)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(new
+        SchemaMetadata(schema));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -166,7 +170,7 @@ public class MetadataHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 listSchemas(int version, MetadataV3 docs) {
     Map<String, Class<? extends Schema>> ss = SchemaServer.schemas();
-    docs.schemas = new SchemaMetadataBase[ss.size()];
+    docs.schemas = new SchemaMetadataV3[ss.size()];
 
     // NOTE: this will throw an exception if the classname isn't found:
     int i = 0;
@@ -183,14 +187,15 @@ public class MetadataHandler extends Handler {
         // ignore if create fails; this can happen for abstract classes
       }
 
-      docs.schemas[i++] = (SchemaMetadataBase)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
+      docs.schemas[i++] = (SchemaMetadataV3)SchemaServer.schema(version, SchemaMetadata.class).fillFromImpl(new
+          SchemaMetadata(schema));
     }
     return docs;
   }
 
 
-  private RouteBase schemaForRoute(int version, Route route) {
+  private RouteV3 schemaForRoute(int version, Route route) {
     Schema<Route, ?> schema = SchemaServer.schema(version, Route.class);
-    return (RouteBase) schema.fillFromImpl(route);
+    return (RouteV3) schema.fillFromImpl(route);
   }
 }

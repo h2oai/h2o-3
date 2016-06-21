@@ -4,18 +4,16 @@ import hex.ModelMetricsMultinomial;
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 
 import water.api.API;
-import water.api.ModelMetricsBase;
 import water.api.SchemaServer;
-import water.api.TwoDimTableBase;
 import water.util.TwoDimTable;
 
 public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S extends ModelMetricsMultinomialV3<I, S>>
-    extends ModelMetricsBase<I, S> {
+    extends ModelMetricsBaseV3<I, S> {
   @API(help="The R^2 for this scoring run.", direction=API.Direction.OUTPUT)
   public double r2;
 
   @API(help="The hit ratio table for this scoring run.", direction=API.Direction.OUTPUT, level= API.Level.expert)
-  public TwoDimTableBase hit_ratio_table;
+  public TwoDimTableV3 hit_ratio_table;
 
   @API(help="The ConfusionMatrix object for this scoring run.", direction=API.Direction.OUTPUT)
   public ConfusionMatrixV3 cm;
@@ -34,7 +32,7 @@ public class ModelMetricsMultinomialV3<I extends ModelMetricsMultinomial, S exte
 
     if (modelMetrics._hit_ratios != null) {
       TwoDimTable table = getHitRatioTable(modelMetrics._hit_ratios);
-      hit_ratio_table = (TwoDimTableBase) SchemaServer.schema(this.getSchemaVersion(), table).fillFromImpl(table);
+      hit_ratio_table = (TwoDimTableV3) SchemaServer.schema(this.getSchemaVersion(), table).fillFromImpl(table);
     }
 
     if (null != modelMetrics._cm) {

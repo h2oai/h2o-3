@@ -1,19 +1,19 @@
-package water.api;
+package water.api.schemas3;
 
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.KeyV3.ModelKeyV3;
-import water.api.schemas3.FrameV3;
-import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
 /**
  * Base Schema for individual instances of ModelMetrics objects.  Note: this class should not be used directly.
  */
-public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase<I, S>> extends SchemaV3<I, S> {
+public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBaseV3<I, S>> extends SchemaV3<I, S> {
+
   // InOut fields
   @API(help="The model used for this scoring run.", direction=API.Direction.INOUT)
   public ModelKeyV3 model;
@@ -23,7 +23,6 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
 
   @API(help="The frame used for this scoring run.", direction=API.Direction.INOUT)
   public FrameKeyV3 frame;
-  // public FrameV2 frame; // TODO: should use a base class!
 
   @API(help="The checksum for the frame used for this scoring run.", direction=API.Direction.INOUT)
   public long frame_checksum;
@@ -48,7 +47,7 @@ public class ModelMetricsBase<I extends ModelMetrics, S extends ModelMetricsBase
   public double MSE;
 
   @Override public S fillFromImpl(ModelMetrics modelMetrics) {
-    // If we're copying in a Model we need a ModelSchema of the right class to fill into.
+    // If we're copying in a Model we need a ModelSchemaV3 of the right class to fill into.
     Model m = modelMetrics.model();
     if( m != null ) {
       this.model = new ModelKeyV3(m._key);

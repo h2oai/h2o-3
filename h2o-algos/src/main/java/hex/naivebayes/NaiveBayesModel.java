@@ -8,7 +8,7 @@ import hex.genmodel.GenModel;
 import hex.schemas.NaiveBayesModelV3;
 import water.H2O;
 import water.Key;
-import water.api.ModelSchema;
+import water.api.schemas3.ModelSchemaV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -53,7 +53,7 @@ public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.Naive
 
   public NaiveBayesModel(Key selfKey, NaiveBayesParameters parms, NaiveBayesOutput output) { super(selfKey,parms,output); }
 
-  public ModelSchema schema() {
+  public ModelSchemaV3 schema() {
     return new NaiveBayesModelV3();
   }
 

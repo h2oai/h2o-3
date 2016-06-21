@@ -15,7 +15,7 @@ import water.util.*;
  * populated if we don't compute rollups, e.g. via
  * the REST API endpoint /Frames/<frameid>/columns/<colname>/summary.
  */
-public class FrameV3 extends FrameBase<Frame, FrameV3> {
+public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
   // Input fields
   @API(help="Row offset to display",direction=API.Direction.INPUT)
@@ -53,10 +53,10 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
   public String[] compatible_models;
 
   @API(help="Chunk summary", direction=API.Direction.OUTPUT)
-  public TwoDimTableBase chunk_summary;
+  public TwoDimTableV3 chunk_summary;
 
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)
-  public TwoDimTableBase distribution_summary;
+  public TwoDimTableV3 distribution_summary;
 
   public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> {
     public ColSpecifierV3() { }
@@ -247,10 +247,11 @@ public class FrameV3 extends FrameBase<Frame, FrameV3> {
     ChunkSummary cs = FrameUtils.chunkSummary(f);
 
     TwoDimTable chunk_summary_table = cs.toTwoDimTableChunkTypes();
-    this.chunk_summary = (TwoDimTableBase) SchemaServer.schema(3, chunk_summary_table).fillFromImpl(chunk_summary_table);
+    this.chunk_summary = (TwoDimTableV3) SchemaServer.schema(3, chunk_summary_table).fillFromImpl(chunk_summary_table);
 
     TwoDimTable distribution_summary_table = cs.toTwoDimTableDistribution();
-    distribution_summary = (TwoDimTableBase)SchemaServer.schema(3, distribution_summary_table).fillFromImpl(distribution_summary_table);
+    distribution_summary = (TwoDimTableV3) SchemaServer.schema(3, distribution_summary_table).fillFromImpl
+        (distribution_summary_table);
 
     this._fr = f;
 

@@ -3,11 +3,11 @@ package hex.schemas;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class QuantileV3 extends ModelBuilderSchema<Quantile,QuantileV3,QuantileV3.QuantileParametersV3> {
 
-  public static final class QuantileParametersV3 extends ModelParametersSchema<QuantileModel.QuantileParameters, QuantileParametersV3> {
+  public static final class QuantileParametersV3 extends ModelParametersSchemaV3<QuantileModel.QuantileParameters, QuantileParametersV3> {
     static public String[] own_fields = new String[] {"probs", "combine_method", "weights_column"};
 
     // Input fields

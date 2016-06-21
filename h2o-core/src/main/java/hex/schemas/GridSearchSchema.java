@@ -7,6 +7,7 @@ import water.Key;
 import water.api.*;
 import water.api.schemas3.JobV3;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
@@ -30,7 +31,7 @@ import java.util.Properties;
 public class GridSearchSchema<G extends Grid<MP>,
     S  extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
-    P  extends ModelParametersSchema> extends SchemaV3<G, S> {
+    P  extends ModelParametersSchemaV3> extends SchemaV3<G, S> {
 
   //
   // Inputs

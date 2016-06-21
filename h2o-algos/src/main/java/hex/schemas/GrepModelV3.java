@@ -3,11 +3,13 @@ package hex.schemas;
 import hex.grep.GrepModel;
 import water.H2O;
 import water.api.*;
+import water.api.schemas3.ModelOutputSchemaV3;
+import water.api.schemas3.ModelSchemaV3;
 import water.util.PojoUtils;
 
-public class GrepModelV3 extends ModelSchema<GrepModel, GrepModelV3, GrepModel.GrepParameters, GrepV3.GrepParametersV3, GrepModel.GrepOutput, GrepModelV3.GrepModelOutputV3> {
+public class GrepModelV3 extends ModelSchemaV3<GrepModel, GrepModelV3, GrepModel.GrepParameters, GrepV3.GrepParametersV3, GrepModel.GrepOutput, GrepModelV3.GrepModelOutputV3> {
 
-  public static final class GrepModelOutputV3 extends ModelOutputSchema<GrepModel.GrepOutput, GrepModelOutputV3> {
+  public static final class GrepModelOutputV3 extends ModelOutputSchemaV3<GrepModel.GrepOutput, GrepModelOutputV3> {
     // Output fields
     // Assume small-data results: string matches only
     @API(help="Matching strings") public String[] matches;
@@ -29,7 +31,7 @@ public class GrepModelV3 extends ModelSchema<GrepModel, GrepModelV3, GrepModel.G
   //==========================
   // Custom adapters go here
 
-  // TOOD: I think we can implement the following two in ModelSchema, using reflection on the type parameters.
+  // TOOD: I think we can implement the following two in ModelSchemaV3, using reflection on the type parameters.
   public GrepV3.GrepParametersV3 createParametersSchema() { return new GrepV3.GrepParametersV3(); }
   public GrepModelOutputV3 createOutputSchema() { return new GrepModelOutputV3(); }
 

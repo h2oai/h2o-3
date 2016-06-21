@@ -4,26 +4,26 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import water.MemoryManager;
 import water.api.API;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
+import water.api.schemas3.ModelOutputSchemaV3;
+import water.api.schemas3.ModelSchemaV3;
 
+import water.api.schemas3.TwoDimTableV3;
 import water.util.ArrayUtils;
-import water.api.TwoDimTableBase;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Comparator;
 //import water.util.DocGen.HTML;
 
-public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMParameters, GLMV3.GLMParametersV3, GLMModel.GLMOutput, GLMModelV3.GLMModelOutputV3> {
+public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLMParameters, GLMV3.GLMParametersV3, GLMOutput, GLMModelV3.GLMModelOutputV3> {
 
-  public static final class GLMModelOutputV3 extends ModelOutputSchema<GLMModel.GLMOutput, GLMModelOutputV3> {
+  public static final class GLMModelOutputV3 extends ModelOutputSchemaV3<GLMOutput, GLMModelOutputV3> {
 
     @API(help="Table of Coefficients")
-    TwoDimTableBase coefficients_table;
+    TwoDimTableV3 coefficients_table;
 
     @API(help="Standardized Coefficient Magnitudes")
-    TwoDimTableBase standardized_coefficient_magnitudes;
+    TwoDimTableV3 standardized_coefficient_magnitudes;
 
 
 
@@ -34,7 +34,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
 
-      coefficients_table = new TwoDimTableBase();
+      coefficients_table = new TwoDimTableV3();
       if(impl.isStandardized()){
         int n = impl.nclasses();
         String [] cols = new String[n*2];
@@ -86,7 +86,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
             tdt.set(i, 0, magnitudes[indices[i]]);
             tdt.set(i, 1, "POS");
           }
-          standardized_coefficient_magnitudes = new TwoDimTableBase();
+          standardized_coefficient_magnitudes = new TwoDimTableV3();
           standardized_coefficient_magnitudes.fillFromImpl(tdt);
         }
       } else {
@@ -120,7 +120,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
       String [] names = impl.coefficientNames().clone();
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
-      coefficients_table = new TwoDimTableBase();
+      coefficients_table = new TwoDimTableV3();
       final double [] magnitudes;
       double [] beta = impl.beta();
       if(beta == null) beta = MemoryManager.malloc8d(names.length);
@@ -190,7 +190,7 @@ public class GLMModelV3 extends ModelSchema<GLMModel, GLMModelV3, GLMModel.GLMPa
           tdt.set(i, 0, magnitudes[indices[i]]);
           tdt.set(i, 1, beta[indices[i]] < 0 ? "NEG" : "POS");
         }
-        standardized_coefficient_magnitudes = new TwoDimTableBase();
+        standardized_coefficient_magnitudes = new TwoDimTableV3();
         standardized_coefficient_magnitudes.fillFromImpl(tdt);
       }
       return this;

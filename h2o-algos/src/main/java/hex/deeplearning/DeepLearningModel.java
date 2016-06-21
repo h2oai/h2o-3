@@ -5,7 +5,7 @@ import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
 import water.*;
-import water.api.ModelSchema;
+import water.api.schemas3.ModelSchemaV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
@@ -83,7 +83,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   }
 
   // Default publicly visible Schema is V2
-  public ModelSchema schema() { return new DeepLearningModelV3(); }
+  public ModelSchemaV3 schema() { return new DeepLearningModelV3(); }
 
   void set_model_info(DeepLearningModelInfo mi) {
     assert(mi != null);

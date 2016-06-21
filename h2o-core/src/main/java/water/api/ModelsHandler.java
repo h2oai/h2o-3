@@ -7,17 +7,15 @@ import java.util.*;
 import hex.Model;
 import water.*;
 import water.api.FramesHandler.Frames;
-import water.api.schemas3.FrameV3;
-import water.api.schemas3.ModelExportV3;
-import water.api.schemas3.ModelImportV3;
-import water.api.schemas3.ModelsV3;
+import water.api.schemas3.*;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 
-public class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<I, S>> extends Handler {
+public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
+    extends Handler {
 
   /** Class which contains the internal representation of the models list and params. */
   public static final class Models extends Iced {
@@ -126,8 +124,8 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 fetch(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
-    s.models = new ModelSchema[1];
-    s.models[0] = (ModelSchema)SchemaServer.schema(version, model).fillFromImpl(model);
+    s.models = new ModelSchemaV3[1];
+    s.models[0] = (ModelSchemaV3)SchemaServer.schema(version, model).fillFromImpl(model);
 
     if (s.find_compatible_frames) {
       // TODO: refactor fetchFrameCols so we don't need this Models object
@@ -136,12 +134,12 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<
       m.models[0] = model;
       m.find_compatible_frames = true;
       Frame[] compatible = Models.findCompatibleFrames(model, Frames.fetchAll(), m.fetchFrameCols());
-      s.compatible_frames = new FrameV3[compatible.length]; // TODO: FrameBase
-      ((ModelSchema)s.models[0]).compatible_frames = new String[compatible.length];
+      s.compatible_frames = new FrameV3[compatible.length]; // TODO: FrameBaseV3
+      ((ModelSchemaV3)s.models[0]).compatible_frames = new String[compatible.length];
       int i = 0;
       for (Frame f : compatible) {
-        s.compatible_frames[i] = new FrameV3(f).fillFromImpl(f); // TODO: FrameBase
-        ((ModelSchema)s.models[0]).compatible_frames[i] = f._key.toString();
+        s.compatible_frames[i] = new FrameV3(f).fillFromImpl(f); // TODO: FrameBaseV3
+        ((ModelSchemaV3)s.models[0]).compatible_frames[i] = f._key.toString();
         i++;
       }
     }
@@ -193,7 +191,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends ModelsBase<
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       InputStream is = p.open(targetUri.toString());
       Model model = (Model)Keyed.readAll(new AutoBuffer(is));
-      s.models = new ModelSchema[]{(ModelSchema) SchemaServer.schema(version, model).fillFromImpl(model)};
+      s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
     }

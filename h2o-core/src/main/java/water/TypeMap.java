@@ -34,17 +34,16 @@ public class TypeMap {
     SchemaV3.class.getName(),
     CloudV3.class.getName(),
     CloudV3.NodeV3.class.getName(),
-    water.api.AboutHandler.AboutV3.class.getName(),
-    water.api.AboutHandler.AboutEntryV3.class.getName(),
+    AboutV3.class.getName(),
+    AboutEntryV3.class.getName(),
     water.UDPRebooted.ShutdownTsk.class.getName(),
 
     // Mistyped hack URLs
     H2OErrorV3.class.getName(),
 
     // Ask for ModelBuilders list
-    water.api.RouteBase.class.getName(),
+    RouteV3.class.getName(),
     ModelBuildersV3.class.getName(),  // So Flow can ask about possible Model Builders without locking
-    water.api.ModelBuildersBase.class.getName(),
     water.util.IcedSortedHashMap.class.getName(), // Seems wildly not-needed
     hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
 

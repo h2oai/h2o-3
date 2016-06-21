@@ -12,10 +12,10 @@ import water.api.*;
  */
 public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, S>> extends SchemaV3<J, S> {
   @API(help="Model builder parameters.", direction = API.Direction.OUTPUT)
-  public ModelParametersSchema parameters;
+  public ModelParametersSchemaV3 parameters;
   
   @API(help="Info, warning and error messages; NOTE: can be appended to while the Job is running", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase messages[];
+  public ValidationMessageV3 messages[];
 
   @API(help="Count of error messages", direction=API.Direction.OUTPUT)
   public int error_count;
@@ -25,11 +25,12 @@ public class ModelBuilderV3<J extends ModelBuilder, S extends ModelBuilderV3<J, 
     super.fillFromImpl(builder);
 
     ModelBuilder.ValidationMessage[] vms = builder._messages;
-    this.messages = new ValidationMessageBase[vms.length];
+    this.messages = new ValidationMessageV3[vms.length];
     for( int i=0; i<vms.length; i++ )
       this.messages[i] = new ValidationMessageV3().fillFromImpl(vms[i]); // TODO: version // Note: does default field_name mapping
     // default fieldname hacks
-    ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
+    ValidationMessageV3.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new
+        String[]{"training_frame", "validation_frame"});
     this.error_count = builder.error_count();
 
     ModelBuilderSchema s = (ModelBuilderSchema)SchemaServer.schema(this.getSchemaVersion(), builder).fillFromImpl(builder);

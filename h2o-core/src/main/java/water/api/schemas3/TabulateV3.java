@@ -1,7 +1,6 @@
 package water.api.schemas3;
 
 import water.api.API;
-import water.api.TwoDimTableBase;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.util.Tabulate;
 
@@ -27,10 +26,10 @@ public class TabulateV3 extends SchemaV3<Tabulate, TabulateV3> {
 
   // OUTPUT
   @API(help="Counts table", direction = API.Direction.OUTPUT)
-  public TwoDimTableBase count_table;
+  public TwoDimTableV3 count_table;
 
   @API(help="Response table", direction = API.Direction.OUTPUT)
-  public TwoDimTableBase response_table;
+  public TwoDimTableV3 response_table;
 
   @Override
   public TabulateV3 fillFromImpl(Tabulate impl) {

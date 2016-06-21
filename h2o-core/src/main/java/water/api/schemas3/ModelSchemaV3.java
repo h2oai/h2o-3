@@ -1,9 +1,9 @@
-package water.api;
+package water.api.schemas3;
 
 import hex.Model;
 import water.AutoBuffer;
 import water.H2O;
-import water.api.schemas3.KeyV3;
+import water.api.API;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
@@ -18,13 +18,15 @@ import water.util.PojoUtils;
  * </ul>
  *
  */
-public class ModelSchema<M extends Model<M, P, O>,
-                                  S extends ModelSchema<M, S, P, PS, O, OS>,
-                                  P extends Model.Parameters,
-                                  PS extends ModelParametersSchema<P, PS>,
-                                  O extends Model.Output,
-                                  OS extends ModelOutputSchema<O, OS>>
-  extends ModelSchemaBase<M, S> {
+public class ModelSchemaV3<
+    M extends Model<M, P, O>,
+    S extends ModelSchemaV3<M, S, P, PS, O, OS>,
+    P extends Model.Parameters,
+    PS extends ModelParametersSchemaV3<P, PS>,
+    O extends Model.Output,
+    OS extends ModelOutputSchemaV3<O, OS>
+  > extends ModelSchemaBaseV3<M, S> {
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // CAREFUL: This class has its own JSON serializer.  If you add a field here you probably also want to add it to the serializer!
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,16 +38,16 @@ public class ModelSchema<M extends Model<M, P, O>,
   public OS output;
 
   @API(help="Compatible frames, if requested", direction=API.Direction.OUTPUT)
-  String[] compatible_frames;
+  public String[] compatible_frames;
 
   @API(help="Checksum for all the things that go into building the Model.", direction=API.Direction.OUTPUT)
   protected long checksum;
 
-  public ModelSchema() {
+  public ModelSchemaV3() {
     super();
   }
 
-  public ModelSchema(M m) {
+  public ModelSchemaV3(M m) {
     super(m);
     PojoUtils.copyProperties(this.parameters, m._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
     PojoUtils.copyProperties(this.output, m._output, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
@@ -78,7 +80,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     output = createOutputSchema();
     output.fillFromImpl(m._output);
 
-    return (S)this; // have to cast because the definition of S doesn't include ModelSchema
+    return (S)this; // have to cast because the definition of S doesn't include ModelSchemaV3
   }
 
   public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
@@ -92,7 +94,7 @@ public class ModelSchema<M extends Model<M, P, O>,
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
     try {
       PS defaults = createParametersSchema().fillFromImpl(parameters.getImplClass().newInstance());
-      ModelParametersSchema.writeParametersJSON(ab, parameters, defaults);
+      ModelParametersSchemaV3.writeParametersJSON(ab, parameters, defaults);
       ab.put1(',');
     }
     catch (Exception e) {

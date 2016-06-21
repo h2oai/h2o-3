@@ -1,13 +1,11 @@
-package water.api;
+package water.api.schemas3;
 
 import hex.Model;
 import hex.ScoreKeeper;
 import water.*;
+import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.KeyV3.ModelKeyV3;
-import water.api.schemas3.FrameV3;
-import water.api.schemas3.ModelParameterSchemaV3;
-import water.api.schemas3.SchemaV3;
 import water.fvec.Frame;
 import water.util.PojoUtils;
 
@@ -19,7 +17,7 @@ import java.util.*;
  * NOTE: use subclasses, not this class directly.  It is not abstract only so that we can instantiate it to generate metadata
  * for it for the metadata API.
  */
-public class ModelParametersSchema<P extends Model.Parameters, S extends ModelParametersSchema<P, S>>
+public class ModelParametersSchemaV3<P extends Model.Parameters, S extends ModelParametersSchemaV3<P, S>>
     extends SchemaV3<P, S> {
   ////////////////////////////////////////
   // NOTE:
@@ -218,9 +216,9 @@ public class ModelParametersSchema<P extends Model.Parameters, S extends ModelPa
 
   /**
    * Write the parameters, including their metadata, into an AutoBuffer.  Used by
-   * ModelBuilderSchema#writeJSON_impl and ModelSchema#writeJSON_impl.
+   * ModelBuilderSchema#writeJSON_impl and ModelSchemaV3#writeJSON_impl.
    */
-  public static final AutoBuffer writeParametersJSON( AutoBuffer ab, ModelParametersSchema parameters, ModelParametersSchema default_parameters) {
+  public static final AutoBuffer writeParametersJSON(AutoBuffer ab, ModelParametersSchemaV3 parameters, ModelParametersSchemaV3 default_parameters) {
     String[] fields = parameters.fields();
 
     // Build ModelParameterSchemaV2 objects for each field, and the call writeJSON on the array

@@ -7,12 +7,13 @@ import water.H2O;
 import water.Job;
 import water.Key;
 import water.TypeMap;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.util.HttpResponseStatus;
 import water.util.PojoUtils;
 
 import java.util.Properties;
 
-public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
+public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   @Override S handle(int version, Route route, Properties parms) throws Exception {
     // Peek out the desired algo from the URL

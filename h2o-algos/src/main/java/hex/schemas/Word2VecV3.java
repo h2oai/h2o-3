@@ -3,10 +3,10 @@ package hex.schemas;
 import hex.word2vec.Word2Vec;
 import hex.word2vec.Word2VecModel.Word2VecParameters;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV3.Word2VecParametersV3> {
-  public static final class Word2VecParametersV3 extends ModelParametersSchema<Word2VecParameters, Word2VecParametersV3> {
+  public static final class Word2VecParametersV3 extends ModelParametersSchemaV3<Word2VecParameters, Word2VecParametersV3> {
     static public String[] own_fields = new String[] {
             "minWordFreq",
             "wordModel",

@@ -7,16 +7,12 @@ import water.AutoBuffer;
 import water.H2O;
 import water.Job;
 import water.api.*;
-import water.api.ValidationMessageBase;
-import water.api.schemas3.JobV3;
-import water.api.schemas3.KeyV3;
-import water.api.schemas3.SchemaV3;
-import water.api.schemas3.ValidationMessageV3;
+import water.api.schemas3.*;
 import water.util.*;
 import java.util.Properties;
 
 public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends
-    ModelParametersSchema> extends SchemaV3<B,S> implements SpecifiesHttpResponseCode {
+    ModelParametersSchemaV3> extends SchemaV3<B,S> implements SpecifiesHttpResponseCode {
   // NOTE: currently ModelBuilderSchema has its own JSON serializer.
   // If you add more fields here you MUST add them to writeJSON_impl() below.
 
@@ -43,7 +39,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   public JobV3 job;
 
   @API(help="Parameter validation messages", direction=API.Direction.OUTPUT)
-  public ValidationMessageBase messages[];
+  public ValidationMessageV3 messages[];
 
   @API(help="Count of parameter validation errors", direction=API.Direction.OUTPUT)
   public int error_count;
@@ -67,11 +63,11 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
   final public P createParametersSchema() {
     // special case, because ModelBuilderSchema is the top of the tree and is parameterized differently
     if (ModelBuilderSchema.class == this.getClass()) {
-      return (P)new ModelParametersSchema();
+      return (P)new ModelParametersSchemaV3();
     }
 
     try {
-      Class<? extends ModelParametersSchema> parameters_class = ReflectionUtils.findActualClassParameter(this.getClass(), 2);
+      Class<? extends ModelParametersSchemaV3> parameters_class = ReflectionUtils.findActualClassParameter(this.getClass(), 2);
       return (P)parameters_class.newInstance();
     }
     catch (Exception e) {
@@ -113,13 +109,14 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     // choices.
     final ModelBuilder.ValidationMessage[] msgs = builder._messages; // Racily growing; read only once
     if( msgs != null ) {
-      this.messages = new ValidationMessageBase[msgs.length];
+      this.messages = new ValidationMessageV3[msgs.length];
       int i = 0;
       for (ModelBuilder.ValidationMessage vm : msgs) {
         if( vm != null ) this.messages[i++] = new ValidationMessageV3().fillFromImpl(vm); // TODO: version // Note: does default field_name mapping
       }
       // default fieldname hacks
-      ValidationMessageBase.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new String[]{"training_frame", "validation_frame"});
+      ValidationMessageV3.mapValidationMessageFieldNames(this.messages, new String[]{"_train", "_valid"}, new
+          String[]{"training_frame", "validation_frame"});
     }
     this.error_count = builder.error_count();
     parameters = createParametersSchema();
@@ -147,7 +144,7 @@ public class ModelBuilderSchema<B extends ModelBuilder, S extends ModelBuilderSc
     ab.put1(',');
 
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
-    ModelParametersSchema.writeParametersJSON(ab, parameters, createParametersSchema().fillFromImpl((Model.Parameters)parameters.createImpl()));
+    ModelParametersSchemaV3.writeParametersJSON(ab, parameters, createParametersSchema().fillFromImpl((Model.Parameters)parameters.createImpl()));
     return ab;
   }
 

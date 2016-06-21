@@ -1,7 +1,6 @@
 package water.api.schemas3;
 
 import hex.ModelMetricsAutoEncoder;
-import water.api.ModelMetricsBase;
 
-public class ModelMetricsAutoEncoderV3 extends ModelMetricsBase<ModelMetricsAutoEncoder, ModelMetricsAutoEncoderV3> {
+public class ModelMetricsAutoEncoderV3 extends ModelMetricsBaseV3<ModelMetricsAutoEncoder, ModelMetricsAutoEncoderV3> {
 }

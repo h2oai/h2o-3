@@ -1,10 +1,9 @@
-package water.api;
+package water.api.schemas3;
 
 import hex.Model;
 import hex.ModelCategory;
 import water.Weaver;
-import water.api.schemas3.KeyV3;
-import water.api.schemas3.SchemaV3;
+import water.api.API;
 import water.util.IcedHashMap;
 import water.util.Log;
 
@@ -15,7 +14,7 @@ import java.lang.reflect.Field;
  * NOTE: use subclasses, not this class directly.  It is not abstract only so that we can instantiate it to generate metadata
  * for it for the metadata API.
  */
-public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSchema<O, S>> extends SchemaV3<O, S> {
+public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSchemaV3<O, S>> extends SchemaV3<O, S> {
 
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;
@@ -39,22 +38,22 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   public ModelCategory model_category;
 
   @API(help="Model summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
-  TwoDimTableBase model_summary;
+  public TwoDimTableV3 model_summary;
 
   @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
-  TwoDimTableBase scoring_history;
+  public TwoDimTableV3 scoring_history;
 
   @API(help="Training data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
-  ModelMetricsBase training_metrics;
+  public ModelMetricsBaseV3 training_metrics;
 
   @API(help="Validation data model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
-  ModelMetricsBase validation_metrics;
+  public ModelMetricsBaseV3 validation_metrics;
 
   @API(help="Cross-validation model metrics", direction=API.Direction.OUTPUT, level=API.Level.critical)
-  ModelMetricsBase cross_validation_metrics;
+  public ModelMetricsBaseV3 cross_validation_metrics;
 
   @API(help="Cross-validation model metrics summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
-  TwoDimTableBase cross_validation_metrics_summary;
+  public TwoDimTableV3 cross_validation_metrics_summary;
 
   @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public String status;
@@ -71,7 +70,7 @@ public class ModelOutputSchema<O extends Model.Output, S extends ModelOutputSche
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
   public IcedHashMap.IcedHashMapStringString help;
 
-  public ModelOutputSchema() {
+  public ModelOutputSchemaV3() {
     super();
   }
 
