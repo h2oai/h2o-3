@@ -4,7 +4,7 @@ h2o.init()
 
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
-iris_data_path = h2o.system_file("iris.csv") # load demonstration data
+iris_data_path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv" # load demonstration data
 iris_df = h2o.import_file(path=iris_data_path)
 iris_df.describe()
 gbm_regressor = H2OGradientBoostingEstimator(distribution="gaussian", ntrees=10, max_depth=3, min_rows=2, learn_rate="0.2")
