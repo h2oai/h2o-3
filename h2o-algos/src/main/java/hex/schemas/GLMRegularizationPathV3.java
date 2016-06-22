@@ -2,8 +2,8 @@ package hex.schemas;
 
 import hex.glm.GLMModel;
 import water.api.API;
-import water.api.KeyV3;
-import water.api.SchemaV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 
 /**
  */

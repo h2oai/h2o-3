@@ -8,6 +8,7 @@ import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
+import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -1374,7 +1375,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  @Override public Class<water.api.KeyV3.ModelKeyV3> makeSchema() { return water.api.KeyV3.ModelKeyV3.class; }
+  @Override public Class<KeyV3.ModelKeyV3> makeSchema() { return KeyV3.ModelKeyV3.class; }
 
   public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyTrainVec = fr.anyVec();

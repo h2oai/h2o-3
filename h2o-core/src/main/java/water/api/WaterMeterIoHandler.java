@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.schemas3.WaterMeterIoV3;
 import water.util.WaterMeterIo;
 
 public class WaterMeterIoHandler extends Handler {

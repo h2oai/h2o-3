@@ -1,6 +1,7 @@
 package water.api;
 
 import water.Key;
+import water.api.schemas3.InitIDV3;
 import water.rapids.Session;
 
 import java.util.HashMap;

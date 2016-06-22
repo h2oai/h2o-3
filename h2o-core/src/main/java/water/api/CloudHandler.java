@@ -3,6 +3,7 @@ package water.api;
 import water.H2O;
 import water.H2ONode;
 import water.Paxos;
+import water.api.schemas3.CloudV3;
 
 class CloudHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer

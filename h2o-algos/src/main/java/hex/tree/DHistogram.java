@@ -71,6 +71,9 @@ public final class DHistogram extends Iced {
   public transient boolean _hasQuantiles;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
 
+  // split direction for missing values
+  public enum NASplitDir { None, NAvsREST, NALeft, NARight }
+
   static class HistoQuantiles extends Keyed<HistoQuantiles> {
     public HistoQuantiles(Key<HistoQuantiles> key, double[] splitPts) {
       super(key);
@@ -144,14 +147,13 @@ public final class DHistogram extends Iced {
     assert(_w ==null);
     assert(_wY ==null);
     assert(_wYY ==null);
+//    Log.info("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
 
   // Interpolate d to find bin#
   public int bin( double col_data ) {
-//    assert( !Double.isNaN(col_data) ); //NAs go to a separate bucket
-    if( Double.isNaN(col_data) ) return _w.length-1; // NAs go right, and for numeric features, this is consistent
-
+    assert( !Double.isNaN(col_data) ); //NAs go to a separate bucket
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _w.length-1;
@@ -232,7 +234,7 @@ public final class DHistogram extends Iced {
   // Compute bin min/max.
   // Compute response mean & variance.
   void incr( double col_data, double y, double w ) {
-//    assert !Double.isNaN(col_data);
+    assert !Double.isNaN(col_data);
     assert Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
     water.util.AtomicUtils.DoubleArray.add(_w,b,w); // Bump count in bin
@@ -255,6 +257,9 @@ public final class DHistogram extends Iced {
     if( _min2 > dsh._min2  ) _min2 = dsh._min2;
     if( _maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
     add0(dsh);
+    _wNA.addAndGet(dsh._wNA.get());
+    _wYNA.addAndGet(dsh._wYNA.get());
+    _wYYNA.addAndGet(dsh._wYYNA.get());
   }
 
   // Inclusive min & max
@@ -350,16 +355,15 @@ public final class DHistogram extends Iced {
     // Histogram arrays used for splitting, these are either the original bins
     // (for an ordered predictor), or sorted by the mean response (for an
     // unordered predictor, i.e. categorical predictor).
-    double[] wY = _wY;
+    double[]   w =   _w;
+    double[]  wY =  _wY;
     double[] wYY = _wYY;
-    double[] w = _w;
     int idxs[] = null;          // and a reverse index mapping
 
     // For categorical (unordered) predictors, sort the bins by average
     // prediction then look for an optimal split.  Currently limited to categoricals
-    // where we're one-per-bin.  No point for 3 or fewer bins as all possible
-    // combinations (just 3) are tested without needing to sort.
-    if( _isInt == 2 && _step == 1.0f && nbins >= 4 ) {
+    // where we're one-per-bin.
+    if( _isInt == 2 && _step == 1.0f ) {
       // Sort the index by average response
       idxs = MemoryManager.malloc4(nbins+1); // Reverse index
       for( int i=0; i<nbins+1; i++ ) idxs[i] = i;
@@ -369,62 +373,77 @@ public final class DHistogram extends Iced {
       ArrayUtils.sort(idxs, avgs);
       // Fill with sorted data.  Makes a copy, so the original data remains in
       // its original order.
-      wY = MemoryManager.malloc8d(nbins);
+        w = MemoryManager.malloc8d(nbins);
+       wY = MemoryManager.malloc8d(nbins);
       wYY = MemoryManager.malloc8d(nbins);
-      w = MemoryManager.malloc8d(nbins);
       for( int i=0; i<nbins; i++ ) {
-        wY[i] = _wY[idxs[i]];
+          w[i] =   _w[idxs[i]];
+         wY[i] =  _wY[idxs[i]];
         wYY[i] = _wYY[idxs[i]];
-        w[i] = _w[idxs[i]];
       }
     }
 
     // Compute mean/var for cumulative bins from 0 to nbins inclusive.
-    double wY0[] = MemoryManager.malloc8d(nbins+1);
-    double wYY0[] = MemoryManager.malloc8d(nbins+1);
-    double w0[] = MemoryManager.malloc8d(nbins+1);
+    double   wlo[] = MemoryManager.malloc8d(nbins+1);
+    double  wYlo[] = MemoryManager.malloc8d(nbins+1);
+    double wYYlo[] = MemoryManager.malloc8d(nbins+1);
     for( int b=1; b<=nbins; b++ ) {
-      double m0 = wY0[b-1],  m1 = wY[b-1];
-      double s0 = wYY0[b-1],  s1 = wYY[b-1];
-      double k0 = w0[b-1],  k1 = w[b-1];
-      if( k0==0 && k1==0 )
+      double n0 =   wlo[b-1], n1 =   w[b-1];
+      if( n0==0 && n1==0 )
         continue;
-      wY0[b] = m0+m1;
-      wYY0[b] = s0+s1;
-      w0[b] = k0+k1;
+      double m0 =  wYlo[b-1], m1 =  wY[b-1];
+      double s0 = wYYlo[b-1], s1 = wYY[b-1];
+        wlo[b] = n0+n1;
+       wYlo[b] = m0+m1;
+      wYYlo[b] = s0+s1;
     }
-    double tot = w0[nbins];
+    double wNA = _wNA.doubleValue();
+    double tot = wlo[nbins] + wNA; //total number of (weighted) rows
     // Is any split possible with at least min_obs?
     if( tot < 2*min_rows )
       return null;
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
-    double var = wYY0[nbins]*tot - wY0[nbins]* wY0[nbins];
-    if( var == 0 ) {
-//      assert isConstantResponse();
-      return null;
-    }
-    // If variance is really small, then the predictions (which are all at
-    // single-precision resolution), will be all the same and the tree split
-    // will be in vain.
+    double wYNA = _wYNA.doubleValue();
+    double wYYNA = _wYYNA.doubleValue();
+    double var = (wYYlo[nbins]+wYYNA)*tot - (wYlo[nbins]+wYNA)*(wYlo[nbins]+wYNA);
     if( ((float)var) == 0f )
       return null;
 
     // Compute mean/var for cumulative bins from nbins to 0 inclusive.
-    double  w1[] = MemoryManager.malloc8d(nbins+1);
-    double  wY1[] = MemoryManager.malloc8d(nbins+1);
-    double wYY1[] = MemoryManager.malloc8d(nbins+1);
+    double   whi[] = MemoryManager.malloc8d(nbins+1);
+    double  wYhi[] = MemoryManager.malloc8d(nbins+1);
+    double wYYhi[] = MemoryManager.malloc8d(nbins+1);
     for( int b=nbins-1; b>=0; b-- ) {
-      double m0 =  wY1[b+1], m1 = wY[b];
-      double s0 = wYY1[b+1], s1 = wYY[b];
-      double k0 = w1 [b+1], k1 = w[b];
-      if( k0==0 && k1==0 )
+      double n0 =   whi[b+1], n1 =   w[b];
+      if( n0==0 && n1==0 )
         continue;
-       wY1[b] = m0+m1;
-      wYY1[b] = s0+s1;
-      w1 [b] = k0+k1;
-      assert MathUtils.compare(w0[b]+w1[b],tot,1e-5,1e-5);
+      double m0 =  wYhi[b+1], m1 =  wY[b];
+      double s0 = wYYhi[b+1], s1 = wYY[b];
+        whi[b] = n0+n1;
+       wYhi[b] = m0+m1;
+      wYYhi[b] = s0+s1;
+      assert MathUtils.compare(wlo[b]+ whi[b]+wNA,tot,1e-5,1e-5);
+    }
+
+    double best_seL=Double.MAX_VALUE;   // squared error for left side of the best split (so far)
+    double best_seR=Double.MAX_VALUE;   // squared error for right side of the best split (so far)
+    NASplitDir nasplit = NASplitDir.None;
+
+    // squared error of all non-NAs
+    double seNonNA = wYYhi[0] - wYhi[0]* wYhi[0]/ whi[0]; // Squared Error with no split
+    if (seNonNA < 0) seNonNA = 0;
+    double seBefore = seNonNA;
+
+    // if there are any NAs, then try to split them from the non-NAs
+    if (wNA>0) {
+      double seAll = (wYYhi[0]+wYYNA) - (wYhi[0]+wYNA)*(wYhi[0]+wYNA)/(whi[0]+wNA);
+      double seNA = wYYNA - wYNA*wYNA/wNA;
+      best_seL = seNonNA;
+      best_seR = seNA;
+      nasplit = NASplitDir.NAvsREST;
+      seBefore = seAll;
     }
 
     // Now roll the split-point across the bins.  There are 2 ways to do this:
@@ -433,49 +452,65 @@ public final class DHistogram extends Iced {
     // but both splits could work for any integral datatype.  Do the less-than
     // splits first.
     int best=0;                         // The no-split
-    double best_se0=Double.MAX_VALUE;   // Best squared error
-    double best_se1=Double.MAX_VALUE;   // Best squared error
     byte equal=0;                       // Ranged check
     for( int b=1; b<=nbins-1; b++ ) {
       if( w[b] == 0 ) continue; // Ignore empty splits
-      if( w0[b] < min_rows ) continue;
-      if( w1[b] < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
+      if( wlo[b]+wNA < min_rows ) continue;
+      if( whi[b]+wNA < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
       // We're making an unbiased estimator, so that MSE==Var.
       // Then Squared Error = MSE*N = Var*N
-      //                    = (wYY/N - mean^2)*N
-      //                    = wYY - N*mean^2
-      //                    = wYY - N*(sum/N)(sum/N)
-      //                    = wYY - sum^2/N
-      double se0 = wYY0[b] - wY0[b]* wY0[b]/ w0[b];
-      double se1 = wYY1[b] - wY1[b]* wY1[b]/w1[b];
-      if( se0 < 0 ) se0 = 0;    // Roundoff error; sometimes goes negative
-      if( se1 < 0 ) se1 = 0;    // Roundoff error; sometimes goes negative
-      if( (se0+se1 < best_se0+best_se1) || // Strictly less error?
-              // Or tied MSE, then pick split towards middle bins
-              (se0+se1 == best_se0+best_se1 &&
-                      Math.abs(b -(nbins>>1)) < Math.abs(best-(nbins>>1))) ) {
-        best_se0 = se0;   best_se1 = se1;
-        best = b;
-      }
-    }
+      //                    = (wYY/N - wY^2)*N
+      //                    = wYY - N*wY^2
+      //                    = wYY - N*(wY/N)(wY/N)
+      //                    = wYY - wY^2/N
 
-    // If the bin covers a single value, we can also try an equality-based split
-    if( _isInt > 0 && _step == 1.0f &&    // For any integral (not float) column
-            _maxEx-_min > 2 && idxs==null ) { // Also need more than 2 (boolean) choices to actually try a new split pattern
-      for( int b=1; b<=nbins-1; b++ ) {
-        if( w[b] < min_rows ) continue; // Ignore too small splits
-        double N = w0[b] + w1[b+1];
-        if( N < min_rows )
-          continue; // Ignore too small splits
-        double wY2 =   wY0[b] +  wY1[b+1];
-        double wYY2 = wYY0[b] + wYY1[b+1];
-        double si =    wYY2 - wY2 * wY2 /   N   ; // Left+right, excluding 'b'
-        double sx =    wYY[b] - wY[b]*wY[b]/w[b]; // Just 'b'
-        if( si < 0 ) si = 0;    // Roundoff error; sometimes goes negative
-        if( sx < 0 ) sx = 0;    // Roundoff error; sometimes goes negative
-        if( si+sx < best_se0+best_se1 ) { // Strictly less error?
-          best_se0 = si;   best_se1 = sx;
-          best = b;        equal = 1; // Equality check
+      // no NAs
+      if (wNA==0) {
+        double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
+        double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
+        if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+        if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+        if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+                // Or tied MSE, then pick split towards middle bins
+                (selo + sehi == best_seL + best_seR &&
+                        Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+          best_seL = selo;
+          best_seR = sehi;
+          best = b;
+        }
+      } else {
+        // option 1: split the numeric feature and throw NAs to the left
+        {
+          double selo = wYYlo[b] + wYYNA - (wYlo[b] + wYNA) * (wYlo[b] + wYNA) / (wlo[b] + wNA);
+          double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
+          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+          if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+                  // Or tied SE, then pick split towards middle bins
+                  (selo + sehi == best_seL + best_seR &&
+                          Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+            best_seL = selo;
+            best_seR = sehi;
+            best = b;
+            nasplit = NASplitDir.NALeft;
+          }
+        }
+
+        // option 2: split the numeric feature and throw NAs to the right
+        {
+          double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
+          double sehi = wYYhi[b]+wYYNA - (wYhi[b]+wYNA) * (wYhi[b]+wYNA) / (whi[b]+wNA);
+          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+          if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+                  // Or tied SE, then pick split towards middle bins
+                  (selo + sehi == best_seL + best_seR &&
+                          Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+            best_seL = selo;
+            best_seR = sehi;
+            best = b;
+            nasplit = NASplitDir.NARight;
+          }
         }
       }
     }
@@ -495,16 +530,49 @@ public final class DHistogram extends Iced {
       equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
     }
 
-    if( best==0 ) return null;  // No place to split
-    double se = wYY1[0] - wY1[0]* wY1[0]/w1[0]; // Squared Error with no split
-    //if( se <= best_se0+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
-    if (!(best_se0+best_se1 < se * (1- _minSplitImprovement))) return null; // Ultimately roundoff error loses, and no split actually helped
-    double n0 = equal != 1 ?  w0[best] : w0[best]  + w1[best+1];
-    double n1 = equal != 1 ? w1[best] : w[best]                ;
-    double p0 = equal != 1 ? wY0[best] : wY0[best] + wY1[best+1];
-    double p1 = equal != 1 ? wY1[best] : wY[best]               ;
-    if( MathUtils.equalsWithinOneSmallUlp((float)(p0/n0),(float)(p1/n1)) ) return null; // No difference in predictions, which are all at 1 float ULP
-    return new DTree.Split(col,best,bs,equal,se,best_se0,best_se1,n0,n1,p0/n0,p1/n1);
+    if( best==0 && nasplit==NASplitDir.None) {
+//      Log.info("Not splitting: no optimal split point found:\n" + this);
+      return null;
+    }
+
+    //if( se <= best_seL+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    if (!(best_seL+ best_seR < seBefore * (1- _minSplitImprovement))) {
+//      Log.info("Not splitting: not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + this);
+      return null;
+    }
+
+    double nLeft = equal != 1 ? wlo[best] : wlo[best]  + whi[best+1];
+    double nRight = equal != 1 ? whi[best] : w[best]                ;
+    double predLeft = equal != 1 ? wYlo[best] : wYlo[best] + wYhi[best+1];
+    double predRight = equal != 1 ? wYhi[best] : wY[best]               ;
+
+    if (nasplit==NASplitDir.NAvsREST) {
+      assert(best == 0);
+      nLeft = whi[0]; //all non-NAs
+      predLeft = wYhi[0];
+      nRight = wNA;
+      predRight = wYNA;
+    }
+    else if (nasplit==NASplitDir.NALeft) {
+      nLeft +=wNA;
+      predLeft +=wYNA;
+    }
+    else if (nasplit==NASplitDir.NARight) {
+      nRight +=wNA;
+      predRight +=wYNA;
+    }
+
+    if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
+//      Log.info("Not splitting: Predictions for left/right are the same:\n" + this);
+      return null;
+    }
+
+    if (nLeft < min_rows || nRight < min_rows) {
+//      Log.info("Not splitting: split would violate min_rows limit:\n" + this);
+      return null;
+    }
+
+    return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 
   public void updateSharedHistosAndReset(double[] w, double[] wY, double[] wYY, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {
@@ -520,18 +588,19 @@ public final class DHistogram extends Iced {
       if( col_data > minmax[1] ) minmax[1] = col_data;
       double y = ys[k];
       double wy = weight * y;
-//      if (Double.isNaN(col_data)) {
-//        //separate bucket for NA - atomically added to the shared histo
-//        _wNA.addAndGet(weight);
-//        _wYNA.addAndGet(wy);
-//        _wYYNA.addAndGet(wy*y);
-//      } else {
+      double wyy = wy * y;
+      if (Double.isNaN(col_data)) {
+        //separate bucket for NA - atomically added to the shared histo
+        _wNA.addAndGet(weight);
+        _wYNA.addAndGet(wy);
+        _wYYNA.addAndGet(wyy);
+      } else {
         // increment local pre-thread histograms
         int b = bin(col_data);
         w[b] += weight;
         wY[b] += wy;
-        wYY[b] += wy * y;
-//      }
+        wYY[b] += wyy;
+      }
     }
 
     // Atomically update histograms

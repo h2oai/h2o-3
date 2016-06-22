@@ -2,6 +2,8 @@ package water.api;
 
 import water.H2O;
 import water.MRTask;
+import water.api.schemas3.FindV3;
+import water.api.schemas3.FrameV3;
 import water.exceptions.H2OColumnNotFoundArgumentException;
 import water.exceptions.H2OCategoricalLevelNotFoundArgumentException;
 import water.exceptions.H2OIllegalArgumentException;

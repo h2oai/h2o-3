@@ -3,10 +3,10 @@ package hex.schemas;
 import hex.coxph.CoxPH;
 import hex.coxph.CoxPHModel.CoxPHParameters;
 import water.H2O;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParametersV3> {
-  public static final class CoxPHParametersV3 extends ModelParametersSchema<CoxPHParameters, CoxPHParametersV3> {
+  public static final class CoxPHParametersV3 extends ModelParametersSchemaV3<CoxPHParameters, CoxPHParametersV3> {
     static public String[] own_fields = new String[] {
               "start_column",
               "stop_column",

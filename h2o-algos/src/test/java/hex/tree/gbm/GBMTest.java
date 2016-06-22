@@ -170,14 +170,14 @@ public class GBMTest extends TestUtil {
       if( idx < 0 ) idx = ~idx;
       parms._train = fr._key;
       parms._response_column = fr._names[idx];
-      parms._ntrees = 4;
+      parms._ntrees = 5;
       parms._distribution = family;
       parms._max_depth = 4;
       parms._min_rows = 1;
       parms._nbins = 50;
       parms._learn_rate = .2f;
       parms._score_each_iteration = true;
-      if( validation ) {        // Make a validation frame thats a clone of the training data
+      if( validation ) {        // Make a validation frame that's a clone of the training data
         vfr = new Frame(fr);
         DKV.put(vfr);
         parms._valid = vfr._key;
@@ -231,7 +231,7 @@ public class GBMTest extends TestUtil {
       double auc = mm._auc._auc;
       Assert.assertTrue(0.83 <= auc && auc < 0.87); // Sanely good model
       double[][] cm = mm._auc.defaultCM();
-      Assert.assertArrayEquals(ard(ard(322, 71), ard(31, 76)), cm);
+      Assert.assertArrayEquals(ard(ard(336, 57), ard(39, 68)), cm);
     } finally {
       parms._train.remove();
       parms._valid.remove();
@@ -614,7 +614,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21971340929271474, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21919655106803468, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
@@ -671,7 +671,7 @@ public class GBMTest extends TestUtil {
     }
     Scope.exit();
     for( double mse : mses )
-      assertEquals(0.21971340929271474, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21919655106803468, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
@@ -1411,10 +1411,10 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
-      assertEquals(0.7269651882661657, mm.auc_obj()._auc, 1e-4); // 1 node
+      assertEquals(0.7262032347274434, mm.auc_obj()._auc, 1e-4); // 1 node
       assertEquals(0.22663824626352638, mm.mse(), 1e-4);
-      assertEquals(0.09116437415807066, mm.r2(), 1e-4);
-      assertEquals(0.6456803408834985, mm.logloss(), 1e-4);
+      assertEquals(0.09088000238023386, mm.r2(), 1e-4);
+      assertEquals(0.6458390321700332, mm.logloss(), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -1687,7 +1687,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 22.89111) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 23.16773) < 1e-4);
 
     } finally {
       parms._train.remove();
@@ -1725,7 +1725,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.65668) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 10.90414) < 1e-4);
 
     } finally {
       parms._train.remove();
@@ -1744,8 +1744,8 @@ public class GBMTest extends TestUtil {
     try {
       {
         CreateFrame cf = new CreateFrame();
-        cf.rows = 10000;
-        cf.cols = 100;
+        cf.rows = 100;
+        cf.cols = 10;
         cf.integer_range = 1000;
         cf.categorical_fraction = 1.0;
         cf.integer_fraction = 0.0;
@@ -1753,20 +1753,20 @@ public class GBMTest extends TestUtil {
         cf.time_fraction = 0.0;
         cf.string_fraction = 0.0;
         cf.binary_ones_fraction = 0.0;
-        cf.missing_fraction = 0.9;
-        cf.factors = 300;
+        cf.missing_fraction = 0.2;
+        cf.factors = 3;
         cf.response_factors = 2;
         cf.positive_response = false;
         cf.has_response = true;
-        cf.seed = 1234;
+        cf.seed = 1235;
         cf.seed_for_column_types = 1234;
         train = cf.execImpl().get();
       }
 
       {
         CreateFrame cf = new CreateFrame();
-        cf.rows = 10000;
-        cf.cols = 100;
+        cf.rows = 100;
+        cf.cols = 10;
         cf.integer_range = 1000;
         cf.categorical_fraction = 1.0;
         cf.integer_fraction = 0.0;
@@ -1774,8 +1774,8 @@ public class GBMTest extends TestUtil {
         cf.time_fraction = 0.0;
         cf.string_fraction = 0.0;
         cf.binary_ones_fraction = 0.0;
-        cf.missing_fraction = 0.9;
-        cf.factors = 300;
+        cf.missing_fraction = 0.2;
+        cf.factors = 3;
         cf.response_factors = 2;
         cf.positive_response = false;
         cf.has_response = true;
@@ -1788,7 +1788,8 @@ public class GBMTest extends TestUtil {
       parms._response_column = "response"; // Train on the outcome
       parms._distribution = Distribution.Family.multinomial;
       parms._max_depth = 20;
-      parms._ntrees = 10;
+      parms._min_rows = 1;
+      parms._ntrees = 5;
       parms._seed = 1;
 
       GBM job = new GBM(parms);
@@ -1963,14 +1964,288 @@ public class GBMTest extends TestUtil {
     parms._train = tr;
     parms._response_column = "C2";
     parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
     Frame preds = gbm.score(df);
-    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Log.info(df);
     Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - -10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
     preds.remove();
     gbm.remove();
     df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNARight() {
+    String xy = ",10\n1,0\n2,0\n3,0\n4,10\n,10";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(preds.vec(0).at(0) == 10);
+    Assert.assertTrue(preds.vec(0).at(1) == 0);
+    Assert.assertTrue(preds.vec(0).at(2) == 0);
+    Assert.assertTrue(preds.vec(0).at(3) == 0);
+    Assert.assertTrue(preds.vec(0).at(4) == 10);
+    Assert.assertTrue(preds.vec(0).at(5) == 10);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNALeft() {
+    String xy = ",0\n1,0\n2,0\n3,0\n4,10\n,0";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNAvsRest() {
+    String xy = ",5\n1,0\n2,0\n3,0\n4,0\n,3";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 4) < 1e-6);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testOnevsRest() {
+    String xy = "-9,5\n1,0\n2,0\n3,0\n4,0\n-9,3";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 4) < 1e-6);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNACategorical() {
+    String xy = ",0\nA,0\nB,0\nA,0\nD,-10\n,0";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - -10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNARightCategorical() {
+    String xy = ",10\nA,0\nB,0\nA,0\n4,10\n,10";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(preds.vec(0).at(0) == 10);
+    Assert.assertTrue(preds.vec(0).at(1) == 0);
+    Assert.assertTrue(preds.vec(0).at(2) == 0);
+    Assert.assertTrue(preds.vec(0).at(3) == 0);
+    Assert.assertTrue(preds.vec(0).at(4) == 10);
+    Assert.assertTrue(preds.vec(0).at(5) == 10);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNALeftCategorical() {
+    String xy = ",0\nA,0\nB,0\nA,0\nD,10\n,0";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testNAvsRestCategorical() {
+    String xy = ",5\nA,0\nB,0\nA,0\nD,0\n,3";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Frame preds = gbm.score(df);
+    Log.info(df);
+    Log.info(preds);
+    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 4) < 1e-6);
+    preds.remove();
+    gbm.remove();
+    df.remove();
+  }
+
+  // PUBDEV-2822
+  @Test public void testUnseenNACategorical() {
+    String xy = "B,-5\nA,0\nB,0\nA,0\nD,0\nA,3";
+    Key tr = Key.make("train");
+    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+
+    String test = ",5\n,0\nB,0\n,0\nE,0\n,3";
+    Key te = Key.make("test");
+    Frame df2 = ParseDataset.parse(te, makeByteVec(Key.make("te"), test));
+
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    parms._train = tr;
+    parms._response_column = "C2";
+    parms._min_rows = 1;
+    parms._learn_rate = 1;
+    parms._ntrees = 1;
+    GBM job = new GBM(parms);
+    GBMModel gbm = job.trainModel().get();
+    Scope.enter(); //AdaptTestTrain leaks when it does inplace Vec adaptation, need a Scope to catch that stuff
+    Frame preds = gbm.score(df);
+    Frame preds2 = gbm.score(df2);
+    Log.info(df);
+    Log.info(preds);
+    Log.info(df2);
+    Log.info(preds2);
+    Assert.assertTrue(gbm.testJavaScoring(df, preds, 1e-15));
+    Assert.assertTrue(gbm.testJavaScoring(df2, preds2, 1e-15));
+    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - -2.5) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 1) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - -2.5) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 1) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 1) < 1e-6);
+    preds.remove();
+    preds2.remove();
+    gbm.remove();
+    df.remove();
+    df2.remove();
+    Scope.exit();
   }
 
 }

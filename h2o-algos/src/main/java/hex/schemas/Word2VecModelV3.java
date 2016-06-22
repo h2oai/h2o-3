@@ -1,13 +1,13 @@
 package hex.schemas;
 
 import hex.word2vec.Word2VecModel;
-import water.api.ModelOutputSchema;
-import water.api.ModelSchema;
+import water.api.schemas3.ModelOutputSchemaV3;
+import water.api.schemas3.ModelSchemaV3;
 
 
-public class Word2VecModelV3 extends ModelSchema<Word2VecModel, Word2VecModelV3, Word2VecModel.Word2VecParameters, Word2VecV3.Word2VecParametersV3, Word2VecModel.Word2VecOutput, Word2VecModelV3.Word2VecModelOutputV3> {
+public class Word2VecModelV3 extends ModelSchemaV3<Word2VecModel, Word2VecModelV3, Word2VecModel.Word2VecParameters, Word2VecV3.Word2VecParametersV3, Word2VecModel.Word2VecOutput, Word2VecModelV3.Word2VecModelOutputV3> {
 
-  public static final class Word2VecModelOutputV3 extends ModelOutputSchema<Word2VecModel.Word2VecOutput, Word2VecModelOutputV3> {
+  public static final class Word2VecModelOutputV3 extends ModelOutputSchemaV3<Word2VecModel.Word2VecOutput, Word2VecModelOutputV3> {
   } // Word2VecModelOutputV2
 
 

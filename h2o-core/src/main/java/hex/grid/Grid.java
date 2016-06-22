@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.*;
 import water.*;
+import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
@@ -342,8 +343,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   }
 
   @Override
-  public Class<water.api.KeyV3.GridKeyV3> makeSchema() {
-    return water.api.KeyV3.GridKeyV3.class;
+  public Class<KeyV3.GridKeyV3> makeSchema() {
+    return KeyV3.GridKeyV3.class;
   }
 
   public TwoDimTable createSummaryTable(Key<Model>[] model_ids, String sort_by, boolean decreasing) {

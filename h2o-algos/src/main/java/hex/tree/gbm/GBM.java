@@ -498,7 +498,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int nid = 0; nid < leaf; nid++) {
           if (tree.node(nid) instanceof DecidedNode) {
             DecidedNode dn = tree.decided(nid);
-            if (dn._split._col == -1) { // No decision here, no row should have this NID now
+            if (dn._split == null) { // No decision here, no row should have this NID now
               if (nid == 0)               // Handle the trivial non-splitting tree
                 new LeafNode(tree, -1, 0);
               continue;
@@ -508,7 +508,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               if (cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode) tree.node(cnid))._split.col() == -1))
+                              ((DecidedNode) tree.node(cnid))._split == null))
                 dn._nids[i] = new LeafNode(tree, nid).nid(); // Mark a leaf here
             }
           }
@@ -631,7 +631,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
-          if( tree.root() instanceof LeafNode ) continue;
+          if( tree.root() instanceof LeafNode )
+            continue;
           Distribution dist = new Distribution(_parms);
           for( int row=0; row<nids._len; row++ ) { // For all rows
             int nid = (int)nids.at8(row);          // Get Node to decide from
@@ -643,9 +644,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
               nid = tree.node(nid).pid();                  // Then take parent's decision
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
-            if( dn._split._col == -1 )                    // Unable to decide?
+            if( dn._split == null )                    // Unable to decide?
               dn = tree.decided(dn.pid());  // Then take parent's decision
-            int leafnid = dn.ns(chks,row); // Decide down to a leafnode
+            int leafnid = dn.getChildNodeID(chks,row); // Decide down to a leafnode
             assert leaf <= leafnid && leafnid < tree._len :
                     "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
             assert tree.node(leafnid) instanceof LeafNode;

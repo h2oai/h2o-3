@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.Iced;
+import water.api.schemas3.ShutdownV3;
 
 public class ShutdownHandler extends Handler {
   public static final class Shutdown extends Iced {

@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.MRTask;
+import water.api.schemas3.KillMinus3V3;
 import water.exceptions.H2OIllegalArgumentException;
 
 public class KillMinus3Handler extends Handler {

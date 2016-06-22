@@ -3,11 +3,10 @@ package hex.schemas;
 import hex.naivebayes.NaiveBayes;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.api.API;
-import water.api.FrameV3.ColSpecifierV3;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,NaiveBayesV3.NaiveBayesParametersV3> {
-  public static final class NaiveBayesParametersV3 extends ModelParametersSchema<NaiveBayesParameters, NaiveBayesParametersV3> {
+  public static final class NaiveBayesParametersV3 extends ModelParametersSchemaV3<NaiveBayesParameters, NaiveBayesParametersV3> {
     static public String[] fields = new String[]{
 				"model_id",
         "nfolds",

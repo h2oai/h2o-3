@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import water.DKV;
 import water.Key;
+import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.ParseSetup;
 import water.util.PojoUtils;

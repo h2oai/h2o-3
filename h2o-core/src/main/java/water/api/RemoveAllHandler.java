@@ -4,6 +4,7 @@ import water.Futures;
 import water.H2O;
 import water.Job;
 import water.MRTask;
+import water.api.schemas3.RemoveAllV3;
 import water.util.Log;
 
 // Best-effort cluster brain-wipe and reset.

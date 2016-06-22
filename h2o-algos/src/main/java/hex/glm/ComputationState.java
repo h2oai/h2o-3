@@ -11,14 +11,11 @@ import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
 import water.H2O;
 import water.Job;
-import water.Key;
 import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
 
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Arrays;
 
 public final class ComputationState {
@@ -87,7 +84,6 @@ public final class ComputationState {
   public BetaConstraint activeBC(){return _activeBC;}
   public double likelihood() {return _likelihood;}
 
-
   public DataInfo activeData(){
     if(_activeClass != -1)
       return activeDataMultinomial(_activeClass);
@@ -132,6 +128,8 @@ public final class ComputationState {
    * @return indices of expected active predictors.
    */
   protected int applyStrongRules(double lambdaNew, double lambdaOld) {
+    lambdaNew = Math.min(_lambdaMax,lambdaNew);
+    lambdaOld = Math.min(_lambdaMax,lambdaOld);
     if(_parms._family == Family.multinomial)
       return applyStrongRulesMultinomial(lambdaNew,lambdaOld);
     int P = _dinfo.fullN();
@@ -140,10 +138,9 @@ public final class ComputationState {
     _activeData = _activeData != null?_activeData:_dinfo;
     _allIn = _allIn || _parms._alpha[0]*lambdaNew == 0 || _activeBC.hasBounds();
     if (!_allIn) {
-      final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
+      final double rhs = Math.max(0,_alpha * (2 * lambdaNew - lambdaOld));
       int [] newCols = MemoryManager.malloc4(P);
       int j = 0;
-
       int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
       for (int i = 0; i < P; ++i) {
         if (j < oldActiveCols.length && i == oldActiveCols[j]) {
@@ -158,15 +155,13 @@ public final class ComputationState {
       _allIn = active == P;
       if(!_allIn) {
         int [] cols = newCols;
-//        if(newlySelected != active) {
-//          cols = new int[active];
-//
-//        }
         cols[newlySelected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
         cols = Arrays.copyOf(cols, newlySelected);
         _beta = ArrayUtils.select(_beta, cols);
         if(_u != null) _u = ArrayUtils.select(_u,cols);
-        _activeData = _dinfo.filterExpandedColumns(Arrays.copyOf(cols, newlySelected));
+        _activeData = _dinfo.filterExpandedColumns(cols);
+        assert _activeData.activeCols().length == _beta.length;
+        assert _u == null || _activeData.activeCols().length == _u.length;
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
@@ -221,6 +216,8 @@ public final class ComputationState {
   }
 
   public void setActiveClass(int activeClass) {_activeClass = activeClass;}
+
+  public double deviance() {return 2*likelihood();}
 
   public static class GLMSubsetGinfo extends GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;
@@ -359,6 +356,8 @@ public final class ComputationState {
     int [] activeCols = ArrayUtils.removeIds(_activeData.activeCols(),cols);
     if(_beta != null)
       _beta = ArrayUtils.removeIds(_beta,cols);
+    if(_u != null)
+      _u = ArrayUtils.removeIds(_u,cols);
     if(_ginfo != null && _ginfo._gradient != null)
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
@@ -427,7 +426,7 @@ public final class ComputationState {
   public double [] expandBeta(double [] beta) {
     if(_activeData._activeCols == null)
       return beta;
-    return ArrayUtils.expandAndScatter(beta, _dinfo.fullN() + 1 * _nclasses,_activeData._activeCols);
+    return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
   }
 
 }

@@ -3,6 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import java.util.Arrays;
 import water.H2O.H2OCountedCompleter;
+import water.api.schemas3.KeyV3;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -383,5 +384,5 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         _max_runtime_msecs = remote._max_runtime_msecs;
       }
   }
-  @Override public Class<water.api.KeyV3.JobKeyV3> makeSchema() { return water.api.KeyV3.JobKeyV3.class; }
+  @Override public Class<KeyV3.JobKeyV3> makeSchema() { return KeyV3.JobKeyV3.class; }
 }
