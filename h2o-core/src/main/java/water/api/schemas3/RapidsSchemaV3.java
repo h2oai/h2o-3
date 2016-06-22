@@ -10,7 +10,7 @@ public class RapidsSchemaV3<I extends Iced, S extends RapidsSchemaV3<I, S>> exte
   @API(help="An Abstract Syntax Tree.", direction=API.Direction.INPUT)
   public String ast;
 
-  @API(help="Key name to assign Frame results", direction=API.Direction.INPUT)
+  @API(help="[DEPRECATED] Key name to assign Frame results", direction=API.Direction.INPUT)
   public String id;
 
   @API(help="Session key", direction=API.Direction.INPUT)
