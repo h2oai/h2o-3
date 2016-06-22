@@ -89,7 +89,6 @@ public class RequestServer extends HttpServlet {
       HTTP_ACCEPTED = "202 Accepted",
       HTTP_NO_CONTENT = "204 No Content",
       HTTP_PARTIAL_CONTENT = "206 Partial Content",
-      HTTP_RANGE_NOT_SATISFIABLE = "416 Requested Range Not Satisfiable",
       HTTP_REDIRECT = "301 Moved Permanently",
       HTTP_NOT_MODIFIED = "304 Not Modified",
       HTTP_BAD_REQUEST = "400 Bad Request",
@@ -97,7 +96,9 @@ public class RequestServer extends HttpServlet {
       HTTP_FORBIDDEN = "403 Forbidden",
       HTTP_NOT_FOUND = "404 Not Found",
       HTTP_BAD_METHOD = "405 Method Not Allowed",
+      HTTP_PRECONDITION_FAILED = "412 Precondition Failed",
       HTTP_TOO_LONG_REQUEST = "414 Request-URI Too Long",
+      HTTP_RANGE_NOT_SATISFIABLE = "416 Requested Range Not Satisfiable",
       HTTP_TEAPOT = "418 I'm a Teapot",
       HTTP_THROTTLE = "429 Too Many Requests",
       HTTP_INTERNAL_ERROR = "500 Internal Server Error",
@@ -110,7 +111,13 @@ public class RequestServer extends HttpServlet {
   public static final String
       MIME_PLAINTEXT = "text/plain",
       MIME_HTML = "text/html",
+      MIME_CSS = "text/css",
       MIME_JSON = "application/json",
+      MIME_JS = "application/javascript",
+      MIME_JPEG = "image/jpeg",
+      MIME_PNG = "image/png",
+      MIME_GIF = "image/gif",
+      MIME_WOFF = "application/x-font-woff",
       MIME_DEFAULT_BINARY = "application/octet-stream",
       MIME_XML = "text/xml";
 
@@ -782,11 +789,18 @@ public class RequestServer extends HttpServlet {
     if (bytes == null || bytes.length == 0) // No resource found?
       return response404("Resource " + url, request_type);
 
-    String mime = MIME_DEFAULT_BINARY;
-    if (url.endsWith(".css"))
-      mime = "text/css";
-    else if (url.endsWith(".html"))
-      mime = "text/html";
+    int i = url.lastIndexOf('.');
+    String mime;
+    switch (url.substring(i + 1)) {
+      case "js": mime = MIME_JS; break;
+      case "css": mime = MIME_CSS; break;
+      case "htm":case "html": mime = MIME_HTML; break;
+      case "jpg":case "jpeg": mime = MIME_JPEG; break;
+      case "png": mime = MIME_PNG; break;
+      case "gif": mime = MIME_GIF; break;
+      case "woff": mime = MIME_WOFF; break;
+      default: mime = MIME_DEFAULT_BINARY;
+    }
     NanoResponse res = new NanoResponse(HTTP_OK, mime, new ByteArrayInputStream(bytes));
     res.addHeader("Content-Length", Long.toString(bytes.length));
     return res;
