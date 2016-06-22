@@ -22,9 +22,7 @@ import water.util.Log;
 import water.util.ReflectionUtils;
 import water.util.annotations.IgnoreJRERequirement;
 
-public class Handler extends H2OCountedCompleter<Handler> {
-  public Handler() {}
-  public Handler(Handler completer) { super(completer); }
+public class Handler {
 
   public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
      return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
@@ -70,11 +68,6 @@ public class Handler extends H2OCountedCompleter<Handler> {
     return result;
   }
 
-  @Override
-  public final void compute2() {
-    throw H2O.fail();
-  }
-
   @IgnoreJRERequirement
   protected StringBuffer markdown(Handler handler, int version, StringBuffer docs, String filename) {
     // TODO: version handling
@@ -86,7 +79,7 @@ public class Handler extends H2OCountedCompleter<Handler> {
     catch (IOException e) {
       Log.warn("Caught IOException trying to read doc file: ", path);
     }
-    if (null != docs)
+    if (docs != null)
       docs.append(sb);
     return sb;
   }
@@ -94,18 +87,19 @@ public class Handler extends H2OCountedCompleter<Handler> {
   public static <T extends Keyed> T getFromDKV(String param_name, String key, Class<T> klazz) {
     return getFromDKV(param_name, Key.make(key), klazz);
   }
+
   public static <T extends Keyed> T getFromDKV(String param_name, Key key, Class<T> klazz) {
-    if (null == key)
-      throw new H2OIllegalArgumentException(param_name, "Handler.getFromDKV()", key);
+    if (key == null)
+      throw new H2OIllegalArgumentException(param_name, "Handler.getFromDKV()", "null");
 
     Value v = DKV.get(key);
-    if (null == v)
+    if (v == null)
       throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
-    Iced ice = v.get();
-    if (! (klazz.isInstance(ice)))
-      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), klazz, ice.getClass());
-
-    return (T) ice;
+    try {
+      return klazz.cast(v.get());
+    } catch (ClassCastException e) {
+      throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), klazz, v.get().getClass());
+    }
   }
 }

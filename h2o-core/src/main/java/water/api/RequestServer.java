@@ -70,6 +70,7 @@ public class RequestServer extends HttpServlet {
   //
 
   // Returned in REST API responses as X-h2o-rest-api-version-max
+  // Do not bump to 4 until when the API v4 is fully ready for release.
   public static final int H2O_REST_API_VERSION = 3;
 
   private static RouteTree routesTree = new RouteTree("");
