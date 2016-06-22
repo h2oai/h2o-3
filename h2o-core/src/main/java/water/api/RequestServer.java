@@ -10,6 +10,9 @@ import water.nbhm.NonBlockingHashMap;
 import water.rapids.Assembly;
 import water.util.*;
 
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
@@ -50,9 +53,21 @@ import java.util.zip.ZipOutputStream;
  *
  * @see water.api.Handler
  * @see water.api.RegisterV3Api
- * @see water.JettyHTTPD.H2oDefaultServlet
  */
-public class RequestServer {  // TODO: merge with H2oDefaultServlet
+public class RequestServer extends HttpServlet {
+
+  // TODO: merge doGeneric() and serve()
+  //       Originally we had RequestServer based on NanoHTTPD. At some point we switched to JettyHTTPD, but there are
+  //       still some leftovers from the Nano times.
+  // TODO: invoke DatasetServlet, PostFileServlet and NpsBinServlet using standard Routes
+  //       Right now those 3 servlets are handling 5 "special" api endpoints from JettyHTTPD, and we also have several
+  //       "special" endpoints in maybeServeSpecial(). We don't want them to be special. The Route class should be
+  //       made flexible enough to generate responses of various kinds, and then all of those "special" cases would
+  //       become regular API calls.
+  // TODO: Move JettyHTTPD.sendErrorResponse here, and combine with other error-handling functions
+  //       That method is only called from 3 servlets mentioned above, and we want to standardize the way how errors
+  //       are handled in different responses.
+  //
 
   // Returned in REST API responses as X-h2o-rest-api-version-max
   public static final int H2O_REST_API_VERSION = 3;
@@ -171,8 +186,110 @@ public class RequestServer {  // TODO: merge with H2oDefaultServlet
 
   //------ Handling Requests -------------------------------------------------------------------------------------------
 
+  @Override protected void doGet(HttpServletRequest rq, HttpServletResponse rs)    { doGeneric("GET", rq, rs); }
+  @Override protected void doPut(HttpServletRequest rq, HttpServletResponse rs)    { doGeneric("PUT", rq, rs); }
+  @Override protected void doPost(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("POST", rq, rs); }
+  @Override protected void doHead(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("HEAD", rq, rs); }
+  @Override protected void doDelete(HttpServletRequest rq, HttpServletResponse rs) { doGeneric("DELETE", rq, rs); }
+
   /**
-   * Top-level dispatch based on the URI.
+   * Top-level dispatch handling
+   */
+  public void doGeneric(String method, HttpServletRequest request, HttpServletResponse response) {
+    try {
+      JettyHTTPD.startTransaction(request.getHeader("User-Agent"));
+
+      // Note that getServletPath does an un-escape so that the %24 of job id's are turned into $ characters.
+      String uri = request.getServletPath();
+
+      Properties headers = new Properties();
+      Enumeration<String> en = request.getHeaderNames();
+      while (en.hasMoreElements()) {
+        String key = en.nextElement();
+        String value = request.getHeader(key);
+        headers.put(key, value);
+      }
+
+      Properties parms = new Properties();
+      Map<String, String[]> parameterMap;
+      parameterMap = request.getParameterMap();
+      for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+        String key = entry.getKey();
+        String[] values = entry.getValue();
+
+        if (values.length == 1) {
+          parms.put(key, values[0]);
+        } else if (values.length > 1) {
+          StringBuilder sb = new StringBuilder();
+          sb.append("[");
+          boolean first = true;
+          for (String value : values) {
+            if (!first) sb.append(",");
+            sb.append("\"").append(value).append("\"");
+            first = false;
+          }
+          sb.append("]");
+          parms.put(key, sb.toString());
+        }
+      }
+
+      // Make serve() call.
+      NanoResponse resp = serve(uri, method, headers, parms);
+
+      // Un-marshal Nano response back to Jetty.
+      String choppedNanoStatus = resp.status.substring(0, 3);
+      assert (choppedNanoStatus.length() == 3);
+      int sc = Integer.parseInt(choppedNanoStatus);
+      JettyHTTPD.setResponseStatus(response, sc);
+
+      response.setContentType(resp.mimeType);
+
+      Properties header = resp.header;
+      Enumeration<Object> en2 = header.keys();
+      while (en2.hasMoreElements()) {
+        String key = (String) en2.nextElement();
+        String value = header.getProperty(key);
+        response.setHeader(key, value);
+      }
+
+      resp.writeTo(response.getOutputStream());
+
+    } catch (IOException e) {
+      JettyHTTPD.setResponseStatus(response, 500);
+      // Trying to send an error message or stack trace will produce another IOException...
+
+    } finally {
+      JettyHTTPD.logRequest(method, request, response);
+      // Handle shutdown if it was requested.
+      if (H2O.getShutdownRequested()) {
+        (new Thread() {
+          public void run() {
+            boolean [] confirmations = new boolean[H2O.CLOUD.size()];
+            if (H2O.SELF.index() >= 0) {
+              confirmations[H2O.SELF.index()] = true;
+            }
+            for(H2ONode n:H2O.CLOUD._memary) {
+              if(n != H2O.SELF)
+                new RPC<>(n, new UDPRebooted.ShutdownTsk(H2O.SELF,n.index(), 1000, confirmations)).call();
+            }
+            try { Thread.sleep(2000); }
+            catch (Exception ignore) {}
+            int failedToShutdown = 0;
+            // shutdown failed
+            for(boolean b:confirmations)
+              if(!b) failedToShutdown++;
+            Log.info("Orderly shutdown: " + (failedToShutdown > 0? failedToShutdown + " nodes failed to shut down! ":"") + " Shutting down now.");
+            H2O.closeAll();
+            H2O.exit(failedToShutdown);
+          }
+        }).start();
+      }
+      JettyHTTPD.endTransaction();
+    }
+  }
+
+  /**
+   * Subsequent handling of the dispatch
    */
   public static NanoResponse serve(String url, String method, Properties header, Properties parms) {
     try {
