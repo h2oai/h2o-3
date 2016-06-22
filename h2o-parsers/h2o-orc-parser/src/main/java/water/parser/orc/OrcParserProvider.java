@@ -7,11 +7,7 @@ import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
-import water.parser.DefaultParserProviders;
-import water.parser.ParseSetup;
-import water.parser.Parser;
-import water.parser.ParserInfo;
-import water.parser.ParserProvider;
+import water.parser.*;
 
 /**
  * Avro parser provider.
@@ -53,7 +49,8 @@ public class OrcParserProvider implements ParserProvider {
 
     try {
       OrcParser.OrcInfo OrcInfo = OrcParser.extractOrcInfo(bits, requiredSetup);
-      return new OrcParser.OrcParseSetup(requiredSetup, OrcInfo.header, OrcInfo.firstBlockSize, OrcInfo.domains);
+      return new OrcParser.OrcParseSetup(requiredSetup, OrcInfo.orcFileReader, OrcInfo.maxStripeBlockSize,
+              OrcInfo.minStripeBlockSize);
     } catch (Throwable e) {
       throw new H2OIllegalArgumentException("Wrong data", "Cannot find Orc header in input file: " + firstInput, e);
     }

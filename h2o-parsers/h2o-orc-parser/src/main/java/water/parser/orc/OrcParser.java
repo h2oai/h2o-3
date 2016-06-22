@@ -2,27 +2,20 @@ package water.parser.orc;
 
 // Avro support
 import org.apache.avro.Schema;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.file.DataFileStream;
-import org.apache.avro.file.SeekableByteArrayInput;
 import org.apache.avro.file.SeekableInput;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumReader;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.ql.io.orc.StripeInformation;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.ql.io.orc.Reader;
 import org.apache.hadoop.hive.ql.io.orc.OrcFile;
+import org.apache.hadoop.hive.ql.io.orc.Reader;
+import org.apache.hadoop.hive.ql.io.orc.StripeInformation;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
-
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import water.Job;
 import water.Key;
-import water.fvec.Vec;
 import water.parser.*;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -30,7 +23,6 @@ import water.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
 
 import static water.parser.orc.OrcUtil.*;
@@ -53,56 +45,46 @@ import static water.parser.orc.OrcUtil.*;
  * 4.  Inside each stripe, we will read data out in batches of VectorizedRowBatch (1024 rows or less).
  */
 public class OrcParser extends Parser {
-
-  /** Avro header */
-  private final byte[] header;
-
-
   /** Orc Info */
-  private final StructObjectInspector objInspector = null; // will column names/types
-  private final List<StripeInformation> stripes = null;   // get stripe info for parsing
-  private final Reader orcFileReader = null;
-  private final long stripeBlockSize = 0;
-
-
+  private final Reader orcFileReader;              // if I can have this, I can generate all the other fields
 
   OrcParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
-    this.header = ((OrcParser.OrcParseSetup) setup).header;
+    this.orcFileReader = ((OrcParser.OrcParseSetup) setup).orcFileReader;
 
   }
 
   @Override
   protected final ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
-    // We will read GenericRecord and load them based on schema
-    final DatumReader<GenericRecord> datumReader = new GenericDatumReader<>();
-    final H2OSeekableInputAdaptor sbai = new H2OSeekableInputAdaptor(cidx, din);
-    DataFileReader<GenericRecord> dataFileReader = null;
-    int cnt = 0;
-    try {
-      // Reconstruct Avro header
-      DataFileStream.Header
-          fakeHeader = new DataFileReader<>(new SeekableByteArrayInput(this.header), datumReader).getHeader();
-      dataFileReader = DataFileReader.openReader(sbai, datumReader, fakeHeader, true);
-      Schema schema = dataFileReader.getSchema();
-      GenericRecord gr = new GenericData.Record(schema);
-      Schema.Field[] flatSchema = flatSchema(schema);
-      long sync = dataFileReader.previousSync();
-      if (sbai.chunkCnt == 0) { // Find data in first chunk
-        while (dataFileReader.hasNext() && dataFileReader.previousSync() == sync) {
-          gr = dataFileReader.next(gr);
-          // Write values to the output
-          // FIXME: what if user change input names, or ignore an input column?
-          write2frame(gr, _setup.getColumnNames(), flatSchema, _setup.getColumnTypes(), dout);
-          cnt++;
-        }
-      } // else first chunk does not contain synchronization block, so give up and let another reader to use it
-    } catch (Throwable e) {
-      e.printStackTrace();
-    }
-
-    Log.trace(String.format("Orc: ChunkIdx: %d read %d records, start at %d off, block count: %d, block size: %d", cidx, cnt, din.getChunkDataStart(cidx), dataFileReader.getBlockCount(), dataFileReader.getBlockSize()));
-
+//    // We will read GenericRecord and load them based on schema
+//    final DatumReader<GenericRecord> datumReader = new GenericDatumReader<>();
+//    final H2OSeekableInputAdaptor sbai = new H2OSeekableInputAdaptor(cidx, din);
+//    DataFileReader<GenericRecord> dataFileReader = null;
+//    int cnt = 0;
+//    try {
+//      // Reconstruct Avro header
+//      DataFileStream.Header
+//          fakeHeader = new DataFileReader<>(new SeekableByteArrayInput(this.header), datumReader).getHeader();
+//      dataFileReader = DataFileReader.openReader(sbai, datumReader, fakeHeader, true);
+//      Schema schema = dataFileReader.getSchema();
+//      GenericRecord gr = new GenericData.Record(schema);
+//      Schema.Field[] flatSchema = flatSchema(schema);
+//      long sync = dataFileReader.previousSync();
+//      if (sbai.chunkCnt == 0) { // Find data in first chunk
+//        while (dataFileReader.hasNext() && dataFileReader.previousSync() == sync) {
+//          gr = dataFileReader.next(gr);
+//          // Write values to the output
+//          // FIXME: what if user change input names, or ignore an input column?
+//          write2frame(gr, _setup.getColumnNames(), flatSchema, _setup.getColumnTypes(), dout);
+//          cnt++;
+//        }
+//      } // else first chunk does not contain synchronization block, so give up and let another reader to use it
+//    } catch (Throwable e) {
+//      e.printStackTrace();
+//    }
+//
+//    Log.trace(String.format("Orc: ChunkIdx: %d read %d records, start at %d off, block count: %d, block size: %d", cidx, cnt, din.getChunkDataStart(cidx), dataFileReader.getBlockCount(), dataFileReader.getBlockSize()));
+//
     return dout;
   }
 
@@ -280,14 +262,10 @@ public class OrcParser extends Parser {
   }
 
   public static class OrcParseSetup extends ParseSetup {
-    final byte[] header;
-    final long blockSize;
-
     // expand to include Orc specific fields
-    private final StructObjectInspector objInspector = null; // will column names/types
-    private final List<StripeInformation> stripes = null;   // get stripe info for parsing
-    private final Reader orcFileReader = null;
-    private final long stripeBlockSize = 0;
+    final Reader orcFileReader;
+    final long maxStripeBlockSize;   // stripe size, max of all stripe sizes
+    final long minStripeBlockSize;   // if all stripes are the same size, equal to maxStripeBlockSize
 
     public OrcParseSetup(int ncols,
                          String[] columnNames,
@@ -295,22 +273,23 @@ public class OrcParser extends Parser {
                          String[][] domains,
                          String[][] naStrings,
                          String[][] data,
-                         StructObjectInspector inspector;
-                         List<StripeInformation> allStripes;
-                         Reader orcReader;
-                         long stripeSize) {
-      super(OrcParserProvider.ORC_INFO, (byte) '|', true, HAS_HEADER , ncols, columnNames, ctypes, domains, naStrings, data);
-      this.header = header;
-      this.blockSize = blockSize;
-      this.setChunkSize((int) blockSize);
+                         Reader orcReader,
+                         long maxStripeSize,
+                         long minStripeSize) {
+      super(OrcParserProvider.ORC_INFO, (byte) '|', true, HAS_HEADER ,
+              ncols, columnNames, ctypes, domains, naStrings, data);
+      this.orcFileReader = orcReader;
+      this.maxStripeBlockSize = maxStripeSize;
+      this.minStripeBlockSize = minStripeSize;
+      this.setChunkSize((int) maxStripeSize);
     }
 
-    public OrcParseSetup(ParseSetup ps, byte[] header, long blockSize, String[][] domains) {
+    public OrcParseSetup(ParseSetup ps, Reader reader, long maxStripeSize, long minStripeSize) {
       super(ps);
-      this.header = header;
-      this.blockSize = blockSize;
-      this.setDomains(domains);
-      this.setChunkSize((int) blockSize);
+      this.orcFileReader = reader;
+      this.maxStripeBlockSize = maxStripeSize;
+      this.minStripeBlockSize = minStripeSize;
+      this.setChunkSize((int) maxStripeSize);
     }
 
     @Override
@@ -321,81 +300,115 @@ public class OrcParser extends Parser {
 
   public static ParseSetup guessSetup(byte[] bits) {
     try {
+      return runOnPreview(bits, new OrcPreviewProcessor<ParseSetup>() {
+        @Override
+        public ParseSetup process(Reader orcFileReader, StructObjectInspector inspector) {
+          return deriveParseSetup(orcFileReader, inspector);
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException("Orc format was not recognized", e);
+    }
 
+  }
+
+  /** Just like derivedOrcInfo
+   */
+  static OrcInfo extractOrcInfo(byte[] bits, final ParseSetup requiredSetup) throws IOException {
+    return runOnPreview(bits, new OrcPreviewProcessor<OrcInfo>() {
+      @Override
+      public OrcInfo process(Reader orcReader, StructObjectInspector inspector) {
+        OrcParseSetup ps = (OrcParseSetup) deriveParseSetup(orcReader, inspector);
+
+        return new OrcInfo(ps.orcFileReader, ps.maxStripeBlockSize, ps.minStripeBlockSize);
+      }
+    });
+  }
+
+  /**
+   * This method basically grab the reader, the inspector of an orc file.  However, it will
+   * return null if an exception was found.
+   * @param bits
+   * @param processor
+   * @param <T>
+   * @return
+   * @throws IOException
+     */
+  static <T> T runOnPreview(byte[] bits, OrcPreviewProcessor<T> processor) throws IOException {
+    try {
       String tempFile = "tempFile";
       Configuration conf = new Configuration();
       FileUtils.writeByteArrayToFile(new File(tempFile), bits);
 
       Path p = new Path(tempFile);
-      Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));
+      Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));;     // orc reader
+      StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();;
 
-      return deriveParseSetup(orcFileReader);
-
-    } catch (IOException e) {
-      throw new RuntimeException("Orc format was not recognized", e);
+      return processor.process(orcFileReader, insp);
+    } catch (IOException safeToIgnore) {
+      return null;
     }
-  }
-
-  static OrcInfo extractOrcInfo(byte[] bits, final ParseSetup requiredSetup) throws IOException {
-    return runOnPreview(bits, new OrcPreviewProcessor<OrcInfo>() {
-      @Override
-      public OrcInfo process(byte[] header, GenericRecord gr, long blockCount,
-                              long blockSize) {
-        Schema recordSchema = gr.getSchema();
-        List<Schema.Field> fields = recordSchema.getFields();
-        int supportedFieldCnt = 0 ;
-        for (Schema.Field f : fields) if (isSupportedSchema(f.schema())) supportedFieldCnt++;
-        assert supportedFieldCnt == requiredSetup.getColumnNames().length : "User-driven changes are not not supported in Avro format";
-        String[][] domains = new String[supportedFieldCnt][];
-        int i = 0;
-        for (Schema.Field f : fields) {
-          Schema schema = f.schema();
-          if (isSupportedSchema(schema)) {
-            byte type = schemaToColumnType(schema);
-            if (type == Vec.T_CAT) {
-              domains[i] = getDomain(schema);
-            }
-            i++;
-          }
-        }
-        return new OrcInfo(header, blockCount, blockSize, domains);
-      }
-    });
   }
 
   /*
    * This function will derive information like column names, types and number from
    * the inspector.
    */
-  private static ParseSetup deriveParseSetup(Reader orcFileReader) {
-    // Grab inspector
-    try {
-      StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();
+  private static ParseSetup deriveParseSetup(Reader orcFileReader, StructObjectInspector insp) {
 
-      List<StructField> allColumns = (List<StructField>) insp.getAllStructFieldRefs();
+    List<StructField> allColumns = (List<StructField>) insp.getAllStructFieldRefs();  // grab column info
+    List<StripeInformation> allStripes = orcFileReader.getStripes();  // grab stripe information
 
-      int supportedFieldCnt = 0 ;
-      for (StructField oneField:allColumns) {
-        if (isSupportedSchema(oneField.getFieldObjectInspector().getTypeName())) supportedFieldCnt++;
+    int supportedFieldCnt = 0 ;
+    for (StructField oneField:allColumns) {
+      if (isSupportedSchema(oneField.getFieldObjectInspector().getTypeName())) supportedFieldCnt++;
+    }
+
+    String[] names = new String[supportedFieldCnt];
+    byte[] types = new byte[supportedFieldCnt];
+    String[][] domains = new String[supportedFieldCnt][];
+    String[] dataPreview = new String[supportedFieldCnt];
+
+    // go through all column information
+    int columnIndex = 0;
+
+    for (StructField oneField : allColumns) {
+      String columnType = oneField.getFieldObjectInspector().getTypeName();
+      if (isSupportedSchema(columnType)) {
+        names[columnIndex] = oneField.getFieldName();
+        types[columnIndex] = schemaToColumnType(columnType);
+//          if (types[columnIndex] == Vec.T_CAT) {  // Orc does not support ENUM/CATEGORICAL
+//            domains[columnIndex] = getDomain(schema);
+//          }
+
+        columnIndex++;
+      } else {
+        Log.warn("Skipping field: " + oneField.getFieldName() + " because of unsupported type: " + columnType);
       }
+    }
 
-      String[] names = new String[supportedFieldCnt];
-      byte[] types = new byte[supportedFieldCnt];
-      String[][] domains = new String[supportedFieldCnt][];
+    // go through all stripe and get stripe size information
+    long minStripeSize = (long) Double.POSITIVE_INFINITY;
+    long maxStripeSize = (long) Double.POSITIVE_INFINITY * (-1);
+    for (StripeInformation oneStripe : allStripes) {
+      long stripeSize = oneStripe.getDataLength();
 
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting StructObjectInspector or accessing stipe information", e);
+      if (stripeSize < minStripeSize)
+        minStripeSize = stripeSize;
+      else if (stripeSize > maxStripeSize)
+        maxStripeSize = stripeSize;
     }
 
     OrcParseSetup ps = new OrcParseSetup(
-        insp,
-        names,
-        types,
-        domains,
-        null,
-        new String[][] { dataPreview },
-        header,
-        blockSize
+            supportedFieldCnt,
+            names,
+            types,
+            domains,
+            null,
+            new String[][] { dataPreview },
+            orcFileReader,
+            maxStripeSize,
+            minStripeSize
     );
     return ps;
   }
@@ -404,23 +417,20 @@ public class OrcParser extends Parser {
    */
   static class OrcInfo {
 
-    public OrcInfo(StructObjectInspector objInsp, Reader orcReader, long stripeBlockSize, String[][] domains) {
-      this.objInspector = objInsp;
+    public OrcInfo(Reader orcReader, long maxStripeBlockSize, long minStripeBlockSize) {
       this.orcFileReader = orcReader;
-      this.stripeBlockSize = stripeBlockSize;
-      this.domains = domains;
+      this.maxStripeBlockSize = maxStripeBlockSize;
+      this.minStripeBlockSize = minStripeBlockSize;
+
     }
 
-    StructObjectInspector objInspector; // will column names/types
-    List<StripeInformation> stripes;   // get stripe info for parsing
-    Reader orcFileReader;
-    long stripeBlockSize;   // stripe size, last stripe may not have this size
-    String[][] domains;
-
+    Reader orcFileReader;   // can derive all other fields from here
+    long maxStripeBlockSize;   // stripe size, max of all stripe sizes
+    long minStripeBlockSize;   // if all stripes are the same size, equal to maxStripeBlockSize
   }
 
   private interface OrcPreviewProcessor<R> {
-    R process(byte[] header, GenericRecord gr, long blockCount, long blockSize);
+    R process(Reader orcFileReader, StructObjectInspector inspector);
   }
 
 }
