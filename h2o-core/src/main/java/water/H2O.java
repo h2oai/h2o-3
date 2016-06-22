@@ -969,14 +969,9 @@ final public class H2O {
    * @return A longer message including a URL.
    */
   public static String technote(int number, String message) {
-    StringBuffer sb = new StringBuffer()
-            .append(message)
-            .append("\n")
-            .append("\n")
-            .append("For more information visit:\n")
-            .append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number));
-
-    return sb.toString();
+    return message + "\n\n" +
+        "For more information visit:\n" +
+        "  http://jira.h2o.ai/browse/TN-" + Integer.toString(number);
   }
 
   /**
@@ -987,7 +982,7 @@ final public class H2O {
    * @return A longer message including a list of URLs.
    */
   public static String technote(int[] numbers, String message) {
-    StringBuffer sb = new StringBuffer()
+    StringBuilder sb = new StringBuilder()
             .append(message)
             .append("\n")
             .append("\n")
@@ -1022,7 +1017,7 @@ final public class H2O {
   // i.e., jobs running at MAX_PRIORITY cannot block, and when those jobs are
   // done, the next lower level jobs get unblocked, etc.
   public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
-  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0; //126
+  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY;   //126
   public static final byte  FETCH_ACK_PRIORITY = MAX_PRIORITY-1; //125
   public static final byte        ACK_PRIORITY = MAX_PRIORITY-2; //124
   public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-3; //123
@@ -1107,9 +1102,7 @@ final public class H2O {
     public final T getResult(){
       try {
         return get();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
     }
@@ -1122,8 +1115,9 @@ final public class H2O {
    *  TaskGetKey} can block an entire node for lack of some small piece of
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
-  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
-
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter>
+      extends CountedCompleter
+      implements Cloneable, Freezable<T> {
 
     @Override
     public byte [] asBytes(){return new AutoBuffer().put(this).buf();}
@@ -1787,7 +1781,8 @@ final public class H2O {
       } catch(Throwable t) {
         Log.POST(11, t.toString());
         StackTraceElement[] stes = t.getStackTrace();
-        for(int i =0; i < stes.length; i++) Log.POST(11, stes[i].toString());
+        for (StackTraceElement ste : stes)
+          Log.POST(11, ste.toString());
       }
     }
 
