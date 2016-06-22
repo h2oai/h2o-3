@@ -2248,4 +2248,83 @@ public class GBMTest extends TestUtil {
     Scope.exit();
   }
 
+  @Test public void unseenMissing() {
+    GBMModel gbm = null;
+    GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+    Frame train=null, test=null, train_preds=null, test_preds=null;
+    Scope.enter();
+    try {
+      {
+        CreateFrame cf = new CreateFrame();
+        cf.rows = 100;
+        cf.cols = 10;
+        cf.integer_range = 1000;
+        cf.categorical_fraction = 1.0;
+        cf.integer_fraction = 0.0;
+        cf.binary_fraction = 0.0;
+        cf.time_fraction = 0.0;
+        cf.string_fraction = 0.0;
+        cf.binary_ones_fraction = 0.0;
+        cf.missing_fraction = 0.0;
+        cf.factors = 3;
+        cf.response_factors = 2;
+        cf.positive_response = false;
+        cf.has_response = true;
+        cf.seed = 1235;
+        cf.seed_for_column_types = 1234;
+        train = cf.execImpl().get();
+      }
+
+      {
+        CreateFrame cf = new CreateFrame();
+        cf.rows = 100;
+        cf.cols = 10;
+        cf.integer_range = 1000;
+        cf.categorical_fraction = 1.0;
+        cf.integer_fraction = 0.0;
+        cf.binary_fraction = 0.0;
+        cf.time_fraction = 0.0;
+        cf.string_fraction = 0.0;
+        cf.binary_ones_fraction = 0.0;
+        cf.missing_fraction = 0.8;
+        cf.factors = 3;
+        cf.response_factors = 2;
+        cf.positive_response = false;
+        cf.has_response = true;
+        cf.seed = 4321; //different test set
+        cf.seed_for_column_types = 1234;
+        test = cf.execImpl().get();
+      }
+
+      parms._train = train._key;
+      parms._response_column = "response"; // Train on the outcome
+      parms._distribution = Distribution.Family.multinomial;
+      parms._max_depth = 20;
+      parms._min_rows = 1;
+      parms._ntrees = 5;
+      parms._seed = 1;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+
+      train_preds = gbm.score(train);
+      test_preds = gbm.score(test);
+
+      // Build a POJO, validate same results
+      Assert.assertTrue(gbm.testJavaScoring(train, train_preds, 1e-15));
+      Key old = gbm._key;
+      gbm._key = Key.make(gbm._key + "ha");
+      Assert.assertTrue(gbm.testJavaScoring(test, test_preds, 1e-15));
+      DKV.remove(old);
+
+    } finally {
+      if( gbm  != null ) gbm .delete();
+      if( train != null ) train.remove();
+      if( test != null ) test.remove();
+      if( train_preds  != null ) train_preds .remove();
+      if( test_preds  != null ) test_preds .remove();
+      Scope.exit();
+    }
+  }
+
 }
