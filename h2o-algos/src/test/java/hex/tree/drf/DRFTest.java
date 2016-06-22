@@ -91,11 +91,11 @@ public class DRFTest extends TestUtil {
             20,
             1,
             20,
-            ard(ard(0, 1, 1, 0, 0),
-                    ard(0, 62, 6, 0, 0),
-                    ard(0, 0, 1, 0, 0),
-                    ard(1, 2, 2, 28, 1),
-                    ard(0, 0, 2, 2, 35)),
+            ard(ard(0, 2, 0, 0, 0),
+                    ard(0, 58, 6, 4, 0),
+                    ard(0, 1, 0, 0, 0),
+                    ard(1, 3, 4, 25, 1),
+                    ard(0, 0, 0, 2, 37)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -114,10 +114,10 @@ public class DRFTest extends TestUtil {
             1,
             20,
             ard(ard(1, 2, 0, 0, 0),
-                    ard(0, 174, 6,  3, 0),
+                    ard(0, 177, 1,  5, 0),
                     ard(0, 2, 0, 0, 0),
-                    ard(2, 4, 1, 67, 1),
-                    ard(0, 0, 1, 2, 83)),
+                    ard(0, 6, 1, 67, 1),
+                    ard(0, 0, 0, 2, 84)),
             s("3", "4", "5", "6", "8"));
   }
 
@@ -214,7 +214,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            59.87077260106929
+            63.13182273942728
     );
 
   }
@@ -233,7 +233,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            58.857160962841164
+            59.713095855920244
     );
 
   }
@@ -252,7 +252,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-            49.42453594627541
+            47.00716017021814
     );
 
   }
@@ -743,7 +743,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.21488096730810302, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.21270754031847988, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 
@@ -1385,7 +1385,7 @@ public class DRFTest extends TestUtil {
       drf = new DRF(parms).trainModel().get();
 
       ModelMetricsRegression mm = (ModelMetricsRegression)drf._output._training_metrics;
-      assertEquals(0.1238181934227711, mm.mse(), 1e-4);
+      assertEquals(0.12228011813703696, mm.mse(), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();

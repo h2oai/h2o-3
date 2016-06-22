@@ -204,7 +204,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         for( int nid=0; nid<leaf; nid++ ) {
           if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
-            if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
+            if( dn._split == null ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new LeafNode(tree, -1, 0);
                 ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
@@ -216,7 +216,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
+                              ((DecidedNode)tree.node(cnid))._split==null) ) {
                 LeafNode ln = new LeafNode(tree,nid);
                 ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
@@ -263,9 +263,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                 leafnid = 0;
               } else {
                 DecidedNode dn = tree.decided(nid);           // Must have a decision point
-                if (dn._split.col() == -1)     // Unable to decide?
+                if (dn._split == null)     // Unable to decide?
                   dn = tree.decided(tree.node(nid).pid());    // Then take parent's decision
-                leafnid = dn.ns(chks, row); // Decide down to a leafnode
+                leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
               }
               // Setup Tree(i) - on the fly prediction of i-tree for row-th row
               //   - for classification: cumulative number of votes for this row

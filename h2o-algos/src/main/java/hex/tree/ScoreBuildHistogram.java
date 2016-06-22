@@ -140,7 +140,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       boolean oob = isOOBRow(nid);
       if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
       DTree.DecidedNode dn = _tree.decided(nid);
-      if( dn._split._col == -1 ) { // Might have a leftover non-split
+      if( dn._split == null ) { // Might have a leftover non-split
         if( DTree.isRootNode(dn) ) { nnids[row] = nid-_leaf; continue; }
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
@@ -150,7 +150,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       }
 
       assert !isDecidedRow(nid);
-      nid = dn.ns(chks,row); // Move down the tree 1 level
+      nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
         if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
         nids.set(row, nid);
