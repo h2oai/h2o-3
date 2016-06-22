@@ -22,11 +22,9 @@ import water.util.Log;
 import water.util.ReflectionUtils;
 import water.util.annotations.IgnoreJRERequirement;
 
-public class Handler extends H2OCountedCompleter {
-  public Handler( ) { }
-  public Handler( Handler completer ) { super(completer); }
-
-  protected long _t_start, _t_stop; // Start/Stop time in ms for the serve() call
+public class Handler extends H2OCountedCompleter<Handler> {
+  public Handler() {}
+  public Handler(Handler completer) { super(completer); }
 
   public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
      return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
@@ -50,18 +48,16 @@ public class Handler extends H2OCountedCompleter {
 
     // Fill from http request params:
     schema = schema.fillFromParms(parms);
-    if (null == schema)
+    if (schema == null)
       throw H2O.fail("fillFromParms returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
 
-    // Run the Handler in the Nano Thread (nano does not grok CPS!)
     // NOTE! The handler method is free to modify the input schema and hand it back.
-    _t_start = System.currentTimeMillis();
     Schema result = null;
     try {
       route._handler_method.setAccessible(true);
       result = (Schema)route._handler_method.invoke(this, version, schema);
     }
-    // Exception throws out of the invoked method turn into InvocationTargetException
+    // Exception thrown out of the invoked method turn into InvocationTargetException
     // rather uselessly.  Peel out the original exception & throw it.
     catch( InvocationTargetException ite ) {
       Throwable t = ite.getCause();
@@ -69,7 +65,6 @@ public class Handler extends H2OCountedCompleter {
       if( t instanceof Error ) throw (Error)t;
       throw new RuntimeException(t);
     }
-    _t_stop  = System.currentTimeMillis();
 
     // Version-specific unwind from the Iced back into the Schema
     return result;
