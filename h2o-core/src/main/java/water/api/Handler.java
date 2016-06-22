@@ -22,7 +22,7 @@ import water.util.Log;
 import water.util.ReflectionUtils;
 import water.util.annotations.IgnoreJRERequirement;
 
-public class Handler {
+public class Handler extends H2OCountedCompleter<Handler> {
 
   public static Class<? extends Schema> getHandlerMethodInputSchema(Method method) {
      return (Class<? extends Schema>)ReflectionUtils.findMethodParameterClass(method, 1);
