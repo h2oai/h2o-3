@@ -57,7 +57,6 @@ public class NetworkInit {
 
     final int[] ip;
     final int bits;
-    final private boolean isIPv4;
 
     public static CIDRBlock parse(String cidrBlock) {
       boolean isIPV4 = cidrBlock.contains(".");
@@ -82,7 +81,7 @@ public class NetworkInit {
 
     public static CIDRBlock createIPv4(int[] ip, int bits) {
       assert ip.length  == 4;
-      return new CIDRBlock(ip, bits, true);
+      return new CIDRBlock(ip, bits);
     }
 
     public static CIDRBlock createIPv6(int[] ip, int bits) {
@@ -93,7 +92,7 @@ public class NetworkInit {
         ipLong[2*i + 0] = (ip[i] >> 8) & 0xff;
         ipLong[2*i + 1] = ip[i] & 0xff;
       }
-      return new CIDRBlock(ipLong, bits, false);
+      return new CIDRBlock(ipLong, bits);
     }
 
     /**
@@ -102,12 +101,10 @@ public class NetworkInit {
      * @param ip   Array of octets specifying IP (4 for IPv4, 16 for IPv6)
      * @param bits Bits specifying active part of IP
      */
-    private CIDRBlock(int[] ip, int bits, boolean isIPv4) {
+    private CIDRBlock(int[] ip, int bits) {
       assert ip.length == 4 || ip.length == 16 : "Wrong number of bytes to construct IP: " + ip.length;
-      assert isIPv4 || ip.length != 4;
       this.ip = ip;
       this.bits = bits;
-      this.isIPv4 = isIPv4;
     }
 
     private boolean validOctet(int o) {
@@ -202,31 +199,24 @@ public class NetworkInit {
       // Right now the loop up order is: site local address > link local address > fallback loopback
       ArrayList<InetAddress> siteLocalIps = new ArrayList();
       ArrayList<InetAddress> linkLocalIps = new ArrayList();
-      ArrayList<InetAddress> loopbackIps = new ArrayList();
 
       boolean isIPv6Preferred = NetworkUtils.isIPv6Preferred();
       boolean isIPv4Preferred = NetworkUtils.isIPv4Preferred();
       for( InetAddress ip : ips ) {
-        //System.out.println("Scoped interface: " + ip.getScopedInterface());
-        System.out.println(ip);
-        System.out.println("  IsLinkLocalAddress: " + ip.isLinkLocalAddress());
-        System.out.println("  IsSiteLocalAddress: " + ip.isSiteLocalAddress());
-        System.out.println("  IsLoopbackAddress: " + ip.isLoopbackAddress());
-        // make sure the given IP address can be found here
+        // Make sure the given IP address can be found here
         if(!ip.isLoopbackAddress()) {
           // Always prefer IPv4
           if (isIPv6Preferred && !isIPv4Preferred && ip instanceof Inet4Address) continue;
           if (isIPv4Preferred && ip instanceof Inet6Address) continue;
           if (ip.isSiteLocalAddress()) siteLocalIps.add(ip);
           if (ip.isLinkLocalAddress()) linkLocalIps.add(ip);
-          if (ip.isLoopbackAddress()) loopbackIps.add(ip);
         }
       }
       // The ips were already sorted in priority based way, so use it
       // There is only a single site local address, use it
       if( siteLocalIps.size() == 1 ) {
         local = siteLocalIps.get(0);
-      } else if (linkLocalIps.size() > 0) {
+      } else if (linkLocalIps.size() > 0) { // Always use link local address on IPv6
         local = linkLocalIps.get(0);
       } else {
         local = guessInetAddress(siteLocalIps);
@@ -358,13 +348,16 @@ public class NetworkInit {
     {
       ArrayList<NetworkInterface> networkInterfaceList = calcPrioritizedInterfaceList();
 
-      for (NetworkInterface ni : networkInterfaceList) {
-        Enumeration<InetAddress> ias = ni.getInetAddresses();
-        while (ias.hasMoreElements()) {
-          InetAddress ia;
-          ia = ias.nextElement();
-          ips.add(ia);
-          Log.info("Possible IP Address: " + ni.getName() + " (" + ni.getDisplayName() + "), " + ia.getHostAddress());
+      for (NetworkInterface nIface : networkInterfaceList) {
+        Enumeration<InetAddress> ias = nIface.getInetAddresses();
+        if (NetworkUtils.isUp(nIface)) {
+          while (ias.hasMoreElements()) {
+            InetAddress ia = ias.nextElement();
+            if (NetworkUtils.isReachable(nIface, ia, 50 /* timeout */)) {
+              ips.add(ia);
+              Log.info("Possible IP Address: " + nIface.getName() + " (" + nIface.getDisplayName() + "), " + ia.getHostAddress());
+            }
+          }
         }
       }
     }

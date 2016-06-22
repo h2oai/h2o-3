@@ -1,6 +1,9 @@
 package water.util;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import static water.util.ArrayUtils.toByteArray;
@@ -30,8 +33,8 @@ public class NetworkUtils {
   public static int[] IPV4_MULTICAST_ALLOCATION_RANGE = new int[] { /* low */ 0xE1000000, /* high */ 0xEFFFFFFF };
 
   // The preconfigured scopes of IPv6 multicast groups - see https://en.wikipedia.org/wiki/Multicast_address#IPv6
-  public static long[][] IPV6_MULTICAST_ALLOCATION_RANGE = new long[][] { /* low  */ new long[] {0xff10000000000000L, 0x0L}, // T-flag for transient, 8 = organization scope
-                                                                          /* high */ new long[] {0xff18FFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL}};
+  public static long[][] IPV6_MULTICAST_ALLOCATION_RANGE = new long[][] { /* low  */ new long[] {0xff08000000000000L, 0x0L}, // T-flag for transient, 8 = organization scope (will be replace by real scope
+                                                                          /* high */ new long[] {0xff08FFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL}};
 
   public static boolean isIPv6Preferred() {
     return Boolean.parseBoolean(System.getProperty("java.net.preferIPv6Addresses", "false"))
@@ -78,6 +81,20 @@ public class NetworkUtils {
     if (ip.isLinkLocalAddress()) return SCOPE_LINK_LOCAL;
     if (ip.isSiteLocalAddress()) return SCOPE_SITE_LOCAL;
     return SCOPE_ORG_LOCAL;
+  }
+
+  public static boolean isUp(NetworkInterface iface) {
+    try { return iface.isUp(); } catch (SocketException e) {
+      return false;
+    }
+  }
+
+  public static boolean isReachable(NetworkInterface iface, InetAddress address, int timeout) {
+    try {
+      return address.isReachable(iface, 0, timeout);
+    } catch (IOException e) {
+      return false;
+    }
   }
 
 }
