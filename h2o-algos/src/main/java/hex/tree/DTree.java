@@ -137,6 +137,7 @@ public class DTree extends Iced {
     final double _p0,  _p1;     // Predicted value for each split
 
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1 ) {
+      assert(nasplit!= DHistogram.NASplitDir.None);
       _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
@@ -544,9 +545,9 @@ public class DTree extends Iced {
         else throw H2O.unimpl();
       } else {
         // NA handling
-        if (_split._nasplit== DHistogram.NASplitDir.NALeft) {
+        if (_split._nasplit== DHistogram.NASplitDir.NALeft || _split._nasplit == DHistogram.NASplitDir.Left) {
           bin = 0;
-        } else if (_split._nasplit == DHistogram.NASplitDir.NARight || _split._nasplit == DHistogram.NASplitDir.NAvsREST) {
+        } else if (_split._nasplit == DHistogram.NASplitDir.NARight || _split._nasplit == DHistogram.NASplitDir.Right || _split._nasplit == DHistogram.NASplitDir.NAvsREST) {
           bin = 1;
         } else if (_split._nasplit == DHistogram.NASplitDir.None) {
           bin = 1; // if no NAs in training, but NAs in testing -> go right TODO: Pick optimal direction
@@ -610,9 +611,9 @@ public class DTree extends Iced {
           }
           else {
             if (_split._equal < 2) {
-              if (_split._nasplit == DHistogram.NASplitDir.NARight || _split._nasplit == DHistogram.NASplitDir.None)
+              if (_split._nasplit == DHistogram.NASplitDir.NARight || _split._nasplit == DHistogram.NASplitDir.Right || _split._nasplit == DHistogram.NASplitDir.None)
                 sb.append(_split._equal != 0 ? (i == 0 ? " != " : " == ") : (i == 0 ? " <  " : " is NA or >= "));
-              if (_split._nasplit == DHistogram.NASplitDir.NALeft)
+              if (_split._nasplit == DHistogram.NASplitDir.NALeft || _split._nasplit == DHistogram.NASplitDir.Left)
                 sb.append(_split._equal != 0 ? (i == 0 ? " is NA or != " : " == ") : (i == 0 ? " is NA or <  " : " >= "));
             } else {
               sb.append(i == 0 ? " not in " : "  is in ");

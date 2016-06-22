@@ -316,7 +316,7 @@ To make custom GLM model from R or python:
 - **How does the algorithm handle missing values during training?**
 
   Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
-  The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level.   
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level.   
   Optionally, glm can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
@@ -630,11 +630,11 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 - **What happens if the response has missing values?**
  
@@ -1256,11 +1256,11 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go right”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math. No new node is created. Instead, the observation is treated as if it had the maximum feature value of all observations in the node to be split. Note that the missing value might not be separated from the largest value itself. For example, if a node contains feature values of 0,1,2,3,4,5, then the missing value is counted as a 5. No matter what split decision is then made, the value 5 and the missing values won’t be separated. The 5 and the missing stay together, even in splits down the tree.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 - **What happens if the response has missing values?**
 
@@ -1611,7 +1611,9 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-	Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level.   
+  Optionally, Deep Learning can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
 
