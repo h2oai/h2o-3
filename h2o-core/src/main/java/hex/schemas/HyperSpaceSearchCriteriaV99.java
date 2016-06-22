@@ -3,7 +3,7 @@ package hex.schemas;
 import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria;
 import water.api.API;
-import water.api.SchemaV3;
+import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 
 /**

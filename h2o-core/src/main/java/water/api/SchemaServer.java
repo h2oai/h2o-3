@@ -117,7 +117,7 @@ public class SchemaServer {
       }
 
       // Check the version, and bump the LATEST_VERSION
-      // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBase, so that we can
+      // NOTE: we now allow non-versioned schemas, for example base classes like ModelMetricsBaseV3, so that we can
       // fetch the metadata for them.
       int version = Schema.extractVersionFromSchemaName(clzname);
       if (version > HIGHEST_SUPPORTED_VERSION && version != EXPERIMENTAL_VERSION)
@@ -172,10 +172,13 @@ public class SchemaServer {
       if (impl_class != Iced.class) {
         Pair<String, Integer> versioned = new Pair<>(impl_class.getSimpleName(), version);
         // Check for conflicts
-        if (iced_to_schema.containsKey(versioned))
-          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " +
-              iced_to_schema.get(versioned) + " and " + clz + " both map to " +
-              "version: " + version + " of Iced class: " + impl_class);
+        // The check is invalid: there could be multiple schemas mapping to the same Iced object with the same version.
+        // This is why all calls that depend on this mapping should ideally be eliminated (they cannot by
+        // type-checked anyways, so they greatly increase bugginness of the code...)
+//        if (iced_to_schema.containsKey(versioned))
+//          throw H2O.fail("Found two schemas mapping to the same Iced class with the same version: " +
+//              iced_to_schema.get(versioned) + " and " + clz + " both map to " +
+//              "version: " + version + " of Iced class: " + impl_class);
         iced_to_schema.put(versioned, clz);
       }
     }
@@ -233,20 +236,13 @@ public class SchemaServer {
   }
 
   /**
-   * For a given version and Iced class return the appropriate Schema class, if any.f
-   * @see #schemaClass(int, java.lang.String)
-   */
-  protected static Class<? extends Schema> schemaClass(int version, Class<? extends Iced> impl_class) {
-    return schemaClass(version, impl_class.getSimpleName());
-  }
-
-  /**
    * For a given version and type (Iced class simpleName) return the appropriate Schema
    * class, if any.
    * <p>
    * If a higher version is asked for than is available (e.g., if the highest version of
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then FrameV2 will
    * be returned.  This compatibility lookup is cached.
+   * @deprecated
    */
   public static Class<? extends Schema> schemaClass(int version, String type) {
     if (version < 1) return null;
@@ -262,6 +258,7 @@ public class SchemaServer {
   /**
    * For a given version and Iced object return an appropriate Schema instance, if any.
    * @see #schema(int, java.lang.String)
+   * @deprecated
    */
   public static Schema schema(int version, Iced impl) {
     if (version == -1) version = getLatestVersion();
@@ -274,6 +271,7 @@ public class SchemaServer {
    * @param impl_class Create schema corresponds to this implementation class.
    * @throws H2OIllegalArgumentException if Class.newInstance() throws
    * @see #schema(int, java.lang.String)
+   * @deprecated
    */
   public static Schema schema(int version, Class<? extends Iced> impl_class) {
     if (version == -1) version = getLatestVersion();
@@ -287,6 +285,7 @@ public class SchemaServer {
    * Frame is FrameV2 and the client asks for the schema for (Frame, 17) then an instance
    * of FrameV2 will be returned.  This compatibility lookup is cached.
    * @throws H2ONotFoundArgumentException if an appropriate schema is not found
+   * @deprecated
    */
   private static Schema schema(int version, String type) {
     Class<? extends Schema> clz = schemaClass(version, type);

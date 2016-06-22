@@ -1,6 +1,7 @@
 package water.api;
 
 import water.H2O;
+import water.api.schemas3.ImportFilesV3;
 
 import java.util.ArrayList;
 

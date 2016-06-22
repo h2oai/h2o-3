@@ -2,8 +2,8 @@ package hex.schemas;
 
 import water.Iced;
 import water.api.API;
-import water.api.KeyV3;
-import water.api.SchemaV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 
 public class DataInfoFrameV3 extends SchemaV3<Iced,DataInfoFrameV3> {
   @API(help="input frame")                                  public KeyV3.FrameKeyV3 frame;

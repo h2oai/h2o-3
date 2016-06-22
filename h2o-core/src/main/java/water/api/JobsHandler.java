@@ -1,6 +1,8 @@
 package water.api;
 
 import water.*;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.JobsV3;
 import water.exceptions.H2ONotFoundArgumentException;
 
 public class JobsHandler extends Handler {

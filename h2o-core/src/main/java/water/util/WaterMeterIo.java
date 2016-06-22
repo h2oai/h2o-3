@@ -2,7 +2,7 @@ package water.util;
 
 import water.*;
 import water.api.API;
-import water.api.SchemaV3;
+import water.api.schemas3.SchemaV3;
 import water.persist.PersistManager;
 
 public class WaterMeterIo extends Iced {

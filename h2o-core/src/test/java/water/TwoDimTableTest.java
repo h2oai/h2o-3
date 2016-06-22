@@ -2,7 +2,7 @@ package water;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.api.TwoDimTableBase;
+import water.api.schemas3.TwoDimTableV3;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -36,7 +36,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -64,7 +64,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -114,7 +114,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -137,7 +137,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -160,7 +160,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
   }
 
@@ -187,7 +187,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(table.get(1, 2).equals("1.2"));
     assertTrue(table.get(1, 3) == null);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
 
   }
@@ -239,7 +239,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(table.get(2, 3).equals(0L));
     assertTrue(table.get(3, 3).equals(-0L));
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
 
   }
@@ -263,7 +263,7 @@ public class TwoDimTableTest extends TestUtil {
     assertTrue(ts.length() > 0);
     Log.info(ts);
 
-    String json = new TwoDimTableBase().fillFromImpl(table).toJsonString();
+    String json = new TwoDimTableV3().fillFromImpl(table).toJsonString();
     Log.info(json);
 
   }

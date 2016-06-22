@@ -1,6 +1,7 @@
 package water.api;
 
 import water.H2O;
+import water.api.schemas3.NodePersistentStorageV3;
 import water.init.NodePersistentStorage;
 import water.init.NodePersistentStorage.NodePersistentStorageEntry;
 

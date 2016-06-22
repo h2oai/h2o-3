@@ -1,11 +1,10 @@
 package hex.schemas;
 
 import water.Iced;
-import water.Key;
 import water.api.API;
 import water.api.API.Direction;
-import water.api.KeyV3;
-import water.api.SchemaV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 
 /**
  * End point to update a model. Creates a modified copy of the original model. Can only change coefficient values.

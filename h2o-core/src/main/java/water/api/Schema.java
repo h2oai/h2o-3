@@ -1,8 +1,10 @@
 package water.api;
 
-import hex.schemas.ModelBuilderSchema;
-import org.reflections.Reflections;
 import water.*;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
@@ -123,6 +125,15 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   public Schema() {
     init_meta();
     SchemaServer.checkIfRegistered(this);
+  }
+
+  /**
+   * Create a new Schema instance from an existing impl object.
+   * @param impl
+   */
+  public Schema(I impl) {
+    this();
+    this.fillFromImpl(impl);
   }
 
   protected void init_meta() {
@@ -525,8 +536,8 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       return new FrameV3.ColSpecifierV3(s);
     }
 
-    if (ModelSchema.class.isAssignableFrom(fclz))
-      throw H2O.fail("Can't yet take ModelSchema as input.");
+    if (ModelSchemaV3.class.isAssignableFrom(fclz))
+      throw H2O.fail("Can't yet take ModelSchemaV3 as input.");
     /*
       if( (s==null || s.length()==0) && required ) throw new IllegalArgumentException("Missing key");
       else if (!required && (s == null || s.length() == 0)) return null;

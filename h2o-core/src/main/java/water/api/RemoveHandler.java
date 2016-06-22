@@ -3,6 +3,7 @@ package water.api;
 import water.DKV;
 import water.Keyed;
 import water.Lockable;
+import water.api.schemas3.RemoveV3;
 
 public class RemoveHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer

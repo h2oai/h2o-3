@@ -7,7 +7,7 @@ import water.fvec.Frame;
 
 public class ModelMetricsPCA extends ModelMetricsUnsupervised {
   public ModelMetricsPCA(Model model, Frame frame) {
-    super(model, frame, Double.NaN);
+    super(model, frame, 0, Double.NaN);
   }
 
   // PCA currently does not have any model metrics to compute during scoring

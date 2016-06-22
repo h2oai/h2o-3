@@ -2,6 +2,7 @@ package water.api;
 
 import water.H2O;
 import water.MRTask;
+import water.api.schemas3.LogAndEchoV3;
 import water.util.Log;
 
 public class LogAndEchoHandler extends Handler {

@@ -1,5 +1,7 @@
 package water.api;
 
+import water.api.schemas3.ProfilerNodeV3;
+import water.api.schemas3.ProfilerV3;
 import water.util.JProfile;
 
 public class ProfilerHandler extends Handler {

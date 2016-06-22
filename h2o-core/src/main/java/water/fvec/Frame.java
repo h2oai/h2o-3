@@ -3,6 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.util.FrameUtils;
@@ -1455,5 +1456,5 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
-  @Override public Class<water.api.KeyV3.FrameKeyV3> makeSchema() { return water.api.KeyV3.FrameKeyV3.class; }
+  @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 }

@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -193,5 +194,5 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
 }
 
 // Need this class, so a /3/Jobs can return the JSON'd version of it
-class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchema> {}
+class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchemaV3> {}
 

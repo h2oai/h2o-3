@@ -2,14 +2,13 @@ package hex.schemas;
 
 import hex.DataInfo;
 import hex.svd.SVD;
-import hex.svd.SVDModel;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class SVDV99 extends ModelBuilderSchema<SVD,SVDV99,SVDV99.SVDParametersV99> {
 
-  public static final class SVDParametersV99 extends ModelParametersSchema<SVDModel.SVDParameters, SVDParametersV99> {
+  public static final class SVDParametersV99 extends ModelParametersSchemaV3<SVDParameters, SVDParametersV99> {
     static public String[] fields = new String[] {
         "model_id",
         "training_frame",

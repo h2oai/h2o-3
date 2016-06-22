@@ -118,7 +118,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
 
   public static class ModelMetricsSVD extends ModelMetricsUnsupervised {
     public ModelMetricsSVD(Model model, Frame frame) {
-      super(model, frame, Double.NaN);
+      super(model, frame, 0, Double.NaN);
     }
 
     // SVD currently does not have any model metrics to compute during scoring

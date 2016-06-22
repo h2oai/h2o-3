@@ -73,6 +73,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         A logical value indicating whether to conduct a search over the space of lambda
         values starting from the lambda max, given lambda is interpreted as lambda minself.
 
+      early_stopping : bool
+        A logical value indicating whether to stop early when doing lambda search.
+        H2O will stop the computation at the moment when the likelihood stops changing or gets  (on the validation data).
+
       nlambdas : int
         The number of lambda values to use when lambda_search = TRUE.
 
@@ -138,7 +142,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     """
   def __init__(self, model_id=None,ignore_const_cols=None, max_iterations=None, beta_epsilon=None, solver=None,
                standardize=None, family=None, link=None, tweedie_variance_power=None,
-               tweedie_link_power=None, alpha=None, prior=None, lambda_search=None,
+               tweedie_link_power=None, alpha=None, prior=None, lambda_search=None, early_stopping=True,
                nlambdas=None, lambda_min_ratio=None, beta_constraints=None, nfolds=None,
                seed = None, fold_assignment=None, keep_cross_validation_predictions=None,
                keep_cross_validation_fold_assignment=None,
@@ -238,6 +242,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
   @lambda_search.setter
   def lambda_search(self, value):
     self._parms["lambda_search"] = value
+
+  @property
+  def early_stopping(self):
+    return self._parms["early_stopping"]
+
+  @early_stopping.setter
+  def early_stopping(self, value):
+    self._parms["early_stopping"] = value
 
   @property
   def nlambdas(self):

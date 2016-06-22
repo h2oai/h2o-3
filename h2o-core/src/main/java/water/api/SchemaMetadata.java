@@ -4,7 +4,7 @@ import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.Weaver;
-import water.api.SchemaMetadataBase.FieldMetadataBase;
+import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
 import water.util.Log;
@@ -156,17 +156,9 @@ public final class SchemaMetadata extends Iced {
         // Note, this has to work when the field is null.  In addition, if the field's type is a base class we want to see if we have a versioned schema for its Iced type and, if so, use it.
         if (this.is_schema) {
           // First, get the class of the field: NOTE: this gets the actual type for genericized fields, but not for arrays of genericized fields
-          Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
-
-          // Now see if we have a versioned schema for its Iced type:
-          Class<? extends Schema>  versioned_schema_class = SchemaServer.schemaClass(-1, Schema.getImplClass(schema_class));
-
-          // If we found a versioned schema class for its iced type use it, else fall back to the type of the field:
-          if (null != versioned_schema_class) {
-            this.schema_name = versioned_schema_class.getSimpleName();
-          } else {
-            this.schema_name = schema_class.getSimpleName();
-          }
+          Class schema_class = f.getType().isArray()? f.getType().getComponentType()
+                                                    : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
+          this.schema_name = schema_class.getSimpleName();
         } else if ((is_enum || is_fake_enum) && !f.getType().isArray()) {
           // We have enums of the same name defined in a few classes (e.g., Loss and Initialization)
           this.schema_name = getEnumSchemaName(is_enum ? f.getType() : annotation.valuesProvider());
@@ -280,10 +272,10 @@ public final class SchemaMetadata extends Iced {
           if (schema instanceof ModelParameterSchemaV3 && ("default_value".equals(field_name) || "actual_value".equals(field_name)))
             return "Polymorphic";
 
-          if ((schema instanceof FieldMetadataV3 || schema instanceof FieldMetadataBase) && "value".equals(field_name))
+          if ((schema instanceof FieldMetadataV3) && "value".equals(field_name))
             return "Polymorphic";
 
-          if (((schema instanceof TwoDimTableBase || schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
+          if (((schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
             return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);

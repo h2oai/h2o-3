@@ -1,8 +1,8 @@
 package water.util;
 
 import water.*;
-import water.api.FrameV3;
-import water.api.KeyV3;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.KeyV3;
 import water.api.Schema;
 import water.api.SchemaServer;
 import water.exceptions.H2OIllegalArgumentException;

@@ -1,6 +1,9 @@
 package water.api;
 
 import water.*;
+import water.api.schemas3.H2OErrorV3;
+import water.api.schemas3.H2OModelBuilderErrorV3;
+import water.api.schemas99.AssemblyV99;
 import water.exceptions.*;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;

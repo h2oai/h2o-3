@@ -4,11 +4,11 @@ import hex.DataInfo;
 import hex.pca.PCA;
 import hex.pca.PCAModel.PCAParameters;
 import water.api.API;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
 
-  public static final class PCAParametersV3 extends ModelParametersSchema<PCAParameters, PCAParametersV3> {
+  public static final class PCAParametersV3 extends ModelParametersSchemaV3<PCAParameters, PCAParametersV3> {
     static public String[] fields = new String[] {
       "model_id",
       "training_frame",

@@ -7,7 +7,7 @@ import water.fvec.Frame;
 
 public class ModelMetricsAggregator extends ModelMetricsUnsupervised {
   public ModelMetricsAggregator(Model model, Frame frame) {
-    super(model, frame, Double.NaN);
+    super(model, frame, 0, Double.NaN);
   }
 
   // Aggregator currently does not have any model metrics to compute during scoring

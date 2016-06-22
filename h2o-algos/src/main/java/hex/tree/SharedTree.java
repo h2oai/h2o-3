@@ -457,7 +457,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
 //        System.out.println(dn +
 //                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
-        if( dn._split._col == -1 ) udn.do_not_split();
+        if( dn._split == null ) udn.do_not_split();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
