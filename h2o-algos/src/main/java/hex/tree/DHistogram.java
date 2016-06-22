@@ -72,7 +72,19 @@ public final class DHistogram extends Iced {
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
 
   // split direction for missing values
-  public enum NASplitDir { None, NAvsREST, NALeft, NARight }
+  public enum NASplitDir {
+    //never saw NAs in training
+    None,     //initial state - should not be present in a trained model
+
+    // saw NAs in training
+    NAvsREST, //split off non-NA (left) vs NA (right)
+    NALeft,   //NA goes left
+    NARight,  //NA goes right
+
+    // never NAs in training, but have a way to deal with them in scoring
+    Left,     //test time NA should go left
+    Right,    //test time NA should go right
+  }
 
   static class HistoQuantiles extends Keyed<HistoQuantiles> {
     public HistoQuantiles(Key<HistoQuantiles> key, double[] splitPts) {
@@ -572,6 +584,10 @@ public final class DHistogram extends Iced {
       return null;
     }
 
+    // if still undecided (e.g., if there are no NAs in training), pick a good default direction for NAs in test time
+    if (nasplit == NASplitDir.None) {
+      nasplit = nLeft > nRight ? NASplitDir.Left : NASplitDir.Right;
+    }
     return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 
