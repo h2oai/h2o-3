@@ -415,7 +415,7 @@ test process, they will cloud up and run the multi-node JUnit tests.
    the repository, and how to install required dependencies.
 
 -  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Maven>`__
+   `here <http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Maven>`__
    to view instructions on how to use H2O with Maven.
 
 -  `Maven install <https://github.com/h2oai/h2o-3/blob/master/build.gradle>`_: This page provides information on how to build a
@@ -429,7 +429,7 @@ test process, they will cloud up and run the multi-node JUnit tests.
 -  `H2O Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects
    created in Java, Scala, or Sparkling Water.
 
--  `H2O Scala API Developer Documentation <https://github.com/h2oai/h2o-droplets>`_: The definitive Scala API guide
+-  `H2O Scala API Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-scala/scaladoc/index.html>`_: The definitive Scala API guide
    for H2O.
    
 -  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a
