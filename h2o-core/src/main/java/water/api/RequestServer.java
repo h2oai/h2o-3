@@ -51,13 +51,8 @@ import java.util.zip.ZipOutputStream;
  * </ol>
  *
  * @see water.api.Handler
-<<<<<<< HEAD
- * @see water.api.Schema
- * @see water.api.RegisterV3Api
-=======
  * @see water.api.RegisterV3Api
  * @see water.JettyHTTPD.H2oDefaultServlet
->>>>>>> pasha_jenkins
  */
 public class RequestServer {
 
