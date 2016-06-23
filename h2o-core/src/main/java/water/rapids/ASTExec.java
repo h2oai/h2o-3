@@ -41,7 +41,8 @@ public class ASTExec extends AST {
     AST ast = ((ValFun)fun)._ast;
     int nargs = ast.nargs();
     if( nargs != -1 && nargs != _asts.length )
-      throw new IllegalArgumentException("Incorrect number of arguments; '"+ast+"' expects "+nargs+" but was passed "+_asts.length);
+      throw new IllegalArgumentException(
+          "Incorrect number of arguments; '"+ast+"' expects "+(nargs-1)+" but was passed "+(_asts.length-1));
     try (Env.StackHelp stk = env.stk()) {
         return env.returning(ast.apply(env,stk,_asts));
       }
