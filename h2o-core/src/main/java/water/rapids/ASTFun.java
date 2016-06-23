@@ -17,16 +17,16 @@ public class ASTFun extends AST {
   final Val[] _args;            // Evaluated arguments to a function
   final ASTFun _parent;         // Parent lexical scope
 
-  protected ASTFun( Exec e ) { 
+  protected ASTFun( Rapids e ) {
     e.xpeek('{');
     ArrayList<String> ids = new ArrayList<>();
     ids.add("");                // 1-based ID list
 
     while( e.skipWS()!= '.' ) {
       String id = e.token();
-      if( !Character.isJavaIdentifierStart(id.charAt(0)) ) throw new Exec.IllegalASTException("variable must be a valid Java identifier: "+id);
+      if( !Character.isJavaIdentifierStart(id.charAt(0)) ) throw new Rapids.IllegalASTException("variable must be a valid Java identifier: "+id);
       for( char c : id.toCharArray() )
-        if( !Character.isJavaIdentifierPart(c) ) throw new Exec.IllegalASTException("variable must be a valid Java identifier: "+id);
+        if( !Character.isJavaIdentifierPart(c) ) throw new Rapids.IllegalASTException("variable must be a valid Java identifier: "+id);
       ids.add(id);
     }
     e.xpeek('.');

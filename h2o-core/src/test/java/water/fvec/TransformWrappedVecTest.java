@@ -5,7 +5,7 @@ import org.junit.Test;
 import water.MRTask;
 import water.TestUtil;
 import water.rapids.AST;
-import water.rapids.Exec;
+import water.rapids.Rapids;
 
 public class TransformWrappedVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
@@ -14,7 +14,7 @@ public class TransformWrappedVecTest extends TestUtil {
     Vec v=null;
     try {
       v = Vec.makeZero(1<<20);
-      AST ast = new Exec("{ x . (- 1 x) }").parse();
+      AST ast = new Rapids("{ x . (- 1 x) }").parse();
       Vec iv = new TransformWrappedVec(v, ast);
       new MRTask() {
         @Override public void map(Chunk c) {

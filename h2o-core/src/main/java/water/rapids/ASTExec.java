@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class ASTExec extends AST {
   public final AST[] _asts;
   ASTExec( AST[] asts ) { _asts = asts; }
-  protected ASTExec( Exec e ) {
+  protected ASTExec( Rapids e ) {
     e.xpeek('(');
     AST ast = e.parse();
     // An eager "must fail at runtime" test.  Not all ASTId's will yield a

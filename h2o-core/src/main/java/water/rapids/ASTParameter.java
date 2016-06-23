@@ -5,9 +5,9 @@ import water.H2O;
 public abstract class ASTParameter extends AST {
   public final Val _v;
   ASTParameter(String str) { _v=new ValStr(str); }
-  ASTParameter(Exec e) { _v = new ValNum(Double.valueOf(e.token())); }
+  ASTParameter(Rapids e) { _v = new ValNum(Double.valueOf(e.token())); }
   ASTParameter(double d) { _v = new ValNum(d); }
-  ASTParameter(Exec e, char c) { _v = new ValStr(e.match(c)); }
+  ASTParameter(Rapids e, char c) { _v = new ValStr(e.match(c)); }
 
   public ASTParameter() { _v=null; }
 

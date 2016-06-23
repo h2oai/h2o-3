@@ -14,6 +14,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
+import water.rapids.Rapids;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -374,7 +375,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 // confirm that orig CM was made with threshold 0.5
                                                 // manually make labels with AUC-given default threshold
                                                 String ast = "(= pred (> ([] pred 2) #"+threshold+") [0] [])";
-                                                Frame tmp = water.rapids.Exec.exec(ast).getFrame();
+                                                Frame tmp = Rapids.exec(ast).getFrame();
                                                 pred2labels = tmp.vecs()[0];
                                                 cm = buildCM(labels, pred2labels);
                                                 Log.info("CM from self-made labels:");

@@ -252,7 +252,7 @@ public abstract class AST extends Iced<AST> {
 
 /** A number.  Execution is just to return the constant. */
 class ASTNum extends ASTParameter {
-  ASTNum( Exec e ) { super(e); }
+  ASTNum( Rapids e ) { super(e); }
   ASTNum( double d ) { super(d); }
   @Override public Val exec(Env env) { return _v; }
   @Override int[] columns( String[] names ) { return new int[]{(int)_v.getNum()}; }
@@ -262,7 +262,7 @@ class ASTNum extends ASTParameter {
 /** A String.  Execution is just to return the constant. */
 class ASTStr extends ASTParameter {
   ASTStr(String str) { super(str); }
-  ASTStr(Exec e, char c) { super(e,c); }
+  ASTStr(Rapids e, char c) { super(e,c); }
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
@@ -285,7 +285,7 @@ class ASTFrame extends AST {
 /** An ID.  Execution does lookup in the current scope. */
 class ASTId extends ASTParameter {
   final String _id;
-  ASTId(Exec e) { _id = e.token(); }
+  ASTId(Rapids e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.returning(env.lookup(_id)); }

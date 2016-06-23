@@ -3,7 +3,7 @@ package water.api;
 import water.H2O;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.rapids.Exec;
+import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
 import water.util.Log;
@@ -33,7 +33,7 @@ public class RapidsHandler extends Handler {
       // No locking, no synchronization - since any local locking is NOT a
       // cluster-wide lock locking, which just provides the illusion of safety
       // but not the actuality.
-      val = Exec.exec(rapids.ast, ses);
+      val = Rapids.exec(rapids.ast, ses);
     } catch (IllegalArgumentException e) {
       throw e;
     } catch (Throwable e) {

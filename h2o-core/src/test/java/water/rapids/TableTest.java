@@ -57,7 +57,7 @@ public class TableTest extends TestUtil {
   private Frame chkTree(String tree, String fname, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("hex"),fname);
     try {
-      Val val = Exec.exec(tree);
+      Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
       if( val instanceof ValFrame )

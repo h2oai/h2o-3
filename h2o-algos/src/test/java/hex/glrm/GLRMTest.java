@@ -9,11 +9,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
 import water.fvec.UploadFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.rapids.Exec;
+import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
@@ -126,7 +125,7 @@ public class GLRMTest extends TestUtil {
         job = new GLRM(parms);
         model = job.trainModel().get();
         String s = "(tmp= py_4 (rows (cols_py " + model._output._representation_key + " [0 1]) (tmp= py_3 (| (| (| (| (| (== (tmp= py_2 " + acs_zcta_fr._key + ") \"10065\") (== py_2 \"11219\")) (== py_2 \"66753\")) (== py_2 \"84104\")) (== py_2 \"94086\")) (== py_2 \"95014\")))))";
-        Val val = Exec.exec(s);
+        Val val = Rapids.exec(s);
       } catch (Throwable t) {
         t.printStackTrace();
         throw new RuntimeException(t);
