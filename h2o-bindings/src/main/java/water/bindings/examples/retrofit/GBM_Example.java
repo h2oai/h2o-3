@@ -4,15 +4,10 @@ import okhttp3.OkHttpClient;
 import water.bindings.pojos.*;
 import water.bindings.proxies.retrofit.*;
 import water.bindings.H2oApi;
-import com.google.gson.*;
-import retrofit2.*;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 public class GBM_Example {
 
@@ -60,10 +55,27 @@ public class GBM_Example {
             ParseV3 parseBody = h2o.parse(parseParms);
             System.out.println("parseBody: " + parseBody);
 
+            // STEP 4: Split into test and train datasets
+            String tmpVec = "tmp_" + UUID.randomUUID().toString();
+            String splitExpr =
+              "(, " +
+              "  (tmp= " + tmpVec + " (h2o.runif arrhythmia.hex 906317))" +
+              "  (assign train " +
+              "    (rows arrhythmia.hex (<= " + tmpVec + " 0.75)))" +
+              "  (assign test " +
+              "    (rows arrhythmia.hex (> " + tmpVec + " 0.75)))" +
+              "  (rm " + tmpVec + "))";
+            RapidsSchemaV3 rapidsParms = new RapidsSchemaV3();
+            rapidsParms.ast = splitExpr;
+            h2o.rapidsExec(rapidsParms);
+
             // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
             GBMParametersV3 gbmParms = new GBMParametersV3();
 
-            gbmParms.trainingFrame = H2oApi.stringToFrameKey("arrhythmia.hex");
+            // gbmParms.trainingFrame = H2oApi.stringToFrameKey("arrhythmia.hex");
+
+            gbmParms.trainingFrame = H2oApi.stringToFrameKey("train");
+            gbmParms.validationFrame = H2oApi.stringToFrameKey("test");
 
             ColSpecifierV3 responseColumn = new ColSpecifierV3();
             responseColumn.columnName = "C1";
