@@ -406,7 +406,7 @@ public class RegisterV3Api extends AbstractRegister {
         "any moment.");
 
     RequestServer.registerEndpoint("rapids_help",
-        "GET /99/rapids/help", RapidsHandler.class, "genHelp",
+        "GET /99/Rapids/help", RapidsHandler.class, "genHelp",
         "Produce help for Rapids AST language.");
   }
 }
