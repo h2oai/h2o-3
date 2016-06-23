@@ -49,6 +49,7 @@ def translate_name(name):
         "middle___underscores" => "middleUnderscores"
         "_exclude_fields" => "_excludeFields" (retain initial/trailing underscores)
         "__http_status__" => "__httpStatus__"
+    :param name: name to be converted
     """
     parts = name.split("_")
     i = 0
@@ -56,7 +57,7 @@ def translate_name(name):
         parts[i] = "_"
         i += 1
     parts[i] = parts[i].lower()
-    for j in range(i+1, len(parts)):
+    for j in range(i + 1, len(parts)):
         parts[j] = parts[j].capitalize()
     i = len(parts) - 1
     while parts[i] == "":
@@ -121,7 +122,7 @@ def generate_schema(class_name, schema):
         yield "    /**"
         yield bi.wrap(fhelp, indent="     * ")
         yield "     */"
-        yield "    @SerializedName(\"%s\")" % name  if name != ccname else None
+        yield "    @SerializedName(\"%s\")" % name if name != ccname else None
         yield "    public %s %s;" % (ftype, ccname)
         yield ""
     if has_inherited:
@@ -228,7 +229,7 @@ def generate_proxy(classname, endpoints):
         yield bi.wrap(e["summary"], indent="   * ")
         for field in e["input_params"]:
             s = "   *   @param %s " % field["name"]
-            yield s + bi.wrap(field["help"], indent="   *"+" "*(len(s)-4), indent_first=False)
+            yield s + bi.wrap(field["help"], indent="   *" + " " * (len(s) - 4), indent_first=False)
         yield u"   */"
         # Create 2 versions of each call: first with all input parameters present, and then only with required params
         for params in [param_strs, required_param_strs]:
@@ -314,6 +315,7 @@ def generate_main_class(endpoints):
     yield "import com.google.gson.*;"
     yield "import okhttp3.OkHttpClient;"
     yield "import java.io.IOException;"
+    yield "import java.lang.reflect.Array;"
     yield "import java.lang.reflect.Type;"
     yield "import java.util.concurrent.TimeUnit;"
     yield ""
@@ -381,8 +383,8 @@ def generate_main_class(endpoints):
         class_name = route["class_name"]
         outtype = route["output_schema"]
         input_fields = route["input_params"]
-        required_fields = [field  for field in input_fields if field["required"]]
-        input_fields_wo_excluded = [field  for field in input_fields if field["name"] != "_exclude_fields"]
+        required_fields = [field for field in input_fields if field["required"]]
+        input_fields_wo_excluded = [field for field in input_fields if field["name"] != "_exclude_fields"]
 
         yield "  /**"
         yield bi.wrap(route["summary"], indent="   * ")
@@ -394,7 +396,7 @@ def generate_main_class(endpoints):
         li = len(input_fields)
         le = len(input_fields_wo_excluded)
         lr = len(required_fields)
-        assert lr <= 3, "Too many required fields in method " + apiName
+        assert lr <= 3, "Too many required fields in method " + apiname
         if lr == li:
             # The set of required fields is the same as the set of input fields. No need for (2) and (3).
             input_fields = None
@@ -442,12 +444,12 @@ def generate_main_class(endpoints):
                   format(type=outtype, method=apiname, args=args)
             yield "    {clazz} s = getService({clazz}.class);".format(clazz=class_name)
             yield "    return s.{method}({values}).execute().body();".\
-                  format(method=route["handler_method"], values=values);
+                  format(method=route["handler_method"], values=values)
             yield "  }"
         yield ""
 
     yield ""
-    yield "  //--------- PRIVATE " + "-"*98
+    yield "  //--------- PRIVATE " + ("-" * 98)
     yield ""
     yield "  private Retrofit retrofit;"
     yield "  private String url = \"http://localhost:54321/\";"
@@ -541,7 +543,7 @@ def generate_main_class(endpoints):
     yield "  }"
     yield ""
     yield "  /**"
-    yield "   * Return an array of Keys for an array of Strings."
+    yield "   * Return an array of Keys for an array of Strings. TODO: remove me"
     yield "   */"
     yield "  public static FrameKeyV3[] stringArrayToFrameKeyArray(String[] keys) {"
     yield "    if (keys == null) return null;"
@@ -549,6 +551,30 @@ def generate_main_class(endpoints):
     yield "    int i = 0;"
     yield "    for (String key : keys) { FrameKeyV3 k = new FrameKeyV3(); k.name = key; ids[i++] = k; }"
     yield "    return ids;"
+    yield "  }"
+    yield ""
+    yield "  /**"
+    yield "   * Return an array of keys from an array of Strings."
+    yield "   * @param ids array of string ids to convert to KeyV3's"
+    yield "   * @param clz class of key objects to create. Since we have JobKeyV3, FrameKeyV3, ModelKeyV3, etc -- this"
+    yield "   *            method needs to know which of these keys you want to create"
+    yield "   */"
+    yield "  private static <T extends KeyV3> T[] stringArrayToKeyArray(String[] ids, Class<T> clz) {"
+    yield "    if (ids == null) return null;"
+    yield "    // noinspection unchecked"
+    yield "    T[] keys = (T[]) Array.newInstance(clz, ids.length);"
+    yield "    String keyType = clz.getSimpleName();"
+    yield "    if (keyType.endsWith(\"KeyV3\")) keyType = keyType.substring(0, keyType.length()-5);"
+    yield "    try {"
+    yield "      int i = 0;"
+    yield "      for (String id: ids) {"
+    yield "        keys[i] = clz.newInstance();"
+    yield "        keys[i].name = id;"
+    yield "        keys[i].type = keyType;"
+    yield "        i++;"
+    yield "      }"
+    yield "    } catch (InstantiationException | IllegalAccessException e) { /* can't be */ }"
+    yield "    return keys;"
     yield "  }"
     yield ""
     yield "  /**"
