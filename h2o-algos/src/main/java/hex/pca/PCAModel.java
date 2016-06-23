@@ -18,7 +18,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
   public static class PCAParameters extends Model.Parameters {
     public String algoName() { return "PCA"; }
-    public String fullName() { return "Principle Components Analysis"; }
+    public String fullName() { return "Principal Components Analysis"; }
     public String javaName() { return PCAModel.class.getName(); }
     @Override public long progressUnits() { return _pca_method == PCAParameters.Method.GramSVD ? 5 : 3; }
 

@@ -2,7 +2,7 @@
 
 >*"Good, better, best. Never let it rest. 'Til your good is better and your better is best." - St. Jerome*
 
-## tl;dr
+## Overview
 
 H2O now has random [hyperparameter search](https://en.wikipedia.org/wiki/Hyperparameter_optimization) with time- and metric-based early stopping.  Bergstra and Bengio[^1] write on p. 281:
 
