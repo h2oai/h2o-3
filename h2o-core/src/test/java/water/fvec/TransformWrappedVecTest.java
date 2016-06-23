@@ -14,7 +14,7 @@ public class TransformWrappedVecTest extends TestUtil {
     Vec v=null;
     try {
       v = Vec.makeZero(1<<20);
-      AST ast = new Rapids("{ x . (- 1 x) }").parse();
+      AST ast = Rapids.parse("{ x . (- 1 x) }");
       Vec iv = new TransformWrappedVec(v, ast);
       new MRTask() {
         @Override public void map(Chunk c) {
