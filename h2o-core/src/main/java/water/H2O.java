@@ -17,6 +17,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
@@ -1259,6 +1260,12 @@ final public class H2O {
     return H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
   }
 
+  public static String getURL(String schema) {
+    return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
+                         ? "%s://[%s]:%d" : "%s://%s:%d",
+                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
+  }
+
   // The multicast discovery port
   public static MulticastSocket  CLOUD_MULTICAST_SOCKET;
   public static NetworkInterface CLOUD_MULTICAST_IF;
@@ -1420,7 +1427,7 @@ final public class H2O {
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
     if(H2O.ARGS.useUDP) {
-      new UDPReceiverThread().start();
+      new UDPReceiverThread(NetworkInit._udpSocket).start();
       // Start a UDP timeout worker thread. This guy only handles requests for
       // which we have not received a timely response and probably need to
       // arrange for a re-send to cover a dropped UDP packet.
