@@ -446,9 +446,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
-      boolean converged = effective_learning_rate() < 1e-8;
+      boolean converged = effective_learning_rate() < 1e-6;
       if (converged) {
-        Log.warn("Effective learning rate dropped below 1e-8 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
+        Log.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
       }
       return converged;
     }
