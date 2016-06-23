@@ -121,10 +121,10 @@ public class Rapids {
 
   /**
    * Primary constructor
-   * @param rapids String containing a Rapids AST expression.
+   * @param rapidsStr String containing a Rapids expression.
    */
-  protected Rapids(String rapids) {
-    _str = rapids;
+  protected Rapids(String rapidsStr) {
+    _str = rapidsStr;
     _x = 0;
   }
 

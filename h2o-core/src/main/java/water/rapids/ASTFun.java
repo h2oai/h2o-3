@@ -11,13 +11,18 @@ import java.util.ArrayList;
 public class ASTFun extends AST {
   final String[] _ids;          // Identifier names
   final AST _body;              // The function body
-
-  // If this function is being evaluated, record the arguments and parent
-  // lexical scope
+  // If this function is being evaluated, record the arguments and parent lexical scope
   final Val[] _args;            // Evaluated arguments to a function
   final ASTFun _parent;         // Parent lexical scope
 
-  protected ASTFun( Rapids e ) {
+  public ASTFun() {
+    _ids = null;
+    _body = null;
+    _args = null;
+    _parent = null;
+  }
+
+  protected ASTFun(Rapids e) {
     e.xpeek('{');
     ArrayList<String> ids = new ArrayList<>();
     ids.add("");                // 1-based ID list
@@ -45,6 +50,16 @@ public class ASTFun extends AST {
       sb.p(id).p(' ');
     sb.p(". ").p(_body.toString()).p('}');
     return sb.toString();
+  }
+
+  @Override public String example() {
+    return "{ ...args . expr }";
+  }
+  @Override public String description() {
+    return "Function definition: a list of tokens in curly braces. All initial tokens (which must be valid " +
+        "identifiers) become function arguments, then a single dot '.' must follow, and finally an expression which " +
+        "is the body of the function. Functions with variable number of arguments are not supported. Example: " +
+        "squaring function `{x . (^ x 2)}`";
   }
 
   // Print environment

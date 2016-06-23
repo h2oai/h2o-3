@@ -404,5 +404,9 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /99/Sample", CloudHandler.class, "status",
         "Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at " +
         "any moment.");
+
+    RequestServer.registerEndpoint("rapids_help",
+        "GET /99/rapids/help", RapidsHandler.class, "genHelp",
+        "Produce help for Rapids AST language.");
   }
 }

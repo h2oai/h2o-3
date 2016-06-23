@@ -7,7 +7,10 @@ import java.util.ArrayList;
 /** Apply A Function.  Basic function execution. */
 public class ASTExec extends AST {
   public final AST[] _asts;
-  ASTExec( AST[] asts ) { _asts = asts; }
+
+  public ASTExec() { _asts = null; }
+  public ASTExec(AST[] asts) { _asts = asts; }
+
   protected ASTExec( Rapids e ) {
     e.xpeek('(');
     AST ast = e.parse();
@@ -28,6 +31,16 @@ public class ASTExec extends AST {
     for( AST ast : _asts )
       sb.p(ast.toString()).p(' ');
     return sb.p(')').toString();
+  }
+
+  @Override public String example() {
+    return "(func ...args)";
+  }
+
+  @Override public String description() {
+    return "List of whitespace-separated tokens within parenthesis is interpreted as a function application. The " +
+        "first argument must be a function name (or an expression returning a function), all other tokens are passed " +
+        "to the function as arguments. For example: `(sqrt 16)`, `(+ 2 3)`, `(getTimeZone)`, etc.";
   }
 
   // Function application.  Execute the first AST and verify that it is a
