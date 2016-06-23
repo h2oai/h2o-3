@@ -33,6 +33,7 @@ buildscript {
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
+        classpath "io.spring.gradle:dependency-management-plugin:0.5.4.RELEASE"
     }
 }
 
@@ -49,6 +50,7 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala'),
       project(':h2o-persist-hdfs'),
+      project(':h2o-persist-s3'),
       project(':h2o-genmodel'),
       project(':h2o-bindings'),
       project(':h2o-avro-parser')
@@ -60,6 +62,7 @@ ext {
       project(':h2o-web'),
       project(':h2o-app'),
       project(':h2o-persist-hdfs'),
+      project(':h2o-persist-s3'),
       project(':h2o-test-integ'),
       project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),

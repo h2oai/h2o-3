@@ -268,6 +268,8 @@ public class TestUtil extends Iced {
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
+      if(expecteds.at(i) != actuals.at(i))
+        System.out.println(i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start()));
       assertEquals(expecteds.at(i), actuals.at(i), delta);
     }
   }

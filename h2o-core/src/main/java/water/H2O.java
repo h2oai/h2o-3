@@ -1580,11 +1580,6 @@ final public class H2O {
   // --------------------------------------------------------------------------
   static void initializePersistence() {
     _PM = new PersistManager(ICE_ROOT);
-
-    if( ARGS.aws_credentials != null ) {
-      try { water.persist.PersistS3.getClient(); }
-      catch( IllegalArgumentException e ) { Log.err(e); }
-    }
   }
 
   // --------------------------------------------------------------------------

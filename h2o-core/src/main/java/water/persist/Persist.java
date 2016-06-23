@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import water.*;
 import water.util.Log;
@@ -46,7 +47,7 @@ public abstract class Persist {
    * @param limit Max number of entries to return
    * @return List of matches
    */
-  abstract public ArrayList<String> calcTypeaheadMatches(String filter, int limit);
+  abstract public List<String> calcTypeaheadMatches(String filter, int limit);
 
   abstract public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
 
