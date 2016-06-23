@@ -9,4 +9,4 @@ schemas.json
 *.toc
 
 # Ignore _build folder
-# new_look_docs/_build
+new_look_docs/_build
