@@ -133,7 +133,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
-    @Override protected void buildNextKTrees() {
+    @Override protected boolean buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -152,6 +152,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
+
+      return false; //never stop early
     }
 
     // Assumes that the "Work" column are filled with horizontalized (0/1) class memberships per row (or copy of regression response)
