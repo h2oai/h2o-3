@@ -405,6 +405,10 @@ def generate_main_class(endpoints):
             # then there will be no need for separate case (2) either.
             input_fields_wo_excluded = None
 
+        # Temporary hack, since Parse reuires all the fields from ParseSetup: don't generate the required-fields-only method
+        if 'parse' == apiname:
+            required_fields = None
+
         for fields in [required_fields, input_fields_wo_excluded, input_fields]:
             if fields is None: continue
             use_schema_param = (len(fields) >= 4)
@@ -446,7 +450,7 @@ def generate_main_class(endpoints):
     yield "  //--------- PRIVATE " + "-"*98
     yield ""
     yield "  private Retrofit retrofit;"
-    yield "  private String url = \"http://localhost/54321/\";"
+    yield "  private String url = \"http://localhost:54321/\";"
     yield "  private int timeout_s = 60;"
     yield "  private int pollInterval_ms = 1000;"
     yield ""
@@ -528,7 +532,7 @@ def generate_main_class(endpoints):
     yield "  /**"
     yield "   * Return an array of Strings for an array of keys."
     yield "   */"
-    yield "  private static String[] keyArrayToStringArray(KeyV3[] keys) {"
+    yield "  public static String[] keyArrayToStringArray(KeyV3[] keys) {"
     yield "    if (keys == null) return null;"
     yield "    String[] ids = new String[keys.length];"
     yield "    int i = 0;"
@@ -537,10 +541,31 @@ def generate_main_class(endpoints):
     yield "  }"
     yield ""
     yield "  /**"
+    yield "   * Return an array of Keys for an array of Strings."
+    yield "   */"
+    yield "  public static FrameKeyV3[] stringArrayToFrameKeyArray(String[] keys) {"
+    yield "    if (keys == null) return null;"
+    yield "    FrameKeyV3[] ids = new FrameKeyV3[keys.length];"
+    yield "    int i = 0;"
+    yield "    for (String key : keys) { FrameKeyV3 k = new FrameKeyV3(); k.name = key; ids[i++] = k; }"
+    yield "    return ids;"
+    yield "  }"
+    yield ""
+    yield "  /**"
     yield "   *"
     yield "   */"
-    yield "  private static String keyToString(KeyV3 key) {"
+    yield "  public static String keyToString(KeyV3 key) {"
     yield "    return key == null? null : key.name;"
+    yield "  }"
+    yield ""
+    yield "  /**"
+    yield "   *"
+    yield "   */"
+    yield "  public static FrameKeyV3 stringToFrameKey(String key) {"
+    yield "    if (key == null) return null;"
+    yield "    FrameKeyV3 k = new FrameKeyV3();"
+    yield "    k.name = key;"
+    yield "    return k;"
     yield "  }"
     yield ""
     yield "  /**"
@@ -548,6 +573,16 @@ def generate_main_class(endpoints):
     yield "   */"
     yield "  private static String colToString(ColSpecifierV3 col) {"
     yield "    return col == null? null : col.columnName;"
+    yield "  }"
+    yield ""
+    yield "  /**"
+    yield "   *"
+    yield "   */"
+    yield "  public static String stringToCol(String col) {"
+    yield "    if (col == null) return null;"
+    yield "    ColSpecifierV3 c = new ColSpecifierV3();"
+    yield "    c.columnName = col;"
+    yield "    return col;"
     yield "  }"
     yield ""
     yield "}"

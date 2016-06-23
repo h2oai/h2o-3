@@ -18,7 +18,7 @@ public class RegisterV3Api extends AbstractRegister {
         "POST /3/SplitFrame", SplitFrameHandler.class, "run",
         "Split an H2O Frame.");
 
-    RequestServer.registerEndpoint("_interaction_run",
+    RequestServer.registerEndpoint("generateInteractions",
         "POST /3/Interaction", InteractionHandler.class, "run",
         "Create interactions between categorical columns.");
 
@@ -46,11 +46,11 @@ public class RegisterV3Api extends AbstractRegister {
         "POST /99/ImportSQLTable", ImportSQLTableHandler.class, "importSQLTable",
         "Import SQL table into an H2O Frame.");
 
-    RequestServer.registerEndpoint("_parseSetup_guessSetup",
+    RequestServer.registerEndpoint("guessParseSetup",
         "POST /3/ParseSetup", ParseSetupHandler.class, "guessSetup",
         "Guess the parameters for parsing raw byte-oriented data into an H2O Frame.");
 
-    RequestServer.registerEndpoint("_parse_parse",
+    RequestServer.registerEndpoint("parse",
         "POST /3/Parse", ParseHandler.class, "parse",
         "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
@@ -63,7 +63,7 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /3/Cloud", CloudHandler.class, "status",
         "Determine the status of the nodes in the H2O cloud.");
 
-    RequestServer.registerEndpoint("_cloud_head",
+    RequestServer.registerEndpoint("cloudStatusMinimal",
         "HEAD /3/Cloud", CloudHandler.class, "head",
         "Determine the status of the nodes in the H2O cloud.");
 
@@ -132,7 +132,7 @@ public class RegisterV3Api extends AbstractRegister {
         "POST /3/Jobs/{job_id}/cancel", JobsHandler.class, "cancel",
         "Cancel a running job.");
 
-    RequestServer.registerEndpoint("_find_find",
+    RequestServer.registerEndpoint("findInFrame",
         "GET /3/Find", FindHandler.class, "find",
         "Find a value within a Frame.");
 
@@ -199,12 +199,12 @@ public class RegisterV3Api extends AbstractRegister {
         "Delete all Models from the H2O distributed K/V store.");
 
     // Get java code for models as
-    RequestServer.registerEndpoint("_models_fetchPreview",
+    RequestServer.registerEndpoint("modelPreview",
         "GET /3/Models.java/{model_id}/preview", ModelsHandler.class, "fetchPreview",
         "Return potentially abridged model suitable for viewing in a browser (currently only used for java model code).");
 
     // Register resource also with .java suffix since we do not want to break API
-    RequestServer.registerEndpoint("_models_fetchJavaCode",
+    RequestServer.registerEndpoint("modelJavaCode",
         "GET /3/Models.java/{model_id}", ModelsHandler.class, "fetchJavaCode",
         "[DEPRECATED] Return the stream containing model implementation in Java code.");
 
@@ -269,31 +269,31 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /3/ModelMetrics", ModelMetricsHandler.class, "fetch",
         "Return all the saved scoring metrics.");
 
-    RequestServer.registerEndpoint("_mm_score",
+    RequestServer.registerEndpoint("score",
         "POST /3/ModelMetrics/models/{model}/frames/{frame}", ModelMetricsHandler.class, "score",
         "Return the scoring metrics for the specified Frame with the specified Model.  If the Frame has already been " +
         "scored with the Model then cached results will be returned; otherwise predictions for all rows in the Frame " +
         "will be generated and the metrics will be returned.");
 
-    RequestServer.registerEndpoint("_predictions_predict1",
+    RequestServer.registerEndpoint("predict",
         "POST /3/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predict",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
-    RequestServer.registerEndpoint("_predictions_predict2",
+    RequestServer.registerEndpoint("predict_async",
         "POST /4/Predictions/models/{model}/frames/{frame}", ModelMetricsHandler.class, "predictAsync",
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
-    RequestServer.registerEndpoint("_waterMeterCpuTicks_fetch",
+    RequestServer.registerEndpoint("waterMeterCpuTicks",
         "GET /3/WaterMeterCpuTicks/{nodeidx}", WaterMeterCpuTicksHandler.class, "fetch",
         "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");
 
-    RequestServer.registerEndpoint("_waterMeterIo_fetch",
+    RequestServer.registerEndpoint("waterMeterIoForNode",
         "GET /3/WaterMeterIo/{nodeidx}", WaterMeterIoHandler.class, "fetch",
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
-    RequestServer.registerEndpoint("_waterMeterIo_fetchAll",
+    RequestServer.registerEndpoint("waterMeterIoForCluster",
         "GET /3/WaterMeterIo", WaterMeterIoHandler.class, "fetch_all",
         "Return IO usage snapshot of all nodes in the H2O cluster.");
 
@@ -340,7 +340,7 @@ public class RegisterV3Api extends AbstractRegister {
 
     // Log file management.
     // Note:  Hacky pre-route cutout of "/3/Logs/download" is done above in a non-json way.
-    RequestServer.registerEndpoint("_logs_fetch",
+    RequestServer.registerEndpoint("logs",
         "GET /3/Logs/nodes/{nodeidx}/files/{name}", LogsHandler.class, "fetch",
         "Get named log file for a node.");
 
@@ -352,11 +352,11 @@ public class RegisterV3Api extends AbstractRegister {
     //   RequestServer.registerEndpoint("POST /3/ModelBuilders/{algo}", ModelBuildersHandler.class, "train", "Train {algo}");
     //
 
-    RequestServer.registerEndpoint("killDash3",
+    RequestServer.registerEndpoint("logThreadDump",
         "GET /3/KillMinus3", KillMinus3Handler.class, "killm3",
         "Kill minus 3 on *this* node");
 
-    RequestServer.registerEndpoint("_rapids_exec",
+    RequestServer.registerEndpoint("rapidsExec",
         "POST /99/Rapids", RapidsHandler.class, "exec",
         "Execute an Rapids AST.");
 
@@ -384,7 +384,7 @@ public class RegisterV3Api extends AbstractRegister {
         "DELETE /3/DKV", RemoveAllHandler.class, "remove",
         "Remove all keys from the H2O distributed K/V store.");
 
-    RequestServer.registerEndpoint("_logAndEcho_echo",
+    RequestServer.registerEndpoint("logAndEcho",
         "POST /3/LogAndEcho", LogAndEchoHandler.class, "echo",
         "Save a message to the H2O logfile.");
 

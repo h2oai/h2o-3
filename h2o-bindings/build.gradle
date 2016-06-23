@@ -41,7 +41,7 @@ sourceSets {
 
 jar {
   manifest {
-    attributes 'Main-Class': 'water.bindings.examples.Example'
+    attributes 'Main-Class': 'water.bindings.examples.retrofit.GBM_Example'
   }
 }
 
@@ -89,9 +89,21 @@ runGenerateRESTAPIBindingsSrc.dependsOn configurations.srcGenCompile
 compileJava.dependsOn runGenerateRESTAPIBindingsSrc
 clean.dependsOn cleanGenerateRESTAPIBindings
 
+
 //
 // Setup Gradle application runner
 //
 apply plugin: 'application'
-mainClassName = 'water.bindings.examples.Example'
+mainClassName = 'water.bindings.examples.retrofit.GBM_Example'
+//ignoreExitValue = false
 
+
+
+//task runApp(type: JavaExec) {
+//  classpath = sourceSets.main.runtimeClasspath
+
+//  main = 'water.bindings.examples.retrofit.GBM_Example'
+
+  // arguments to pass to the application
+//  args 'appArg1'
+//}

@@ -29,6 +29,7 @@ out/
 *.iws
 *.Rout
 *.Rd
+*.h4xd
 h2o-r/h2o-package/DESCRIPTION
 .settings/*
 gradle-app.setting
