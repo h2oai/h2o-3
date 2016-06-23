@@ -22,6 +22,8 @@ public class NetworkUtils {
   public static byte[] GOOGLE_DNS_IPV6 = toByteArray(new int[] {0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00,
                                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88 });
 
+  private static String H2O_SYSTEM_SCOPE_PARAM = "sys.ai.h2o.network.ipv6.scope";
+
   // See IPv6 Multicast scopes:
   public static long SCOPE_IFACE_LOCAL  = 0x0001000000000000L;
   public static long SCOPE_LINK_LOCAL   = 0x0002000000000000L;
@@ -76,7 +78,15 @@ public class NetworkUtils {
     return port>>>16;
   }
 
+  /** Return IPv6 scope for given IPv6 address. */
   public static long getIPv6Scope(InetAddress ip) {
+    Long value = OSUtils.getLongProperty(H2O_SYSTEM_SCOPE_PARAM) != null
+                 ? OSUtils.getLongProperty(H2O_SYSTEM_SCOPE_PARAM)
+                 : OSUtils.getLongProperty(H2O_SYSTEM_SCOPE_PARAM, 16);
+    if (value != null && ArrayUtils.equalsAny(value,
+                                              SCOPE_IFACE_LOCAL, SCOPE_LINK_LOCAL,
+                                              SCOPE_SITE_LOCAL, SCOPE_ORG_LOCAL,
+                                              SCOPE_GLOBAL_LOCAL)) return value;
     if (ip.isLoopbackAddress()) return SCOPE_IFACE_LOCAL;
     if (ip.isLinkLocalAddress()) return SCOPE_LINK_LOCAL;
     if (ip.isSiteLocalAddress()) return SCOPE_SITE_LOCAL;

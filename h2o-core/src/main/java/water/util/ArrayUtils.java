@@ -1443,4 +1443,12 @@ public class ArrayUtils {
     }
     return r;
   }
+
+  public static boolean equalsAny(long value, long...lhs) {
+    if (lhs == null || lhs.length == 0) return false;
+    for (long lhValue : lhs) {
+      if (value == lhValue) return true;
+    }
+    return false;
+  }
 }

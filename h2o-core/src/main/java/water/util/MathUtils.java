@@ -632,11 +632,16 @@ public class MathUtils {
     return y * Math.log(y / mu);
   }
 
+  /** Compare signed longs */
+  public static int compare(long x, long y) {
+    return (x < y) ? -1 : ((x == y) ? 0 : 1);
+  }
+
   /** Copmarision of unsigned longs.
    */
   public static int compareUnsigned(long a, long b) {
     // Just map [0, 2^64-1] to [-2^63, 2^63-1]
-    return Long.compare(a^0x8000000000000000L, b^0x8000000000000000L);
+    return compare(a^0x8000000000000000L, b^0x8000000000000000L);
   }
 
   /** Comparision of 128bit unsigned values represented by 2 longs */
