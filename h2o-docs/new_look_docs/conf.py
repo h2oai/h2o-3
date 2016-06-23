@@ -14,9 +14,6 @@
 
 import sys
 import os
-# import recommonmark
-# from recommonmark.transform import AutoStructify
-# from recommonmark.parser import CommonMarkParser
 import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
