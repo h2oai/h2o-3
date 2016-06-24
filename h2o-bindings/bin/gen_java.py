@@ -465,6 +465,7 @@ def generate_main_class(endpoints):
     yield "      .registerTypeAdapter(KeyV3.class, new KeySerializer())"
     yield "      .registerTypeAdapter(ColSpecifierV3.class, new ColSerializer())"
     yield "      .registerTypeAdapter(ModelBuilderSchema.class, new ModelDeserializer())"
+    yield "      .registerTypeAdapter(ModelSchemaBaseV3.class, new ModelSchemaDeserializer())"
     yield "      .create();"
     yield ""
     yield "    OkHttpClient client = new OkHttpClient.Builder()"
@@ -522,39 +523,45 @@ def generate_main_class(endpoints):
     yield "    }"
     yield "  }"
     yield ""
-    yield "  /**"
-    yield "   * Factory method for parsing a ModelV3 json object into an instance of the model-specific subclass."
-    yield "   */"
-    yield "  private static class ModelDeserializer implements JsonDeserializer<ModelBuilderSchema> {"
-    yield "    @Override"
-    yield "    public ModelBuilderSchema deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)"
-    yield "      throws JsonParseException {"
-    yield "      if (json.isJsonNull()) return null;"
-    yield "      if (json.isJsonObject()) {"
-    yield "        JsonObject jobj = json.getAsJsonObject();"
-    yield "        if (jobj.has(\"algo\")) {"
-    yield "          String algo = jobj.get(\"algo\").getAsJsonPrimitive().getAsString().toLowerCase();"
-    yield "          switch (algo) {"
-    for route in endpoints:
-        if route["class_name"] == "ModelBuilders" and route["api_name"].startswith("train"):
-            algo = route["algo"]
-            oschema = route["output_schema"]
-            assert oschema.lower()[:len(algo)] == algo, "Wrong output schema for algo %s: %s" % (algo, oschema)
-            yield "            case \"{algo}\": return context.deserialize(json, {oschema}.class);".format(**locals())
-    yield "            default:"
-    yield "              throw new JsonParseException(\"Unable to deserialize model of type \" + algo);"
-    yield "          }"
-    yield "        }"
-    yield "      }"
-    yield "      throw new JsonParseException(\"Invalid ModelBuilderSchema element \" + json.toString());"
-    yield "    }"
-    yield "  }"
-    yield ""
+    for clz, base, target_clz_factory in [
+        ("ModelDeserializer", "ModelBuilderSchema", lambda schema, algo: schema),
+        ("ModelSchemaDeserializer", "ModelSchemaBaseV3", lambda schema, algo: schema[:len(algo)] + "Model" + schema[len(algo):])
+        ]:
+        yield "  /**"
+        yield "   * Factory method for parsing a %s json object into an instance of the model-specific subclass." % base
+        yield "   */"
+        yield "  private static class %s implements JsonDeserializer<%s> {" % (clz, base)
+        yield "    @Override"
+        yield "    public %s deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)" % base
+        yield "      throws JsonParseException {"
+        yield "      if (json.isJsonNull()) return null;"
+        yield "      if (json.isJsonObject()) {"
+        yield "        JsonObject jobj = json.getAsJsonObject();"
+        yield "        if (jobj.has(\"algo\")) {"
+        yield "          String algo = jobj.get(\"algo\").getAsJsonPrimitive().getAsString().toLowerCase();"
+        yield "          switch (algo) {"
+        for route in endpoints:
+            if route["class_name"] == "ModelBuilders" and route["api_name"].startswith("train"):
+                algo = route["algo"]
+                oschema = route["output_schema"]
+                assert oschema.lower()[:len(algo)] == algo, "Wrong output schema for algo %s: %s" % (algo, oschema)
+                model = target_clz_factory(oschema, algo)
+                yield "            case \"{algo}\": return context.deserialize(json, {model}.class);".format(**locals())
+        yield "            default:"
+        yield "              throw new JsonParseException(\"Unable to deserialize model of type \" + algo);"
+        yield "          }"
+        yield "        }"
+        yield "      }"
+        yield "      throw new JsonParseException(\"Invalid %s element \" + json.toString());" % base
+        yield "    }"
+        yield "  }"
+        yield ""
     yield "  private static class ModelV3TypeAdapter implements TypeAdapterFactory {"
     yield "    @Override"
     yield "    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {"
     yield "      final Class<? super T> rawType = type.getRawType();"
-    yield "      if (!ModelBuilderSchema.class.isAssignableFrom(rawType)) return null;"
+    yield "      if (!ModelBuilderSchema.class.isAssignableFrom(rawType) &&"
+    yield "          !ModelSchemaBaseV3.class.isAssignableFrom(rawType)) return null;"
     yield "      final TypeAdapter<T> delegate = gson.getDelegateAdapter(this, type);"
     yield "      return new TypeAdapter<T>() {"
     yield "        @Override"
