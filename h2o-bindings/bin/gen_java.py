@@ -11,7 +11,7 @@ class JavaTypeTranslator(bi.TypeTranslator):
         bi.TypeTranslator.__init__(self)
         self.types["string"] = "String"
 
-
+type_adapter = JavaTypeTranslator()
 def translate_type(h2o_type, schema):
     return type_adapter.translate(h2o_type, schema)
 
@@ -686,5 +686,4 @@ def main():
 
 
 if __name__ == "__main__":
-    type_adapter = JavaTypeTranslator()
     main()

@@ -21,6 +21,7 @@ class PythonTypeTranslator(bi.TypeTranslator):
         self.make_key = lambda itype, schema: "str"
         self.make_enum = lambda schema, values: " | ".join(stringify(v)  for v in values) if values else schema
 
+type_adapter = PythonTypeTranslator()
 def translate_type(h2o_type, values=None):
     return type_adapter.translate(h2o_type, h2o_type, values)
 
@@ -246,9 +247,8 @@ def module_extra_for(algo):
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
 # ----------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+def main():
     bi.init("Python", "python")
-    type_adapter = PythonTypeTranslator()
 
     for name, mb in bi.model_builders().items():
         module = name
@@ -258,3 +258,7 @@ if __name__ == "__main__":
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
 
     type_adapter.vprint_translation_map()
+
+
+if __name__ == "__main__":
+    main()

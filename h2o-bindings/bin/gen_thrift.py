@@ -25,7 +25,7 @@ class ThriftTypeTranslator(bi.TypeTranslator):
         self.make_map = lambda ktype, vtype: "map<%s,%s>" % (ktype, vtype)
         self.make_key = lambda itype, schema: "String"
 
-
+type_adapter = ThriftTypeTranslator()
 def translate_type(h2o_type, schema):
     return type_adapter.translate(h2o_type, schema)
 
@@ -110,9 +110,8 @@ def generate_struct(name, schema):
 # ----------------------------------------------------------------------------------------------------------------------
 #    MAIN
 # ----------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+def main():
     bi.init("Thrift", "thrift")
-    type_adapter = ThriftTypeTranslator()
 
     schemas_map = bi.schemas_map()
     ordered_schemas = OrderedDict()
@@ -122,3 +121,7 @@ if __name__ == "__main__":
     bi.write_to_file("water/bindings/structs/H2O.thrift", generate_thrift(ordered_schemas))
 
     type_adapter.vprint_translation_map()
+
+
+if __name__ == "__main__":
+    main()

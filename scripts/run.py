@@ -96,8 +96,7 @@ def is_gradle_build_python_test(file_name):
     Return True if file_name matches a regexp for on of the python test run during gradle build.  False otherwise.
     :param file_name: file to test
     """
-    return file_name in ["gen_docs_json.py", "gen_java.py", "gen_csharp.py", "gen_thrift.py", "test_gbm_prostate.py",
-                         "test_rest_api.py"]
+    return file_name in ["gen_all.py", "test_gbm_prostate.py", "test_rest_api.py"]
 
 
 def is_javascript_test_file(file_name):
@@ -2279,22 +2278,19 @@ def parse_args(argv):
 
 
 def wipe_output_dir():
-    print("")
-    print("Wiping output directory...")
+    print("Wiping output directory.")
     try:
         if os.path.exists(g_output_dir):
             shutil.rmtree(g_output_dir)
     except OSError as e:
-        print("")
-        print("ERROR: Removing output directory failed: " + g_output_dir)
+        print("ERROR: Removing output directory %s failed: " % g_output_dir)
         print("       (errno {0}): {1}".format(e.errno, e.strerror))
         print("")
         sys.exit(1)
 
 
 def wipe_test_state(test_root_dir):
-    print("")
-    print("Wiping test state (including random seeds)...")
+    print("Wiping test state (including random seeds).")
     if True:
         possible_seed_file = os.path.join(test_root_dir, str("master_seed"))
         if os.path.exists(possible_seed_file):
