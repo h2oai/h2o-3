@@ -8,27 +8,34 @@ import gen_python
 import gen_thrift
 import bindings
 import sys, os
+
 sys.path.insert(0, "../../scripts")
 import run
+
+# Create results/ folder, where H2OCloud stores its logs
+if not os.path.exists("results"):
+    os.mkdir("results")
 
 # Start H2O cloud
 print("Starting H2O cloud...")
 cloud = run.H2OCloud(
-	cloud_num=0,
-	use_client=False,
-	nodes_per_cloud=1,
-	h2o_jar=os.path.abspath("../../build/h2o.jar"),
-	base_port=48000,
-	xmx="4g",
-	cp="",
-	output_dir="results"
+    cloud_num=0,
+    use_client=False,
+    nodes_per_cloud=1,
+    h2o_jar=os.path.abspath("../../build/h2o.jar"),
+    base_port=48000,
+    xmx="4g",
+    cp="",
+    output_dir="results"
 )
 cloud.start()
 cloud.wait_for_cloud_to_be_up()
 
+# Manipulate the command line arguments, so that bindings module would know which cloud to use
 sys.argv.insert(1, "--usecloud")
 sys.argv.insert(2, "%s:%s" % (cloud.get_ip(), cloud.get_port()))
 
+# Actually generate all the bindings
 print()
 gen_java.main()
 gen_python.main()
@@ -38,4 +45,5 @@ gen_csharp.main()
 bindings.done()
 print()
 
+# The END
 cloud.stop()
