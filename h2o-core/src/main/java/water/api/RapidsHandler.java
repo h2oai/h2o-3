@@ -17,7 +17,7 @@ import java.util.ArrayList;
 
 public class RapidsHandler extends Handler {
 
-  public static RapidsSchemaV3 exec(int version, RapidsSchemaV3 rapids) {
+  public RapidsSchemaV3 exec(int version, RapidsSchemaV3 rapids) {
     if (rapids == null) return null;
     if (rapids.id != null)
       throw new H2OIllegalArgumentException("Field RapidsSchemaV3.id is deprecated and should be null: " + rapids.id);
@@ -59,14 +59,14 @@ public class RapidsHandler extends Handler {
     }
   }
 
-  public static RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
+  public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
     Reflections reflections = new Reflections("water.rapids");
     RapidsHelpV3 res = new RapidsHelpV3();
     res.syntax = processAstClass(AST.class, reflections);
     return res;
   }
 
-  private static RapidsExpressionV3 processAstClass(Class<? extends AST> clz, Reflections refl) {
+  private RapidsExpressionV3 processAstClass(Class<? extends AST> clz, Reflections refl) {
     ArrayList<RapidsExpressionV3> subs = new ArrayList<>();
     for (Class<? extends AST> subclass : refl.getSubTypesOf(clz))
       if (subclass.getSuperclass() == clz)
