@@ -1866,7 +1866,7 @@ cluster has been shut down.
 --------------
 
 .. |Flow - Hide Sidebar| image:: ../images/Flow_SidebarHide.png
-.. |Flow - Hide Sidebar| image:: ../images/Flow_SidebarDisplay.png
+.. |Flow - Display Sidebar| image:: ../images/Flow_SidebarDisplay.png
 .. |Flow - View Example Flows link| image:: ../images/Flow_ViewExampleFlows.png
 .. |Flow - Run Button| image:: ../images/Flow_RunButton.png
 .. |Flow - Completed Successfully| image:: ../images/Flow_run_pass.png

@@ -963,7 +963,7 @@ FAQ
    - ``col_sample_rate_per_tree`` is 0.602
    - ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
 
-  For each tree, the floor is used to determine the number - for this example, (0.602\*100)=60 out of the 100 ()of columns that are randomly picked_. For classification cases where ``mtries=-1``, the square root ()for this example, (100)=10 columns) are then randomly chosen for each split decision (out of the total 60).
+  For each tree, the floor is used to determine the number - for this example, (0.602\*100)=60 out of the 100 ()of columns that are randomly picked. For classification cases where ``mtries=-1``, the square root ()for this example, (100)=10 columns) are then randomly chosen for each split decision (out of the total 60).
 
   For regression, the floor ()in this example, (100/3)=33 columns) is used for each split by default. If ``mtries=7``, then 7 columns are picked for each split decision (out of the 60).
 

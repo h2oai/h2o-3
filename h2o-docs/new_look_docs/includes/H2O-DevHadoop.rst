@@ -1,7 +1,7 @@
 .. _on-hadoop:
 
 Using H2O on Hadoop
-=========
+===================
 
 Currently supported versions:
 

@@ -66,7 +66,7 @@ Run the following command to load data that resides on the same machine that is 
 
 
 Merging Two Datasets
------------------------
+--------------------
 
 You can use the Merge function to combine two datasets that share a common column name. By default, all columns in common are used as the merge key; uncommon will be ignored. Also, if you want to use only a subset of the columns in common, rename the other columns so the columns are unique in the merged result.
 
@@ -576,7 +576,7 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
 	>>> cols = df[~mask,:]  
 
 Replacing Values in a Frame
--------------------------
+---------------------------
 
 This example shows how to replace numeric values in a frame of data. Note that it is currently not possible to replace categorical value in a column.    
 
@@ -709,5 +709,3 @@ Note that when splitting frames, H2O does not give an exact split. It's designed
 	        1  0.654244   0.345756
 	
 	[10 rows x 3 columns]
-
-

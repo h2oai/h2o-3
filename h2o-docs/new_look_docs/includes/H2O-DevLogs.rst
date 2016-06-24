@@ -318,4 +318,3 @@ If you are not using Hadoop and the job is still running:
 
    In R, enter the command ``h2o.downloadAllLogs(filename = "logs.zip")`` (where ``filename`` is the specified filename for the logs).
 
---------------
