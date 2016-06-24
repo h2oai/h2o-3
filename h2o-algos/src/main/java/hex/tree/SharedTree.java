@@ -297,7 +297,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Abstract classes implemented by the tree builders
     abstract protected M makeModel( Key modelKey, P parms);
     abstract protected boolean doOOBScoring();
-    abstract protected void buildNextKTrees();
+    abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
 
     // Common methods for all tree builders
@@ -351,13 +351,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           }
         }
         Timer kb_timer = new Timer();
-        buildNextKTrees();
+        boolean converged = buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         if (_model._output._treeStats._max_depth==0) {
           Log.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
         }
-        if (timeout()) {
+        if (converged || timeout()) {
           _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
           break; // If timed out, do the final scoring
         }

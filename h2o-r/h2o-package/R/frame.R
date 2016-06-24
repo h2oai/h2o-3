@@ -2611,30 +2611,28 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
   .newExpr("grouped_permute", fr, permCol-1, groupByCols-1, permByCol-1, keepCol-1)
 }
 
-#'
 #' Basic Imputation of H2O Vectors
 #'
-#'  Perform inplace imputation by filling missing values with aggregates
-#'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
-#'  based on groupings of columns from within data; these columns can be passed by index or
-#'  name to the by parameter. If a factor column is supplied, then the method must be
-#'  "mode".
+#' Perform inplace imputation by filling missing values with aggregates
+#' computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
+#' based on groupings of columns from within data; these columns can be passed by index or
+#' name to the by parameter. If a factor column is supplied, then the method must be
+#' "mode".
 #'
-#'  The default method is selected based on the type of the column to impute. If the column
-#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
-#'  column types (e.g. String, Time, UUID) are not supported.
+#' The default method is selected based on the type of the column to impute. If the column
+#' is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
+#' column types (e.g. String, Time, UUID) are not supported.
 #'
-#'  @param data The dataset containing the column to impute.
-#'  @param column A specific column to impute, default of 0 means impute the whole frame.
-#'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
-#'                "mode" replaces with the most common factor (for factor columns only);
-#'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
-#'  @param by group by columns
-#'  @param groupByFrame Impute the column col with this pre-computed grouped frame.
-#'  @param values A vector of impute values (one per column). NaN indicates to skip the column
-#'
-#'  @return an H2OFrame with imputed values
-#'  @examples
+#' @param data The dataset containing the column to impute.
+#' @param column A specific column to impute, default of 0 means impute the whole frame.
+#' @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
+#'               "mode" replaces with the most common factor (for factor columns only);
+#' @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
+#' @param by group by columns
+#' @param groupByFrame Impute the column col with this pre-computed grouped frame.
+#' @param values A vector of impute values (one per column). NaN indicates to skip the column
+#' @return an H2OFrame with imputed values
+#' @examples
 #' \donttest{
 #'  h2o.init()
 #'  fr <- as.h2o(iris, destination_frame="iris")
@@ -2642,7 +2640,7 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'  # impute with a group by
 #'  fr <- h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
 #' }
-#'  @export
+#' @export
 h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
                        combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, groupByFrame=NULL, values=NULL) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector

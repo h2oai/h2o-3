@@ -395,7 +395,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.
-    @Override protected void buildNextKTrees() {
+    @Override protected boolean buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -445,6 +445,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
+
+      boolean converged = effective_learning_rate() < 1e-6;
+      if (converged) {
+        Log.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
+      }
+      return converged;
     }
 
     private void growTrees(DTree[] ktrees, int[] leaves, Random rand) {
@@ -547,14 +553,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
+    private double effective_learning_rate() {
+      return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
+    }
+
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
       double m1class = _nclass > 1 && _parms._distribution != Distribution.Family.bernoulli ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
-        double annealing = Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          double gf = _parms._learn_rate * annealing * m1class * gp.gamma(k, i);
+          double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
