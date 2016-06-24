@@ -48,7 +48,7 @@ class TypeTranslator:
         self.translate_object = lambda otype, schema: schema
         self._mem = set()  # Store all types seen, for debug purposes
 
-    def translate(self, h2o_type, schema):
+    def translate(self, h2o_type, schema, values=None):
         if config["verbose"]:
             self._mem.add((h2o_type, schema))
         if h2o_type.endswith("[][]"):
@@ -61,7 +61,7 @@ class TypeTranslator:
         if h2o_type.startswith("Key<"):
             return self.make_key(self.translate(h2o_type[4:-1], schema), schema)
         if h2o_type == "enum":
-            return self.make_enum(schema)
+            return self.make_enum(schema, values)
         if schema is None:
             if h2o_type in self.types:
                 return self.types[h2o_type]

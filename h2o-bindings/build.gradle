@@ -78,6 +78,16 @@ task runGenerateRESTAPIThriftBindingsSrc(type: Exec) {
             '--test', "gen_thrift.py"
 }
 
+task runGenerateRESTAPIPythonBindingsSrc(type: Exec) {
+    workingDir binDir
+    commandLine 'python', runner,
+            '--wipeall',
+            '--baseport', '48000',
+            '--numclouds', '1',
+            '--jvm.xmx', '4g',
+            '--test', "gen_python.py"
+}
+
 task cleanGenerateRESTAPIBindings(type: Delete) {
     delete "$binDir/results"
     delete "$binDir/sandbox"
