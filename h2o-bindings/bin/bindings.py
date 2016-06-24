@@ -44,7 +44,7 @@ class TypeTranslator:
         self.make_array2 = lambda itype: itype + "[][]"
         self.make_map = lambda ktype, vtype: "Map<%s,%s>" % (ktype, vtype)
         self.make_key = lambda itype, schema: schema
-        self.make_enum = lambda schema: schema
+        self.make_enum = lambda schema, values: schema
         self.translate_object = lambda otype, schema: schema
         self._mem = set()  # Store all types seen, for debug purposes
 

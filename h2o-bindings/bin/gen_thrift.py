@@ -40,6 +40,7 @@ def add_schema_to_dependency_array(schema, ordered_schemas, schemas_map):
         declaration.
       :param schemas_map: dictionary(schemaname => schemaobject)
     """
+    ordered_schemas[schema["name"]] = schema
     for field in schema["fields"]:
         field_schema_name = field["schema_name"]
         if field_schema_name is None: continue
@@ -48,8 +49,8 @@ def add_schema_to_dependency_array(schema, ordered_schemas, schemas_map):
             ordered_schemas[field_schema_name] = field["values"]
         else:
             field_schema = schemas_map[field_schema_name]
-            add_schema_to_dependency_array(field_schema, ordered_schemas, schemas_map)
-    ordered_schemas[schema["name"]] = schema
+            if field_schema["name"] not in ordered_schemas:
+                add_schema_to_dependency_array(field_schema, ordered_schemas, schemas_map)
 
 
 def generate_thrift(ordered_schemas):
