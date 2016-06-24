@@ -172,9 +172,9 @@ public final class SchemaMetadata extends Iced {
             this.inherited_from = f.getDeclaringClass().getSimpleName();
 
         if (null != annotation) {
-          // String l = annotation.label();
+          String l = annotation.label();
           this.help = annotation.help();
-          // this.label = (null == l || l.isEmpty() ? f.getName() : l);
+          this.label = (null == l || l.isEmpty() ? f.getName() : l);
           this.required = annotation.required();
           this.level = annotation.level();
           this.direction = annotation.direction();

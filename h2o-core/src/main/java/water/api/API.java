@@ -19,9 +19,14 @@ public @interface API {
   enum Level {critical, secondary, expert}
 
   /**
-   * A short help description to appear alongside the field in a UI.
+   *  A short help description to appear alongside the field in a UI.
    */
   String help();
+
+  /**
+   * The label that should be displayed for the field if the name is insufficient.
+   */
+  String label() default "";
 
   /**
    * Is this field required, or is the default value generally sufficient?
@@ -46,7 +51,7 @@ public @interface API {
    */
   String[] values() default {};
 
-  /** Provide values for enum-like types if it cannot be provided as a constant in annotation. */
+  /** Proovide values for enum-like types if it cannot be provided as a constant in annotation. */
   Class<? extends ValuesProvider> valuesProvider() default ValuesProvider.class;
 
   /**
