@@ -16,8 +16,11 @@ public class SchemaMetadataV3 extends SchemaV3<SchemaMetadata, SchemaMetadataV3>
    * The simple schema (class) name, e.g. DeepLearningParametersV2, used in the schema metadata.  Must not be
    * changed after creation (treat as final).
    */
-  @API(help="Simple name of the Schema.  NOTE: the schema_names form a single namespace.")
+  @API(help="Simple name of the Schema. NOTE: the schema_names form a single namespace.")
   public String name ;
+
+  @API(help="[DEPRECATED] This field is always the same as name.", direction=API.Direction.OUTPUT)
+  public String label;
 
   /**
    * The simple schema superclass name, e.g. ModelSchemaV3, used in the schema metadata.  Must not be changed after

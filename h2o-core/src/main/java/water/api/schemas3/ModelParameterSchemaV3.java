@@ -25,6 +25,9 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
   @API(help="name in the JSON, e.g. \"lambda\"", direction=API.Direction.OUTPUT)
   public String name;
 
+  @API(help="[DEPRECATED] same as name.", direction=API.Direction.OUTPUT)
+  public String label;
+
   @API(help="help for the UI, e.g. \"regularization multiplier, typically used for foo bar baz etc.\"", direction=API.Direction.OUTPUT)
   public String help;
 
@@ -79,7 +82,7 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
 
       if (null != annotation) {
         String l = annotation.label();
-        this.label = (null == l || l.isEmpty() ? f.getName() : l);
+        this.label = this.name;
         this.help = annotation.help();
         this.required = annotation.required();
 
@@ -129,6 +132,7 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
    */
   public final AutoBuffer writeJSON_impl(AutoBuffer ab) {
     ab.putJSONStr("name", name);                                    ab.put1(',');
+    ab.putJSONStr("label", name);                                   ab.put1(',');
     ab.putJSONStr("help", help);                                    ab.put1(',');
     ab.putJSONStrUnquoted("required", required ? "true" : "false"); ab.put1(',');
     ab.putJSONStr("type", type);                                    ab.put1(',');

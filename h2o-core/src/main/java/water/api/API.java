@@ -19,7 +19,7 @@ public @interface API {
   enum Level {critical, secondary, expert}
 
   /**
-   *  A short help description to appear alongside the field in a UI.
+   * A short help description to appear alongside the field in a UI.
    */
   String help();
 
