@@ -60,6 +60,7 @@ public class SchemaMetadataV3 extends SchemaV3<SchemaMetadata, SchemaMetadataV3>
   public SchemaMetadataV3 fillFromImpl(SchemaMetadata impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.CONSISTENT, new String[] {"fields"});
     this.fields = new FieldMetadataV3[impl.fields.size()];
+    this.label = impl.name;
     int i = 0;
     for (SchemaMetadata.FieldMetadata f : impl.fields)
       this.fields[i++] = new FieldMetadataV3().fillFromImpl(f); // TODO: version!
