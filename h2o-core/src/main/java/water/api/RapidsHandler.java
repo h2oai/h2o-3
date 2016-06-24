@@ -56,6 +56,7 @@ public class RapidsHandler extends Handler {
     }
   }
 
+  /*
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
     Reflections reflections = new Reflections("water.rapids");
     RapidsHelpV3 res = new RapidsHelpV3();
@@ -85,4 +86,5 @@ public class RapidsHandler extends Handler {
 
     return target;
   }
+  */
 }
