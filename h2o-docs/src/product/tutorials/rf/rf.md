@@ -11,10 +11,7 @@ This tutorial uses a publicly available data set that can be found at <a href ="
 
 The data are composed of 3279 observations, 1557 attributes, and an a priori grouping assignment. The objective is to build a prediction tool that predicts whether an object is an internet ad or not.
 
-If you don't have any data of your own to work with, you can find some example datasets here: 
-
-- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
-- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 
 ####Importing Data

@@ -19,10 +19,7 @@ The original data are the Arrhythmia data set made available by UCI
 Machine Learning Repository. They are composed of 452 observations and
 279 attributes.
 
-If you don't have any data of your own to work with, you can find some example datasets here: 
-
-- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
-- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 ####Importing Data
 Before creating a model, import data into H2O:
