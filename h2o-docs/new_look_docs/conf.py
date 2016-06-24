@@ -36,6 +36,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinxcontrib.osexample',
     'sphinx.ext.mathjax',
+    'sphinx.ext.todo'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
