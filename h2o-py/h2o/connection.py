@@ -35,6 +35,7 @@ class H2OConnection(object):
   """
   H2OConnection is a class that represents a connection to the H2O cluster.
   It is specified by an IP address and a port number.
+  Environment vars H2O_IP and H2O_PORT can be used to override defaults.
 
   Objects of type H2OConnection are not instantiated directly!
 
@@ -45,7 +46,7 @@ class H2OConnection(object):
   __ENCODING__ = "utf-8"
   __ENCODING_ERROR__ = "replace"
 
-  def __init__(self, ip, port, start_h2o, enable_assertions, license, nthreads, max_mem_size, min_mem_size, ice_root,
+  def __init__(self, ip=None, port=None, start_h2o, enable_assertions, license, nthreads, max_mem_size, min_mem_size, ice_root,
                strict_version_check, proxy, https, insecure, username, password, cluster_name, max_mem_size_GB, min_mem_size_GB, proxies, size):
     """
     Instantiate the package handle to the H2O cluster.
@@ -75,6 +76,10 @@ class H2OConnection(object):
     :return: None
     """
 
+    if ip is None:
+        ip = os.environ.get("H2O_IP", "localhost")
+    if port is None:
+        port = os.environ.get("H2O_PORT", 54321)
     port = as_int(port)
     if not (isinstance(port, int) and 0 <= port <= sys.maxsize): raise ValueError("Port out of range, "+port)
     
