@@ -48,7 +48,7 @@ public class GBM_Example {
 
 
             // STEP 2: parse setup
-            ParseSetupV3 parseSetupBody = h2o.guessParseSetup(H2oApi.stringArrayToFrameKeyArray(importBody.destinationFrames));
+            ParseSetupV3 parseSetupBody = h2o.guessParseSetup(H2oApi.stringArrayToKeyArray(importBody.destinationFrames, FrameKeyV3.class));
             System.out.println("parseSetupBody: " + parseSetupBody);
 
 
