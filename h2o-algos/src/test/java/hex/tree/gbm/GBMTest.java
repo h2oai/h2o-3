@@ -2327,4 +2327,47 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  //PUBDEV-3066
+  @Test public void testAnnealingStop() {
+    Frame tfr=null;
+    final int N = 1;
+
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      for (int i=0; i<N; ++i) {
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = "IsDepDelayed";
+        parms._nbins = 10;
+        parms._nbins_cats = 500;
+        parms._ntrees = 100;
+        parms._learn_rate_annealing = 0.5;
+        parms._max_depth = 5;
+        parms._min_rows = 10;
+        parms._distribution = Distribution.Family.bernoulli;
+        parms._balance_classes = true;
+        parms._seed = 0;
+
+        // Build a first model; all remaining models should be equal
+        GBMModel gbm = new GBM(parms).trainModel().get();
+        Assert.assertNotEquals(gbm._output._ntrees, parms._ntrees);
+        gbm.delete();
+      }
+    } finally {
+      if (tfr != null) tfr.remove();
+    }
+    Scope.exit();
+  }
+
 }

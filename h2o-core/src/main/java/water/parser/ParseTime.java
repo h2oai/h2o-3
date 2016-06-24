@@ -292,8 +292,7 @@ public abstract class ParseTime {
       if( i<end ) SSS = digit(SSS,buf[i++]);
       if( i<end ) SSS = digit(SSS,buf[i++]);
       if( SSS < 0 || SSS > 999 ) return Long.MIN_VALUE;
-      if ((end - i) >= 6) // nanoseconds are included
-        i += 6; // ignore
+      while( i<end && isDigit(buf[i]) ) i++; // skip micros and nanos
     }
     if( i<end && buf[i] == '"' ) i++;
     if( i == end) {

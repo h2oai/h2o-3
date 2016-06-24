@@ -13,6 +13,8 @@ class RapidsHandler extends Handler {
     if( rapids.ast == null || rapids.ast.equals("") ) return rapids;
     if( rapids.session_id == null || rapids.session_id.equals("") )
       rapids.session_id = "_specialSess";
+    assert rapids.id == null || rapids.id.equals(""): "Rapids 'id' parameter is unused and should not be set.";
+
 
     Session ses = InitIDHandler.SESSIONS.get(rapids.session_id);
     if( ses == null )

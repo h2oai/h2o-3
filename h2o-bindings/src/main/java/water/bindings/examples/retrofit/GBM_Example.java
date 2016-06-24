@@ -4,15 +4,10 @@ import okhttp3.OkHttpClient;
 import water.bindings.pojos.*;
 import water.bindings.proxies.retrofit.*;
 import water.bindings.H2oApi;
-import com.google.gson.*;
-import retrofit2.*;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 public class GBM_Example {
 
@@ -41,15 +36,21 @@ public class GBM_Example {
             // Utility var:
             JobV3 job = null;
 
+            // STEP 0: init a session
+            String sessionId = h2o.newSession().sessionKey;
+
+
             // STEP 1: import raw file
             ImportFilesV3 importBody = h2o.importFiles(
                 "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null
             );
             System.out.println("import: " + importBody);
 
+
             // STEP 2: parse setup
             ParseSetupV3 parseSetupBody = h2o.guessParseSetup(H2oApi.stringArrayToFrameKeyArray(importBody.destinationFrames));
             System.out.println("parseSetupBody: " + parseSetupBody);
+
 
             // STEP 3: parse into columnar Frame
             ParseV3 parseParms = new ParseV3();
@@ -60,10 +61,30 @@ public class GBM_Example {
             ParseV3 parseBody = h2o.parse(parseParms);
             System.out.println("parseBody: " + parseBody);
 
+
+            // STEP 4: Split into test and train datasets
+            String tmpVec = "tmp_" + UUID.randomUUID().toString();
+            String splitExpr =
+              "(, " +
+              "  (tmp= " + tmpVec + " (h2o.runif arrhythmia.hex 906317))" +
+              "  (assign train " +
+              "    (rows arrhythmia.hex (<= " + tmpVec + " 0.75)))" +
+              "  (assign test " +
+              "    (rows arrhythmia.hex (> " + tmpVec + " 0.75)))" +
+              "  (rm " + tmpVec + "))";
+            RapidsSchemaV3 rapidsParms = new RapidsSchemaV3();
+            rapidsParms.sessionId = sessionId;
+            rapidsParms.ast = splitExpr;
+            h2o.rapidsExec(rapidsParms);
+
+
             // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
             GBMParametersV3 gbmParms = new GBMParametersV3();
 
-            gbmParms.trainingFrame = H2oApi.stringToFrameKey("arrhythmia.hex");
+            // gbmParms.trainingFrame = H2oApi.stringToFrameKey("arrhythmia.hex");
+
+            gbmParms.trainingFrame = H2oApi.stringToFrameKey("train");
+            gbmParms.validationFrame = H2oApi.stringToFrameKey("test");
 
             ColSpecifierV3 responseColumn = new ColSpecifierV3();
             responseColumn.columnName = "C1";
@@ -73,9 +94,11 @@ public class GBM_Example {
             GBMV3 gbmBody = (GBMV3)h2o.train_gbm(gbmParms);
             System.out.println("gbmBody: " + gbmBody);
 
+
             // STEP 6: poll for completion
             job = h2o.waitForJobCompletion(gbmBody.job.key);
             System.out.println("GBM build done.");
+
 
             // STEP 7: fetch the model
             ModelKeyV3 model_key = (ModelKeyV3)job.dest;
@@ -84,6 +107,7 @@ public class GBM_Example {
             GBMModelV3 model = (GBMModelV3)models.models[0];
             System.out.println("new GBM model: " + model);
             // System.out.println("new GBM model: " + models.models[0]);
+
 
             // STEP 8: predict!
             ModelMetricsListSchemaV3 predict_params = new ModelMetricsListSchemaV3();
@@ -94,6 +118,8 @@ public class GBM_Example {
             ModelMetricsListSchemaV3 predictions = h2o.predict(predict_params);
             System.out.println("predictions: " + predictions);
 
+            // STEP 99: end the session
+            h2o.endSession();
         }
         catch (IOException e) {
             System.err.println("Caught exception: " + e);
