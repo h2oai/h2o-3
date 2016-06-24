@@ -160,8 +160,9 @@ def init(language, output_dir, clear_dir=True):
     vprint("-" * ll)
 
 def done():
+    global config
     _report_time()
-    for key in config.keys(): del config[key]
+    config = defaultdict(bool)
 
 
 def vprint(msg, pretty=False):
