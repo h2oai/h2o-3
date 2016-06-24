@@ -972,7 +972,7 @@ def create_frame(id = None, rows = 10000, cols = 10, randomize = True, value = 0
     -------
       H2OFrame
     """
-    parms = {"dest": _py_tmp_key() if id is None else id,
+    parms = {"dest": _py_tmp_key(append=H2OConnection.session_id()) if id is None else id,
          "rows": rows,
          "cols": cols,
          "randomize": randomize,
@@ -1030,7 +1030,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     H2OFrame
   """
   factors = [data.names[n] if isinstance(n,int) else n for n in factors]
-  parms = {"dest": _py_tmp_key() if destination_frame is None else destination_frame,
+  parms = {"dest": _py_tmp_key(append=H2OConnection.session_id()) if destination_frame is None else destination_frame,
            "source_frame": data.frame_id,
            "factor_columns": [_quoted(f) for f in factors],
            "pairwise": pairwise,

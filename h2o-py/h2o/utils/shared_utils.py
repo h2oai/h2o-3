@@ -15,10 +15,10 @@ import re
 
 # private static methods
 _id_ctr = 0
-def _py_tmp_key():
+def _py_tmp_key(append=""):
   global _id_ctr
   _id_ctr=_id_ctr+1
-  return "py_" + str(_id_ctr)
+  return "py_" + str(_id_ctr) + append
 
 def temp_ctr():
   return _id_ctr
