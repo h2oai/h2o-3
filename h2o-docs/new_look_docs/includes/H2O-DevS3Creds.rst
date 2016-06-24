@@ -80,21 +80,19 @@ Build a cluster of EC2 instances by running the following commands on the host t
  ::
 
 		./h2o-cluster-launch-instances.py
-		./h2o-cluster-distribute-h2o.sh  
- .. 
+		./h2o-cluster-distribute-h2o.sh
 
-  --OR--
+ --OR--
     
  ::   
 
 		./h2o-cluster-launch-instances.py
 		./h2o-cluster-download-h2o.sh
-   
- ..
 
  **Note**: The second method may be faster than the first because download pulls from S3. 
 
 2. Distribute the credentials using ``./h2o-cluster-distribute-aws-credentials.sh``. 
+
   **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key. 
 
   **Caution**: Distributing the AWS credentials copies the Amazon `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
@@ -103,12 +101,10 @@ Build a cluster of EC2 instances by running the following commands on the host t
  
  :: 
 
-  ./h2o-cluster-start-h2o.sh
+	  ./h2o-cluster-start-h2o.sh
 
- ..
-
- Wait 60 seconds after entering the command before entering it on the next node. 
-  
+  Wait 60 seconds after entering the command before entering it on the next node. 
+ 
 4. In your internet browser, substitute any of the public DNS node addresses for *IP_ADDRESS* in the following example: ``http://IP_ADDRESS:54321``
 
   - To start H2O: ``./h2o-cluster-start-h2o.sh``
@@ -116,7 +112,6 @@ Build a cluster of EC2 instances by running the following commands on the host t
   - To shut down the cluster, use your `Amazon AWS console <http://docs.aws.amazon.com/ElasticMapReduce/latest/DeveloperGuide/UsingEMR_TerminateJobFlow.html>`_ to shut down the cluster manually. 
 
   **Note**: To successfully import data, the data must reside in the same location on all nodes. 
-
 
 
 .. _Core-site.xml:
@@ -155,7 +150,6 @@ The following is an example core-site.xml file:
         </configuration> 
 
 
-
 Launching H2O
 -----------------
 
@@ -189,13 +183,11 @@ Configuring the Instance
   .. figure:: ../EC2_images/ec2_config.png
      :alt: EC2 Configuration
 
-
 2. When launching the instance, select an accessible key pair.
 
   .. figure:: ../EC2_images/ec2_key_pair.png
      :alt: EC2 Key Pair
 
--------------------------------------------------
 
 (Windows Users) Tunneling into the Instance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,7 +213,6 @@ Otherwise, download PuTTY and follow these instructions:
  .. figure:: ../EC2_images/ec2_putty_key.png
     :alt: Private Key
 
-
 4. Launch the PuTTY client.
 5. In the *Session* section, enter the host name or IP address. For
    Ubuntu users, the default host name is ``ubuntu@<ip-address>``. For
@@ -230,7 +221,6 @@ Otherwise, download PuTTY and follow these instructions:
  .. figure:: ../EC2_images/ec2_putty_connect_1.png
     :alt: Configuring Session
 
-
 6. Select *SSH*, then *Auth* in the sidebar, and click the **Browse** button to select the private key file for authentication.
 
 7. Start a new session and click the **Yes** button to confirm caching of the server's rsa2 key fingerprint and continue connecting.
@@ -238,8 +228,6 @@ Otherwise, download PuTTY and follow these instructions:
  .. figure:: ../EC2_images/ec2_putty_alert.png
     :alt: PuTTY Alert
 
-
---------------
 
 Downloading Java and H2O
 ------------------------

@@ -7,12 +7,12 @@ would like to use.
 From R
 ------
 
-To use H2O in R, follow the instructions on the `download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#R>`_.
+To use H2O in R, follow the instructions on the `R download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#R>`_.
 
 From Python
 -----------
 
-To use H2O in Python, follow the instructions on the `download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Python>`_.
+To use H2O in Python, follow the instructions on the `Python download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Python>`_.
 
 On Spark
 --------
@@ -171,10 +171,7 @@ To configure H2O on a multi-node cluster:
     04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: Flow dir: '/Users/H2O-3User/h2oflows'
     04-20 16:14:00.475 192.168.1.70:54321    2754   main      INFO: Cloud of size 1 formed [/192.168.1.70:54321]
 
-.. todo:: see if you can move the 'note' out one tab and change '7' bullet to use a #
-..
-
-    **Note** As you add more nodes to your cluster, the output is updated: ``INFO WATER: Cloud of size 2 formed [/...]...``
+   **Note** As you add more nodes to your cluster, the output is updated: ``INFO WATER: Cloud of size 2 formed [/...]...``
 
 7. Access the H2O 3.0 web UI (Flow) with your browser. Point your
    browser to the HTTP address specified in the output

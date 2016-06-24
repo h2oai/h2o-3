@@ -3,6 +3,7 @@ Data Science Pipeline
 
 .. todo:: add a section that provides definitions and explanations of each model performance metric (currently missing from docs)
 .. todo:: add cross-validation examples for Python and spark
+.. todo:: add all examples for Sparkling-Water
 
 Importing & Uploading Data
 --------------------------
@@ -33,10 +34,6 @@ H2O can load data directly from:
 		#Upload data from the same machine running H2O:
 		df = h2o.upload_file("/pathToFile/fileName")
 	
-	.. code-block:: Sparkling-Water
-	
-		#need to do
-
 
 Working with H2OFrames
 ----------------------
@@ -89,10 +86,6 @@ To gain more insights into the variance of the holdout metrics (e.g., AUCs), you
 
 		#Need to add
 		
-	.. code-block:: Sparkling-Water
-
-		#Need to add
-
 
 Which Algorithm Solves Your Problem?
 ------------------------------------
