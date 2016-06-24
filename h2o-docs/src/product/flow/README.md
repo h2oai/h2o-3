@@ -208,10 +208,7 @@ Now that you are familiar with the cell modes, let's import some data.
 <a name="ImportData"></a>
 # ... Importing Data
 
-If you don't have any data of your own to work with, you can find some example datasets here: 
-
-- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
-- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 
 There are multiple ways to import data in H2O flow:
