@@ -87,6 +87,7 @@ h2o-test-accuracy/testng.xml
 ./h2o-py/docs/docs/objects.inv
 
 git_private_jenkins.sh
+make-java6.sh
 
 # Ignore generated code
 src-gen/

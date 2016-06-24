@@ -19,14 +19,11 @@ public class RapidsHandler extends Handler {
 
   public RapidsSchemaV3 exec(int version, RapidsSchemaV3 rapids) {
     if (rapids == null) return null;
-    if (rapids.id != null)
-      throw new H2OIllegalArgumentException("Field RapidsSchemaV3.id is deprecated and should be null: " + rapids.id);
-
+    if (!StringUtils.isNullOrEmpty(rapids.id))
+      throw new H2OIllegalArgumentException("Field RapidsSchemaV3.id is deprecated and should not be set " + rapids.id);
     if (StringUtils.isNullOrEmpty(rapids.ast)) return rapids;
     if (StringUtils.isNullOrEmpty(rapids.session_id))
       rapids.session_id = "_specialSess";
-    assert rapids.id == null || rapids.id.equals(""): "Rapids 'id' parameter is unused and should not be set.";
-
 
     Session ses = InitIDHandler.SESSIONS.get(rapids.session_id);
     if (ses == null) {
@@ -59,6 +56,7 @@ public class RapidsHandler extends Handler {
     }
   }
 
+  /*
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
     Reflections reflections = new Reflections("water.rapids");
     RapidsHelpV3 res = new RapidsHelpV3();
@@ -89,4 +87,5 @@ public class RapidsHandler extends Handler {
 
     return target;
   }
+  */
 }
