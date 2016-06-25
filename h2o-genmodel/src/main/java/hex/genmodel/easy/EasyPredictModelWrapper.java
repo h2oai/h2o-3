@@ -75,7 +75,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   /**
    * Configure the wrapper on how to handle unknown categorical levels.
-   * Call this method before making any predictions.
+   * [Optionally] call this method before making any predictions.
    *
    * @param value Enable (true) or disable (false) automatic conversion of unknown levels to N/A.
    */
