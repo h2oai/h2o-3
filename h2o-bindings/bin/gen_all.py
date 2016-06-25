@@ -15,7 +15,10 @@ import run
 # Create results folder, where H2OCloud stores its logs, and ../build/test-results where Jenkins stores its stuff
 if not os.path.exists("results"):
     os.mkdir("results")
+if not os.path.exists("results/failed"):
     os.mkdir("results/failed")
+if not os.path.exists("../build"):
+    os.mkdir("../build")
 if not os.path.exists("../build/test-results"):
     os.mkdir("../build/test-results")
 
