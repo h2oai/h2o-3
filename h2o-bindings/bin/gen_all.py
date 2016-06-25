@@ -12,9 +12,12 @@ import sys, os
 sys.path.insert(0, "../../scripts")
 import run
 
-# Create results/ folder, where H2OCloud stores its logs
+# Create results folder, where H2OCloud stores its logs, and ../build/test-results where Jenkins stores its stuff
 if not os.path.exists("results"):
     os.mkdir("results")
+    os.mkdir("results/failed")
+if not os.path.exists("../build/test-results"):
+    os.mkdir("../build/test-results")
 
 # Start H2O cloud
 print("Starting H2O cloud...")
