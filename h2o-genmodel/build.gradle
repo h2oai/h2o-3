@@ -21,3 +21,6 @@ javadoc {
 // DO NOT ADD ANY DEPENDENCIES ON h2o-* projects
 //
 
+dependencies {
+    testCompile "junit:junit:${junitVersion}"
+}

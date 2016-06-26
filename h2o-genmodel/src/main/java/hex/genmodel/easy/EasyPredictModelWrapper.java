@@ -97,6 +97,20 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   /**
+   * Get the total number unknown categorical levels seen.  A single prediction may contribute more than one.
+   *
+   * @return A long value.
+   */
+  public long getTotalUnknownCategoricalLevelsSeen() {
+    ConcurrentHashMap<String, AtomicLong> map = getUnknownCategoricalLevelsSeenPerColumn();
+    long total = 0;
+    for (AtomicLong l : map.values()) {
+      total += l.get();
+    }
+    return total;
+  }
+
+  /**
    * Get unknown categorical level counts.
    *
    * @return A hash map with a per-column count of unknown categorical level seen when making predictions.
