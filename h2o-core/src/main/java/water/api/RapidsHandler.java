@@ -56,7 +56,6 @@ public class RapidsHandler extends Handler {
     }
   }
 
-  /*
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
     Reflections reflections = new Reflections("water.rapids");
     RapidsHelpV3 res = new RapidsHelpV3();
@@ -78,14 +77,12 @@ public class RapidsHandler extends Handler {
         AST m = clz.newInstance();
         target.pattern = m.example();
         target.description = m.description();
-      } catch (IllegalAccessException | InstantiationException e) {
-//        e.printStackTrace();
-//        throw H2O.fail("Exception " + e + " while processing class " + clz.getSimpleName());
       }
+      catch (IllegalAccessException e) { throw H2O.fail("A"); }
+      catch (InstantiationException e) { throw H2O.fail("B"); }
     }
     target.sub = subs.toArray(new RapidsExpressionV3[subs.size()]);
 
     return target;
   }
-  */
 }
