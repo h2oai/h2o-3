@@ -58,7 +58,6 @@ public class EasyPredictModelWrapperTest {
     return new MyModel(names, domains);
   }
 
-//  @SuppressWarnings("all")
   @Test
   public void testUnknownCategoricalLevels() throws Exception {
     MyModel rawModel = makeModel();
