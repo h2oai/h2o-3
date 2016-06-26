@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
+# This script must run from its own directory
 from __future__ import print_function
 import gen_csharp
 import gen_docs_json
@@ -13,9 +14,9 @@ sys.path.insert(0, "../../scripts")
 import run
 
 # Create results folder, where H2OCloud stores its logs
-results_dir = "../../results"
+results_dir = "../build/logs"
 if not os.path.exists(results_dir):
-    os.mkdir(results_dir)
+    os.makedirs(results_dir)
 
 # Start H2O cloud
 print("Starting H2O cloud...")
