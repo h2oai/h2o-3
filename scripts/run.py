@@ -990,6 +990,7 @@ class TestRunner:
         self.failed_output_dir = failed_output_dir
         self.produce_unit_reports = produce_unit_reports
         self.testreport_dir = testreport_dir
+        self.completed_tests_count = 0
 
         self.start_seconds = time.time()
         self.terminated = False
@@ -1651,6 +1652,8 @@ class TestRunner:
                 sys.exit(1)
 
     def _report_test_result(self, test, nopass):
+        self.completed_tests_count += 1
+        index = self.completed_tests_count
         port = test.get_port()
         finish_seconds = time.time()
         duration = finish_seconds - test.start_seconds
@@ -1658,17 +1661,17 @@ class TestRunner:
         if not test.get_skipped():
             if self.perf and not is_javascript_test_file(test.test_name): self._report_perf(test, finish_seconds)
         if test.get_passed():
-            s = "PASS      %d %4ds %-60s" % (port, duration, test_name)
+            s = "%-4d pass  %005d %4ds %s" % (index, port, duration, test_name)
             self._log(s)
             if self.produce_unit_reports: self._report_xunit_result("r_suite", test_name, duration, False)
         elif test.get_skipped():
-            s = "SKIP      %d %4ds %-60s" % (port, duration, test_name)
+            s = "%-4d skip  %005d %4ds %s" % (index, port, duration, test_name)
             self._log(s)
             if self.produce_unit_reports:
                 self._report_xunit_result("r_suite", test_name, duration, False)
         else:
-            s = "     FAIL %d %4ds %-60s %s  %s" % \
-                (port, duration, test.get_test_name(), test.get_output_dir_file_name(), test.get_seed_used())
+            s = "%-4d FAIL  %005d %4ds %s  %s  %s" % \
+                (index, port, duration, test.get_test_name(), test.get_output_dir_file_name(), test.get_seed_used())
             self._log(s)
             f = self._get_failed_filehandle_for_appending()
             f.write(test.get_test_dir_file_name() + "\n")
