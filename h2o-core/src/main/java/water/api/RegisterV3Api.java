@@ -405,10 +405,8 @@ public class RegisterV3Api extends AbstractRegister {
         "Example of an experimental endpoint.  Call via /EXPERIMENTAL/Sample.  Experimental endpoints can change at " +
         "any moment.");
 
-    /*
     RequestServer.registerEndpoint("rapids_help",
         "GET /99/Rapids/help", RapidsHandler.class, "genHelp",
         "Produce help for Rapids AST language.");
-    */
   }
 }
