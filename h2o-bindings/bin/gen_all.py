@@ -7,15 +7,15 @@ import gen_java
 import gen_python
 import gen_thrift
 import bindings
-import sys, os
-
+import sys
+import os
 sys.path.insert(0, "../../scripts")
 import run
 
-# Create results folder, where H2OCloud stores its logs, and ../build/test-results where Jenkins stores its stuff
-for directory in ["../../results", "../../results/failed", "../../../build", "../../../build/test-results"]:
-    if not os.path.exists(directory):
-        os.mkdir(directory)
+# Create results folder, where H2OCloud stores its logs
+results_dir = "../../results"
+if not os.path.exists(results_dir):
+    os.mkdir(results_dir)
 
 # Start H2O cloud
 print("Starting H2O cloud...")
@@ -27,7 +27,7 @@ cloud = run.H2OCloud(
     base_port=48000,
     xmx="4g",
     cp="",
-    output_dir="../../results"
+    output_dir=results_dir
 )
 cloud.start()
 cloud.wait_for_cloud_to_be_up()
