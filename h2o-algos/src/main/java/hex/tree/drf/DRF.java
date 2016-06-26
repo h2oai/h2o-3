@@ -62,8 +62,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
       if (_nclass >= 2) _parms._distribution = Distribution.Family.multinomial;
     }
-    if (_parms._sample_rate == 1f && _valid == null)
-      error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
+    if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
+      warn("_sample_rate", "Sample rate is 100% and no validation dataset (and no cross-validation) is specified.  There are no OOB data to compute out-of-bag error estimates!");
     if (hasOffsetCol())
       error("_offset_column", "Offsets are not yet supported for DRF.");
     if (hasOffsetCol() && isClassifier()) {
