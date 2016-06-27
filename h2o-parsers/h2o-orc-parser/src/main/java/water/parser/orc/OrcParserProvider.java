@@ -43,14 +43,15 @@ public class OrcParserProvider implements ParserProvider {
     assert inputs != null && inputs.length > 0 : "Inputs cannot be empty!";
     Key firstInput = inputs[0];
     Iced ice = DKV.getGet(firstInput);
-    if (ice == null) throw new H2OIllegalArgumentException("Missing data", "Did not find any data under key " + firstInput);
+    if (ice == null)
+      throw new H2OIllegalArgumentException("Missing data", "Did not find any data under key " + firstInput);
     ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
     byte [] bits = bv.getFirstBytes();
 
     try {
       OrcParser.OrcInfo OrcInfo = OrcParser.extractOrcInfo(bits, requiredSetup);
-      return new OrcParser.OrcParseSetup(requiredSetup, OrcInfo.orcFileReader, OrcInfo.maxStripeBlockSize,
-              OrcInfo.minStripeBlockSize);
+      return new OrcParser.OrcParseSetup(requiredSetup, OrcInfo.orcFileReader, OrcInfo.cumStripeSizes,
+              OrcInfo.totalFileSize, OrcInfo.stripesInfo, OrcInfo.columnTypesString, OrcInfo.maxStripeSize);
     } catch (Throwable e) {
       throw new H2OIllegalArgumentException("Wrong data", "Cannot find Orc header in input file: " + firstInput, e);
     }

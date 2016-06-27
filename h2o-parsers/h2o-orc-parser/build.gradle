@@ -19,7 +19,7 @@ dependencies {
     exclude module: 'crunch-core'
     exclude module: 'crunch-hive'
   }
-  
+
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
 }

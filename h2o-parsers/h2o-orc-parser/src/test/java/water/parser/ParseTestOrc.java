@@ -37,7 +37,8 @@ public class ParseTestOrc extends TestUtil {
 
 //    Frame hr2 = parse_test_file("smalldata/iris/iris2.csv");
 //    Frame hr3 = parse_test_file("smalldata/parser/avro/sequence100k.avro");
-    Frame hr = parse_test_file("smalldata/parser/orc/demo-11-zlib.orc");
+//    Frame hr = parse_test_file("smalldata/parser/orc/demo-11-zlib.orc");
+    Frame hr4 = parse_test_file("smalldata/parser/orc/bigint_single_col.orc");
 
     FrameAssertion[] assertions = new FrameAssertion[] {
         // sequence100k.avro
