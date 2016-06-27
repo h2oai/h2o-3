@@ -1285,7 +1285,13 @@ class H2OFrame(object):
 
   def split_frame(self, ratios=None, destination_frames=None, seed=None):
     """Split a frame into distinct subsets of size determined by the given ratios.
-    The number of subsets is always 1 more than the number of ratios given.
+    The number of subsets is always 1 more than the number of ratios given. Note that
+    this does not give an exact split. H2O is designed to be efficient on big data
+    using a probabilistic splitting method rather than an exact split. For example
+    when specifying a split of 0.75/0.25, H2O will produce a test/train split with
+    an expected value of 0.75/0.25 rather than exactly 0.75/0.25. On small datasets,
+    the sizes of the resulting splits will deviate from the expected value more than
+    on big data, where they will be very close to exact.
 
     Parameters
     ----------
