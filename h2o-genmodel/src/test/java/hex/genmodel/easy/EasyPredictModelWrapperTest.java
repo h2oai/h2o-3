@@ -98,8 +98,9 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(total, 0);
     }
 
-    m = new EasyPredictModelWrapper(rawModel);
-    m.setConvertUnknownCategoricalLevelsToNa(true);
+    m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
+            .setModel(rawModel)
+            .setConvertUnknownCategoricalLevelsToNa(true));
 
     {
       RowData row0 = new RowData();
