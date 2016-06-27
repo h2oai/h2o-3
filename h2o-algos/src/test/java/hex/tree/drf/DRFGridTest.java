@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 import static water.util.ArrayUtils.interval;
 
 public class DRFGridTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testCarsGrid() {
     Grid<DRFModel.DRFParameters> grid = null;
@@ -44,7 +44,7 @@ public class DRFGridTest extends TestUtil {
 
       // Setup hyperparameter search space
       final Double[] legalSampleRateOpts = new Double[]{0.5};
-      final Double[] illegalSampleRateOpts = new Double[]{1.0};
+      final Double[] illegalSampleRateOpts = new Double[]{2.0};
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_ntrees", new Integer[]{2, 4});
         put("_max_depth", new Integer[]{10, 20});

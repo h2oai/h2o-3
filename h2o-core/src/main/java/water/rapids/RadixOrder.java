@@ -470,7 +470,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // Log.info("Getting OX MSB " + MSBvalue + " batch 0 from node " + node + "/" + H2O.CLOUD.size() + " for Frame " + _fr._key);
       // Log.info("Getting");
       k = SplitByMSBLocal.getNodeOXbatchKey(_isLeft, _MSBvalue, node, /*batch=*/0);
-      assert k.home();
+      // assert k.home();   // TODO: PUBDEV-3074
       ox[node] = DKV.getGet(k);   // get the first batch for each node for this MSB
       DKV.remove(k);
     }
