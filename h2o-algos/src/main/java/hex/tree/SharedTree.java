@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+  final protected static boolean DEV_DEBUG = false;
   protected int _mtry;
   protected int _mtry_per_tree;
 
@@ -382,13 +383,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
       Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors and actual response
-      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
-      fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices
-      if (idx_weight() >= 0)
-        fr2.add(fr._names[idx_weight()],vecs[idx_weight()]); //observation weights
-      // Start building one of the K trees in parallel
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution));
+
+      // Add temporary workspace vectors (optional weights are taken over from fr)
+      int weightIdx = fr2.find(_parms._weights_column);
+      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
+      int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      if (DEV_DEBUG) {
+        System.out.println("Building a layer for class " + k + ":\n" + fr2.toString());
+      }
+      // Async tree building
+      // step 1: build histograms
+      // step 2: split nodes
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, weightIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -397,6 +404,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if( tree == null ) continue;
       sb1ts[k].join();
       if( sb1ts[k]._did_split ) did_split=true;
+      if (DEV_DEBUG) {
+        System.out.println("Done with this layer for class " + k + ":\n" + new Frame(
+                new String[]{"TREE", "WORK", "NIDS"},
+                new Vec[]{
+                        vecs[idx_tree(k)],
+                        vecs[idx_work(k)],
+                        vecs[idx_nids(k)]
+                }
+        ).toString());
+      }
     }
     // The layer is done.
     return did_split ? hcs : null;
@@ -408,26 +425,32 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final int _nbins;           // Numerical columns: Number of histogram bins
     final int _nbins_cats;      // Categorical columns: Number of histogram bins
     final DTree _tree;
-    final int _leafs[/*nclass*/];
+    final int _leafOffsets[/*nclass*/]; //Index of the first leaf node. Leaf indices range from _leafOffsets[k] to _tree._len-1
     final DHistogram _hcs[/*nclass*/][][];
     final Frame _fr2;
     final boolean _build_tree_one_node;
-    float[] _improvPerVar;      // Squared Error improvement per variable per split
-    Distribution.Family _family;
+    final float[] _improvPerVar;      // Squared Error improvement per variable per split
+    final Distribution.Family _family;
+    final int _weightIdx;
+    final int _workIdx;
+    final int _nidIdx;
 
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, Distribution.Family family, int weightIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
       _nbins_cats= nbins_cats;
       _tree = tree;
-      _leafs= leafs;
+      _leafOffsets = leafs;
       _hcs  = hcs;
       _fr2  = fr2;
       _build_tree_one_node = build_tree_one_node;
       _improvPerVar = improvPerVar;
       _family = family;
+      _weightIdx = weightIdx;
+      _workIdx = workIdx;
+      _nidIdx = nidIdx;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -438,35 +461,36 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafs[_k], _hcs[_k], _family).dfork(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
       //System.out.println(sbh.profString());
 
-      final int leafk = _leafs[_k];
+      final int leafOffset = _leafOffsets[_k];
       int tmax = _tree.len();   // Number of total splits in tree K
-      for( int leaf=leafk; leaf<tmax; leaf++ ) { // Visit all the new splits (leaves)
+      for(int leaf = leafOffset; leaf<tmax; leaf++ ) { // Visit all the new splits (leaves)
         DTree.UndecidedNode udn = _tree.undecided(leaf);
-//        System.out.println((_st._nclass==1?"Regression":("Class "+_fr2.vecs()[_st._ncols].domain()[_k]))+",\n  Undecided node:"+udn);
+//        System.out.println((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
         // Replace the Undecided with the Split decision
-        DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
-//        System.out.println(dn +
-//                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
+        DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafOffset]);
+//        System.out.println(dn + "\n" + dn._split);
         if( dn._split == null ) udn.do_not_split();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
-          assert((float)(s.pre_split_se()-s.se())>=0);
-          AtomicUtils.FloatArray.add(_improvPerVar,s.col(),(float)(s.pre_split_se()-s.se()));
+          float improvement = (float)(s.pre_split_se()-s.se());
+          assert(improvement>=0);
+          AtomicUtils.FloatArray.add(_improvPerVar,s.col(),improvement);
         }
       }
-      _leafs[_k]=tmax;          // Setup leafs for next tree level
-      int new_leafs = _tree.len()-tmax;
+      _leafOffsets[_k]=tmax;          // Setup leafs for next tree level
+      int new_leafs = _tree.len()-tmax; //new_leafs can be 0 if no actual splits were made
       _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
       for( int nl = tmax; nl<_tree.len(); nl ++ )
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
-      if (_did_split) _tree._depth++;
+      if (_did_split && new_leafs > 0) _tree._depth++;
+//      if (_did_split) _tree._depth++;
     }
   }
 
@@ -487,12 +511,15 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
-  // Out-of-bag trees counter - only one since it is shared via k-trees
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
-  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
+  protected final Vec vec_weight(Frame fr      ) { return fr.vecs()[idx_weight()]; }
+  protected final Vec vec_offset(Frame fr      ) { return fr.vecs()[idx_offset()]; }
   protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[idx_resp() ]; }
   protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
+  protected final Vec vec_work( Frame fr, int c) { return fr.vecs()[idx_work(c)]; }
+  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
+  protected final Vec vec_oobt( Frame fr       ) { return fr.vecs()[idx_oobt()]; }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
@@ -502,7 +529,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Builder-specific decision node
   protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] ) {
-    return new DTree.DecidedNode(udn, hs);
+    return new DTree.DecidedNode(udn, hs, _parms._seed);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the
@@ -529,7 +556,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for( int row=0; row<ys._len; row++ )
         if( ys.isNA(row) )
           for( int t=0; t<_nclass; t++ )
-            chk_nids(chks,t).set(row, -1);
+            chk_nids(chks,t).set(row, ScoreBuildHistogram.MISSING_RESPONSE);
     }
   }
 

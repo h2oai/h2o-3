@@ -356,11 +356,7 @@ public final class DHistogram extends Iced {
     ArrayUtils.add(_wYY,dsh._wYY);
   }
 
-  // Compute a "score" for a column; lower score "wins" (is a better split).
-  // Score is the sum of the MSEs when the data is split at a single point.
-  // mses[1] == MSE for splitting between bins  0  and 1.
-  // mses[n] == MSE for splitting between bins n-1 and n.
-  public DTree.Split scoreMSE( int col, double min_rows) {
+  public DTree.Split findBestSplitPoint(int col, double min_rows) {
     final int nbins = nbins();
     assert nbins > 1;
 
@@ -449,9 +445,10 @@ public final class DHistogram extends Iced {
     double seBefore = seNonNA;
 
     // if there are any NAs, then try to split them from the non-NAs
-    if (wNA>0) {
-      double seAll = (wYYhi[0]+wYYNA) - (wYhi[0]+wYNA)*(wYhi[0]+wYNA)/(whi[0]+wNA);
-      double seNA = wYYNA - wYNA*wYNA/wNA;
+    if (wNA>=min_rows) {
+      double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
+      double seNA = wYYNA - wYNA * wYNA / wNA;
+      if (seNA < 0) seNA = 0;
       best_seL = seNonNA;
       best_seR = seNA;
       nasplit = NASplitDir.NAvsREST;
@@ -501,10 +498,12 @@ public final class DHistogram extends Iced {
                   // Or tied SE, then pick split towards middle bins
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-            best_seL = selo;
-            best_seR = sehi;
-            best = b;
-            nasplit = NASplitDir.NALeft;
+            if( (wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
+              best_seL = selo;
+              best_seR = sehi;
+              best = b;
+              nasplit = NASplitDir.NALeft;
+            }
           }
         }
 
@@ -518,10 +517,12 @@ public final class DHistogram extends Iced {
                   // Or tied SE, then pick split towards middle bins
                   (selo + sehi == best_seL + best_seR &&
                           Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
-            best_seL = selo;
-            best_seR = sehi;
-            best = b;
-            nasplit = NASplitDir.NARight;
+            if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
+              best_seL = selo;
+              best_seR = sehi;
+              best = b;
+              nasplit = NASplitDir.NARight;
+            }
           }
         }
       }
@@ -553,10 +554,10 @@ public final class DHistogram extends Iced {
       return null;
     }
 
-    double nLeft = equal != 1 ? wlo[best] : wlo[best]  + whi[best+1];
-    double nRight = equal != 1 ? whi[best] : w[best]                ;
-    double predLeft = equal != 1 ? wYlo[best] : wYlo[best] + wYhi[best+1];
-    double predRight = equal != 1 ? wYhi[best] : wY[best]               ;
+    double nLeft = wlo[best];
+    double nRight = whi[best];
+    double predLeft = wYlo[best];
+    double predRight = wYhi[best];
 
     if (nasplit==NASplitDir.NAvsREST) {
       assert(best == 0);
