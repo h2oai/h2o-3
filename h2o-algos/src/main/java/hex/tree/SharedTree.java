@@ -716,6 +716,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     List<String> colFormat = new ArrayList<>();
 
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Number of Internal Trees"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
 
     colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
@@ -736,7 +737,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             "");
     int row = 0;
     int col = 0;
-    table.set(row, col++, _output._treeStats._num_trees);
+    table.set(row, col++, _output._ntrees);
+    table.set(row, col++, _output._treeStats._num_trees); //internal number of trees (more for multinomial)
     table.set(row, col++, _output._treeStats._byte_size);
     table.set(row, col++, _output._treeStats._min_depth);
     table.set(row, col++, _output._treeStats._max_depth);
