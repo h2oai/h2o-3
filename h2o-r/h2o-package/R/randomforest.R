@@ -3,7 +3,7 @@
 #' Builds a Random Forest Model on an H2OFrame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
-#'        to use in building the GBM model.
+#'        to use in building the RF model.
 #' @param y The name or index of the response variable. If the data does not
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
@@ -65,7 +65,8 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
 #' @param histogram_type What type of histogram to use for finding optimal split points
-#'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
+#'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin". Note that H2O supports
+#'        extremely randomized trees with the "Random" option.
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
