@@ -116,8 +116,9 @@ public class OrcParser extends Parser {
   public int[] findStripeIndices(int cidx, int chunk_size, Long[] cumStripeSizes) {
     int[] tempIndices = new int[2];
     int startingByte = cidx * chunk_size;
+    int lastChunkIndex = cumStripeSizes.length-1;
 
-    if (startingByte > cumStripeSizes[cumStripeSizes.length-1]) { // last chunk
+    if (startingByte > cumStripeSizes[lastChunkIndex]) { // last chunk
       startingByte = startingByte - chunk_size;
       for (int index = 0; index < cumStripeSizes.length; index++) {
         if (startingByte <= cumStripeSizes[index]) {
@@ -128,7 +129,7 @@ public class OrcParser extends Parser {
           break;
         }
       }
-      tempIndices[1] = cumStripeSizes.length-1;
+      tempIndices[1] = lastChunkIndex;
     } else {
       for (int index = 0; index < cumStripeSizes.length; index++) {
         if (startingByte <= cumStripeSizes[index]) {
@@ -148,8 +149,9 @@ public class OrcParser extends Parser {
         }
       }
 
-      if (tempIndices[1] < 1)
-        tempIndices[1] = tempIndices[0];
+      // could be at the end of the file or the stripe is the size of the chunk
+      if (cumStripeSizes[lastChunkIndex] <= startingByte)
+        tempIndices[1] = lastChunkIndex;
     }
 
     return tempIndices;
@@ -174,7 +176,7 @@ public class OrcParser extends Parser {
 
       boolean done = false;
       Long rowCounts = 0L;
-      Long rowNumber = perStripe.getRowNumber();
+      Long rowNumber = oneStripe.getNumberOfRows();
 
       while(!done) {
         long currentBatchRow = batch.count();
@@ -333,7 +335,6 @@ public class OrcParser extends Parser {
         }
       }
     }
-
   }
 
 
@@ -475,8 +476,8 @@ public class OrcParser extends Parser {
       this.maxStripeSize = maxStripeSize;
 
       // set chunk size to be the max stripe size if the stripe size exceeds the default
-        if (this.maxStripeSize > this._chunk_size)  //
-          this.setChunkSize(this.maxStripeSize.intValue());
+      if (this.maxStripeSize > this._chunk_size)  //
+        this.setChunkSize(this.maxStripeSize.intValue());
     }
 
     @Override

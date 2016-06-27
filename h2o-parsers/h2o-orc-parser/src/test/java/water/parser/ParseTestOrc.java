@@ -1,357 +1,138 @@
 package water.parser;
 
 
-import com.google.common.io.Files;
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumWriter;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.io.orc.OrcFile;
+import org.apache.hadoop.hive.ql.io.orc.Reader;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
+import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
- * Test suite for Avro parser.
+ * Test suite for orc parser.
+ *
+ * This test will build a H2O frame for all orc files found in smalldata/parser/orc directory
+ * and compare the H2O frame content with the orc file content read with Core Java commands.
+ * Test is declared a success if the content of H2O frame is the same as the contents read
+ * by using core Java commands off the Orc file itself.  No multi-threading is used in reading
+ * off the Orc file using core Java commands.
  */
 public class ParseTestOrc extends TestUtil {
 
   private static double EPSILON = 1e-9;
 
+  // list all orc files in smalldata/parser/orc directory
+  private String[] allOrcFiles = {"smalldata/parser/orc/TestOrcFile.columnProjection.orc",
+          "smalldata/parser/orc/bigint_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.emptyFile.orc",
+          "smalldata/parser/orc/bool_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.metaData.orc",
+          "smalldata/parser/orc/decimal.orc",
+          "smalldata/parser/orc/TestOrcFile.test1.orc",
+          "smalldata/parser/orc/demo-11-zlib.orc",
+          "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
+          "smalldata/parser/orc/demo-12-zlib.orc",
+          "smalldata/parser/orc/TestOrcFile.testDate2038.orc",
+          "smalldata/parser/orc/double_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.testMemoryManagementV11.orc",
+          "smalldata/parser/orc/float_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.testMemoryManagementV12.orc",
+          "smalldata/parser/orc/int_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.testPredicatePushdown.orc",
+          "smalldata/parser/orc/nulls-at-end-snappy.orc",
+          "smalldata/parser/orc/TestOrcFile.testSeek.orc",
+          "smalldata/parser/orc/orc-file-11-format.orc",
+          "smalldata/parser/orc/TestOrcFile.testSnappy.orc",
+          "smalldata/parser/orc/orc_split_elim.orc",
+          "smalldata/parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc",
+          "smalldata/parser/orc/over1k_bloom.orc",
+          "smalldata/parser/orc/TestOrcFile.testStripeLevelStats.orc",
+          "smalldata/parser/orc/smallint_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.testTimestamp.orc",
+          "smalldata/parser/orc/string_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.testUnionAndTimestamp.orc",
+          "smalldata/parser/orc/tinyint_single_col.orc",
+          "smalldata/parser/orc/TestOrcFile.testWithoutIndex.orc",
+          "smalldata/parser/orc/version1999.orc"};
+
   @BeforeClass
   static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
   @Test
-  public void testParseSimple() {
-    // Tests for basic files which are in smalldata
+  public void testParseAllOrcs() {
 
-//    Frame hr2 = parse_test_file("smalldata/iris/iris2.csv");
-//    Frame hr3 = parse_test_file("smalldata/parser/avro/sequence100k.avro");
-//    Frame hr = parse_test_file("smalldata/parser/orc/demo-11-zlib.orc");
-    Frame hr4 = parse_test_file("smalldata/parser/orc/bigint_single_col.orc");
+    int numOfOrcFiles = allOrcFiles.length; // number of Orc Files to test
 
-    FrameAssertion[] assertions = new FrameAssertion[] {
-        // sequence100k.avro
-        new FrameAssertion("smalldata/parser/avro/sequence100k.avro", TestUtil.ari(1, 100000)) {
-          @Override public void check(Frame f) {
-            Vec values = f.vec(0);
-            for (int i = 0; i < f.numRows(); i++) {
-              assertEquals(i, values.at8(i));
-            }
-          }
-        },
-        // episodes.avro
-        new FrameAssertion("smalldata/parser/avro/episodes.avro", TestUtil.ari(3, 8)) {}
-    };
+    for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
+    {
+      String fileName = allOrcFiles[fIndex];
+      File f = find_test_file_static(fileName);
 
-    for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
-    }
-  }
-
-  @Test public void testParsePrimitiveTypes() {
-    FrameAssertion[] assertions = new FrameAssertion[]{
-        new GenFrameAssertion("supportedPrimTypes.avro", TestUtil.ari(8, 100)) {
-
-          @Override protected File prepareFile() throws IOException { return AvroFileGenerator.generatePrimitiveTypes(file, nrows()); }
-
-          @Override
-          void check(Frame f) {
-            assertArrayEquals("Column names need to match!", ar("CString", "CBytes", "CInt", "CLong", "CFloat", "CDouble", "CBoolean", "CNull"), f.names());
-            assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_BAD), f.types());
-
-            int nrows = nrows();
-            BufferedString bs = new BufferedString();
-            for (int row = 0; row < nrows; row++) {
-              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CInt", row, f.vec(2).at8(row));
-              assertEquals("Value in column CLong", row, f.vec(3).at8(row));
-              assertEquals("Value in column CFloat", row, f.vec(4).at(row), EPSILON);
-              assertEquals("Value in column CDouble", row, f.vec(5).at(row), EPSILON);
-              assertEquals("Value in column CBoolean", (row & 1) == 1, (((int) f.vec(5).at(row)) & 1) == 1);
-              assertTrue("Value in column CNull", f.vec(7).isNA(row));
-            }
-          }
+      if (f != null && f.exists()) {
+        Configuration conf = new Configuration();
+        Path p = new Path(f.toString());
+        try {
+          Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));     // orc reader
+          Frame h2oFrame = parse_test_file(fileName);     // read one orc file and build a H2O frame
+          compareH2OFrame(h2oFrame, orcFileReader);
+        } catch (IOException e) {
+          e.printStackTrace();
         }
-    };
 
-    for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
-    }
-  }
-
-  @Test public void testParseUnionTypes() {
-    FrameAssertion[] assertions = new FrameAssertion[]{
-        new GenFrameAssertion("unionTypes.avro", TestUtil.ari(7, 101)) {
-
-          @Override protected File prepareFile() throws IOException { return AvroFileGenerator.generateUnionTypes(file, nrows()); }
-
-          @Override
-          void check(Frame f) {
-            assertArrayEquals("Column names need to match!", ar("CUString", "CUBytes", "CUInt", "CULong", "CUFloat", "CUDouble", "CUBoolean"), f.names());
-            assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM), f.types());
-            int nrows = nrows();
-            BufferedString bs = new BufferedString();
-            // NA in the first row
-            for (int col = 0; col < ncols(); col++) {
-              assertTrue("NA should be in first row and col " + col, f.vec(col).isNA(0));
-            }
-            for (int row = 1; row < nrows; row++) {
-              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CInt", row, f.vec(2).at8(row));
-              assertEquals("Value in column CLong", row, f.vec(3).at8(row));
-              assertEquals("Value in column CFloat", row, f.vec(4).at(row), EPSILON);
-              assertEquals("Value in column CDouble", row, f.vec(5).at(row), EPSILON);
-              assertEquals("Value in column CBoolean", (row & 1) == 1, (((int) f.vec(5).at(row)) & 1) == 1);
-            }
-          }
-        }
-    };
-
-    for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
-    }
-  }
-
-  @Test public void testParseEnumTypes() {
-    FrameAssertion[] assertions = new FrameAssertion[]{
-        new GenFrameAssertion("enumTypes.avro", TestUtil.ari(2, 100)) {
-          String[][] categories = AvroFileGenerator.generateSymbols(ar("CAT_A_", "CAT_B_"), ari(7, 13)); // Generated categories
-          @Override protected File prepareFile() throws IOException {
-            return AvroFileGenerator.generateEnumTypes(file, nrows(), categories);
-          }
-
-          @Override
-          void check(Frame f) {
-            assertArrayEquals("Column names need to match!", ar("CEnum", "CUEnum"), f.names());
-            assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_CAT), f.types());
-            assertArrayEquals("Category names need to match in CEnum!", categories[0], f.vec("CEnum").domain());
-            assertArrayEquals("Category names need to match in CUEnum!", categories[1], f.vec("CUEnum").domain());
-
-            int numOfCategories1 = categories[0].length;
-            int numOfCategories2 = categories[1].length;
-            int nrows = nrows();
-            for (int row = 0; row < nrows; row++) {
-              assertEquals("Value in column CEnum", row % numOfCategories1, (int) f.vec("CEnum").at(row));
-              if (row % (numOfCategories2+1) == 0) assertTrue("NA should be in row " + row + " and col CUEnum", f.vec("CUEnum").isNA(row));
-              else assertEquals("Value in column CUEnum", row % numOfCategories2, (int) f.vec("CUEnum").at(row));
-            }
-          }
-        }
-    };
-
-    for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
-    }
-  }
-
-  private static void assertFrameAsserion(FrameAssertion frameAssertion) {
-    int[] dim = frameAssertion.dim;
-    Frame frame = null;
-    try {
-      frame = frameAssertion.prepare();
-      assertEquals("Frame has to have expected number of columns", dim[0], frame.numCols());
-      assertEquals("Frame has to have expected number of rows", dim[1], frame.numRows());
-      frameAssertion.check(frame);
-    } finally {
-      frameAssertion.done(frame);
-      if (frame != null)
-        frame.delete();
-    }
-  }
-
-  private static abstract class FrameAssertion {
-    final String file;
-    final int[] dim; // columns X rows
-    public FrameAssertion(String file, int[] dim) {
-      this.file = file;
-      this.dim = dim;
-    }
-
-    public Frame prepare() {
-      return TestUtil.parse_test_file(file);
-    }
-
-    public void done(Frame frame) {}
-
-    void check(Frame frame) {}
-
-    public final int nrows() { return dim[1]; }
-    public final int ncols() { return dim[0]; }
-  }
-
-  private static abstract class GenFrameAssertion extends FrameAssertion {
-
-    public GenFrameAssertion(String file, int[] dim) {
-      super(file, dim);
-    }
-    File generatedFile;
-
-    protected abstract File prepareFile() throws IOException;
-
-    @Override
-    public Frame prepare() {
-      try {
-        File f = generatedFile = prepareFile();
-        System.out.println("File generated into: " + f.getCanonicalPath());
-        return TestUtil.parse_test_file(f.getCanonicalPath());
-      } catch (IOException e) {
-        throw new RuntimeException("Cannot created test file: " + file, e);
+      } else {
+        Log.warn("The following file was not found: " + fileName);
       }
     }
+  }
 
-    @Override
-    public void done(Frame frame) {
-      generatedFile.deleteOnExit();
-      if (generatedFile != null) generatedFile.delete();
+  /**
+   * This method will take one H2O frame generated by the Orc parser and the fileName of the Orc file
+   * and attempt to compare the content of the Orc file to the H2O frame.  In particular, the following
+   * are compared:
+   * - column names;
+   * - number of columns and rows;
+   * - content of each row.
+   *
+   * If all comparison pass, the test will pass.  Otherwise, the test will fail.
+   *
+   * @param h2oFrame
+   * @param orcReader
+     */
+  private static void compareH2OFrame(Frame h2oFrame, Reader orcReader) {
+    // grab column names, column and row numbers
+    StructObjectInspector insp = (StructObjectInspector) orcReader.getObjectInspector();
+    List<StructField> allColInfo = (List<StructField>) insp.getAllStructFieldRefs();    // get info of all cols
+
+    // compare number of columns and rows
+    int colNumber = allColInfo.size();    // get and check column number
+    assertEquals("Number of columns need to be the same: ", colNumber, h2oFrame.numCols());
+
+    Long totalRowNumber = orcReader.getNumberOfRows();    // get and check row number
+    assertEquals("Number of rows need to be the same: ", totalRowNumber, (Long) h2oFrame.numRows());
+
+    // compare column names
+    String[] colNames = new String[colNumber];
+    String[] colTypes = new String[colNumber];
+    for (int index = 0; index < colNumber; index++) {   // get and check column names
+      colNames[index] = allColInfo.get(index).getFieldName();
+      colTypes[index] = allColInfo.get(index).getFieldObjectInspector().getTypeName();
     }
-  }
-}
+    assertArrayEquals("Column names need to be the same: ", colNames, h2oFrame._names);
 
-/* A test file generator.
-  Use it offline, upload file into smalldata S3 bucket.
-*/
-class AvroFileGenerator {
+    // compare one column at a time of the whole row?
 
-  public static void main(String[] args) throws IOException {
-    generatePrimitiveTypes("/tmp/h2o-avro-tests/primitiveTypes.avro", 100);
   }
 
-  public static File generatePrimitiveTypes(String filename, int nrows) throws IOException {
-    File parentDir = Files.createTempDir();
-    File f  = new File(parentDir, filename);
-    // Write output records
-    DatumWriter<GenericRecord> w = new GenericDatumWriter<GenericRecord>();
-    DataFileWriter<GenericRecord> dw = new DataFileWriter<GenericRecord>(w);
-    Schema
-        schema = SchemaBuilder.builder()
-          .record("test_primitive_types").fields()
-            .name("CString").type("string").noDefault()
-            .name("CBytes").type("bytes").noDefault()
-            .name("CInt").type("int").noDefault()
-            .name("CLong").type("long").noDefault()
-            .name("CFloat").type("float").noDefault()
-            .name("CDouble").type("double").noDefault()
-            .name("CBoolean").type("boolean").noDefault()
-            .name("CNull").type("null").noDefault()
-          .endRecord();
-    try {
-      dw.create(schema, f);
-      for (int i = 0; i < nrows; i++) {
-        GenericRecord gr = new GenericData.Record(schema);
-        gr.put("CString", String.valueOf(i));
-        gr.put("CBytes", ByteBuffer.wrap(String.valueOf(i).getBytes()));
-        gr.put("CInt", i);
-        gr.put("CLong", Long.valueOf(i));
-        gr.put("CFloat", Float.valueOf(i));
-        gr.put("CDouble", Double.valueOf(i));
-        gr.put("CBoolean", (i & 1) == 1);
-        gr.put("CNull", null);
-        dw.append(gr);
-      }
-      return f;
-    } finally {
-      dw.close();
-    }
-  }
-
-  public static File generateUnionTypes(String filename, int nrows) throws IOException {
-    File parentDir = Files.createTempDir();
-    File f  = new File(parentDir, filename);
-    DatumWriter<GenericRecord> w = new GenericDatumWriter<GenericRecord>();
-    DataFileWriter<GenericRecord> dw = new DataFileWriter<GenericRecord>(w);
-
-    // Based on SchemaBuilder javadoc:
-    // * The below two field declarations are equivalent:
-    // * <pre>
-    // *  .name("f").type().unionOf().nullType().and().longType().endUnion().nullDefault()
-    // *  .name("f").type().optional().longType()
-    // * </pre>
-    Schema
-        schema = SchemaBuilder.builder()
-        .record("test_union_types").fields()
-          .name("CUString").type().optional().stringType()
-          .name("CUBytes").type().optional().bytesType()
-          .name("CUInt").type().optional().intType()
-          .name("CULong").type().optional().longType()
-          .name("CUFloat").type().optional().floatType()
-          .name("CUDouble").type().optional().doubleType()
-          .name("CUBoolean").type().optional().booleanType()
-        .endRecord();
-    try {
-      dw.create(schema, f);
-      for (int i = 0; i < nrows; i++) {
-        GenericRecord gr = new GenericData.Record(schema);
-        gr.put("CUString", i == 0 ? null : String.valueOf(i));
-        gr.put("CUBytes", i == 0 ? null : ByteBuffer.wrap(String.valueOf(i).getBytes()));
-        gr.put("CUInt", i == 0 ? null : i);
-        gr.put("CULong", i == 0 ? null : Long.valueOf(i));
-        gr.put("CUFloat", i == 0 ? null : Float.valueOf(i));
-        gr.put("CUDouble", i == 0 ? null : Double.valueOf(i));
-        gr.put("CUBoolean", i == 0 ? null : (i & 1) == 1);
-        dw.append(gr);
-      }
-      return f;
-    } finally {
-      dw.close();;
-    }
-  }
-
-  public static File generateEnumTypes(String filename, int nrows, String[][] categories) throws IOException {
-    assert categories.length == 2 : "Needs only 2 columns";
-    File parentDir = Files.createTempDir();
-    File f  = new File(parentDir, filename);
-    DatumWriter<GenericRecord> w = new GenericDatumWriter<GenericRecord>();
-    DataFileWriter<GenericRecord> dw = new DataFileWriter<GenericRecord>(w);
-
-    Schema enumSchema1 = SchemaBuilder.enumeration("CEnum1").symbols(categories[0]);
-    Schema enumSchema2 = SchemaBuilder.enumeration("CEnum2").symbols(categories[1]);
-    Schema
-        schema = SchemaBuilder.builder()
-        .record("test_enum_types").fields()
-          .name("CEnum").type(enumSchema1).noDefault()
-          .name("CUEnum").type().optional().type(enumSchema2)
-        .endRecord();
-
-    System.out.println(schema);
-    int numOfCategories1 = categories[0].length;
-    int numOfCategories2 = categories[1].length;
-    try {
-      dw.create(schema, f);
-      for (int i = 0; i < nrows; i++) {
-        GenericRecord gr = new GenericData.Record(schema);
-        gr.put("CEnum", new GenericData.EnumSymbol(enumSchema1, categories[0][i % numOfCategories1]));
-        gr.put("CUEnum", i % (numOfCategories2+1) == 0 ? null : new GenericData.EnumSymbol(enumSchema2, categories[1][i % numOfCategories2]));
-        dw.append(gr);
-      }
-      return f;
-    } finally {
-      dw.close();;
-    }
-  }
-
-  public static String[][] generateSymbols(String[] prefix, int[] num) {
-    assert prefix.length == num.length;
-    String[][] symbols = new String[prefix.length][];
-    for (int i = 0; i < prefix.length; i++) symbols[i] = generateSymbols(prefix[i], num[i]);
-    return symbols;
-  }
-
-  public static String[] generateSymbols(String prefix, int num) {
-    String[] symbols = new String[num];
-    for (int i = 0; i < num; i++) symbols[i] = prefix + i;
-    return symbols;
-  }
 }
