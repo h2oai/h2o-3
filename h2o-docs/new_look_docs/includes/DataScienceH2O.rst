@@ -860,6 +860,9 @@ Defining a DRF Model
 	- QuantilesGlobal
 	- RoundRobin
 
+    **Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
+
+
 -  **keep\_cross\_validation\_predictions**: Enable this option to keep the
    cross-validation prediction.
 
@@ -996,6 +999,11 @@ DRF Algorithm
 
 
 `Building Random Forest at Scale <http://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
+
+References
+~~~~~~~~~~
+
+`P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006. <http://link.springer.com/article/10.1007%2Fs10994-006-6226-1>`_
 
 
 Naïve Bayes
