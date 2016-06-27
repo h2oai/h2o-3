@@ -51,21 +51,20 @@ class TypeTranslator:
         if config["verbose"]:
             self._mem.add((h2o_type, schema))
         if h2o_type.endswith("[][]"):
-            return self.make_array2(self.translate(h2o_type[:-4], schema))
+            return self.make_array2(self.translate(h2o_type[:-4], schema, values))
         if h2o_type.endswith("[]"):
-            return self.make_array(self.translate(h2o_type[:-2], schema))
+            return self.make_array(self.translate(h2o_type[:-2], schema, values))
         if h2o_type.startswith("Map<"):
             t1, t2 = h2o_type[4:-1].split(",", 2)  # Need to be fixed once we have keys with commas...
-            return self.make_map(self.translate(t1, schema), self.translate(t2, schema))
+            return self.make_map(self.translate(t1, schema, values), self.translate(t2, schema, values))
         if h2o_type.startswith("Key<"):
-            return self.make_key(self.translate(h2o_type[4:-1], schema), schema)
+            return self.make_key(self.translate(h2o_type[4:-1], schema, values), schema)
         if h2o_type == "enum":
             return self.make_enum(schema, values)
+        if h2o_type in self.types:
+            return self.types[h2o_type]
         if schema is None:
-            if h2o_type in self.types:
-                return self.types[h2o_type]
-            else:
-                return h2o_type
+            return h2o_type
         return self.translate_object(h2o_type, schema)
 
     def vprint_translation_map(self):
@@ -74,7 +73,7 @@ class TypeTranslator:
             print("Type conversions done:")
             print("-" * 80)
             for t, s in sorted(self._mem):
-                print("(%s, %s)  =>  %s" % (t, s, self.translate(t, s)))
+                print("(type: %s, schema: %s)  =>  %s" % (t, s, self.translate(t, s)))
             print()
 
 
