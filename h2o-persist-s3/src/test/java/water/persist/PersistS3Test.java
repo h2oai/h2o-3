@@ -20,7 +20,7 @@ public class PersistS3Test extends TestUtil {
 
 
   @BeforeClass
-  public static void setup() { stall_till_cloudsize(1); }
+  public static void setup() { stall_till_cloudsize(5); }
 
   private static class XORTask extends MRTask<XORTask> {
     long _res = 0;
