@@ -426,10 +426,10 @@ test process, they will cloud up and run the multi-node JUnit tests.
    website comprising developer kits and technical specs, news, and
    product spotlights.
 
--  `H2O Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects
+-  `H2O Droplet Project Templates <https://github.com/h2oai/h2o-droplets>`_: This page provides template info for projects
    created in Java, Scala, or Sparkling Water.
 
--  `H2O Scala API Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-scala/scaladoc/index.html>`_: The definitive Scala API guide
+-  `H2O Scala API Developer Documentation <../h2o-scala/scaladoc/index.html>`_: The definitive Scala API guide
    for H2O.
    
 -  `Hacking Algos <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`_: This blog post by Cliff walks you through building a

@@ -17,6 +17,6 @@ The links below point to more detailed API/developer documentation.
 
 - `POJO Model Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
 
-- `h2o-scala Scaladoc <../h2o-scala/scaladoc/index.html#package>`_: The definitive Scala API guide for H2O.
+- `h2o-scala Scaladoc <../h2o-scala/scaladoc/index.html>`_: The definitive Scala API guide for H2O.
 
 - `Sparkling Water API <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md>`_: This document describes the configuration properties that can be passed to Spark to onfigure Sparkling Water. 
