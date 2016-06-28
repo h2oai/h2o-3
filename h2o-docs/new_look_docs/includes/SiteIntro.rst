@@ -415,7 +415,7 @@ test process, they will cloud up and run the multi-node JUnit tests.
    the repository, and how to install required dependencies.
 
 -  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/index.html#Maven>`__
+   `here <http://www.h2o.ai/download/h2o/maven>`__
    to view instructions on how to use H2O with Maven.
 
 -  `Maven install <https://github.com/h2oai/h2o-3/blob/master/build.gradle>`_: This page provides information on how to build a
