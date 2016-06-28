@@ -115,4 +115,7 @@ public class UploadFileVec extends FileVec {
     }
     return key;
   }
+
+  @Override // not supported for now, can do rebalance later
+  public int setChunkSize(Frame fr, int chunkSize) {return _chunkSize;}
 }

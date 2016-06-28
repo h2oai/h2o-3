@@ -95,7 +95,7 @@ public class RBindTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     fr.remove(4).remove();
     try {
-      Val val = Exec.exec(tree);
+      Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
       if( val instanceof ValFrame )

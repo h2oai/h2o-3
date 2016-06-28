@@ -202,11 +202,11 @@ public class GroupByTest extends TestUtil {
     Frame cov = parse_test_file(Key.make("cov"),"smalldata/covtype/covtype.altered.gz");
     System.out.println(cov.toString(0,10));
 
-    Val v_ddply = Exec.exec("(ddply cov [54] nrow)");
+    Val v_ddply = Rapids.exec("(ddply cov [54] nrow)");
     System.out.println(v_ddply.toString());
     ((ValFrame)v_ddply)._fr.delete();
 
-    Val v_groupby = Exec.exec("(GB cov [54] nrow 54 \"all\")");
+    Val v_groupby = Rapids.exec("(GB cov [54] nrow 54 \"all\")");
     System.out.println(v_groupby.toString());
     ((ValFrame)v_groupby)._fr.delete();
 
@@ -219,13 +219,13 @@ public class GroupByTest extends TestUtil {
     System.out.println(ids.toString(0,10));
 
     long start = System.currentTimeMillis();
-    Val v_gb = Exec.exec("(GB cov [0] nrow 0 \"all\")");
+    Val v_gb = Rapids.exec("(GB cov [0] nrow 0 \"all\")");
     System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
     System.out.println(v_gb.toString());
     ((ValFrame)v_gb)._fr.delete();
     
     long start2 = System.currentTimeMillis();
-    Val v_tb = Exec.exec("(table cov FALSE)");
+    Val v_tb = Rapids.exec("(table cov FALSE)");
     System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
     System.out.println(v_tb.toString());
     ((ValFrame)v_tb)._fr.delete();
@@ -250,7 +250,7 @@ public class GroupByTest extends TestUtil {
 
   private Frame chkTree(String tree, String fname, float d) {
     Frame fr = parse_test_file(Key.make("hex"),fname);
-    Val val = Exec.exec(tree);
+    Val val = Rapids.exec(tree);
     System.out.println(val.toString());
     if( val instanceof ValFrame )
       return ((ValFrame)val)._fr;
@@ -260,7 +260,7 @@ public class GroupByTest extends TestUtil {
   private Frame chkTree(String tree, String fname, boolean expectThrow) {
     Frame fr = parse_test_file(Key.make("hex"),fname);
     try {
-      Val val = Exec.exec(tree);
+      Val val = Rapids.exec(tree);
       System.out.println(val.toString());
       if( val instanceof ValFrame )
         return ((ValFrame)val)._fr;

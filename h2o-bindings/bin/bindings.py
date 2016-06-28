@@ -13,7 +13,6 @@ from __future__ import division
 from __future__ import unicode_literals
 from __future__ import absolute_import
 from collections import defaultdict
-from builtins import range
 import argparse
 import atexit
 import codecs
@@ -44,38 +43,37 @@ class TypeTranslator:
         self.make_array2 = lambda itype: itype + "[][]"
         self.make_map = lambda ktype, vtype: "Map<%s,%s>" % (ktype, vtype)
         self.make_key = lambda itype, schema: schema
-        self.make_enum = lambda schema: schema
+        self.make_enum = lambda schema, values: schema
         self.translate_object = lambda otype, schema: schema
         self._mem = set()  # Store all types seen, for debug purposes
 
-    def translate(self, h2o_type, schema):
+    def translate(self, h2o_type, schema, values=None):
         if config["verbose"]:
             self._mem.add((h2o_type, schema))
         if h2o_type.endswith("[][]"):
-            return self.make_array2(self.translate(h2o_type[:-4], schema))
+            return self.make_array2(self.translate(h2o_type[:-4], schema, values))
         if h2o_type.endswith("[]"):
-            return self.make_array(self.translate(h2o_type[:-2], schema))
+            return self.make_array(self.translate(h2o_type[:-2], schema, values))
         if h2o_type.startswith("Map<"):
             t1, t2 = h2o_type[4:-1].split(",", 2)  # Need to be fixed once we have keys with commas...
-            return self.make_map(self.translate(t1, schema), self.translate(t2, schema))
+            return self.make_map(self.translate(t1, schema, values), self.translate(t2, schema, values))
         if h2o_type.startswith("Key<"):
-            return self.make_key(self.translate(h2o_type[4:-1], schema), schema)
+            return self.make_key(self.translate(h2o_type[4:-1], schema, values), schema)
         if h2o_type == "enum":
-            return self.make_enum(schema)
+            return self.make_enum(schema, values)
+        if h2o_type in self.types:
+            return self.types[h2o_type]
         if schema is None:
-            if h2o_type in self.types:
-                return self.types[h2o_type]
-            else:
-                return h2o_type
+            return h2o_type
         return self.translate_object(h2o_type, schema)
 
     def vprint_translation_map(self):
         if config["verbose"]:
-            print("\n" + "-"*80)
+            print("\n" + "-" * 80)
             print("Type conversions done:")
-            print("-"*80)
+            print("-" * 80)
             for t, s in sorted(self._mem):
-                print("(%s, %s)  =>  %s" % (t, s, self.translate(t, s)))
+                print("(type: %s, schema: %s)  =>  %s" % (t, s, self.translate(t, s)))
             print()
 
 
@@ -90,6 +88,7 @@ def init(language, output_dir, clear_dir=True):
       :param clear_dir -- if True (default), the target folder will be cleared before any new
         files created in it.
     """
+    if config["start_time"]: done()
     config["start_time"] = time.time()
     print("Generating %s bindings... " % language, end="")
     sys.stdout.flush()
@@ -135,6 +134,7 @@ def init(language, output_dir, clear_dir=True):
     # Clear the content of the output directory. Note: deleting the directory and then recreating it may be
     # faster, but it creates side-effects that we want to avoid (i.e. clears permissions on the folder).
     if clear_dir:
+        filepath = "?"
         try:
             vprint("Deleting contents of the output directory...")
             for filename in os.listdir(config["destdir"]):
@@ -152,11 +152,16 @@ def init(language, output_dir, clear_dir=True):
     l1 = max(len(e["name"]) for e in json["entries"])
     l2 = max(len(e["value"]) for e in json["entries"])
     ll = max(29 + len(config["baseurl"]), l1 + l2 + 2)
-    vprint("-"*ll)
+    vprint("-" * ll)
     vprint("Connected to an H2O instance " + config["baseurl"] + "\n")
     for e in json["entries"]:
-        vprint(e["name"] + ":" + " "*(1+l1 - len(e["name"])) + e["value"])
-    vprint("-"*ll)
+        vprint(e["name"] + ":" + " " * (1 + l1 - len(e["name"])) + e["value"])
+    vprint("-" * ll)
+
+def done():
+    global config
+    _report_time()
+    config = defaultdict(bool)
 
 
 def vprint(msg, pretty=False):
@@ -210,6 +215,7 @@ def endpoints(raw=False):
     apinames = {}  # Used for checking for api name duplicates
     assert "routes" in json, "Unexpected result from /3/Metadata/endpoints call"
     re_api_name = re.compile(r"^\w+$")
+
     def gen_rich_route():
         for e in json["routes"]:
             path = e["url_pattern"]
@@ -243,8 +249,8 @@ def endpoints(raw=False):
 
             # For these special cases, the actual input schema is not the one reported by the endpoint, but the schema
             # of the 'parameters' field (which is fake).
-            if (e["class_name"], method) in set([("Grid", "train"), ("ModelBuilders", "train"),
-                                                 ("ModelBuilders", "validate_parameters")]):
+            if (e["class_name"], method) in {("Grid", "train"), ("ModelBuilders", "train"),
+                                             ("ModelBuilders", "validate_parameters")}:
                 pieces = path.split("/")
                 assert len(pieces) >= 4, "Expected to see algo name in the path: " + path
                 e["algo"] = pieces[3]
@@ -304,6 +310,7 @@ def schemas(raw=False):
     pattern0 = re.compile(r"^\w+(V\d+)\D\w+$")
     pattern1 = re.compile(r"^(\w{3,})(\1)Model\1Parameters(\w+)$", re.IGNORECASE)
     pattern2 = re.compile(r"^(\w{3,})(\1)(\w+)$", re.IGNORECASE)
+
     def translate_name(name):
         if name is None: return
         if name == "Apischemas3TimelineV3EventV3EventType": return "ApiTimelineEventTypeV3"

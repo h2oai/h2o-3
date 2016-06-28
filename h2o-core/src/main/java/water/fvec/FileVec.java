@@ -37,12 +37,21 @@ public abstract class FileVec extends ByteVec {
    */
   public int setChunkSize(int chunkSize) { return setChunkSize(null, chunkSize); }
   public int setChunkSize(Frame fr, int chunkSize) {
+    // Clear cached chunks first
+    // Peeking into a file before the chunkSize has been set
+    // will load chunks of the file in DFLT_CHUNK_SIZE amounts.
+    // If this side-effect is not reversed when _chunkSize differs
+    // from the default value, parsing will either double read
+    // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
+    // (_chunkSize > DFLT_CHUNK_SIZE). This reverses this side-effect.
+    Futures fs = new Futures();
+    Keyed.remove(_key, fs);
+    fs.blockForPending();
     if (chunkSize <= 0) throw new IllegalArgumentException("Chunk sizes must be > 0.");
     if (chunkSize > (1<<30) ) throw new IllegalArgumentException("Chunk sizes must be < 1G.");
     _chunkSize = chunkSize;
-
     //Now reset the chunk size on each node
-    Futures fs = new Futures();
+    fs = new Futures();
     DKV.put(_key, this, fs);
     // also update Frame to invalidate local caches
     if (fr != null ) {
@@ -54,7 +63,9 @@ public abstract class FileVec extends ByteVec {
   }
 
   @Override public long length() { return _len; }
-  @Override public int nChunks() { return (int)Math.max(1,_len / _chunkSize + ((_len % _chunkSize != 0)?1:0)); }
+  @Override public int nChunks() {
+    return (int)Math.max(1,_len / _chunkSize + ((_len % _chunkSize != 0)?1:0));
+  }
   @Override public boolean writable() { return false; }
 
   /** Size of vector data. */
