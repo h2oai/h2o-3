@@ -17,7 +17,7 @@ public final class OrcUtil {
     switch (s.toLowerCase()) {
       case "boolean":
       case "bigint":  // long
- //     case "binary":  // TODO: add support for binary type after understanding what it is.
+      case "binary":
       case "char":
       case "date":
       case "decimal":
@@ -26,7 +26,7 @@ public final class OrcUtil {
       case "int":
       case "smallint":
       case "string":
-//      case "timestamp":  // TODO: add support for binary type after understanding what it is.
+      case "timestamp":
       case "tinyint":
       case "varchar":
         return true;
@@ -36,8 +36,7 @@ public final class OrcUtil {
   }
 
   /**
-   * Transform Orc schema into H2O type.
-   * Transform Orc schema into H2O type.
+   * Transform Orc column types into H2O type.
    *
    * @param s  Orc data type
    * @return  a byte representing H2O column type
@@ -53,13 +52,12 @@ public final class OrcUtil {
       case "float":
       case "double":
       case "decimal":
+      case "timestamp":  // FIXME: make timestamp is interpreted correctly.
+      case "date":       // FIXME: make timestamp is interpreted correctly.
         return Vec.T_NUM;
-//      case "timestamp":  // TODO: add support for binary type after understanding what it is.
-      case "date":
-          return Vec.T_TIME;
       case "string":
       case "varchar":
- //     case "binary":  // TODO: "binary" not supported, not sure how to interpret it.
+      case "binary":  // FIXME: make sure binary is interpreted correctly.  Set to string for now.
       case "char":
         return Vec.T_STR;
       default:

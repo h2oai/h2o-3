@@ -3,14 +3,19 @@ package water.parser;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.exec.vector.*;
 import org.apache.hadoop.hive.ql.io.orc.OrcFile;
 import org.apache.hadoop.hive.ql.io.orc.Reader;
+import org.apache.hadoop.hive.ql.io.orc.RecordReader;
+import org.apache.hadoop.hive.ql.io.orc.StripeInformation;
+import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
 
 import java.io.File;
@@ -19,6 +24,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static water.parser.orc.OrcUtil.isSupportedSchema;
 
 /**
  * Test suite for orc parser.
@@ -75,7 +81,7 @@ public class ParseTestOrc extends TestUtil {
 
     int numOfOrcFiles = allOrcFiles.length; // number of Orc Files to test
 
-    for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
+    for (int fIndex = 4; fIndex < numOfOrcFiles; fIndex++)
     {
       String fileName = allOrcFiles[fIndex];
       File f = find_test_file_static(fileName);
@@ -116,7 +122,22 @@ public class ParseTestOrc extends TestUtil {
     List<StructField> allColInfo = (List<StructField>) insp.getAllStructFieldRefs();    // get info of all cols
 
     // compare number of columns and rows
-    int colNumber = allColInfo.size();    // get and check column number
+    int allColNumber = allColInfo.size();    // get and check column number
+    boolean[] toInclude = new boolean[allColNumber+1];
+    toInclude[0] = true;
+
+    int colNumber = 0 ;
+    int tempIndex = 1;
+    for (StructField oneField:allColInfo) {
+      if (isSupportedSchema(oneField.getFieldObjectInspector().getTypeName())) {
+        colNumber++;
+        toInclude[tempIndex] = true;
+      } else
+        toInclude[tempIndex] = false;
+
+      tempIndex++;
+    }
+
     assertEquals("Number of columns need to be the same: ", colNumber, h2oFrame.numCols());
 
     Long totalRowNumber = orcReader.getNumberOfRows();    // get and check row number
@@ -125,14 +146,188 @@ public class ParseTestOrc extends TestUtil {
     // compare column names
     String[] colNames = new String[colNumber];
     String[] colTypes = new String[colNumber];
-    for (int index = 0; index < colNumber; index++) {   // get and check column names
-      colNames[index] = allColInfo.get(index).getFieldName();
-      colTypes[index] = allColInfo.get(index).getFieldObjectInspector().getTypeName();
+    int colIndex = 0;
+    for (int index = 0; index < allColNumber; index++) {   // get and check column names
+      String typeName = allColInfo.get(colIndex).getFieldObjectInspector().getTypeName();
+      if (isSupportedSchema(typeName)) {
+        colNames[colIndex] = allColInfo.get(colIndex).getFieldName();
+        colTypes[colIndex] = typeName;
+        colIndex++;
+      }
     }
     assertArrayEquals("Column names need to be the same: ", colNames, h2oFrame._names);
 
     // compare one column at a time of the whole row?
+    compareFrameContents(h2oFrame, orcReader, colTypes, colNames, toInclude);
 
   }
 
+
+  private static void compareFrameContents(Frame h2oFrame, Reader orcReader, String[] colTypes, String[] colNames,
+                                           boolean[] toInclude) {
+    int colNumber = colTypes.length;
+
+    // prepare parameter to read a orc file.
+//    boolean[] toInclude = new boolean[colNumber+1];   // must equal to number of column+1
+//    Arrays.fill(toInclude, true);
+
+    List<StripeInformation> stripesInfo = orcReader.getStripes(); // get all stripe info
+
+    if (stripesInfo.size() == 0) {  // Orc file contains no data
+      assertEquals("Orc file is empty.  H2O frame row number should be zero: ", 0, h2oFrame.numRows());
+    } else {
+      Long startRowIndex = 0L;   // row index into H2O frame
+      for (StripeInformation oneStripe : stripesInfo) {
+        try {
+          RecordReader perStripe = orcReader.rows(oneStripe.getOffset(), oneStripe.getDataLength(), toInclude, null,
+                  colNames);
+          VectorizedRowBatch batch = perStripe.nextBatch(null);  // read orc file stripes in vectorizedRowBatch
+
+          boolean done = false;
+          Long rowCounts = 0L;
+          Long rowNumber = oneStripe.getNumberOfRows();   // row number of current stripe
+
+          while (!done) {
+            long currentBatchRow = batch.count();     // row number of current batch
+
+            ColumnVector[] dataVectors = batch.cols;
+
+            for (int cIdx = 0; cIdx < colNames.length; cIdx++) {   // read one column at a time;
+              compare1Cloumn(dataVectors[cIdx], colTypes[cIdx].toLowerCase(), cIdx, currentBatchRow, h2oFrame.vec(cIdx),
+                      startRowIndex);
+            }
+
+            rowCounts = rowCounts + currentBatchRow;    // record number of rows of data actually read
+            startRowIndex = startRowIndex + currentBatchRow;
+
+            if (rowCounts >= rowNumber)               // read all rows of the stripe already.
+              done = true;
+
+            if (!done)  // not done yet, get next batch
+              batch = perStripe.nextBatch(batch);
+          }
+
+          perStripe.close();
+        } catch (Throwable e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  private static void compare1Cloumn(ColumnVector oneColumn, String columnType, int cIdx, long currentBatchRow,
+                                     Vec h2oColumn, Long startRowIndex) {
+    switch (columnType) {
+      case "boolean":
+      case "bigint":
+      case "int":
+      case "smallint":
+      case "tinyint":
+      case "date":  //FIXME: make sure this is what the customer wants
+        CompareLongcolumn(oneColumn, oneColumn.isNull, currentBatchRow, h2oColumn, startRowIndex);
+        break;
+      case "float":
+      case "double":
+        compareDoublecolumn(oneColumn, oneColumn.isNull, currentBatchRow, h2oColumn, startRowIndex);
+        break;
+      case "string":
+      case "varchar":
+      case "char":
+      case "binary":  //FIXME: only reading it as string right now.
+        compareStringcolumn(oneColumn, oneColumn.isNull, currentBatchRow, h2oColumn, startRowIndex);
+        break;
+      case "timestamp": //FIXME: read in as a number
+        compareTimecolumn(oneColumn, oneColumn.isNull, currentBatchRow, h2oColumn, startRowIndex);
+        break;
+      case "decimal":   //FIXME: make sure we interpret this correctly, ignore the scale right now
+        compareDecimalcolumn(oneColumn, oneColumn.isNull, currentBatchRow, h2oColumn, startRowIndex);
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported Orc schema type: " + columnType);
+    }
+  }
+
+  private static void compareDecimalcolumn(ColumnVector oneDecimalColumn, boolean[] isNull,
+                                           long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
+    HiveDecimalWritable[] oneColumn= ((DecimalColumnVector) oneDecimalColumn).vector;
+    long frameRowIndex = startRowIndex;
+
+    for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
+      if (isNull[rowIndex])
+        System.out.println("Place holder here.");
+      else
+        assertEquals("Decimal elements should equal: ", Double.parseDouble(oneColumn[rowIndex].toString()),
+                h2oFrame.at(frameRowIndex), EPSILON);
+
+      frameRowIndex++;
+    }
+  }
+
+  private static void compareTimecolumn(ColumnVector oneTSColumn, boolean[] isNull, long currentBatchRow,
+                                        Vec h2oFrame, Long startRowIndex) {
+    long[] oneColumn = ((TimestampColumnVector) oneTSColumn).time;
+    long frameRowIndex = startRowIndex;
+
+    for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
+      if (isNull[rowIndex])
+        System.out.println("Place holder here.");
+      else
+        assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at8(frameRowIndex));
+    }
+
+    frameRowIndex++;
+  }
+
+  private static void compareStringcolumn(ColumnVector oneStringColumn, boolean[] isNull,
+                                          long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
+    byte[][] oneColumn = ((BytesColumnVector) oneStringColumn).vector;
+    int[] stringLength = ((BytesColumnVector) oneStringColumn).length;
+    int[] stringStart = ((BytesColumnVector) oneStringColumn).start;
+
+    long frameRowIndex = startRowIndex;
+
+    for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
+      if (isNull[rowIndex])
+        System.out.println("Place holder here.");
+      else {
+        BufferedString h2o = new BufferedString();
+        byte[] temp = new byte[stringLength[rowIndex]];
+        System.arraycopy(oneColumn[rowIndex], stringStart[rowIndex], temp, 0, stringLength[rowIndex]);
+        assertEquals("String/char elements should equal: ", new String(temp),
+                h2oFrame.atStr(h2o, frameRowIndex).toString());
+      }
+
+      frameRowIndex++;
+    }
+  }
+
+  private static void compareDoublecolumn(ColumnVector oneDoubleColumn, boolean[] isNull,
+                                          long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
+    double[] oneColumn= ((DoubleColumnVector) oneDoubleColumn).vector;
+    long frameRowIndex = startRowIndex;
+
+    for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
+      if (isNull[rowIndex])
+        System.out.println("Place holder here.");
+      else
+        assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at(frameRowIndex), EPSILON);
+
+      frameRowIndex++;
+    }
+  }
+
+  private static void CompareLongcolumn(ColumnVector oneLongColumn, boolean[] isNull,
+                                        long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
+    long[] oneColumn= ((LongColumnVector) oneLongColumn).vector;
+    long frameRowIndex = startRowIndex;
+
+    for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
+      if (isNull[rowIndex])
+        System.out.println("Place holder here.");
+      else
+        assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at8(frameRowIndex));
+
+      frameRowIndex++;
+    }
+  }
 }

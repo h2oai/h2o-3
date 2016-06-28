@@ -51,7 +51,8 @@ public class OrcParserProvider implements ParserProvider {
     try {
       OrcParser.OrcInfo OrcInfo = OrcParser.extractOrcInfo(bits, requiredSetup);
       return new OrcParser.OrcParseSetup(requiredSetup, OrcInfo.orcFileReader, OrcInfo.cumStripeSizes,
-              OrcInfo.totalFileSize, OrcInfo.stripesInfo, OrcInfo.columnTypesString, OrcInfo.maxStripeSize);
+              OrcInfo.totalFileSize, OrcInfo.stripesInfo, OrcInfo.columnTypesString, OrcInfo.maxStripeSize,
+              OrcInfo.toInclude, OrcInfo.allColumnNames);
     } catch (Throwable e) {
       throw new H2OIllegalArgumentException("Wrong data", "Cannot find Orc header in input file: " + firstInput, e);
     }
