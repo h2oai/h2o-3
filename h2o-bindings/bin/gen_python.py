@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 from builtins import range
+from builtins import str
 import re
 import bindings as bi
 
@@ -9,21 +10,24 @@ import bindings as bi
 class PythonTypeTranslator(bi.TypeTranslator):
     def __init__(self):
         bi.TypeTranslator.__init__(self)
+        self.types["byte"] = "int"
+        self.types["short"] = "int"
         self.types["long"] = "int"
-        self.types["float"] = "float"
+        self.types["double"] = "float"
         self.types["string"] = "str"
         self.types["boolean"] = "bool"
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
-        self.make_array = lambda itype: "list(%s)" % itype
-        self.make_array2 = lambda itype: "list(list(%s))" % itype
+        self.make_array = lambda vtype: "list(%s)" % vtype
+        self.make_array2 = lambda vtype: "list(list(%s))" % vtype
         self.make_map = lambda ktype, vtype: "Dictionary<%s,%s>" % (ktype, vtype)
         self.make_key = lambda itype, schema: "str"
         self.make_enum = lambda schema, values: " | ".join(stringify(v) for v in values) if values else schema
 
 type_adapter = PythonTypeTranslator()
 def translate_type(h2o_type, values=None):
-    return type_adapter.translate(h2o_type, h2o_type, values)
+    schema = h2o_type.replace("[]", "")
+    return type_adapter.translate(h2o_type, schema, values)
 
 def stringify(v):
     if v == "Infinity": return u'∞'
@@ -45,6 +49,17 @@ def reindent_block(string, new_indent):
         extra_indent = " " * (len(line) - len(dedented) - remove_indent)
         out += add_indent + extra_indent + dedented + "\n"
     return out.strip()
+
+
+# This is the list of all reserved keywords in Python. It is a syntax error to use any of them as an object's property.
+# Currently we have only "lambda" in GLM as a violator, but keeping the whole list here just to be future-proof.
+# For all such violating properties, we name the accessor with an underscore at the end (eg. lambda_), but at the same
+# time keep the actual name in self.params (i.e. model.lambda_ ≡ model.params["lambda"]).
+reserved_words = {
+    "and", "del", "from", "not", "while", "as", "elif", "global", "or", "with", "assert", "else", "if", "pass",
+    "yield", "break", "except", "import", "print", "class", "exec", "in", "raise", "continue", "finally", "is",
+    "return", "def", "for", "lambda", "try"
+}
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -72,17 +87,20 @@ def gen_module(schema, name):
     yield ""
     yield "class %s(H2OEstimator):" % classname
     yield "    \"\"\""
-    yield "    %s" % schema["algo_full_name"]
-    yield "    %s" % ("-" * len(schema["algo_full_name"]))
+    yield "    " + schema["algo_full_name"]
+    yield "    " + ("-" * len(schema["algo_full_name"]))
     if help_preamble:
         yield "    %s" % reindent_block(help_preamble, 4)
     yield ""
     yield "    Parameters (optional, unless specified otherwise)"
     yield "    ----------"
+    param_names = []
     for param in schema["parameters"]:
-        assert (param["type"] == "enum") == bool(param["values"]), "Values are expected for enum types only"
+        assert (param["type"][:4] == "enum") == bool(param["values"]), "Values are expected for enum types only"
         ptype = translate_type(param["type"], param["values"])
         name = param["name"]
+        if name in reserved_words: name += "_"
+        param_names.append(name)
         if param["required"]: ptype += ", required"
         yield "      %s : %s" % (name, bi.wrap(ptype, " " * (9 + len(name)), indent_first=False))
         yield bi. wrap(param["help"], " " * 8)
@@ -94,25 +112,32 @@ def gen_module(schema, name):
     yield "    \"\"\""
     yield "    def __init__(self, **kwargs):"
     yield "        super(%s, self).__init__()" % classname
-    yield "        self._parms = kwargs"
+    yield "        self._parms = {}"
+    yield "        for name in [" + bi.wrap(", ".join('"%s"' % p for p in param_names),
+                                            indent=(" " * 21), indent_first=False) + "]:"
+    yield "            pname = name[:-1] if name[-1] == '_' else name"
+    yield "            self._parms[pname] = kwargs[name] if name in kwargs else None"
     if init_extra:
-        yield "        %s" % reindent_block(init_extra, 8)
+        yield "        " + reindent_block(init_extra, 8)
     yield ""
     for param in schema["parameters"]:
         name = param["name"]
+        if name == "model_id": continue  # The getter is already defined in ModelBase
+        prop = name
+        if name in reserved_words: prop += "_"
         yield "    @property"
-        yield "    def %s(self):" % name
+        yield "    def %s(self):" % prop
         yield "        return self._parms[\"%s\"]" % name
         yield ""
-        yield "    @%s.setter" % name
-        yield "    def %s(self, value):" % name
+        yield "    @%s.setter" % prop
+        yield "    def %s(self, value):" % prop
         yield "        self._parms[\"%s\"] = value" % name
         yield ""
     if class_extra:
-        yield "    %s" % reindent_block(class_extra, 4)
+        yield "    " + reindent_block(class_extra, 4)
         yield ""
     if module_extra:
-        yield "%s" % reindent_block(module_extra, 0)
+        yield reindent_block(module_extra, 0)
         yield ""
 
 
@@ -186,19 +211,33 @@ def init_extra_for(algo):
     if algo == "deeplearning":
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
     if algo == "glm":
-        return """if self._parms["Lambda"] != None: self._parms["lambda"] = self._parms.pop("Lambda")"""
+        return """
+            if "Lambda" in kwargs:
+                self._parms["lambda"] = kwargs["Lambda"]"""
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
 
 def class_extra_for(algo):
     if algo == "glm":
+        # Before we were replacing .lambda property with .Lambda. However that violates Python naming conventions for
+        # variables, so now we prefer to map that property to .lambda_. The old name remains, for compatibility reasons.
         return """
-            \"\"\"
-            Extract full regularization path explored during lambda search from glm model.
-            @param model - source lambda search model
-            \"\"\"
+            @property
+            def Lambda(self):
+                \"""[DEPRECATED] Use self.lambda_ instead\"""
+                return self._parms["lambda"] if "lambda" in self._parms else None
+
+            @Lambda.setter
+            def lambda_(self, value):
+                \"""[DEPRECATED] Use self.lambda_ instead\"""
+                self._parms["lambda"] = value
+
             @staticmethod
             def getGLMRegularizationPath(model):
+                \"\"\"
+                Extract full regularization path explored during lambda search from glm model.
+                @param model - source lambda search model
+                \"\"\"
                 x = H2OConnection.get_json("GetGLMRegPath", model=model._model_json["model_id"]["name"])
                 ns = x.pop("coefficient_names")
                 res = {
@@ -211,15 +250,15 @@ def class_extra_for(algo):
                     res["coefficients_std"] = [dict(zip(ns,y)) for y in x["coefficients_std"]]
                 return res
 
-            \"\"\"
-            Create a custom GLM model using the given coefficients.
-            Needs to be passed source model trained on the dataset to extract the dataset information from.
-              @param model - source model, used for extracting dataset information
-              @param coefs - dictionary containing model coefficients
-              @param threshold - (optional, only for binomial) decision threshold used for classification
-            \"\"\"
             @staticmethod
             def makeGLMModel(model, coefs, threshold=.5):
+                \"\"\"
+                Create a custom GLM model using the given coefficients.
+                Needs to be passed source model trained on the dataset to extract the dataset information from.
+                  @param model - source model, used for extracting dataset information
+                  @param coefs - dictionary containing model coefficients
+                  @param threshold - (optional, only for binomial) decision threshold used for classification
+                \"\"\"
                 model_json = H2OConnection.post_json("MakeGLMModel", model=model._model_json["model_id"]["name"],
                     names=list(coefs.keys()), beta=list(coefs.values()), threshold=threshold)
                 m = H2OGeneralizedLinearEstimator()
@@ -245,18 +284,36 @@ def module_extra_for(algo):
                 pass"""
 
 
+def gen_init(modules):
+    yield "#!/usr/bin/env python"
+    yield "# -*- encoding: utf-8 -*-"
+    yield "#"
+    yield "# This file is auto-generated by h2o-3/h2o-bindings/bin/gen_python.py"
+    yield "# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)"
+    yield "#"
+    for module, clz in modules:
+        yield "from .%s import %s" % (module, clz)
+    yield ""
+    yield "__all__ = ["
+    yield bi.wrap(", ".join('"%s"' % clz for _, clz in modules), indent="    ")
+    yield "]"
+
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
 # ----------------------------------------------------------------------------------------------------------------------
 def main():
-    bi.init("Python", "python")
+    bi.init("Python", "../../../h2o-py/h2o/estimators", clear_dir=False)
 
+    modules = [("deeplearning", "H2OAutoEncoderEstimator")]  # deeplearning module contains 2 classes in it...
     for name, mb in bi.model_builders().items():
         module = name
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
+        modules.append((module, algo_to_classname(name)))
+
+    bi.write_to_file("__init__.py", gen_init(modules))
 
     type_adapter.vprint_translation_map()
 
