@@ -12,6 +12,7 @@ public class FVecParseReader implements ParseReader {
   Chunk _chk;
   int _idx;
   final long _firstLine;
+  private long _goffset = 0;
   public FVecParseReader(Chunk chk){
     _chk = chk;
     _idx = _chk.cidx();
@@ -21,9 +22,14 @@ public class FVecParseReader implements ParseReader {
   @Override public byte[] getChunkData(int cidx) {
     if(cidx != _idx)
       _chk = cidx < _vec.nChunks()?_vec.chunkForChunkIdx(_idx = cidx):null;
-    return (_chk == null)?null:_chk.getBytes();
+    if(_chk == null)
+      return null;
+    _goffset = _chk.start();
+    return _chk.getBytes();
   }
   @Override public int  getChunkDataStart(int cidx) { return -1; }
   @Override public void setChunkDataStart(int cidx, int offset) { }
-  @Override public long getGlobalByteOffset(){return _chk.start();}
+  @Override public long getGlobalByteOffset(){
+    return _goffset;
+  }
 }

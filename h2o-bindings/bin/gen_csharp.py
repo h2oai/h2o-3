@@ -14,6 +14,7 @@ class CSharpTypeTranslator(bi.TypeTranslator):
         self.make_map = lambda ktype, vtype: "Dictionary<%s,%s>" % (ktype, vtype)
         self.make_key = lambda itype, schema: "string"
 
+type_adapter = CSharpTypeTranslator()
 def translate_type(h2o_type, schema):
     return type_adapter.translate(h2o_type, schema)
 
@@ -76,9 +77,8 @@ def generate_enum(name, values):
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
 # ----------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+def main():
     bi.init("C#", "CSharp")
-    type_adapter = CSharpTypeTranslator()
 
     for schema in bi.schemas():
         name = schema["name"]
@@ -90,3 +90,7 @@ if __name__ == "__main__":
         bi.write_to_file("h2o/%s.cs" % name, generate_enum(name, sorted(values)))
 
     type_adapter.vprint_translation_map()
+
+
+if __name__ == "__main__":
+    main()

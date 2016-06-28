@@ -85,6 +85,10 @@ public class RequestUri {
       if (ver.equals("EXPERIMENTAL")) ver = ((Integer) SchemaServer.getExperimentalVersion()).toString();
       if (ver.equals("LATEST")) ver = ((Integer) SchemaServer.getLatestOrHighestSupportedVersion()).toString();
 
+      // Old clients (h2o-2) tend to append .json suffix to the endpoint's name -- fixing that
+      if (path[2].endsWith(".json"))
+        path[2] = path[2].substring(0, path[2].length() - 5);
+
       path[1] = method;
       path[path.length - 1] = ver;
     }

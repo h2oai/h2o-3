@@ -4,6 +4,7 @@ import org.apache.commons.lang.ArrayUtils;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 /**
@@ -95,9 +96,11 @@ public class IcedWrapper extends Iced {
       } else if (clz == String.class) {
         t = "S";
         s_ar = (String[])o;
-      } else if (clz == Enum.class) {
+      } else if (clz.isEnum()) {
         t = "E";
-        e_ar = (String[])o;
+        e_ar = new String[Array.getLength(o)];
+        for (int i = 0; i < e_ar.length; i++)
+          e_ar[i] = Array.get(o, i).toString();
       } else if (o instanceof KeyV3[]) {
         t = "K";
         k_ar = (KeyV3[])o;

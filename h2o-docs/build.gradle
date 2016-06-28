@@ -6,25 +6,6 @@ dependencies {
     compile project(":h2o-assembly")
 }
 
-def runner = new File("$rootDir/scripts/run.py").canonicalPath
-
-// REST API Documentation generator
-// --------------------------------
-
-def restGenPath = new File("$rootDir/h2o-bindings/bin")
-
-task runGenerateRESTAPIDocs(type: Exec) {
-    workingDir restGenPath
-    commandLine 'python', runner, '--wipeall', '--baseport', '48000', '--numclouds', '1', '--jvm.xmx', '4g',
-            '--test', 'gen_docs_json.py'
-}
-
-task cleanGenerateRESTAPIDocs(type: Delete) {
-    delete "$restGenPath/results"
-}
-
-build.dependsOn runGenerateRESTAPIDocs
-clean.dependsOn cleanGenerateRESTAPIDocs
 
 
 // Latex Booklets

@@ -30,7 +30,7 @@ public class ASTNumList extends ASTParameter {
   final boolean _isList; // True if an unordered list of numbers (cnts are 1, stride is ignored)
         boolean _isSort; // True if bases are sorted.  May get updated later.
   
-  ASTNumList( Exec e ) {
+  ASTNumList( Rapids e ) {
     ArrayList<Double> bases  = new ArrayList<>();
     ArrayList<Double> strides= new ArrayList<>();
     ArrayList<Long>   cnts   = new ArrayList<>();

@@ -13,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -121,9 +122,11 @@ public class PersistManager {
     }
 
     try {
-      I[Value.S3  ] = new PersistS3();
+      Class klass = Class.forName("water.persist.PersistS3");
+      java.lang.reflect.Constructor constructor = klass.getConstructor();
+      I[Value.S3] = (Persist) constructor.newInstance();
       Log.info("S3 subsystem successfully initialized");
-    } catch (NoClassDefFoundError ignore) {
+    } catch (Throwable ignore) {
       Log.info("S3 subsystem not available");
     }
   }
@@ -165,7 +168,9 @@ public class PersistManager {
   public final Key anyURIToKey(URI uri) throws IOException {
     Key ikey = null;
     String scheme = uri.getScheme();
-    if ("hdfs".equals(scheme)) {
+    if("s3".equals(scheme)) {
+      ikey = I[Value.S3].uriToKey(uri);
+    } else if ("hdfs".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
     } else if ("s3".equals(scheme) || "s3n".equals(scheme) || "s3a".equals(scheme)) {
       ikey = I[Value.HDFS].uriToKey(uri);
@@ -196,7 +201,7 @@ public class PersistManager {
    * @param limit Max number of entries to return
    * @return List of matches
    */
-  public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
+  public List<String> calcTypeaheadMatches(String filter, int limit) {
     String s = filter.toLowerCase();
     if (s.startsWith("http:") || s.startsWith("https:")) {
       if (httpUrlExists(filter)) {
@@ -207,8 +212,9 @@ public class PersistManager {
       else {
         return new ArrayList<>();
       }
-    }
-    else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") ||
+    } else if(s.startsWith("s3://")) {
+      return I[Value.S3].calcTypeaheadMatches(filter, limit);
+    } else if (s.startsWith("hdfs:") || s.startsWith("s3:") || s.startsWith("s3n:") ||
              s.startsWith("s3a:") || s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) {
         throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
@@ -254,12 +260,16 @@ public class PersistManager {
       return;
     }
 
-    if( s.startsWith("hdfs:") || 
-        s.startsWith("s3:") || 
+    if(s.startsWith("s3:")) {
+      if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
+      I[Value.S3].importFiles(path, files, keys, fails, dels);
+      return;
+    }
+    if( s.startsWith("hdfs:") ||
         s.startsWith("s3n:") || 
         s.startsWith("s3a:") || 
         s.startsWith("maprfs:")) {
-      if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3, S3N, and S3A support is not configured");
+      if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3N, and S3A support is not configured");
       I[Value.HDFS].importFiles(path, files, keys, fails, dels);
       return;
     }

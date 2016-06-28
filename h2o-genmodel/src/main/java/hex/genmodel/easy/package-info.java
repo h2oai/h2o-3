@@ -18,6 +18,14 @@
  *   GenModel rawModel;
  *   rawModel = (GenModel) Class.forName(modelClassName).newInstance();
  *   EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
+ *   //
+ *   // By default, unknown categorical levels throw PredictUnknownCategoricalLevelException.
+ *   // Optionally configure the wrapper to treat unknown categorical levels as N/A instead:
+ *   //
+ *   //     EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+ *   //                                         new EasyPredictModelWrapper.Config()
+ *   //                                             .setModel(rawModel)
+ *   //                                             .setConvertUnknownCategoricalLevelsToNa(true));
  *
  *   // Step 2.
  *   RowData row = new RowData();
