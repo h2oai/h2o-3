@@ -17,7 +17,7 @@ process.
 The color scheme in the diagram shows each layer in a consistent color
 but always shows user-added customer algorithm code as gray.
 
-.. image:: ../images/h2o_stack.png
+.. image:: images/h2o_stack.png
    :alt: H2O stack
    
 
@@ -109,14 +109,14 @@ H2O cluster to read data from HDFS into a distributed H2O Frame.
 **Step 1: The R user calls the importFile function**
 
 
-.. image:: ../images/r_hdfs_read_step1.png
+.. image:: images/r_hdfs_read_step1.png
    :alt: r_hdfs_read_step1
 
 **Step 2: The R client tells the cluster to read the data**
 
 The thin arrows show control information.
 
-.. image:: ../images/r_hdfs_read_step2.png
+.. image:: images/r_hdfs_read_step2.png
    :alt: r_hdfs_read_step2
 
 **Step 3: The data is returned from HDFS into a distributed H2O Frame**
@@ -125,7 +125,7 @@ The thin arrows show control information. The thick arrows show data
 being returned from HDFS. The blocks of data live in the distributed H2O
 Frame cluster memory.
 
-.. image:: ../images/r_hdfs_read_step3.png
+.. image:: images/r_hdfs_read_step3.png
    :alt: r_hdfs_read_step3
 
 How R Scripts Call H2O GLM
@@ -149,7 +149,7 @@ In the R program, the different components are:
 -  dependent packages (RCurl, rjson, etc.)
 -  the R core runtime
 
-.. figure:: ../images/start_glm_from_r.png
+.. figure:: images/start_glm_from_r.png
    :alt: start_glm_from_r
 
 The following diagram shows the R program retrieving the resulting GLM
@@ -157,14 +157,14 @@ model. (Not shown: the GLM model executing subtasks within H2O and
 depositing the result into the K/V store or R polling the /3/Jobs URL
 for the GLM model to complete.)
 
-.. figure:: ../images/retrieve_glm_result_from_r.png
+.. figure:: images/retrieve_glm_result_from_r.png
    :alt: retrieve_glm_result_from_r
 
 An end-to-end sequence diagram of the same transaction is below. This
 gives a different perspective of the R and H2O interactions for the same
 GLM request and the resulting model.
 
-.. figure:: ../images/run_glm_from_r.png
+.. figure:: images/run_glm_from_r.png
    :alt: run_glm_from_r
 
 How R Expressions are Sent to H2O for Evaluation

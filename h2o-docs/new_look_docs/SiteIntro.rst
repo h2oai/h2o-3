@@ -24,14 +24,14 @@ We welcome your feedback! Please let us know if you have any questions
 or comments about H2O by clicking the chat balloon button in the
 lower-right corner in Flow (H2O's web UI).
 
-.. image:: ../images/ChatButton.png
+.. image:: images/ChatButton.png
    :alt: Chat Button
 
 Type your question in the entry field that appears at the bottom of the
 sidebar and you will be connected with an H2O expert who will respond to
 your query in real time.
 
-.. image:: ../images/ChatSidebar.png
+.. image:: images/ChatSidebar.png
    :alt: Chat Sidebar
  
 

@@ -276,7 +276,7 @@ more than one role group.**
    field. If more than one group is listed, change the values for all
    listed groups.
 
-   .. figure:: ../images/TroubleshootingHadoopClouderayarnnodemgr.png
+   .. figure:: images/TroubleshootingHadoopClouderayarnnodemgr.png
       :alt: Cloudera Configuration
 
 3. Click the **Save Changes** button in the upper-right corner.
@@ -287,7 +287,7 @@ more than one role group.**
 5. Change the value, click the **Save Changes** button in the
    upper-right corner, and redeploy.
 
-  .. figure:: ../images/TroubleshootingHadoopClouderayarnscheduler.png
+  .. figure:: images/TroubleshootingHadoopClouderayarnscheduler.png
      :alt: Cloudera Configuration
 
 **For Hortonworks,**
@@ -300,12 +300,12 @@ more than one role group.**
 
 3. In the **Node Manager** section, enter the amount of memory (in MB) to allocate in the **yarn.nodemanager.resource.memory-mb** entry field.
 
-  .. figure:: ../images/TroubleshootingHadoopAmbariNodeMgr.png
+  .. figure:: images/TroubleshootingHadoopAmbariNodeMgr.png
      :alt: Ambari Configuration
 
 4. In the **Scheduler** section, enter the amount of memory (in MB) to allocate in the **yarn.scheduler.maximum-allocation-mb** entry field.
 
-  .. figure:: ../images/TroubleshootingHadoopAmbariyarnscheduler.png
+  .. figure:: images/TroubleshootingHadoopAmbariyarnscheduler.png
      :alt: Ambari Configuration
 
 5. Click the **Save** button at the bottom of the page and redeploy the

@@ -159,7 +159,7 @@ To generate p-values, do one of the following:
 The p-values are listed in the coefficients table (as shown in the
 following example screenshot):
 
-.. figure:: ../images/Flow_Pvalues.png
+.. figure:: images/Flow_Pvalues.png
    :alt: Coefficients Table with P-values
 
 --------------
@@ -315,7 +315,7 @@ To convert the response column:
 -  Before parsing, click the drop-down menu to the right of the column
    name or number and select ``Enum``
 
-.. figure:: ../images/Flow_Parse_ConvertEnum.png
+.. figure:: images/Flow_Parse_ConvertEnum.png
    :alt: Parsing - Convert to Enum
 
 or
@@ -325,7 +325,7 @@ or
    ``<frame_name>`` is the name of the frame), then click the **Convert
    to enum** link to the right of the column name or number
 
-.. figure:: ../images/Flow_Summary_ConvertToEnum.png
+.. figure:: images/Flow_Summary_ConvertToEnum.png
    :alt: Summary - Convert to Enum
 
 --------------
@@ -1071,7 +1071,7 @@ In Flow, the easiest way is to let the auto-suggestion feature in the
 the file, starting with the top-level directory, and H2O provides a list
 of matching files.
 
-.. figure:: ../images/Flow_Import_AutoSuggest.png
+.. figure:: images/Flow_Import_AutoSuggest.png
    :alt: Flow - Import Auto-Suggest
 
 Click the file to add it to the *Search:* field.

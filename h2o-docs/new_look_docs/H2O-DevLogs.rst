@@ -59,18 +59,18 @@ software, version, and job status, see `Accessing YARN`_.
 1. Click the **Applications** link to view all jobs, then click the
    **History** link for the job.
 
-   .. figure:: ../images/YARN_AllApps_History.png
+   .. figure:: images/YARN_AllApps_History.png
        :alt: Application History
        
 2. Click the **logs** link.
 
-   .. figure:: ../images/YARN_History_Logs.png
+   .. figure:: images/YARN_History_Logs.png
        :alt: YARN History Logs
  
 3. Copy the information that displays and send it in an email to
    support@h2o.ai.
    
-   .. figure:: ../images/YARN_history_Logs2.png
+   .. figure:: images/YARN_history_Logs2.png
        :alt: Logs for Support
 
 --------------
@@ -88,22 +88,22 @@ If you are using Hadoop and the job is still running:
 1. Click the **Applications** link to view all jobs, then click the
    **ApplicationMaster** link for the job.
 
-   .. figure:: ../images/YARN_AllApps_AppMaster.png
+   .. figure:: images/YARN_AllApps_AppMaster.png
       :alt: YARN - Application Master
 
 2. Select the job from the list of active jobs.
 
-   .. figure:: ../images/YARN_AppMaster_Job.png
+   .. figure:: images/YARN_AppMaster_Job.png
       :alt: YARN - Application Master
 
 3. Click the **logs** link.
 
-   .. figure:: ../images/YARN_AppMaster_Logs.png
+   .. figure:: images/YARN_AppMaster_Logs.png
       :alt: YARN - Application Master
 
 4. Send the contents of the displayed files to support@h2o.ai.
 
-   .. figure:: ../images/YARN_AppMaster_Logs2.png
+   .. figure:: images/YARN_AppMaster_Logs2.png
       :alt: YARN - Application Master
 
 --------------
@@ -179,14 +179,14 @@ Cloudera 5 & 5.2
 
 1. In Cloudera Manager, click the **YARN** link in the cluster section.
 
-  .. figure:: ../images/Logs_cloudera5_1.png
+  .. figure:: images/Logs_cloudera5_1.png
      :alt: Cloudera Manager
 
 2. In the Quick Links section, select **ResourceManager Web UI** if the
    job is running or select **HistoryServer Web UI** if the job is not
    running.
 
-  .. figure:: ../images/Logs_cloudera5_2.png
+  .. figure:: images/Logs_cloudera5_2.png
      :alt: Cloudera Manager
 
 --------------
@@ -196,12 +196,12 @@ Ambari
 
 1. From the Ambari Dashboard, select **YARN**.
 
-  .. figure:: ../images/Logs_ambari1.png
+  .. figure:: images/Logs_ambari1.png
      :alt: Ambari
 
 2. From the Quick Links drop-down menu, select **ResourceManager UI**.
 
-  .. figure:: ../images/Logs_ambari2.png
+  .. figure:: images/Logs_ambari2.png
      :alt: Ambari
 
 --------------

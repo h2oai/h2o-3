@@ -89,7 +89,7 @@ Accessing Help
 
 Within the Flow web page, pressing the ``h`` key will open a list of helpful shortcuts on your screen:
 
-.. figure:: ../images/Flow_shortcuts.png
+.. figure:: images/Flow_shortcuts.png
    :alt: help menu
 
 To close this window, click the **X** in the upper-right corner or
@@ -101,13 +101,13 @@ Shortcuts**.
 For additional help, click **Help** > **Assist Me** or click the
 **Assist Me!** button in the row of buttons below the menus.
 
-.. figure:: ../images/Flow_AssistMeButton.png
+.. figure:: images/Flow_AssistMeButton.png
    :alt: Assist Me
 
 You can also type ``assist`` in a blank cell and press **Ctrl+Enter**. A
 list of common tasks displays to help you find the correct command.
 
-.. figure:: ../images/Flow_assist.png
+.. figure:: images/Flow_assist.png
    :alt: Assist Me links
 
 There are multiple resources to help you get started with Flow in the
@@ -115,12 +115,12 @@ There are multiple resources to help you get started with Flow in the
 
 **Note**: To hide the sidebar, click the >> button above it
 
-  .. figure:: ../images/Flow_SidebarHide.png
+  .. figure:: images/Flow_SidebarHide.png
 
 
 To display the sidebar if it is hidden, click the >> button
 
-  .. figure:: ../images/Flow_SidebarHide.png
+  .. figure:: images/Flow_SidebarHide.png
 
 To access this documentation, select the **Flow Web UI...** link below
 the **General** heading in the Help sidebar.
@@ -141,7 +141,7 @@ You can explore the pre-configured flows available in H2O Flow for a demonstrati
    subsection of the **Help** sidebar. Click the **examples** folder and
    select the example flow from the list.
 
-.. figure:: ../images/Flow_ExampleFlows.png
+.. figure:: images/Flow_ExampleFlows.png
    :alt: Flow Packs
 
 If you have a flow currently open, a confirmation window appears asking
@@ -155,7 +155,7 @@ To view the REST API documentation, click the **Help** tab in the
 sidebar and then select the type of REST API documentation (**Routes**
 or **Schemas**).
 
-.. figure:: ../images/Flow_REST_docs.png
+.. figure:: images/Flow_REST_docs.png
    :alt: REST API documentation
 
 Before getting started with H2O Flow, make sure you understand the different cell modes. (Refer to `Understanding Cell Modes`_.) Certain actions can only be performed when the cell is in a specific mode.
@@ -184,7 +184,7 @@ cell (highlighted in the red box in the following screenshot).
 To use a clip in a workflow, click the "Clips" tab in the sidebar on the
 right.
 
-.. figure:: ../images/Flow_clips.png
+.. figure:: images/Flow_clips.png
    :alt: Clips tab
 
 All saved clips, including the default system clips (such as ``assist``,
@@ -211,7 +211,7 @@ currently used in your flow; essentially, a command history.
 -  To jump to a specific cell, click the cell description.
 -  To delete a cell, select it and press the X key on your keyboard.
 
- .. figure:: ../images/Flow_outline.png
+ .. figure:: images/Flow_outline.png
     :alt: View Outline
 
 
@@ -227,20 +227,20 @@ Flow." To enter a custom name for the flow, click the default flow name
 ("Untitled Flow") and type the desired flow name. A pencil icon
 indicates where to enter the desired name.
 
-.. figure:: ../images/Flow_rename.png
+.. figure:: images/Flow_rename.png
    :alt: Renaming Flows
 
 
 To confirm the name, click the checkmark to the right of the name field.
 
-.. figure:: ../images/Flow_rename2.png
+.. figure:: images/Flow_rename2.png
    :alt: Confirm Name
 
 To reuse a saved flow, click the "Flows" tab in the sidebar, then click
 the flow name. To delete a saved flow, click the trashcan icon to the
 right of the flow name.
 
-.. figure:: ../images/Flow_flows.png
+.. figure:: images/Flow_flows.png
    :alt: Flows
 
 
@@ -312,7 +312,7 @@ To load a saved flow, click the **Flows** tab in the sidebar at the
 right. In the pop-up confirmation window that appears, select **Load
 Notebook**, or click **Cancel** to return to the current flow.
 
-.. figure:: ../images/Flow_confirmreplace.png
+.. figure:: images/Flow_confirmreplace.png
    :alt: Confirm Replace Flow
 
 After clicking **Load Notebook**, the saved flow is loaded.
@@ -321,7 +321,7 @@ To load an exported flow, click the **Flow** menu and select **Open
 Flow...**. In the pop-up window that appears, click the **Choose File**
 button and select the exported flow, then click the **Open** button.
 
-.. figure:: ../images/Flow_Open.png
+.. figure:: images/Flow_Open.png
    :alt: Open Flow
 
 **Notes**:
@@ -351,7 +351,7 @@ In edit mode, the cell is yellow with a blinking bar
 to indicate where text can be entered and there is an orange flag to the
 left of the cell.
 
-.. figure:: ../images/Flow_EditMode.png
+.. figure:: images/Flow_EditMode.png
    :alt: Edit Mode
 
 .. _Using Command Mode: 
@@ -368,33 +368,33 @@ In command mode, the flag is yellow. The flag also indicates the cell's format:
  -  clicking the **Run** button |Flow - Run Button| or
  -  pressing **Ctrl+Enter**
 
- .. figure:: ../images/Flow_markdown.png
+ .. figure:: images/Flow_markdown.png
     :alt: Flow - Markdown
 
 -  **CS**: Code (default)
 
-  .. figure:: ../images/Flow_parse_code_ex.png
+  .. figure:: images/Flow_parse_code_ex.png
      :alt: Flow - Code
 
 -  **RAW**: Raw format (for code comments)
 
-  .. figure:: ../images/Flow_raw.png
+  .. figure:: images/Flow_raw.png
      :alt: Flow - Raw
 
 -  **H[1-6]**: Heading level (where 1 is a first-level heading)
 
-  .. figure:: ../images/Flow_headinglevels.png
+  .. figure:: images/Flow_headinglevels.png
      :alt: Flow - Heading Levels
 
  **NOTE**: If there is an error in the cell, the flag is red.
 
-  .. figure:: ../images/Flow_redflag.png
+  .. figure:: images/Flow_redflag.png
      :alt: Cell error
 
 If the cell is executing commands, the flag is teal. The flag returns to
 yellow when the task is complete.
 
-.. figure:: ../images/Flow_cellmode_runningflag.png
+.. figure:: images/Flow_cellmode_runningflag.png
    :alt: Cell executing
 
 --------------
@@ -436,7 +436,7 @@ Running Cells
 The series of buttons at the top of the page below the menus run cells
 in a flow.
 
-.. figure:: ../images/Flow_RunButtons.png
+.. figure:: images/Flow_RunButtons.png
    :alt: Flow - Run Buttons
 
 -  To run all cells in the flow, click the **Flow** menu, then click
@@ -459,7 +459,7 @@ When you run the flow, a progress bar indicates the current status of
 the flow. You can cancel the currently running flow by clicking the
 **Stop** button in the progress bar.
 
-.. figure:: ../images/Flow_progressbar.png
+.. figure:: images/Flow_progressbar.png
    :alt: Flow Progress Bar
 
 
@@ -498,15 +498,15 @@ To use a variable in Flow:
 
 1. Define the variable in a code cell (for example, ``locA = "https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv"``).
 
-   .. figure:: ../images/Flow_VariableDefinition.png
+   .. figure:: images/Flow_VariableDefinition.png
 
 2. Run the cell. H2O validates the variable.
 
-  .. figure:: ../images/Flow_VariableValidation.png
+  .. figure:: images/Flow_VariableValidation.png
 
 3. Use the variable in another code cell (for example, ``importFiles [locA]``). 
 
-  .. figure:: ../images/Flow_VariableExample.png
+  .. figure:: images/Flow_VariableExample.png
 
 
 To further simplify your workflow, you can save the cells containing the variables and definitions as clips. (Refer to `Using Clips`_.)
@@ -520,7 +520,7 @@ up or down, run the current cell, and cut, copy, or paste the current
 cell. If you hover over the button, a description of the button's
 function displays.
 
-.. figure:: ../images/Flow_buttons.png
+.. figure:: images/Flow_buttons.png
    :alt: Flow buttons
 
 | You can also use the menus at the top of the screen to edit the order
@@ -582,7 +582,7 @@ displays. A summary displays the results of the file import, including
 the number of imported files and their Network File System (nfs)
 locations.
 
-.. figure:: ../images/Flow_import_results.png
+.. figure:: images/Flow_import_results.png
    :alt: Import Files - Results
 
 
@@ -593,14 +593,14 @@ To upload a local file, click the **Data** menu and select **Upload
 File...**. Click the **Choose File** button, select the file, click the
 **Choose** button, then click the **Upload** button.
 
-.. figure:: ../images/Flow_UploadDataset.png
+.. figure:: images/Flow_UploadDataset.png
    :alt: File Upload Pop-Up
 
 
 When the file has uploaded successfully, a message displays in the upper
 right and the **Setup Parse** cell displays.
 
-.. figure:: ../images/Flow_FileUploadPass.png
+.. figure:: images/Flow_FileUploadPass.png
    :alt: File Upload Successful
 
 Ok, now that your data is available in H2O Flow, let's move on to the
@@ -613,7 +613,7 @@ Parsing Data
 
 After you have imported your data, parse the data.
 
-.. figure:: ../images/Flow_parse_setup.png
+.. figure:: images/Flow_parse_setup.png
    :alt: Flow - Parse options
 
 
@@ -645,7 +645,7 @@ The read-only **Sources** field shows the file path for the imported data select
 
 A preview of the data displays in the "Edit Column Names and Types" section. To change or add a column name, edit or enter the text in the column's entry field. In the screenshot below, the entry field for column 16 is highlighted in red.
 
-.. figure:: ../images/Flow_ColNameEntry.png
+.. figure:: images/Flow_ColNameEntry.png
    :alt: Flow - Column Name Entry Field
 
 To change the column type, select the drop-down list to the right of the column name entry field and select the data type. The options are:
@@ -668,13 +668,13 @@ cannot be searched.
 To navigate the data preview, click the **<- Previous page** or **->
 Next page** buttons.
 
-.. figure:: ../images/Flow_PageButtons.png
+.. figure:: images/Flow_PageButtons.png
    :alt: Flow - Pagination buttons
 
 After making your selections, click the **Parse** button. The code for the current job
 displays.
 
-.. figure:: ../images/Flow_parse_code_ex.png
+.. figure:: images/Flow_parse_code_ex.png
    :alt: Flow - Parse code
 
 
@@ -694,7 +694,7 @@ Viewing All Jobs
 To view all jobs, click the **Admin** menu, then click **Jobs**, or
 enter ``getJobs`` in a cell in CS mode.
 
-.. figure:: ../images/Flow_getJobs.png
+.. figure:: images/Flow_getJobs.png
    :alt: View Jobs
 
 The following information displays:
@@ -714,7 +714,7 @@ Viewing Specific Jobs
 
 To view a specific job, click the link in the "Destination" column.
 
-.. figure:: ../images/Flow_ViewJob_Model.png
+.. figure:: images/Flow_ViewJob_Model.png
    :alt: View Job - Model
 
 The following information displays:
@@ -756,7 +756,7 @@ the .hex key for the parsed data (for example, ``getJobs`` >
 ``getFrame``). The following image depicts the K-Means model type.
 Available options vary depending on model type.
 
-.. figure:: ../images/Flow_ModelBuilder.png
+.. figure:: images/Flow_ModelBuilder.png
    :alt: Model Builder
 
 
@@ -1205,7 +1205,7 @@ Click the **Assist Me!** button, then click the **getModels** link, or
 enter ``getModels`` in the cell in CS mode and press **Ctrl+Enter**. A
 list of available models displays.
 
-.. figure:: ../images/Flow_getModels.png
+.. figure:: images/Flow_getModels.png
    :alt: Flow Models
 
 To view all current models, you can also click the **Model** menu and
@@ -1214,7 +1214,7 @@ click **List All Models**.
 To inspect a model, check its checkbox then click the **Inspect**
 button, or click the **Inspect** button to the right of the model name.
 
-.. figure:: ../images/Flow_GetModel.png
+.. figure:: images/Flow_GetModel.png
    :alt: Flow Model
 
 
@@ -1253,7 +1253,7 @@ Exporting and Importing Models
 6. Click the **Export** button. A confirmation message displays when the
    model has been successfully exported.
 
-.. figure:: ../images/ExportModel.png
+.. figure:: images/ExportModel.png
    :alt: Export Model
 
 
@@ -1271,7 +1271,7 @@ Exporting and Importing Models
    model has been successfully imported. To view the imported model,
    click the **View Model** button.
 
-.. figure:: ../images/ImportModel.png
+.. figure:: images/ImportModel.png
    :alt: Import Model
 
 
@@ -1284,7 +1284,7 @@ To include a parameter in a grid search in Flow, check the checkbox in
 the *GRID?* column to the right of the parameter name (highlighted in
 red in the image below).
 
-.. figure:: ../images/Flow_GridSearch.png
+.. figure:: images/Flow_GridSearch.png
    :alt: Grid Search Column
 
 
@@ -1381,7 +1381,7 @@ higher at the beginning (the left side of the graph) then decrease as
 the model building completes and accuracy improves. Can include mean
 squared error (MSE) and deviance.
 
-.. figure:: ../images/Flow_ScoringHistory.png
+.. figure:: images/Flow_ScoringHistory.png
    :alt: Scoring History example
 
 **Variable importances**: (GBM, DL) Represents the
@@ -1393,7 +1393,7 @@ variable's importance depends on the algorithm. To view the scaled
 importance value of a variable, use your mouse to hover over the bar
 representing the variable.
 
-.. figure:: ../images/Flow_VariableImportances.png
+.. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
 
 
@@ -1405,7 +1405,7 @@ yellow. In the example below, ``0`` was predicted correctly 902 times,
 while ``8`` was predicted correctly 822 times and ``0`` was predicted as
 ``4`` once.
 
-.. figure:: ../images/Flow_ConfusionMatrix.png
+.. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
 
 
@@ -1426,12 +1426,12 @@ positives while the upper-right represents more tolerance for false
 positives. Ideally, a highly accurate ROC resembles the following
 example.
 
-.. figure:: ../images/Flow_ROC.png
+.. figure:: images/Flow_ROC.png
    :alt: ROC Curve example
 
 **Hit Ratio**: (GBM, DRF, NaiveBayes, DL, GLM) (Multinomial Classification only) Table representing the number of times that the prediction was correct out of the total number of predictions.
 
-.. figure:: ../images/HitRatioTable.png
+.. figure:: images/HitRatioTable.png
    :alt: Hit Ratio Table
 
 
@@ -1445,7 +1445,7 @@ represents a negative relationship between the feature and the response
 where an increase in the feature corresponds with a decrease in the
 response (or vice versa).
 
-.. figure:: ../images/SCM.png
+.. figure:: images/SCM.png
    :alt: Standardized Coefficient Magnitudes
 
 
@@ -1465,7 +1465,7 @@ the drop-down **Model:** menu and the data frame to use in the
 prediction from the drop-down **Frame:** menu, then click the
 **Predict** button.
 
-.. figure:: ../images/Flow_makePredict.png
+.. figure:: images/Flow_makePredict.png
    :alt: Making Predictions
 
 
@@ -1478,7 +1478,7 @@ or enter ``getPredictions`` in the cell in CS mode and press
 **Ctrl+Enter**. A list of the stored predictions displays. To view a
 prediction, click the **View** button to the right of the model name.
 
-.. figure:: ../images/Flow_getPredict.png
+.. figure:: images/Flow_getPredict.png
    :alt: Viewing Predictions
 
 You can also view predictions by clicking the drop-down **Score** menu
@@ -1506,7 +1506,7 @@ To compute Gains/Lift, H2O applies the model to the original dataset to find the
 
 For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets). 
 
-.. figure:: ../images/GainsLift.png
+.. figure:: images/GainsLift.png
    :alt: Gains/Lift Chart
 
 **Note**: During the Gains/Lift calculations, all rows containing missing values ("NAs") in either the label (response) or the prediction probability are ignored. 
@@ -1522,7 +1522,7 @@ In addition to the chart, a Gains/Lift table is also available. This table repor
 - Gain (difference in percentages between the overall proportion of events and the observed proportion of observations that are events in the group)
 - Cumulative gain
 
-.. figure:: ../images/GainsLiftTable.png
+.. figure:: images/GainsLiftTable.png
    :alt: Gains/Lift Table
 
 The *response_rate* column lists the likelihood of response, the *lift* column lists the lift rate, and the *cumulative_lift* column provides the percentage of increase in response based on the lift.
@@ -1539,7 +1539,7 @@ Creating Frames
 
 To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
-.. figure:: ../images/Flow_createFrame.png
+.. figure:: images/Flow_createFrame.png
    :alt: createFrame
 
 Viewing Frames
@@ -1549,7 +1549,7 @@ To view a specific frame, click the "Key" link for the specified frame,
 or enter ``getFrameSummary "FrameName"`` in a cell in CS mode (where
 ``FrameName`` is the name of a frame, such as ``allyears2k.hex``).
 
-.. figure:: ../images/Flow_getFrame.png
+.. figure:: images/Flow_getFrame.png
    :alt: Viewing specified frame
 
 
@@ -1572,13 +1572,13 @@ detail (such as a specific column or row) using the **Inspect** button
 or by clicking the links. The following screenshot displays the results
 of clicking the **Inspect** button for a frame.
 
-.. figure:: ../images/Flow_inspectFrame.png
+.. figure:: images/Flow_inspectFrame.png
    :alt: Inspecting Frames
 
 
 This screenshot displays the results of clicking the **columns** link.
 
-.. figure:: ../images/Flow_inspectCol.png
+.. figure:: images/Flow_inspectCol.png
    :alt: Inspecting Columns
 
 
@@ -1599,7 +1599,7 @@ For parsed data, the following information displays:
 -  Link to the .hex file
 -  The **Build Model**, **Predict**, and **Inspect** buttons
 
-.. figure:: ../images/Flow_getFrames.png
+.. figure:: images/Flow_getFrames.png
    :alt: Parsed Frames
 
 
@@ -1614,7 +1614,7 @@ Splitting Frames
 
 Datasets can be split within Flow for use in model training and testing.
 
-.. figure:: ../images/Flow_splitFrame.png
+.. figure:: images/Flow_splitFrame.png
    :alt: splitFrame cell
 
 1. To split a frame, click the **Assist Me** button, then click
@@ -1661,7 +1661,7 @@ Select one of the above options from the drop-down **Color** menu to
 display the specified data in color, then click the **Plot** button to
 plot the data.
 
-.. figure:: ../images/Flow_plot.png
+.. figure:: images/Flow_plot.png
    :alt: Flow - Plotting Frames
 
 **Note**: Because H2O stores enums internally as numeric then maps the
@@ -1698,7 +1698,7 @@ includes the same information:
 nodes. - H2O version - Number of used and available nodes - When the
 cluster was created
 
-.. figure:: ../images/Flow_CloudStatus.png
+.. figure:: images/Flow_CloudStatus.png
    :alt: Cluster Status
 
 
@@ -1733,7 +1733,7 @@ Viewing Logs
 To view the logs for troubleshooting, click the **Admin** menu, then
 click **Inspect Log**.
 
-.. figure:: ../images/Flow_viewLog.png
+.. figure:: images/Flow_viewLog.png
    :alt: Inspect Log
 
 
@@ -1760,7 +1760,7 @@ Viewing Stack Trace Information
 To view the stack trace information, click the **Admin** menu, then
 click **Stack Trace**.
 
-.. figure:: ../images/Flow_stacktrace.png
+.. figure:: images/Flow_stacktrace.png
    :alt: Stack Trace
 
 
@@ -1775,7 +1775,7 @@ Viewing Network Test Results
 To view network test results, click the **Admin** menu, then click
 **Network Test**.
 
-.. figure:: ../images/Flow_NetworkTest.png
+.. figure:: images/Flow_NetworkTest.png
    :alt: Network Test Results
 
 
@@ -1788,7 +1788,7 @@ The Profiler looks across the cluster to see where the same stack trace
 occurs, and can be helpful for identifying activity on the current CPU.
 To view the profiler, click the **Admin** menu, then click **Profiler**.
 
-.. figure:: ../images/Flow_profiler.png
+.. figure:: images/Flow_profiler.png
    :alt: Profiler
 
 To view the profiler information for a specific node, select it from the
@@ -1809,7 +1809,7 @@ click **Timeline**. The following information displays for each event:
 -  Event type
 -  Number of bytes sent & received
 
-.. figure:: ../images/Flow_timeline.png
+.. figure:: images/Flow_timeline.png
    :alt: Timeline
 
 
@@ -1865,17 +1865,17 @@ cluster has been shut down.
 
 --------------
 
-.. |Flow - Hide Sidebar| image:: ../images/Flow_SidebarHide.png
-.. |Flow - Display Sidebar| image:: ../images/Flow_SidebarDisplay.png
-.. |Flow - View Example Flows link| image:: ../images/Flow_ViewExampleFlows.png
-.. |Flow - Run Button| image:: ../images/Flow_RunButton.png
-.. |Flow - Completed Successfully| image:: ../images/Flow_run_pass.png
-.. |Flow - Did Not Complete| image:: ../images/Flow_run_fail.png
-.. |Flow variable definition| image:: ../images/Flow_VariableDefinition.png
-.. |Flow variable validation| image:: ../images/Flow_VariableValidation.png
-.. |Flow variable example| image:: ../images/Flow_VariableExample.png
-.. |Flow menus| image:: ../images/Flow_menus.png
-.. |Flow - Import Files Auto-Suggest| image:: ../images/Flow_Import_AutoSuggest.png
-.. |Import Files| image:: ../images/Flow_import.png
-.. |Paperclip icon| image:: ../images/Flow_clips_paperclip.png
+.. |Flow - Hide Sidebar| image:: images/Flow_SidebarHide.png
+.. |Flow - Display Sidebar| image:: images/Flow_SidebarDisplay.png
+.. |Flow - View Example Flows link| image:: images/Flow_ViewExampleFlows.png
+.. |Flow - Run Button| image:: images/Flow_RunButton.png
+.. |Flow - Completed Successfully| image:: images/Flow_run_pass.png
+.. |Flow - Did Not Complete| image:: images/Flow_run_fail.png
+.. |Flow variable definition| image:: images/Flow_VariableDefinition.png
+.. |Flow variable validation| image:: images/Flow_VariableValidation.png
+.. |Flow variable example| image:: images/Flow_VariableExample.png
+.. |Flow menus| image:: images/Flow_menus.png
+.. |Flow - Import Files Auto-Suggest| image:: images/Flow_Import_AutoSuggest.png
+.. |Import Files| image:: images/Flow_import.png
+.. |Paperclip icon| image:: images/Flow_clips_paperclip.png
 
