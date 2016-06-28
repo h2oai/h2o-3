@@ -14,6 +14,7 @@ public final class OrcUtil {
    * @return  true if the schema can be transformed into H2O type
    */
   public static boolean isSupportedSchema(String s) {
+
     switch (s.toLowerCase()) {
       case "boolean":
       case "bigint":  // long

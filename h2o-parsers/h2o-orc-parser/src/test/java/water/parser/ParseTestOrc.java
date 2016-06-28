@@ -81,8 +81,21 @@ public class ParseTestOrc extends TestUtil {
 
     int numOfOrcFiles = allOrcFiles.length; // number of Orc Files to test
 
-    for (int fIndex = 4; fIndex < numOfOrcFiles; fIndex++)
+    for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
     {
+
+      if ((fIndex == 4) || (fIndex == 6) || (fIndex == 23) || (fIndex == 28) || (fIndex == 18))
+        continue;   // do not support metadata from user
+
+      if (fIndex == 31)   // contain only orc header, no column and no row.
+        continue;
+
+      if (fIndex == 19)   // different column names are used between stripes
+        continue;
+
+      if (fIndex == 26)   // abnormal orc file, no inpsector structure available
+        continue;
+
       String fileName = allOrcFiles[fIndex];
       File f = find_test_file_static(fileName);
 
@@ -92,6 +105,7 @@ public class ParseTestOrc extends TestUtil {
         try {
           Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));     // orc reader
           Frame h2oFrame = parse_test_file(fileName);     // read one orc file and build a H2O frame
+
           compareH2OFrame(h2oFrame, orcFileReader);
         } catch (IOException e) {
           e.printStackTrace();
@@ -123,25 +137,20 @@ public class ParseTestOrc extends TestUtil {
 
     // compare number of columns and rows
     int allColNumber = allColInfo.size();    // get and check column number
-    boolean[] toInclude = new boolean[allColNumber+1];
-    toInclude[0] = true;
 
     int colNumber = 0 ;
-    int tempIndex = 1;
     for (StructField oneField:allColInfo) {
-      if (isSupportedSchema(oneField.getFieldObjectInspector().getTypeName())) {
-        colNumber++;
-        toInclude[tempIndex] = true;
-      } else
-        toInclude[tempIndex] = false;
+      String colType = oneField.getFieldObjectInspector().getTypeName();
 
-      tempIndex++;
+      if (colType.toLowerCase().contains("decimal"))
+        colType = "decimal";
+
+      if (isSupportedSchema(colType))
+        colNumber++;
+
     }
 
     assertEquals("Number of columns need to be the same: ", colNumber, h2oFrame.numCols());
-
-    Long totalRowNumber = orcReader.getNumberOfRows();    // get and check row number
-    assertEquals("Number of rows need to be the same: ", totalRowNumber, (Long) h2oFrame.numRows());
 
     // compare column names
     String[] colNames = new String[colNumber];
@@ -149,6 +158,10 @@ public class ParseTestOrc extends TestUtil {
     int colIndex = 0;
     for (int index = 0; index < allColNumber; index++) {   // get and check column names
       String typeName = allColInfo.get(colIndex).getFieldObjectInspector().getTypeName();
+
+      if (typeName.toLowerCase().contains("decimal"))
+        typeName = "decimal";
+
       if (isSupportedSchema(typeName)) {
         colNames[colIndex] = allColInfo.get(colIndex).getFieldName();
         colTypes[colIndex] = typeName;
@@ -158,7 +171,10 @@ public class ParseTestOrc extends TestUtil {
     assertArrayEquals("Column names need to be the same: ", colNames, h2oFrame._names);
 
     // compare one column at a time of the whole row?
-    compareFrameContents(h2oFrame, orcReader, colTypes, colNames, toInclude);
+    compareFrameContents(h2oFrame, orcReader, colTypes, colNames, null);
+
+    Long totalRowNumber = orcReader.getNumberOfRows();    // get and check row number
+    assertEquals("Number of rows need to be the same: ", totalRowNumber, (Long) h2oFrame.numRows());
 
   }
 
@@ -254,7 +270,7 @@ public class ParseTestOrc extends TestUtil {
 
     for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
       if (isNull[rowIndex])
-        System.out.println("Place holder here.");
+        assertEquals("Na is found: ", true, h2oFrame.isNA(frameRowIndex));
       else
         assertEquals("Decimal elements should equal: ", Double.parseDouble(oneColumn[rowIndex].toString()),
                 h2oFrame.at(frameRowIndex), EPSILON);
@@ -265,12 +281,12 @@ public class ParseTestOrc extends TestUtil {
 
   private static void compareTimecolumn(ColumnVector oneTSColumn, boolean[] isNull, long currentBatchRow,
                                         Vec h2oFrame, Long startRowIndex) {
-    long[] oneColumn = ((TimestampColumnVector) oneTSColumn).time;
+    long[] oneColumn = ((LongColumnVector) oneTSColumn).vector;
     long frameRowIndex = startRowIndex;
 
     for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
       if (isNull[rowIndex])
-        System.out.println("Place holder here.");
+        assertEquals("Na is found: ", true, h2oFrame.isNA(frameRowIndex));
       else
         assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at8(frameRowIndex));
     }
@@ -287,8 +303,8 @@ public class ParseTestOrc extends TestUtil {
     long frameRowIndex = startRowIndex;
 
     for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
-      if (isNull[rowIndex])
-        System.out.println("Place holder here.");
+      if (isNull[rowIndex] || (stringLength[rowIndex] == 0))
+        assertEquals("Na is found: ", true, h2oFrame.isNA(frameRowIndex));
       else {
         BufferedString h2o = new BufferedString();
         byte[] temp = new byte[stringLength[rowIndex]];
@@ -308,7 +324,7 @@ public class ParseTestOrc extends TestUtil {
 
     for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
       if (isNull[rowIndex])
-        System.out.println("Place holder here.");
+        assertEquals("Na is found: ", true, h2oFrame.isNA(frameRowIndex));
       else
         assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at(frameRowIndex), EPSILON);
 
@@ -323,7 +339,7 @@ public class ParseTestOrc extends TestUtil {
 
     for (int rowIndex = 0; rowIndex < currentBatchRow; rowIndex++) {
       if (isNull[rowIndex])
-        System.out.println("Place holder here.");
+        assertEquals("Na is found: ", true, h2oFrame.isNA(frameRowIndex));
       else
         assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at8(frameRowIndex));
 

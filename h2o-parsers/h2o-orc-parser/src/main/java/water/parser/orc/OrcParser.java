@@ -71,9 +71,10 @@ public class OrcParser extends Parser {
     int[] stripeStartEndIndex = new int[2];
 
     try {
+      double numChunks = (double) ((OrcParseSetup) this._setup).getTotalFileSize() / this._setup._chunk_size;
       // only do something if within file size and the orc file is not empty
       if ((((OrcParseSetup) this._setup).getStripeInfo().size() > 0) &&
-              (cidx < ((double) ((OrcParseSetup) this._setup).getTotalFileSize() / this._setup._chunk_size) + 1)) {
+              (!(cidx >= numChunks))) {
         // calculate the correct stripe start index and end index
         stripeStartEndIndex = findStripeIndices(cidx, this._setup._chunk_size,
                 ((OrcParseSetup) this._setup).getCumstripeSizes());
@@ -94,6 +95,9 @@ public class OrcParser extends Parser {
           write1Stripe(thisStripe, fileReader, ((OrcParseSetup) this._setup).getToInclude(),
                   ((OrcParseSetup) this._setup).getAllColNames(),
                   ((OrcParseSetup) this._setup).getColumnTypesString(), dout);
+
+//          write1Stripe(thisStripe, fileReader, null, this._setup.getColumnNames(),
+//                  ((OrcParseSetup) this._setup).getColumnTypesString(), dout);
         }
       }
     } catch (Throwable e) {
@@ -133,7 +137,7 @@ public class OrcParser extends Parser {
       tempIndices[1] = lastChunkIndex;
     } else {
       for (int index = 0; index < cumStripeSizes.length; index++) {
-        if (startingByte <= cumStripeSizes[index]) {
+        if (startingByte < cumStripeSizes[index]) {
           tempIndices[0] = index;
           break;
         }
@@ -141,7 +145,7 @@ public class OrcParser extends Parser {
 
       startingByte = startingByte + chunk_size; // find ending stripe
       for (int index = tempIndices[0]; index < cumStripeSizes.length; index++) {
-        if (cumStripeSizes[index] > startingByte) {
+        if (cumStripeSizes[index] >= startingByte) {
           if (index > tempIndices[0])
             tempIndices[1] = index - 1;
           else
@@ -257,7 +261,7 @@ public class OrcParser extends Parser {
      */
   private static void writeTimecolumn(ColumnVector oneTSColumn, boolean noNulls, boolean[] isNull, int cIdx,
                                       Long rowNumber, ParseWriter dout) {
-    long[] oneColumn = ((TimestampColumnVector) oneTSColumn).time;
+    long[] oneColumn = ((LongColumnVector) oneTSColumn).vector;
 
     if (noNulls) {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
@@ -321,15 +325,16 @@ public class OrcParser extends Parser {
     int[] stringStart = ((BytesColumnVector) oneStringColumn).start;
 
     for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
-      if (isNull[rowIndex])
+      if (isNull[rowIndex] || (stringLength[rowIndex] == 0))
         dout.addInvalidCol(cIdx);
       else {
-        BufferedString bs = new BufferedString();
+
         switch(columnType) {
           case "string":
           case "varchar":
           case "char":
           case "binary":
+            BufferedString bs = new BufferedString();
             byte[] temp = new byte[stringLength[rowIndex]];
             System.arraycopy(oneColumn[rowIndex], stringStart[rowIndex], temp, 0, stringLength[rowIndex]);
             dout.addStrCol(cIdx, bs.set(temp));
@@ -470,6 +475,7 @@ public class OrcParser extends Parser {
       // set chunk size to be the max stripe size if the stripe size exceeds the default
       if (this.maxStripeSize > this._chunk_size)  //
         this.setChunkSize(this.maxStripeSize.intValue());
+
     }
 
     public OrcParseSetup(ParseSetup ps, Reader reader, Long[] allstripes, Long fileSize,
@@ -524,7 +530,6 @@ public class OrcParser extends Parser {
     }
 
     public boolean[] getToInclude() { return this.toInclude; }
-
     public String[] getAllColNames() { return this.allColumnNames; }
   }
 
@@ -594,14 +599,18 @@ public class OrcParser extends Parser {
 
     List<StructField> allColumns = (List<StructField>) insp.getAllStructFieldRefs();  // grab column info
     List<StripeInformation> allStripes = orcFileReader.getStripes();  // grab stripe information
+    String[] allColNames = new String[allColumns.size()];
     boolean[] toInclude = new boolean[allColumns.size()+1];
     toInclude[0] = true;
-    String[] allColNames = new String[allColumns.size()];
 
     int supportedFieldCnt = 0 ;
     int colIndex = 1;
     for (StructField oneField:allColumns) {
-      if (isSupportedSchema(oneField.getFieldObjectInspector().getTypeName())) {
+      String columnType = oneField.getFieldObjectInspector().getTypeName();
+      if (columnType.toLowerCase().contains("decimal")) {
+        columnType = "decimal";
+      }
+      if (isSupportedSchema(columnType)) {
         toInclude[colIndex] = true;
         supportedFieldCnt++;
       } else
@@ -623,6 +632,10 @@ public class OrcParser extends Parser {
 
     for (StructField oneField : allColumns) {
       String columnType = oneField.getFieldObjectInspector().getTypeName();
+
+      if (columnType.toLowerCase().contains("decimal"))
+        columnType = "decimal"; // get rid of strange attachment
+
       if (isSupportedSchema(columnType)) {
         names[columnIndex] = oneField.getFieldName();
         types[columnIndex] = schemaToColumnType(columnType);
@@ -693,7 +706,7 @@ public class OrcParser extends Parser {
     Long maxStripeSize;   // biggest stripe size
     List<StripeInformation> stripesInfo;
     String[] columnTypesString;
-    boolean[] toInclude;  // true if a column is to be read
+    boolean[] toInclude;
     String[] allColumnNames;  // store all column names
   }
 
