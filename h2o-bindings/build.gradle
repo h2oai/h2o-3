@@ -42,6 +42,7 @@ sourceSets {
 jar {
   manifest {
     attributes 'Main-Class': 'water.bindings.examples.retrofit.GBM_Example'
+//    attributes 'Main-Class': 'water.bindings.examples.retrofit.Merge_Example'
   }
 }
 
@@ -67,7 +68,8 @@ clean.dependsOn cleanGenerateRESTAPIBindings
 // Setup Gradle application runner
 //
 apply plugin: 'application'
-mainClassName = 'water.bindings.examples.retrofit.GBM_Example'
+ mainClassName = 'water.bindings.examples.retrofit.GBM_Example'
+//mainClassName = 'water.bindings.examples.retrofit.Merge_Example'
 //ignoreExitValue = false
 
 
