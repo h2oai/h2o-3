@@ -165,7 +165,7 @@ hardware-assisted virtual machine (HVM). If you are using Linux, you can
 choose between para-virtualization (PV) and HVM. These selections
 determine the type of instances you can launch.
 
-.. figure:: ../EC2_images/ec2_system.png
+.. figure:: EC2_images/ec2_system.png
    :alt: EC2 Systems
 
 
@@ -180,12 +180,12 @@ Configuring the Instance
    detects the temporary access keys associated with the instance, so
    you don't need to copy your AWS credentials to the instances.
 
-  .. figure:: ../EC2_images/ec2_config.png
+  .. figure:: EC2_images/ec2_config.png
      :alt: EC2 Configuration
 
 2. When launching the instance, select an accessible key pair.
 
-  .. figure:: ../EC2_images/ec2_key_pair.png
+  .. figure:: EC2_images/ec2_key_pair.png
      :alt: EC2 Key Pair
 
 
@@ -210,7 +210,7 @@ Otherwise, download PuTTY and follow these instructions:
 
 3. Save the private key as a .ppk file.
 
- .. figure:: ../EC2_images/ec2_putty_key.png
+ .. figure:: EC2_images/ec2_putty_key.png
     :alt: Private Key
 
 4. Launch the PuTTY client.
@@ -218,14 +218,14 @@ Otherwise, download PuTTY and follow these instructions:
    Ubuntu users, the default host name is ``ubuntu@<ip-address>``. For
    Linux users, the default host name is ``ec2-user@<ip-address>``.
 
- .. figure:: ../EC2_images/ec2_putty_connect_1.png
+ .. figure:: EC2_images/ec2_putty_connect_1.png
     :alt: Configuring Session
 
 6. Select *SSH*, then *Auth* in the sidebar, and click the **Browse** button to select the private key file for authentication.
 
 7. Start a new session and click the **Yes** button to confirm caching of the server's rsa2 key fingerprint and continue connecting.
 
- .. figure:: ../EC2_images/ec2_putty_alert.png
+ .. figure:: EC2_images/ec2_putty_alert.png
     :alt: PuTTY Alert
 
 
@@ -250,4 +250,4 @@ Downloading Java and H2O
 3. From your browser, navigate to ``<Private_IP_Address>:54321`` or
    ``<Public_DNS>:54321`` to use H2O's web interface.
 
- .. figure:: ../EC2_images/ec2_putty_connect_2.png
+ .. figure:: EC2_images/ec2_putty_connect_2.png
