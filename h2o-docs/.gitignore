@@ -8,5 +8,6 @@ schemas.json
 *.out
 *.toc
 
-# Ignore _build folder
+# Ignore _build folder and version file
 new_look_docs/_build
+new_look_docs/project_version

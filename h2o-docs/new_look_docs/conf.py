@@ -63,7 +63,12 @@ author = u'h2o'
 # built documents.
 #
 # The short X.Y version.
-# version = u'3.0'
+if os.path.exists("project_version"):
+    f = open("project_version", "r")
+    version = f.readline().strip()
+else:
+    version = "AnonDeveloperBuild"
+print "version is " + str(version)
 # The full version, including alpha/beta/rc tags.
 # release = u'3.0'
 

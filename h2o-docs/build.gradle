@@ -124,3 +124,24 @@ task cleanBooklets(type: Delete) {
 task booklets(dependsOn: compileBooklets)
 
 clean.dependsOn cleanBooklets
+
+// create sphinx documentation project version number
+
+def sphinxProjectVersionFile = new File("$rootDir/h2o-docs/new_look_docs/project_version")
+
+task(createSphinxProjectVersionNumber) << {
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    File f = new File ("$sphinxProjectVersionFile");
+    StringBuilder sb = new StringBuilder();
+    sb.append(bv.getProjectVersion())
+    sb.append('\n')
+    f.write(sb.toString())
+}
+
+build.dependsOn createSphinxProjectVersionNumber
+
+task cleanSphinxProjectVersionNumber(type:Delete) {
+    delete "$sphinxProjectVersionFile"
+}
+
+clean.dependsOn cleanSphinxProjectVersionNumber
