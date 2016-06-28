@@ -9,24 +9,24 @@ Welcome to H2O 3!
 .. toctree::
    :maxdepth: 3
    
-   includes/SiteIntro
-   includes/Architecture
-   includes/Download
-   includes/StartH2O
-   includes/H2O-DevS3Creds
-   includes/H2O-DevHadoop   
-   includes/H2O-DevDocker
-   includes/Data-Manipulation
-   includes/Flow
-   includes/DataScienceH2O
-   includes/CrossValidation
-   includes/GridSearch
-   includes/POJO_QuickStart
-   includes/H2O-DevLogs
-   includes/Migration
-   includes/Security
-   includes/FAQ
-   includes/glossary
-   includes/Videos
+   SiteIntro
+   Architecture
+   Download
+   StartH2O
+   H2O-DevS3Creds
+   H2O-DevHadoop
+   H2O-DevDocker
+   Data-Manipulation
+   Flow
+   DataScienceH2O
+   CrossValidation
+   GridSearch
+   POJO_QuickStart
+   H2O-DevLogs
+   Migration
+   Security
+   FAQ
+   glossary
+   Videos
    API-Reference
 
