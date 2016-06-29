@@ -7,22 +7,22 @@ would like to use.
 From R
 ------
 
-To use H2O in R, follow the instructions on the `R download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#R>`_.
+To use H2O in R, follow the instructions on the `R download page <http://www.h2o.ai/download/h2o/r>`_.
 
 From Python
 -----------
 
-To use H2O in Python, follow the instructions on the `Python download page <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/index.html#Python>`_.
+To use H2O in Python, follow the instructions on the `Python download page <http://www.h2o.ai/download/h2o/python>`_.
 
 On Spark
 --------
 
 To use H2O on Spark, follow the instructions on the Sparkling Water
-`download page <http://h2o-release.s3.amazonaws.com/sparkling-water/master/103/index.html>`__.
+`download page <http://www.h2o.ai/download/sparkling-water/choose>`__.
 
 
-From the Cmd Line
------------------
+From the Command Line
+---------------------
 
 .. todo:: create a table of command line options (should you say expression or primary?) 
 .. todo:: provide examples for most common clusters
@@ -65,37 +65,50 @@ JVM Options
 H2O Options
 ~~~~~~~~~~~
 
--  ``-h`` or ``-help``: Display this information in the command line
-   output.
--  ``-name <H2OCloudName>``: Assign a name to the H2O instance in the
-   cloud (where ``<H2OCloudName>`` is the name of the cloud. Nodes with
-   the same cloud name will form an H2O cloud (also known as an H2O
-   cluster).
--  ``-flatfile <FileName>``: Specify a flatfile of IP address for faster
-   cloud formation (where ``<FileName>`` is the name of the flatfile.
--  ``-ip <IPnodeAddress>``: Specify an IP address other than the default
-   ``localhost`` for the node to use (where ``<IPnodeAddress>`` is the
-   IP address).
--  ``-port <#>``: Specify a port number other than the default ``54321``
-   for the node to use (where ``<#>`` is the port number).
--  ``-network ###.##.##.#/##``: Specify an IP addresses (where
-   ``###.##.##.#/##`` represents the IP address and subnet mask). The IP
-   address discovery code binds to the first interface that matches one
-   of the networks in the comma-separated list; to specify an IP
-   address, use ``-network``. To specify a range, use a comma to
-   separate the IP addresses:
-   ``-network 123.45.67.0/22,123.45.68.0/24``. For example,
-   ``10.1.2.0/24`` supports 256 possibilities.
--  ``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill
-   temporary data to disk (where ``<fileSystemPath>`` is the file path).
--  ``-flow_dir <server-side or HDFS directory>``: Specify a directory
-   for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows``
-   (where ``<H2OUserName>`` is your user name).
+-	``-h`` or ``-help``: Display this information in the command line output.
+-	``-name <H2OCloudName>``: Assign a name to the H2O instance in the cloud (where ``<H2OCloudName>`` is the name of the cloud. Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster).
+-	``-flatfile <FileName>``: Specify a flatfile of IP address for faster cloud formation (where ``<FileName>`` is the name of the flatfile.
+-	``-ip <IPnodeAddress>``: specifies IP for the machine other than the default ``localhost``, for example:
+    
+    - IPv4: ``-ip 178.16.2.223`` 
+    - IPv6: ``-ip 2001:db8:1234:0:0:0:0:1`` (Short version of IPv6 with ``::`` is not supported.) **Note**: If you are selecting a link-local address ``fe80::/96``, it is necessary to specify the *zone index* (e.g., ``%en0`` for ``fe80::2acf:e9ff:fe15:e0f3%en0``) in order to select the right interface.
+
+-	``-port <#>``: Specify a PORT used for REST API. The communication port will be the port with value +1 higher.
+-	``-baseport`` specifies starting port to find a free port for REST API, the internal communication port will be port with value +1 higher.
+-	``-network <ip_address/subnet_mask>``: Specify an IP addresses with a subnet mask. The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list; to specify an IP address, use ``-network``. To specify a range, use a comma to separate the IP addresses: ``-network 123.45.67.0/22,123.45.68.0/24``. For example, ``10.1.2.0/24`` supports 256 possibilities. IPv4 and IPv6 addresses are supported. 
+
+    - IPv4: ``-network 178.0.0.0/8``
+    - IPv6: ``-network 2001:db8:1234:0:0:0:0:0/48`` (short version of IPv6 with ``::`` is not supported)
+
+-	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
+-  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows``(where ``<H2OUserName>`` is your user name).
 -  ``-nthreads <#ofThreads>``: Specify the maximum number of threads in
    the low-priority batch work queue (where ``<#ofThreads>`` is the
    number of threads). The default is 99.
 -  ``-client``: Launch H2O node in client mode. This is used mostly for
    running Sparkling Water.
+
+H2O Internal Communication
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, H2O selects the IP and PORT for internal communication automatically using the following this process (if not specified):
+
+1. Retrieve a list of available interfaces (which are up).
+2. Sort them with "bond" interfaces put on the top.
+3. For each interface, extract associated IPs.
+4. Pick only reachable IPs (that filter IPs provided by interfaces, such as awdl):
+
+  - If there is a site IP, use it.
+  - Otherwise, if there is a link local IP, use it. (For IPv6, the link IP 0xfe80/96 is associated with each interface.)
+  - Or finally, try to find a local IP. (Use loopback or try to use Google DNS to find IP for this machine.)
+
+**Notes**: The port is selected by looking for a free port starting with port 54322. The IP, PORT and network selection can be changed by the following options:
+
+  - ``-ip`` 
+  - ``network``
+  - ``-port``
+  - ``-baseport`` 
+
 
 Cloud Formation Behavior
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,63 +129,70 @@ Wait for the ``INFO: Registered: # schemas in: #mS`` output before
 entering the above command again to add another node (the number for #
 will vary).
 
-Flatfile Configuration for Multi-Node Clusters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Clouding Up: Cluster Creation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Running H2O on a multi-node cluster allows you to use more memory for
-large-scale tasks (for example, creating models from huge datasets) than
-would be possible on a single node.
+H2O provides two modes for cluster creation:
 
-If you are configuring many nodes, using the ``-flatfile`` option is
-fast and easy. The ``-flatfile`` option is used to define a list of
-potential cloud peers. However, it is not an alternative to ``-ip`` and
-``-port``, which should be used to bind the IP and port address of the
-node you are using to launch H2O.
+  1. Multicast based
+  2. Flatfile based
 
-To configure H2O on a multi-node cluster:
+Multicast
+^^^^^^^^^
+In this mode, H2O is using IP multicast to announce existence of H2O nodes. Each node selects the same multicast group and port based on specified shared cloud name (see ``-name`` option). For example, for IPv4/PORT a generated multicast group is ``228.246.114.236:58614`` (for cloud name ``michal``), 
+for IPv6/PORT a generated multicast group is ``ff05:0:3ff6:72ec:0:0:3ff6:72ec:58614`` (for cloud name ``michal`` and link-local address which enforce link-local scope).
 
-1. Locate a set of hosts that will be used to create your cluster. A
-   host can be a server, an EC2 instance, or your laptop.
+For IPv6 the scope of multicast address is enforced by a selected node IP. For example, if IP the selection process selects link-local address, then the scope of multicast will be link-local. This can be modified by specifying JVM variable ``sys.ai.h2o.network.ipv6.scope`` which enforces addressing scope use in multicast group address (for example, ``-Dsys.ai.h2o.network.ipv6.scope=0x0005000000000000`` enforces the site local scope. For more details please consult the
+class ``water.util.NetworkUtils``).
 
-2. `Download <http://h2o.ai/download>`__ the appropriate version of H2O
-   for your environment.
+For more information about scopes, see the following `image <http://www.tcpipguide.com/free/diagrams/ipv6scope.png>`_. 
 
-3. Verify the same h2o.jar file is available on each host in the
-   multi-node cluster.
+Flatfile
+^^^^^^^^
+he flatfile describes a topology of a H2O cluster. The flatfile definition is passed via the ``-flatfile`` option. It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
 
-4. Create a flatfile.txt that contains an IP address and port number for
-   each H2O instance. Use one entry per line. For example:
-   ``192.168.1.163:54321    192.168.1.164:54321`` 
++---------+-------+-------+-------+
+| Nodes   | nodeA | nodeB | nodeC |
++---------+-------+-------+-------+
+|Flatfile | A,B   | A, B  | B, C  |
++---------+-------+-------+-------+
 
-5. Copy the flatfile.txt to each node in the cluster.
+The resulting cluster will be formed by nodes A, B, C. The node A transitively sees node C via node B flatfile definition, and vice versa.
 
-6. Use the ``-Xmx`` option to specify the amount of memory for each node. The cluster's memory capacity is the sum of all H2O nodes in the cluster. For example, if you create a cluster with four 20g nodes (by specifying ``-Xmx20g`` four times), H2O will have a total of 80 gigs of memory available.  ``java -Xmx20g -jar h2o.jar -flatfile flatfile.txt -port 54321``
+The flatfile contains a list of nodes in the form ``IP:PORT`` (each node on separated line, everything prefixed by ``#`` is ignored) which are going to compose a resulting cluster. For example, running H2O on a multi-node cluster allows you to use more memory for large-scale tasks (for example, creating models from huge datasets) than would be possible on a single node.
 
-  **Note**: For best performance, we recommend sizing your cluster to be about four
-  times the size of your data. To avoid swapping, the ``-Xmx`` allocation
-  must not exceed the physical memory on any node. Allocating the same
-  amount of memory for all nodes is strongly recommended, as H2O works
-  best with symmetric nodes.
-
-  **Note**: the optional ``-ip`` and ``-port`` options specify the IP address
-  and ports to use. The ``-ip`` option is especially helpful for hosts
-  with multiple network interfaces.
-
-  The output will resemble the following:
+**IPv4**:
 
 ::
 
-    04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   1. Open a terminal and run 'ssh -L 55555:localhost:54321 H2O-3User@###.###.#.##'
-    04-20 16:14:00.253 192.168.1.70:54321    2754   main      INFO:   2. Point your browser to http://localhost:55555
-    04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Log dir: '/tmp/h2o-H2O-3User/h2ologs'
-    04-20 16:14:00.437 192.168.1.70:54321    2754   main      INFO: Cur dir: '/Users/H2O-3User/h2o-3'
-    04-20 16:14:00.459 192.168.1.70:54321    2754   main      INFO: HDFS subsystem successfully initialized
-    04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: S3 subsystem successfully initialized
-    04-20 16:14:00.460 192.168.1.70:54321    2754   main      INFO: Flow dir: '/Users/H2O-3User/h2oflows'
-    04-20 16:14:00.475 192.168.1.70:54321    2754   main      INFO: Cloud of size 1 formed [/192.168.1.70:54321]
+	# run two nodes on 108
+	10.10.65.108:54322
+	10.10.65.108:54325
 
-   **Note** As you add more nodes to your cluster, the output is updated: ``INFO WATER: Cloud of size 2 formed [/...]...``
+**IPv6**:
 
-7. Access the H2O 3.0 web UI (Flow) with your browser. Point your
-   browser to the HTTP address specified in the output
-   ``Listening for HTTP and REST traffic on ...``.
+::
+
+	0:0:0:0:0:0:0:1:54321
+	0:0:0:0:0:0:0:1:54323
+
+Web Server
+~~~~~~~~~~
+
+The web server IP is auto-configured in the same way as internal communication IP, nevertheless the created socket listens on all available interfaces. A specific API can be specified with the ``-web_ip`` option.
+
+Options
+^^^^^^^
+
+- ``-web_ip``: specifies IP for web server to expose REST API
+
+Dual Stacks
+~~~~~~~~~~~
+
+Dual stack machines support IPv4 and IPv6 network stacks.
+Right now, H2O always prefer IPV4, however the preference can be changed via JVM system options ``java.net.preferIPv4Addresses`` and ``java.net.preferIPv6Addresses``.
+
+For example:
+
+- ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=true`` - H2O will try to select IPv4
+- ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=false`` - H2O will try to select IPv6
