@@ -128,9 +128,10 @@ public final class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
-  /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
-   *  figure the originating H2ONode from the first few bytes read. */
-  AutoBuffer( SocketChannel sock ) throws IOException {
+  /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel.
+   * If isSenderH2ONode is set to true than also figure the originating H2ONode from the first few bytes read, otherwise
+   * just don't set _h2o field because the communication originates from non-h2o node such as spark executor*/
+  AutoBuffer( SocketChannel sock, boolean isSenderH2ONode ) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
     _bb = BBP_BIG.make();       // Get a big / TPC-sized ByteBuffer
@@ -138,7 +139,11 @@ public final class AutoBuffer {
     _read = true;               // Reading by default
     _firstPage = true;
     // Read Inet from socket, port from the stream, figure out H2ONode
-    _h2o = H2ONode.intern(sock.socket().getInetAddress(), getPort());
+    if(isSenderH2ONode) {
+      _h2o = H2ONode.intern(sock.socket().getInetAddress(), getPort());
+    }else{
+      _h2o = null;
+    }
     _firstPage = true;          // Yes, must reset this.
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;

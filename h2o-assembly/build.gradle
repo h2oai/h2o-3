@@ -7,6 +7,7 @@ dependencies {
   compile project(":h2o-app")
   compile project(":h2o-persist-s3")
   compile project(":h2o-persist-hdfs")
+  compile project(':h2o-scala_2.10')
   compile "org.slf4j:slf4j-log4j12:1.7.5"
 }
 

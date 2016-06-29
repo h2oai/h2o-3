@@ -61,12 +61,26 @@ public class TCPReceiverThread extends Thread {
         if(sentinel != 0xef)
           throw H2O.fail("missing eom sentinel when opening new tcp channel");
         // todo compare against current cloud, refuse the con if no match
-        H2ONode h2o = H2ONode.intern(sock.socket().getInetAddress(),port);
+
+        // Don't check h2o node if we know in advance that the connection is coming from non-h2o environment
+        // plus new thread is created in H2ONode.intern and if we have a lot of channels with type 3 ( which is
+        // common in this kind of communication), we can get java.lang.OutOfMemoryError: unable to create new native
+        // thread
+
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
-        case 1: new UDP_TCP_ReaderThread(h2o, sock).start(); break;
-        case 2: new TCPReaderThread(sock,new AutoBuffer(sock)).start(); break;
-        default: throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small and 2 - Big");
+        case 1:
+          H2ONode h2o = H2ONode.intern(sock.socket().getInetAddress(), port);
+          new UDP_TCP_ReaderThread(h2o, sock).start();
+          break;
+        case 2:
+          new TCPReaderThread(sock, new AutoBuffer(sock, true)).start();
+          break;
+        case 3:
+          new ExternalFrameHandlerThread(sock, new AutoBuffer(sock, false)).start();
+          break;
+        default:
+          throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
@@ -119,7 +133,7 @@ public class TCPReceiverThread extends Thread {
         // Reuse open sockets for the next task
         try {
           if( !_sock.isOpen() ) break;
-          _ab = new AutoBuffer(_sock);
+          _ab = new AutoBuffer(_sock, true);
         } catch( Exception e ) {
           // Exceptions here are *normal*, this is an idle TCP connection and
           // either the OS can time it out, or the cloud might shutdown.  We
