@@ -2223,7 +2223,7 @@ def parse_args(argv):
             g_wipe_output_dir = True
         elif s == "--test":
             i += 1
-            if (i >= len(argv)):=
+            if (i >= len(argv)):
                 usage()
             g_test_to_run = TestRunner.find_test(argv[i])
         elif s == "--testlist":
