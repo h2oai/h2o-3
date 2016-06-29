@@ -760,7 +760,7 @@ Available options vary depending on model type.
    :alt: Model Builder
 
 
-In the **Build a Model** cell, select an algorithm from the drop-down menu. (Refer to the :ref:`Data Science Algorithms` section for information about the available algorithms.)
+In the **Build a Model** cell, select an algorithm from the drop-down menu. (Refer to the `Data Science Algorithms <datascience/top.html>`_ section for information about the available algorithms.)
 
  - **K-means**: Create a K-Means model.
  - **Generalized Linear Model**: Create a Generalized Linear model.
