@@ -24,16 +24,16 @@ The arguments use the following format: java `<JVM Options>` -jar h2o.jar `<H2O 
 ##H2O Options
 
 - `-h` or `-help`: Display this information in the command line output. 
-- `-name <H2OCloudName>`: Assign a name to the H2O instance in the cloud (where `<H2OCloudName>` is the name of the cloud. Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster). 
-- `-flatfile <FileName>`: Specify a flatfile of IP address for faster cloud formation (where `<FileName>` is the name of the flatfile. 
+- `-name <H2OCloudName>`: Assign a name to the H2O instance in the cloud (where `<H2OCloudName>` is the name of the cloud). Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster). 
+- `-flatfile <FileName>`: Specify a flatfile of IP address for faster cloud formation (where `<FileName>` is the name of the flatfile). 
 - `-ip <IPnodeAddress>`: specifies IP for the machine other than the default `localhost`, for example:
     - IPv4: `-ip 178.16.2.223` 
     - IPv6: `-ip 2001:db8:1234:0:0:0:0:1` (Short version of IPv6 with `::` is not supported.) Note: If you are selecting a link-local address fe80::/96, it is necessary to specify _zone index_ (e.g., `%en0` for `fe80::2acf:e9ff:fe15:e0f3%en0`) to select the right interface.
 - `-port <#>`: Specify a PORT used for REST API. The communication port will be the port with value +1 higher.
-- `-baseport` specifies starting port to find a free port for REST API, the internal communication port will be port with value +1 higher
+- `-baseport` specifies starting port to find a free port for REST API, the internal communication port will be port with value +1 higher.
 - `-network <ip_address/subnet_mask>`: Specify an IP addresses with a subnet mask. The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list; to specify an IP address, use `-network`. To specify a range, use a comma to separate the IP addresses: `-network 123.45.67.0/22,123.45.68.0/24`. For example, `10.1.2.0/24` supports 256 possibilities. IPv4 and IPv6 addresses are supported. 
     - IPv4: `-network 178.0.0.0/8`
-    - IPv6: `-network 2001:db8:1234:0:0:0:0:0/48` (short version of IPv6 with `::` is not supported)
+    - IPv6: `-network 2001:db8:1234:0:0:0:0:0/48` (short version of IPv6 with `::` is not supported.)
 - `-ice_root <fileSystemPath>`: Specify a directory for H2O to spill temporary data to disk (where `<fileSystemPath>` is the file path). 
 - `-flow_dir <server-side or HDFS directory>`: Specify a directory for saved flows. The default is `/Users/h2o-<H2OUserName>/h2oflows` (where `<H2OUserName>` is your user name). 
 - `-nthreads <#ofThreads>`: Specify the maximum number of threads in the low-priority batch work queue (where `<#ofThreads>` is the number of threads). The default is 99. 
@@ -99,8 +99,7 @@ class `water.util.NetworkUtils`).
 For more information about scopes, see <a href="http://www.tcpipguide.com/free/diagrams/ipv6scope.png" target="_blank">http://www.tcpipguide.com/free/diagrams/ipv6scope.png</a>. 
 
 ### Flatfile
-The flatfile describes a topology of a H2O cluster. The flatfile definition is passed via `-flatfile` option. 
-It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
+The flatfile describes a topology of a H2O cluster. The flatfile definition is passed via `-flatfile` option. It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
 
 Nodes    | nodeA | nodeB | nodeC 
 ---------|-------|-------|-------
@@ -108,8 +107,7 @@ Flatfile | A,B   | A, B  | B, C
 
 The resulting cluster will be formed by nodes A, B, C. The node A transitively sees node C via node B flatfile definition, and vice versa.
 
-The flatfile contains a list of nodes in the form `IP:PORT` (each node on separated line, everythin prefixed by `#` is ignored) which are going to compose a resulting cluster.
-For example:
+The flatfile contains a list of nodes in the form `IP:PORT` (each node on separated line, everything prefixed by `#` is ignored) that are going to compose a resulting cluster. For example:
 
 **IPv4**:
 
