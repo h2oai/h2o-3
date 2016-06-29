@@ -66,8 +66,8 @@ H2O Options
 ~~~~~~~~~~~
 
 -	``-h`` or ``-help``: Display this information in the command line output.
--	``-name <H2OCloudName>``: Assign a name to the H2O instance in the cloud (where ``<H2OCloudName>`` is the name of the cloud. Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster).
--	``-flatfile <FileName>``: Specify a flatfile of IP address for faster cloud formation (where ``<FileName>`` is the name of the flatfile.
+-	``-name <H2OCloudName>``: Assign a name to the H2O instance in the cloud (where ``<H2OCloudName>`` is the name of the cloud). Nodes with the same cloud name will form an H2O cloud (also known as an H2O cluster).
+-	``-flatfile <FileName>``: Specify a flatfile of IP address for faster cloud formation (where ``<FileName>`` is the name of the flatfile).
 -	``-ip <IPnodeAddress>``: specifies IP for the machine other than the default ``localhost``, for example:
     
     - IPv4: ``-ip 178.16.2.223`` 
@@ -78,7 +78,7 @@ H2O Options
 -	``-network <ip_address/subnet_mask>``: Specify an IP addresses with a subnet mask. The IP address discovery code binds to the first interface that matches one of the networks in the comma-separated list; to specify an IP address, use ``-network``. To specify a range, use a comma to separate the IP addresses: ``-network 123.45.67.0/22,123.45.68.0/24``. For example, ``10.1.2.0/24`` supports 256 possibilities. IPv4 and IPv6 addresses are supported. 
 
     - IPv4: ``-network 178.0.0.0/8``
-    - IPv6: ``-network 2001:db8:1234:0:0:0:0:0/48`` (short version of IPv6 with ``::`` is not supported)
+    - IPv6: ``-network 2001:db8:1234:0:0:0:0:0/48`` (short version of IPv6 with ``::`` is not supported.)
 
 -	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
 -  ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows``(where ``<H2OUserName>`` is your user name).
