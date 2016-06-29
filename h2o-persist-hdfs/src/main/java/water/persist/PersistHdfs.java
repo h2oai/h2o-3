@@ -3,11 +3,7 @@ package water.persist;
 import com.google.common.io.ByteStreams;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 
 import java.io.EOFException;
 import java.io.File;
@@ -17,6 +13,7 @@ import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -154,13 +151,21 @@ public final class PersistHdfs extends Persist {
     run(new Callable() {
       @Override public Object call() throws Exception {
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
+
         FSDataInputStream s = null;
         try {
-          s = fs.open(p);
+//          fs.getDefaultBlockSize(p);
+
+            s = fs.open(p);
+//          System.out.println("default block size = " + fs.getDefaultBlockSize(p));
+//          FileStatus f = fs.getFileStatus(p);
+//          BlockLocation [] bs = fs.getFileBlockLocations(f,0,f.getLen());
+//          System.out.println(Arrays.toString(bs));
           if (p.toString().toLowerCase().startsWith("maprfs:")) {
             // MapR behaves really horribly with the google ByteStreams code below.
             // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
             // Use the HDFS API here directly instead.
+
             s.seek(skip_);
             s.readFully(b);
           }
@@ -169,11 +174,14 @@ public final class PersistHdfs extends Persist {
             // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
             // Google API's simple seek has better performance
             // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
-            ByteStreams.skipFully(s, skip_);
-            ByteStreams.readFully(s, b);
+//            ByteStreams.skipFully(s, skip_);
+//            ByteStreams.readFully(s, b);
+            s.seek(skip_);
+            s.readFully(b);
           }
           assert v.isPersisted();
         } finally {
+          s.getWrappedStream().close();
           FileUtils.close(s);
         }
         return null;
@@ -242,13 +250,15 @@ public final class PersistHdfs extends Persist {
         // Explicitly ignore the following exceptions but
         // fail on the rest IOExceptions
       } catch( EOFException e ) {
-        ignoreAndWait(e, false);
+        e.printStackTrace();
+        System.out.println(e.getMessage());
+        ignoreAndWait(e, true);
       } catch( SocketTimeoutException e ) {
         ignoreAndWait(e, false);
       } catch( IOException e ) {
         // Newer versions of Hadoop derive S3Exception from IOException
         if (e.getClass().getName().contains("S3Exception")) {
-          ignoreAndWait(e, false);
+          ignoreAndWait(e, true);
         } else {
           ignoreAndWait(e, true);
         }
@@ -320,13 +330,13 @@ public final class PersistHdfs extends Persist {
     Matcher m = Pattern.compile("s3n://[^/]*").matcher(s2);
     return m.matches();
   }
-  // We don't handle HDFS style S3 storage, just native storage.  But all users
-  // don't know about HDFS style S3 so treat S3 as a request for a native file
-  private static final String convertS3toS3N(String s) {
-    if (Pattern.compile("^s3[a]?://.*").matcher(s).matches())
-      return s.replaceFirst("^s3[a]?://", "s3n://");
-    else return s;
-  }
+//  // We don't handle HDFS style S3 storage, just native storage.  But all users
+//  // don't know about HDFS style S3 so treat S3 as a request for a native file
+//  private static final String convertS3toS3N(String s) {
+//    if (Pattern.compile("^s3[a]?://.*").matcher(s).matches())
+//      return s.replaceFirst("^s3[a]?://", "s3n://");
+//    else return s;
+//  }
 
   @Override
   public ArrayList<String> calcTypeaheadMatches(String filter, int limit) {
@@ -334,7 +344,7 @@ public final class PersistHdfs extends Persist {
     Configuration conf = PersistHdfs.CONF;
 
     // Hack around s3://
-    filter = convertS3toS3N(filter);
+//    filter = convertS3toS3N(filter);
 
     // Handle S3N bare buckets - s3n://bucketname should be suffixed by '/'
     // or underlying Jets3n will throw NPE. filter name should be s3n://bucketname/
@@ -373,7 +383,7 @@ public final class PersistHdfs extends Persist {
 
   @Override
   public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    path = convertS3toS3N(path);
+//    path = convertS3toS3N(path);
 
     // Fix for S3 kind of URL
     if (isBareS3NBucketWithoutTrailingSlash(path)) {

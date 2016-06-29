@@ -507,14 +507,19 @@ public class Frame extends Lockable<Frame> {
     }
 
     int ncols = _keys.length;
-    _names = Arrays.copyOf(_names, ncols+N);
-    _keys = Arrays.copyOf(_keys, ncols+N);
-    _vecs = Arrays.copyOf(_vecs, ncols+N);
+
+    // make temp arrays and don't assign them back until they are fully filled - otherwise vecs() can cache null's and NPE.
+    String[] tmpnam = Arrays.copyOf(_names, ncols+N);
+    Key<Vec>[] tmpkeys = Arrays.copyOf(_keys, ncols+N);
+    Vec[] tmpvecs = Arrays.copyOf(_vecs, ncols+N);
     for (int i=0; i<N; ++i) {
-      _names[ncols+i] = tmpnames[i];
-      _keys[ncols+i] = vecs[i]._key;
-      _vecs[ncols+i] = vecs[i];
+      tmpnam[ncols+i] = tmpnames[i];
+      tmpkeys[ncols+i] = vecs[i]._key;
+      tmpvecs[ncols+i] = vecs[i];
     }
+    _names = tmpnam;
+    _keys = tmpkeys;
+    _vecs = tmpvecs;
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a

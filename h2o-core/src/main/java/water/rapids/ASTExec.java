@@ -7,8 +7,11 @@ import java.util.ArrayList;
 /** Apply A Function.  Basic function execution. */
 public class ASTExec extends AST {
   public final AST[] _asts;
-  ASTExec( AST[] asts ) { _asts = asts; }
-  protected ASTExec( Exec e ) {
+
+  public ASTExec() { _asts = null; }
+  public ASTExec(AST[] asts) { _asts = asts; }
+
+  protected ASTExec( Rapids e ) {
     e.xpeek('(');
     AST ast = e.parse();
     // An eager "must fail at runtime" test.  Not all ASTId's will yield a
@@ -30,6 +33,16 @@ public class ASTExec extends AST {
     return sb.p(')').toString();
   }
 
+  @Override public String example() {
+    return "(func ...args)";
+  }
+
+  @Override public String description() {
+    return "List of whitespace-separated tokens within parenthesis is interpreted as a function application. The " +
+        "first argument must be a function name (or an expression returning a function), all other tokens are passed " +
+        "to the function as arguments. For example: `(sqrt 16)`, `(+ 2 3)`, `(getTimeZone)`, etc.";
+  }
+
   // Function application.  Execute the first AST and verify that it is a
   // function.  Then call that function's apply method.  Do not evaluate other
   // arguments; e.g. short-circuit logicals' apply calls may choose to not ever
@@ -41,7 +54,8 @@ public class ASTExec extends AST {
     AST ast = ((ValFun)fun)._ast;
     int nargs = ast.nargs();
     if( nargs != -1 && nargs != _asts.length )
-      throw new IllegalArgumentException("Incorrect number of arguments; '"+ast+"' expects "+nargs+" but was passed "+_asts.length);
+      throw new IllegalArgumentException(
+          "Incorrect number of arguments; '"+ast+"' expects "+(nargs-1)+" but was passed "+(_asts.length-1));
     try (Env.StackHelp stk = env.stk()) {
         return env.returning(ast.apply(env,stk,_asts));
       }

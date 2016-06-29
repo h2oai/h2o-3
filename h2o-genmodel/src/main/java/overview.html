@@ -84,6 +84,14 @@ public class main {
     hex.genmodel.GenModel rawModel;
     rawModel = (hex.genmodel.GenModel) Class.forName(modelClassName).newInstance();
     EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
+    //
+    // By default, unknown categorical levels throw PredictUnknownCategoricalLevelException.
+    // Optionally configure the wrapper to treat unknown categorical levels as N/A instead:
+    //
+    //     EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+    //                                         new EasyPredictModelWrapper.Config()
+    //                                             .setModel(rawModel)
+    //                                             .setConvertUnknownCategoricalLevelsToNa(true));
 
     RowData row = new RowData();
     row.put("Year", "1987");

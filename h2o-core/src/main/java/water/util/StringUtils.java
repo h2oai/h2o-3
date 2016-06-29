@@ -18,7 +18,16 @@ public class StringUtils {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     t.printStackTrace(pw);
-    String stackTrace = sw.toString();
-    return stackTrace;
+    return sw.toString();
   }
+
+  /**
+   * Convenience function to test whether a string is empty.
+   * @param s String to test
+   * @return True if the string is either null or empty, false otherwise
+   */
+  public static boolean isNullOrEmpty(String s) {
+    return s == null || s.length() == 0;
+  }
+
 }

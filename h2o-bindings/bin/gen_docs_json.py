@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import bindings as bi
 
-if __name__ == "__main__":
+def main():
     bi.init("Docs Json", "../../../h2o-docs", clear_dir=False)
 
     bi.vprint("Writing schemas.json...")
@@ -13,3 +13,6 @@ if __name__ == "__main__":
     bi.vprint("Writing routes.json...")
     bi.write_to_file("routes.json", json.dumps(bi.endpoints(raw=True)))
 
+
+if __name__ == "__main__":
+    main()

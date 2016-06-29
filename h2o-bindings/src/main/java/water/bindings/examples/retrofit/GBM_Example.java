@@ -1,33 +1,13 @@
 package water.bindings.examples.retrofit;
 
-import okhttp3.OkHttpClient;
+import water.bindings.H2oApi;
 import water.bindings.pojos.*;
 import water.bindings.proxies.retrofit.*;
-import water.bindings.H2oApi;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.UUID;
 
 public class GBM_Example {
-
-    public static void copyFields(Object to, Object from) {
-        Field[] fromFields = from.getClass().getDeclaredFields();
-        Field[] toFields   = to.getClass().getDeclaredFields();
-
-        for (Field fromField : fromFields){
-            Field toField = null;
-            try {
-                toField = to.getClass().getDeclaredField(fromField.getName());
-                fromField.setAccessible(true);
-                toField.setAccessible(true);
-                toField.set(to, fromField.get(from));
-            }
-            catch (Exception e) {
-                continue; // NoSuchField is the normal case
-            }
-        }
-    }
 
     public static void gbmExampleFlow() {
         H2oApi h2o = new H2oApi();
@@ -42,19 +22,19 @@ public class GBM_Example {
 
             // STEP 1: import raw file
             ImportFilesV3 importBody = h2o.importFiles(
-                "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null
-            );
+                "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"
+              );
             System.out.println("import: " + importBody);
 
 
             // STEP 2: parse setup
-            ParseSetupV3 parseSetupBody = h2o.guessParseSetup(H2oApi.stringArrayToFrameKeyArray(importBody.destinationFrames));
+            ParseSetupV3 parseSetupBody = h2o.guessParseSetup(H2oApi.stringArrayToKeyArray(importBody.destinationFrames, FrameKeyV3.class));
             System.out.println("parseSetupBody: " + parseSetupBody);
 
 
             // STEP 3: parse into columnar Frame
             ParseV3 parseParms = new ParseV3();
-            GBM_Example.copyFields(parseParms, parseSetupBody);
+            H2oApi.copyFields(parseParms, parseSetupBody);
             parseParms.destinationFrame = H2oApi.stringToFrameKey("arrhythmia.hex");
             parseParms.blocking = true;  // alternately, call h2o.waitForJobCompletion(parseSetupBody.job)
 
