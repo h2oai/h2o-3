@@ -1728,6 +1728,7 @@ final public class H2O {
     }
 
     // Always print version, whether asked-for or not!
+    Log.info("Used arguments: " + Arrays.toString(args));
     printAndLogVersion();
     if( ARGS.version ) {
       Log.flushStdout();

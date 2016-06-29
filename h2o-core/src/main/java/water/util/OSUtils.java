@@ -44,4 +44,16 @@ public class OSUtils {
       return Long.valueOf(value, radix);
     }
   }
+
+  public static String getOsName() {
+    return System.getProperty("os.name");
+  }
+
+  public static boolean isLinux() {
+    return getOsName().toLowerCase().startsWith("linux");
+  }
+
+  public static boolean isWindows() {
+    return getOsName().toLowerCase().startsWith("windows");
+  }
 }

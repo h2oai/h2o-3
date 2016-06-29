@@ -22,7 +22,11 @@ public class NetworkUtils {
   public static byte[] GOOGLE_DNS_IPV6 = toByteArray(new int[] {0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00,
                                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88 });
 
+  /** Override IPv6 scope by a defined value */
   private static String H2O_SYSTEM_SCOPE_PARAM = "sys.ai.h2o.network.ipv6.scope";
+
+  /** Define timeout in ms to figure out if local ip is reachable */
+  private static String H2O_SYSTEM_LOCAL_IP_PING_TIMEOUT = "sys.ai.h2o.network.ip.ping.timeout";
 
   // See IPv6 Multicast scopes:
   public static long SCOPE_IFACE_LOCAL  = 0x0001000000000000L;
@@ -107,4 +111,12 @@ public class NetworkUtils {
     }
   }
 
+  public static int getLocalIpPingTimeout() {
+    String value = System.getProperty(H2O_SYSTEM_LOCAL_IP_PING_TIMEOUT, "150" /* ms */);
+    try {
+      return Integer.valueOf(value);
+    } catch (NumberFormatException e) {
+      return 150;
+    }
+  }
 }
