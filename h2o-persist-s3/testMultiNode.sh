@@ -18,9 +18,9 @@ function cleanup () {
   RC=`cat $OUTDIR/status.0`
   if [ $RC -ne 0 ]; then
     cat $OUTDIR/out.0
-    echo h2o-algos junit tests FAILED
+    echo h2o-persist-s3 junit tests FAILED
   else
-    echo h2o-algos junit tests PASSED
+    echo h2o-persist-s3 junit tests PASSED
   fi
   exit $RC
 }
@@ -68,7 +68,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
 
-# On this h2o-algos testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
+# On this h2o-persist-s3 testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
 # If sorted, the result of the cd/grep varies by machine.
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows.
