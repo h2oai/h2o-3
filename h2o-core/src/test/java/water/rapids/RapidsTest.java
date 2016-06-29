@@ -231,7 +231,7 @@ public class RapidsTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     fr.remove(4).remove();
     try {
-      Val val = Exec.exec(tree);
+      Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
       if( val instanceof ValFrame ) {
@@ -249,7 +249,7 @@ public class RapidsTest extends TestUtil {
   @Test public void testProstate_assign_frame_scalar() {
     Frame fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
     try {
-      Val val = Exec.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
+      Val val = Rapids.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
       if( val instanceof ValFrame ) {
         Frame fr2= ((ValFrame)val)._fr;
         System.out.println(fr2.vec(0));
@@ -264,7 +264,7 @@ public class RapidsTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("a.hex"),"smalldata/iris/iris_wheader.csv");
     String tree = "(tmp= py_2 (:= (tmp= py_1 (cbind a.hex (== (cols_py a.hex 4.0 ) \"Iris-setosa\" ) ) ) (as.factor (cols_py py_1 5.0 ) ) 5.0 [] ) )";
     //String tree = "(:= (tmp= py_1 a.hex) (h2o.runif a.hex -1) 4 [])";
-    Val val = Exec.exec(tree);
+    Val val = Rapids.exec(tree);
     if( val instanceof ValFrame ) {
       Frame fr2= ((ValFrame)val)._fr;
       System.out.println(fr2.vec(0));
@@ -287,7 +287,7 @@ public class RapidsTest extends TestUtil {
       DKV.put(r);
       System.out.println(r);
       String x = String.format("(merge %s %s #1 #0 [] [] \"auto\")",l._key,r._key);
-      Val res = Exec.exec(x);
+      Val res = Rapids.exec(x);
       f = res.getFrame();
       System.out.println(f);
       Vec names = f.vec(0);
@@ -319,7 +319,7 @@ public class RapidsTest extends TestUtil {
               ard(2.561221e-05)));
       double[] probs = new double[]{0.001, 0.005, .01, .02, .05, .10, .50, .8883, .90, .99};
       String x = String.format("(quantile %s %s \"interpolate\" _)", fr._key, Arrays.toString(probs));
-      Val val = Exec.exec(x);
+      Val val = Rapids.exec(x);
       fr.delete();
       f = val.getFrame();
       Assert.assertEquals(2,f.numCols());
@@ -334,7 +334,7 @@ public class RapidsTest extends TestUtil {
   }
 
   static void exec_str( String str, Session ses ) {
-    Val val = Exec.exec(str,ses);
+    Val val = Rapids.exec(str,ses);
     switch( val.type() ) {
     case Val.FRM:
       Frame fr = val.getFrame();
@@ -379,10 +379,10 @@ public class RapidsTest extends TestUtil {
     try {
       fr = parse_test_file(Key.make("a.hex"),"smalldata/airlines/AirlinesTrainMM.csv.zip");
       System.out.printf(fr.toString());
-      Exec.exec("(tmp= flow_1 (h2o.runif a.hex -1))",ses);
-      Exec.exec("(tmp= f.25 (rows a.hex (<  flow_1 0.25) ) )",ses);
-      Exec.exec("(tmp= f.75 (rows a.hex (>= flow_1 0.25) ) )",ses);
-      Exec.exec("(tmp= flow_2 (h2o.runif a.hex -1))",ses);
+      Rapids.exec("(tmp= flow_1 (h2o.runif a.hex -1))",ses);
+      Rapids.exec("(tmp= f.25 (rows a.hex (<  flow_1 0.25) ) )",ses);
+      Rapids.exec("(tmp= f.75 (rows a.hex (>= flow_1 0.25) ) )",ses);
+      Rapids.exec("(tmp= flow_2 (h2o.runif a.hex -1))",ses);
       ses.end(null);
     } catch( Throwable ex ) {
       throw ses.endQuietly(ex);
@@ -392,7 +392,7 @@ public class RapidsTest extends TestUtil {
   }
 
   @Test public void testChicago() {
-    String oldtz = Exec.exec("(getTimeZone)").getStr();
+    String oldtz = Rapids.exec("(getTimeZone)").getStr();
     Session ses = new Session();
     try {
       parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
@@ -507,7 +507,7 @@ public class RapidsTest extends TestUtil {
     } catch( Throwable ex ) {
       throw ses.endQuietly(ex);
     } finally {
-      Exec.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
+      Rapids.exec("(setTimeZone \""+oldtz+"\")"); // Restore time zone (which is global, and will affect following tests)
 
       for( String s : new String[]{"weather.hex","crimes.hex","census.hex",
                                    "nary_op_5", "unary_op_6", "unary_op_7", "unary_op_8", "binary_op_9",

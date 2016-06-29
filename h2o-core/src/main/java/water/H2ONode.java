@@ -13,7 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import water.RPC.RPCCall;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
+import water.util.ArrayUtils;
 import water.util.Log;
+import water.util.MathUtils;
 import water.util.UnsafeUtils;
 
 /**
@@ -34,12 +36,26 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
-  public static final class H2Okey extends InetSocketAddress implements Comparable {
-    final int _ipv4;     // cheapo ipv4 address
+
+  /** Identification of the node via IP and PORT */
+  static final class H2Okey extends InetSocketAddress implements Comparable {
+    // Numeric representation of IP
+    // For IPv6 the both fields are valid and describes full IPv6 address, for IPv4 only low 32 bits of _ipLow are valid
+    // But still need a flag to distinguish between IPv4 and IPv6
+    final long _ipHigh, _ipLow; // IPv4: A.B.C.D ~ DCBA
+    final boolean _isIPv4;
     H2Okey(InetAddress inet, int port) {
-      super(inet,port);
-      byte[] b = inet.getAddress();
-      _ipv4 = (b[0]&0xFF)+((b[1]&0xFF)<<8)+((b[2]&0xFF)<<16)+((b[3]&0xFF)<<24);
+      super(inet, port);
+      byte[] b = inet.getAddress(); // 4bytes or 16bytes
+      if (b.length == 4) {
+        _ipHigh = 0;
+        _ipLow = ArrayUtils.encodeAsLong(b);
+        _isIPv4 = true;
+      } else {
+        _ipHigh = ArrayUtils.encodeAsLong(b, 8, 8);
+        _ipLow = ArrayUtils.encodeAsLong(b, 0, 8);
+        _isIPv4 = false;
+      }
     }
     public int htm_port() { return getPort()-1; }
     public int udp_port() { return getPort()  ; }
@@ -48,24 +64,26 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       return getAddress().getHostAddress() + ":" + htm_port();
     }
     AutoBuffer write( AutoBuffer ab ) {
-      return ab.put4(_ipv4).put2((char)udp_port());
+      return (_isIPv4
+              ? ab.put1(1).put4((int) _ipLow)
+              : ab.put1(0).put8(_ipLow).put8(_ipHigh)).put2((char) udp_port());
     }
     static H2Okey read( AutoBuffer ab ) {
-      try { 
-        InetAddress inet = InetAddress.getByAddress(ab.getA1(4));
+      try {
+        int size = ab.get1() == 1 ? 4 : 16; // IPv4 or IPv6 address
+        InetAddress inet = InetAddress.getByAddress(ab.getA1(size));
         int port = ab.get2();
-        return new H2Okey(inet,port);
+        return new H2Okey(inet, port);
       } catch( UnknownHostException e ) { throw Log.throwErr(e); }
     }
     // Canonical ordering based on inet & port
-    @Override public int compareTo( Object x ) {
+    @Override public int compareTo(Object x) {
       if( x == null ) return -1;   // Always before null
       if( x == this ) return 0;
       H2Okey key = (H2Okey)x;
-      // Must be unsigned long-math, or overflow will make a broken sort
-      long res = (_ipv4&0xFFFFFFFFL) - (key._ipv4&0xFFFFFFFFL);
-      if( res != 0 ) return res < 0 ? -1 : 1;
-      return udp_port() - key.udp_port();
+      // Must be unsigned long-arithmetic, or overflow will make a broken sort
+      int res = MathUtils.compareUnsigned(_ipHigh, _ipLow, key._ipHigh, key._ipLow);
+      return res != 0 ? res : udp_port() - key.udp_port();
     }
   }
 
@@ -73,7 +91,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return _key.getIpPortString();
   }
 
-  public final int ip4() { return _key._ipv4; }
+  public final int ip4() { return (int) _key._ipLow; }
 
   // These are INTERN'd upon construction, and are uniquely numbered within the
   // same run of a JVM.  If a remote Node goes down, then back up... it will

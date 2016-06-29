@@ -29,18 +29,5 @@ public final class HDFSFileVec extends FileVec {
     return k;
   }
 
-  @Override public int setChunkSize(Frame fr, int chunkSize) {
-    // Clear cached chunks first
-    // Peeking into a file before the chunkSize has been set
-    // will load chunks of the file in DFLT_CHUNK_SIZE amounts.
-    // If this side-effect is not reversed when _chunkSize differs
-    // from the default value, parsing will either double read
-    // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
-    // (_chunkSize > DFLT_CHUNK_SIZE). This reverses this side-effect.
-    Futures fs = new Futures();
-    Keyed.remove(_key, fs);
-    fs.blockForPending();
 
-    return super.setChunkSize(fr, chunkSize);
-  }
 }

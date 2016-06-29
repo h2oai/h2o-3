@@ -395,7 +395,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // --------------------------------------------------------------------------
     // Build the next k-trees, which is trying to correct the residual error from
     // the prior trees.
-    @Override protected void buildNextKTrees() {
+    @Override protected boolean buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -445,6 +445,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
+
+      boolean converged = effective_learning_rate() < 1e-6;
+      if (converged) {
+        Log.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
+      }
+      return converged;
     }
 
     private void growTrees(DTree[] ktrees, int[] leaves, Random rand) {
@@ -498,7 +504,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int nid = 0; nid < leaf; nid++) {
           if (tree.node(nid) instanceof DecidedNode) {
             DecidedNode dn = tree.decided(nid);
-            if (dn._split._col == -1) { // No decision here, no row should have this NID now
+            if (dn._split == null) { // No decision here, no row should have this NID now
               if (nid == 0)               // Handle the trivial non-splitting tree
                 new LeafNode(tree, -1, 0);
               continue;
@@ -508,7 +514,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
               if (cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode) tree.node(cnid))._split.col() == -1))
+                              ((DecidedNode) tree.node(cnid))._split == null))
                 dn._nids[i] = new LeafNode(tree, nid).nid(); // Mark a leaf here
             }
           }
@@ -547,14 +553,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
+    private double effective_learning_rate() {
+      return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
+    }
+
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
       double m1class = _nclass > 1 && _parms._distribution != Distribution.Family.bernoulli ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
-        double annealing = Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          double gf = _parms._learn_rate * annealing * m1class * gp.gamma(k, i);
+          double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
@@ -631,7 +640,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
-          if( tree.root() instanceof LeafNode ) continue;
+          if( tree.root() instanceof LeafNode )
+            continue;
           Distribution dist = new Distribution(_parms);
           for( int row=0; row<nids._len; row++ ) { // For all rows
             int nid = (int)nids.at8(row);          // Get Node to decide from
@@ -643,9 +653,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
               nid = tree.node(nid).pid();                  // Then take parent's decision
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
-            if( dn._split._col == -1 )                    // Unable to decide?
+            if( dn._split == null )                    // Unable to decide?
               dn = tree.decided(dn.pid());  // Then take parent's decision
-            int leafnid = dn.ns(chks,row); // Decide down to a leafnode
+            int leafnid = dn.getChildNodeID(chks,row); // Decide down to a leafnode
             assert leaf <= leafnid && leafnid < tree._len :
                     "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
             assert tree.node(leafnid) instanceof LeafNode;

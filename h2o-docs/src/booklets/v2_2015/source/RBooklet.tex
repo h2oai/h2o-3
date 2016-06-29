@@ -538,10 +538,9 @@ To rename a dataframe on the server running H2O for a dataset manipulated in R, 
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_assign.R}
 
-\newpage
 \subsection{Viewing Column Names}
 To view a list of the column names in the dataset, use {\texttt{colnames()}} or {\texttt{names()}} with the name of the R reference object in the parentheses.
-
+\newpage
 \waterExampleInR
 \medskip
 %\lstinputlisting[style=R]{R_Vignette_code_examples/r_colnames.R} - This example seems less helpful than the original  - restoring old version for now
@@ -696,11 +695,14 @@ To append a column of random numbers to an H2O data frame for testing/training d
 
 To generate two subsets (according to specified ratios) from an existing H2O dataset for testing/training, use {\texttt{h2o.splitFrame()}}, which returns contiguous sections of the data without random sampling.
 
+{\bf{Note}}: {\texttt{h2o.splitFrame()}} does not give an exact split. H2O is designed to be efficient on big data using a probabilistic splitting method rather than an exact split. For example specifying a split of 0.75/0.25, H2O will produce a test/train split with an expected value of 0.75/0.25 rather than exactly 0.75/0.25. On small datasets, the sizes of the resulting splits will deviate from the expected value more than on big data, where they will be very close to exact.
+
+\newpage
 \waterExampleInR
 \medskip
 \lstinputlisting[style=R]{R_Vignette_code_examples/r_splitframe.R}
 
-\newpage
+
 \subsection{Getting Frames}
 
 
@@ -738,8 +740,6 @@ To generate a list of all H2O objects generated during a session and each object
 \end{lstlisting}
 
 \normalsize 
-
-\newpage
 
 \subsection{Removing H2O Objects}
 

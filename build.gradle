@@ -33,6 +33,7 @@ buildscript {
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath "be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+"
+        classpath "io.spring.gradle:dependency-management-plugin:0.5.4.RELEASE"
     }
 }
 
@@ -49,6 +50,7 @@ ext {
       project(':h2o-app'),
       project(':h2o-scala'),
       project(':h2o-persist-hdfs'),
+      project(':h2o-persist-s3'),
       project(':h2o-genmodel'),
       project(':h2o-bindings'),
       project(':h2o-avro-parser')
@@ -60,6 +62,7 @@ ext {
       project(':h2o-web'),
       project(':h2o-app'),
       project(':h2o-persist-hdfs'),
+      project(':h2o-persist-s3'),
       project(':h2o-test-integ'),
       project(':h2o-test-accuracy'),
       project(':h2o-genmodel'),
@@ -77,6 +80,13 @@ ext {
 
     pythonProjects = [
       project(':h2o-py')
+    ]
+
+    // The project which need to be run under CI only
+    testNeedsCiProject = [
+      // The S3 tests needs credentials which are provided by test environment.
+      // Because of restrictions of Amazon they cannot be stored in repository.
+      project(':h2o-persist-s3'),
     ]
 
     //
@@ -104,6 +114,9 @@ allprojects {
 
     ext {
         isRelease = rootProject.hasProperty("doRelease")
+        isCi = (System.getProperty("user.name").equals("jenkins")
+                || System.getenv("CI") != null
+                || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
     }
 }
 
@@ -173,12 +186,20 @@ subprojects {
         if (project.hasProperty("doAnimalSniffer") && project.doAnimalSniffer == "true") {
             apply from: "$rootDir/gradle/animalSniffer.gradle"
         }
+        if (testNeedsCiProject.contains(project)) {
+            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            project.testMultiNode.enabled = project.ext.isCi
+        }
     }
 
     // Configure Scala projects
     if (project in scalaProjects) {
         apply from: "$rootDir/gradle/scala.gradle"
         apply from: "$rootDir/gradle/cp.gradle"
+        if (testNeedsCiProject.contains(project)) {
+            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            project.testMultiNode.enabled = project.ext.isCi
+        }
     }
 
     if (project in rProjects) {

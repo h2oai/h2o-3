@@ -1,5 +1,7 @@
 package water.api;
 
+import water.api.schemas3.NetworkBenchV3;
+import water.api.schemas3.NetworkTestV3;
 import water.init.NetworkBench;
 import water.init.NetworkTest;
 

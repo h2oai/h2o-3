@@ -14,8 +14,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public final double _logloss;
   public final double _mean_per_class_error;
 
-  public ModelMetricsMultinomial(Model model, Frame frame, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss) {
-    super(model, frame, mse, domain, sigma);
+  public ModelMetricsMultinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, ConfusionMatrix cm, float[] hr, double logloss) {
+    super(model, frame, nobs, mse, domain, sigma);
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
@@ -164,7 +164,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
       }
-      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, mse, _domain, sigma, cm,   hr,   logloss));
+      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,   hr,   logloss));
     }
   }
 }

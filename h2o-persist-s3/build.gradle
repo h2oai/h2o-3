@@ -1,0 +1,36 @@
+description = "H2O Persist S3"
+
+//apply plugin: "io.spring.dependency-management"
+
+//dependencyManagement {
+//  imports {
+//    mavenBom 'com.amazonaws:aws-java-sdk-bom:1.10.47'
+//  }
+//}
+
+dependencies {
+  compile project(":h2o-core")
+  compile 'com.amazonaws:aws-java-sdk-s3:1.10.47'
+  compile 'org.apache.httpcomponents:httpclient:4.3.6'
+  testCompile "junit:junit:${junitVersion}"
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
+}
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+// The default 'test' behavior is broken in that it does not grok clusters.
+// For H2O, all tests need to be run on a cluster, where each JVM is
+// "free-running" - it's stdout/stderr are NOT hooked by another process.  If
+// they are hooked (e.g., by the gradle driver process) then the stdout/err get
+// buffered and when all CPUs are maxed out (happens over a large fraction of
+// the test run) no output is visible.  If the JVMs then crash (again, common
+// enough), we get NO output for the test run.  So instead we need to arrange a
+// complete cluster of free-running JVMs and redirect all output (at the OS
+// level) to files - then scrape the files later for test results.
+test {
+  dependsOn ":h2o-core:testJar"
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}

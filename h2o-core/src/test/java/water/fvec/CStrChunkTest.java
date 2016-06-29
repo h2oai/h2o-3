@@ -17,8 +17,7 @@ public class CStrChunkTest extends TestUtil {
 
       BufferedString[] vals = new BufferedString[1000001];
       for (int i = 0; i < vals.length; i++) {
-        vals[i] = new BufferedString();
-        vals[i].setTo("Foo"+i);
+        vals[i] = new BufferedString("Foo"+i);
       }
       if (l==1) nc.addNA();
       for (BufferedString v : vals) nc.addStr(v);

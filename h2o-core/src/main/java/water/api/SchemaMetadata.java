@@ -4,7 +4,7 @@ import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.Weaver;
-import water.api.SchemaMetadataBase.FieldMetadataBase;
+import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
 import water.util.Log;
@@ -156,17 +156,9 @@ public final class SchemaMetadata extends Iced {
         // Note, this has to work when the field is null.  In addition, if the field's type is a base class we want to see if we have a versioned schema for its Iced type and, if so, use it.
         if (this.is_schema) {
           // First, get the class of the field: NOTE: this gets the actual type for genericized fields, but not for arrays of genericized fields
-          Class<? extends Schema> schema_class = f.getType().isArray() ? (Class<? extends Schema>)f.getType().getComponentType() : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
-
-          // Now see if we have a versioned schema for its Iced type:
-          Class<? extends Schema>  versioned_schema_class = Schema.schemaClass(schema.getSchemaVersion(), Schema.getImplClass(schema_class));
-
-          // If we found a versioned schema class for its iced type use it, else fall back to the type of the field:
-          if (null != versioned_schema_class) {
-            this.schema_name = versioned_schema_class.getSimpleName();
-          } else {
-            this.schema_name = schema_class.getSimpleName();
-          }
+          Class schema_class = f.getType().isArray()? f.getType().getComponentType()
+                                                    : ReflectionUtils.findActualFieldClass(schema.getClass(), f);
+          this.schema_name = schema_class.getSimpleName();
         } else if ((is_enum || is_fake_enum) && !f.getType().isArray()) {
           // We have enums of the same name defined in a few classes (e.g., Loss and Initialization)
           this.schema_name = getEnumSchemaName(is_enum ? f.getType() : annotation.valuesProvider());
@@ -180,9 +172,8 @@ public final class SchemaMetadata extends Iced {
             this.inherited_from = f.getDeclaringClass().getSimpleName();
 
         if (null != annotation) {
-          // String l = annotation.label();
           this.help = annotation.help();
-          // this.label = (null == l || l.isEmpty() ? f.getName() : l);
+          this.label = this.name;
           this.required = annotation.required();
           this.level = annotation.level();
           this.direction = annotation.direction();
@@ -272,7 +263,7 @@ public final class SchemaMetadata extends Iced {
       }
 
       if (Iced.class.isAssignableFrom(clz)) {
-        if (clz == Schema.Meta.class) {
+        if (clz == SchemaV3.Meta.class) {
           // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
           return "Schema.Meta";
         } else {
@@ -280,10 +271,10 @@ public final class SchemaMetadata extends Iced {
           if (schema instanceof ModelParameterSchemaV3 && ("default_value".equals(field_name) || "actual_value".equals(field_name)))
             return "Polymorphic";
 
-          if ((schema instanceof FieldMetadataV3 || schema instanceof FieldMetadataBase) && "value".equals(field_name))
+          if ((schema instanceof FieldMetadataV3) && "value".equals(field_name))
             return "Polymorphic";
 
-          if (((schema instanceof TwoDimTableBase || schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
+          if (((schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
             return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
@@ -360,9 +351,9 @@ public final class SchemaMetadata extends Iced {
   }
 
   public SchemaMetadata(Schema schema) {
-    version = schema.get__meta().getSchema_version();
-    name = schema.get__meta().getSchema_name();
-    type = schema.get__meta().getSchema_type();
+    version = schema.getSchemaVersion();
+    name = schema.getSchemaName();
+    type = schema.getSchemaType();
 
     superclass = schema.getClass().getSuperclass().getSimpleName();
     // Get metadata of all annotated fields

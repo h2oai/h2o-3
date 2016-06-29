@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelMetrics;
 import water.*;
+import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
@@ -63,8 +64,6 @@ class ModelMetricsHandler extends Handler {
       return this.schema(version).fillFromImpl(m.fetch());
     }
 
-    // TODO: almost identical to ModelsHandler; refactor
-    public static ModelMetrics getFromDKV(String mm_key) { return getFromDKV(mm_key); }
 
     protected ModelMetricsListSchemaV3 schema(int version) {
       switch (version) {
@@ -74,9 +73,9 @@ class ModelMetricsHandler extends Handler {
     }
   } // class ModelMetricsList
 
-  /** Schema for a list of ModelMetricsBase.
+  /** Schema for a list of ModelMetricsBaseV3.
    *  This should be common across all versions of ModelMetrics schemas, so it lives here.   */
-  public static final class ModelMetricsListSchemaV3 extends RequestSchema<ModelMetricsList, ModelMetricsListSchemaV3> {
+  public static final class ModelMetricsListSchemaV3 extends SchemaV3<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = true)
     public KeyV3.ModelKeyV3 model;
@@ -113,7 +112,7 @@ class ModelMetricsHandler extends Handler {
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
-    public ModelMetricsBase[] model_metrics;
+    public ModelMetricsBaseV3[] model_metrics;
 
     @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
       // TODO: check for type!
@@ -155,13 +154,13 @@ class ModelMetricsHandler extends Handler {
       this.exemplar_index = mml._exemplar_index;
 
       if (null != mml._model_metrics) {
-        this.model_metrics = new ModelMetricsBase[mml._model_metrics.length];
+        this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ ) {
           ModelMetrics mm = mml._model_metrics[i];
-          this.model_metrics[i] = (ModelMetricsBase) Schema.schema(3, mm.getClass()).fillFromImpl(mm);
+          this.model_metrics[i] = (ModelMetricsBaseV3) SchemaServer.schema(3, mm.getClass()).fillFromImpl(mm);
         }
       } else {
-        this.model_metrics = new ModelMetricsBase[0];
+        this.model_metrics = new ModelMetricsBaseV3[0];
       }
       return this;
     }

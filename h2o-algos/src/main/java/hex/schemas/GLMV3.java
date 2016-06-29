@@ -7,15 +7,15 @@ import hex.glm.GLMModel.GLMParameters.Solver;
 import water.api.API;
 import water.api.API.Direction;
 import water.api.API.Level;
-import water.api.KeyV3.FrameKeyV3;
-import water.api.ModelParametersSchema;
+import water.api.schemas3.KeyV3.FrameKeyV3;
+import water.api.schemas3.ModelParametersSchemaV3;
 
 /**
  * Created by tomasnykodym on 8/29/14.
  */
 public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
-  public static final class GLMParametersV3 extends ModelParametersSchema<GLMParameters, GLMParametersV3> {
+  public static final class GLMParametersV3 extends ModelParametersSchemaV3<GLMParameters, GLMParametersV3> {
     static public String[] fields = new String[]{
             "model_id",
             "training_frame",
@@ -39,6 +39,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "alpha",
             "lambda",
             "lambda_search",
+            "early_stopping",
             "nlambdas",
             "standardize",
             "missing_values_handling",
@@ -50,8 +51,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "objective_epsilon",
             "beta_epsilon",
             "gradient_epsilon",
-            "stopping_rounds",
-            "stopping_tolerance",
             "link",
             "prior",
             "lambda_min_ratio",
@@ -92,6 +91,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
 
     @API(help = "use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
     public boolean lambda_search;
+
+    @API(help="stop early when there is no more relative improvement on train or validation (if provided)")
+    public boolean early_stopping;
 
     @API(help = "number of lambdas to be used in a search", level = Level.critical)
     public int nlambdas;

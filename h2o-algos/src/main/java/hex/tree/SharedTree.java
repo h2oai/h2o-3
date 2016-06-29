@@ -297,7 +297,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     // Abstract classes implemented by the tree builders
     abstract protected M makeModel( Key modelKey, P parms);
     abstract protected boolean doOOBScoring();
-    abstract protected void buildNextKTrees();
+    abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
 
     // Common methods for all tree builders
@@ -351,13 +351,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           }
         }
         Timer kb_timer = new Timer();
-        buildNextKTrees();
+        boolean converged = buildNextKTrees();
         Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
         if (_model._output._treeStats._max_depth==0) {
           Log.warn("Nothing to split on: Check that response and distribution are meaningful (e.g., you are not using laplace/quantile regression with a binary response).");
         }
-        if (timeout()) {
+        if (converged || timeout()) {
           _job.update(_parms._ntrees-tid-1); // add remaining trees to progress bar
           break; // If timed out, do the final scoring
         }
@@ -457,7 +457,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafk]);
 //        System.out.println(dn +
 //                           "  > Split: " + dn._split + " L/R:" + dn._split._n0+" + "+dn._split._n1);
-        if( dn._split._col == -1 ) udn.do_not_split();
+        if( dn._split == null ) udn.do_not_split();
         else {
           _did_split = true;
           DTree.Split s = dn._split; // Accumulate squared error improvements per variable
@@ -716,6 +716,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     List<String> colFormat = new ArrayList<>();
 
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+    colHeaders.add("Number of Internal Trees"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("Model Size in Bytes"); colTypes.add("long"); colFormat.add("%d");
 
     colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
@@ -736,7 +737,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
             "");
     int row = 0;
     int col = 0;
-    table.set(row, col++, _output._treeStats._num_trees);
+    table.set(row, col++, _output._ntrees);
+    table.set(row, col++, _output._treeStats._num_trees); //internal number of trees (more for multinomial)
     table.set(row, col++, _output._treeStats._byte_size);
     table.set(row, col++, _output._treeStats._min_depth);
     table.set(row, col++, _output._treeStats._max_depth);

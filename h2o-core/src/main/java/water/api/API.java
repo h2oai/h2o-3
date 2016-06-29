@@ -24,6 +24,11 @@ public @interface API {
   String help();
 
   /**
+   * The label that should be displayed for the field if the name is insufficient.
+   */
+  String label() default "";
+
+  /**
    * Is this field required, or is the default value generally sufficient?
    */
   boolean required() default false;
@@ -36,7 +41,7 @@ public @interface API {
   /**
    * Is this field an input, output or inout?
    */
-  Direction direction() default Direction.INPUT; // TODO: should this be INOUT?
+  Direction direction() default Direction.INPUT;
 
   // The following are markers for *input* fields.
 
@@ -46,7 +51,7 @@ public @interface API {
    */
   String[] values() default {};
 
-  /** Provide values for enum-like types if it cannot be provided as a constant in annotation. */
+  /** Proovide values for enum-like types if it cannot be provided as a constant in annotation. */
   Class<? extends ValuesProvider> valuesProvider() default ValuesProvider.class;
 
   /**

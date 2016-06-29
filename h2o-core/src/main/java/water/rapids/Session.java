@@ -90,7 +90,7 @@ public class Session {
     return returning;
   }
 
-  // The Exec call threw an exception.  Best-effort cleanup, no more exceptions
+  // The Rapids call threw an exception.  Best-effort cleanup, no more exceptions
   public RuntimeException endQuietly(Throwable ex) {
     try { 
       GLOBALS.clear();
@@ -276,7 +276,7 @@ public class Session {
   }
 
   // To avoid a class-circularity hang, we need to force other members of the
-  // cluster to load the Exec & AST classes BEFORE trying to execute code
+  // cluster to load the Rapids & AST classes BEFORE trying to execute code
   // remotely, because e.g. ddply runs functions on all nodes.
   private static volatile boolean _inited; // One-shot init
   static void cluster_init() {

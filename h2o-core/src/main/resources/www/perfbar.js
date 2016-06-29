@@ -293,7 +293,7 @@ function initializeCloud() {
             timeouts = new Array(cloud_size);
         }
     };
-    xmlhttp.open("GET","/3/Cloud.json",true);
+    xmlhttp.open("GET","/3/Cloud",true);
     xmlhttp.send();
 }
 
@@ -357,7 +357,7 @@ function initializeNode(nodeIdx, nodeName, nodePort) {
             }
         }
     };
-    xmlhttp.open("GET","/3/WaterMeterCpuTicks.json/" + nodeIdx, true);
+    xmlhttp.open("GET","/3/WaterMeterCpuTicks/" + nodeIdx, true);
     xmlhttp.send();
 }
 
@@ -386,7 +386,7 @@ function repaintAndArmTimeout(nodeIdx) {
             }, timeoutDelayMillis, nodeIdx);
         }
     };
-    xmlhttp.open("GET", "/3/WaterMeterCpuTicks.json/" + nodeIdx, true);
+    xmlhttp.open("GET", "/3/WaterMeterCpuTicks/" + nodeIdx, true);
     xmlhttp.send();
 }
 

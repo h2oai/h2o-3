@@ -6,12 +6,15 @@ import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
-import hex.schemas.GridSearchSchema;
+import hex.schemas.*;
 import water.H2O;
 import water.Job;
 import water.Key;
 import water.TypeMap;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.IcedHashMap;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -33,7 +36,7 @@ import java.util.*;
 public class GridSearchHandler<G extends Grid<MP>,
     S extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
-    P extends ModelParametersSchema> extends Handler {
+    P extends ModelParametersSchemaV3> extends Handler {
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   // TODO: why does this do its own params filling?
@@ -49,8 +52,12 @@ public class GridSearchHandler<G extends Grid<MP>,
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
     // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
-    String algoSchemaName = Schema.schemaClass(version, algoName).getSimpleName(); // GBMV3
-    int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
+    // String algoSchemaName = SchemaServer.schemaClass(version, algoName).getSimpleName(); // GBMV3
+    // int algoVersion = Integer.valueOf(algoSchemaName.substring(algoSchemaName.lastIndexOf("V")+1)); // '3'
+    // Ok, i'm replacing one hack with another hack here, because SchemaServer.schema*() calls are getting eliminated.
+    // There probably shouldn't be any reference to algoVersion here at all... TODO: unhack all of this
+    int algoVersion = 3;
+    if (algoName.equals("SVD") || algoName.equals("Aggregator")) algoVersion = 99;
 
     // TODO: this is a horrible hack which is going to cause maintenance problems:
     String paramSchemaName = schemaDir+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
@@ -60,6 +67,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     gss.init_meta();
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
     gss.parameters.init_meta();
+    gss.hyper_parameters = new IcedHashMap<>();
 
     // Get default parameters, then overlay the passed-in values
     ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
@@ -101,7 +109,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // FIXME: right now we have to remove grid parameters which we sent back
     gss.hyper_parameters = null;
     gss.total_models = gsJob._result.get().getModelCount(); // TODO: looks like it's currently always 0
-    gss.job = (JobV3) Schema.schema(version, Job.class).fillFromImpl(gsJob);
+    gss.job = new JobV3(gsJob);
 
     return gss;
   }
@@ -141,7 +149,7 @@ public class GridSearchHandler<G extends Grid<MP>,
   }
 
 
-  static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchema>
+  static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {
 
     @Override
@@ -164,7 +172,7 @@ public class GridSearchHandler<G extends Grid<MP>,
    * @param <MP> type of model parameters
    * @param <PS> type of schema representing model parameters
    */
-  public static class ModelParametersFromSchemaBuilder<MP extends Model.Parameters, PS extends ModelParametersSchema>
+  public static class ModelParametersFromSchemaBuilder<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory.ModelParametersBuilder<MP> {
 
     final private MP params;
@@ -173,7 +181,7 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     public ModelParametersFromSchemaBuilder(MP initialParams) {
       params = initialParams;
-      paramsSchema = (PS) Schema.schema(Schema.getHighestSupportedVersion(), params.getClass());
+      paramsSchema = (PS) SchemaServer.schema(-1, params.getClass());
       fields = new ArrayList<>(7);
     }
 
@@ -199,7 +207,7 @@ public class GridSearchHandler<G extends Grid<MP>,
           .copyProperties(params, paramsSchema, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, null,
                           fields.toArray(new String[fields.size()]));
       // FIXME: handle these train/valid fields in different way
-      // See: ModelParametersSchema#fillImpl
+      // See: ModelParametersSchemaV3#fillImpl
       if (params._valid == null && paramsSchema.validation_frame != null) {
         params._valid = Key.make(paramsSchema.validation_frame.name);
       }

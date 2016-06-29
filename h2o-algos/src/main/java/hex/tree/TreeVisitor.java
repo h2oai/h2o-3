@@ -9,7 +9,7 @@ import water.util.IcedBitSet;
 /** Abstract visitor class for serialized trees.*/
 public abstract class TreeVisitor<T extends Exception> {
   // Override these methods to get walker behavior.
-  protected void pre ( int col, float fcmp, IcedBitSet gcmp, int equal ) throws T { }
+  protected void pre (int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) throws T { }
   protected void mid ( int col, float fcmp, int equal ) throws T { }
   protected void post( int col, float fcmp, int equal ) throws T { }
   protected void leaf( float pred )                     throws T { }
@@ -35,17 +35,18 @@ public abstract class TreeVisitor<T extends Exception> {
     int nodeType = _ts.get1();
     int col = _ts.get2();
     if( col==65535 ) { leaf2(nodeType); return; }
-    // float fcmp = _ts.get4f();
-    // boolean equal = ((nodeType&4)==4);
     int equal = (nodeType&12) >> 2;
+    DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[_ts.get1()];
 
-    // Extract value or group to split on
     float fcmp = -1;
-    if(equal == 0 || equal == 1)
-      fcmp = _ts.get4f();
-    else {
-      if( equal == 2 ) _gcmp.fill2(_ct._bits,_ts);
-      else             _gcmp.fill3(_ct._bits,_ts);
+    if (naSplitDir != DHistogram.NASplitDir.NAvsREST) {
+      // Extract value or group to split on
+      if (equal == 0 || equal == 1)
+        fcmp = _ts.get4f();
+      else {
+        if (equal == 2) _gcmp.fill2(_ct._bits, _ts);
+        else _gcmp.fill3(_ct._bits, _ts);
+      }
     }
 
     // Compute the amount to skip.
@@ -61,7 +62,7 @@ public abstract class TreeVisitor<T extends Exception> {
     case 48: skip =  4;  break; // skip is always 4 for direct leaves (see DecidedNode.size() and LeafNode.size() methods)
     default: assert false:"illegal lmask value " + lmask;
     }
-    pre(col,fcmp,_gcmp,equal);   // Pre-walk
+    pre(col,fcmp,_gcmp,equal,naSplitDir);   // Pre-walk
     _depth++;
     if( (lmask & 0x10)==16 ) leaf2(lmask);  else  visit();
     mid(col,fcmp,equal);   // Mid-walk

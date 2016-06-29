@@ -109,6 +109,11 @@ class MetricsBase(object):
     """
     return self._metric_json["logloss"]
 
+  def nobs(self):
+    """
+    :return: Retrieve the number of observations.
+    """
+    return self._metric_json["nobs"]
   def mean_residual_deviance(self):
     """
     :return: Retrieve the mean residual deviance for this set of metrics.

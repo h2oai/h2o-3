@@ -451,7 +451,7 @@ public class NewChunk extends Chunk {
       return Vec.T_BAD;
     if(_strCnt > 0)
       return Vec.T_STR;
-    if(_catCnt > 0 && _catCnt + _naCnt == _len)
+    if(_catCnt > 0 && _catCnt + _naCnt + (isSparseZero()? _len-_sparseLen : 0) == _len)
       return Vec.T_CAT; // All are Strings+NAs ==> Categorical Chunk
     // UUIDs?
     if( _uuidCnt > 0 ) return Vec.T_UUID;
@@ -478,10 +478,12 @@ public class NewChunk extends Chunk {
   public void addCategorical(int e) {
     if(_ms == null || _ms.len() == _sparseLen)
       append2slow();
-    _ms.set(_sparseLen,e);
-    _xs.setCategorical(_sparseLen);
-    if(_id != null) _id[_sparseLen] = _len;
-    ++_sparseLen;
+    if( e != 0 || !isSparseZero() ) {
+      _ms.set(_sparseLen,e);
+      _xs.setCategorical(_sparseLen);
+      if(_id != null) _id[_sparseLen] = _len;
+      ++_sparseLen;
+    }
     ++_len;
   }
   public void addNA() {

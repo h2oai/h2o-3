@@ -1,6 +1,8 @@
 package water.api;
 
 import water.*;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.JobsV3;
 import water.exceptions.H2ONotFoundArgumentException;
 
 public class JobsHandler extends Handler {
@@ -16,7 +18,7 @@ public class JobsHandler extends Handler {
 
     int i = 0;
     for (Job j : jobs) {
-      try { s.jobs[i] = (JobV3) Schema.schema(version, j).fillFromImpl(j); }
+      try { s.jobs[i] = (JobV3) SchemaServer.schema(version, j).fillFromImpl(j); }
       // no special schema for this job subclass, so fall back to JobV3
       catch (H2ONotFoundArgumentException e) { s.jobs[i] = new JobV3().fillFromImpl(j); }
       i++; // Java does the increment before the function call which throws?!
@@ -35,7 +37,7 @@ public class JobsHandler extends Handler {
     Job j = (Job) ice;
     s.jobs = new JobV3[1];
     // s.fillFromImpl(jobs);
-    try { s.jobs[0] = (JobV3) Schema.schema(version, j).fillFromImpl(j); }
+    try { s.jobs[0] = (JobV3) SchemaServer.schema(version, j).fillFromImpl(j); }
     // no special schema for this job subclass, so fall back to JobV3
     catch (H2ONotFoundArgumentException e) { s.jobs[0] = new JobV3().fillFromImpl(j); }
     return s;

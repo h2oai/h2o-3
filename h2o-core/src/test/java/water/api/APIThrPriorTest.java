@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -142,7 +143,7 @@ public class APIThrPriorTest extends TestUtil {
     serve(s,parms,status,"GET");
   }
   private void serve(String s, Properties parms, int status, String method) throws IOException {
-    NanoHTTPD.Response r = RequestServer.SERVER.serve(s,method,null,parms==null?new Properties():parms);
+    NanoResponse r = RequestServer.serve(s,method,null,parms==null?new Properties():parms);
     int n = r.data.available();
     byte[] bs = new byte[n];
     r.data.read(bs,0,n);
@@ -193,5 +194,5 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
 }
 
 // Need this class, so a /3/Jobs can return the JSON'd version of it
-class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchema> {}
+class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchemaV3> {}
 

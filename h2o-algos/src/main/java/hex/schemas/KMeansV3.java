@@ -3,12 +3,12 @@ package hex.schemas;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel.KMeansParameters;
 import water.api.API;
-import water.api.ClusteringModelParametersSchema;
-import water.api.KeyV3;
+import water.api.schemas3.ClusteringModelParametersSchemaV3;
+import water.api.schemas3.KeyV3;
 
 public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMeansV3.KMeansParametersV3> {
 
-  public static final class KMeansParametersV3 extends ClusteringModelParametersSchema<KMeansParameters, KMeansParametersV3> {
+  public static final class KMeansParametersV3 extends ClusteringModelParametersSchemaV3<KMeansParameters, KMeansParametersV3> {
     static public String[] fields = new String[] {
         "model_id",
         "training_frame",

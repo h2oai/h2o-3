@@ -1,8 +1,9 @@
 package water.api;
 
 import hex.glrm.ModelMetricsGLRM;
+import water.api.schemas3.ModelMetricsBaseV3;
 
-public class ModelMetricsGLRMV99 extends ModelMetricsBase<ModelMetricsGLRM, ModelMetricsGLRMV99> {
+public class ModelMetricsGLRMV99 extends ModelMetricsBaseV3<ModelMetricsGLRM, ModelMetricsGLRMV99> {
   @API(help="Sum of Squared Error (Numeric Cols)")
   public double numerr;
 

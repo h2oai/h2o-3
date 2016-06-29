@@ -264,6 +264,8 @@ The GLM suite includes:
 
 - **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation. 
+
 - **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a GLM Model
@@ -314,7 +316,7 @@ To make custom GLM model from R or python:
 - **How does the algorithm handle missing values during training?**
 
   Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
-  The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level.   
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level.   
   Optionally, glm can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
@@ -595,6 +597,8 @@ DRF no longer has a special-cased histogram for classification or regression (cl
   - QuantilesGlobal
   - RoundRobin
 
+  >**Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
+
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
 - **class\_sampling\_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance.  
@@ -628,11 +632,11 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 - **What happens if the response has missing values?**
  
@@ -683,6 +687,8 @@ For regression, the floor - in this example, (100/3)=33 columns - is used for ea
 <iframe src="//www.slideshare.net/slideshow/embed_code/key/tASzUyJ19dtJsQ" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/0xdata/rf-brighttalk" title="Building Random Forest at Scale" target="_blank">Building Random Forest at Scale</a> </strong> from <strong><a href="//www.slideshare.net/0xdata" target="_blank">Sri Ambati</a></strong> </div>
 
 ###References
+
+<a href="http://link.springer.com/article/10.1007%2Fs10994-006-6226-1" target="_blank">P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006.</a>
 
 ---
 
@@ -1254,11 +1260,11 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go right”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math. No new node is created. Instead, the observation is treated as if it had the maximum feature value of all observations in the node to be split. Note that the missing value might not be separated from the largest value itself. For example, if a node contains feature values of 0,1,2,3,4,5, then the missing value is counted as a 5. No matter what split decision is then made, the value 5 and the missing values won’t be separated. The 5 and the missing stay together, even in splits down the tree.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 - **What happens if the response has missing values?**
 
@@ -1548,7 +1554,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation.   
 
 - **quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
@@ -1589,9 +1595,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 
 
- 
-
-
 ###Interpreting a Deep Learning Model
 
 To view the results, click the View button. The output for the Deep Learning model includes the following information for both the training and testing sets: 
@@ -1612,7 +1615,9 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level.   
+  Optionally, Deep Learning can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
 
@@ -1693,35 +1698,39 @@ Deep Learning performs mean-imputation for missing numericals and creates a sepa
 
 - **Are there any best practices for building a model using checkpointing?**
 
-In general, to get the best possible model, we recommend building a model with `train\_samples\_per\_iteration = -2` (which is the default value for auto-tuning) and saving it. 
+ In general, to get the best possible model, we recommend building a model with `train\_samples\_per\_iteration = -2` (which is the default value for auto-tuning) and saving it. 
 
+ To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing `train\_samples\_per\_iteration`, `target\_ratio\_comm\_to\_comp`, or other parameters. 
 
-To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing `train\_samples\_per\_iteration`, `target\_ratio\_comm\_to\_comp`, or other parameters. 
+ If you don't know your model ID because it was generated by R, look it up using `h2o.ls()`. By default, Deep Learning model names start with `deeplearning_` To view the model, use `m <- h2o.getModel("my\_model\_id")` or `summary(m)`. 
 
-If you don't know your model ID because it was generated by R, look it up using `h2o.ls()`. By default, Deep Learning model names start with `deeplearning_` To view the model, use `m <- h2o.getModel("my\_model\_id")` or `summary(m)`. 
+ There are a few ways to manage checkpoint restarts: 
 
-There are a few ways to manage checkpoint restarts: 
+ *Option 1*: (Multi-node only) Leave `train\_samples\_per\_iteration = -2`, increase `target\_comm\_to\_comp` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance. 
 
-*Option 1*: (Multi-node only) Leave `train\_samples\_per\_iteration = -2`, increase `target\_comm\_to\_comp` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance. 
+ *Option 2*: (Single or multi-node) Set `train\_samples\_per\_iteration` to \(N\), where \(N\) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on \(N\) randomly-chosen rows for every iteration. The number defined as \(N\) depends on the dataset size and the model complexity. 
 
-*Option 2*: (Single or multi-node) Set `train\_samples\_per\_iteration` to \(N\), where \(N\) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on \(N\) randomly-chosen rows for every iteration. The number defined as \(N\) depends on the dataset size and the model complexity. 
-
-*Option 3*: (Single or multi-node) Change regularization parameters such as `l1, l2, max\_w2, input\_droput\_ratio` or `hidden\_dropout\_ratios`. We recommend build the first mode using `RectifierWithDropout`, `input\_dropout\_ratio = 0` (if there is suspected noise in the input), and `hidden\_dropout\_ratios=c(0,0,0)` (for the ability to enable dropout regularization later). 
+ *Option 3*: (Single or multi-node) Change regularization parameters such as `l1, l2, max\_w2, input\_droput\_ratio` or `hidden\_dropout\_ratios`. We recommend build the first mode using `RectifierWithDropout`, `input\_dropout\_ratio = 0` (if there is suspected noise in the input), and `hidden\_dropout\_ratios=c(0,0,0)` (for the ability to enable dropout regularization later). 
 
 - **How does class balancing work?**
 
-The `max\_after\_balance\_size` parameter defines the maximum size of the over-sampled dataset. For example, if `max\_after\_balance\_size = 3`, the over-sampled dataset will not be greater than three times the size of the original dataset. 
+ The `max\_after\_balance\_size` parameter defines the maximum size of the over-sampled dataset. For example, if `max\_after\_balance\_size = 3`, the over-sampled dataset will not be greater than three times the size of the original dataset. 
 
-For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using `balance\_classes = T`, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If `max\_after\_balance\_size = 3`, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total). 
+ For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using `balance\_classes = T`, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If `max\_after\_balance\_size = 3`, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total). 
 
-To specify the per-class over- or under-sampling factors, use `class\_sampling\_factors`. In the previous example, the default behavior with `balance\_classes` is equivalent to `c(1,40,40,40,40)`, while when `max\_after\_balance\_size = 3`, the results would be `c(3/5,40*3/5,40*3/5,40*3/5)`. 
+ To specify the per-class over- or under-sampling factors, use `class\_sampling\_factors`. In the previous example, the default behavior with `balance\_classes` is equivalent to `c(1,40,40,40,40)`, while when `max\_after\_balance\_size = 3`, the results would be `c(3/5,40*3/5,40*3/5,40*3/5)`. 
 
-In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
+ In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
 
 - **How is variable importance calculated for Deep Learning?**
 
-For Deep Learning, variable importance is calculated using the Gedeon method. 
+ For Deep Learning, variable importance is calculated using the Gedeon method. 
 
+- **Why do my results include a negative R^2 value?**
+
+ H2O computes the R^2 as `1 - MSE/variance`, where `MSE` is the mean squared error of the prediction, and `variance` is the (weighted) variance: `sum(w*Y*Y)/sum(w) - sum(w*Y)^2/sum(w)^2`, where `w` is the row weight (1 by default), and `Y` is the centered response.
+
+ If the MSE is greater than the variance of the response, you will see a negative R^2 value. This indicates that the model got a really bad fit, and the results are not to be trusted. 
 
 ---
 

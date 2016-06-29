@@ -2,6 +2,8 @@ package water.api;
 
 
 import water.Job;
+import water.api.schemas3.ImportSQLTableV99;
+import water.api.schemas3.JobV3;
 import water.jdbc.SQLManager;
 
 /**

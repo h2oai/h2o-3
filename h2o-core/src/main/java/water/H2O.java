@@ -17,6 +17,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
@@ -604,6 +605,8 @@ final public class H2O {
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
+    // Flush all cached messages
+    Log.flushStdout();
 
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
@@ -757,7 +760,7 @@ final public class H2O {
   /**
    * Register REST API routes.
    *
-   * Use reflection to find all classes that inherit from water.api.AbstractRegister
+   * Use reflection to find all classes that inherit from {@link water.api.AbstractRegister}
    * and call the register() method for each.
    *
    * @param relativeResourcePath Relative path from running process working dir to find web resources.
@@ -966,14 +969,9 @@ final public class H2O {
    * @return A longer message including a URL.
    */
   public static String technote(int number, String message) {
-    StringBuffer sb = new StringBuffer()
-            .append(message)
-            .append("\n")
-            .append("\n")
-            .append("For more information visit:\n")
-            .append("  http://jira.h2o.ai/browse/TN-").append(Integer.toString(number));
-
-    return sb.toString();
+    return message + "\n\n" +
+        "For more information visit:\n" +
+        "  http://jira.h2o.ai/browse/TN-" + Integer.toString(number);
   }
 
   /**
@@ -984,7 +982,7 @@ final public class H2O {
    * @return A longer message including a list of URLs.
    */
   public static String technote(int[] numbers, String message) {
-    StringBuffer sb = new StringBuffer()
+    StringBuilder sb = new StringBuilder()
             .append(message)
             .append("\n")
             .append("\n")
@@ -1019,7 +1017,7 @@ final public class H2O {
   // i.e., jobs running at MAX_PRIORITY cannot block, and when those jobs are
   // done, the next lower level jobs get unblocked, etc.
   public static final byte        MAX_PRIORITY = Byte.MAX_VALUE-1;
-  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY-0; //126
+  public static final byte    ACK_ACK_PRIORITY = MAX_PRIORITY;   //126
   public static final byte  FETCH_ACK_PRIORITY = MAX_PRIORITY-1; //125
   public static final byte        ACK_PRIORITY = MAX_PRIORITY-2; //124
   public static final byte   DESERIAL_PRIORITY = MAX_PRIORITY-3; //123
@@ -1104,9 +1102,7 @@ final public class H2O {
     public final T getResult(){
       try {
         return get();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
     }
@@ -1119,8 +1115,9 @@ final public class H2O {
    *  TaskGetKey} can block an entire node for lack of some small piece of
    *  data).  So each attempt to do lower-priority F/J work starts with an
    *  attempt to work and drain the higher-priority queues. */
-  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter> extends CountedCompleter implements Cloneable, Freezable<T> {
-
+  public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter>
+      extends CountedCompleter
+      implements Cloneable, Freezable<T> {
 
     @Override
     public byte [] asBytes(){return new AutoBuffer().put(this).buf();}
@@ -1255,6 +1252,12 @@ final public class H2O {
    */
   public static String getIpPortString() {
     return H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT;
+  }
+
+  public static String getURL(String schema) {
+    return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
+                         ? "%s://[%s]:%d" : "%s://%s:%d",
+                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
   }
 
   // The multicast discovery port
@@ -1418,7 +1421,7 @@ final public class H2O {
     // Nodes. There should be only 1 of these, and it never shuts down.
     // Started first, so we can start parsing UDP packets
     if(H2O.ARGS.useUDP) {
-      new UDPReceiverThread().start();
+      new UDPReceiverThread(NetworkInit._udpSocket).start();
       // Start a UDP timeout worker thread. This guy only handles requests for
       // which we have not received a timely response and probably need to
       // arrange for a re-send to cover a dropped UDP packet.
@@ -1441,8 +1444,7 @@ final public class H2O {
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
     new TCPReceiverThread(NetworkInit._tcpSocket).start();
-    // Register the default Requests
-    Object x = water.api.RequestServer.class;
+
   }
 
   // Callbacks to add new Requests & menu items
@@ -1452,7 +1454,7 @@ final public class H2O {
       String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
   ) {
     if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
-    RequestServer.register(apiName, method_url, hclass, method, summary);
+    RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
   }
 
   public static void registerResourceRoot(File f) {
@@ -1464,7 +1466,9 @@ final public class H2O {
   static public void finalizeRegistration() {
     if (_doneRequests) return;
     _doneRequests = true;
-    water.api.RequestServer.finalizeRegistration();
+
+    water.api.SchemaServer.registerAllSchemasIfNecessary();
+    jetty.acceptRequests();
   }
 
   // --------------------------------------------------------------------------
@@ -1576,11 +1580,6 @@ final public class H2O {
   // --------------------------------------------------------------------------
   static void initializePersistence() {
     _PM = new PersistManager(ICE_ROOT);
-
-    if( ARGS.aws_credentials != null ) {
-      try { water.persist.PersistS3.getClient(); }
-      catch( IllegalArgumentException e ) { Log.err(e); }
-    }
   }
 
   // --------------------------------------------------------------------------
@@ -1777,7 +1776,8 @@ final public class H2O {
       } catch(Throwable t) {
         Log.POST(11, t.toString());
         StackTraceElement[] stes = t.getStackTrace();
-        for(int i =0; i < stes.length; i++) Log.POST(11, stes[i].toString());
+        for (StackTraceElement ste : stes)
+          Log.POST(11, ste.toString());
       }
     }
 

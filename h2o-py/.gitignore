@@ -26,6 +26,8 @@ MANIFEST
 
 # Tests
 tests/results/*
+tests/*/results/*
+tests/*/*/results/*
 
 # Installer logs
 pip-log.txt

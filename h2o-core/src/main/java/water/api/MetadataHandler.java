@@ -3,7 +3,13 @@ package water.api;
 import hex.ModelBuilder;
 import water.Iced;
 import water.TypeMap;
+import water.api.schemas3.MetadataV3;
+import water.api.schemas3.RouteV3;
+import water.api.schemas3.SchemaMetadataV3;
+import water.api.schemas4.EndpointV4;
 import water.util.MarkdownBuilder;
+import water.api.schemas4.EndpointsListV4;
+import water.api.schemas4.ListRequestV4;
 
 import java.net.MalformedURLException;
 import java.util.Map;
@@ -25,15 +31,15 @@ public class MetadataHandler extends Handler {
 
     builder.tableHeader("HTTP method", "URI pattern", "Input schema", "Output schema", "Summary");
 
-    docs.routes = new RouteBase[RequestServer.numRoutes()];
+    docs.routes = new RouteV3[RequestServer.numRoutes()];
     int i = 0;
     for (Route route : RequestServer.routes()) {
-      RouteBase schema = schemaForRoute(version, route);
+      RouteV3 schema = new RouteV3(route);
       docs.routes[i] = schema;
 
       // ModelBuilder input / output schema hackery
       MetadataV3 look = new MetadataV3();
-      look.routes = new RouteBase[1];
+      look.routes = new RouteV3[1];
       look.routes[0] = schema;
       look.path = route._url;
       look.http_method = route._http_method;
@@ -55,11 +61,24 @@ public class MetadataHandler extends Handler {
     return docs;
   }
 
+  public EndpointsListV4 listRoutes4(int version, ListRequestV4 inp) {
+    EndpointsListV4 res = new EndpointsListV4();
+    res.endpoints = new EndpointV4[RequestServer.numRoutes(4)];
+    int i = 0;
+    for (Route route : RequestServer.routes()) {
+      if (route.getVersion() != version) continue;
+      EndpointV4 routeSchema = Schema.newInstance(EndpointV4.class).fillFromImpl(route);
+      res.endpoints[i++] = routeSchema;
+    }
+    return res;
+  }
+
+
   /** Return the metadata for a REST API Route, specified either by number or path. */
   // Also called through reflection by RequestServer
   public MetadataV3 fetchRoute(int version, MetadataV3 docs) {
     Route route = null;
-    if (null != docs.path && null != docs.http_method) {
+    if (docs.path != null && docs.http_method != null) {
       try {
         route = RequestServer.lookupRoute(new RequestUri(docs.http_method, docs.path));
       } catch (MalformedURLException e) {
@@ -68,12 +87,14 @@ public class MetadataHandler extends Handler {
     } else {
       // Linear scan for the route, plus each route is asked for in-order
       // during doc-gen leading to an O(n^2) execution cost.
-      int i = 0;
-      for (Route r : RequestServer.routes())
-        if (i++ == docs.num) { route = r; break; }
+      if (docs.path != null)
+        try { docs.num = Integer.parseInt(docs.path); }
+        catch (NumberFormatException e) { /* path is not a number, it's ok */ }
+      if (docs.num >= 0 && docs.num < RequestServer.numRoutes())
+        route = RequestServer.routes().get(docs.num);
       // Crash-n-burn if route not found (old code thru an AIOOBE), so we
       // something similarly bad.
-      docs.routes = new RouteBase[]{(RouteBase)Schema.schema(version, Route.class).fillFromImpl(route)};
+      docs.routes = new RouteV3[]{new RouteV3(route)};
     }
     if (route == null) return null;
 
@@ -112,9 +133,9 @@ public class MetadataHandler extends Handler {
   @Deprecated
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 fetchSchemaMetadataByClass(int version, MetadataV3 docs) {
-    docs.schemas = new SchemaMetadataBase[1];
+    docs.schemas = new SchemaMetadataV3[1];
     // NOTE: this will throw an exception if the classname isn't found:
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(SchemaMetadata.createSchemaMetadata(docs.classname));
+    SchemaMetadataV3 meta = new SchemaMetadataV3(SchemaMetadata.createSchemaMetadata(docs.classname));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -123,11 +144,11 @@ public class MetadataHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 fetchSchemaMetadata(int version, MetadataV3 docs) {
     if ("void".equals(docs.schemaname)) {
-      docs.schemas = new SchemaMetadataBase[0];
+      docs.schemas = new SchemaMetadataV3[0];
       return docs;
     }
 
-    docs.schemas = new SchemaMetadataBase[1];
+    docs.schemas = new SchemaMetadataV3[1];
     // NOTE: this will throw an exception if the classname isn't found:
     Schema schema = Schema.newInstance(docs.schemaname);
     // get defaults
@@ -138,7 +159,7 @@ public class MetadataHandler extends Handler {
     catch (Exception e) {
       // ignore if create fails; this can happen for abstract classes
     }
-    SchemaMetadataBase meta = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
+    SchemaMetadataV3 meta = new SchemaMetadataV3(new SchemaMetadata(schema));
     docs.schemas[0] = meta;
     return docs;
   }
@@ -146,8 +167,8 @@ public class MetadataHandler extends Handler {
   /** Fetch the metadata for all the Schemas. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public MetadataV3 listSchemas(int version, MetadataV3 docs) {
-    Map<String, Class<? extends Schema>> ss = Schema.schemas();
-    docs.schemas = new SchemaMetadataBase[ss.size()];
+    Map<String, Class<? extends Schema>> ss = SchemaServer.schemas();
+    docs.schemas = new SchemaMetadataV3[ss.size()];
 
     // NOTE: this will throw an exception if the classname isn't found:
     int i = 0;
@@ -164,14 +185,9 @@ public class MetadataHandler extends Handler {
         // ignore if create fails; this can happen for abstract classes
       }
 
-      docs.schemas[i++] = (SchemaMetadataBase)Schema.schema(version, SchemaMetadata.class).fillFromImpl(new SchemaMetadata(schema));
+      docs.schemas[i++] = new SchemaMetadataV3(new SchemaMetadata(schema));
     }
     return docs;
   }
 
-
-  private RouteBase schemaForRoute(int version, Route route) {
-    Schema<Route, ?> schema = Schema.schema(version, Route.class);
-    return (RouteBase) schema.fillFromImpl(route);
-  }
 }

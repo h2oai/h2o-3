@@ -16,10 +16,7 @@ First get the tutorial's data set from  <a href="https://s3.amazonaws.com/h2o-pu
 
 The data are composed of 210 observations, 7 attributes, and an a priori grouping assignment. All data are positively valued and continuous. 
 
-If you don't have any data of your own to work with, you can find some example datasets here: 
-
-- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
-- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 
 ####Importing Data

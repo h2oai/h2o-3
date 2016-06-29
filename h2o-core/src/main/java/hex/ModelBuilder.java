@@ -224,7 +224,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Work for each requested fold
-  private int nFoldWork() {
+  protected int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
     Vec f = train().vec(_parms._fold_column);
     Vec fc = VecUtils.toCategoricalVec(f);

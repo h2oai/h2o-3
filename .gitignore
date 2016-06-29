@@ -29,6 +29,7 @@ out/
 *.iws
 *.Rout
 *.Rd
+*.h4xd
 h2o-r/h2o-package/DESCRIPTION
 .settings/*
 gradle-app.setting
@@ -70,6 +71,7 @@ smalldata/
 # Stuff created by 'gradle dist'
 h2o-dist/tmp
 target
+h2o-test-accuracy/testng.xml
 
 # stuff created by sphinx-build (python docs)
 ./h2o-py/docs/docs/_static
@@ -85,6 +87,7 @@ target
 ./h2o-py/docs/docs/objects.inv
 
 git_private_jenkins.sh
+make-java6.sh
 
 # Ignore generated code
 src-gen/

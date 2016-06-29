@@ -1,7 +1,7 @@
 package water.parser;
 
 import water.*;
-import water.api.ParseSetupV3;
+import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -213,7 +213,7 @@ public class ParseSetup extends Iced {
         Double.parseDouble(s);
         return false;       // Number in 1st row guesses: No Column Header
       } catch (NumberFormatException e) { /*Pass - determining if number is possible*/ }
-      str.setTo(s);
+      str.set(s);
       if(ParseTime.isTime(str)) return false;
       if(ParseUUID.isUUID(str)) return false;
     }

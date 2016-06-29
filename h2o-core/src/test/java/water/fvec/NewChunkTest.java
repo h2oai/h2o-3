@@ -16,16 +16,16 @@ import static org.junit.Assert.assertTrue;
 public class NewChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   final int K = 1 + (int)(new Random().nextFloat() * (FileVec.DFLT_CHUNK_SIZE >> 4));
-  AppendableVec av;
+  private AppendableVec av;
   NewChunk nc;
   Chunk cc;
   Vec vec;
 
-  void pre() {
+  private void pre() {
     av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
     nc = new NewChunk(av, 0);
   }
-  void post() {
+  private void post() {
     cc = nc.compress();
     av._tmp_espc[0] = K; //HACK
     cc._start = 0; //HACK
@@ -35,7 +35,7 @@ public class NewChunkTest extends TestUtil {
     fs.blockForPending();
     assert(DKV.get(vec._key)!=null); //only the vec header is in DKV, the chunk is not
   }
-  void post_write() {
+  private void post_write() {
     cc.close(0, new Futures()).blockForPending();
   }
   void remove() {if(vec != null)vec.remove();}
@@ -53,17 +53,11 @@ public class NewChunkTest extends TestUtil {
   }
 
   private static class NewChunkTestCpy extends NewChunk {
-    public NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
-    public NewChunkTestCpy(Vec vec, int cidx, boolean sparse) {super(vec, cidx, sparse);}
-    public NewChunkTestCpy(double[] ds) {super(ds);}
-    public NewChunkTestCpy(Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {super(vec, cidx, mantissa, exponent, indices, doubles);}
-    public NewChunkTestCpy(Chunk c) {super(c);}
-    public NewChunkTestCpy(Vec vec, int cidx, int len) {super(vec, cidx, len);}
-
-    public int mantissaSize() {return _ms._vals1 != null?1:_ms._vals4 != null?4:8;}
-    public int exponentSize() {return _xs._vals1 != null?1:_xs._vals4 != null?4:0;}
-    public int missingSize()  {return _missing == null?0:_missing.size();}
-
+    NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
+    public NewChunkTestCpy() { super(null,0); }
+    int mantissaSize() {return _ms._vals1 != null?1:_ms._vals4 != null?4:8;}
+    int exponentSize() {return _xs._vals1 != null?1:_xs._vals4 != null?4:0;}
+    int missingSize()  {return _missing == null?0:_missing.size();}
   }
 
   private void testIntegerChunk(long [] values, int mantissaSize) {
@@ -72,8 +66,8 @@ public class NewChunkTest extends TestUtil {
     Chunk c;
 
     NewChunkTestCpy nc = new NewChunkTestCpy(v,4);
-    for(int i = 0; i < values.length; ++i)
-      nc.addNum(values[i], 0);
+    for( long val : values )
+      nc.addNum(val, 0);
     assertEquals(mantissaSize,nc.mantissaSize());
     assertEquals(0,nc.exponentSize());
     assertEquals(0,nc.missingSize());
@@ -91,8 +85,8 @@ public class NewChunkTest extends TestUtil {
 
     // test with exponent
     nc = new NewChunkTestCpy(v,4);
-    for(int i = 0; i < values.length; ++i)
-      nc.addNum(values[i], -1);
+    for( long val : values )
+      nc.addNum(val, -1);
     for(int i = 0; i < values.length; i += 5)
       nc.setNA_impl(i);
     assertEquals(1,nc.exponentSize());
@@ -105,8 +99,8 @@ public class NewChunkTest extends TestUtil {
     }
     // test switch to doubles
     nc = new NewChunkTestCpy(v,4);
-    for(int i = 0; i < values.length; ++i)
-      nc.addNum(values[i], 0);
+    for( long val : values )
+      nc.addNum(val, 0);
     for(int i = 0; i < values.length; i += 5)
       nc.setNA_impl(i);
     nc.addNum(Math.PI);
@@ -120,8 +114,8 @@ public class NewChunkTest extends TestUtil {
     assertEquals(Math.PI,c.atd(values.length),0);
     // test switch to sparse zero
     nc = new NewChunkTestCpy(v,4);
-    for(int i = 0; i < values.length; ++i)
-      nc.addNum(values[i], 0);
+    for( long val : values )
+      nc.addNum(val, 0);
     nc.addNA();
     nc.setNA_impl(0);
     int nzs = 0;
@@ -141,8 +135,8 @@ public class NewChunkTest extends TestUtil {
         assertEquals(0,c.atd(i),0);
     // test switch to sparse NAs
     nc = new NewChunkTestCpy(v,4);
-    for(int i = 0; i < values.length; ++i)
-      nc.addNum(values[i], 0);
+    for( long val : values )
+      nc.addNum(val, 0);
     nc.addNA();
     nc.setNA_impl(0);
     nzs = 0;
@@ -166,9 +160,9 @@ public class NewChunkTest extends TestUtil {
 
 
   }
-  long [] ms1 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127};
-  long [] ms4 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023};
-  long [] ms8 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023,Long.MAX_VALUE >> 16};
+  private long [] ms1 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127};
+  private long [] ms4 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023};
+  private long [] ms8 = new long[] {-128,-64,-32,-16,-8,-4,-2,0,1,3,7,15,31,63,127,255,511,1023,Long.MAX_VALUE >> 16};
 
   @Test public void testDenseMantissaSizes(){
     testIntegerChunk(ms1,1);
@@ -191,7 +185,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(         Math.PI,c.atd(i++),1e-16);
     for(;i<2*N+1;) assertEquals(0,c.atd(i++),1e-16);
     assertEquals(i,c.nextNZ(c.nextNZ(-1)));
-    assertEquals(         Math.E,c.atd(i++),1e-16);
+    assertEquals(         Math.E,c.atd(i  ),1e-16);
 
     nc = new NewChunk(null, 0, false);
     nc.addNum(Math.PI);
@@ -370,11 +364,11 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNA();
       assertEquals(K, nc._len);
       post();
-      cc.set(K - 1, 342l); //should inflate
+      cc.set(K - 1, 342L); //should inflate
       post_write();
       assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA(k));
-      Assert.assertEquals(342, cc.at8(K - 1));
+      Assert.assertEquals(342L, cc.at8(K - 1));
       Assert.assertTrue(! (cc instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
@@ -516,5 +510,17 @@ public class NewChunkTest extends TestUtil {
     } finally {remove();}
   }
   
+  @Test public void testSparseCat() {
+    try {
+      av = new AppendableVec(Vec.newKey(), Vec.T_CAT);
+      nc = new NewChunk(av, 0);
+      for (int k = 0; k < K; ++k) nc.addCategorical(0);
+      assertEquals(K, nc._len);
+      post();
+      for (int k = 0; k < K; ++k) Assert.assertTrue(!cc.isNA(k) && cc.at8(k)==0);
+      Assert.assertTrue(cc instanceof C0LChunk);
+    } finally { remove(); }
+  }
+
 }
 

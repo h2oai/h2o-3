@@ -8,6 +8,7 @@ import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
+import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -585,6 +586,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
+      case mean_per_class_error:
+        return (float)mean_per_class_error();
+      case lift_top_group:
+        return (float)lift_top_group();
       case AUTO:
       default:
         return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());
@@ -624,6 +629,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double logloss() {
     if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+  }
+
+  public double mean_per_class_error() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mean_per_class_error : last_scored().scored_train._mean_per_class_error;
+  }
+
+  public double lift_top_group() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._lift : last_scored().scored_train._lift;
   }
 
 
@@ -1374,7 +1389,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  @Override public Class<water.api.KeyV3.ModelKeyV3> makeSchema() { return water.api.KeyV3.ModelKeyV3.class; }
+  @Override public Class<KeyV3.ModelKeyV3> makeSchema() { return KeyV3.ModelKeyV3.class; }
 
   public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyTrainVec = fr.anyVec();

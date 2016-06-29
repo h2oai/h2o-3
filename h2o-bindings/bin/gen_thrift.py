@@ -25,7 +25,7 @@ class ThriftTypeTranslator(bi.TypeTranslator):
         self.make_map = lambda ktype, vtype: "map<%s,%s>" % (ktype, vtype)
         self.make_key = lambda itype, schema: "String"
 
-
+type_adapter = ThriftTypeTranslator()
 def translate_type(h2o_type, schema):
     return type_adapter.translate(h2o_type, schema)
 
@@ -40,6 +40,7 @@ def add_schema_to_dependency_array(schema, ordered_schemas, schemas_map):
         declaration.
       :param schemas_map: dictionary(schemaname => schemaobject)
     """
+    ordered_schemas[schema["name"]] = schema
     for field in schema["fields"]:
         field_schema_name = field["schema_name"]
         if field_schema_name is None: continue
@@ -48,8 +49,8 @@ def add_schema_to_dependency_array(schema, ordered_schemas, schemas_map):
             ordered_schemas[field_schema_name] = field["values"]
         else:
             field_schema = schemas_map[field_schema_name]
-            add_schema_to_dependency_array(field_schema, ordered_schemas, schemas_map)
-    ordered_schemas[schema["name"]] = schema
+            if field_schema["name"] not in ordered_schemas:
+                add_schema_to_dependency_array(field_schema, ordered_schemas, schemas_map)
 
 
 def generate_thrift(ordered_schemas):
@@ -109,9 +110,8 @@ def generate_struct(name, schema):
 # ----------------------------------------------------------------------------------------------------------------------
 #    MAIN
 # ----------------------------------------------------------------------------------------------------------------------
-if __name__ == "__main__":
+def main():
     bi.init("Thrift", "thrift")
-    type_adapter = ThriftTypeTranslator()
 
     schemas_map = bi.schemas_map()
     ordered_schemas = OrderedDict()
@@ -121,3 +121,7 @@ if __name__ == "__main__":
     bi.write_to_file("water/bindings/structs/H2O.thrift", generate_thrift(ordered_schemas))
 
     type_adapter.vprint_translation_map()
+
+
+if __name__ == "__main__":
+    main()

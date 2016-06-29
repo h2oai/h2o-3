@@ -3,6 +3,7 @@ package water.fvec;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.util.FrameUtils;
@@ -506,14 +507,19 @@ public class Frame extends Lockable<Frame> {
     }
 
     int ncols = _keys.length;
-    _names = Arrays.copyOf(_names, ncols+N);
-    _keys = Arrays.copyOf(_keys, ncols+N);
-    _vecs = Arrays.copyOf(_vecs, ncols+N);
+
+    // make temp arrays and don't assign them back until they are fully filled - otherwise vecs() can cache null's and NPE.
+    String[] tmpnam = Arrays.copyOf(_names, ncols+N);
+    Key<Vec>[] tmpkeys = Arrays.copyOf(_keys, ncols+N);
+    Vec[] tmpvecs = Arrays.copyOf(_vecs, ncols+N);
     for (int i=0; i<N; ++i) {
-      _names[ncols+i] = tmpnames[i];
-      _keys[ncols+i] = vecs[i]._key;
-      _vecs[ncols+i] = vecs[i];
+      tmpnam[ncols+i] = tmpnames[i];
+      tmpkeys[ncols+i] = vecs[i]._key;
+      tmpvecs[ncols+i] = vecs[i];
     }
+    _names = tmpnam;
+    _keys = tmpkeys;
+    _vecs = tmpvecs;
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
@@ -1043,13 +1049,11 @@ public class Frame extends Lockable<Frame> {
   }
 
 
-
-
-  // Convert first 100 rows to a 2-d table
+  // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) { return toString(0,20); }
 
-  // Convert len rows starting at off to a 2-d ascii table
-  public String toString( long off, int len ) {
+  public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
+  public TwoDimTable toTwoDimTable(long off, int len ) {
     if( off > numRows() ) off = numRows();
     if( off+len > numRows() ) len = (int)(numRows()-off);
 
@@ -1066,6 +1070,7 @@ public class Frame extends Lockable<Frame> {
     String[] coltypes = new String[ncols];
     String[][] strCells = new String[len+5][ncols];
     double[][] dblCells = new double[len+5][ncols];
+    final BufferedString tmpStr = new BufferedString();
     for( int i=0; i<ncols; i++ ) {
       if( DKV.get(_keys[i]) == null ) { // deleted Vec in Frame
         coltypes[i] = "string";
@@ -1085,8 +1090,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = null; dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_STR :
-        coltypes[i] = "string"; 
-        BufferedString tmpStr = new BufferedString();
+        coltypes[i] = "string";
         for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
@@ -1109,7 +1113,7 @@ public class Frame extends Lockable<Frame> {
         throw H2O.fail();
       }
     }
-    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells).toString();
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells);
   }
 
 
@@ -1457,5 +1461,5 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
-  @Override public Class<water.api.KeyV3.FrameKeyV3> makeSchema() { return water.api.KeyV3.FrameKeyV3.class; }
+  @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 }

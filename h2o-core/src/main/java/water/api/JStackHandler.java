@@ -1,5 +1,6 @@
 package water.api;
 
+import water.api.schemas3.JStackV3;
 import water.util.JStack;
 
 public class JStackHandler extends Handler {

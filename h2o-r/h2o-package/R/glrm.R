@@ -153,9 +153,9 @@ h2o.glrm <- function(training_frame, cols, k, model_id,
   if(!missing(multi_loss))
     parms$multi_loss <- multi_loss
   if(!(missing(loss_by_col) || is.null(loss_by_col)))
-    parms$loss_by_col <- .collapse(loss_by_col)
+    parms$loss_by_col <- loss_by_col
   if(!(missing(loss_by_col_idx) || is.null(loss_by_col_idx)))
-    parms$loss_by_col_idx <- .collapse(loss_by_col_idx)
+    parms$loss_by_col_idx <- loss_by_col_idx
   if(!missing(regularization_x))
     parms$regularization_x <- regularization_x
   if(!missing(regularization_y))

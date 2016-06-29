@@ -25,6 +25,11 @@ checkMerge <- function(x, y, all.x, all.y) {
                      H2O (radix) rows: ", h2o_radix_rows))
     }
     expect_true(rows_equal_radix)
+    
+    if (base_rows == 0) {
+        print(paste0("Base and H2O (radix) merge results agree the result is empty. Not testing correct data is being returned here. Empty tests should be in separate test file."))
+    }
+    expect_true(base_rows > 0)
 
     #rows_equal_hash = base_rows == h2o_hash_rows
     #if (!rows_equal_hash) {
@@ -67,7 +72,9 @@ test.merge <- function() {
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.center.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.division.csv"),
                       c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.region.csv"),
-                      c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.x77.csv"))
+                      c("smalldata/merge/state.name.abb.csv", "smalldata/merge/state.name.x77.csv"),
+                      c("smalldata/jira/pubdev_2322_x.csv", "smalldata/jira/pubdev_2322_y.csv"),
+                      c("smalldata/jira/pubdev_2325_x.csv", "smalldata/jira/pubdev_2325_y.csv"))
 
     for (xy in x_y_paths) {
         for (ax in c(TRUE, FALSE)) {
