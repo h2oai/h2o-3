@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.checkpointing <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
-  seed <- sample(1:1000000, 1)
+  seed <- 1234 #sample(1:1000000, 1)
   Log.info(paste0("runif seed: ",seed))
   s <- h2o.runif(cars, seed=seed)
   train <- cars[s > .2,]
