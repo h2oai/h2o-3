@@ -80,6 +80,8 @@ public class OrcParser extends Parser {
         stripeStartEndIndex = findStripeIndices(cidx, this._setup._chunk_size,
                 ((OrcParseSetup) this._setup).getCumstripeSizes());
 
+        Log.info("chunk index "+cidx+" start index "+stripeStartEndIndex[0]+" end index "+stripeStartEndIndex[1]);
+
         List<StripeInformation> stripesInfo = ((OrcParseSetup) this._setup).getStripeInfo();
         Reader fileReader = ((OrcParseSetup) this._setup).getOrcFileReader();
 
@@ -443,9 +445,15 @@ public class OrcParser extends Parser {
       this.maxStripeSize = maxStripeSize;
       this.toInclude = toInclude;
       this.allColumnNames = allColNames;
+
       // set chunk size to be the max stripe size if the stripe size exceeds the default
       if (this.maxStripeSize > this._chunk_size)  //
         this.setChunkSize(this.maxStripeSize.intValue());
+
+
+//      // DEBUG
+//      if (this.totalFileSize > 0)
+//        this.setChunkSize(this.totalFileSize.intValue());
 
     }
 
@@ -465,6 +473,10 @@ public class OrcParser extends Parser {
       // set chunk size to be the max stripe size if the stripe size exceeds the default
       if (this.maxStripeSize > this._chunk_size)  //
         this.setChunkSize(this.maxStripeSize.intValue());
+//
+//      // DEBUG
+//      if (this.totalFileSize > 0)
+//        this.setChunkSize(this.totalFileSize.intValue());
     }
 
     @Override
