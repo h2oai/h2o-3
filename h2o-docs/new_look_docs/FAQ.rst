@@ -2159,7 +2159,6 @@ This returns output similar to the following:
 
 ::
 
-    ```
     irene@mr-0x3:~/target$ java -jar h2o.jar -port 55599
     04:48:58.053 main      INFO WATER: ----- H2O started -----
     04:48:58.055 main      INFO WATER: Build git branch: master
@@ -2180,7 +2179,6 @@ This returns output similar to the following:
     /192.168.1.173:55599, discovery address /230 .252.255.19:59132
     04:48:58.111 main      INFO WATER: Cloud of size 1 formed [/192.168.1.173:55599]
     04:48:58.247 main      INFO WATER: Log dir: '/tmp/h2ologs'
-    ```
 
 3. Log into the remote machine where the running instance of H2O will be
    forwarded using a command similar to the following. (Your specified
