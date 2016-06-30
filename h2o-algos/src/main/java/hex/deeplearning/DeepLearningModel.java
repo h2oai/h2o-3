@@ -1349,20 +1349,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public long _train_samples_per_iteration = -2;
   
     public double _target_ratio_comm_to_comp = 0.05;
-  
-    /**
-     * The random seed controls sampling and initialization. Reproducible
-     * results are only expected with single-threaded operation (i.e.,
-     * when running on one node, turning off load balancing and providing
-     * a small dataset that fits in one chunk).  In general, the
-     * multi-threaded asynchronous updates to the model parameters will
-     * result in (intentional) race conditions and non-reproducible
-     * results. Note that deterministic sampling and initialization might
-     * still lead to some weak sense of determinism in the model.
-     */
-    public long _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
-    @Override protected long nFoldSeed() { return _seed; }
-  
+
   /*Adaptive Learning Rate*/
     /**
      * The implemented adaptive learning rate algorithm (ADADELTA) automatically
@@ -1707,7 +1694,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     void validate(DeepLearning dl, boolean expensive) {
       boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
-  
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)
         dl.error("_mini_batch_size", "Mini-batch size must be >= 1");

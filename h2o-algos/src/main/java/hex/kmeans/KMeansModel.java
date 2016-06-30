@@ -25,12 +25,10 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     @Override public long progressUnits() { return _max_iterations; }
     public int _max_iterations = 1000;     // Max iterations
     public boolean _standardize = true;    // Standardize columns
-    public long _seed = System.nanoTime(); // RNG seed
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
     public Key<Frame> _user_points;
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
-    @Override protected long nFoldSeed() { return _seed; }
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {

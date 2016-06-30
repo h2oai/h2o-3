@@ -15,9 +15,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.PrettyPrint;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -103,7 +103,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
-    protected long nFoldSeed() { return new Random().nextLong(); }
+    public long _seed = -1;
+    public long getOrMakeRealSeed(){
+      while (_seed==-1) {
+        _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
+        Log.info("Auto-generated time-based seed for pseudo-random number generator (because it was set to -1): " + _seed);
+      }
+      return _seed;
+    }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5;

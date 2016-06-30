@@ -1385,7 +1385,7 @@ public class DRFTest extends TestUtil {
       drf = new DRF(parms).trainModel().get();
 
       ModelMetricsRegression mm = (ModelMetricsRegression)drf._output._training_metrics;
-      assertEquals(0.12228011813703696, mm.mse(), 1e-4);
+      assertEquals(0.12358322821934015, mm.mse(), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
