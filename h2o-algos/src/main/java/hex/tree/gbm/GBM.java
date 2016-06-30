@@ -334,6 +334,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
         for( int row = 0; row < preds._len; row++) {
           if( ys.isNA(row) ) continue;
+          if (weights.atd(row)==0) continue;
           int nid = (int)nids.at8(row);
           assert(nid!=ScoreBuildHistogram.UNINITIALIZED);
           if (nid < 0) continue; //skip OOB and otherwise skipped rows
