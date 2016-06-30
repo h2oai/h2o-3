@@ -11,50 +11,56 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def weights_check():
   def check_same(data1, data2, min_rows_scale):
-    gbm1_regression = H2OGradientBoostingEstimator(min_rows=5,
+    gbm1_regression = H2OGradientBoostingEstimator(min_rows=20,
                                                    ntrees=5,
-                                                   max_depth=5)
+                                                   seed=20,
+                                                   max_depth=4)
     gbm1_regression.train(x=["displacement", "power", "weight", "acceleration", "year"],
                           y="economy",
                           training_frame=data1)
 
-    gbm2_regression = H2OGradientBoostingEstimator(min_rows=5*min_rows_scale,
+    gbm2_regression = H2OGradientBoostingEstimator(min_rows=20*min_rows_scale,
                                                    ntrees=5,
-                                                   max_depth=5)
-    gbm2_regression.train(x=["displacement", "power", "weight", "acceleration", "year", "weights"],
+                                                   seed=20,
+                                                   max_depth=4)
+    gbm2_regression.train(x=["displacement", "power", "weight", "acceleration", "year"],
                           y="economy",
                           training_frame=data2,
                           weights_column="weights")
 
-    gbm1_binomial = H2OGradientBoostingEstimator(min_rows=5,
+    gbm1_binomial = H2OGradientBoostingEstimator(min_rows=20,
                                                  distribution="bernoulli",
                                                  ntrees=5,
-                                                 max_depth=5)
+                                                 seed=20,
+                                                 max_depth=4)
     gbm1_binomial.train(x=["displacement", "power", "weight", "acceleration", "year"],
                         y="economy_20mpg",
                         training_frame=data1)
-    gbm2_binomial = H2OGradientBoostingEstimator(min_rows=5*min_rows_scale,
+    gbm2_binomial = H2OGradientBoostingEstimator(min_rows=20*min_rows_scale,
                                                  distribution="bernoulli",
                                                  ntrees=5,
-                                                 max_depth=5)
-    gbm2_binomial.train(x=["displacement", "power", "weight", "acceleration", "year", "weights"],
+                                                 seed=20,
+                                                 max_depth=4)
+    gbm2_binomial.train(x=["displacement", "power", "weight", "acceleration", "year"],
                         y="economy_20mpg",
                         training_frame=data2,
                         weights_column="weights")
 
-    gbm1_multinomial = H2OGradientBoostingEstimator(min_rows=5,
+    gbm1_multinomial = H2OGradientBoostingEstimator(min_rows=20,
                                                     distribution="multinomial",
                                                     ntrees=5,
-                                                    max_depth=5)
+                                                    seed=20,
+                                                    max_depth=4)
     gbm1_multinomial.train(x=["displacement", "power", "weight", "acceleration", "year"],
                            y="cylinders",
                            training_frame=data1)
 
-    gbm2_multinomial = H2OGradientBoostingEstimator(min_rows=5*min_rows_scale,
+    gbm2_multinomial = H2OGradientBoostingEstimator(min_rows=20*min_rows_scale,
                                                     distribution="multinomial",
                                                     ntrees=5,
-                                                    max_depth=5)
-    gbm2_multinomial.train(x=["displacement", "power", "weight", "acceleration", "year", "weights"],
+                                                    seed=20,
+                                                    max_depth=4)
+    gbm2_multinomial.train(x=["displacement", "power", "weight", "acceleration", "year"],
                            y="cylinders",
                            weights_column="weights", training_frame=data2)
     reg1_mse = gbm1_regression.mse()

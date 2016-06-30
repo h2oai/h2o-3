@@ -135,22 +135,29 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
     @Override public void compute2() {
-      final int strataMin = _strata == null ? 0 : (int) (Math.max(0,_strata.min()));
-      final int strataMax = _strata == null ? 0 : (int) (Math.max(0,_strata.max()));
+      final int strataMin = (int)_strata.min();
+      final int strataMax = (int)_strata.max();
+      if (strataMin < 0 || strataMax < 0) {
+        Log.warn("No quantiles can be computed since there are no non-OOB rows.");
+        return;
+      }
       final int nstrata = strataMax - strataMin + 1;
       Log.info("Computing quantiles for " + nstrata + " different strata.");
       _quantiles = new double[nstrata];
       Vec weights = _weights != null ? _weights : _response.makeCon(1);
-      for (int i=strataMin;i<=strataMax;++i) { //loop over nodes
+      for (int i=0;i<nstrata;++i) { //loop over nodes
         Vec newWeights = weights.makeCopy();
         //only keep weights for this stratum (node), set rest to 0
-        if (_strata!=null) new KeepOnlyOneStrata(i).doAll(_strata, newWeights);
+        if (_strata!=null) new KeepOnlyOneStrata(strataMin+i).doAll(_strata, newWeights);
         double sumRows = new SumWeights().doAll(_response, newWeights).sum;
         Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
         h.doAll(_response, newWeights);
-        while (Double.isNaN(_quantiles[i-strataMin] = h.findQuantile(_prob, _combine_method)))
+        while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
           h = h.refinePass(_prob).doAll(_response, newWeights);
         newWeights.remove();
+        //sanity check quantiles
+        assert(_quantiles[i] <= _response.max()+1e-6);
+        assert(_quantiles[i] >= _response.min()-1e-6);
       }
       if (_weights != weights) weights.remove();
       tryComplete();

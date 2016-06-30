@@ -29,7 +29,6 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public Method _svd_method = Method.GramSVD;   // Method for computing SVD
     public int _nv = 1;    // Number of right singular vectors to calculate
     public int _max_iterations = 1000;    // Maximum number of iterations
-    public long _seed = System.nanoTime();        // RNG seed
     // public Key<Frame> _u_key;         // Frame key for left singular vectors (U)
     public String _u_name;
     // public Key<Frame> _v_key;        // Frame key for right singular vectors (V)
@@ -43,7 +42,6 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     public enum Method {
       GramSVD, Power, Randomized
     }
-    @Override protected long nFoldSeed() { return _seed; }
   }
 
   public static class SVDOutput extends Model.Output {

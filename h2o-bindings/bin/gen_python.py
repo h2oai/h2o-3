@@ -172,9 +172,10 @@ def help_preamble_for(algo):
             description of the error distribution."""
     if algo == "gbm":
         return """
-            Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
-            The default distribution function will guess the model type based on the response column type run properly
-            the response column must be an numeric for "gaussian" or an enum for "bernoulli" or "multinomial"."""
+            Builds gradient boosted trees on a parsed data set, for regression or classification.
+            The default distribution function will guess the model type based on the response column type.
+            Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric 
+            for all other distributions."""
     if algo == "naivebayes":
         return """
             The naive Bayes classifier assumes independence between predictor variables

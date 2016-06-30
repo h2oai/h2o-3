@@ -26,7 +26,6 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public PCAModel.PCAParameters.Method _pca_method = PCAModel.PCAParameters.Method.Power;   // Method for dimensionality reduction
     public int _k = 1;                     // Number of principal components
     public int _max_iterations = 1000;     // Max iterations for SVD
-    public long _seed = System.nanoTime(); // RNG seed
     public boolean _use_all_factor_levels = false;   // When expanding categoricals, should first level be kept or dropped?
   }
 
