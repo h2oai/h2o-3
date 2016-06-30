@@ -56,7 +56,7 @@ public class Merge {
   }
 
   // single-threaded driver logic
-  static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft, int[][] id_maps) {
+  public static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft, int[][] id_maps) {
 
     // each of those launches an MRTask
     System.out.println("\nCreating left index ...");

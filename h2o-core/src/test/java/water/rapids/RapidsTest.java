@@ -9,6 +9,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
 
 import java.io.File;
@@ -234,7 +235,7 @@ public class RapidsTest extends TestUtil {
       Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
-      if( val instanceof ValFrame ) {
+      if( val instanceof ValFrame) {
         Frame fr2= ((ValFrame)val)._fr;
         System.out.println(fr2.vec(0));
         fr2.remove();

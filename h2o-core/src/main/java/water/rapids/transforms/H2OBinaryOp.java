@@ -2,8 +2,8 @@ package water.rapids.transforms;
 
 import water.H2O;
 import water.fvec.Frame;
-import water.rapids.AST;
-import water.rapids.ASTExec;
+import water.rapids.ast.AstExec;
+import water.rapids.ast.AstRoot;
 
 import java.util.HashMap;
 
@@ -31,17 +31,17 @@ public class H2OBinaryOp extends H2OColOp { // called thru reflection
   }
 
   @Override protected void setupParamsImpl(int i, String[] args) {
-    if( _ast._asts[i+1] instanceof ASTExec) {
+    if( _ast._asts[i+1] instanceof AstExec) {
       if( !isBinaryOp(_fun) ) throw H2O.unimpl("unimpl: " + lookup(_fun));
       _leftIsCol = args[i].equals("leftArg");
       _riteIsCol = !_leftIsCol;
-      _binCol = ((ASTExec)_ast._asts[i+1])._asts[2].str();
-      _params.put(args[i], AST.newASTStr(((ASTExec) _ast._asts[i + 1])._asts[2].str()));
+      _binCol = ((AstExec)_ast._asts[i+1])._asts[2].str();
+      _params.put(args[i], AstRoot.newAstStr(((AstExec) _ast._asts[i + 1])._asts[2].str()));
     } else super.setupParamsImpl(i,args);
   }
 
   @Override protected Frame transformImpl(Frame f) {
-    if( paramIsRow() ) ((ASTExec)_ast._asts[2])._asts[1] = AST.newASTFrame(f);
+    if( paramIsRow() ) ((AstExec)_ast._asts[2])._asts[1] = AstRoot.newAstFrame(f);
     return super.transformImpl(f);
   }
 

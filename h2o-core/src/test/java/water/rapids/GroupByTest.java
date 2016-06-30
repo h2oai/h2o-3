@@ -8,6 +8,7 @@ import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.vals.ValFrame;
 
 public class GroupByTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(5); }

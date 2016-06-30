@@ -7,6 +7,9 @@ import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstRoot;
+import water.rapids.ast.prims.operators.AstPlus;
 import water.util.Log;
 
 /**
@@ -45,8 +48,8 @@ public class Session {
 
   public Session() { cluster_init(); }
 
-  // Execute an AST in the current Session with much assertion-checking
-  public Val exec(AST ast, ASTFun scope) {
+  // Execute an AstRoot in the current Session with much assertion-checking
+  public Val exec(AstRoot ast, AstFunction scope) {
     String sane ;
     assert (sane=sanity_check_refs(null))==null : sane;
 
@@ -154,7 +157,7 @@ public class Session {
   // Track a freshly minted tmp frame.  This frame can be removed when the
   // session ends (unlike global frames), or anytime during the session when
   // the client removes it.
-  Frame track_tmp( Frame fr ) {
+  public Frame track_tmp(Frame fr) {
     assert fr._key != null;     // Temps have names
     FRAMES.put(fr._key,fr);     // Track for session
     addRefCnt(fr,1);            // Refcnt is also up: these Vecs stick around after single Rapids call for the next one
@@ -165,7 +168,7 @@ public class Session {
   // Remove and delete a session-tracked frame.
   // Remove from all session tracking spaces.
   // Remove any newly-unshared Vecs, but keep the shared ones.
-  void remove( Frame fr ) {
+  public void remove(Frame fr) {
     if( fr == null ) return;
     Futures fs = new Futures();
     if( !FRAMES.containsKey(fr._key) ) { // In globals and not temps?
@@ -195,7 +198,7 @@ public class Session {
   }
 
   // Update a global ID, maintaining sharing of Vecs
-  Frame assign( Key id, Frame src ) {
+  public Frame assign(Key id, Frame src) {
     if( FRAMES.containsKey(id) ) throw new IllegalArgumentException("Cannot reassign temp "+id);
     Futures fs = new Futures();
     // Vec lifetime invariant: Globals do not share with other globals (but can
@@ -228,7 +231,7 @@ public class Session {
   // Support C-O-W optimizations: the following list of columns are about to be
   // updated.  Copy them as-needed and replace in the Frame.  Return the
   // updated Frame vecs for flow-coding.
-  Vec[] copyOnWrite( Frame fr, int[] cols ) {
+  public Vec[] copyOnWrite(Frame fr, int[] cols) {
     Vec did_copy = null;        // Did a copy?
     Vec[] vecs = fr.vecs();
     for( int i=0; i<cols.length; i++ ) {
@@ -276,13 +279,13 @@ public class Session {
   }
 
   // To avoid a class-circularity hang, we need to force other members of the
-  // cluster to load the Rapids & AST classes BEFORE trying to execute code
+  // cluster to load the Rapids & AstRoot classes BEFORE trying to execute code
   // remotely, because e.g. ddply runs functions on all nodes.
   private static volatile boolean _inited; // One-shot init
   static void cluster_init() {
     if( _inited ) return;
     // Touch a common class to force loading
-    new MRTask() { @Override public void setupLocal() { new ASTPlus(); } }.doAllNodes();
+    new MRTask() { @Override public void setupLocal() { new AstPlus(); } }.doAllNodes();
     _inited = true;
   }
 }
