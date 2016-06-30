@@ -10,7 +10,7 @@ import water.fvec.Frame;
 import water.parser.*;
 
 /**
- * Avro parser provider.
+ * Orc parser provider.
  */
 public class OrcParserProvider implements ParserProvider {
 
@@ -37,9 +37,7 @@ public class OrcParserProvider implements ParserProvider {
   @Override
   public ParseSetup createParserSetup(Key[] inputs, ParseSetup requiredSetup) {
     // We need to get header of Orc file to configure the Orc parser.
-    // The code expects that inputs are consistent and extract only header
-    // from the first file.
-    // Also expect that files are not compressed
+    
     assert inputs != null && inputs.length > 0 : "Inputs cannot be empty!";
     Key firstInput = inputs[0];
     Iced ice = DKV.getGet(firstInput);
