@@ -88,9 +88,9 @@ public class Rapids {
         assert frame._key != null; // No nameless Frame returns, as these are hard to cleanup
         if (session.FRAMES.containsKey(frame._key)) {
           Log.info("UNIMPL: session.FRAMES already contains key " + frame._key);
-        } else {
+        }// else {
           session.addRefCnt(frame, -1);
-        }
+        //}
       }
       return val;
     }
