@@ -43,7 +43,7 @@ public class OrcParser extends Parser {
 
   /** Orc Info */
   private final Reader orcFileReader; // can generate all the other fields from this reader
-  private static BufferedString bs = new BufferedString();
+  private BufferedString bs = new BufferedString();
 
   OrcParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
@@ -175,7 +175,7 @@ public class OrcParser extends Parser {
    * @param columnTypes: string array denoting column types;
      * @param dout
      */
-  private static void write1Stripe(StripeInformation oneStripe, Reader orcFileReader, boolean[] toInclude,
+  private void write1Stripe(StripeInformation oneStripe, Reader orcFileReader, boolean[] toInclude,
                                    String[] columnNames, String[] columnTypes, ParseWriter dout) {
     try {
       RecordReader perStripe = orcFileReader.rows(oneStripe.getOffset(), oneStripe.getDataLength(), toInclude, null,
@@ -218,7 +218,7 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private static void write1column(ColumnVector oneColumn, String columnType, int cIdx, Long rowNumber,
+  private void write1column(ColumnVector oneColumn, String columnType, int cIdx, Long rowNumber,
                                    ParseWriter dout) {
     switch (columnType) {
       case "boolean":
@@ -262,7 +262,7 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private static void writeTimecolumn(ColumnVector oneTSColumn, boolean noNulls, boolean[] isNull, int cIdx,
+  private void writeTimecolumn(ColumnVector oneTSColumn, boolean noNulls, boolean[] isNull, int cIdx,
                                       Long rowNumber, ParseWriter dout) {
     long[] oneColumn = ((LongColumnVector) oneTSColumn).vector;
 
@@ -291,7 +291,7 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private static void writeDecimalcolumn(ColumnVector oneDecimalColumn, boolean noNulls, boolean[] isNull, int cIdx,
+  private void writeDecimalcolumn(ColumnVector oneDecimalColumn, boolean noNulls, boolean[] isNull, int cIdx,
                                          Long rowNumber, ParseWriter dout) {
     HiveDecimalWritable[] oneColumn= ((DecimalColumnVector) oneDecimalColumn).vector;
 
@@ -320,7 +320,7 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private static void writeStringcolumn(ColumnVector oneStringColumn, String columnType, boolean noNulls,
+  private void writeStringcolumn(ColumnVector oneStringColumn, String columnType, boolean noNulls,
                                         boolean[] isNull, int cIdx, Long rowNumber, ParseWriter dout) {
 
     byte[][] oneColumn  = ((BytesColumnVector) oneStringColumn).vector;
@@ -348,7 +348,7 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private static void writeDoublecolumn(ColumnVector oneDoubleColumn, String columnType, boolean noNulls,
+  private void writeDoublecolumn(ColumnVector oneDoubleColumn, String columnType, boolean noNulls,
                                         boolean[] isNull, int cIdx, Long rowNumber, ParseWriter dout) {
     double[] oneColumn = ((DoubleColumnVector) oneDoubleColumn).vector;
 
@@ -391,7 +391,7 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private static void writeLongcolumn(ColumnVector oneLongColumn, String columnType, Boolean noNull, boolean[] isNull,
+  private void writeLongcolumn(ColumnVector oneLongColumn, String columnType, Boolean noNull, boolean[] isNull,
                                       int cIdx, Long rowNumber, ParseWriter dout) {
 
     long[] oneColumn = ((LongColumnVector) oneLongColumn).vector;
