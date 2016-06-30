@@ -33,9 +33,6 @@ public class TwoDimTable extends Iced {
   public static boolean isEmpty(final double d) {
     return Double.doubleToRawLongBits(d) == Double.doubleToRawLongBits(emptyDouble);
   }
-  public static boolean isEmpty(final long l) {
-    return l == Double.doubleToRawLongBits(emptyDouble);
-  }
 
   /**
    * Constructor for TwoDimTable (R rows, C columns)
