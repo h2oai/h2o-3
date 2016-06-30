@@ -37,8 +37,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
-    public long _seed = -1;
-
     public int _nbins_top_level = 1<<10; //hardcoded maximum top-level number of bins for real-valued columns
 
     public boolean _build_tree_one_node = false;
@@ -54,10 +52,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
     @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
-
-    @Override protected long nFoldSeed() {
-      return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
-    }
 
     public double _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level
     public double _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree

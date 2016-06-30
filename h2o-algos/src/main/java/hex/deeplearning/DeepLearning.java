@@ -191,8 +191,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   public class DeepLearningDriver extends Driver {
     @Override public void computeImpl() {
+      init(true); //this can change the seed if it was set to -1
       long cs = _parms.checksum();
-      init(true);
       // Something goes wrong
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);

@@ -287,7 +287,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new H2OIllegalArgumentException("Fold column must be either categorical or contiguous integers from 0..N-1 or 1..N");
       return fold;
     }
-    final long seed = _parms.nFoldSeed();
+    final long seed = _parms.getOrMakeRealSeed();
     Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
     switch( _parms._fold_assignment ) {
     case AUTO:
@@ -728,6 +728,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    if( expensive) {
+      _parms.getOrMakeRealSeed();
+    }
     if (_parms._nfolds < 0 || _parms._nfolds == 1) {
       error("_nfolds", "nfolds must be either 0 or >1.");
     }
