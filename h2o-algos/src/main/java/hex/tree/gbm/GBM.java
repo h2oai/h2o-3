@@ -337,7 +337,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           int nid = (int)nids.at8(row);
           assert(nid!=ScoreBuildHistogram.UNINITIALIZED);
           if (nid < 0) continue; //skip OOB and otherwise skipped rows
-          assert(weights.atd(row) != 0); //already filtered out via nid < 0
           float f = (float)(preds.atd(row) + offset.atd(row));
           int idx = nid - _firstLeafIndex;
           _mins[idx] = Math.min(_mins[idx], f);
@@ -581,8 +580,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Vec strata = vec_nids(_train,0);
       int minIndex = (int)strata.min();
       if (DEV_DEBUG) for (int i=0;i<ktrees[0]._len;++i) System.out.println(ktrees[0].node(i).toString());
-//      assert(minIndex==qp._minIndex); // FIXME: remove qp._minIndex
-//      assert(minIndex==firstLeafIndex);
+      assert(minIndex==qp._minIndex); // FIXME: remove qp._minIndex
+      assert(minIndex==firstLeafIndex);
 
       // compute quantile for all leaf nodes
       Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, response, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
