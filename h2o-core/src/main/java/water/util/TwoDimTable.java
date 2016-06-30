@@ -33,6 +33,9 @@ public class TwoDimTable extends Iced {
   public static boolean isEmpty(final double d) {
     return Double.doubleToRawLongBits(d) == Double.doubleToRawLongBits(emptyDouble);
   }
+  public static boolean isEmpty(final long l) {
+    return l == Double.doubleToRawLongBits(emptyDouble);
+  }
 
   /**
    * Constructor for TwoDimTable (R rows, C columns)
@@ -161,12 +164,16 @@ public class TwoDimTable extends Iced {
             set(r, c, dblCellValues[r][c]);
           break;
         case "int":
-          for (int r = 0; r < rowDim; ++r)
-            set(r, c, (int) dblCellValues[r][c]);
+          for (int r = 0; r < rowDim; ++r) {
+            if (isEmpty(dblCellValues[r][c])) set(r,c, Double.NaN);
+            else set(r, c, (int) dblCellValues[r][c]);
+          }
           break;
         case "long":
-          for (int r = 0; r < rowDim; ++r)
-            set(r, c, (long) dblCellValues[r][c]);
+          for (int r = 0; r < rowDim; ++r) {
+            if (isEmpty(dblCellValues[r][c])) set(r, c, Double.NaN);
+            else set(r, c, (long) dblCellValues[r][c]);
+          }
           break;
         case "string":
           for (int r = 0; r < rowDim; ++r)
@@ -221,12 +228,11 @@ public class TwoDimTable extends Iced {
    * @param o Object value
    */
   public void set(final int row, final int col, final Object o) {
-    if (o == null) {
-      cellValues[row][col] = null;
-      return;
-    }
-
-    if (colTypes[col].equals("double"))
+    if (o == null)
+      cellValues[row][col] = new IcedWrapper(null);
+    else if (o instanceof Double && Double.isNaN((double)o))
+      cellValues[row][col] = new IcedWrapper(Double.NaN);
+    else if (colTypes[col].equals("double"))
       cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
     else if (colTypes[col].equals("float"))
       cellValues[row][col] = new IcedWrapper(new Float(o.toString()));
@@ -298,25 +304,34 @@ public class TwoDimTable extends Iced {
       row = 0;
       for (int r = 0; r < rowDim; ++r) {
         if (!full && skip(r)) continue;
+        Object o = get(r,c);
+        if ((o == null) || o instanceof Double && isEmpty((double)o)){
+          cellStrings[row + 1][c + 1] = "";
+          row++;
+          continue;
+        } else if (o instanceof Double && Double.isNaN((double)o)) {
+          cellStrings[row + 1][c + 1] = "NaN";
+          row++;
+          continue;
+        }
         switch (colTypes[c]) {
           case "double":
-            cellStrings[row + 1][c + 1] = get(r,c) == null || isEmpty((Double)get(r,c)) ? "" : String.format(formatString, (Double)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = String.format(formatString, (Double)cellValues[r][c].get());
             break;
           case "float":
-            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Float)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = String.format(formatString, (Float)cellValues[r][c].get());
             break;
           case "int":
-            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Integer)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = String.format(formatString, (Integer)cellValues[r][c].get());
             break;
           case "long":
-            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (Long)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = String.format(formatString, (Long)cellValues[r][c].get());
             break;
           case "string":
-            cellStrings[row + 1][c + 1] = get(r,c) == null ? "" : String.format(formatString, (String)cellValues[r][c].get());
+            cellStrings[row + 1][c + 1] = String.format(formatString, (String)cellValues[r][c].get());
             break;
           default:
-            if( get(r,c) != null )
-              cellStrings[row+1][c+1] = String.format(formatString, cellValues[r][c]);
+            cellStrings[row+1][c+1] = String.format(formatString, cellValues[r][c]);
             break;
         }
         row++;
