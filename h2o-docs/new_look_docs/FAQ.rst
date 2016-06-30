@@ -52,7 +52,11 @@ General Troubleshooting Tips
    H2O.
 -  Confirm that the nodes are not on different networks by confirming
    that the IP addresses of the nodes are the same in the output:
-   ``INFO: Listening for HTTP and REST traffic on  IP_Address/ 06-18 10:54:21.586 192.168.1.70:54323    25638  main       INFO: H2O cloud name: 'H2O_User' on IP_Address, discovery address /Discovery_Address INFO: Cloud of size 1 formed [IP_Address]``
+
+      ::
+
+         INFO: Listening for HTTP and REST traffic on  IP_Address/ 06-18 10:54:21.586 192.168.1.70:54323    25638  main       INFO: H2O cloud name: 'H2O_User' on IP_Address, discovery address /Discovery_Address INFO: Cloud of size 1 formed [IP_Address]
+
 -  Check if the nodes have different interfaces; if so, use the -network
    option to define the network (for example, ``-network 127.0.0.1``).
    To use a network range, use a comma to separate the IP addresses (for

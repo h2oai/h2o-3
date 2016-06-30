@@ -35,8 +35,6 @@ Defining a GLM Model
 
 -  **nfolds**: Specify the number of folds for cross-validation.
 
-   	 **Note**: Lambda search is not supported when cross-validation is enabled.
-
 -  **response\_column**: (Required) Specify the column to use as the
    independent variable.
 
@@ -97,8 +95,6 @@ Defining a GLM Model
    starting with lambda max. The given lambda is then interpreted as
    lambda min. 
    
-     **Note**: Lambda search is not supported when cross-validation is enabled.
-
 -  **nlambdas**: (Applicable only if **lambda\_search** is enabled)
    Specify the number of lambdas to use in the search. The default is
    100.
@@ -211,6 +207,36 @@ By default, the following output displays:
    freedom, AIC, AUC, binomial, rank)
 -  Coefficients
 -  Coefficient magnitudes
+
+Handling of Categorical Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GLM auto-expands categorical variables into one-hot encoded binary variables (i.e. if variable has levels “cat”,”dog”, “mouse”, cat is encoded as 1,0,0, mouse is 0,1,0 and dog is 0,0,1). It is generally more efficient to let GLM perform auto-expansion instead of expanding data manually and it also adds the benefit of correct handling of different categorical mappings between different datasets as welll as handling of unseen categorical levels. Unlike binary numeric columns, auto-expanded variables are not standardized.
+
+It is common to skip one of the levels during the one-hot encoding to prevent linear dependency between the variable and the intercept. H3O follows the convention of skipping the first level. This behavior can be controlled by setting use_all_factor_levels_flag (no level is going to be skipped if the flag is true). The default depends on regularization parameter - it is set to false if no regularization and to true otherwise. The reference level which is skipped is always the first level, you can change which level is the reference level by calling h2o.relevel function prior to building the model.
+
+
+Lambda Search and Full Regularization Path
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper). Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
+
+It can sometimes be useful to see the coefficients for all lambda values. Or to override default lambda selection. Full regularization path can be extracted from both R and python clients (currently not from Flow). It returns coefficients (and standardized coefficients) for all computed lambda values and also explained deviances on both train and validation. Subsequently, makeGLMModel call can be used to create h2o glm model with selected coefficients.
+
+To extract the regularization path from R or python:
+
+- R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
+- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an rgument
+
+
+Modifying or Creating Custom GLM Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In R and python, makeGLMModel call can be used to create h2o model from given coefficients. It needs a source glm model trained on the same dataset to extract dataset information. To make custom GLM model from R or python:
+
+- R: call h2o.makeGLMModel, takes a model and a vector of coefficients and (optional) decision threshold as parameters.
+- Pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method), takes a model, dictionary containing coefficients and (optional) decision threshold as parameters.
+
 
 FAQ
 ~~~
