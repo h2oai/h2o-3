@@ -85,7 +85,7 @@ public class Rapids {
       if (val.isFrame()) {
         Frame fr = val.getFrame();
         assert fr._key != null; // No nameless Frame returns, as these are hard to cleanup
-        if (ses.FRAMES.containsKey(fr)) {
+        if (ses.FRAMES.containsKey(fr._key)) {
           throw water.H2O.unimpl();
         } else {
           ses.addRefCnt(fr, -1);
