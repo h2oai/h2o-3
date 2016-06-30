@@ -35,7 +35,6 @@ public class EnumUtils {
     HashMap<String, Enum> map = enumMappings.get(clz);
     if (map == null) {
       map = new HashMap<>();
-      enumMappings.put(clz, map);
       for (Enum item : clz.getEnumConstants()) {
         String origName = item.name();
         String unifName = origName.toUpperCase().replaceAll("[^0-9A-Z]", "");
@@ -44,11 +43,21 @@ public class EnumUtils {
         map.put(origName, item);
         map.put(unifName, item);
       }
+      // Put the map into {enumMappings} no sooner than it is fully constructed. If there are multiple threads
+      // accessing the same enum mapping, then it is possible they'll begin constructing the map simultaneously and
+      // then overwrite each other's results. This is harmless.
+      // However it would be an error to put the {map} into {enumMappings} before it is filled, because then the
+      // other thread would think that the map is complete, and may not find some of the legitimate keys.
+      enumMappings.put(clz, map);
     }
 
     Enum value = map.get(name);
-    if (value == null && name != null)
-      value = map.get(name.toUpperCase().replaceAll("[^0-9A-Z]", ""));
+    if (value == null && name != null) {
+      String unifName = name.toUpperCase().replaceAll("[^0-9A-Z]", "");
+      value = map.get(unifName);
+      // Save the mapping name -> value, so that subsequent requests with the same name will be faster.
+      map.put(name, value);
+    }
 
     if (value == null)
       throw new IllegalArgumentException("No enum constant " + clz.getCanonicalName() + "." + name);
