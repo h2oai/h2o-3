@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.checkpointing <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
-  seed <- 1234 #sample(1:1000000, 1)
+  seed <- sample(1:1000000, 1)
   Log.info(paste0("runif seed: ",seed))
   s <- h2o.runif(cars, seed=seed)
   train <- cars[s > .2,]
@@ -35,7 +35,7 @@ test.checkpointing <- function() {
   print(paste0("Response column: ",response_col))
 
   # build first model
-  ntrees1=sample(5:20,1)
+  ntrees1=sample(2:5,1)
   max_depth1=sample(2:5,1)
   min_rows1=sample(10:15,1)
   print(paste0("ntrees model 1: ",ntrees1))
@@ -45,7 +45,7 @@ test.checkpointing <- function() {
                     min_rows=min_rows1,validation_frame=valid,distribution=distribution)
 
   # continue building the model
-  ntrees2=ntrees1+sample(5:20,1)
+  ntrees2=ntrees1+sample(2:5,1)
   max_depth2=max_depth1
   min_rows2=min_rows1
   print(paste0("ntrees model 2: ",ntrees2))
