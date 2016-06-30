@@ -6,6 +6,7 @@ import java.util.Random;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.NewChunk;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
@@ -13,7 +14,6 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
 public class FrameUtils {
-
 
   /** Parse given file(s) into the form of single frame represented by the given key.
    *
@@ -87,10 +87,12 @@ public class FrameUtils {
       }
     }
   }
+
   public static double [] asDoubles(Vec v){
     if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
     return new Vec2ArryTsk((int)v.length()).doAll(v).res;
   }
+
   private static class Vec2IntArryTsk extends MRTask<Vec2IntArryTsk> {
     final int N;
     public int [] res;
@@ -112,6 +114,7 @@ public class FrameUtils {
       }
     }
   }
+
   public static int [] asInts(Vec v){
     if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
     return new Vec2IntArryTsk((int)v.length()).doAll(v).res;
@@ -140,12 +143,96 @@ public class FrameUtils {
     return ks;
   }
 
-  public static double sparseRatio(Frame fr) {
-    double reg = 1.0/fr.numCols();
-    double res = 0;
-    for(Vec v:fr.vecs())
-      res += v.sparseRatio();
-    return res * reg;
+  /**
+   * Helper to convert a categorical variable into a "binary" encoding format. In this format each categorical value is
+   * first assigned an integer value, then that integer is written in binary, and each bit column is converted into a
+   * separate column. This is intended as an improvement to an existing one-hot transformation.
+   * For each categorical variable we assume that the number of categories is 1 + domain cardinality, the extra
+   * category is reserved for NAs.
+   * See http://www.willmcginnis.com/2015/11/29/beyond-one-hot-an-exploration-of-categorical-variables/
+   */
+  public static class CategoricalBinaryEncoder extends Iced {
+    final Key<Frame> _frameKey;
+    Job<Frame> _job;
+
+    public CategoricalBinaryEncoder(Key<Frame> dataset) {
+      _frameKey = dataset;
+    }
+
+    /**
+     * Driver for CategoricalBinaryEncoder
+     */
+    class CategoricalBinaryEncoderDriver extends H2O.H2OCountedCompleter {
+      final Frame _frame;
+      final Key<Frame> _destKey;
+      CategoricalBinaryEncoderDriver(Frame frame, Key<Frame> destKey) { _frame = frame; _destKey = destKey; }
+
+      class BinaryConverter extends MRTask<BinaryConverter> {
+        int[] _categorySizes;
+        public BinaryConverter(int[] categorySizes) { _categorySizes = categorySizes; }
+
+        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+          int targetColOffset = 0;
+          for (int iCol = 0; iCol < cs.length; ++iCol) {
+            Chunk col = cs[iCol];
+            int numTargetColumns = _categorySizes[iCol];
+            for (int iRow = 0; iRow < col._len; ++iRow) {
+              long val = col.isNA(iRow)? 0 : 1 + col.at8(iRow);
+              for (int j = 0; j < numTargetColumns; ++j) {
+                ncs[targetColOffset + j].addNum(val & 1, 0);
+                val >>>= 1;
+              }
+              assert val == 0 : "";
+            }
+            targetColOffset += numTargetColumns;
+          }
+        }
+      }
+
+      @Override public void compute2() {
+        Vec[] frameVecs = _frame.vecs();
+        int numCategoricals = 0;
+        for (Vec v : frameVecs)
+          if (v.isCategorical())
+            numCategoricals++;
+
+        Frame categoricalFrame = new Frame();
+        Frame outputFrame = new Frame(_destKey);
+        int[] binaryCategorySizes = new int[numCategoricals];
+        int numOutputColumns = 0;
+        for (int i = 0, j = 0; i < frameVecs.length; ++i) {
+          int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
+          if (numCategories > 0) {
+            categoricalFrame.add(_frame.name(i), frameVecs[i]);
+            binaryCategorySizes[j] = 1 + MathUtils.log2(numCategories - 1 + 1/* for NAs */);
+            numOutputColumns += binaryCategorySizes[j];
+            ++j;
+          } else
+            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+        }
+        BinaryConverter mrtask = new BinaryConverter(binaryCategorySizes);
+        Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
+        // change names of binaryCols so that they reflect the original names of the categories
+        for (int i = 0, j = 0; i < binaryCategorySizes.length; j += binaryCategorySizes[i++]) {
+          for (int k = 0; k < binaryCategorySizes[i]; ++k) {
+            binaryCols._names[j + k] = categoricalFrame.name(i) + ":" + k;
+          }
+        }
+        outputFrame.add(binaryCols);
+        DKV.put(outputFrame);
+        tryComplete();
+      }
+    }
+
+    public Job<Frame> exec() {
+      final Frame frame = DKV.getGet(_frameKey);
+      if (frame == null)
+        throw new IllegalArgumentException("Invalid Frame key " + _frameKey + " (Frame doesn't exist).");
+      Key<Frame> destKey = Key.make();
+      _job = new Job<>(destKey, Frame.class.getName(), "CategoricalBinaryEncoder");
+      int workAmount = frame.lastVec().nChunks();
+      return _job.start(new CategoricalBinaryEncoderDriver(frame, destKey), workAmount);
+    }
   }
 
   /**
@@ -153,7 +240,7 @@ public class FrameUtils {
    */
   public static class MissingInserter extends Iced {
     Job<Frame> _job;
-    final Key _dataset;
+    final Key<Frame> _dataset;
     final double _fraction;
     final long _seed;
 
@@ -165,7 +252,7 @@ public class FrameUtils {
      * Driver for MissingInserter
      */
     class MissingInserterDriver extends H2O.H2OCountedCompleter {
-      final Frame _frame;
+      transient final Frame _frame;
       MissingInserterDriver(Frame frame) {_frame = frame; }
       @Override
       public void compute2() {
@@ -186,7 +273,7 @@ public class FrameUtils {
     }
 
     public Job<Frame> execImpl() {
-      _job = new Job(_dataset, Frame.class.getName(), "MissingValueInserter");
+      _job = new Job<>(_dataset, Frame.class.getName(), "MissingValueInserter");
       if (DKV.get(_dataset) == null)
         throw new IllegalArgumentException("Invalid Frame key " + _dataset + " (Frame doesn't exist).");
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
@@ -212,6 +299,14 @@ public class FrameUtils {
         cnt += c.sparseLenZero()/(double)c.len();
       } else cnt += 1;
     return cnt * reg;
+  }
+
+  public static double sparseRatio(Frame fr) {
+    double reg = 1.0/fr.numCols();
+    double res = 0;
+    for(Vec v:fr.vecs())
+      res += v.sparseRatio();
+    return res * reg;
   }
 
   public static class WeightedMean extends MRTask<WeightedMean> {

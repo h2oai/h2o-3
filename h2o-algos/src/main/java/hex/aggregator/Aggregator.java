@@ -1,27 +1,82 @@
 package hex.aggregator;
 
 import hex.DataInfo;
-
 import hex.ModelBuilder;
 import hex.ModelCategory;
-
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 
-import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
   public static class Exemplar extends Iced<Exemplar> {
-    Exemplar(double[] d, long id) { data=d; gid=id; }
+    Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }
     Exemplar deepClone() { return new AutoBuffer().put(this).flipForReading().get(); }
     final double[] data;
     final long gid;
+
+    long _cnt;  // exemplar count
+
+    /**
+     * Add a new exemplar to the input array (doubling it if necessary)
+     * @param es Array of exemplars
+     * @param e  Adding this exemplar to the array of exemplars
+     * @return   Array of exemplars containing the new exemplar
+     */
+    public static Exemplar[] addExemplar(Exemplar[] es, Exemplar e) {
+      Exemplar[] res=es;
+      int idx=es.length-1;
+      while(idx>=0 && null==es[idx]) idx--;
+      if( idx==es.length-1 ) {
+        res = Arrays.copyOf(es,es.length<<1);
+        res[es.length]=e;
+        return res;
+      }
+      res[idx+1]=e;
+      return res;
+    }
+
+    /**
+     * Trim any training nulls
+     * @param es the array to trim
+     * @return a new Exemplar[] without trailing nulls
+     */
+    public static Exemplar[] trim(Exemplar[] es) {
+      int idx=es.length-1;
+      while(null==es[idx]) idx--;
+      return Arrays.copyOf(es,idx+1);
+    }
+
+    private double squaredEuclideanDistance(double[] e2, double thresh) {
+      double sum = 0;
+      int n = 0;
+      boolean missing = false;
+      double e1[] = data;
+      double ncols = e1.length;
+      for (int j = 0; j < ncols; j++) {
+        final double d1 = e1[j];
+        final double d2 = e2[j];
+        if (!isMissing(d1) && !isMissing(d2)) {
+          final double dist = (d1 - d2);
+          sum += dist*dist;
+          n++;
+        } else {
+          missing=true;
+        }
+        if (!missing && sum > thresh) break; //early cutout
+      }
+      sum *= ncols / n;
+      return sum;
+    }
+
+    private static boolean isMissing(double x) {
+      return Double.isNaN(x);
+    }
   }
 
   // Number of columns in training set (p)
@@ -41,13 +96,12 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     // Main worker thread
     @Override
-    public void compute2() {
+    public void computeImpl() {
       AggregatorModel model = null;
 
       DataInfo di = null;
       try {
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -60,7 +114,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         _job.update(1,"Preprocessing data.");
         di = new DataInfo(orig, null, true, _parms._transform, false, false, false);
         DKV.put(di);
-        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols());
+        final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // mostly always going to be ~ (_radius_scale * 0.09)
 
         // Add workspace vector for exemplar assignment
         Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
@@ -74,7 +128,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
         // Populate model output state
         model._exemplars = aggTask._exemplars;
-        model._counts = aggTask._counts;
+        model._counts = new long[aggTask._exemplars.length];
+        for(int i=0;i<aggTask._exemplars.length;++i)
+          model._counts[i] = aggTask._exemplars[i]._cnt;
         model._exemplar_assignment_vec_key = assignment._key;
         model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
 
@@ -84,11 +140,10 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         _job.update(1, "Done.");
         model.update(_job);
       } finally {
-        _parms.read_unlock_frames(_job);
         if (model != null) model.unlock(_job);
         if (di!=null) di.remove();
+        Scope.untrack(new Key[]{model._exemplar_assignment_vec_key});
       }
-      tryComplete();
     }
   }
 
@@ -100,7 +155,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
     // OUTPUT
     Exemplar[] _exemplars;
-    long[] _counts;
+//    long[] _counts;
 
     static class MyPair extends Iced<MyPair> implements Comparable<MyPair> {
       long first;
@@ -165,8 +220,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     @Override
     public void map(Chunk[] chks) {
       _mapping = new GIDMapping();
-      List<Exemplar> exemplars = new ArrayList<>();
-      List<Long> counts = new ArrayList<>();
+      Exemplar[] es = new Exemplar[4];
 
       Chunk[] dataChks = Arrays.copyOf(chks, chks.length-1);
       Chunk assignmentChk = chks[chks.length-1];
@@ -182,23 +236,21 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         double[] data = Arrays.copyOf(row.numVals, nCols);
         if (r==0) {
           Exemplar ex = new Exemplar(data, rowIndex);
-          exemplars.add(ex);
-          counts.add(1L);
+          es = Exemplar.addExemplar(es,ex);
           assignmentChk.set(r, ex.gid);
         } else {
           /* find closest exemplar to this case */
           double distanceToNearestExemplar = Double.MAX_VALUE;
-          Iterator<Exemplar> it = exemplars.iterator();
           int closestExemplarIndex = 0;
           int index = 0;
           long gid=-1;
-          while (it.hasNext()) {
-            Exemplar e = it.next();
-            double d = squaredEuclideanDistance(e.data, data, nCols, distanceToNearestExemplar);
-            if (d < distanceToNearestExemplar) {
-              distanceToNearestExemplar = d;
+          for(Exemplar e: es) {
+            if( null==e ) break;
+            double distToExemplar = e.squaredEuclideanDistance(data,distanceToNearestExemplar);
+            if( distToExemplar < distanceToNearestExemplar ) {
+              distanceToNearestExemplar = distToExemplar;
               closestExemplarIndex = index;
-              gid = e.gid;
+              gid=e.gid;
             }
             /* do not need to look further even if some other exemplar is closer */
             if (distanceToNearestExemplar < _delta)
@@ -207,30 +259,21 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           }
           /* found a close exemplar, so add to list */
           if (distanceToNearestExemplar < _delta) {
-            Long count = counts.get(closestExemplarIndex);
-            counts.set(closestExemplarIndex, count + 1);
+            es[closestExemplarIndex]._cnt++;
             assignmentChk.set(r, gid);
           } else {
             /* otherwise, assign a new exemplar */
             Exemplar ex = new Exemplar(data, rowIndex);
-            exemplars.add(ex);
-            counts.add(1L);
+            es = Exemplar.addExemplar(es,ex);
             assignmentChk.set(r, rowIndex); //assign to self
           }
         }
       }
       // populate output primitive arrays
-      _exemplars = exemplars.toArray(new Exemplar[0]);
-
-      Object[] countsArray = counts.toArray();
-      _counts = new long[counts.size()];
-      for (int i = 0; i < counts.size(); i++) {
-        _counts[i] = (Long) countsArray[i];
-      }
+      _exemplars = Exemplar.trim(es);
       assert(_exemplars.length <= chks[0].len());
-      assert(_counts.length == _exemplars.length);
       long sum=0;
-      for (long c:_counts) sum+=c;
+      for (Exemplar e: _exemplars) sum+=e._cnt;
       assert(sum <= chks[0].len());
       ((Job)_jobKey.get()).update(1, "Aggregating.");
     }
@@ -241,86 +284,47 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         _mapping.set(mrt._mapping.pairSet[i].first, mrt._mapping.pairSet[i].second);
       // reduce mrt into this
       Exemplar[] exemplars = mrt._exemplars;
-      long[] counts = mrt._counts;
+//      long[] counts = mrt._counts;
       long localCounts = 0;
-      for (long c : _counts) localCounts += c;
+      for (Exemplar e : _exemplars) localCounts += e._cnt;
       long remoteCounts = 0;
-      for (long c : counts) remoteCounts += c;
+      for (Exemplar e : mrt._exemplars) remoteCounts += e._cnt;
 
-      ArrayList<Exemplar> myExemplars = new ArrayList();
-      myExemplars.addAll(Arrays.asList(_exemplars));
-
-      // loop over other task's exemplars
-      for (int r=0; r<exemplars.length; ++r) {
-        double[] data = exemplars[r].data;
+      // remote tasks exemplars
+      for(int r=0;r<mrt._exemplars.length;++r) {
         double distanceToNearestExemplar = Double.MAX_VALUE;
         int closestExemplarIndex = 0;
-        // loop over my exemplars (which might grow below)
-        Iterator<Exemplar> it = myExemplars.iterator();
-        int itIdx=0;
-        while(it.hasNext()) {
-          Exemplar ex = it.next();
-          double[] e = ex.data;
-          double d = squaredEuclideanDistance(e, data, data.length, distanceToNearestExemplar);
-          if (d < distanceToNearestExemplar) {
-            distanceToNearestExemplar = d;
-            closestExemplarIndex = itIdx;
+        int index=0;
+        for(Exemplar le: _exemplars) {
+          if( null==le ) break; // tapped out
+          double distToExemplar = le.squaredEuclideanDistance(mrt._exemplars[r].data,distanceToNearestExemplar);
+          if( distToExemplar < distanceToNearestExemplar ) {
+            distanceToNearestExemplar = distToExemplar;
+            closestExemplarIndex=index;
           }
            /* do not need to look further even if some other exemplar is closer */
           if (distanceToNearestExemplar < _delta)
             break;
-          itIdx++;
+          index++;
         }
         if (distanceToNearestExemplar < _delta) {
           // add remote exemplar counts/indices to one of my exemplars that are close enough
-          _counts[closestExemplarIndex]+=counts[r];
+          _exemplars[closestExemplarIndex]._cnt += mrt._exemplars[r]._cnt;
 
 //          Log.info("Reduce: Reassigning " + counts[r] + " rows from " + exemplars[r].gid + " to " + _exemplars[closestExemplarIndex].gid);
           _mapping.set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
         } else {
-          myExemplars.add(exemplars[r].deepClone());
-
-          long[] newCounts = Arrays.copyOf(_counts, _counts.length+1);
-          newCounts[_counts.length] = counts[r];
-          _counts = newCounts;
+          _exemplars = Exemplar.addExemplar(_exemplars, mrt._exemplars[r].deepClone());
         }
       }
-      _exemplars = myExemplars.toArray(new Exemplar[0]);
       mrt._exemplars = null;
-      mrt._counts = null;
-
+      _exemplars = Exemplar.trim(_exemplars);
       assert(_exemplars.length <= localCounts + remoteCounts);
-      assert(_counts.length == _exemplars.length);
       long sum=0;
-      for(long c:_counts) sum+=c;
+      for(Exemplar e: _exemplars) sum+=e._cnt;
       assert(sum == localCounts + remoteCounts);
       ((Job)_jobKey.get()).update(1, "Aggregating.");
     }
-
-    private static double squaredEuclideanDistance(double[] e1, double[] e2, int nCols, double thresh) {
-      double sum = 0;
-      int n = 0;
-      boolean missing = false;
-      for (int j = 0; j < nCols; j++) {
-        final double d1 = e1[j];
-        final double d2 = e2[j];
-        if (!isMissing(d1) && !isMissing(d2)) {
-          final double dist = (d1 - d2);
-          sum += dist*dist;
-          n++;
-        } else {
-          missing=true;
-        }
-        if (!missing && sum > thresh) break; //early cutout
-      }
-      sum *= (double) nCols / n;
-      return sum;
-    }
-
-    private static boolean isMissing(double x) {
-      return Double.isNaN(x);
-    }
-
   }
 
   private static class RenumberTask extends MRTask<RenumberTask> {

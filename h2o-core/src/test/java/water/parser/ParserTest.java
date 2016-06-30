@@ -1,15 +1,15 @@
 package water.parser;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.util.Log;
 
-import java.io.File;
-
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
@@ -29,7 +29,7 @@ public class ParserTest extends TestUtil {
     return k;
   }
 
-  public static boolean compareDoubles(double a, double b, double threshold) {
+  private static boolean compareDoubles(double a, double b, double threshold) {
     if( a==b ) return true;
     if( ( Double.isNaN(a) && !Double.isNaN(b)) ||
         (!Double.isNaN(a) &&  Double.isNaN(b)) ) return false;
@@ -70,13 +70,13 @@ public class ParserTest extends TestUtil {
     };
 
     double[][] exp = new double[][] {
-      ard(1.0, 2.0, 3.0),
-      ard(1.0, 2.0, 3.0),
-      ard(4.0, 5.0, 6.0),
-      ard(4.0, 5.2, NaN),
-      ard(NaN, NaN, 1.0),
-      ard(1.1, NaN, NaN),
-      ard(1.1, 2.1, 3.4),
+        ard(1.0, 2.0, 3.0),
+        ard(1.0, 2.0, 3.0),
+        ard(4.0, 5.0, 6.0),
+        ard(4.0, 5.2, NaN),
+        ard(NaN, NaN, 1.0),
+        ard(1.1, NaN, NaN),
+        ard(1.1, 2.1, 3.4),
     };
 
     for (char separator : SEPARATORS) {
@@ -96,6 +96,34 @@ public class ParserTest extends TestUtil {
       ParseDataset.parse(r2, k2);
       testParsed(r2,exp);
     }
+  }
+
+  @Test public void testMajorityVote() {
+    String[] data = new String[] {
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "a 0\n",
+        "1 0\n",
+        "2 0\n",
+        "3 0\n"
+    };
+
+    String[] dataset = getDataForSeparator(' ', data);
+    StringBuilder sb1 = new StringBuilder();
+    for( String ds : dataset ) sb1.append(ds).append("\n");
+    Key k1 = makeByteVec(sb1.toString());
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Enum"));
+    fr.delete();
   }
 
   @Test public void testChunkBoundaries() {
@@ -265,6 +293,18 @@ public class ParserTest extends TestUtil {
       testParsed(r, expDouble);
     }
   }
+
+  @Test public void testMajoritySep() {
+    String data = 
+      "a,b,c,d,e,f,g,h,i,j,k,space 1,l,space 2,m,space 3,n,o,p,q,r,s,t,u,v,w,x,y,z\n"+ // 26+3 cols, exactly 3 spaces
+      "1,2,3,4,5,6,7,8,9,0,1,catag 1,2,catag 2,3,catag 3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9\n"; // a few extra cols, exactly 3 spaces
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.numCols()==26+3);
+    fr.delete();
+  }
+
  @Test public void testMultipleNondecimalColumns() {
     String data[] = {
         "foo| 2|one\n"
@@ -303,7 +343,6 @@ public class ParserTest extends TestUtil {
       testParsed(r, expDouble);
     }
   }
-
 
   // Test if the empty column is correctly handled.
   // NOTE: this test makes sense only for comma separated columns
@@ -377,10 +416,10 @@ public class ParserTest extends TestUtil {
     }
   }
 
-  public static String[] getDataForSeparator(char sep, String[] data) {
+  static String[] getDataForSeparator(char sep, String[] data) {
     return getDataForSeparator('|', sep, data);
   }
-  static String[] getDataForSeparator(char placeholder, char sep, String[] data) {
+  private static String[] getDataForSeparator(char placeholder, char sep, String[] data) {
     String[] result = new String[data.length];
     for (int i = 0; i < data.length; i++) {
       result[i] = data[i].replace(placeholder, sep);
@@ -684,6 +723,26 @@ public class ParserTest extends TestUtil {
     testParsed(r1,pows10_exp);
   }
 
+  // Comparing a column with just 1399008600149269883L and 1399008600149269880L
+  // (differ by 3 in the lowest digit), converting to a double or scaling up
+  // and down by 10 and converting inverts the size:
+  //  ((double)1399008600149269883L) < ((double)139900860014926988L*10.0)
+  // i.e., the larger long converts to the smaller double.
+  @Test public void testParseManyDigits5() {
+    String pows10 =
+      "1399008600149269883\n"+
+      "1399008600149269880\n"+
+      "";
+    double[][] pows10_exp = new double[][] {
+      ard(1399008600149269883L),
+      ard(1399008600149269880L),
+    };
+    Key k = makeByteVec(pows10);
+    Key r1 = Key.make("r1");
+    ParseDataset.parse(r1, k);
+    testParsed(r1,pows10_exp);
+  }
+
   // if there's only 3 different things - 2 strings and one other things (number of string), then declare this column an categorical column
   @Test @Ignore public void testBinaryWithNA() {
     String[] data = new String[] {
@@ -783,6 +842,34 @@ public class ParserTest extends TestUtil {
           }
         }
       }
+    }
+  }
+
+  @Test
+  public void testPubDev2897() {
+    Frame f = parse_test_file("smalldata/jira/pubdev_2897.csv");
+    try {
+      Assert.assertEquals("Frame rows", 5, f.numRows());
+      Assert.assertEquals("Frame columns", 3, f.numCols());
+
+      Vec v0 = f.vec(0);
+      Assert.assertEquals("1. Column type", Vec.T_NUM, v0.get_type());
+
+      Vec v1 = f.vec(1);
+      Assert.assertEquals("2. Column type", Vec.T_NUM, v1.get_type());
+
+      Vec v2 = f.vec(2);
+      Assert.assertEquals("3. Column type", Vec.T_CAT, v2.get_type());
+      Assert.assertArrayEquals("3. Column domain", ar("A", "B"), v2.domain());
+      int domainLen = v2.domain().length;
+      // Verify values in columns
+      for (int i = 0; i < f.numRows(); i++) {
+        if (v2.isNA(i)) continue;
+        long value = v2.at8(i);
+        Assert.assertTrue("Vector value should reference a string inside domain", value >= 0 && value < domainLen);
+      }
+    } finally {
+      f.delete();
     }
   }
 }

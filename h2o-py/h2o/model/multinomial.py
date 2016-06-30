@@ -35,6 +35,35 @@ class H2OMultinomialModel(ModelBase):
     for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.hit_ratio_table()
     return list(m.values())[0] if len(m) == 1 else m
 
+
+  def mean_per_class_error(self, train=False, valid=False, xval=False):
+    """
+    Retrieve the mean per class error across all classes
+
+    If all are False (default), then return the training metric value.
+    If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
+    and "xval"
+
+    Parameters
+    ----------
+      train : bool, optional
+        If True, return the mean_per_class_error value for the training data.
+
+      valid : bool, optional
+        If True, return the mean_per_class_error value for the validation data.
+
+      xval : bool, optional
+        If True, return the mean_per_class_error value for each of the cross-validated splits.
+
+    Returns
+    -------
+      The mean_per_class_error values for the specified key(s).
+    """
+    tm = ModelBase._get_metrics(self, train, valid, xval)
+    m = {}
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.mean_per_class_error()
+    return list(m.values())[0] if len(m) == 1 else m
+
   def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
     """
     Plots training set (and validation set if available) scoring history for an H2OMultinomialModel. The timestep and metric

@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -142,7 +143,7 @@ public class APIThrPriorTest extends TestUtil {
     serve(s,parms,status,"GET");
   }
   private void serve(String s, Properties parms, int status, String method) throws IOException {
-    NanoHTTPD.Response r = RequestServer.SERVER.serve(s,method,null,parms==null?new Properties():parms);
+    NanoResponse r = RequestServer.serve(s,method,null,parms==null?new Properties():parms);
     int n = r.data.available();
     byte[] bs = new byte[n];
     r.data.read(bs,0,n);
@@ -181,18 +182,17 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   @Override public void init(boolean expensive) { super.init(expensive); }
 
   private class BogusDriver extends Driver {
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       _driver_priority = priority(); // Get H2OCountedCompleter priority
       synchronized(Bogus.this) {
         if( _state == 0 ) _state = 1;
         Bogus.this.notify();
         while( _state==1 ) try { Bogus.this.wait(); } catch (InterruptedException ignore) { }
       }
-      tryComplete();
     }
   }
 }
 
 // Need this class, so a /3/Jobs can return the JSON'd version of it
-class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchema> {}
+class BogusV3 extends ModelBuilderSchema<Bogus,BogusV3,ModelParametersSchemaV3> {}
 

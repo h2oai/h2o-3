@@ -13,6 +13,7 @@ import static water.util.RandomUtils.getRNG;
 
 /* Bulk Array Utilities */
 public class ArrayUtils {
+  private static final byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 
   // Sum elements of an array
   public static long sum(final long[] from) {
@@ -51,6 +52,19 @@ public class ArrayUtils {
       result += x[i] * y[i];
     return result;
   }
+
+  public static double [] mmul(double [][] M, double [] V) {
+    double [] res = new double[M.length];
+    for(int i = 0; i < M.length; ++i) {
+      double d = 0;
+      for (int j = 0; j < V.length; ++j) {
+        d += M[i][j] * V[j];
+      }
+      res[i] = d;
+    }
+    return res;
+  }
+
   public static double[][] outerProduct(double[] x, double[] y){
     double[][] result = new double[x.length][y.length];
     for(int i = 0; i < x.length; i++) {
@@ -634,6 +648,15 @@ public class ArrayUtils {
       if( elem==ls[i] ) return i;
     return -1;
   }
+  // behaves like Arrays.binarySearch, but is slower -> Just good for tiny arrays (length<20)
+  public static int linearSearch(double[] vals, double v) {
+    final int N=vals.length;
+    for (int i=0; i<N; ++i) {
+      if (vals[i]==v) return i;
+      if (vals[i]>v) return -i-1;
+    }
+    return -1;
+  }
 
   private static final DecimalFormat default_dformat = new DecimalFormat("0.#####");
   public static String pprint(double[][] arr){
@@ -1059,7 +1082,7 @@ public class ArrayUtils {
   }
 
   public static double [] expandAndScatter(double [] ary, int N, int [] ids) {
-    assert ary.length == ids.length;
+    assert ary.length == ids.length:"ary.length = " + ary.length + " != " + ids.length + " = ids.length";
     double [] res = MemoryManager.malloc8d(N);
     for(int i = 0; i < ids.length; ++i) res[ids[i]] = ary[i];
     return res;
@@ -1104,6 +1127,7 @@ public class ArrayUtils {
     subtract(a,b,c);
     return c;
   }
+
   public static double[] subtract (double [] a, double [] b, double [] c) {
     for(int i = 0; i < a.length; ++i)
       c[i] = a[i] - b[i];
@@ -1308,5 +1332,144 @@ public class ArrayUtils {
     if(id == ary.length-1) return Arrays.copyOf(ary,id);
     if(id == 0) return Arrays.copyOfRange(ary,id,ary.length);
     return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id,ary.length));
+  }
+
+  public static double[] padUniformly(double[] origPoints, int newLength) {
+    int origLength = origPoints.length;
+    if (newLength <= origLength || origLength<=1) return origPoints;
+    int extraPoints = newLength - origLength;
+    int extraPointsPerBin = extraPoints/(origLength-1);
+    double[] res = new double[newLength];
+
+    int pos=0;
+    int rem = extraPoints - extraPointsPerBin*(origLength-1);
+    for (int i=0;i<origLength-1;++i) {
+      double startPos = origPoints[i];
+      double delta = origPoints[i+1]-startPos;
+      int ext = extraPointsPerBin + (i<rem ? 1 : 0);
+      res[pos++] = startPos;
+      for (int j=0;j<ext;++j)
+        res[pos++] = startPos + (j+0.5) / ext * delta;
+    }
+    res[pos] = origPoints[origLength-1];
+    return res;
+  }
+
+  // See HistogramTest JUnit for tests
+  public static double[] makeUniqueAndLimitToRange(double[] splitPoints, double min, double maxEx) {
+    double last= splitPoints[0];
+    double[] uniqueValidPoints = new double[splitPoints.length+2];
+    int count=0;
+    // keep all unique points that are minimally overlapping with min..maxEx
+    for (int i = 0; i< splitPoints.length; ++i) {
+      double pos = splitPoints[i];
+      // first one
+      if (pos >= min && count==0) {
+        uniqueValidPoints[count++]= min;
+        if (pos> min) uniqueValidPoints[count++]=pos;
+        last=pos;
+        continue;
+      }
+      //last one
+      else if (pos > maxEx) {
+        break;
+      }
+      // regular case: add to uniques
+      else if (pos > min && pos < maxEx && (i==0 || pos != last)) {
+        uniqueValidPoints[count++] = pos;
+        last = pos;
+      }
+    }
+    if (count==0) {
+      return new double[]{min};
+    }
+    return Arrays.copyOfRange(uniqueValidPoints,0,count);
+  }
+
+  // See HistogramTest JUnit for tests
+  public static double[] limitToRange(double[] sortedSplitPoints, double min, double maxEx) {
+    int start=Arrays.binarySearch(sortedSplitPoints, min);
+    if (start<0) start=-start-1;
+    // go back one more to return at least one value
+    if (start==sortedSplitPoints.length) start--;
+    // go back one more to include the min (inclusive)
+    if (sortedSplitPoints[start] > min && start>0) start--;
+    assert(start>=0);
+    assert(sortedSplitPoints[start] <= min);
+
+    int end=Arrays.binarySearch(sortedSplitPoints, maxEx);
+    if (end<0) end=-end-1;
+    assert(end>0 && end<= sortedSplitPoints.length);
+    assert(end>=start);
+    assert(sortedSplitPoints[end-1] < maxEx);
+
+    return Arrays.copyOfRange(sortedSplitPoints,start,end);
+  }
+
+  public static double[] extractCol(int i, double[][] ary) {
+    double [] res = new double[ary.length];
+    for(int j = 0; j < ary.length; ++j)
+      res[j] = ary[j][i];
+    return res;
+  }
+
+  public static long encodeAsLong(byte[] b) {
+    return encodeAsLong(b, 0, b.length);
+  }
+  public static long encodeAsLong(byte[] b, int off, int len) {
+    assert len <= 8 : "Cannot encode more then 8 bytes into long: len = " + len;
+    long r = 0;
+    int shift = 0;
+    for(int i = 0; i < len; i++) {
+      r |= (b[i + off] & 0xFFL) << shift;
+      shift += 8;
+    }
+    return r;
+  }
+
+  public static int encodeAsInt(byte[] b, int off, int len) {
+    assert len <= 4 : "Cannot encode more then 4 bytes into int: len = " + len;
+    int r = 0;
+    int shift = 0;
+    for(int i = 0; i < len; i++) {
+      r |= (b[i + off] & 0xFF) << shift;
+      shift += 8;
+    }
+    return r;
+  }
+
+  /** Transform given long numbers into byte array.
+   * Highest 8-bits of the first long will stored in the first field of returned byte array.
+   *
+   * Example:
+   * 0xff18000000000000L -> new byte[] { 0xff, 0x18, 0, 0, 0, 0, 0, 0}
+   */
+  public static byte[] toByteArray(long ...nums) {
+    if (nums == null || nums.length == 0) return EMPTY_BYTE_ARRAY;
+    byte[] result = new byte[8*nums.length];
+    int c = 0;
+    for (long n : nums) {
+      for (int i = 0; i < 8; i++) {
+        result[c*8 + i] = (byte) ((n >>> (56 - 8 * i)) & 0xFF);
+      }
+      c++;
+    }
+    return result;
+  }
+
+  public static byte[] toByteArray(int[] ary) {
+    byte[] r = new byte[ary.length];
+    for (int i = 0; i < ary.length; i++) {
+      r[i] = (byte) (ary[i] & 0xff);
+    }
+    return r;
+  }
+
+  public static boolean equalsAny(long value, long...lhs) {
+    if (lhs == null || lhs.length == 0) return false;
+    for (long lhValue : lhs) {
+      if (value == lhValue) return true;
+    }
+    return false;
   }
 }

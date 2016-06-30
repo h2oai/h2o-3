@@ -293,7 +293,7 @@ public class Vec extends Keyed<Vec> {
 
   public boolean isBinary(){
     RollupStats rs = rollupStats();
-    return rs._isInt && rs._mins[0] == 0 && rs._maxs[0] == 1;
+    return rs._isInt && rs._mins[0] >= 0 && rs._maxs[0] <= 1;
   }
 
   private void setMeta( byte type, String[] domain) {

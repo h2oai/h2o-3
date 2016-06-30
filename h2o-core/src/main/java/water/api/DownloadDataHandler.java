@@ -1,5 +1,7 @@
 package water.api;
 
+import water.api.schemas3.DownloadDataV3;
+
 @SuppressWarnings("unused")
 public class DownloadDataHandler extends Handler {
   public DownloadDataV3 fetch(int version, DownloadDataV3 server) {

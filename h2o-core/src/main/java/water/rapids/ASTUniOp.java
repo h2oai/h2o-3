@@ -81,6 +81,7 @@ class ASTGamma  extends ASTUniOp { public String str(){ return "gamma";  } doubl
 class ASTLGamma extends ASTUniOp { public String str(){ return "lgamma"; } double op(double d) { return Gamma.logGamma(d);}}
 class ASTDiGamma  extends ASTUniOp { public String str(){ return "digamma";  } double op(double d) {  return Double.isNaN(d)?Double.NaN:Gamma.digamma(d);}}
 class ASTTriGamma  extends ASTUniOp { public String str(){ return "trigamma";  } double op(double d) {  return Double.isNaN(d)?Double.NaN:Gamma.trigamma(d);}}
+class ASTNoOp extends ASTUniOp { public String str(){ return "none"; } double op(double d) { return d; }}
 
 // Split out in it's own function, instead of Yet Another UniOp, because it
 // needs a "is.NA" check instead of just using the Double.isNaN hack... because
@@ -112,6 +113,40 @@ class ASTIsNA  extends ASTPrim {
     }
   }
   double op(double d) { return Double.isNaN(d)?1:0; }
+}
+
+/**
+ * Remove rows with NAs from the H2OFrame
+ * Note: Current implementation is NOT in place replacement
+ */
+class ASTNAOmit extends ASTPrim {
+  @Override public String[] args() { return new String[]{"ary"}; }
+  @Override
+  public String str() { return "na.omit"; }
+  @Override int nargs() { return 1+1; }
+  @Override
+  public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    Frame fr2 = new MRTask() {
+      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+        for(int i=0;i<cs.length;++i) {
+          if( cs[i] instanceof CStrChunk ) ncs[i].addStr(cs[i],row);
+          else if( cs[i] instanceof C16Chunk ) ncs[i].addUUID(cs[i],row);
+          else if( cs[i].hasFloat() ) ncs[i].addNum(cs[i].atd(row));
+          else ncs[i].addNum(cs[i].at8(row),0);
+        }
+      }
+      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        int col;
+        for(int row=0;row<cs[0]._len;++row) {
+          for( col = 0; col < cs.length; ++col)
+            if( cs[col].isNA(row) ) break;
+          if( col==cs.length ) copyRow(row,cs,ncs);
+        }
+      }
+    }.doAll(fr.types(),fr).outputFrame(fr.names(),fr.domains());
+    return new ValFrame(fr2);
+  }
 }
 
 class ASTRunif extends ASTPrim {
@@ -278,6 +313,45 @@ class ASTSetLevel extends ASTPrim {
       }
     }.doAll(new byte[]{Vec.T_NUM}, fr.anyVec()).outputFrame(null, fr.names(), fr.domains());
     return new ValFrame(fr2);
+  }
+}
+
+class ASTReLevel extends ASTPrim {
+  @Override
+  public String[] args() { return new String[]{"ary", "level"}; }
+  @Override int nargs() { return 1+2; } // (setLevel x level)
+  @Override
+  public String str() { return "relevel"; }
+  @Override
+  public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if (fr.numCols() != 1) throw new IllegalArgumentException("`setLevel` works on a single column at a time.");
+    String[] doms = fr.anyVec().domain().clone();
+    if( doms == null )
+      throw new IllegalArgumentException("Cannot set the level on a non-factor column!");
+    String lvl = asts[2].exec(env).getStr();
+
+    final int idx = Arrays.asList(doms).indexOf(lvl);
+    if (idx == -1) throw new IllegalArgumentException("Did not find level `" + lvl + "` in the column.");
+    if(idx == 0) return new ValFrame(new Frame(fr.names(),new Vec[]{fr.anyVec().makeCopy()}));
+    String [] srcDom = fr.anyVec().domain();
+    final String [] dom = new String[srcDom.length];
+    dom[0] = srcDom[idx];
+    int j = 1;
+    for(int i = 0; i < srcDom.length; ++i)
+      if(i != idx)  dom[j++] = srcDom[i];
+    return new ValFrame(new MRTask(){
+      @Override public void map(Chunk c, NewChunk nc) {
+        int [] vals = new int[c._len];
+        c.getIntegers(vals,0,c._len,-1);
+        for(int i = 0; i < vals.length; ++i)
+          if(vals[i] == -1) nc.addNA();
+          else if(vals[i] == idx)
+            nc.addNum(0);
+          else
+            nc.addNum(vals[i]+(vals[i] < idx?1:0));
+      }
+    }.doAll(1,Vec.T_CAT,fr).outputFrame(fr.names(),new String[][]{dom}));
   }
 }
 

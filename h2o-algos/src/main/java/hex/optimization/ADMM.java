@@ -18,7 +18,7 @@ public class ADMM {
     public double []  rho();
     public boolean solve(double [] beta_given, double [] result);
     public boolean hasGradient();
-    public double [] gradient(double [] beta);
+    public OptimizationUtils.GradientInfo gradient(double [] beta);
     public int iter();
   }
 
@@ -32,19 +32,23 @@ public class ADMM {
 
     MathUtils.Norm _gradientNorm = Norm.L_Infinite;
 
+    public double [] _u;
+
     public static double DEFAULT_RELTOL = 1e-2;
     public static double DEFAULT_ABSTOL = 1e-4;
     public L1Solver setGradientNorm(MathUtils.Norm n) {_gradientNorm = n; return this;}
-    public L1Solver(double eps, int max_iter) {
-      this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL);
+    public L1Solver(double eps, int max_iter, double [] u) {
+      this(eps,max_iter,DEFAULT_RELTOL,DEFAULT_ABSTOL,u);
     }
 
-    public L1Solver(double eps, int max_iter, double reltol, double abstol) {
+    public L1Solver(double eps, int max_iter, double reltol, double abstol, double [] u) {
       _eps = eps; this.max_iter = max_iter;
+      _u = u;
       RELTOL = reltol;
       ABSTOL = abstol;
     }
 
+    public L_BFGS.ProgressMonitor _pm;
     public boolean solve(ProximalSolver solver, double[] res, double lambda, boolean hasIntercept) {
       return solve(solver, res, lambda, hasIntercept, null, null);
     }
@@ -88,27 +92,29 @@ public class ADMM {
         solver.solve(null, z);
         return true;
       }
-      int ii = hasIntercept?1:0;
-      double [] zbest = null;
+      int hasIcpt = hasIntercept?1:0;
       int N = z.length;
       double abstol = ABSTOL * Math.sqrt(N);
       double [] rho = solver.rho();
-      double [] u = MemoryManager.malloc8d(N);
       double [] x = z.clone();
       double [] beta_given = MemoryManager.malloc8d(N);
+      double [] u;
+      if(_u != null) {
+        u = _u;
+        for (int i = 0; i < beta_given.length - hasIcpt; ++i)
+          beta_given[i] = z[i] - _u[i];
+      } else u = _u = MemoryManager.malloc8d(z.length);
       double [] kappa = MemoryManager.malloc8d(rho.length);
-      int hasIcpt = hasIntercept?1:0;
       if(l1pen > 0)
         for(int i = 0; i < N-hasIcpt; ++i)
           kappa[i] = rho[i] != 0?l1pen/rho[i]:0;
       int i;
       double orlx = 1.0; // over-relaxation
       double reltol = RELTOL;
-      double best_err = Double.POSITIVE_INFINITY;
       for (i = 0; i < max_iter && solver.solve(beta_given, x); ++i) {
+        if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
         // compute u and z updateADMM
         double rnorm = 0, snorm = 0, unorm = 0, xnorm = 0;
-        boolean allzeros = true;
         for (int j = 0; j < N - hasIcpt; ++j) {
           double xj = x[j];
           double zjold = z[j];
@@ -127,7 +133,6 @@ public class ADMM {
           xnorm += xj * xj;
           unorm += rho[j] * rho[j] * u[j] * u[j];
           z[j] = zj;
-          allzeros &= zj == 0;
         }
         if (hasIntercept) {
           int idx = x.length - 1;
@@ -148,7 +153,7 @@ public class ADMM {
         }
         if (rnorm < (abstol + (reltol * Math.sqrt(xnorm))) && snorm < (abstol + reltol * Math.sqrt(unorm))) {
           double oldGerr = gerr;
-          computeErr(z, solver.gradient(z), l1pen, lb, ub);
+          computeErr(z, solver.gradient(z)._gradient, l1pen, lb, ub);
           if ((gerr > _eps) /* || solver.improving() */){// && (allzeros || i < 5 /* let some warm up before giving up */ /*|| Math.abs(oldGerr - gerr) > _eps * 0.1*/)) {
             Log.debug("ADMM.L1Solver: iter = " + i + " , gerr =  " + gerr + ", oldGerr = " + oldGerr + ", rnorm = " + rnorm + ", snorm  " + snorm);
             if(abstol > 1e-12) abstol *= .1;
@@ -159,21 +164,18 @@ public class ADMM {
           if(gerr > _eps)
             Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
           iter = i;
+          if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
           return true;
         }
       }
-      computeErr(z, solver.gradient(z), l1pen, lb, ub);
-//      if (zbest != null && best_err < gerr) {
-//        System.arraycopy(zbest, 0, z, 0, zbest.length);
-//        computeErr(z, solver.gradient(z), l1pen, lb, ub);
-//        assert Math.abs(best_err - gerr) < 1e-8 : " gerr = " + gerr + ", best_err = " + best_err + " zbest = " + Arrays.toString(zbest) + ", z = " + Arrays.toString(z);
-//      }
+      computeErr(z, solver.gradient(z)._gradient, l1pen, lb, ub);
       if(iter == max_iter)
         Log.warn("ADMM solver reached maximum number of iterations (" + max_iter + ")");
       else
         Log.warn("ADMM solver stopped after " + i + " iterations. (max_iter=" + max_iter + ")");
       if(gerr > _eps) Log.warn("ADMM solver finished with gerr = " + gerr + " >  eps = " + _eps);
       iter = max_iter;
+      if(_pm != null && (i + 1) % 5 == 0)_pm.progress(z,solver.gradient(z));
       return false;
     }
 

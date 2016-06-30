@@ -6,16 +6,20 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
+import java.awt.color.ICC_ColorSpace;
+
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
   public final double _logloss;
+  public final double _mean_per_class_error;
   public final GainsLift _gainsLift;
 
-  public ModelMetricsBinomial(Model model, Frame frame, double mse, String[] domain, double sigma, AUC2 auc, double logloss, GainsLift gainsLift) {
-    super(model, frame, mse, domain, sigma);
+  public ModelMetricsBinomial(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma, AUC2 auc, double logloss, GainsLift gainsLift) {
+    super(model, frame,  nobs, mse, domain, sigma);
     _auc = auc;
     _logloss = logloss;
     _gainsLift = gainsLift;
+    _mean_per_class_error = cm() == null ? Double.NaN : cm().mean_per_class_error();
   }
 
   public static ModelMetricsBinomial getFromDKV(Model model, Frame frame) {
@@ -32,12 +36,14 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     sb.append(super.toString());
     if (_auc != null) sb.append(" AUC: " + (float)_auc._auc + "\n");
     sb.append(" logloss: " + (float)_logloss + "\n");
+    sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
     if (_gainsLift != null) sb.append(_gainsLift);
     return sb.toString();
   }
 
   public double logloss() { return _logloss; }
+  public double mean_per_class_error() { return _mean_per_class_error; }
   @Override public AUC2 auc_obj() { return _auc; }
   @Override public ConfusionMatrix cm() {
     if( _auc == null ) return null;
@@ -117,9 +123,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
             gl.exec(m._output._job);
           }
         }
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse, _domain, sigma, auc,  logloss, gl));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl));
       } else {
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, mse,   null,  sigma, null, logloss, null));
+        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, _count, mse,   null,  sigma, null, logloss, null));
       }
     }
     public String toString(){

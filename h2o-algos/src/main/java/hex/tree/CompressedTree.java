@@ -39,19 +39,23 @@ public class CompressedTree extends Keyed {
       int nodeType = ab.get1U();
       int colId = ab.get2();
       if( colId == 65535 ) return scoreLeaf(ab);
-
-      // boolean equal = ((nodeType&4)==4);
+      DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[ab.get1U()];
+      final boolean NAvsREST = naSplitDir == DHistogram.NASplitDir.NAvsREST;
+      final boolean NALeft = naSplitDir == DHistogram.NASplitDir.NALeft;
+      final boolean Left = naSplitDir == DHistogram.NASplitDir.Left;
       int equal = (nodeType&12) >> 2;
       assert (equal >= 0 && equal <= 3): "illegal equal value " + equal+" at "+ab+" in bitpile "+Arrays.toString(_bits);
 
-      // Extract value or group to split on
       float splitVal = -1;
-      if(equal == 0 || equal == 1) { // Standard float-compare test (either < or ==)
-        splitVal = ab.get4f();       // Get the float to compare
-      } else {                       // Bitset test
-        if( ibs == null ) ibs = new IcedBitSet(0);
-        if( equal == 2 ) ibs.fill2(_bits,ab);
-        else             ibs.fill3(_bits,ab);
+      if (!NAvsREST) {
+        // Extract value or group to split on
+        if (equal == 0 || equal == 1) { // Standard float-compare test (either < or ==)
+          splitVal = ab.get4f();       // Get the float to compare
+        } else {                       // Bitset test
+          if (ibs == null) ibs = new IcedBitSet(0);
+          if (equal == 2) ibs.fill2(_bits, ab);
+          else ibs.fill3(_bits, ab);
+        }
       }
 
       // Compute the amount to skip.
@@ -70,18 +74,21 @@ public class CompressedTree extends Keyed {
 
       // WARNING: Generated code has to be consistent with this code:
       double d = row[colId];
-      if (Double.isNaN(d) ||                                            // NA goes right
+      if ((Double.isNaN(d) && !NALeft) ||                                            // NA goes right
+              !NAvsREST &&
               ( ( (equal==0            ) && d >= splitVal         ) ||  // greater or equals goes right
                 ( (equal==1            ) && d == splitVal         ) ||  // equals goes right
                 ( (equal==2 || equal==3) && ibs.contains((int)d) ) )    // if contained in bitset, go right
       ) {
         // RIGHT
-        ab.skip(skip);        // Skip to the right subtree
-        if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
-        lmask = rmask;        // And set the leaf bits into common place
+        if (!(Double.isNaN(d) && (NALeft||Left))) { //missing value with NALeft or Left goes LEFT as well
+          ab.skip(skip);        // Skip to the right subtree
+          if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+          lmask = rmask;        // And set the leaf bits into common place
+        }
       } else {
         // LEFT
-        assert(!Double.isNaN(d));
+        assert(!Double.isNaN(d) || NALeft || Left);
       }
       level++;
       if( (lmask&16)==16 ) {
@@ -122,12 +129,16 @@ public class CompressedTree extends Keyed {
     final String[] names = tm._names;
     final SB sb = new SB();
     new TreeVisitor<RuntimeException>(this) {
-      @Override protected void pre( int col, float fcmp, IcedBitSet gcmp, int equal ) {
-        if (equal==1) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
-        sb.i().p(names[col]).p(' ');
-        if( equal==0 ) sb.p("< ").p(fcmp);
-        else if( equal==1 ) sb.p("!=").p(fcmp);
-        else sb.p("in ").p(gcmp);
+      @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {
+        if (naSplitDir == DHistogram.NASplitDir.NAvsREST) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(")"));
+        else if (naSplitDir == DHistogram.NASplitDir.NALeft) sb.p("Double.isNaN("+sb.i().p(names[col]).p(") || "));
+        else if (equal==1) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
+        if (naSplitDir != DHistogram.NASplitDir.NAvsREST) {
+          sb.i().p(names[col]).p(' ');
+          if (equal == 0) sb.p("< ").p(fcmp);
+          else if (equal == 1) sb.p("!=").p(fcmp);
+          else sb.p("in ").p(gcmp);
+        }
         sb.ii(1).nl();
       }
       @Override protected void post( int col, float fcmp, int equal ) { sb.di(1); }

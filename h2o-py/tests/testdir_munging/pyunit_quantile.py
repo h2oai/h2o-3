@@ -12,7 +12,7 @@ import numpy as np
 
 def quantile():
     # Connect to a pre-existing cluster
-    
+    random.seed(1234)
 
     data = [[random.uniform(-10000,10000)] for c in range(1000)]
     h2o_data = h2o.H2OFrame(data)

@@ -121,4 +121,157 @@ public class ParseTimeTest extends TestUtil {
     //File items will be converted to ms for local timezone
     ParserTest.testParsed(dataFrame, exp, exp.length);
   }
+
+  @Test public void testDayParseNoTime1() {
+    // Just yyyy-mm-dd, no time
+    String data = "Date\n"+
+      "2014-1-23\n"+
+      "2014-1-24\n"+
+      "2014-1-23\n"+
+      "2014-1-24\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+      1390464000000L,
+      1390550400000L,
+      1390464000000L,
+      1390550400000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testDayParseNoTime2() {
+    // Just mm/dd/yyyy, no time
+    String data = "Date\n"+
+      "1/23/2014  \n"+ // Note evil trailing blanks
+      "1/24/2014  \n"+
+      "1/23/2014 \n"+
+      "1/24/2014\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+            1390464000000L,
+            1390550400000L,
+            1390464000000L,
+            1390550400000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testDayParseNoTime3() {
+    // Just yyyy-mm, no time no day
+    String data = "Date\n"+
+      "2014-1\n"+
+      "2014-2\n"+
+      "2014-3\n"+
+      "2014-4\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+      1388563200000L,
+      1391241600000L,
+      1393660800000L,
+      1396335600000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testMonthParseNoDay() {
+    // Just mmmyy, no time no day
+    // Just yy-mmm, no time no day
+    String data = "Date\n"+
+      "JAN14\n"+"FEB14\n"+"MAR14\n"+"APR14\n"+"MAY14\n"+"JUN14\n"+
+      "JUL14\n"+"AUG14\n"+"SEP14\n"+"OCT14\n"+"NOV14\n"+"DEC14\n"+
+      "JAN16\n"+"MAR17\n"+"JUN18\n"+"SEP19\n"+"DEC20\n"+
+      "14-JAN\n"+"14-FEB\n"+"14-MAR\n"+"14-APR\n"+"14-MAY\n"+"14-JUN\n"+
+      "14-JUL\n"+"14-AUG\n"+"14-SEP\n"+"14-OCT\n"+"14-NOV\n"+"14-DEC\n"+
+      "16-JAN\n"+"17-MAR\n"+"18-JUN\n"+"19-SEP\n"+"20-DEC\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date
+      1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
+      1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
+      1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
+      1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
+      1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
+      1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
+      1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
+      1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
+
+  @Test public void testTimeParseNoDate() {
+    // Just time, no date.  Parses as msec on the Unix Epoch start date, i.e. <24*60*60*1000
+    // HH:mm:ss.S          // tenths second
+    // HH:mm:ss.SSS        // milliseconds
+    // HH:mm:ss.SSSnnnnnn  // micros and nanos also
+    String data = "Time\n"+
+      "0:0:0.0\n"+
+      "0:54:13.0\n"+
+      "10:36:2.0\n"+
+      "10:36:8.0\n"+
+      "10:37:49.0\n"+
+      "11:18:48.0\n"+
+      "11:41:34.0\n"+
+      "11:4:49.0\n"+
+      "12:47:41.0\n"+
+      "3:24:19.0\n"+
+      "3:45:55.0\n"+
+      "3:45:56.0\n"+
+      "3:58:24.0\n"+
+      "6:13:55.0\n"+
+      "6:25:14.0\n"+
+      "7:0:15.0\n"+
+      "7:3:8.0\n"+
+      "8:20:8.0\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Time
+      0L,                      // Notice: no TZ at all ==> GMT!
+      3253000L,
+      38162000L,
+      38168000L,
+      38269000L,
+      40728000L,
+      42094000L,
+      39889000L,
+      46061000L,
+      12259000L,
+      13555000L,
+      13556000L,
+      14304000L,
+      22435000L,
+      23114000L,
+      25215000L,
+      25388000L,
+      30008000L,
+    };
+    Vec vec = fr.vec("Time");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
 }

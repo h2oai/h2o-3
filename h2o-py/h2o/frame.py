@@ -205,7 +205,7 @@ class H2OFrame(object):
 
   def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     # [] and () cases -- folded together since H2OFrame is mutable
-    if isinstance(python_obj, (list, tuple)): col_header, data_to_write = _handle_python_lists(python_obj)
+    if isinstance(python_obj, (list, tuple)): col_header, data_to_write = _handle_python_lists(python_obj, header)
 
     # {} and collections.OrderedDict cases
     elif isinstance(python_obj, (dict, collections.OrderedDict)): col_header, data_to_write = _handle_python_dicts(python_obj)
@@ -215,18 +215,18 @@ class H2OFrame(object):
       if can_use_numpy() and can_use_pandas():
         import numpy
         import pandas
-        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj)
-        elif isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj)
+        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj, header)
+        elif isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
         else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
                                "pandas.DataFrame. Got: " + str(type(python_obj)))
       elif can_use_numpy():
         import numpy
-        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj)
+        if isinstance(python_obj, numpy.ndarray): col_header, data_to_write = _handle_numpy_array(python_obj, header)
         else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
                                "pandas.DataFrame. Got: " + str(type(python_obj)))
       elif can_use_pandas():
         import pandas
-        if isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj)
+        if isinstance(python_obj, pandas.DataFrame): col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
         else: raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
                                "pandas.DataFrame. Got: " + str(type(python_obj)))
       else:
@@ -244,7 +244,9 @@ class H2OFrame(object):
     tmp_file = os.fdopen(tmp_handle,'w')
     # create a new csv writer object thingy
     csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",", quoting=csv.QUOTE_ALL)
-    #csv_writer.writeheader()              # write the header
+    csv_writer.writeheader()              # write the header
+    #because we have written the header, header in this newly created tmp csv file must be 1
+    header = 1
     if column_names is None: column_names = col_header
     csv_writer.writerows(data_to_write)    # write the data
     tmp_file.close()                       # close the streams
@@ -476,7 +478,7 @@ class H2OFrame(object):
   def __div__(self, i):  return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __truediv__ (self, i): return H2OFrame._expr(expr=ExprNode("/",   self,i), cache=self._ex._cache)
   def __floordiv__(self, i): return H2OFrame._expr(expr=ExprNode("intDiv",self,i), cache=self._ex._cache)
-  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("mod", self,i), cache=self._ex._cache)
+  def __mod__ (self, i): return H2OFrame._expr(expr=ExprNode("%",   self,i), cache=self._ex._cache)
   def __or__  (self, i): return H2OFrame._expr(expr=ExprNode("|",   self,i), cache=self._ex._cache)
   def __and__ (self, i): return H2OFrame._expr(expr=ExprNode("&",   self,i), cache=self._ex._cache)
   def __ge__  (self, i): return H2OFrame._expr(expr=ExprNode(">=",  self,i), cache=self._ex._cache)
@@ -492,7 +494,7 @@ class H2OFrame(object):
   def __pow__ (self, i): return H2OFrame._expr(expr=ExprNode("^",   self,i), cache=self._ex._cache)
   def __contains__(self, i): return all([(t==self).any() for t in i]) if _is_list(i) else (i==self).any()
   # rops
-  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("mod",i,self), cache=self._ex._cache)
+  def __rmod__(self, i): return H2OFrame._expr(expr=ExprNode("%",i,self), cache=self._ex._cache)
   def __radd__(self, i): return self.__add__(i)
   def __rsub__(self, i): return H2OFrame._expr(expr=ExprNode("-",i,  self), cache=self._ex._cache)
   def __rand__(self, i): return self.__and__(i)
@@ -1283,7 +1285,13 @@ class H2OFrame(object):
 
   def split_frame(self, ratios=None, destination_frames=None, seed=None):
     """Split a frame into distinct subsets of size determined by the given ratios.
-    The number of subsets is always 1 more than the number of ratios given.
+    The number of subsets is always 1 more than the number of ratios given. Note that
+    this does not give an exact split. H2O is designed to be efficient on big data
+    using a probabilistic splitting method rather than an exact split. For example
+    when specifying a split of 0.75/0.25, H2O will produce a test/train split with
+    an expected value of 0.75/0.25 rather than exactly 0.75/0.25. On small datasets,
+    the sizes of the resulting splits will deviate from the expected value more than
+    on big data, where they will be very close to exact.
 
     Parameters
     ----------
@@ -1447,6 +1455,26 @@ class H2OFrame(object):
     if (by_y==None): by_y = [other.names.index(c) for c in common_names]
     return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
 
+  def relevel(self,y):
+    """ Reorders levels of an H2O factor, similarly to standard R's relevel().
+    The levels of a factor are reordered such that the reference level is at level 0, remaining levels are moved down
+    as needed.
+
+    Parameters
+    ----------
+     x: Column
+      Column in H2O Frame
+
+     y : String
+      Reference level
+
+    Returns
+    -------
+     New reordered factor column
+    """
+
+    return H2OFrame._expr(expr=ExprNode("relevel", self, quote(y)))
+
   def insert_missing_values(self, fraction=0.1, seed=None):
     """Inserting Missing Values into an H2OFrame.
     Randomly replaces a user-specified fraction of entries in a H2O dataset with missing
@@ -1585,6 +1613,33 @@ class H2OFrame(object):
       columns).
     """
     return ExprNode("sd", self, na_rm)._eager_scalar()
+
+  def cor(self,y = None,na_rm=False,use=None):
+    """Compute the correlation matrix of one or two H2OFrames.
+
+    Parameters
+    ----------
+    y : H2OFrame, default=None
+      If y is None and self is a single column, then the correlation is computed for self.
+      If self has multiple columns, then its correlation matrix is returned. Single rows are treated as single columns.
+      If y is not None, then a correlation matrix between the columns of self and the columns of y is computed.
+    na_rm : bool, default=False
+      Remove NAs from the computation.
+    use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
+      A string indicating how to handle missing values. This must be one of the following:
+        "everything"            - outputs NaNs whenever one of its contributing observations is missing
+        "all.obs"               - presence of missing observations will throw an error
+        "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+    Returns
+    -------
+      An H2OFrame of the correlation matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
+      (if y is given). If self and y are single rows or single columns, the correlation is given as a scalar.
+    """
+    if y is None:
+      y = self
+    if use is None: use = "complete.obs" if na_rm else "everything"
+    if self.nrow==1 or (self.ncol==1 and y.ncol==1): return ExprNode("cor",self,y,use)._eager_scalar()
+    return H2OFrame._expr(expr=ExprNode("cor",self,y,use))._frame()
 
   def asfactor(self):
     """

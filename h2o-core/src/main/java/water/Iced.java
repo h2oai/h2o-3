@@ -19,7 +19,7 @@ import java.io.*;
  * <p>
  * During startup time the Weaver creates a parallel set of classes called
  * (classname)$Icer.  These provide bytestream and JSON serializers
- * and deserializers which get called by AutoBuffer.write* and AutoBugger.read*.
+ * and deserializers which get called by AutoBuffer.write* and AutoBuffer.read*.
  * <p>
  * To debug the automagic serialization code create a transient field in your Iced
  * class called DEBUG_WEAVER.  The generated source code will get written to STDOUT:
@@ -62,7 +62,7 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
   /** Standard "write thyself into the AutoBuffer" call, using JSON.  Real work
    *  is in the delegate {@link Icer} classes.
    *  @return Returns the original {@link AutoBuffer} for flow-coding. */
-  @Override final public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(D)this); }
+  @Override public AutoBuffer writeJSON(AutoBuffer ab) { return icer().writeJSON(ab,(D)this); }
   /** Standard "read thyself from the AutoBuffer" call, using the fast Iced protocol.  Real work
    *  is in the delegate {@link Icer} classes.
    *  @return Returns the original {@link AutoBuffer} for flow-coding. */

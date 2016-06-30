@@ -36,11 +36,9 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
 
   // ----------------------
   private class ExampleDriver extends Driver {
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       ExampleModel model = null;
       try {
-        Scope.enter();
-        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -66,10 +64,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
         }
       } finally {
         if( model != null ) model.unlock(_job);
-        _parms.read_unlock_frames(_job);
-        Scope.exit(model == null ? null : model._key);
       }
-      tryComplete();
     }
   }
 

@@ -3,6 +3,7 @@ package water.api;
 import water.H2O;
 import water.Iced;
 import water.TimeLine;
+import water.api.schemas3.TimelineV3;
 import water.init.TimelineSnapshot;
 
 /** UDP Timeline
@@ -10,7 +11,7 @@ import water.init.TimelineSnapshot;
  */
 public class TimelineHandler extends Handler {
   public static final class Timeline extends Iced {
-    TimelineSnapshot snapshot;
+    public TimelineSnapshot snapshot;
   }
 
   // TODO: should return a base class for TimelineVx

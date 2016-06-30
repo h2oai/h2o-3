@@ -1,4 +1,8 @@
 #!/bin/bash
+#AWS_ACCESS_KEY_ID=''
+#AWS_SECRET_ACCESS_KEY=''
+#AWS_SSH_PRIVATE_KEY_FILE=''
+echo $AWS_SSH_PRIVATE_KEY_FILE
 
 set -e
 

@@ -84,10 +84,7 @@ For additional sales or marketing assistance, please email [sales@h2o.ai](mailto
 
 - <a href="http://h2o.ai/product/recommended-systems-for-h2o/" target="_blank">Recommended Systems</a>: This one-page PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. 
 
-- <a href="http://h2o.ai/enterprise-edition/" target="_blank">H2O Enterprise Edition</a>: This web page describes the benefits of H2O Enterprise Edition. 
- 
-- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/security/Security.md" target="_blank">Security</a>: This document describes how to use the security features (available only in H2O Enterprise Edition). 
-
+- <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/security/Security.md" target="_blank">Security</a>: This document describes how to use the security features (available only to H2O Enterprise support customers). 
 
 - <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevS3Creds.md" target="_blank">How to Pass S3 Credentials to H2O</a>: This document describes the necessary step of passing your S3 credentials to H2O so that H2O can be used with AWS, as well as how to run H2O on an EC2 cluster.  
 

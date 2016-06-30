@@ -175,7 +175,7 @@ public class DataInfoTestAdapt extends TestUtil {
           for (int i = 0; i < cs[0]._len; ++i) {
 //            DataInfo.Row r = rows[i];
             di.extractDenseRow(cs, i, r);
-            if( skipMissing && r.bad ) continue;
+            if( skipMissing && r.isBad() ) continue;
             for (int j = 0; j < di.fullN(); ++j) {
               double goldValue = cs[off+j].atd(i);
               double thisValue = r.get(j); // - (di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]);

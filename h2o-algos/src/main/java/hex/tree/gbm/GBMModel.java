@@ -21,7 +21,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       _sample_rate = 1.0;
       _ntrees = 50;
       _max_depth = 5;
-      _max_abs_leafnode_pred = Double.POSITIVE_INFINITY;
+      _max_abs_leafnode_pred = Double.MAX_VALUE;
     }
 
     public String algoName() { return "GBM"; }
@@ -39,8 +39,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset) {
-    super.score0(data, preds, weight, offset);    // These are f_k(x) in Algorithm 10.4
+  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset, int ntrees) {
+    super.score0(data, preds, weight, offset, ntrees);    // These are f_k(x) in Algorithm 10.4
     if (_parms._distribution == Distribution.Family.bernoulli) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
       preds[2] = new Distribution(_parms).linkInv(f);

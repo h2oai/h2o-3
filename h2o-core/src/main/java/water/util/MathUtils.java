@@ -39,6 +39,8 @@ public class MathUtils {
     private final double[] _mean;
     private final double[] _m2;
     double[] _wsums;
+    transient double[] _nawsums;
+    long [] _naCnt;
     double[] _var;
     double[] _sd;
     public double _wsum = Double.NaN;
@@ -50,14 +52,15 @@ public class MathUtils {
       _m2 = MemoryManager.malloc8d(n);
       _wsums = MemoryManager.malloc8d(n);
       _nzCnt = MemoryManager.malloc8(n);
-    }
-
-    public void add(double w) {
-      ++_nobs;
+      _nawsums = MemoryManager.malloc8d(n);
+      _naCnt = MemoryManager.malloc8(n);
     }
 
     public void add(double x, double w, int i) {
-      if (w != 0) {
+      if(Double.isNaN(x)) {
+        _nawsums[i] += w;
+        _naCnt[i]++;
+      } else if (w != 0) {
         double wsum = _wsums[i] + w;
         double delta = x - _mean[i];
         double R = delta * w / wsum;
@@ -70,28 +73,30 @@ public class MathUtils {
 
     public void add(double[] x, double w) {
       for (int i = 0; i < x.length; ++i)
-        if (!Double.isNaN(x[i]))
-          add(x[i], w, i);
+        add(x[i], w, i);
     }
 
-    /**
-     * To be called at the end to adjust for the skipped zeros (if using sparse).
-     *
-     * @param len  - number of (non-skipped) lines in the dataset
-     * @param wsum - sum of all weights
-     */
-    public void fillInZeros(long len, double wsum) {
-      _nobs = len;
+    public void setNobs(long nobs, double wsum) {
+      _nobs = nobs;
       _wsum = wsum;
-      if(sparse()) {
-        double muReg = 1.0 / wsum;
-        for (int i = 0; i < _mean.length; ++i)
-          _mean[i] *= _wsums[i] * muReg;
+    }
+
+    public void fillSparseZeros(int i) {
+      int zeros = (int)(_nobs - _nzCnt[i]);
+      if(zeros > 0) {
+        double muReg = 1.0 / (_wsum - _nawsums[i]);
+        double zeromean = 0;
+        double delta = _mean[i] - zeromean;
+        double zerowsum = _wsum - _wsums[i] - _nawsums[i];
+        _mean[i] *= _wsums[i] * muReg;
+        _m2[i] += delta * delta * _wsums[i] * zerowsum * muReg; //this is the variance*(N-1), will do sqrt(_sigma/(N-1)) later in postGlobal
+        _wsums[i] += zerowsum;
       }
     }
-
+    public void fillSparseNAs(int i) {_naCnt[i] = (int)(_nobs - _nzCnt[i]);}
     public void reduce(BasicStats bs) {
       ArrayUtils.add(_nzCnt, bs._nzCnt);
+      ArrayUtils.add(_naCnt, bs._naCnt);
       for (int i = 0; i < _mean.length; ++i) {
         double wsum = _wsums[i] + bs._wsums[i];
         if(wsum != 0) {
@@ -102,18 +107,20 @@ public class MathUtils {
         _wsums[i] = wsum;
       }
       _nobs += bs._nobs;
+      _wsum += bs._wsum;
     }
 
     private double[] variance(double[] res) {
-      double reg = _nobs / (_nobs - 1.0);
-      for (int i = 0; i < res.length; ++i)
-        res[i] = reg * _m2[i] / _wsums[i];
+      for (int i = 0; i < res.length; ++i) {
+        long nobs = _nobs - _naCnt[i];
+        res[i] = (nobs / (nobs - 1.0)) * _m2[i] / _wsums[i];
+      }
       return res;
     }
 
     public double variance(int i){return variance()[i];}
     public double[] variance() {
-      if(sparse()) throw new UnsupportedOperationException("Can not do single pass sparse variance computation");
+//      if(sparse()) throw new UnsupportedOperationException("Can not do single pass sparse variance computation");
       if (_var != null) return _var;
       return _var = variance(MemoryManager.malloc8d(_mean.length));
     }
@@ -129,12 +136,7 @@ public class MathUtils {
     public double mean(int i) {return _mean[i];}
     public long nobs() {return _nobs;}
 
-    public boolean sparse() {
-      for(int i = 0; i < _nzCnt.length; ++i)
-        if(_nzCnt[i] < _nobs)
-          return true;
-      return false;
-    }
+    public boolean isSparse(int col) {return _nzCnt[col] < _nobs;}
   }
   /** Fast approximate sqrt
    *  @return sqrt(x) with up to 5% relative error */
@@ -628,5 +630,24 @@ public class MathUtils {
     if(y == 0)return 0;
     if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
     return y * Math.log(y / mu);
+  }
+
+  /** Compare signed longs */
+  public static int compare(long x, long y) {
+    return (x < y) ? -1 : ((x == y) ? 0 : 1);
+  }
+
+  /** Copmarision of unsigned longs.
+   */
+  public static int compareUnsigned(long a, long b) {
+    // Just map [0, 2^64-1] to [-2^63, 2^63-1]
+    return compare(a^0x8000000000000000L, b^0x8000000000000000L);
+  }
+
+  /** Comparision of 128bit unsigned values represented by 2 longs */
+  public static int compareUnsigned(long hiA, long loA, long hiB, long loB) {
+    int resHi = compareUnsigned(hiA, hiB);
+    int resLo = compareUnsigned(loA, loB);
+    return resHi != 0 ? resHi : resLo;
   }
 }

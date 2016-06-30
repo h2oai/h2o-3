@@ -80,5 +80,12 @@
       # fail if reach h2o-dev
       if (parent.name == .H2O.LOCATE.PROJECT.ROOT) stop("Reached the root h2o-dev. Didn't find the bucket with the root.parent")
     }
+    if (cur.dir == parent.dir) {
+      # Reached root: / or C:
+      # Stop now otherwise infinite recursive call
+      stop("Could not find the dataset bucket '", root,"'. Please setwd() to a H2O directory and/or syncSmalldata or syncBigdataLaptop.")
+    }
     return(.h2o.locate.path.compute(parent.dir, root, root.parent))
   }
+  
+  

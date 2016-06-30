@@ -296,7 +296,7 @@ public final class ParseDataset {
           RPC[] rpcs = new RPC[H2O.CLOUD.size()];
           for (int i = 0; i < fcdt.length; i++){
             H2ONode[] nodes = H2O.CLOUD.members();
-            fcdt[i] = new CreateParse2GlobalCategoricalMaps(mfpt._cKey, fr._key, ecols.length);
+            fcdt[i] = new CreateParse2GlobalCategoricalMaps(mfpt._cKey, fr._key, ecols);
             rpcs[i] = new RPC<>(nodes[i], fcdt[i]).call();
           }
           for (RPC rpc : rpcs)
@@ -365,14 +365,14 @@ public final class ParseDataset {
     return pds;
   }
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {
-    private final Key _parseCatMapsKey;
-    private final Key _frKey;
-    private final int _eColCnt;
+    private final Key   _parseCatMapsKey;
+    private final Key   _frKey;
+    private final int[] _ecol;
 
-    private CreateParse2GlobalCategoricalMaps(Key parseCatMapsKey, Key key, int eColCnt) {
+    private CreateParse2GlobalCategoricalMaps(Key parseCatMapsKey, Key key, int[] ecol) {
       _parseCatMapsKey = parseCatMapsKey;
       _frKey = key;
-      _eColCnt = eColCnt;
+      _ecol = ecol;
     }
 
     @Override public void compute2() {
@@ -383,27 +383,27 @@ public final class ParseDataset {
         return;
       }
         final Categorical[] parseCatMaps = MultiFileParseTask._categoricals.get(_parseCatMapsKey);
-        int[][] _nodeOrdMaps = new int[_eColCnt][];
+        int[][] _nodeOrdMaps = new int[_ecol.length][];
 
         // create old_ordinal->new_ordinal map for each cat column
-        int catColIdx = 0;
-        for (int colIdx = 0; colIdx < parseCatMaps.length; colIdx++) {
+        for (int eColIdx = 0; eColIdx < _ecol.length; eColIdx++) {
+          int colIdx = _ecol[eColIdx];
           if (parseCatMaps[colIdx].size() != 0) {
-            _nodeOrdMaps[catColIdx] = MemoryManager.malloc4(parseCatMaps[colIdx].maxId() + 1);
-            Arrays.fill(_nodeOrdMaps[catColIdx], -1);
+            _nodeOrdMaps[eColIdx] = MemoryManager.malloc4(parseCatMaps[colIdx].maxId() + 1);
+            Arrays.fill(_nodeOrdMaps[eColIdx], -1);
             //Bulk String->BufferedString conversion is slightly faster, but consumes memory
             final BufferedString[] unifiedDomain = BufferedString.toBufferedString(_fr.vec(colIdx).domain());
             //final String[] unifiedDomain = _fr.vec(colIdx).domain();
             for (int i = 0; i < unifiedDomain.length; i++) {
               //final BufferedString cat = new BufferedString(unifiedDomain[i]);
               if (parseCatMaps[colIdx].containsKey(unifiedDomain[i])) {
-                _nodeOrdMaps[catColIdx][parseCatMaps[colIdx].getTokenId(unifiedDomain[i])] = i;
+                _nodeOrdMaps[eColIdx][parseCatMaps[colIdx].getTokenId(unifiedDomain[i])] = i;
               }
             }
-            catColIdx++;
+          } else {
+            Log.debug("Column " + colIdx + " was marked as categorical but categorical map is empty!");
           }
         }
-
         // Store the local->global ordinal maps in DKV by node parse categorical key and node index
         DKV.put(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + H2O.SELF.index()), new CategoricalUpdateMap(_nodeOrdMaps));
       tryComplete();
@@ -804,8 +804,8 @@ public final class ParseDataset {
       try {
         switch( cpr ) {
         case NONE:
-          if (_parseSetup._parse_type.isParallelParseSupported) {
-            new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).doAll(vec);
+          if( _parseSetup._parse_type.isParallelParseSupported()) {
+            new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);
             for( int i = 0; i < vec.nChunks(); ++i )
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {

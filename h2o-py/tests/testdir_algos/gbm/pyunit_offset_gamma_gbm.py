@@ -19,7 +19,8 @@ def offset_gamma():
                                      ntrees=600,
                                      max_depth=1,
                                      min_rows=1,
-                                     learn_rate=0.1)
+                                     learn_rate=0.1,
+                                     min_split_improvement=0)
   gbm.train(x=list(range(3)), y="Claims", training_frame=insurance, offset_column="offset")
 
   predictions = gbm.predict(insurance)
@@ -33,10 +34,10 @@ def offset_gamma():
     format(-1.714958, gbm._model_json['output']['init_f'])
   assert abs(50.1087 - predictions.mean()[0]) < 1e-2, "expected prediction mean to be {0}, but got {1}". \
     format(50.1087, predictions.mean()[0])
-  assert abs(0.9133843 - predictions.min()) < 1e-4, "expected prediction min to be {0}, but got {1}". \
-    format(0.9133843, predictions.min())
-  assert abs(392.6667 - predictions.max()) < 0.1, "expected prediction max to be {0}, but got {1}". \
-    format(392.6667, predictions.max())
+  assert abs(0.91292- predictions.min()) < 1e-4, "expected prediction min to be {0}, but got {1}". \
+    format(0.91292, predictions.min())
+  assert abs(392.79 - predictions.max()) < 0.1, "expected prediction max to be {0}, but got {1}". \
+    format(392.79, predictions.max())
 
 
 

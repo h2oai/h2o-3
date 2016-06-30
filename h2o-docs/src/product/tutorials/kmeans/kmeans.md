@@ -12,14 +12,11 @@ For more information, refer to <a href="http://citeseerx.ist.psu.edu/viewdoc/dow
 
 ### Getting Started
 
-This tutorial uses a publicly available data set that can be found at <a href"http://archive.ics.uci.edu/ml/datasets/seeds" target="_blank">http://archive.ics.uci.edu/ml/datasets/seeds</a>.
+First get the tutorial's data set from  <a href="https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt" target="_blank">here</a> (on the next page select File > Save to download the text file). (This data originally comes from the publicly available data set, which can be found at <a href="http://archive.ics.uci.edu/ml/datasets/seeds" target="_blank">http://archive.ics.uci.edu/ml/datasets/seeds</a>. In the tutorial's link above we've removed random spacing that causes the data set to look like 9 columns instead of 8.)
 
 The data are composed of 210 observations, 7 attributes, and an a priori grouping assignment. All data are positively valued and continuous. 
 
-If you don't have any data of your own to work with, you can find some example datasets here: 
-
-- <a href="http://docs.h2o.ai/h2oclassic/resources/publicdata.html"  target="_blank">http://docs.h2o.ai/h2oclassic/resources/publicdata.html </a>
-- <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>
+If you don't have any data of your own to work with, you can find some example datasets at <a href="http://data.h2o.ai" target="_blank">http://data.h2o.ai</a>.
 
 
 ####Importing Data
@@ -58,7 +55,7 @@ Now, parse the imported data:
 0. Once data are parsed, click the **View** button, then click the **Build Model** button. 
 0. Select `K-means` from the drop-down **Select an algorithm** menu, then click the **Build model** button. 
 0. If the parsed seeds_dataset.hex file is not already listed in the **Training_frame** drop-down list, select it. Otherwise, continue to the next step. 
-0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 7 (the a priori known clusters for this dataset). 
+0. From the **Ignored_columns** section, select the columns to ignore in the *Available* area to move them to the *Selected* area. For this example, select column 8 (the a priori known clusters for this dataset). 
 0. In the **K** field, specify the number of clusters. For this example, enter `3`.  
 0. In the **Max_iterations** field, specify the maximum number of iterations. For this example, enter `100`. 
 0. From the drop-down **Init** menu, select the initialization mode. For this example, select **PlusPlus**. 

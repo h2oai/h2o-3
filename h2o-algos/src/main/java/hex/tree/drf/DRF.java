@@ -62,8 +62,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
       if (_nclass >= 2) _parms._distribution = Distribution.Family.multinomial;
     }
-    if (_parms._sample_rate == 1f && _valid == null)
-      error("_sample_rate", "Sample rate is 100% and no validation dataset is specified.  There are no OOB data to compute out-of-bag error estimation!");
+    if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
+      warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
     if (hasOffsetCol())
       error("_offset_column", "Offsets are not yet supported for DRF.");
     if (hasOffsetCol() && isClassifier()) {
@@ -133,7 +133,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
-    @Override protected void buildNextKTrees() {
+    @Override protected boolean buildNextKTrees() {
       // We're going to build K (nclass) trees - each focused on correcting
       // errors for a single class.
       final DTree[] ktrees = new DTree[_nclass];
@@ -152,6 +152,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
 
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
+
+      return false; //never stop early
     }
 
     // Assumes that the "Work" column are filled with horizontalized (0/1) class memberships per row (or copy of regression response)
@@ -174,7 +176,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
           // inverse of the first (and that the same columns were picked)
           if( k==1 && _nclass==2 && _model.binomialOpt()) continue;
           ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
-          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], _parms)); // The "root" node
+          new UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys())); // The "root" node
         }
       }
 
@@ -204,7 +206,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         for( int nid=0; nid<leaf; nid++ ) {
           if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
-            if( dn._split._col == -1 ) { // No decision here, no row should have this NID now
+            if( dn._split == null ) { // No decision here, no row should have this NID now
               if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new LeafNode(tree, -1, 0);
                 ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
@@ -216,7 +218,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode)tree.node(cnid))._split.col()==-1) ) {
+                              ((DecidedNode)tree.node(cnid))._split==null) ) {
                 LeafNode ln = new LeafNode(tree,nid);
                 ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
@@ -263,9 +265,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                 leafnid = 0;
               } else {
                 DecidedNode dn = tree.decided(nid);           // Must have a decision point
-                if (dn._split.col() == -1)     // Unable to decide?
+                if (dn._split == null)     // Unable to decide?
                   dn = tree.decided(tree.node(nid).pid());    // Then take parent's decision
-                leafnid = dn.ns(chks, row); // Decide down to a leafnode
+                leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
               }
               // Setup Tree(i) - on the fly prediction of i-tree for row-th row
               //   - for classification: cumulative number of votes for this row

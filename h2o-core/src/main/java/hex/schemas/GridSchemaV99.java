@@ -6,6 +6,7 @@ import hex.grid.Grid;
 import water.DKV;
 import water.Key;
 import water.api.*;
+import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.TwoDimTable;
 
@@ -17,10 +18,9 @@ import java.util.Set;
 /**
  * REST endpoint representing single grid object.
  *
- * FIXME: Grid should contain also grid definition - model parameters
- * and definition of hyper parameters.
+ * FIXME: Grid should contain also grid definition - model parameters and definition of hyper parameters.
  */
-public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
+public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   //
   // Inputs
   //
@@ -43,7 +43,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   public String[] hyper_names;
 
   @API(help = "List of failed parameters", direction = API.Direction.OUTPUT)
-  public ModelParametersSchema[] failed_params; // Using common ancestor of XXXParamsV3
+  public ModelParametersSchemaV3[] failed_params; // Using common ancestor of XXXParamsV3
 
   @API(help = "List of detailed failure messages", direction = API.Direction.OUTPUT)
   public String[] failure_details;
@@ -55,22 +55,22 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
   public String[][] failed_raw_params;
 
   @API(help = "Training model metrics for the returned models; only returned if sort_by is set", direction = API.Direction.OUTPUT)
-  public ModelMetricsBase[] training_metrics;
+  public ModelMetricsBaseV3[] training_metrics;
 
   @API(help = "Validation model metrics for the returned models; only returned if sort_by is set", direction = API.Direction.OUTPUT)
-  public ModelMetricsBase[] validation_metrics;
+  public ModelMetricsBaseV3[] validation_metrics;
 
   @API(help = "Cross validation model metrics for the returned models; only returned if sort_by is set", direction = API.Direction.OUTPUT)
-  public ModelMetricsBase[] cross_validation_metrics;
+  public ModelMetricsBaseV3[] cross_validation_metrics;
 
   @API(help = "Cross validation model metrics summary for the returned models; only returned if sort_by is set", direction = API.Direction.OUTPUT)
-  public TwoDimTableBase[] cross_validation_metrics_summary;
+  public TwoDimTableV3[] cross_validation_metrics_summary;
 
   @API(help="Summary", direction=API.Direction.OUTPUT)
-  TwoDimTableBase summary_table;
+  TwoDimTableV3 summary_table;
 
   @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
-  TwoDimTableBase scoring_history;
+  TwoDimTableV3 scoring_history;
 
   @Override
   public Grid createImpl() {
@@ -110,7 +110,7 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
     // If not, show all possible metrics
     if (modelKeys.size() > 0 && sort_by != null) {
       Set<String> possibleMetrics = ModelMetrics.getAllowedMetrics(modelKeys.get(0));
-      if (!possibleMetrics.contains(sort_by)) {
+      if (!possibleMetrics.contains(sort_by.toLowerCase())) {
         throw new H2OIllegalArgumentException("Invalid argument for sort_by specified. Must be one of: " + Arrays.toString(possibleMetrics.toArray(new String[0])));
       }
     }
@@ -121,21 +121,26 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
       modelKeys = ModelMetrics.sortModelsByMetric(sort_by, decreasing, modelKeys);
 
       // fill the metrics arrays
-      training_metrics = new ModelMetricsBase[modelKeys.size()];
-      validation_metrics = new ModelMetricsBase[modelKeys.size()];
-      cross_validation_metrics = new ModelMetricsBase[modelKeys.size()];
-      cross_validation_metrics_summary = new TwoDimTableBase[modelKeys.size()];
+      training_metrics = new ModelMetricsBaseV3[modelKeys.size()];
+      validation_metrics = new ModelMetricsBaseV3[modelKeys.size()];
+      cross_validation_metrics = new ModelMetricsBaseV3[modelKeys.size()];
+      cross_validation_metrics_summary = new TwoDimTableV3[modelKeys.size()];
 
       for (int i = 0; i < modelKeys.size(); i++) {
         Model m = DKV.getGet(modelKeys.get(i));
 
-        if (null != m) {
+        if (m != null) {
           Model.Output o = m._output;
 
-          training_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._training_metrics).fillFromImpl(o._training_metrics);
-          if (null != o._validation_metrics) validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._validation_metrics).fillFromImpl(o._validation_metrics);
-          if (null != o._cross_validation_metrics) cross_validation_metrics[i] = (ModelMetricsBase) Schema.schema(3, o._cross_validation_metrics).fillFromImpl(o._cross_validation_metrics);
-          if (null != o._cross_validation_metrics_summary) cross_validation_metrics_summary[i] = (TwoDimTableBase) Schema.schema(3, o._cross_validation_metrics_summary).fillFromImpl(o._cross_validation_metrics_summary);
+          if (null != o._training_metrics)
+            training_metrics[i] = (ModelMetricsBaseV3) SchemaServer.schema(3, o._training_metrics).fillFromImpl(o
+                ._training_metrics);
+          if (null != o._validation_metrics) validation_metrics[i] = (ModelMetricsBaseV3) SchemaServer.schema(3, o
+              ._validation_metrics).fillFromImpl(o._validation_metrics);
+          if (null != o._cross_validation_metrics) cross_validation_metrics[i] = (ModelMetricsBaseV3) SchemaServer
+              .schema(3, o._cross_validation_metrics).fillFromImpl(o._cross_validation_metrics);
+          if (o._cross_validation_metrics_summary != null)
+            cross_validation_metrics_summary[i] = new TwoDimTableV3(o._cross_validation_metrics_summary);
         }
       }
     }
@@ -156,21 +161,21 @@ public class GridSchemaV99 extends Schema<Grid, GridSchemaV99> {
 
     TwoDimTable t = grid.createSummaryTable(keys, sort_by, decreasing);
     if (t!=null)
-      summary_table = new TwoDimTableBase().fillFromImpl(t);
+      summary_table = new TwoDimTableV3().fillFromImpl(t);
 
     TwoDimTable h = grid.createScoringHistoryTable();
     if (h != null)
-      scoring_history = new TwoDimTableBase().fillFromImpl(h);
+      scoring_history = new TwoDimTableV3().fillFromImpl(h);
     return this;
   }
 
-  private ModelParametersSchema[] toModelParametersSchema(Model.Parameters[] modelParameters) {
+  private ModelParametersSchemaV3[] toModelParametersSchema(Model.Parameters[] modelParameters) {
     if (modelParameters==null) return null;
-    ModelParametersSchema[] result = new ModelParametersSchema[modelParameters.length];
+    ModelParametersSchemaV3[] result = new ModelParametersSchemaV3[modelParameters.length];
     for (int i = 0; i < modelParameters.length; i++) {
       if (modelParameters[i] != null) {
         result[i] =
-            (ModelParametersSchema) Schema.schema(Schema.getLatestVersion(), modelParameters[i])
+            (ModelParametersSchemaV3) SchemaServer.schema(SchemaServer.getLatestVersion(), modelParameters[i])
                 .fillFromImpl(modelParameters[i]);
       } else {
         result[i] = null;

@@ -32,8 +32,9 @@
 #' @param seed (Optional) Random seed used to initialize the cluster centroids.
 #' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo"
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
+#'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will 
+#'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
@@ -59,7 +60,7 @@ h2o.kmeans <- function(training_frame, x, k,
                        seed,
                        nfolds = 0,
                        fold_column = NULL,
-                       fold_assignment = c("AUTO","Random","Modulo"),
+                       fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
                        max_runtime_secs=0)

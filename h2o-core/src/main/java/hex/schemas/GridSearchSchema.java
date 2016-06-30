@@ -5,6 +5,10 @@ import hex.grid.Grid;
 import water.H2O;
 import water.Key;
 import water.api.*;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
 
@@ -27,7 +31,7 @@ import java.util.Properties;
 public class GridSearchSchema<G extends Grid<MP>,
     S  extends GridSearchSchema<G, S, MP, P>,
     MP extends Model.Parameters,
-    P  extends ModelParametersSchema> extends Schema<G, S> {
+    P  extends ModelParametersSchemaV3> extends SchemaV3<G, S> {
 
   //
   // Inputs
@@ -56,11 +60,11 @@ public class GridSearchSchema<G extends Grid<MP>,
   @Override public S fillFromParms(Properties parms) {
     if( parms.containsKey("hyper_parameters") ) {
       Map<String,Object> m = water.util.JSONUtils.parse(parms.getProperty("hyper_parameters"));
-      hyper_parameters = new IcedHashMap<>();
       // Convert lists and singletons into arrays
       for (Map.Entry<String, Object> e : m.entrySet()) {
         Object o = e.getValue();
         Object[] o2 = o instanceof List ? ((List) o).toArray() : new Object[]{o};
+
         hyper_parameters.put(e.getKey(),o2);
       }
       parms.remove("hyper_parameters");
@@ -79,6 +83,12 @@ public class GridSearchSchema<G extends Grid<MP>,
         search_criteria = new HyperSpaceSearchCriteriaV99.CartesianSearchCriteriaV99();
       } else if ("RandomDiscrete".equals(strategy)) {
         search_criteria = new HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99();
+        if (p.containsKey("max_runtime_secs") && Double.parseDouble((String) p.get("max_runtime_secs"))<0) {
+          throw new H2OIllegalArgumentException("max_runtime_secs must be >= 0 (0 for unlimited time)", strategy);
+        }
+        if (p.containsKey("max_models") && Integer.parseInt((String) p.get("max_models"))<0) {
+          throw new H2OIllegalArgumentException("max_models must be >= 0 (0 for all models)", strategy);
+        }
       } else {
         throw new H2OIllegalArgumentException("search_criteria.strategy", strategy);
       }

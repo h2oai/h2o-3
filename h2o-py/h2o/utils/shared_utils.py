@@ -15,10 +15,10 @@ import re
 
 # private static methods
 _id_ctr = 0
-def _py_tmp_key():
+def _py_tmp_key(append=""):
   global _id_ctr
   _id_ctr=_id_ctr+1
-  return "py_" + str(_id_ctr)
+  return "py_" + str(_id_ctr) + append
 
 def temp_ctr():
   return _id_ctr
@@ -72,7 +72,7 @@ def _check_lists_of_lists(python_obj):
   return most_cols
   
 
-def _handle_python_lists(python_obj):
+def _handle_python_lists(python_obj, check_header):
   #convert all inputs to lol
   if _is_list_of_lists(python_obj):  # do we have a list of lists: [[...], ..., [...]] ?
     ncols = _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
@@ -83,7 +83,7 @@ def _handle_python_lists(python_obj):
     python_obj = [[python_obj]]
     ncols = 1
   # create the header
-  header = _gen_header(ncols)
+  header = _gen_header(ncols) if check_header != 1 else python_obj.pop(0)
   # shape up the data for csv.DictWriter
   data_to_write = [dict(list(zip(header,row))) for row in python_obj]
   return header, data_to_write
@@ -100,11 +100,11 @@ def _is_num_list(l):
 def _is_list_of_lists(o):
   return any(isinstance(l, (list, tuple)) for l in o)
 
-def _handle_numpy_array(python_obj):
-  return _handle_python_lists(python_obj=python_obj.tolist())
+def _handle_numpy_array(python_obj, header):
+  return _handle_python_lists(python_obj.tolist(), header)
 
-def _handle_pandas_data_frame(python_obj):
-  return _handle_numpy_array(python_obj=python_obj.as_matrix())
+def _handle_pandas_data_frame(python_obj, header):
+  return _handle_numpy_array(python_obj.as_matrix(), header)
 
 def _handle_python_dicts(python_obj):
   header = list(python_obj.keys())

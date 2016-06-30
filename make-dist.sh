@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 cdh5.5.3 cdh5.6.0 hdp2.1 hdp2.2 hdp2.3 hdp2.4 mapr3.1.1 mapr4.0.1 mapr5.0 mapr5.1"
+HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4.2 cdh5.5.3 cdh5.6.0 cdh5.7.0 hdp2.1 hdp2.2 hdp2.3 hdp2.4 mapr3.1.1 mapr4.0.1 mapr5.0 mapr5.1"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -24,7 +24,7 @@ function make_zip_common {
   cp h2o-py/dist/*whl $IMAGEDIR/python
 
   mkdir -p $IMAGEDIR/bindings/java
-  cp h2o-java-rest-bindings/build/libs/h2o-java-rest-bindings-*.jar $IMAGEDIR/bindings/java
+  cp h2o-bindings/build/libs/h2o-bindings-*.jar $IMAGEDIR/bindings/java
 
   cd $IMAGEDIR/..
   zip -r ${PROJECT_BASE}.zip ${PROJECT_BASE}
@@ -120,7 +120,7 @@ cd ..
 
 # Add Java bindings Jar to target.
 mkdir -p target/bindings/java
-cp -p h2o-java-rest-bindings/build/libs/*.jar target/bindings/java
+cp -p h2o-bindings/build/libs/*.jar target/bindings/java
 
 # Add Maven repo to target.
 mkdir target/maven

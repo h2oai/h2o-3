@@ -29,8 +29,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   private transient Frame _frame;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
+  public final long _nobs;
 
-  public ModelMetrics(Model model, Frame frame, double MSE, String desc) {
+  public ModelMetrics(Model model, Frame frame, long nobs, double MSE, String desc) {
     super(buildKey(model, frame));
     _description = desc;
     // Do not cache fields now
@@ -40,6 +41,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     _model_checksum = model.checksum();
     try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
+    _nobs = nobs;
     _scoring_time = System.currentTimeMillis();
   }
 
@@ -75,7 +77,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Method method = null;
     ConfusionMatrix cm = m.cm();
     try {
-      method = m.getClass().getMethod(criterion);
+      method = m.getClass().getMethod(criterion.toLowerCase());
     }
     catch (Exception e) {
       // fall through
@@ -83,7 +85,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
     if (null == method && null != cm) {
       try {
-        method = cm.getClass().getMethod(criterion);
+        method = cm.getClass().getMethod(criterion.toLowerCase());
       }
       catch (Exception e) {
         // fall through
@@ -143,12 +145,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     excluded.add("cm");
     excluded.add("auc_obj");
     excluded.add("remove");
+    excluded.add("nobs");
     if (m!=null) {
       for (Method meth : m.getClass().getMethods()) {
         if (excluded.contains(meth.getName())) continue;
         try {
           double c = (double) meth.invoke(m);
-          res.add(meth.getName());
+          res.add(meth.getName().toLowerCase());
         } catch (Exception e) {
           // fall through
         }
@@ -159,7 +162,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
         if (excluded.contains(meth.getName())) continue;
         try {
           double c = (double) meth.invoke(cm);
-          res.add(meth.getName());
+          res.add(meth.getName().toLowerCase());
         } catch (Exception e) {
           // fall through
         }
@@ -169,8 +172,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   /**
-   * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "errCount",
-   * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "F1", "F2", "F0point5". . .
+   * Return a new list of models sorted by the named criterion, such as "auc", mse", "hr", "err", "err_count",
+   * "accuracy", "specificity", "recall", "precision", "mcc", "max_per_class_error", "f1", "f2", "f0point5". . .
    * @param sort_by criterion by which we should sort
    * @param decreasing sort by decreasing metrics or not
    * @param modelKeys keys of models to sortm

@@ -3,13 +3,12 @@ package water.api;
 import hex.Model;
 import water.*;
 import water.api.ModelsHandler.Models;
+import water.api.schemas3.*;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FrameUtils;
 import water.util.Log;
 
-import java.io.InputStream;
 import java.util.*;
 
 /*
@@ -47,15 +46,15 @@ import java.util.*;
  * <p> deleteAll(): Delete all Frames from the H2O distributed K/V store.
  * <p>
  */
-class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> extends Handler {
+public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,S>> extends Handler {
 
   /** Class which contains the internal representation of the frames list and params. */
-  protected static final class Frames extends Iced {
-    Key frame_id;
-    long row_offset;
-    int row_count;
-    Frame[] frames;
-    String column;
+  public static final class Frames extends Iced {
+    public Key<Frame> frame_id;
+    public long row_offset;
+    public int row_count;
+    public Frame[] frames;
+    public String column;
     public boolean find_compatible_models = false;
 
     /**
@@ -216,12 +215,6 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
     return s;
   }
 
-  /** Docs for column summary. */
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public StringBuffer columnSummaryDocs(int version, StringBuffer docs) {
-    return null; // doc(this, version, docs, "docs/columnSummary.md");
-  }
-
   // TODO: return everything but the second level of rollups (histograms); currently mins and maxes are missing
   /** Return a single frame. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
@@ -230,7 +223,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     // Summary data is big, and not always there: null it out here.  You have to call columnSummary
     // to force computation of the summary data.
-    for (FrameBase a_frame: frames.frames) {
+    for (FrameBaseV3 a_frame: frames.frames) {
       ((FrameV3)a_frame).clearBinsField();
     }
 
@@ -242,15 +235,15 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBase
+    s.frames[0] = new FrameV3(frame, s.row_offset, s.row_count).fillFromImpl(frame, s.row_offset, s.row_count, s.column_offset, s.column_count);  // TODO: Refactor with FrameBaseV3
 
     if (s.find_compatible_models) {
       Model[] compatible = Frames.findCompatibleModels(frame, Models.fetchAll());
-      s.compatible_models = new ModelSchema[compatible.length];
+      s.compatible_models = new ModelSchemaV3[compatible.length];
       ((FrameV3)s.frames[0]).compatible_models = new String[compatible.length];
       int i = 0;
       for (Model m : compatible) {
-        s.compatible_models[i] = (ModelSchema)Schema.schema(version, m).fillFromImpl(m);
+        s.compatible_models[i] = (ModelSchemaV3)SchemaServer.schema(version, m).fillFromImpl(m);
         ((FrameV3)s.frames[0]).compatible_models[i] = m._key.toString();
         i++;
       }
@@ -262,7 +255,7 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
   public FramesV3 export(int version, FramesV3 s) {
     Frame fr = getFromDKV("key", s.frame_id.key());
     Log.info("ExportFiles processing (" + s.path + ")");
-    s.job =  (JobV3) Schema.schema(version, Job.class).fillFromImpl(Frame.export(fr, s.path, s.frame_id.key().toString(),s.force));
+    s.job = new JobV3(Frame.export(fr, s.path, s.frame_id.key().toString(),s.force));
     return s;
   }
 
@@ -299,11 +292,11 @@ class FramesHandler<I extends FramesHandler.Frames, S extends FramesBase<I, S>> 
 
     ArrayList<String> missing = new ArrayList<>();
     Futures fs = new Futures();
-    for( int i = 0; i < keys.length; i++ ) {
+    for (Key key : keys) {
       try {
-        getFromDKV("(none)", keys[i]).delete(null, fs);
-      } catch( IllegalArgumentException iae ) {
-        missing.add(keys[i].toString());
+        getFromDKV("(none)", key).delete(null, fs);
+      } catch (IllegalArgumentException iae) {
+        missing.add(key.toString());
       }
     }
     fs.blockForPending();

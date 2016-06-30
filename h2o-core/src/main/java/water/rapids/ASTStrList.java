@@ -14,7 +14,7 @@ import java.util.Arrays;
  */
 public class ASTStrList extends ASTParameter {
   public String[] _strs;
-  ASTStrList( Exec e ) {
+  ASTStrList( Rapids e ) {
     ArrayList<String> strs  = new ArrayList<>();
     while( true ) {
       char c = e.skipWS();

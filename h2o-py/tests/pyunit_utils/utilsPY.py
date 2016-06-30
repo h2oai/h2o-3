@@ -31,6 +31,7 @@ import string
 import copy
 import json
 import math
+from random import shuffle
 
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
@@ -284,7 +285,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
         o, e = p.communicate()
         print("Java output: {0}".format(o))
         assert os.path.exists(out_pojo_csv), "Expected file {0} to exist, but it does not.".format(out_pojo_csv)
-        munged2 = h2o.upload_file(path=out_pojo_csv)
+        munged2 = h2o.upload_file(path=out_pojo_csv, col_types=test.types)
         print("Pojo predictions saved in {0}".format(out_pojo_csv))
 
         print("Comparing predictions between H2O and Java POJO")
@@ -296,17 +297,18 @@ def javamunge(assembly, pojoname, test, compile_only=False):
 
         # Value
         import math
+        import numbers
         munged.show()
         munged2.show()
         for r in range(hr):
           for c in range(hc):
               hp = munged[r,c]
               pp = munged2[r,c]
-              if isinstance(hp, float):
-                assert isinstance(pp, float)
+              if isinstance(hp, numbers.Number):
+                assert isinstance(pp, numbers.Number)
                 assert (math.fabs(hp-pp) < 1e-8) or (math.isnan(hp) and math.isnan(pp)), "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
               else:
-                assert hp == pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
+                assert hp==pp, "Expected munged rows to be the same for row {0}, but got {1}, and {2}".format(r, hp, pp)
 
 def locate(path):
     """
@@ -367,8 +369,8 @@ def hadoop_namenode():
     return None
 
 def pyunit_exec(test_name):
-    with open (test_name, "r") as t: pyunit = t.read()
-    pyunit_c = compile(pyunit, '<string>', 'exec')
+    with open(test_name, "r") as t: pyunit = t.read()
+    pyunit_c = compile(pyunit, test_name, 'exec')
     p = {}
     exec(pyunit_c, p)
 
@@ -746,6 +748,69 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
 
     # write to file in csv format
     np.savetxt(csv_filename, np.concatenate((x_mat, response_y), axis=1), delimiter=",")
+
+
+def generate_clusters(cluster_center_list, cluster_pt_number_list, cluster_radius_list):
+    """
+    This function is used to generate clusters of points around cluster_centers listed in
+    cluster_center_list.  The radius of the cluster of points are specified by cluster_pt_number_list.
+    The size of each cluster could be different and it is specified in cluster_radius_list.
+
+    :param cluster_center_list: list of coordinates of cluster centers
+    :param cluster_pt_number_list: number of points to generate for each cluster center
+    :param cluster_radius_list: list of size of each cluster
+    :return: list of sample points that belong to various clusters
+    """
+
+    k = len(cluster_pt_number_list)     # number of clusters to generate clusters for
+
+    if (not(k == len(cluster_center_list))) or (not(k == len(cluster_radius_list))):
+        print("Length of list cluster_center_list, cluster_pt_number_list, cluster_radius_list must be the same!")
+        sys.exit(1)
+
+    training_sets = []
+    for k_ind in range(k):
+        new_cluster_data = generate_one_cluster(cluster_center_list[k_ind], cluster_pt_number_list[k_ind],
+                                                cluster_radius_list[k_ind])
+        if k_ind > 0:
+            training_sets = np.concatenate((training_sets, new_cluster_data), axis=0)
+        else:
+            training_sets = new_cluster_data
+
+    # want to shuffle the data samples so that the clusters are all mixed up
+    map(np.random.shuffle, training_sets)
+
+    return training_sets
+
+
+def generate_one_cluster(cluster_center, cluster_number, cluster_size):
+    """
+    This function will generate a full cluster wither cluster_number points centered on cluster_center
+    with maximum radius cluster_size
+
+    :param cluster_center: python list denoting coordinates of cluster center
+    :param cluster_number: integer denoting number of points to generate for this cluster
+    :param cluster_size: float denoting radius of cluster
+    :return: np matrix denoting a cluster
+    """
+
+    pt_dists = np.random.uniform(0, cluster_size, [cluster_number, 1])
+    coord_pts = len(cluster_center)     # dimension of each cluster point
+    one_cluster_data = np.zeros((cluster_number, coord_pts), dtype=np.float)
+
+    for p_ind in range(cluster_number):
+        coord_indices = list(range(coord_pts))
+        random.shuffle(coord_indices)  # randomly determine which coordinate to generate
+        left_radius = pt_dists[p_ind]
+
+        for c_ind in range(coord_pts):
+            coord_index = coord_indices[c_ind]
+            one_cluster_data[p_ind, coord_index] = random.uniform(-1*left_radius+cluster_center[coord_index],
+                                                                  left_radius+cluster_center[coord_index])
+            left_radius = math.sqrt(pow(left_radius, 2)-pow((one_cluster_data[p_ind, coord_index]-
+                                                             cluster_center[coord_index]), 2))
+
+    return one_cluster_data
 
 
 def remove_negative_response(x_mat, response_y):
@@ -1899,7 +1964,11 @@ def get_gridables(params_in_json):
         if each_param['gridable']:
             gridable_parameters.append(str(each_param["name"]))
             gridable_types.append(each_param["type"])
-            gridable_defaults.append(each_param["default_value"])
+
+            if type(each_param["default_value"]) == 'unicode':    # hyper-parameters cannot be unicode
+                gridable_defaults.append(str(each_param["default_value"]))
+            else:
+                gridable_defaults.append(each_param["default_value"])
 
     return gridable_parameters, gridable_types, gridable_defaults
 
@@ -1980,7 +2049,7 @@ def gen_grid_search(model_params, hyper_params, exclude_parameters, gridable_par
 
             if para_name not in hyper_params.keys():    # add default value to user defined parameter list
                  # gridable parameter not seen before.  Randomly generate values for it
-                if 'int' in gridable_types[count_index]:
+                if ('int' in gridable_types[count_index]) or ('long' in gridable_types[count_index]):
                     # make sure integer values are not duplicated, using set action to remove duplicates
                     hyper_params[para_name] = list(set([random.randint(min_int_val, max_int_val) for p in
                                                         range(0, max_int_number)]))
@@ -2383,6 +2452,59 @@ def evaluate_early_stopping(metric_list, stop_round, tolerance, bigger_is_better
         return not (ratio < 1-tolerance)
 
 
+def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero, params_more_than_one,
+                           params_zero_positive, max_grid_model):
+    """
+    This function will look at the hyper-parameter space set in hyper_params, generate a new hyper_param space that
+    will contain a smaller number of grid_models.  It will determine how many models will be built from
+    this new hyper_param space.  In order to arrive at the correct answer, it must discount parameter settings that
+    are illegal.
+
+    :param hyper_params: dict containing model parameter names and list of values to set it to
+    :param params_zero_one: list containing model parameter names whose values must be between 0 and 1
+    :param params_more_than_zero: list containing model parameter names whose values must exceed zero
+    :param params_more_than_one: list containing model parameter names whose values must exceed one
+    :param params_zero_positive: list containing model parameter names whose values must equal to or exceed zero
+    :param max_grid_model: maximum number of grid_model that can be generated from the new hyper_params space
+
+    :return: total model: integer denoting number of grid models that can be built from all legal parameter settings
+                          in new hyper_parameter space
+             final_hyper_params: dict of new hyper parameter space derived from the original hyper_params
+    """
+
+    total_model = 1
+    param_len = 0
+    hyper_keys = list(hyper_params)
+    shuffle(hyper_keys)    # get all hyper_parameter names in random order
+    final_hyper_params = dict()
+
+    for param in hyper_keys:
+
+        # this param should be between 0 and 2
+        if param == "col_sample_rate_change_per_level":
+            param_len = len([x for x in hyper_params["col_sample_rate_change_per_level"] if (x >= 0)
+                                 and (x <= 2)])
+        elif param in params_zero_one:
+            param_len = len([x for x in hyper_params[param] if (x >= 0)
+                                 and (x <= 1)])
+        elif param in params_more_than_zero:
+            param_len = len([x for x in hyper_params[param] if (x > 0)])
+        elif param in params_more_than_one:
+            param_len = len([x for x in hyper_params[param] if (x > 1)])
+        elif param in params_zero_positive:
+            param_len = len([x for x in hyper_params[param] if (x >= 0)])
+        else:
+            param_len = len(hyper_params[param])
+
+        if (param_len >= 0) and ((total_model*param_len) <= max_grid_model):
+            total_model *= param_len
+            final_hyper_params[param] = hyper_params[param]
+        elif (total_model*param_len) > max_grid_model:
+            break
+
+    return total_model, final_hyper_params
+
+
 def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     """
     This function will write a json file of the hyper_parameters in directories dir1 and dir2
@@ -2403,3 +2525,5 @@ def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     # save hyper-parameter file in sandbox
     with open(os.path.join(dir2, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
+
+

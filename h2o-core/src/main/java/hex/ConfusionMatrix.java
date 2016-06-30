@@ -62,6 +62,18 @@ public class ConfusionMatrix extends Iced {
 
   public final int size() { return _cm.length; }
 
+  public final double mean_per_class_error() {
+    double err = 0;
+    for( int d = 0; d < _cm.length; ++d )
+      err += class_error(d); //can be 0 if no actuals, but we're still dividing by the total count of classes
+    return err / _cm.length;
+  }
+
+  // mean(accuracy) = mean(1-error) = 1-mean(error)
+  public final double mean_per_class_accuracy() {
+    return 1-mean_per_class_error();
+  }
+
   public final double class_error(int c) {
     double s = ArrayUtils.sum(_cm[c]);
     if( s == 0 ) return 0.0;    // Either 0 or NaN, but 0 is nicer
@@ -163,7 +175,7 @@ public class ConfusionMatrix extends Iced {
    * Returns the F-measure which combines precision and recall. <br>
    * C.f. end of http://en.wikipedia.org/wiki/Precision_and_recall.
    */
-  public double F1() {
+  public double f1() {
     final double precision = precision();
     final double recall = recall();
     return 2. * (precision * recall) / (precision + recall);
@@ -173,7 +185,7 @@ public class ConfusionMatrix extends Iced {
    * Returns the F-measure which combines precision and recall and weights recall higher than precision. <br>
    * See <a href="http://en.wikipedia.org/wiki/F1_score.">F1_score</a>
    */
-  public double F2() {
+  public double f2() {
     final double precision = precision();
     final double recall = recall();
     return 5. * (precision * recall) / (4. * precision + recall);
@@ -183,7 +195,7 @@ public class ConfusionMatrix extends Iced {
    * Returns the F-measure which combines precision and recall and weights precision higher than recall. <br>
    * See <a href="http://en.wikipedia.org/wiki/F1_score.">F1_score</a>
    */
-  public double F0point5() {
+  public double f0point5() {
     final double precision = precision();
     final double recall = recall();
     return 1.25 * (precision * recall) / (.25 * precision + recall);

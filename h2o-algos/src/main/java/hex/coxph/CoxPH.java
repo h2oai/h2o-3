@@ -389,85 +389,77 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     @Override
-    public void compute2() {
+    public void computeImpl() {
       CoxPHModel model ;
-      try {
-        Scope.enter();
-        _parms.read_lock_frames(_job);
-        init(true);
+      init(true);
 
-        applyScoringFrameSideEffects();
+      applyScoringFrameSideEffects();
 
-        // The model to be built
-        model = new CoxPHModel(_job._result, _parms, new CoxPHModel.CoxPHOutput(CoxPH.this));
-        model.delete_and_lock(_job);
+      // The model to be built
+      model = new CoxPHModel(_job._result, _parms, new CoxPHModel.CoxPHOutput(CoxPH.this));
+      model.delete_and_lock(_job);
 
-        applyTrainingFrameSideEffects();
+      applyTrainingFrameSideEffects();
 
-        int nResponses = 1;
-        boolean useAllFactorLevels = false;
-        final DataInfo dinfo = new DataInfo(_modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false);
-        initStats(model, dinfo);
+      int nResponses = 1;
+      boolean useAllFactorLevels = false;
+      final DataInfo dinfo = new DataInfo(_modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false);
+      initStats(model, dinfo);
 
-        final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;
-        final int n_coef       = dinfo.fullN() - n_offsets;
-        final double[] step    = MemoryManager.malloc8d(n_coef);
-        final double[] oldCoef = MemoryManager.malloc8d(n_coef);
-        final double[] newCoef = MemoryManager.malloc8d(n_coef);
-        Arrays.fill(step,    Double.NaN);
-        Arrays.fill(oldCoef, Double.NaN);
-        for (int j = 0; j < n_coef; ++j)
-          newCoef[j] = model._parms.init;
-        double oldLoglik = - Double.MAX_VALUE;
-        final int n_time = (int) (model._output.max_time - model._output.min_time + 1);
-        final boolean has_start_column   = (model._parms.start_column != null);
-        final boolean has_weights_column = (model._parms.weights_column != null);
-        for (int i = 0; i <= model._parms.iter_max; ++i) {
-          model._output.iter = i;
+      final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;
+      final int n_coef       = dinfo.fullN() - n_offsets;
+      final double[] step    = MemoryManager.malloc8d(n_coef);
+      final double[] oldCoef = MemoryManager.malloc8d(n_coef);
+      final double[] newCoef = MemoryManager.malloc8d(n_coef);
+      Arrays.fill(step,    Double.NaN);
+      Arrays.fill(oldCoef, Double.NaN);
+      for (int j = 0; j < n_coef; ++j)
+        newCoef[j] = model._parms.init;
+      double oldLoglik = - Double.MAX_VALUE;
+      final int n_time = (int) (model._output.max_time - model._output.min_time + 1);
+      final boolean has_start_column   = (model._parms.start_column != null);
+      final boolean has_weights_column = (model._parms.weights_column != null);
+      for (int i = 0; i <= model._parms.iter_max; ++i) {
+        model._output.iter = i;
 
-          final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output.min_time, n_time, n_offsets,
-                  has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
+        final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output.min_time, n_time, n_offsets,
+                has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
 
-          final double newLoglik = calcLoglik(model, coxMR);
-          if (newLoglik > oldLoglik) {
-            if (i == 0)
-              calcCounts(model, coxMR);
+        final double newLoglik = calcLoglik(model, coxMR);
+        if (newLoglik > oldLoglik) {
+          if (i == 0)
+            calcCounts(model, coxMR);
 
-            calcModelStats(model, newCoef, newLoglik);
-            calcCumhaz_0(model, coxMR);
+          calcModelStats(model, newCoef, newLoglik);
+          calcCumhaz_0(model, coxMR);
 
-            if (newLoglik == 0)
-              model._output.lre = - Math.log10(Math.abs(oldLoglik - newLoglik));
-            else
-              model._output.lre = - Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
-            if (model._output.lre >= model._parms.lre_min)
+          if (newLoglik == 0)
+            model._output.lre = - Math.log10(Math.abs(oldLoglik - newLoglik));
+          else
+            model._output.lre = - Math.log10(Math.abs((oldLoglik - newLoglik) / newLoglik));
+          if (model._output.lre >= model._parms.lre_min)
+            break;
+
+          Arrays.fill(step, 0);
+          for (int j = 0; j < n_coef; ++j)
+            for (int k = 0; k < n_coef; ++k)
+              step[j] -= model._output.var_coef[j][k] * model._output.gradient[k];
+          for (int j = 0; j < n_coef; ++j)
+            if (Double.isNaN(step[j]) || Double.isInfinite(step[j]))
               break;
 
-            Arrays.fill(step, 0);
-            for (int j = 0; j < n_coef; ++j)
-              for (int k = 0; k < n_coef; ++k)
-                step[j] -= model._output.var_coef[j][k] * model._output.gradient[k];
-            for (int j = 0; j < n_coef; ++j)
-              if (Double.isNaN(step[j]) || Double.isInfinite(step[j]))
-                break;
-
-            oldLoglik = newLoglik;
-            System.arraycopy(newCoef, 0, oldCoef, 0, oldCoef.length);
-          } else {
-            for (int j = 0; j < n_coef; ++j)
-              step[j] /= 2;
-          }
-
+          oldLoglik = newLoglik;
+          System.arraycopy(newCoef, 0, oldCoef, 0, oldCoef.length);
+        } else {
           for (int j = 0; j < n_coef; ++j)
-            newCoef[j] = oldCoef[j] - step[j];
+            step[j] /= 2;
         }
 
-        model.update(_job);
-      } finally {
-        _parms.read_unlock_frames(_job);
-        Scope.exit();
+        for (int j = 0; j < n_coef; ++j)
+          newCoef[j] = oldCoef[j] - step[j];
       }
-      tryComplete();
+
+      model.update(_job);
     }
 
   }

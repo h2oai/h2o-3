@@ -27,17 +27,20 @@ public class BinaryMerge extends DTask<BinaryMerge> {
   transient boolean _oneToManyMatch = false;   // does any left row match to more than 1 right row?  If not, can allocate and loop more efficiently, and mark the resulting key'd frame with a 'unique' index.
                                                //   TODO: implement
   int _leftFieldSizes[], _rightFieldSizes[];   // the widths of each column in the key
-  long _leftColMins[], _rightColMins[];        // the col.min() of each column in the key
+  long _leftBase[], _rightBase[];        // the col.min() of each column in the key
   transient int _leftKeyNCol, _rightKeyNCol;   // the number of columns in the key i.e. length of _leftFieldSizes and _rightFieldSizes
   transient int _leftKeySize, _rightKeySize;   // the total width in bytes of the key, sum of field sizes
   transient int _numJoinCols;
   transient long _leftN, _rightN;
+  transient long _leftFrom;
+  transient int _retBatchSize;
   transient long _leftBatchSize, _rightBatchSize;
   Frame _leftFrame, _rightFrame;
 
   transient long _perNodeNumRightRowsToFetch[];
   transient long _perNodeNumLeftRowsToFetch[];
   int _leftMSB, _rightMSB;
+  int _leftShift, _rightShift;
 
   boolean _allLeft, _allRight;
 
@@ -45,13 +48,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   transient int _leftChunkNode[], _rightChunkNode[];  // fast lookups to save repeated calls to node.index() which calls binarysearch within it.
 
-  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftFieldSizes[], int rightFieldSizes[], long leftColMins[], long rightColMins[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
+  BinaryMerge(Frame leftFrame, Frame rightFrame, int leftMSB, int rightMSB, int leftShift, int rightShift, int leftFieldSizes[], int rightFieldSizes[], long leftBase[], long rightBase[], boolean allLeft) {   // In X[Y], 'left'=i and 'right'=x
     _leftFrame = leftFrame;
     _rightFrame = rightFrame;
     _leftMSB = leftMSB;
     _rightMSB = rightMSB;
+    _leftShift = leftShift;
+    _rightShift = rightShift;
     _leftFieldSizes = leftFieldSizes; _rightFieldSizes = rightFieldSizes;
-    _leftColMins = leftColMins; _rightColMins = rightColMins;
+    _leftBase = leftBase; _rightBase = rightBase;
     _allLeft = allLeft;
     _allRight = false;  // TODO: pass through
     // TODO: set 2 Frame and 2 int[] to NULL at the end of compute2 to save some traffic back, but should be small and insignificant
@@ -80,13 +85,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       System.gc();
     }*/
 
-
     SingleThreadRadixOrder.OXHeader rightSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/false, _rightMSB));
+    //if (_rightMSB==-1) assert _allLeft && rightSortedOXHeader == null; // i.e. it's known nothing on right can join
     if (rightSortedOXHeader == null) {
       if (_allLeft == false) { tryComplete(); return; }
       rightSortedOXHeader = new SingleThreadRadixOrder.OXHeader(0, 0, 0);  // enables general case code to run below without needing new special case code
     }
-    // both left and right MSB have some data to match
     _leftBatchSize = leftSortedOXHeader._batchSize;
     _rightBatchSize = rightSortedOXHeader._batchSize;
     _perNodeNumRightRowsToFetch = new long[H2O.CLOUD.size()];
@@ -95,18 +99,15 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // get left batches
     _leftKey = new byte[leftSortedOXHeader._nBatch][];
     _leftOrder = new long[leftSortedOXHeader._nBatch][];
-    _retFirst = new long[leftSortedOXHeader._nBatch][];
-    _retLen = new long[leftSortedOXHeader._nBatch][];
     for (int b=0; b<leftSortedOXHeader._nBatch; ++b) {
       Value v = DKV.get(SplitByMSBLocal.getSortedOXbatchKey(/*left=*/true, _leftMSB, b));
       SplitByMSBLocal.OXbatch oxLeft = v.get(); //mem version (obtained from remote) of the Values gets turned into POJO version
       v.freeMem(); //only keep the POJO version of the Value
       _leftKey[b] = oxLeft._x;
       _leftOrder[b] = oxLeft._o;
-      _retFirst[b] = new long[oxLeft._o.length];
-      _retLen[b] = new long[oxLeft._o.length];
     }
     _leftN = leftSortedOXHeader._numRows;
+    assert _leftN >= 1;
 
     // get right batches
     _rightKey = new byte[rightSortedOXHeader._nBatch][];
@@ -124,7 +125,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     _rightKeyNCol = _rightFieldSizes.length;
     _leftKeySize = ArrayUtils.sum(_leftFieldSizes);
     _rightKeySize = ArrayUtils.sum(_rightFieldSizes);
-    System.out.println("_leftKeySize="+_leftKeySize + " _rightKeySize="+_rightKeySize + " _leftN="+_leftN + " _rightN="+_rightN);
+    // System.out.println("_leftKeySize="+_leftKeySize + " _rightKeySize="+_rightKeySize + " _leftN="+_leftN + " _rightN="+_rightN);
     _numJoinCols = Math.min(_leftKeyNCol, _rightKeyNCol);
 
     // Create fast lookups to go from chunk index to node index of that chunk
@@ -150,25 +151,64 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }*/
 
 
-    if ((_leftN != 0 || _allRight) && (_rightN != 0 || _allLeft)) {
+    // Now calculate which subset of leftMSB and which subset of rightMSB we're joining here
+    // by going into the detail of the key values present rather than the extents of the range (the extents themselves may not be present)
+    // We see where the right extents occur in the left keys present; and if there is an overlap we find the full extent of
+    // the overlap on the left side (nothing less).
+    // We only _need_ do this for left outer join otherwise we'd end up with too many no-match left rows.
+    // We'll waste allocating the retFirst and retLen vectors though if only a small overlap is needed, so
+    // for that reason it's useful to restrict size of retFirst and retLen even for inner join too.
 
-      t0 = System.nanoTime();
-      bmerge_r(-1, _leftN, -1, _rightN);
-      _timings[1] += (System.nanoTime() - t0) / 1e9;
+    // Find left and right MSB extents in terms of the key boundaries they represent
+    assert 0<=_leftMSB && _leftMSB<=255 && -1<=_rightMSB && _rightMSB<=255;  // _rightMSB==-1 indicates that no right MSB should be looked at
+    if (_rightMSB==-1) assert _allLeft;
+    long leftMin = (((long)_leftMSB) << _leftShift) + _leftBase[0]-1;  // the first key possible in this bucket
+    long leftMax = (((long)_leftMSB+1) << _leftShift) + _leftBase[0] - 2;    // the last key possible in this bucket
+    long rightMin = (((long)_rightMSB) << _rightShift) + _rightBase[0]-1;    // if _rightMSB==-1 then the values in rightMin and rightMax here are redundant and not used
+    long rightMax = (((long)_rightMSB+1) << _rightShift) + _rightBase[0] - 2;
 
-      if (_allLeft) {
-        assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == _leftN;
-      } else {
-        long tt = 0;
-        for (int i=0; i<_retFirst.length; i++)    // i.e. sum(_retFirst>0) in R
-          for (int j=0; j<_retFirst[i].length; j++)
-            tt += (_retFirst[i][j] > 0) ? 1 : 0;
-        assert tt <= _leftN;  // TODO: change to tt.privateAssertMethod() containing the loop above to avoid that loop when asserts are off
-        assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == tt;
-      }
+    _leftFrom =   (_rightMSB==-1 || leftMin>=rightMin || (_allLeft && _rightMSB==0))   ? -1     : bsearchLeft(rightMin, /*retLow*/true);
+    long leftTo = (_rightMSB==-1 || leftMax<=rightMax || (_allLeft && _rightMSB==255)) ? _leftN : bsearchLeft(rightMax, /*retLow*/false);
+    // The (_allLeft && rightMSB==0) part is to include those keys in that leftMSB just below the right base. They won't be caught by rightMSBs to the left
+    // because there are no more rightMSBs below 0. Only when _allLeft do we need to create NA match for them.  They must be created in the same MSB/MSB
+    // pair along with the keys that may match the very lowest right keys, because stitching assumes unique MSB/MSB pairs.
 
-      if (_numRowsInResult > 0) createChunksInDKV();
+    long retSize = leftTo - _leftFrom - 1;   // since leftTo and leftFrom are 1 outside the extremes
+    assert retSize >= 0;
+    if (retSize==0) { tryComplete(); return; }   // nothing can match, even when allLeft
+    _retBatchSize = 268435456;    // 2^31 / 8 since Java arrays are limited to 2^31 bytes
+
+    int retNBatch = (int)((retSize - 1) / _retBatchSize + 1);
+    int retLastSize = (int)(retSize - (retNBatch - 1) * _retBatchSize);
+
+    _retFirst = new long[retNBatch][];
+    _retLen = new long[retNBatch][];
+    int b;
+    for (b=0; b<retNBatch-1; b++) {
+      _retFirst[b] = MemoryManager.malloc8(_retBatchSize);
+      _retLen[b] = MemoryManager.malloc8(_retBatchSize);
     }
+    _retFirst[b] = MemoryManager.malloc8(retLastSize);
+    _retLen[b] = MemoryManager.malloc8(retLastSize);
+
+    t0 = System.nanoTime();
+    bmerge_r(_leftFrom, leftTo, -1, _rightN);   // always look at the whole right bucket.  Even though in types -1 and 1, we know range is outside so nothing should match
+                                                // if types -1 and 1 do occur, they only happen for leftMSB 0 and 255, and will quickly resolve to no match in the right bucket via bmerge
+    _timings[1] += (System.nanoTime() - t0) / 1e9;
+
+    if (_allLeft) {
+      assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == retSize;
+    } else {
+      long tt = 0;
+      for (int i=0; i<_retFirst.length; i++)    // i.e. sum(_retFirst>0) in R
+        for (int j=0; j<_retFirst[i].length; j++)
+          tt += (_retFirst[i][j] > 0) ? 1 : 0;
+      assert tt <= retSize;  // TODO: change to tt.privateAssertMethod() containing the loop above to avoid that loop when asserts are off,
+                             //       or accumulate the tt inside the merge_r, somehow
+      assert ArrayUtils.sum(_perNodeNumLeftRowsToFetch) == tt;
+    }
+
+    if (_numRowsInResult > 0) createChunksInDKV();
 
     // TODO: recheck transients or null out here before returning
     tryComplete();
@@ -194,10 +234,10 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     while (i<_numJoinCols && xval==yval) {    // TO DO: pass i in to start at a later key column, when known
       int xlen = _leftFieldSizes[i];
       int ylen = _rightFieldSizes[i];
-      xval = xbatch[xoff] & 0xFF; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFF; xlen--; } xoff++;
-      yval = ybatch[yoff] & 0xFF; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFF; ylen--; } yoff++;
-      xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftColMins[i];
-      yval = yval==0 ? Long.MIN_VALUE : yval-1+_rightColMins[i];
+      xval = xbatch[xoff] & 0xFFL; while (xlen>1) { xval <<= 8; xval |= xbatch[++xoff] & 0xFFL; xlen--; } xoff++;
+      yval = ybatch[yoff] & 0xFFL; while (ylen>1) { yval <<= 8; yval |= ybatch[++yoff] & 0xFFL; ylen--; } yoff++;
+      xval = xval==0 ? Long.MIN_VALUE : xval-1+_leftBase[i];
+      yval = yval==0 ? Long.MIN_VALUE : yval-1+_rightBase[i];
       i++;
     }
     long diff = xval-yval;  // could overflow even in long; e.g. joining to a prevailing NA, or very large gaps O(2^62)
@@ -208,6 +248,26 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     }
     // Same return value as strcmp in C. <0 => xi<yi.
     // The magnitude of the difference is used for limiting staleness in a rolling join, capped at Integer.MAX|(MIN+1). roll's type is chosen to be int so staleness can't be requested over int's limit.
+  }
+
+  private long bsearchLeft(long x, boolean returnLow) {
+    // binary search to the left MSB in the 1st column only
+    long low = -1;
+    long upp = _leftN;
+    while (low < upp - 1) {
+      long mid = low + (upp - low) / 2;
+      byte keyBatch[] = _leftKey[(int)(mid / _leftBatchSize)];
+      int off = (int)(mid % _leftBatchSize) * _leftKeySize;
+      int len = _leftFieldSizes[0];
+      long val = keyBatch[off] & 0xFFL; while (len>1) { val <<= 8; val |= keyBatch[++off] & 0xFFL; len--; } off++;
+      val = val==0 ? Long.MIN_VALUE : val-1+_leftBase[0];
+      if (x<val || (x==val && returnLow)) {
+        upp = mid;
+      } else {
+        low = mid;
+      }
+    }
+    return returnLow ? low : upp;
   }
 
   private boolean leftKeyEqual(byte x[][], long xi, long yi) {
@@ -286,6 +346,12 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         _timings[15] += (System.nanoTime() - t00)/1e9;
         _perNodeNumLeftRowsToFetch[_leftChunkNode[chkIdx]]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
         if (len==0) continue;  // _allLeft must be true if len==0
+
+        // TODO:  initial MSB splits should split down to small enough chunk size - but would that require more passes and if so, how long?  Code simplification benefits would be welcome!
+        long outLoc = j - (_leftFrom + 1);   // outOffset is 0 here in the standard scaling up high cardinality test
+        jb = (int)(outLoc/_retBatchSize);  // outBatchSize can be different, and larger since known to be 8 bytes per item, both retFirst and retLen.  (Allowing 8 byte here seems wasteful, actually.)
+        jo = (int)(outLoc%_retBatchSize);  // TODO - take outside the loop.  However when we go deep-msb, this'll go away.
+
         _retFirst[jb][jo] = rLow + 2;  // rLow surrounds row, so +1.  Then another +1 for 1-based row-number. 0 (default) means nomatch and saves extra set to -1 for no match.  Could be significant in large edge cases by not needing to write at all to _retFirst if it has no matches.
         _retLen[jb][jo] = len;
         //StringBuilder sb = new StringBuilder();
@@ -324,12 +390,9 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // Cannot use a List<Long> as that's restricted to 2Bn items and also isn't an Iced datatype
     long t0 = System.nanoTime();
     long perNodeRightRows[][][] = new long[H2O.CLOUD.size()][][];
-    //long perNodeRightRowsFrom[][][] = new long[H2O.CLOUD.size()][][];
     long perNodeRightLoc[] = new long[H2O.CLOUD.size()];
 
     long perNodeLeftRows[][][] = new long[H2O.CLOUD.size()][][];
-    //long perNodeLeftRowsFrom[][][] = new long[H2O.CLOUD.size()][][];
-    //long perNodeLeftRowsRepeat[][][] = new long[H2O.CLOUD.size()][][];
     long perNodeLeftLoc[] = new long[H2O.CLOUD.size()];
 
 
@@ -342,42 +405,29 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     // Allocate memory to split this MSB combn's left and right matching rows into contiguous batches sent to the nodes they reside on
     int batchSize = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
-    int thisNode = H2O.SELF.index();
+    //int thisNode = H2O.SELF.index();
     for (int i = 0; i < H2O.CLOUD.size(); i++) {
       if (_perNodeNumRightRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumRightRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
         int lastSize = (int) (_perNodeNumRightRowsToFetch[i] - (nbatch - 1) * batchSize);
-        System.out.println("Sending " +_perNodeNumRightRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for rightMSB " +_rightMSB);
+        // System.out.println("Sending " +_perNodeNumRightRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for rightMSB " +_rightMSB);
         assert nbatch >= 1;
         assert lastSize > 0;
         perNodeRightRows[i] = new long[nbatch][];
-        //perNodeRightRowsFrom[i] = new long[nbatch][];
         int b;
-        for (b = 0; b < nbatch - 1; b++) {
-          perNodeRightRows[i][b] = new long[batchSize];  // TO DO?: use MemoryManager.malloc()
-          //perNodeRightRowsFrom[i][b] = new long[batchSize];
-        }
-        perNodeRightRows[i][b] = new long[lastSize];
-        //perNodeRightRowsFrom[i][b] = new long[lastSize];
+        for (b = 0; b < nbatch - 1; b++) perNodeRightRows[i][b] = MemoryManager.malloc8(batchSize);
+        perNodeRightRows[i][b] = MemoryManager.malloc8(lastSize);
       }
       if (_perNodeNumLeftRowsToFetch[i] > 0) {
         int nbatch = (int) ((_perNodeNumLeftRowsToFetch[i] - 1) / batchSize + 1);  // TODO: wrap in class to avoid this boiler plate
         int lastSize = (int) (_perNodeNumLeftRowsToFetch[i] - (nbatch - 1) * batchSize);
-        System.out.println("Sending " +_perNodeNumLeftRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for leftMSB " + _leftMSB);
+        // System.out.println("Sending " +_perNodeNumLeftRowsToFetch[i]+ " row requests to node " +i+ " in " +nbatch+ " batches from node " +thisNode+ " for leftMSB " + _leftMSB);
         assert nbatch >= 1;
         assert lastSize > 0;
         perNodeLeftRows[i] = new long[nbatch][];
-        //perNodeLeftRowsFrom[i] = new long[nbatch][];
-        //perNodeLeftRowsRepeat[i] = new long[nbatch][];
         int b;
-        for (b = 0; b < nbatch - 1; b++) {
-          perNodeLeftRows[i][b] = new long[batchSize];  // TO DO?: use MemoryManager.malloc()
-          //perNodeLeftRowsFrom[i][b] = new long[batchSize];
-          //perNodeLeftRowsRepeat[i][b] = new long[batchSize];
-        }
-        perNodeLeftRows[i][b] = new long[lastSize];
-        //perNodeLeftRowsFrom[i][b] = new long[lastSize];
-        //perNodeLeftRowsRepeat[i][b] = new long[lastSize];
+        for (b = 0; b < nbatch - 1; b++) perNodeLeftRows[i][b] = MemoryManager.malloc8(batchSize);
+        perNodeLeftRows[i][b] = MemoryManager.malloc8(lastSize);
       }
     }
     _timings[2] += (System.nanoTime() - t0) / 1e9;
@@ -395,7 +445,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     // _retFirst and _retLen are the same shape
     long prevf = -1, prevl = -1;
     long resultLoc=0;  // sweep upwards through the final result, filling it in
-    long leftLoc=-1;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
+    long leftLoc=_leftFrom;  // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
     for (int jb=0; jb<_retFirst.length; ++jb) {              // jb = j batch
       for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset
         leftLoc++;  // to save jb*_retFirst[0].length + jo;
@@ -415,8 +465,6 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           int ni = _leftChunkNode[chkIdx];
           long pnl = perNodeLeftLoc[ni]++;   // pnl = per node location
           perNodeLeftRows[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
-          //perNodeLeftRowsFrom[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
-          //perNodeLeftRowsRepeat[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = Math.max(1,l);
         }
         if (f==0) { resultLoc++; continue; }
         assert l > 0;
@@ -430,7 +478,6 @@ public class BinaryMerge extends DTask<BinaryMerge> {
           int ni = _rightChunkNode[chkIdx];
           long pnl = perNodeRightLoc[ni]++;   // pnl = per node location.   // TODO Split to an if() and batch and offset separately
           perNodeRightRows[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = row;  // ask that node for global row number row
-          //perNodeRightRowsFrom[ni][(int)(pnl/batchSize)][(int)(pnl%batchSize)] = resultLoc++;  // TODO: could store the batch and offset separately?  If it will be used to assign into a Vec, then that's have different shape/espc so the location is better.
         }
       }
     }
@@ -455,11 +502,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     for (int col=0; col<_numColsInResult; col++) {
       int b;
       for (b = 0; b < nbatch - 1; b++) {
-        frameLikeChunks[col][b] = new double[batchSize];
+        frameLikeChunks[col][b] = MemoryManager.malloc8d(batchSize);
         Arrays.fill(frameLikeChunks[col][b], Double.NaN);   // NA by default to save filling with NA for nomatches when allLeft
         _chunkSizes[b] = batchSize;
       }
-      frameLikeChunks[col][b] = new double[lastSize];
+      frameLikeChunks[col][b] = MemoryManager.malloc8d(lastSize);
       Arrays.fill(frameLikeChunks[col][b], Double.NaN);
       _chunkSizes[b] = lastSize;
     }
@@ -487,7 +534,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       grrrsRite[ni] = new GetRawRemoteRows[bUppRite];
       grrrsLeft[ni] = new GetRawRemoteRows[bUppLeft];
       for (int b = 0; b < bUppRite; b++) {
-        // Arrays.sort(perNodeRightRows[ni][b]);  Simple quick test of fetching in monotic order. Doesn't seem to help so far. TODO try again now with better method
+        // Arrays.sort(perNodeRightRows[ni][b]);  Simple quick test of fetching in monotonic order. Doesn't seem to help so far. TODO try again now with better surrounding method
         grrrsRiteRPC[ni][b] = new RPC<>(node, new GetRawRemoteRows(_rightFrame, perNodeRightRows[ni][b])).call();
       }
       for (int b = 0; b < bUppLeft; b++) {
@@ -513,8 +560,8 @@ public class BinaryMerge extends DTask<BinaryMerge> {
     grrrsLeftRPC = null;
 
     // Now loop through _retFirst and _retLen and populate
-    resultLoc=0;  // sweep upwards through the final result, filling it in
-    leftLoc=-1;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
+    resultLoc=0;   // sweep upwards through the final result, filling it in
+    leftLoc=_leftFrom;   // sweep through left table along the sorted row locations.  // TODO: hop back to original order here for [] syntax.
     prevf = -1; prevl = -1;
     for (int jb=0; jb<_retFirst.length; ++jb) {              // jb = j batch
       for (int jo=0; jo<_retFirst[jb].length; ++jo) {        // jo = j offset
@@ -636,10 +683,11 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       assert(_rows!=null);
       assert(_chk ==null);
       long t0 = System.nanoTime();
-
-      _chk  = new double[_fr.numCols()][_rows.length];
-      int cidx[] = new int[_rows.length];
-      int offset[] = new int[_rows.length];
+      // System.out.print("Allocating _chk with " + _fr.numCols() +" by " + _rows.length + "...");
+      _chk  = MemoryManager.malloc8d(_fr.numCols(),_rows.length);  // TODO: should this be transposed in memory?
+      // System.out.println("done");
+      int cidx[] = MemoryManager.malloc4(_rows.length);
+      int offset[] = MemoryManager.malloc4(_rows.length);
       Vec anyVec = _fr.anyVec();
       for (int row=0; row<_rows.length; row++) {
         cidx[row] = anyVec.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TODO: sort input row numbers to avoid

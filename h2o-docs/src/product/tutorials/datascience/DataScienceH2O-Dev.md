@@ -179,8 +179,7 @@ The GLM suite includes:
 
 - **validation_frame**: (Optional) Select the dataset used to evaluate the accuracy of the model. 
 
-- **nfolds**: Specify the number of folds for cross-validation. 
-	>**Note**: Lambda search is not supported when cross-validation is enabled. 
+- **nfolds**: Specify the number of folds for cross-validation.
 
 - **response_column**: (Required) Select the column to use as the independent variable.
 	
@@ -209,8 +208,7 @@ The GLM suite includes:
 
 - **lambda**:  Specify the regularization strength. 
 
-- **lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
-	>**Note**: Lambda search is not supported when cross-validation is enabled. 
+- **lambda_search**: Check this checkbox to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min.
 
 - **nlambdas**: (Applicable only if **lambda\_search** is enabled) Specify the number of lambdas to use in the search. The default is 100. 
 
@@ -266,6 +264,9 @@ The GLM suite includes:
 
 - **max\_active\_predictors**: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors. 
 
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation. 
+
+- **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. 
 
 ###Interpreting a GLM Model
 
@@ -276,12 +277,46 @@ By default, the following output displays:
 - Coefficients
 - Coefficient magnitudes
 
+### Handling of Categorical Variables
+GLM auto-expands categorical variables into one-hot encoded binary variables (i.e. if variable has levels "cat","dog", "mouse", cat is encoded as 1,0,0, mouse is 0,1,0 and dog is 0,0,1).
+It is generally more efficient to let GLM perform auto-expansion instead of expanding data manually and it also adds the benefit of correct handling of different categorical mappings between different datasets as welll as handling of unseen categorical levels.
+Unlike binary numeric columns, auto-expanded variables are not standardized.
+
+It is common to skip one of the levels during the one-hot encoding to prevent linear dependency between the variable and the intercept.
+H3O follows the convention of skipping the first level.
+This behavior can be controlled by setting use_all_factor_levels_flag (no level is going to be skipped if the flag is true).
+The default depends on regularization parameter - it is set to false if no regularization and to true otherwise.
+The reference level which is skipped is always the first level, you can change which level is the reference level by calling h2o.relevel function prior to building the model.
+
+
+### Lambda Search and Full Regularization Path
+If lambda_search option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper).
+Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step.
+The returned model will have coefficients corresponding to the "optimal" lambda value as decided during training.
+
+It can sometimes be useful to see the coefficients for all lambda values. Or to override default lambda selection.
+Full regularization path can be extracted from both R and python clients (currently not from Flow). It returns coefficients (and standardized coefficients)
+for all computed lambda values and also explained deviances on both train and validation.
+Subsequently, makeGLMModel call can be used to create h2o glm model with selected coefficients.
+
+To extract the regularization path from R or python:
+ - R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
+ - pyton: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an rgument
+
+### Modifying or Creating Custom GLM Model
+In R and python, makeGLMModel call can be used to create h2o model from given coefficients.
+It needs a source glm model trained on the same dataset to extract dataset information.
+To make custom GLM model from R or python:
+ - R: call h2o.makeGLMModel, takes a model and a vector of coefficients and (optional) decision threshold as parameters.
+ - pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method), takes a model, dictionary containing coefficients and (optional) decision threshold as parameters.
+
+
 ###FAQ
 
 - **How does the algorithm handle missing values during training?**
 
   Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
-  The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level.   
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level.   
   Optionally, glm can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
@@ -435,13 +470,13 @@ Snee, Ronald D. “Validation of Regression Models: Methods and Examples.” Tec
 
 ###Introduction
 
-Distributed Random Forest (DRF) is a powerful classification tool. When given a set of data, DRF generates a forest of classification trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. The classification from each H2O tree can be thought of as a vote; the most votes determines the classification.
+Distributed Random Forest (DRF) is a powerful classification and regression tool. When given a set of data, DRF generates a forest of classification (or regression) trees, rather than a single classification (or regression) tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Both classification and regression take the average prediction over all of their trees to make a final prediction, whether predicting for a class or numeric value (note: for a categorical response column, DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat ->0, 'dog' -> 1, 'mouse' ->2).
 
 The current version of DRF is fundamentally the same as in previous versions of H2O (same algorithmic steps, same histogramming techniques), with the exception of the following changes: 
 
 - Improved ability to train on categorical variables (using the `nbins_cats` parameter)
 - Minor changes in histogramming logic for some corner cases
-- By default, DRF now builds half as many trees for binomial problems, similar to GBM: one tree to estimate class 0, probability p0, class 1 probability is 1-p0. 
+- By default, DRF builds half as many trees for binomial problems, similar to GBM: it uses a single tree to estimate class 0 (probability "p0"), and then computes the probability of class 0 as ``1.0 - p0``. For multiclass problems, a tree is used to estimate the probability of each class separately. 
 
 There was some code cleanup and refactoring to support the following features:
 
@@ -449,7 +484,7 @@ There was some code cleanup and refactoring to support the following features:
 - Per-row offsets
 - N-fold cross-validation
 
-DRF no longer has a special-cased histogram for classification (class DBinomHistogram has been superseded by DRealHistogram), since it was not applicable to cases with observation weights or for cross-validation. 
+DRF no longer has a special-cased histogram for classification or regression (class DBinomHistogram has been superseded by DRealHistogram) since it was not applicable to cases with observation weights or for cross-validation. 
 
 
 ###Defining a DRF Model
@@ -518,13 +553,14 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    - **AUTO**: Logloss for classification, deviance for regression
+    - **AUTO**: Logloss for classification; deviance for regression
     - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
-    - **misclassification** 
+    - **misclassification**
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -553,7 +589,15 @@ DRF no longer has a special-cased histogram for classification (class DBinomHist
 	
 - **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
-- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
+- **histogram_type**: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
+
+  - AUTO
+  - UniformAdaptive
+  - Random
+  - QuantilesGlobal
+  - RoundRobin
+
+  >**Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
 
 - **keep\_cross\_validation\_predictions**: To keep the cross-validation predictions, check this checkbox. 
 
@@ -588,11 +632,11 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 - **What happens if the response has missing values?**
  
@@ -643,6 +687,8 @@ For regression, the floor - in this example, (100/3)=33 columns - is used for ea
 <iframe src="//www.slideshare.net/slideshow/embed_code/key/tASzUyJ19dtJsQ" width="425" height="355" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/0xdata/rf-brighttalk" title="Building Random Forest at Scale" target="_blank">Building Random Forest at Scale</a> </strong> from <strong><a href="//www.slideshare.net/0xdata" target="_blank">Sri Ambati</a></strong> </div>
 
 ###References
+
+<a href="http://link.springer.com/article/10.1007%2Fs10994-006-6226-1" target="_blank">P. Geurts, D. Ernst., and L. Wehenkel, “Extremely randomized trees”, Machine Learning, 63(1), 3-42, 2006.</a>
 
 ---
 
@@ -1122,9 +1168,15 @@ There was some code cleanup and refactoring to support the following features:
 	
 	>etc. 
 
-- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. 
+- **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
-- **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding. 
+- **histogram_type**: By default (AUTO) GBM bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
+
+  - AUTO
+  - UniformAdaptive
+  - Random
+  - QuantilesGlobal
+  - RoundRobin
 
 - **score\_each\_iteration**: (Optional) Check this checkbox to score during each iteration of the model training. 
 
@@ -1158,13 +1210,14 @@ There was some code cleanup and refactoring to support the following features:
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification; deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
-    - **misclassification** 
+    - **misclassification**
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -1207,15 +1260,19 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points.  NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 - **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 - **What happens if the response has missing values?**
 
   No errors will occur, but nothing will be learned from rows containing missing the response.
+
+-  **What happens when you try to predict on a categorical level not seen during training?**
+
+  GBM converts a new categorical level to an "undefined" value in the test set, and then splits either left or right during scoring.  
 
 - **Does it matter if the data is sorted?** 
 
@@ -1247,19 +1304,25 @@ Trees cluster observations into leaf nodes, and this information can be useful f
 
 - **When fitting a random number between 0 and 1 as a single feature, the training ROC curve is consistent with `random` for low tree numbers and overfits as the number of trees is increased, as expected. However, when a random number is included as part of a set of hundreds of features, as the number of trees increases, the random number increases in feature importance. Why is this?**
  
-This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
+  This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature. 
 
 - **How is column sampling implemented for GBM?**
 
-For an example model using: 
+  For an example model using: 
 
-- 100 columns
-- `col_sample_rate_per_tree=0.754`
-- `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
+  - 100 columns
+  - `col_sample_rate_per_tree=0.754`
+  - `col_sample_rate=0.8` (refers to available columns after per-tree sampling)
 
-For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case,(0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
+  For each tree, the floor is used to determine the number - in this example, (0.754*100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case, (0.754*0.8*100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
 
+- **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
 
+  The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
+
+- **Are there any tutorials for GBM?**
+
+ You can find tutorials for using GBM with R, Python, and Flow at the following location: <a href="https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm" target="_blank">https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm</a>
 
 ###GBM Algorithm 
 
@@ -1443,13 +1506,14 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **stopping\_metric**: Select the metric to use for early stopping. The available options are: 
 	
-    -  **AUTO**: Logloss for classification, deviance for regression
-    -  **deviance**
+    - **AUTO**: Logloss for classification; deviance for regression
+    - **deviance**
     - **logloss**
     - **MSE**
     - **AUC**
     - **r2**
     - **misclassification** 
+    - **mean\_per\_class\_error**
 
 - **stopping\_tolerance**: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. 
 
@@ -1490,7 +1554,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 - **shuffle\_training\_data**: Check this checkbox to shuffle the training data. This option is recommended if the training data is replicated and the value of **train\_samples\_per\_iteration** is close to the number of nodes times the number of rows. This option is not selected by default. 
 
-- **missing\_values\_handling**: Select how to handle missing values (skip or mean imputation).   
+- **missing\_values\_handling**: Specify how to handle missing values (Skip or MeanImputation). This defaults to MeanImputation.   
 
 - **quiet_mode**: Check this checkbox to display less output in the standard output. This option is not selected by default. 
 
@@ -1531,9 +1595,6 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 
 
- 
-
-
 ###Interpreting a Deep Learning Model
 
 To view the results, click the View button. The output for the Deep Learning model includes the following information for both the training and testing sets: 
@@ -1554,7 +1615,9 @@ To view the results, click the View button. The output for the Deep Learning mod
 
 - **How does the algorithm handle missing values during training?**
 
-Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default. 
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped.  
+  The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level.   
+  Optionally, Deep Learning can skip all rows with any missing values. 
 
 - **How does the algorithm handle missing values during testing?**
 
@@ -1635,35 +1698,39 @@ Deep Learning performs mean-imputation for missing numericals and creates a sepa
 
 - **Are there any best practices for building a model using checkpointing?**
 
-In general, to get the best possible model, we recommend building a model with `train\_samples\_per\_iteration = -2` (which is the default value for auto-tuning) and saving it. 
+ In general, to get the best possible model, we recommend building a model with `train\_samples\_per\_iteration = -2` (which is the default value for auto-tuning) and saving it. 
 
+ To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing `train\_samples\_per\_iteration`, `target\_ratio\_comm\_to\_comp`, or other parameters. 
 
-To improve the initial model, start from the previous model and add iterations by building another model, setting the checkpoint to the previous model, and changing `train\_samples\_per\_iteration`, `target\_ratio\_comm\_to\_comp`, or other parameters. 
+ If you don't know your model ID because it was generated by R, look it up using `h2o.ls()`. By default, Deep Learning model names start with `deeplearning_` To view the model, use `m <- h2o.getModel("my\_model\_id")` or `summary(m)`. 
 
-If you don't know your model ID because it was generated by R, look it up using `h2o.ls()`. By default, Deep Learning model names start with `deeplearning_` To view the model, use `m <- h2o.getModel("my\_model\_id")` or `summary(m)`. 
+ There are a few ways to manage checkpoint restarts: 
 
-There are a few ways to manage checkpoint restarts: 
+ *Option 1*: (Multi-node only) Leave `train\_samples\_per\_iteration = -2`, increase `target\_comm\_to\_comp` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance. 
 
-*Option 1*: (Multi-node only) Leave `train\_samples\_per\_iteration = -2`, increase `target\_comm\_to\_comp` from 0.05 to 0.25 or 0.5, which provides more communication. This should result in a better model when using multiple nodes. **Note:** This does not affect single-node performance. 
+ *Option 2*: (Single or multi-node) Set `train\_samples\_per\_iteration` to \(N\), where \(N\) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on \(N\) randomly-chosen rows for every iteration. The number defined as \(N\) depends on the dataset size and the model complexity. 
 
-*Option 2*: (Single or multi-node) Set `train\_samples\_per\_iteration` to \(N\), where \(N\) is the number of training samples used for training by the entire cluster for one iteration. Each of the nodes then trains on \(N\) randomly-chosen rows for every iteration. The number defined as \(N\) depends on the dataset size and the model complexity. 
-
-*Option 3*: (Single or multi-node) Change regularization parameters such as `l1, l2, max\_w2, input\_droput\_ratio` or `hidden\_dropout\_ratios`. We recommend build the first mode using `RectifierWithDropout`, `input\_dropout\_ratio = 0` (if there is suspected noise in the input), and `hidden\_dropout\_ratios=c(0,0,0)` (for the ability to enable dropout regularization later). 
+ *Option 3*: (Single or multi-node) Change regularization parameters such as `l1, l2, max\_w2, input\_droput\_ratio` or `hidden\_dropout\_ratios`. We recommend build the first mode using `RectifierWithDropout`, `input\_dropout\_ratio = 0` (if there is suspected noise in the input), and `hidden\_dropout\_ratios=c(0,0,0)` (for the ability to enable dropout regularization later). 
 
 - **How does class balancing work?**
 
-The `max\_after\_balance\_size` parameter defines the maximum size of the over-sampled dataset. For example, if `max\_after\_balance\_size = 3`, the over-sampled dataset will not be greater than three times the size of the original dataset. 
+ The `max\_after\_balance\_size` parameter defines the maximum size of the over-sampled dataset. For example, if `max\_after\_balance\_size = 3`, the over-sampled dataset will not be greater than three times the size of the original dataset. 
 
-For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using `balance\_classes = T`, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If `max\_after\_balance\_size = 3`, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total). 
+ For example, if you have five classes with priors of 90%, 2.5%, 2.5%, and 2.5% (out of a total of one million rows) and you oversample to obtain a class balance using `balance\_classes = T`, the result is all four minor classes are oversampled by forty times and the total dataset will be 4.5 times as large as the original dataset (900,000 rows of each class). If `max\_after\_balance\_size = 3`, all five balance classes are reduced by 3/5 resulting in 600,000 rows each (three million total). 
 
-To specify the per-class over- or under-sampling factors, use `class\_sampling\_factors`. In the previous example, the default behavior with `balance\_classes` is equivalent to `c(1,40,40,40,40)`, while when `max\_after\_balance\_size = 3`, the results would be `c(3/5,40*3/5,40*3/5,40*3/5)`. 
+ To specify the per-class over- or under-sampling factors, use `class\_sampling\_factors`. In the previous example, the default behavior with `balance\_classes` is equivalent to `c(1,40,40,40,40)`, while when `max\_after\_balance\_size = 3`, the results would be `c(3/5,40*3/5,40*3/5,40*3/5)`. 
 
-In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
+ In all cases, the probabilities are adjusted to the pre-sampled space, so the minority classes will have lower average final probabilities than the majority class, even if they were sampled to reach class balance. 
 
 - **How is variable importance calculated for Deep Learning?**
 
-For Deep Learning, variable importance is calculated using the Gedeon method. 
+ For Deep Learning, variable importance is calculated using the Gedeon method. 
 
+- **Why do my results include a negative R^2 value?**
+
+ H2O computes the R^2 as `1 - MSE/variance`, where `MSE` is the mean squared error of the prediction, and `variance` is the (weighted) variance: `sum(w*Y*Y)/sum(w) - sum(w*Y)^2/sum(w)^2`, where `w` is the row weight (1 by default), and `Y` is the centered response.
+
+ If the MSE is greater than the variance of the response, you will see a negative R^2 value. This indicates that the model got a really bad fit, and the results are not to be trusted. 
 
 ---
 

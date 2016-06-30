@@ -151,12 +151,12 @@ class H2OGridSearch(object):
   def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     #same api as estimator_base train
     algo_params = locals()
-
     parms = self._parms.copy()
     parms.update({k:v for k, v in algo_params.items() if k not in ["self","params", "algo_params", "parms"] })
     parms["search_criteria"] = self.search_criteria
     parms["hyper_parameters"] = self.hyper_params  # unique to grid search
     parms.update({k:v for k,v in list(self.model._parms.items()) if v is not None})  # unique to grid search
+    parms.update(params)
     if '__class__' in parms:  # FIXME: hackt for PY3
       del parms['__class__']
     y = algo_params["y"]
@@ -209,9 +209,22 @@ class H2OGridSearch(object):
     grid.poll()
     if '_rest_version' in list(kwargs.keys()):
       grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
-      for error_message in grid_json["failure_details"]:
-        print(error_message)
-    else:                              grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
+
+      error_index = 0
+      if len(grid_json["failure_details"]) > 0:
+        print("Errors/Warnings building gridsearch model\n")
+
+        for error_message in grid_json["failure_details"]:
+          if isinstance(grid_json["failed_params"][error_index], dict):
+            for h_name in grid_json['hyper_names']:
+              print("Hyper-parameter: {0}, {1}".format(h_name, grid_json['failed_params'][error_index][h_name]))
+
+          if len(grid_json["failure_stack_traces"]) > error_index:
+            print("failure_details: {0}\nfailure_stack_traces: "
+                  "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
+          error_index += 1
+    else:
+      grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
 
@@ -222,7 +235,7 @@ class H2OGridSearch(object):
                                                 _rest_version=kwargs['_rest_version'])['models'][0]
       self._resolve_grid(grid.dest_key, grid_json, first_model_json)
     else:
-      raise ValueError("Gridsearch returns no model due to bad parameter values.")
+      raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
 
   def _resolve_grid(self, grid_id, grid_json, first_model_json):
     model_class = H2OGridSearch._metrics_class(first_model_json)
@@ -363,15 +376,16 @@ class H2OGridSearch(object):
     """
     return {model.model_id:model.catoffsets() for model in self.models}
 
-  def model_performance(self, test_data=None, train=False, valid=False):
+  def model_performance(self, test_data=None, train=False, valid=False, xval=False):
     """Generate model metrics for this model on test_data.
 
-    :param test_data: Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
-    :param train: Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
-    :param valid: Report the validation metrics for the model. If train and valid are True, then it defaults to True.
+    :param test_data: Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are ignored if test_data is not None.
+    :param train: Report the training metrics for the model.
+    :param valid: Report the validation metrics for the model.
+    :param xval: Report the validation metrics for the model.
     :return: An object of class H2OModelMetrics.
     """
-    return {model.model_id:model.model_performance(test_data, train, valid) for model in self.models}
+    return {model.model_id:model.model_performance(test_data, train, valid, xval) for model in self.models}
 
   def scoring_history(self):
     """Retrieve Model Score History

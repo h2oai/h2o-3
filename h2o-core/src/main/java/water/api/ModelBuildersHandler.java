@@ -4,6 +4,8 @@ import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Iced;
+import water.api.schemas3.ModelBuildersV3;
+import water.api.schemas3.SchemaV3;
 
 class ModelBuildersHandler extends Handler {
 
@@ -13,7 +15,7 @@ class ModelBuildersHandler extends Handler {
     m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
     for( String algo : ModelBuilder.algos() ) {
       ModelBuilder builder = ModelBuilder.make(algo, null, null);
-      m.model_builders.put(algo.toLowerCase(), (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
+      m.model_builders.put(algo.toLowerCase(), (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder));
     }
     return m;
   }
@@ -23,11 +25,11 @@ class ModelBuildersHandler extends Handler {
   public ModelBuildersV3 fetch(int version, ModelBuildersV3 m) {
     m.model_builders = new ModelBuilderSchema.IcedHashMapStringModelBuilderSchema();
     ModelBuilder builder = ModelBuilder.make(m.algo, null, null);
-    m.model_builders.put(m.algo.toLowerCase(), (ModelBuilderSchema)Schema.schema(version, builder).fillFromImpl(builder));
+    m.model_builders.put(m.algo.toLowerCase(), (ModelBuilderSchema)SchemaServer.schema(version, builder).fillFromImpl(builder));
     return m;
   }
 
-  public static class ModelIdV3 extends Schema<Iced, ModelIdV3>{
+  public static class ModelIdV3 extends SchemaV3<Iced, ModelIdV3> {
     @API(help="Model ID", direction = API.Direction.OUTPUT)
     String model_id;
   }

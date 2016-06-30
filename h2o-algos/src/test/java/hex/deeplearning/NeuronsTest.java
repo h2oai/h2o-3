@@ -51,7 +51,6 @@ public class NeuronsTest extends water.TestUtil {
     Storage.DenseVector dx = new Storage.DenseVector(x);
     Storage.DenseVector dy = new Storage.DenseVector(y);
     Storage.DenseVector dres = new Storage.DenseVector(res);
-    Storage.SparseVector sx = new Storage.SparseVector(x);
 
     /**
      * warmup
@@ -109,52 +108,4 @@ public class NeuronsTest extends water.TestUtil {
     System.out.println("optimized dense row * dense time: " + PrettyPrint.msecs(System.currentTimeMillis()-start, true));
   }
 
-  @Test
-  public void sparseTester() {
-    Storage.DenseVector dv = new Storage.DenseVector(20);
-    dv.set(3,0.21f);
-    dv.set(7,0.13f);
-    dv.set(18,0.14f);
-    Storage.SparseVector sv = new Storage.SparseVector(dv);
-    assert(sv.size() == 20);
-    assert(sv.nnz() == 3);
-
-    // dense treatment
-    for (int i=0;i<sv.size();++i)
-      Log.info("sparse [" + i + "] = " + sv.get(i));
-
-    // sparse treatment
-    for (Storage.SparseVector.Iterator it=sv.begin(); !it.equals(sv.end()); it.next()) {
-//      Log.info(it.toString());
-      Log.info(it.index() + " -> " + it.value());
-    }
-
-    Storage.DenseColMatrix dcm = new Storage.DenseColMatrix(3,5);
-    dcm.set(2,1,3.2f);
-    dcm.set(1,3,-1.2f);
-    assert(dcm.get(2,1)==3.2f);
-    assert(dcm.get(1,3)==-1.2f);
-    assert(dcm.get(0,0)==0f);
-
-    Storage.DenseRowMatrix drm = new Storage.DenseRowMatrix(3,5);
-    drm.set(2,1,3.2f);
-    drm.set(1,3,-1.2f);
-    assert(drm.get(2,1)==3.2f);
-    assert(drm.get(1,3)==-1.2f);
-    assert(drm.get(0,0)==0f);
-
-    Storage.SparseColMatrix scm = new Storage.SparseColMatrix(3,5);
-    scm.set(2,1,3.2f);
-    scm.set(1,3,-1.2f);
-    assert(scm.get(2,1)==3.2f);
-    assert(scm.get(1,3)==-1.2f);
-    assert(scm.get(0,0)==0f);
-
-    Storage.SparseRowMatrix srm = new Storage.SparseRowMatrix(3,5);
-    srm.set(2,1,3.2f);
-    srm.set(1,3,-1.2f);
-    assert(srm.get(2,1)==3.2f);
-    assert(srm.get(1,3)==-1.2f);
-    assert(srm.get(0,0)==0f);
-  }
 }

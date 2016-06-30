@@ -1,11 +1,12 @@
 package water.api;
 
 import water.Iced;
+import water.api.schemas3.SchemaV3;
 
 /**
  * Schema to represent schema.
  */
-public class StreamingSchema extends Schema<Iced, StreamingSchema> {
+public class StreamingSchema extends SchemaV3<Iced, StreamingSchema> {
 
   private final transient StreamWriter streamWriter;
   private final transient String filename;

@@ -1,6 +1,7 @@
 package water.api;
 
 import water.*;
+import water.api.schemas3.LogsV3;
 import water.util.LinuxProcFileReader;
 import water.util.Log;
 

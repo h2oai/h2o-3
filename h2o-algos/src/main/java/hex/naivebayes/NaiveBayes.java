@@ -76,7 +76,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       model._output._rescnt = tsk._rescnt;
       model._output._ncats = dinfo._cats;
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Initializing arrays for model statistics");
       // String[][] domains = dinfo._adaptedFrame.domains();
       String[][] domains = model._output._domains;
@@ -87,7 +87,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         pcond[i] = new double[tsk._nrescat][ncnt];
       }
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Computing probabilities for categorical cols");
       // A-priori probability of response y
       for(int i = 0; i < apriori.length; i++)
@@ -103,7 +103,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         }
       }
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Computing mean and standard deviation for numeric cols");
       // Mean and standard deviation of numeric predictor x_j for every level of response y
       for(int col = 0; col < dinfo._nums; col++) {
@@ -150,7 +150,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
               new String[1][], new double[][] {apriori});
       model._output._model_summary = createModelSummaryTable(model._output);
 
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Scoring and computing metrics on training data");
       if (_parms._compute_metrics) {
         model.score(_parms.train()).delete(); // This scores on the training data and appends a ModelMetrics
@@ -158,7 +158,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       }
 
       // At the end: validation scoring (no need to gather scoring history)
-      if(stop_requested()) return false;
+      if(stop_requested() && !timeout()) return false;
       _job.update(1, "Scoring and computing metrics on validation data");
       if (_valid != null) {
         model.score(_parms.valid()).delete(); //this appends a ModelMetrics on the validation set
@@ -169,34 +169,27 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     }
 
     @Override
-    public void compute2() {
+    public void computeImpl() {
       NaiveBayesModel model = null;
       DataInfo dinfo = null;
 
       try {
-        Scope.enter();
         init(true);   // Initialize parameters
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
         dinfo = new DataInfo(_train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, _weights!=null, false, _fold!=null);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
         model.delete_and_lock(_job);
-        _train.read_lock(_job._key);
 
         _job.update(1, "Begin distributed Naive Bayes calculation");
         NBTask tsk = new NBTask(_job._key, dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
         if (computeStatsFillModel(model, dinfo, tsk))
           model.update(_job);
       } finally {
-        _train.unlock(_job);
         if (model != null) model.unlock(_job);
         if (dinfo != null) dinfo.remove();
-        _parms.read_unlock_frames(_job);
-        Scope.exit();
       }
-      tryComplete();
     }
   }
 

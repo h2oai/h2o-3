@@ -1,7 +1,7 @@
 package water.parser;
 
 import water.*;
-import water.api.ParseSetupV3;
+import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -146,7 +146,13 @@ public class ParseSetup extends Iced {
       case "unknown": types[i] = Vec.T_BAD;  break;
       case "uuid":    types[i] = Vec.T_UUID; break;
       case "string":  types[i] = Vec.T_STR;  break;
+      case "float":
+      case "real":
+      case "double":
+      case "int":
       case "numeric": types[i] = Vec.T_NUM;  break;
+      case "categorical":
+      case "factor":
       case "enum":    types[i] = Vec.T_CAT;  break;
       case "time":    types[i] = Vec.T_TIME; break;
       default:        types[i] = Vec.T_BAD;
@@ -207,7 +213,7 @@ public class ParseSetup extends Iced {
         Double.parseDouble(s);
         return false;       // Number in 1st row guesses: No Column Header
       } catch (NumberFormatException e) { /*Pass - determining if number is possible*/ }
-      str.setTo(s);
+      str.set(s);
       if(ParseTime.isTime(str)) return false;
       if(ParseUUID.isUUID(str)) return false;
     }

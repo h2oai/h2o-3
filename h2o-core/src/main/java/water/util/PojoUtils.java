@@ -1,9 +1,10 @@
 package water.util;
 
 import water.*;
-import water.api.FrameV3;
-import water.api.KeyV3;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.KeyV3;
 import water.api.Schema;
+import water.api.SchemaServer;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 
@@ -13,7 +14,7 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
- * POJO utilities which cover cases similar to but not the same as Aapche Commons PojoUtils.
+ * POJO utilities which cover cases similar to but not the same as Apache Commons PojoUtils.
  */
 public class PojoUtils {
   public enum FieldNaming {
@@ -180,7 +181,7 @@ public class PojoUtils {
                 } else {
                   Schema s = null;
                   try {
-                    s = Schema.schema(version, impl);
+                    s = SchemaServer.schema(version, impl);
                   } catch (H2ONotFoundArgumentException e) {
                     s = ((Schema) dest_field.getType().getComponentType().newInstance());
                   }
@@ -278,7 +279,8 @@ public class PojoUtils {
             //
             // Assigning an impl field into a schema field, e.g. a DeepLearningParameters into a DeepLearningParametersV2.
             //
-            dest_field.set(dest, Schema.schema(/* ((Schema)dest).getSchemaVersion() TODO: remove HACK!! */ 3, (Class<? extends Iced>)orig_field.get(origin).getClass()).fillFromImpl((Iced) orig_field.get(origin)));
+            dest_field.set(dest, SchemaServer.schema(/* ((Schema)dest).getSchemaVersion() TODO: remove HACK!! */ 3,
+                (Class<? extends Iced>)orig_field.get(origin).getClass()).fillFromImpl((Iced) orig_field.get(origin)));
           } else if (Schema.class.isAssignableFrom(orig_field.getType()) && Schema.getImplClass((Class<? extends Schema>)orig_field.getType()).isAssignableFrom(dest_field.getType())) {
             //
             // Assigning a schema field into an impl field, e.g. a DeepLearningParametersV2 into a DeepLearningParameters.
@@ -297,7 +299,7 @@ public class PojoUtils {
             } else {
               if (((Schema)dest_field.get(dest)).getImplClass().isAssignableFrom(v.get().getClass())) {
                 Schema s = ((Schema)dest_field.get(dest));
-                dest_field.set(dest, Schema.schema(s.getSchemaVersion(), s.getImplClass()).fillFromImpl(v.get()));
+                dest_field.set(dest, SchemaServer.schema(s.getSchemaVersion(), s.getImplClass()).fillFromImpl(v.get()));
               } else {
                 Log.err("Can't fill Schema of type: " + dest_field.getType() + " with value of type: " + v.getClass() + " fetched from Key: " + origin_key);
                 dest_field.set(dest, null);
@@ -489,4 +491,13 @@ public class PojoUtils {
     if (a.getClass().getComponentType() == Double.class)  return Arrays.equals((Double[])a, (Double[])b);
     return Arrays.deepEquals((Object[])a, (Object[])b);
   }
+
+  /**
+   * Same as Objects.equals(a, b) -- copied here because Objects class does not exist in Java6 (if we ever drop
+   * support for Java6, this method can be removed).
+   */
+  public static boolean equals(Object a, Object b) {
+    return (a == b) || (a != null && b != null && b.equals(a));
+  }
+
 }

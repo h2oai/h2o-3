@@ -6,7 +6,6 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 
 /**  Score and Build Histogram
  *
@@ -141,7 +140,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       boolean oob = isOOBRow(nid);
       if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
       DTree.DecidedNode dn = _tree.decided(nid);
-      if( dn._split._col == -1 ) { // Might have a leftover non-split
+      if( dn._split == null ) { // Might have a leftover non-split
         if( DTree.isRootNode(dn) ) { nnids[row] = nid-_leaf; continue; }
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
@@ -151,7 +150,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       }
 
       assert !isDecidedRow(nid);
-      nid = dn.ns(chks,row); // Move down the tree 1 level
+      nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
         if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
         nids.set(row, nid);
@@ -245,47 +244,13 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 
   private static void overAllRows(double [] cs, double [] ys, double [] ws, int[] rows, final DHistogram rh, int lo, int hi, double[] bins, double[] sums, double[] ssqs) {
     if( rh==null ) return; // Ignore untracked columns in this split
-    int rhbinslen = rh._bins.length;
-    if( rhbinslen > bins.length) { // Grow bins if needed
+    int rhbinslen = rh._w.length;
+    if( rhbinslen > bins.length) { // Grow bins if needed, otherwise re-use exiting arrays for speed
       bins = new double[rhbinslen];
       sums = new double[rhbinslen];
       ssqs = new double[rhbinslen];
     }
-    fillLocalHistoForNode(bins, sums, ssqs, ws, cs, ys, rh, rows, hi, lo);
-    bumpSharedHisto(bins,sums,ssqs,rh);
-  }
-
-  static void bumpSharedHisto(double[]bins,double[]sums,double[]ssqs,DHistogram rh) {
-    final int len = rh._bins.length;
-    for( int b=0; b<len; b++ ) { // Bump counts in bins
-      if( bins[b] != 0 ) { AtomicUtils.DoubleArray.add(rh._bins,b,bins[b]); bins[b]=0; }
-    }
-    for( int b=0; b<len; b++ ) { // Bump counts in bins
-      if( sums[b] != 0 || ssqs[b] != 0 ) { rh.incr1(b,sums[b],ssqs[b]); sums[b]=ssqs[b]=0; }
-    }
-  }
-
-  private static void fillLocalHistoForNode(double[] bins, double[] sums, double[] ssqs, double[] ws, double[] cs, double[] ys, DHistogram rh, int [] rows, int hi, int lo) {
-    double minmax[] = new double[]{rh._min2,rh._maxIn};
-    // Gather all the data for this set of rows, for 1 column and 1 split/NID
-    // Gather min/max, sums and sum-squares.
-    for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double w = ws[k];
-      if (w == 0) continue;
-      double col_data = cs[k];
-      if( col_data < minmax[0] ) minmax[0] = col_data;
-      if( col_data > minmax[1] ) minmax[1] = col_data;
-      int b = rh.bin(col_data); // Compute bin# via linear interpolation
-      double resp = ys[k];
-      double wy = w*resp;
-      bins[b] += w;                // Bump count in bin
-      sums[b] += wy;
-      ssqs[b] += wy*resp;
-    }
-    // Add all the data into the Histogram (atomically add)
-    rh.setMin(minmax[0]);       // Track actual lower/upper bound per-bin
-    rh.setMax(minmax[1]);
+    rh.updateSharedHistosAndReset(bins, sums, ssqs, ws, cs, ys, rows, hi, lo);
   }
 
 }

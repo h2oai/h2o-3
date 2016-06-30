@@ -139,7 +139,7 @@ public class GLMBasicTestBinomial extends TestUtil {
         try {
           params._solver = s;
           System.out.println("SOLVER = " + s);
-          model = new GLM(params).trainModel().get();
+          model = new GLM(params,Key.make("testOffset_" + s)).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
           boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
@@ -181,10 +181,10 @@ public class GLMBasicTestBinomial extends TestUtil {
           Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
             assertEquals(pred_test[i],preds.at(i),CD?1e-3:1e-6);
+          GLMTest.testScoring(model,fTrain);
         } finally {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
-
           if (scoreTest != null)  scoreTest.delete();
         }
       }
@@ -215,11 +215,15 @@ public class GLMBasicTestBinomial extends TestUtil {
     parms._intercept = false;
     parms._standardize = false;
     GLMModel m = null;
-    try {
-      m = new GLM(parms).trainModel().get();
-      System.out.println(m.coefficients());
-    } finally {
-      if(m != null) m.delete();
+    for(Solver s:new Solver[]{Solver.IRLSM,Solver.COORDINATE_DESCENT}) {
+      parms._solver = s;
+      try {
+        m = new GLM(parms).trainModel().get();
+        GLMTest.testScoring(m, _abcd);
+        System.out.println(m.coefficients());
+      } finally {
+        if (m != null) m.delete();
+      }
     }
   }
 
@@ -330,7 +334,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._beta_epsilon = 1e-6;
     params._missing_values_handling = MissingValuesHandling.Skip;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS /* , Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS,Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -338,14 +342,14 @@ public class GLMBasicTestBinomial extends TestUtil {
           model = new GLM(params).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
+          boolean CD = s == Solver.COORDINATE_DESCENT;
           for (int i = 0; i < cfs1.length; ++i)
-            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+            assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-2:1e-4);
           assertEquals(355.7, GLMTest.nullDeviance(model), 1e-1);
           assertEquals(313.0, GLMTest.residualDeviance(model), 1e-1);
           assertEquals(290,   GLMTest.nullDOF(model), 0);
           assertEquals(286,   GLMTest.resDOF(model), 0);
           assertEquals(321,   GLMTest.aic(model), 1e-1);
-          boolean CD = (s == Solver.COORDINATE_DESCENT || s == Solver.COORDINATE_DESCENT_NAIVE);
           assertEquals(88.72363, GLMTest.residualDevianceTest(model),CD?1e-2:1e-4);
           // test scoring
           try {
@@ -371,10 +375,11 @@ public class GLMBasicTestBinomial extends TestUtil {
           assertEquals(model._output._validation_metrics.auc_obj()._auc, adata._auc, 1e-8);
           assertEquals(model._output._validation_metrics._MSE, mmTest._MSE, 1e-8);
           assertEquals(((ModelMetricsBinomialGLM) model._output._validation_metrics)._resDev, mmTest._resDev, 1e-8);
+          GLMTest.testScoring(model,fTest);
           // test the actual predictions
           Vec.Reader preds = scoreTest.vec("p1").new Reader();
           for(int i = 0; i < pred_test.length; ++i)
-            assertEquals(pred_test[i],preds.at(i), CD?1e-4:1e-6);// s == Solver.COORDINATE_DESCENT_NAIVE
+            assertEquals(pred_test[i],preds.at(i), CD?1e-3:1e-6);// s == Solver.COORDINATE_DESCENT_NAIVE
         } finally {
           if (model != null) model.delete();
           if (scoreTrain != null) scoreTrain.delete();
@@ -421,7 +426,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._gradient_epsilon = 1e-6;
     params._missing_values_handling = MissingValuesHandling.Skip;
     params._max_iterations = 100; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS /*, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -558,7 +563,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._max_iterations = 1000; // not expected to reach max iterations here
     params._missing_values_handling = MissingValuesHandling.Skip;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS /*, Solver.COORDINATE_DESCENT_NAIVE, Solver.COORDINATE_DESCENT*/}) {
+      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -583,7 +588,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           for (int i = 0; i < cfs1.length; ++i) {
             System.out.println("cfs = " + cfs1[i] + ": " + coefsUpsampled.get(cfs1[i]) + " =?= " + coefs.get(cfs1[i]));
             assertEquals(coefsUpsampled.get(cfs1[i]), coefs.get(cfs1[i]), s == Solver.IRLSM?1e-5:1e-4);
-            assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-3:1e-4);//dec
+            assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-2:1e-4);//dec
           }
           assertEquals(GLMTest.auc(modelUpsampled),GLMTest.auc(model),1e-4);
           assertEquals(GLMTest.logloss(modelUpsampled),GLMTest.logloss(model),1e-4);
@@ -675,7 +680,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 1e-10;
     params._gradient_epsilon = 1e-6;
     params._max_iterations = 10000; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
+    for(Solver s:new Solver[]{Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -728,7 +733,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._objective_epsilon = 1e-6;
     params._gradient_epsilon = 1e-5;
     params._max_iterations = 150; // not expected to reach max iterations here
-    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS}) {
+    for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -895,7 +900,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     params._intercept = false;
     params._beta_epsilon = 1e-6;
     try {
-      for (Solver s : new Solver[]{Solver.AUTO, Solver.IRLSM, Solver.L_BFGS}) {
+      for (Solver s : new Solver[]{ Solver.IRLSM, Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
         Frame scoreTrain = null, scoreTest = null;
         try {
           params._solver = s;
@@ -910,8 +915,9 @@ public class GLMBasicTestBinomial extends TestUtil {
           model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();
           System.out.println("coefs = " + coefs);
+          boolean CD = s == Solver.COORDINATE_DESCENT;
           for (int i = 0; i < cfs1.length; ++i)
-            assertEquals(vals[i], coefs.get(cfs1[i]), 1e-4);
+            assertEquals(vals[i], coefs.get(cfs1[i]), CD?1e-2:1e-4);
           assertEquals(1494, GLMTest.nullDeviance(model), 1);
           assertEquals(1235, GLMTest.residualDeviance(model), 1);
           assertEquals( 252, GLMTest.nullDOF(model), 0);

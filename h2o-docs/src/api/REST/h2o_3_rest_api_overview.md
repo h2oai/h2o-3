@@ -6,7 +6,7 @@ When we look to using H2O in a production environment there are two major aspect
 ### Model Training
 Model training is the set of steps you use to load your training and optional validation data into H2O, prepare it, and train one or more models.  You will generally do this in Flow, Python, R, Scala or Java.
 
-If you've done this work in Flow, *or* if you want to drive the workflow from another application (e.g., a data collection pipline), you can use the REST API to automate these steps.
+If you've done this work in Flow, *or* if you want to drive the workflow from another application (e.g., a data collection pipeline), you can use the REST API to automate these steps.
 
 ### Predictions
 There are two ways to use the models you've trained in H2O to generate new predictions:
@@ -29,7 +29,7 @@ You can call the REST API:
  - using *curl*
  - using the language of your choice
 
-Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file and are simple to generate for other langauges if desired.
+Generated payload POJOs for Java are available as part of the release in a separate bindings Jar file and are simple to generate for other languages if desired.
 
 ## Reference Documentation
 Reference documentation for the REST API is available in the Help sidebar in Flow, as well as on the H2O.ai website, [http://docs.h2o.ai/](http://docs.h2o.ai/).  The reference documentation is all generated from the H2O server via the Metadata facilities described below so  it is always up to date.
@@ -120,7 +120,6 @@ This example shows the *model_id* field returned by a model builder call:
                     },
                     "default_value": null,
                     "help": "Destination id for this model; auto-generated if not specified",
-                    "label": "model_id",
                     "level": "critical",
                     "name": "model_id",
                     "required": false,
@@ -145,7 +144,7 @@ As an example, Flow has no hardwired knowledge of any of the model algos.  It di
 Similarly, all the endpoints (URL patterns) are described dynamically by the */Metadata/endpoints* endpoints.
 
 ## Error Condition Payloads
-All errors return one of the non-2xx HTTP status codes mentioned above and return standardized error payloads.  These contain an end-user-directed message, a developer-oriented message, the HTTP status, an optional dictionary of revelant values, and exception information if applicable.
+All errors return one of the non-2xx HTTP status codes mentioned above and return standardized error payloads.  These contain an end-user-directed message, a developer-oriented message, the HTTP status, an optional dictionary of relevant values, and exception information if applicable.
 
 Here is the result of requesting a Frame that is not present in the server: 
 
@@ -302,13 +301,13 @@ This section reproduces the Flow example *GBM_Example.flow* using three language
  * *curl*, and 
  * *Java* (making REST API calls from an external Java program).
 
-The Java code uses the bindings found in H2O's *h2o-java-rest-bindings.jar*, which use the *Retrofit* REST API library from Square: [http://square.github.io/retrofit/](http://square.github.io/retrofit/).  
+The Java code uses the bindings found in H2O's *h2o-bindings.jar*, which use the *Retrofit* REST API library from Square: [http://square.github.io/retrofit/](http://square.github.io/retrofit/).  
 
 If you use Java / Retrofit you'll get the results back from the server as Java objects.  For brevity these are not shown here.  
 
 The source files for the payload schemas and for the endpoint proxies are documented with help text for the fields and Javadoc for the methods, and the default constructors set each field to its default value.  Each payload schema class includes a *toString()* method to ease debugging.
 
-If you have downloaded H2O as a zip file you'll find the Java Retrofit bindings in *bindings/java/h2o-java-rest-bindings-{version}.jar* and the sources in *bindings/java/h2o-java-rest-bindings-sources.jar*.  If you have built H2O from source you'll find them in *h2o-java-rest-bindings/build/libs/h2o-java-rest-bindings.jar* and the sources in *h2o-java-rest-bindings/build/src-gen/main/java/water/bindings/*.
+If you have downloaded H2O as a zip file you'll find the Java Retrofit bindings in *bindings/java/h2o-bindings-{version}.jar* and the sources in *bindings/java/h2o-bindings-sources.jar*.  If you have built H2O from source you'll find them in *h2o-bindings/build/libs/h2o-bindings.jar* and the sources in *h2o-bindings/build/src-gen/main/java/water/bindings/*.
 
 ### GBM_Example.flow, Step 1: Import
 In Flow:
@@ -745,7 +744,6 @@ GBMV3 gbmBody = (GBMV3)ModelBuilders.Helper.train_gbm(modelBuildersService, gbm_
         "schema_type": "Iced"
       },
       "name": "model_id",
-      "label": "model_id",
       "help": "Destination id for this model; auto-generated if not specified",
       "required": false,
       "type": "Key<Model>",

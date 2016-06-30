@@ -1,6 +1,8 @@
 package hex.genmodel.easy;
 
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
@@ -8,34 +10,96 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
-import hex.genmodel.easy.prediction.AbstractPrediction;
-import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
-import hex.genmodel.easy.prediction.BinomialModelPrediction;
-import hex.genmodel.easy.prediction.ClusteringModelPrediction;
-import hex.genmodel.easy.prediction.MultinomialModelPrediction;
-import hex.genmodel.easy.prediction.RegressionModelPrediction;
+import hex.genmodel.easy.prediction.*;
 
 /**
- * An easy-to-use prediction wrapper for generated models.
+ * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
+ *
+ *     EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
+ *
+ *     EasyPredictModelWrapper model = new EasyPredictModelWrapper(
+ *                                         new EasyPredictModelWrapper.Config()
+ *                                             .setModel(rawModel)
+ *                                             .setConvertUnknownCategoricalLevelsToNa(false));
  *
  * Note that for any given model, you must use the exact one correct predict method below based on the
  * model category.
+ *
+ * By default, unknown categorical levels result in a thrown PredictUnknownCategoricalLevelException.
+ * The API was designed with this default to make the simplest possible setup inform the user if there are concerns
+ * with the data quality.
+ * An alternate behavior is to automatically convert unknown categorical levels to N/A.  To do this, use
+ * setConvertUnknownCategoricalLevelsToNa(true) instead.
+ *
+ * If you choose to convert unknown categorical levels to N/A, you can see how many times this is happening
+ * with the following methods:
+ *
+ *     getTotalUnknownCategoricalLevelsSeen()
+ *     getUnknownCategoricalLevelsSeenPerColumn()
  *
  * <p></p>
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/easy/EasyPredictModelWrapper.java" target="_blank">here on github</a>.
  */
 public class EasyPredictModelWrapper implements java.io.Serializable {
-  // All private members are read-only after the constructor.
+  // These private members are read-only after the constructor.
   final private GenModel m;
   final private HashMap<String, Integer> modelColumnNameToIndexMap;
   final private HashMap<Integer, HashMap<String, Integer>> domainMap;
 
+  // These private members are configured by setConvertUnknownCategoricalLevelsToNa().
+  final private boolean convertUnknownCategoricalLevelsToNa;
+  final private ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
+
+  /**
+   * Configuration builder for instantiating a Wrapper.
+   */
+  public static class Config {
+    private GenModel model;
+    private boolean convertUnknownCategoricalLevelsToNa = false;
+
+    public Config() {
+    }
+
+    /**
+     * Specify model object to wrap.
+     *
+     * @param value model
+     * @return this config object
+     */
+    public Config setModel(GenModel value) {
+      model = value;
+      return this;
+    }
+
+    /**
+     * @return model object being wrapped
+     */
+    public GenModel getModel() { return model; }
+
+    /**
+     * Specify how to handle unknown categorical levels.
+     *
+     * @param value false: throw exception; true: convert to N/A
+     * @return this config object
+     */
+    public Config setConvertUnknownCategoricalLevelsToNa(boolean value) {
+      convertUnknownCategoricalLevelsToNa = value;
+      return this;
+    }
+
+    /**
+     * @return Setting for unknown categorical levels handling
+     */
+    public boolean getConvertUnknownCategoricalLevelsToNa() { return convertUnknownCategoricalLevelsToNa; }
+  }
+
   /**
    * Create a wrapper for a generated model.
-   * @param model The generated model
+   *
+   * @param config The wrapper configuration
    */
-  public EasyPredictModelWrapper(GenModel model) {
-    m = model;
+  public EasyPredictModelWrapper(Config config) {
+    m = config.getModel();
 
     // Create map of column names to index number.
     modelColumnNameToIndexMap = new HashMap<>();
@@ -43,6 +107,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     for (int i = 0; i < modelColumnNames.length; i++) {
       modelColumnNameToIndexMap.put(modelColumnNames[i], i);
     }
+
+    // How to handle unknown categorical levels.
+    unknownCategoricalLevelsSeenPerColumn = new ConcurrentHashMap<>();
+    convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
+    setupConvertUnknownCategoricalLevelsToNa();
 
     // Create map of input variable domain information.
     // This contains the categorical string to numeric mapping.
@@ -58,6 +127,45 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         domainMap.put(i, m);
       }
     }
+  }
+
+  /**
+   * Create a wrapper for a generated model.
+   *
+   * @param model The generated model
+   */
+  public EasyPredictModelWrapper(GenModel model) {
+    this(new Config()
+            .setModel(model));
+  }
+
+  /**
+   * Get the total number unknown categorical levels seen.
+   *
+   * A single prediction may contribute more than one to the count.
+   * The count is only updated when setConvertUnknownCategoricalLevelsToNa is set to true.
+   *
+   * @return A long value.
+   */
+  public long getTotalUnknownCategoricalLevelsSeen() {
+    ConcurrentHashMap<String, AtomicLong> map = getUnknownCategoricalLevelsSeenPerColumn();
+    long total = 0;
+    for (AtomicLong l : map.values()) {
+      total += l.get();
+    }
+    return total;
+  }
+
+  /**
+   * Get unknown categorical level counts.
+   *
+   * A single prediction may contribute to more than one count.
+   * Counts are only updated when setConvertUnknownCategoricalLevelsToNa is set to true.
+   *
+   * @return A hash map with a per-column count of unknown categorical levels seen when making predictions.
+   */
+  public ConcurrentHashMap<String, AtomicLong> getUnknownCategoricalLevelsSeenPerColumn() {
+    return unknownCategoricalLevelsSeenPerColumn;
   }
 
   /**
@@ -86,6 +194,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         return predictClustering(data);
       case Regression:
         return predictRegression(data);
+      case DimReduction:
+        return predictDimReduction(data);
 
       case Unknown:
         throw new PredictException("Unknown model category");
@@ -105,7 +215,21 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     double[] preds = preamble(ModelCategory.AutoEncoder, data);
     throw new RuntimeException("Unimplemented " + preds.length);
   }
+  /**
+   * Make a prediction on a new data point using a Dimension Reduction model (PCA, GLRM)
+   * @param data A new data point.
+   * @return The prediction.
+   * @throws PredictException
+   */
+  public DimReductionModelPrediction predictDimReduction(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.DimReduction, data);
 
+    DimReductionModelPrediction p = new DimReductionModelPrediction();
+    p.dimensions = preds;
+
+    return p;
+
+  }
   /**
    * Make a prediction on a new data point using a Binomial model.
    *
@@ -214,6 +338,21 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   // Private methods below this line.
   //----------------------------------------------------------------------
 
+  private void setupConvertUnknownCategoricalLevelsToNa() {
+    if (convertUnknownCategoricalLevelsToNa) {
+      for (int i = 0; i < m.getNumCols(); i++) {
+        String[] domainValues = m.getDomainValues(i);
+        if (domainValues != null) {
+          String columnName = m.getNames()[i];
+          unknownCategoricalLevelsSeenPerColumn.put(columnName, new AtomicLong());
+        }
+      }
+    }
+    else {
+      unknownCategoricalLevelsSeenPerColumn.clear();
+    }
+  }
+
   private void validateModelCategory(ModelCategory c) throws PredictException {
     if (m.getModelCategory() != c) {
       throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + m.getModelCategory());
@@ -222,7 +361,12 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
 
   private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
-    double[] preds = new double[m.getPredsSize()];
+    double[] preds;
+    if (c == ModelCategory.DimReduction) {
+      preds = new double[m.nclasses()];
+    } else {
+      preds = new double[m.getPredsSize()];
+    }
     preds = predict(data, preds);
     return preds;
   }
@@ -267,10 +411,19 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           String levelName = (String) o;
           HashMap<String, Integer> columnDomainMap = domainMap.get(index);
           Integer levelIndex = columnDomainMap.get(levelName);
+          double value;
           if (levelIndex == null) {
-            throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
+            if (convertUnknownCategoricalLevelsToNa) {
+              value = Double.NaN;
+              unknownCategoricalLevelsSeenPerColumn.get(dataColumnName).incrementAndGet();
+            }
+            else {
+              throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + dataColumnName + "," + levelName + ")", dataColumnName, levelName);
+            }
           }
-          double value = levelIndex;
+          else {
+            value = levelIndex;
+          }
 
           rawData[index] = value;
         }

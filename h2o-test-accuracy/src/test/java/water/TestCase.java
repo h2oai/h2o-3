@@ -8,10 +8,12 @@ import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
+import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import water.api.SchemaServer;
 import water.fvec.FVecTest;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
@@ -174,7 +176,7 @@ public class TestCase {
       Model bestModel = null;
       String bestModelJson = null;
       try {
-        Schema.registerAllSchemasIfNecessary();
+        SchemaServer.registerAllSchemasIfNecessary();
         switch (algo) {  // TODO: Hack for PUBDEV-2812
           case "drf":
             if (!drfRegistered) {
@@ -335,9 +337,9 @@ public class TestCase {
       mmMap.put("AUC", ((ModelMetricsBinomial) mm).auc());
       mmMap.put("Gini", ((ModelMetricsBinomial) mm)._auc._gini);
       mmMap.put("Logloss", ((ModelMetricsBinomial) mm).logloss());
-      mmMap.put("F1", ((ModelMetricsBinomial) mm).cm().F1());
-      mmMap.put("F2", ((ModelMetricsBinomial) mm).cm().F2());
-      mmMap.put("F0point5", ((ModelMetricsBinomial) mm).cm().F0point5());
+      mmMap.put("F1", ((ModelMetricsBinomial) mm).cm().f1());
+      mmMap.put("F2", ((ModelMetricsBinomial) mm).cm().f2());
+      mmMap.put("F0point5", ((ModelMetricsBinomial) mm).cm().f0point5());
       mmMap.put("Accuracy", ((ModelMetricsBinomial) mm).cm().accuracy());
       mmMap.put("Error", ((ModelMetricsBinomial) mm).cm().err());
       mmMap.put("Precision", ((ModelMetricsBinomial) mm).cm().precision());
@@ -559,6 +561,21 @@ public class TestCase {
               throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
           }
           break;
+        case "_histogram_type":
+          switch (parameterValue) {
+            case "AUTO":
+              gbmParams._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
+              break;
+            case "UniformAdaptive":
+              gbmParams._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
+              break;
+            case "Random":
+              gbmParams._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
+              break;
+            default:
+              throw new Exception(parameterValue + " histogram_type is not supported for gbm test cases");
+          }
+          break;
         case "_nfolds":
           gbmParams._nfolds = Integer.parseInt(parameterValue);
           break;
@@ -627,9 +644,6 @@ public class TestCase {
           break;
         case "_max_abs_leafnode_pred":
           gbmParams._max_abs_leafnode_pred = Double.parseDouble(parameterValue);
-          break;
-        case "_random_split_points":
-          gbmParams._random_split_points = Boolean.parseBoolean(parameterValue);
           break;
         case "_score_tree_interval":
           gbmParams._score_tree_interval = Integer.parseInt(parameterValue);
@@ -700,9 +714,6 @@ public class TestCase {
           break;
         case "_max_abs_leafnode_pred":
           gbmHyperParms.put("_max_abs_leafnode_pred", stringArrayToDoubleArray(gridParameterValues));
-          break;
-        case "_random_split_points":
-          gbmHyperParms.put("_random_split_points", stringArrayToBooleanArray(gridParameterValues));
           break;
         case "_score_tree_interval":
           gbmHyperParms.put("_score_tree_interval", stringArrayToIntegerArray(gridParameterValues));
@@ -976,6 +987,21 @@ public class TestCase {
               break;
             default:
               throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
+          }
+          break;
+        case "_histogram_type":
+          switch (parameterValue) {
+            case "AUTO":
+              drfParams._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
+              break;
+            case "UniformAdaptive":
+              drfParams._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
+              break;
+            case "Random":
+              drfParams._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
+              break;
+            default:
+              throw new Exception(parameterValue + " histogram_type is not supported for gbm test cases");
           }
           break;
         case "_nfolds":

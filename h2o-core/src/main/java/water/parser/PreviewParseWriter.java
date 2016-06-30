@@ -139,23 +139,15 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
         continue;
       }
 
-      // All same string, but not obvious NA, declare categorical
-      if (_domains[i].size() == 1
-              && !_domains[i].containsKey("NA")
-              && !_domains[i].containsKey("na")
-              && !_domains[i].containsKey("Na")
-              &&  _nstrings[i] >= nonemptyLines) {
-        types[i] = Vec.T_CAT;
-        continue;
-      }
-
-      // All same string (NA), so just guess numeric
-      if (_domains[i].size() == 1
-          && (_domains[i].containsKey("NA")
-          || !_domains[i].containsKey("na")
-          || !_domains[i].containsKey("Na")
-          ||  _nstrings[i] >= nonemptyLines)) {
-        types[i] = Vec.T_NUM;
+      // All same string or empty?
+      if( _domains[i].size() == 1  ) {
+        // Obvious NA, or few instances of the single string, declare numeric
+        // else categorical
+        types[i] = (_domains[i].containsKey("NA") ||
+                    _domains[i].containsKey("na") ||
+                    _domains[i].containsKey("Na") ||
+                    _domains[i].containsKey("N/A") ||
+                    _nstrings[i] < _nnums[i]+_nzeros[i]) ? Vec.T_NUM : Vec.T_CAT;
         continue;
       }
 

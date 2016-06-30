@@ -209,27 +209,30 @@ class ModelBase(object):
     """
     return self._model_json['output']['catoffsets']
 
-  def model_performance(self, test_data=None, train=False, valid=False):
+  def model_performance(self, test_data=None, train=False, valid=False, xval=False):
     """
     Generate model metrics for this model on test_data.
     
     Parameters
     ----------   
     test_data: H2OFrame, optional 
-      Data set for which model metrics shall be computed against. Both train and valid arguments are ignored if test_data is not None.
+      Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are ignored if test_data is not None.
     train: boolean, optional
-      Report the training metrics for the model. If the test_data is the training data, the training metrics are returned.
+      Report the training metrics for the model.
     valid: boolean, optional 
-      Report the validation metrics for the model. If train and valid are True, then it defaults to True.
-    
+      Report the validation metrics for the model.
+    xval: boolean, optional
+      Report the cross-validation metrics for the model. If train and valid are True, then it defaults to True.
+
     Returns
     -------
       An object of class H2OModelMetrics.
     """
     if test_data is None:
-      if not train and not valid: train = True  # default to train
+      if not train and not valid and not xval: train = True  # default to train
       if train: return self._model_json["output"]["training_metrics"]
       if valid: return self._model_json["output"]["validation_metrics"]
+      if xval: return self._model_json["output"]["cross_validation_metrics"]
 
     else:  # cases dealing with test_data not None
       if not isinstance(test_data, h2o.H2OFrame):

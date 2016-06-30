@@ -1,8 +1,11 @@
 package water;
 
 import org.apache.commons.lang.ArrayUtils;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 /**
  * Iced wrapper object for primitive types and arrays, to allow fields in other Iced
@@ -93,9 +96,11 @@ public class IcedWrapper extends Iced {
       } else if (clz == String.class) {
         t = "S";
         s_ar = (String[])o;
-      } else if (clz == Enum.class) {
+      } else if (clz.isEnum()) {
         t = "E";
-        e_ar = (String[])o;
+        e_ar = new String[Array.getLength(o)];
+        for (int i = 0; i < e_ar.length; i++)
+          e_ar[i] = Array.get(o, i).toString();
       } else if (o instanceof KeyV3[]) {
         t = "K";
         k_ar = (KeyV3[])o;
@@ -196,7 +201,20 @@ public class IcedWrapper extends Iced {
     if (null == t) {
       return "(null)";
     } else if (is_array) {
-      // TODO: return Arrays.toString(ar);
+      if (t.equals("I"))
+        return Arrays.toString(i_ar);
+      else if (t.equals("L"))
+        return Arrays.toString(l_ar);
+      else if (t.equals("F"))
+        return Arrays.toString(f_ar);
+      else if (t.equals("D"))
+        return Arrays.toString(d_ar);
+      else if (t.equals("S"))
+        return Arrays.toString(s_ar);
+      else if (t.equals("E"))
+        return Arrays.toString(e_ar);
+      else if (t.equals("K"))
+        return Arrays.toString(k_ar);
     } else if (t.equals("B")) {
       return "" + i;
     } else if (t.equals("I")) {

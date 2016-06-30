@@ -12,7 +12,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   public long   _catcnt;
 
   public ModelMetricsGLRM(Model model, Frame frame, double numerr, double caterr) {
-    super(model, frame, Double.NaN);
+    super(model, frame, 0, Double.NaN);
     _numerr = numerr;
     _caterr = caterr;
   }

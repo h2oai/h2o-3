@@ -197,7 +197,8 @@ class H2OEstimator(ModelBase):
       if m._is_xvalidated: m._xval_keys= [i["name"] for i in model_json["output"]["cross_validation_models"]]
 
       # build a useful dict of the params
-      for p in m._model_json["parameters"]: m.parms[p["label"]]=p
+      for p in m._model_json["parameters"]:
+        m.parms[p["name"]]=p
     H2OEstimator.mixin(self,model_class)
     self.__dict__.update(m.__dict__.copy())
 

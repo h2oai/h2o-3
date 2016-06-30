@@ -520,7 +520,14 @@ h2o.insertMissingValues <- function(data, fraction=0.1, seed=-1) {
 
 #' Split an H2O Data Set
 #'
-#' Split an existing H2O data set according to user-specified ratios.
+#' Split an existing H2O data set according to user-specified ratios. The number of
+#' subsets is always 1 more than the number of given ratios. Note that this does not give
+#' an exact split. H2O is designed to be efficient on big data using a probabilistic
+#' splitting method rather than an exact split. For example, when specifying a split of
+#' 0.75/0.25, H2O will produce a test/train split with an expected value of 0.75/0.25
+#' rather than exactly 0.75/0.25. On small datasets, the sizes of the resulting splits
+#' will deviate from the expected value more than on big data, where they will be very
+#' close to exact.
 #'
 #' @param data An H2OFrame object representing the dataste to split.
 #' @param ratios A numeric value or array indicating the ratio of total rows
@@ -765,7 +772,9 @@ match.H2OFrame <- h2o.match
 #' @param object H2OFrame object
 #' @param ... Ignored
 #' @export
-na.omit.H2OFrame <- function(object, ...) .newExpr("na.omit", object)
+na.omit.H2OFrame <- function(object, ...){
+  .newExpr("na.omit", object)
+}
 
 #' Compute DCT of an H2OFrame
 #'
@@ -1992,6 +2001,47 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 }
 
 #'
+#' Correlation of columns.
+#'
+#' Compute the correlation matrix of one or two H2OFrames.
+#'
+#' @param x An H2OFrame object.
+#' @param y \code{NULL} (default) or an H2OFrame. The default is equivalent to y = x.
+#' @param na.rm \code{logical}. Should missing values be removed?
+#' @param use An optional character string indicating how to handle missing values. This must be one of the following:
+#   "everything"            - outputs NaNs whenever one of its contributing observations is missing
+#   "all.obs"               - presence of missing observations will throw an error
+#   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' cor(prostate.hex$AGE)
+#' }
+#' @export
+h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
+  # Eager, mostly to match prior semantics but no real reason it need to be
+  if( is.null(y) ){
+    y <- x
+  }
+  if(missing(use)) {
+    if (na.rm) use <- "complete.obs" else use <- "everything"
+  }
+  # Eager, mostly to match prior semantics but no real reason it need to be
+  expr <- .newExpr("cor",x,y,.quote(use))
+  if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
+  else .fetch.data(expr,ncol(x))
+}
+
+#' @rdname h2o.cor
+#' @export
+cor <- function(x, y = NULL,na.rm = FALSE, use)  {
+  if( is.H2OFrame(x) ) h2o.cor(x,y)
+  else stats::cor(x,y)
+}
+
+#'
 #' Standard Deviation of a column of data.
 #'
 #' Obtain the standard deviation of a column of data.
@@ -2147,14 +2197,12 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   use_hex_string <- getRversion() >= "3.1"
-  conn = h2o.getConnection()
 
-  url <- paste0('http://', conn@ip, ':', conn@port,
-                '/3/DownloadDataset',
-                '?frame_id=', URLencode( h2o.getId(x)),
-                '&hex_string=', as.numeric(use_hex_string))
+  urlSuffix <- paste0('DownloadDataset',
+                      '?frame_id=', URLencode( h2o.getId(x)),
+                      '&hex_string=', as.numeric(use_hex_string))
 
-  ttt <- getURL(url)
+  ttt <- .h2o.doSafeGET(urlSuffix = urlSuffix)
   n <- nchar(ttt)
 
   # Delete last 1 or 2 characters if it's a newline.
@@ -2446,6 +2494,21 @@ h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=NULL, by.y=NULL, 
   .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
 }
 
+
+#' Reorders levels of an H2O factor, similarly to standard R's relevel.
+#'
+#' The levels of a factor are reordered os that the reference level is at level 0, remaining levels are moved down as needed.
+#'
+#' @param x factor column in h2o frame
+#' @param y reference level (string)
+#' @return new reordered factor column
+#'
+#' @export
+h2o.relevel <- function(x,y) {
+  .newExpr("relevel", x, .quote(y))
+}
+
+
 #' Group and Apply by Column
 #'
 #' Performs a group by and apply similar to ddply.
@@ -2555,30 +2618,28 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
   .newExpr("grouped_permute", fr, permCol-1, groupByCols-1, permByCol-1, keepCol-1)
 }
 
-#'
 #' Basic Imputation of H2O Vectors
 #'
-#'  Perform inplace imputation by filling missing values with aggregates
-#'  computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
-#'  based on groupings of columns from within data; these columns can be passed by index or
-#'  name to the by parameter. If a factor column is supplied, then the method must be
-#'  "mode".
+#' Perform inplace imputation by filling missing values with aggregates
+#' computed on the "na.rm'd" vector. Additionally, it's possible to perform imputation
+#' based on groupings of columns from within data; these columns can be passed by index or
+#' name to the by parameter. If a factor column is supplied, then the method must be
+#' "mode".
 #'
-#'  The default method is selected based on the type of the column to impute. If the column
-#'  is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
-#'  column types (e.g. String, Time, UUID) are not supported.
+#' The default method is selected based on the type of the column to impute. If the column
+#' is numeric then "mean" is selected; if it is categorical, then "mode" is selected. Other
+#' column types (e.g. String, Time, UUID) are not supported.
 #'
-#'  @param data The dataset containing the column to impute.
-#'  @param column A specific column to impute, default of 0 means impute the whole frame.
-#'  @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
-#'                "mode" replaces with the most common factor (for factor columns only);
-#'  @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
-#'  @param by group by columns
-#'  @param groupByFrame Impute the column col with this pre-computed grouped frame.
-#'  @param values A vector of impute values (one per column). NaN indicates to skip the column
-#'
-#'  @return an H2OFrame with imputed values
-#'  @examples
+#' @param data The dataset containing the column to impute.
+#' @param column A specific column to impute, default of 0 means impute the whole frame.
+#' @param method "mean" replaces NAs with the column mean; "median" replaces NAs with the column median;
+#'               "mode" replaces with the most common factor (for factor columns only);
+#' @param combine_method If method is "median", then choose how to combine quantiles on even sample sizes. This parameter is ignored in all other cases.
+#' @param by group by columns
+#' @param groupByFrame Impute the column col with this pre-computed grouped frame.
+#' @param values A vector of impute values (one per column). NaN indicates to skip the column
+#' @return an H2OFrame with imputed values
+#' @examples
 #' \donttest{
 #'  h2o.init()
 #'  fr <- as.h2o(iris, destination_frame="iris")
@@ -2586,7 +2647,7 @@ h2o.groupedPermute <- function(fr, permCol, permByCol, groupByCols, keepCol) {
 #'  # impute with a group by
 #'  fr <- h2o.impute(fr, "Species", "mode", by=c("Sepal.Length", "Sepal.Width"))
 #' }
-#'  @export
+#' @export
 h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO: add "bfill","ffill"
                        combine_method=c("interpolate", "average", "lo", "hi"), by=NULL, groupByFrame=NULL, values=NULL) {
   # TODO: "bfill" back fill the missing value with the next non-missing value in the vector

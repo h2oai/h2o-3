@@ -48,11 +48,9 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   // ----------------------
   private class GrepDriver extends Driver {
 
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       GrepModel model = null;
       try {
-        Scope.enter();
-        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -74,10 +72,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
         Log.info(sb);
       } finally {
         if( model != null ) model.unlock(_job);
-        _parms.read_unlock_frames(_job);
-        Scope.exit(model == null ? null : model._key);
       }
-      tryComplete();
     }
   }
 

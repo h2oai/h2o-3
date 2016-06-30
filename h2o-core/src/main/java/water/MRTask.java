@@ -459,11 +459,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** Block for and get any final results from a dfork'd MRTask.
    *  Note: the desired name 'get' is final in ForkJoinTask.  */
-  public final T getResult() {
+  public final T getResult(boolean fjManagedBlock) {
     assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
     do {
       try {
-        ForkJoinPool.managedBlock(this);
+        if(fjManagedBlock)
+          ForkJoinPool.managedBlock(this);
+        else
+          // For the cases when we really want to block this thread without FJ framework scheduling a new worker thread.
+          // Model use is in MultifileParseTask - we want to be parsing at most cluster ncores files in parallel.
+          block();
         join(); // Throw any exception the map call threw
       } catch (InterruptedException ignore) {
         // do nothing
@@ -475,6 +480,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     assert _topGlobal:"lost top global flag";
     return self();
   }
+  /** Block for and get any final results from a dfork'd MRTask.
+   *  Note: the desired name 'get' is final in ForkJoinTask.  */
+  public final T getResult() {return getResult(true);}
 
   // Return true if blocking is unnecessary, which is true if the Task isDone.
   public boolean isReleasable() {  return isDone();  }
@@ -738,8 +746,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Full local work-tree cancellation
   void self_cancel2() { if( !isDone() ) { cancel(true); self_cancel1(); } }
   private void self_cancel1() {
-    if( _left != null ) { _left.self_cancel2(); }
-    if( _rite != null ) { _rite.self_cancel2(); }
+    T l = _left; if( l != null ) { l.self_cancel2(); }
+    T r = _rite; if( r != null ) { r.self_cancel2(); }
   }
 
   /** Cancel/kill all work as we can, then rethrow... do not invisibly swallow

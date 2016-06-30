@@ -30,9 +30,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public int _nbins_cats = 1024; // Categorical (factor) cols: Build a histogram of this many bins, then split at the best point
 
-    public double _min_split_improvement = 0; // Minimum relative improvement in squared error reduction for a split to happen
+    public double _min_split_improvement = 1e-5; // Minimum relative improvement in squared error reduction for a split to happen
 
-    public boolean _random_split_points; // Whether to use random split points for binning
+    public enum HistogramType { AUTO, UniformAdaptive, Random, QuantilesGlobal, RoundRobin }
+    public HistogramType _histogram_type = HistogramType.AUTO; // What type of histogram to use for finding optimal split points
 
     public double _r2_stopping = 0.999999; // Stop when the r^2 metric equals or exceeds this value
 
@@ -52,7 +53,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
-    @Override public long progressUnits() { return _ntrees; }
+    @Override public long progressUnits() { return _ntrees + (_histogram_type==HistogramType.QuantilesGlobal || _histogram_type==HistogramType.RoundRobin ? 1 : 0); }
 
     @Override protected long nFoldSeed() {
       return _seed == -1 ? (_seed = RandomUtils.getRNG(System.nanoTime()).nextLong()) : _seed;
@@ -249,15 +250,17 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return res;
   }
 
+  @Override protected double[] score0(double data[], double[] preds, double weight, double offset) {
+    return score0(data,preds,weight,offset,_output._treeKeys.length);
+  }
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     return score0(data, preds, 1.0, 0.0);
   }
-  @Override
-  protected double[] score0(double[] data, double[] preds, double weight, double offset) {
+  protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
     Arrays.fill(preds,0);
-    for( int tidx=0; tidx<_output._treeKeys.length; tidx++ )
+    for( int tidx=0; tidx<ntrees; tidx++ )
       score0(data, preds, tidx);
     return preds;
   }

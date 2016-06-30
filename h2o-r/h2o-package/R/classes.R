@@ -59,6 +59,7 @@ setRefClass("H2OConnectionMutableState",
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
 #' @slot password Password to login with.
+#' @slot cluster_name Cluster to login to.
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
 #' @aliases H2OConnection
 #' @export
@@ -66,15 +67,17 @@ setClass("H2OConnection",
          representation(ip="character", port="numeric", proxy="character",
                         https="logical", insecure="logical",
                         username="character", password="character",
+                        cluster_name="character",
                         mutable="H2OConnectionMutableState"),
-         prototype(ip       = NA_character_,
-                   port     = NA_integer_,
-                   proxy    = NA_character_,
-                   https    = FALSE,
-                   insecure = FALSE,
-                   username = NA_character_,
-                   password = NA_character_,
-                   mutable  = new("H2OConnectionMutableState")))
+         prototype(ip           = NA_character_,
+                   port         = NA_integer_,
+                   proxy        = NA_character_,
+                   https        = FALSE,
+                   insecure     = FALSE,
+                   username     = NA_character_,
+                   password     = NA_character_,
+                   cluster_name = NA_character_,
+                   mutable      = new("H2OConnectionMutableState")))
 
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))
 
@@ -203,6 +206,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
   if( !is.null(tm$r2)                                              )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
+  if( !is.null(tm$mean_per_class_error)                            )  cat("\nMean Per-Class Error:", tm$mean_per_class_error)
   if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
@@ -369,6 +373,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("MSE:  ", object@metrics$MSE, "\n", sep="")
     cat("R^2:  ", object@metrics$r2, "\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
+    cat("Mean Per-Class Error:  ", object@metrics$mean_per_class_error, "\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
     if(object@algorithm == "glm") {

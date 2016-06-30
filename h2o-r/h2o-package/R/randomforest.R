@@ -3,7 +3,7 @@
 #' Builds a Random Forest Model on an H2OFrame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
-#'        to use in building the GBM model.
+#'        to use in building the RF model.
 #' @param y The name or index of the response variable. If the data does not
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
@@ -13,7 +13,7 @@
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param validation_frame An H2OFrame object containing the variables in the model.  Default is NULL.
-#' @param checkpoint "Model checkpoint (either key or H2ODeepLearningModel) to resume training with."
+#' @param checkpoint "Model checkpoint (provide the model_id) to resume training with."
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param mtries Number of variables randomly sampled as candidates at each split.
 #'        If set to -1, defaults to sqrt{p} for classification, and p/3 for regression,
@@ -47,8 +47,9 @@
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo"
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
+#'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will 
+#'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param score_each_iteration Attempts to score each tree.
@@ -58,12 +59,14 @@
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
 #'        Can only trigger after at least 2k scoring events. Use 0 to disable.
 #' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
-#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification".
+#'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification", or "mean_per_class_error".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
 #'        improvement is not at least this much, stop)
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
-#' @param random_split_points Whether to use random split points for histograms (to pick the best split from).
+#' @param histogram_type What type of histogram to use for finding optimal split points
+#'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin". Note that H2O supports
+#'        extremely randomized trees with the "Random" option.
 #' @param ... (Currently Unimplemented)
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
@@ -94,17 +97,17 @@ h2o.randomForest <- function(x, y, training_frame,
                              weights_column = NULL,
                              nfolds = 0,
                              fold_column = NULL,
-                             fold_assignment = c("AUTO","Random","Modulo"),
+                             fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                              keep_cross_validation_predictions = FALSE,
                              keep_cross_validation_fold_assignment = FALSE,
                              score_each_iteration = FALSE,
                              score_tree_interval = 0,
                              stopping_rounds=0,
-                             stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification"),
+                             stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "r2", "misclassification", "mean_per_class_error"),
                              stopping_tolerance=1e-3,
                              max_runtime_secs=0,
                              min_split_improvement,
-                             random_split_points=FALSE
+                             histogram_type=c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin")
                              )
 {
   # Training_frame and validation_frame may be a key or an H2OFrame object
@@ -187,7 +190,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(stopping_tolerance)) parms$stopping_tolerance <- stopping_tolerance
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
-  if(!missing(random_split_points)) parms$random_split_points <- random_split_points
+  if(!missing(histogram_type)) parms$histogram_type <- histogram_type
 
   .h2o.modelJob('drf', parms)
 }

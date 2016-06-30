@@ -2,6 +2,197 @@
 
 ##H2O
 
+###Turchin (3.8.2.9) - 6/10/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2920'>PUBDEV-2920</a>] -         Python apply() doesn&#39;t recognize % (modulo) within lambda function
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2940'>PUBDEV-2940</a>] -         Documentation: Add RoundRobin histogram_type to GBM/DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2957'>PUBDEV-2957</a>] -         Add &quot;seed&quot; option to GLM in documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2973'>PUBDEV-2973</a>] -         Documentation: Update supported Hadoop versions
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2981'>PUBDEV-2981</a>] -         Models hang when max_runtime_secs is too small
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2982'>PUBDEV-2982</a>] -         Default min/max_mem_size to gigabytes in h2o.init
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2997'>PUBDEV-2997</a>] -         Add &quot;ignore_const_cols&quot; argument to glm and gbm for Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2999'>PUBDEV-2999</a>] -         AIOOBE in GBM if no nodes are split during tree building
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3004'>PUBDEV-3004</a>] -         Negative R^2 (now NaN) can prevent early stopping
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3011'>PUBDEV-3011</a>] -         Two grid sorting methods in Py API - only one works sometimes
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2743'>PUBDEV-2743</a>] -         Add seed argument to GLM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2917'>PUBDEV-2917</a>] -         Add cor() function to Rapids
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3005'>PUBDEV-3005</a>] -         Verify checkpoint argument in h2o.gbm (for R)
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2040'>PUBDEV-2040</a>] -         Sync up argument names in `h2o.init` between R and Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2996'>PUBDEV-2996</a>] -         Change `getjar` to `get_jar` in h2o.download_pojo in R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2998'>PUBDEV-2998</a>] -         Change min_split_improvement default value from 0 to 1e-5 for GBM/DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3013'>PUBDEV-3013</a>] -         Allow specification of &quot;AUC&quot; or &quot;auc&quot; or &quot;Auc&quot; for stopping_metrics, sorting of grids, etc.
+</li>
+</ul>
+
+###Turchin (3.8.2.8) - 6/2/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2985'>PUBDEV-2985</a>] -         Make Random grid search consistent between clients for same parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2987'>PUBDEV-2987</a>] -         Allow learn_rate_annealing to be passed to H2OGBMEstimator constructor in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2989'>PUBDEV-2989</a>] -         Fix typo in GBM/DRF Python API for col_sample_rate_change_per_level - was misnamed and couldn&#39;t be set
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2979'>PUBDEV-2979</a>] -         Add a new metric: mean misclassification error for classification models
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2972'>PUBDEV-2972</a>] -         No longer print negative R^2 values - show NaN instead
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2984'>PUBDEV-2984</a>] -         Add xval=True/False as an option to model_performance() in Python API
+</li>
+</ul>
+
+###Turchin (3.8.2.6) - 5/24/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1899'>PUBDEV-1899</a>] -         Number of active predictors is off by 1 when Intercept is included
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2942'>PUBDEV-2942</a>] -         GLM with cross-validation AIOOBE (+ Grid-Search + Multinomial, may be related)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2943'>PUBDEV-2943</a>] -         Improved accuracy for histogram_type=&quot;QuantilesGlobal&quot; for DRF/GBM
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1705'>PUBDEV-1705</a>] -         GLM needs &#39;seed&#39; argument for new (random) implementation of n-folds
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2743'>PUBDEV-2743</a>] -         Add seed argument to GLM
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2928'>PUBDEV-2928</a>] -         Remove _Dev from file name _DataScienceH2O-Dev
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2945'>PUBDEV-2945</a>] -         Clean up overly long and duplicate error message in KeyV3
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2953'>PUBDEV-2953</a>] -         Allow the user to pass column types of an existing H2OFrame during Parse/Upload in R and Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2954'>PUBDEV-2954</a>] -         Tweak Parser Heuristic
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2955'>PUBDEV-2955</a>] -         GLM improvements and fixes
+</li>
+</ul>
+
+###Turchin (3.8.2.5) - 5/19/2016
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2909'>PUBDEV-2909</a>] -         Documentation update for relevel
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2282'>PUBDEV-2282</a>] -         DRF: cannot compile pojo
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2304'>PUBDEV-2304</a>] -         GBM pojo compile failures
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2878'>PUBDEV-2878</a>] -         Bug in h2o-py H2OScaler.inverse_transform()
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2880'>PUBDEV-2880</a>] -         Add NAOmit() to Rapids
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2897'>PUBDEV-2897</a>] -         AIOOBE in Vec.factor (due to Parse bug?)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2903'>PUBDEV-2903</a>] -         In grid search, max_runtime_secs without max_models hangs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2933'>PUBDEV-2933</a>] -         GBM&#39;s fold_assignment = &quot;Stratified&quot; breaks with missing values in response column
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2729'>PUBDEV-2729</a>] -         Implement h2o.relevel, equivalent of base R&#39;s relevel function
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2857'>PUBDEV-2857</a>] -         Add Kerberos authentication to Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2893'>PUBDEV-2893</a>] -         Summaries Fail in rdemo.citi.bike.small.R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2895'>PUBDEV-2895</a>] -         DimReduction for EasyModelAPI
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2915'>PUBDEV-2915</a>] -         Make histograms truly adaptive (quantiles-based) for DRF/GBM
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2902'>PUBDEV-2902</a>] -         Add a list of gridable parameters to the docs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2904'>PUBDEV-2904</a>] -         Add relevel() to Python API
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2905'>PUBDEV-2905</a>] -         Improve the progress bar based on max_runtime_secs &amp; max_models &amp; actual work
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2908'>PUBDEV-2908</a>] -         Improve GBM/DRF reproducibility for fixed parameters and hardware
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2911'>PUBDEV-2911</a>] -         Check sanity of random grid search parameters (max_models and max_runtime_secs)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2912'>PUBDEV-2912</a>] -         Add Job&#39;s remaining time to Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2919'>PUBDEV-2919</a>] -         Add enum option &#39;histogram_type&#39; to DRF/GBM (and remove random_split_points)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2923'>PUBDEV-2923</a>] -         JUnit: Separate POJO namespace during junit testing
+</li>
+</ul>
+
 ###Turchin (3.8.2.3) - 4/25/2016
 
 <h4>        Bug
@@ -2577,7 +2768,7 @@ The following changes are to resolve incorrect software behavior:
 #####Algorithms
 
 - [PUBDEV-1211](https://0xdata.atlassian.net/browse/PUBDEV-1211): pca: descaled pca, std dev seems to be wrong for attached data [github](https://github.com/h2oai/h2o-3/commit/edfa4e30e72ecb02cc4c99c8d8a02313b58c0f63)
-- [PUBDEV-1213](https://0xdata.atlassian.net/browse/PUBDEV-1213): pca: would be good to have the std dev numbered bec difficult to relate to the principle components [(github)](https://github.com/h2oai/h2o-3/commit/90ef7c083823fca05a0f94bf8c7e451ea64b646a)
+- [PUBDEV-1213](https://0xdata.atlassian.net/browse/PUBDEV-1213): pca: would be good to have the std dev numbered bec difficult to relate to the principal components [(github)](https://github.com/h2oai/h2o-3/commit/90ef7c083823fca05a0f94bf8c7e451ea64b646a)
 - [PUBDEV-1201](https://0xdata.atlassian.net/browse/PUBDEV-1201): pca: get ArrayIndexOutOfBoundsException [(github)](https://github.com/h2oai/h2o-3/commit/1390a4bd4de3adcdb924658e9122f230f7521fea)
 - [PUBDEV-1203](https://0xdata.atlassian.net/browse/PUBDEV-1203): pca: giving wrong std dev/rotation-labels for iris with species as enum [(github)](https://github.com/h2oai/h2o-3/commit/7ae347fcd26e96cdbd8b5fa3a42585cb5530fe01)
 - [PUBDEV-1199](https://0xdata.atlassian.net/browse/PUBDEV-1199): DL with <1 epochs has wrong initial estimated time [(github)](https://github.com/h2oai/h2o-3/commit/5b6854954f037b645002accbf35f0670b01df41f)

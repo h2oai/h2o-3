@@ -16,7 +16,7 @@ def offset_poisson():
     insurance["offset"] = insurance["Holders"].log()
 
 
-    gbm = H2OGradientBoostingEstimator(ntrees=600,learn_rate=.1,max_depth=1,min_rows=1,distribution="poisson")
+    gbm = H2OGradientBoostingEstimator(ntrees=600,learn_rate=.1,max_depth=1,min_rows=1,distribution="poisson",min_split_improvement=0)
     gbm.train(x=list(range(3)),y="Claims",training_frame=insurance,offset_column="offset")
 
     # gbm = h2o.gbm(x=insurance[0:3], y=insurance["Claims"], distribution="poisson", ntrees=600, max_depth=1, min_rows=1,

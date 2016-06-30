@@ -673,11 +673,17 @@ public final class AutoBuffer {
   // increase the size of the backing array,
   // otherwise dump into a large direct buffer
   private ByteBuffer expandByteBuffer(int sizeHint) {
-    int needed = sizeHint-_bb.remaining()+_bb.capacity();
+    long needed = (long) sizeHint - _bb.remaining() + _bb.capacity(); // Max needed is 2G
+    if (needed > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Cannot allocate more than 2GB array: sizeHint="+sizeHint+", "
+                                         + "needed="+needed
+                                         + ", bb.remaining()=" + _bb.remaining() + ", bb.capacity()="+_bb.capacity());
+    }
     if ((_h2o==null && _chan == null) || (_bb.hasArray() && needed < MTU)) {
       byte[] ary = _bb.array();
-      // just get twice what is currently needed
-      int newLen = 1 << (water.util.MathUtils.log2(needed)+1);
+      // just get twice what is currently needed but not more then max array size (2G)
+      // Be careful not to overflow because of integer math!
+      int newLen = (int) Math.min(1L << (water.util.MathUtils.log2(needed)+1), Integer.MAX_VALUE - 1L);
       int oldpos = _bb.position();
       _bb = ByteBuffer.wrap(MemoryManager.arrayCopyOfRange(ary,0,newLen),oldpos,newLen-oldpos)
           .order(ByteOrder.nativeOrder());
@@ -1250,7 +1256,10 @@ public final class AutoBuffer {
     //_arys++;
     if( ary == null ) return putInt(-1);
     putInt(ary.length);
-    if (ary.length*4 > _bb.remaining()) expandByteBuffer(ary.length*4);
+    // Note: based on Brandon commit this should improve performance during parse (7d950d622ee3037555ecbab0e39404f8f0917652)
+    if (ary.length*4 > _bb.remaining()) {
+      expandByteBuffer(ary.length*4); // Try to expand BB buffer to fit input array
+    }
     int sofar = 0;
     while( sofar < ary.length ) {
       IntBuffer ib = _bb.asIntBuffer();
@@ -1550,7 +1559,7 @@ public final class AutoBuffer {
         off=i;                  // Advance the "so far" variable
       }
       // Handle remaining special cases in JSON
-      if( b[i] == '/' ) { putA1(b,off,i); put1('\\'); put1('/'); off=i+1; continue;}
+      // if( b[i] == '/' ) { putA1(b,off,i); put1('\\'); put1('/'); off=i+1; continue;}
       if( b[i] == '\b' ) { putA1(b,off,i); put1('\\'); put1('b'); off=i+1; continue;}
       if( b[i] == '\f' ) { putA1(b,off,i); put1('\\'); put1('f'); off=i+1; continue;}
       if( b[i] == '\n' ) { putA1(b,off,i); put1('\\'); put1('n'); off=i+1; continue;}

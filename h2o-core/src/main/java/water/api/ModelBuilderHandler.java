@@ -7,16 +7,17 @@ import water.H2O;
 import water.Job;
 import water.Key;
 import water.TypeMap;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.util.HttpResponseStatus;
 import water.util.PojoUtils;
 
 import java.util.Properties;
 
-public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchema> extends Handler {
+public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   @Override S handle(int version, Route route, Properties parms) throws Exception {
     // Peek out the desired algo from the URL
-    String ss[] = route._url_pattern_raw.split("/");
+    String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
@@ -45,14 +46,10 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
     schema.parameters.fillFromParms(parms);         // Overwrite with user parms
     schema.parameters.fillImpl(builder._parms);     // Merged parms back over Model.Parameter object
     builder.init(false);          // validate parameters
-
-    _t_start = System.currentTimeMillis();
-    if( doTrain ) builder.trainModel();
-    _t_stop  = System.currentTimeMillis();
-
     schema.fillFromImpl(builder); // Fill in the result Schema with the Job at least, plus any extra trainModel errors
     PojoUtils.copyProperties(schema.parameters, builder._parms, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, null, new String[] { "error_count", "messages" });
     schema.setHttpStatus(HttpResponseStatus.OK.getCode());
+    if( doTrain ) schema.job.fillFromImpl(builder.trainModel());
     return schema;
   }
 

@@ -22,8 +22,8 @@
 #'        \code{"poisson"}: \code{"log"}, \code{"identity"}\cr
 #'        \code{"gamma"}: \code{"inverse"}, \code{"log"}, \code{"identity"}\cr
 #'        \code{"tweedie"}: \code{"tweedie"}\cr
-#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}.
-#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}.
+#' @param tweedie_variance_power A numeric specifying the power for the variance function when \code{family = "tweedie"}. Default is 0.
+#' @param tweedie_link_power A numeric specifying the power for the link function when \code{family = "tweedie"}. Default is 1.
 #' @param alpha A numeric in [0, 1] specifying the elastic-net mixing parameter.
 #'                The elastic-net penalty is defined to be:
 #'                \deqn{P(\alpha,\beta) = (1-\alpha)/2||\beta||_2^2 + \alpha||\beta||_1 = \sum_j [(1-\alpha)/2 \beta_j^2 + \alpha|\beta_j|]}
@@ -34,6 +34,7 @@
 #'               The default prior is the observational frequency of class 1. Must be from (0,1) exclusive range or NULL (no prior).
 #' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
 #'                      \code{lambda} is interpreted as lambda min.
+#' @param early_stopping A logical value indicating whether to stop early when doing lambda search. H2O will stop the computation at the moment when the likelihood stops changing or gets  (on the validation data).
 #' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}.
 #' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the
 #'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
@@ -47,9 +48,11 @@
 #' @param offset_column Specify the offset column.
 #' @param weights_column Specify the weights column.
 #' @param nfolds (Optional) Number of folds for cross-validation.
+#' @param seed (Optional) Specify the random number generator (RNG) seed for cross-validation folds.
 #' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified
-#'        Must be "AUTO", "Random" or "Modulo".
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
+#'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will
+#'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param intercept Logical, include constant term (intercept) in the model.
@@ -62,8 +65,6 @@
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
 #' @param missing_values_handling (Optional) Controls handling of missing values. Can be either "MeanImputation" or "Skip". MeanImputation replaces missing values with mean for numeric and most frequent level for categorical,  Skip ignores observations with any missing value. Applied both during model training *AND* scoring.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#' @param ... (Currently Unimplemented)
-#'        coefficients.
 #'
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine learning task at hand
 #'         (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is returned, if it's regression then a
@@ -114,17 +115,19 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     standardize = TRUE,
                     family = c("gaussian", "binomial", "poisson", "gamma", "tweedie","multinomial"),
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
-                    tweedie_variance_power = NaN,
-                    tweedie_link_power = NaN,
+                    tweedie_variance_power = 0,
+                    tweedie_link_power = 1,
                     alpha = 0.5,
                     prior = NULL,
                     lambda = 1e-05,
                     lambda_search = FALSE,
+                    early_stopping=FALSE,
                     nlambdas = -1,
                     lambda_min_ratio = -1.0,
                     nfolds = 0,
+                    seed = NULL,
                     fold_column = NULL,
-                    fold_assignment = c("AUTO","Random","Modulo"),
+                    fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                     keep_cross_validation_predictions = FALSE,
                     keep_cross_validation_fold_assignment = FALSE,
                     beta_constraints = NULL,
@@ -132,7 +135,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     weights_column = NULL,
                     intercept = TRUE,
                     max_active_predictors = -1,
-                    interactions=NULL,
+                    interactions = NULL,
                     objective_epsilon = -1,
                     gradient_epsilon = -1,
                     non_negative = FALSE,
@@ -187,6 +190,7 @@ h2o.glm <- function(x, y, training_frame, model_id,
   if( !missing(offset_column) )             parms$offset_column          <- offset_column
   if( !missing(weights_column) )            parms$weights_column         <- weights_column
   if( !missing(intercept) )                 parms$intercept              <- intercept
+  if( !missing(seed))                       parms$seed                   <- seed
   if( !missing(fold_column) )               parms$fold_column            <- fold_column
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
@@ -231,6 +235,19 @@ h2o.makeGLMModel <- function(model,beta) {
    m@model$coefficients <- m@model$coefficients_table[,2]
    names(m@model$coefficients) <- m@model$coefficients_table[,1]
    m
+}
+
+#' Extract full regularization path from glm model (assuming it was run with lambda search option)
+#'
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.getGLMFullRegularizationPath <- function(model) {
+   res = .h2o.__remoteSend(method="GET", .h2o.__GLMRegPath, model=model@model_id)
+   colnames(res$coefficients) <- res$coefficient_names
+   if(!is.null(res$coefficients_std) && length(res$coefficients_std) > 0L) {
+     colnames(res$coefficients_std) <- res$coefficient_names
+   }
+   res
 }
 
 ##' Start an H2O Generalized Linear Model Job

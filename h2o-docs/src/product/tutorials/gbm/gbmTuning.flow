@@ -1,0 +1,165 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "md",
+      "input": "# H2O GBM Tuning Tutorial for Flow\n\n## Arno Candel, PhD, Chief Architect, H2O.ai\n#### Ported to Flow by Lauren DiPerna, M.S., Jr. Data Scientist, H2O.ai\n\nIn this tutorial, we show how to build a well-tuned H2O GBM model for a supervised classification task. We specifically don't focus on feature engineering and use a small dataset to allow you to reproduce these results in a few minutes on a laptop. This script can be directly transferred to datasets that are hundreds of GBs large and H2O clusters with dozens of compute nodes.\n\nThis tutorial is also available in R and Python:\n* R users can download a [R Markdown](http://rmarkdown.rstudio.com) from [H2O's github repository](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).\n* Python users can download a [Jupyter Notebook](http://jupyter.org/) from [H2O's github repository](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb).\n\n## How to Interact with this Tutorial\nTo run an individual cell in a flow file, confirm the cell is in Edit Mode (click on the cell to highlight it), then press Ctrl+Enter or click the Run button. To see all the keyboard shortcuts, click outside of this cell and then press the `h` key.\n\nEach cell will list what steps were taken to produce its output - these steps are provided only as a reference and are not steps you need to take.\n\n## Installation & Launch of H2O for Flow\nEither download H2O from [H2O.ai's website](http://h2o.ai/download) or install the latest version of H2O using the following command line code:\n\n1. [Download H2O](http://h2o.ai/download/). This is a zip file that contains everything you need to get started.\n\n    Or run the following from your command line:\n         curl -o h2o.zip http://download.h2o.ai/versions/h2o-3.8.2.8.zip\n2. From your terminal, run:\n         cd ~/Downloads\n         unzip h2o-3.8.2.8.zip\n         cd h2o-3.8.2.8\n         java -jar h2o.jar\n3. Point your browser to http://localhost:54321\n\n4. The next time you want to launch Flow, change into the directory that contains your H2O package from the command line, and run the JAR file.\n    *(note: if your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-3.8.2.8 with the correct path to your h2o-3.8.2.8 package)*:\n         cd ~/Downloads/h2o-3.8.2.8 \n         java -jar h2o.jar\n\n\n## Import the data into H2O \nEverything is scalable and distributed from now on. All processing is done on the fully multi-threaded and distributed H2O Java-based backend and can be scaled to large datasets on large compute clusters.\nHere, we use a small public dataset ([Titanic](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html)), but you can use datasets that are hundreds of GBs large.\n\nFrom within the `ImportFiles` CS cell (shown below), a path can point to a local file, hdfs, s3, nfs, Hive, directories, etc."
+    },
+    {
+      "type": "cs",
+      "input": "importFiles"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv\" ]\n\n# steps taken: \n# enter http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv into the `Search` field\n# hit enter to add the file, click on the file to select it, and then click on `Import`"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv\" ]\n\n# click `Parse these files...`"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv\"]\n  destination_frame: \"titanic.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 14\n  single_quotes: false\n  column_names: [\"pclass\",\"survived\",\"name\",\"sex\",\"age\",\"sibsp\",\"parch\",\"ticket\",\"fare\",\"cabin\",\"embarked\",\"boat\",\"body\",\"home.dest\"]\n  column_types: [\"Numeric\",\"Enum\",\"String\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304\n\n\n# steps taken:\n# select `enum` from the `survived` response column's dropdown menu to convert it from an integer to a categorical factor\n# then click `Parse`"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"titanic.hex\"\n\n# steps taken: click on `View`"
+    },
+    {
+      "type": "md",
+      "input": "From now on, everything is generic and directly applies to most datasets. We assume that all feature engineering is done at this stage and focus on model tuning. For multi-class problems, you can look at the log loss or confusion matrix output instead of the auc, and for regression problems, you can look at the deviance or the mse.\n\n## Split the data for Machine Learning\nWe split the data into three pieces: 60% for training, 20% for validation, and 20% for final testing. \nHere, we use random splitting, but this assumes i.i.d. data. If this is not the case (e.g., when events span across multiple rows or data has a time structure), you'll have to sample your data non-randomly."
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"titanic.hex\", [0.6,0.2], [\"titanic_training.hex_0.60\",\"titanic_validation.hex_0.20\",\"titanic_testing.hex_0.20\"], 1234\n\n# steps taken:\n# click on 'Split'\n# then within the output fields click on `Add a new split` to add a testing set split\n# enter in the ratio 0.60, 0.20, 0.20 for training, validation, and testing sets respectively\n# set the seed to 1234 \n# then click on `Create` to create the splits"
+    },
+    {
+      "type": "md",
+      "input": "## Establish baseline performance\nAs the first step, we'll build some default models to see what accuracy we can expect. Let's use the [AUC metric](http://mlwiki.org/index.php/ROC_Analysis) for this demo. It ranges from 0.5 for random models to 1 for perfect models.\n\n\nThe first model is a default GBM, trained on the 60% training split"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"default_gbm\",\"training_frame\":\"titanic_training.hex_0.60\",\"validation_frame\":\"titanic_validation.hex_0.20\",\"nfolds\":0,\"response_column\":\"survived\",\"ignored_columns\":[\"name\"],\"ignore_const_cols\":true,\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"seed\":-1,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"score_tree_interval\":0,\"nbins_top_level\":1024,\"nbins_cats\":1024,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"learn_rate_annealing\":1,\"checkpoint\":\"\",\"col_sample_rate_per_tree\":1,\"min_split_improvement\":0,\"histogram_type\":\"AUTO\",\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"col_sample_rate_change_per_level\":1,\"max_abs_leafnode_pred\":1.7976931348623157e+308}\n\n# steps taken:\n# click on `Model` at the top\n# click on `Gradient Boosting Method`\n# select `titanic_training.hex_0.60` from the `training_frame` dropdown menu\n# select `titanic_validation.hex_0.20` from the `validation_frame` dropdown menu\n# select `survived` from the `response_column` dropdown menu\n# click the box next to `name` in the table for `ignored_columns`\n# leave everything else as the default value provided\n# click on 'Build Model'"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"default_gbm\"\n\n# steps taken:\n# click on `View`\n# click on `Predict`\n# click on `OUTPUT - VALIDATION_METRICS` to view the AUC on the validation set"
+    },
+    {
+      "type": "md",
+      "input": "The validation AUC is over 94%, so this model is highly predictive!"
+    },
+    {
+      "type": "md",
+      "input": "The second model is another default GBM, but trained on 80% of the data, and cross-validated using 4 folds. Note that cross-validation takes longer and is not usually done for really large datasets."
+    },
+    {
+      "type": "cs",
+      "input": "splitFrame \"titanic.hex\", [0.8], [\"titanic.hex_0.80\",\"titanic.hex_0.20\"], 1234\n\n# steps taken:\n# split your training set into a training and testing set with an 80/20 split\n# use the same seed as your first split 1234\n# click on `Create`"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"default_gbm_80\",\"training_frame\":\"titanic.hex_0.80\",\"nfolds\":\"4\",\"response_column\":\"survived\",\"ignored_columns\":[\"name\"],\"ignore_const_cols\":true,\"ntrees\":50,\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"seed\":0xDECAF,\"learn_rate\":0.1,\"distribution\":\"AUTO\",\"sample_rate\":1,\"col_sample_rate\":1,\"score_each_iteration\":false,\"score_tree_interval\":0,\"fold_assignment\":\"AUTO\",\"nbins_top_level\":1024,\"nbins_cats\":1024,\"r2_stopping\":0.999999,\"stopping_rounds\":0,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001,\"max_runtime_secs\":0,\"learn_rate_annealing\":1,\"checkpoint\":\"\",\"col_sample_rate_per_tree\":1,\"min_split_improvement\":0,\"histogram_type\":\"AUTO\",\"keep_cross_validation_fold_assignment\":false,\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"col_sample_rate_change_per_level\":1,\"max_abs_leafnode_pred\":1.7976931348623157e+308}\n\n# steps taken:\n# selec titanic.hex_80 from the `training_frame` dropdown menu\n# enter 4 for the `nfolds` value\n# select `survived` from the `response_column` dropdown menu\n# click the box next to `name` in the table for `ignored_columns`\n# set seed to 0xDECAF\n# leave everything else as the default value provided\n# click on `Build Model`"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"default_gbm_80\"\n\n# steps taken:\n# click on `View`\n\n# to get a detailed summary of the cross validation metrics, click on `OUTPUT - CROSS-VALIDATION METRICS SUMMARY` \n# this gives you an idea of the variance between the folds\n# to get the AUC for the cross validation set, click on `OUTPUT - CROSS-VALIDATION METRICS`"
+    },
+    {
+      "type": "md",
+      "input": "We see that the cross-validated performance is similar to the validation set performance: `AUC 0.926439` (click on `OUTPUT - CROSS_VALIDATION_METRICS` in the cell above to see the auc)\n\nNext, we train a GBM with \"I feel lucky\" parameters. We'll use early stopping to automatically tune the number of trees using the validation AUC.  We'll use a lower learning rate (lower is always better, just takes more trees to converge). We'll also use stochastic sampling of rows and columns to (hopefully) improve generalization."
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"gbm_lucky\",\"training_frame\":\"titanic_training.hex_0.60\",\"validation_frame\":\"titanic_validation.hex_0.20\",\"nfolds\":0,\"response_column\":\"survived\",\"ignored_columns\":[\"name\"],\"ignore_const_cols\":true,\"ntrees\":\"10000\",\"max_depth\":5,\"min_rows\":10,\"nbins\":20,\"seed\":\"1234\",\"learn_rate\":\"0.01\",\"distribution\":\"AUTO\",\"sample_rate\":\"0.8\",\"col_sample_rate\":\"0.8\",\"score_each_iteration\":false,\"score_tree_interval\":\"10\",\"balance_classes\":false,\"nbins_top_level\":1024,\"nbins_cats\":1024,\"r2_stopping\":0.999999,\"stopping_rounds\":\"5\",\"stopping_metric\":\"AUC\",\"stopping_tolerance\":\"1e-4\",\"max_runtime_secs\":0,\"learn_rate_annealing\":1,\"checkpoint\":\"\",\"col_sample_rate_per_tree\":1,\"min_split_improvement\":0,\"histogram_type\":\"AUTO\",\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"col_sample_rate_change_per_level\":1,\"max_abs_leafnode_pred\":1.7976931348623157e+308}\n\n# steps taken:\n# buildModel\n# select `titanic_training.hex_0.60` from the `training_frame` dropdown menu\n# select `titanic_validation.hex_0.20` from the `validation_frame` dropdown menu\n# select `survived` from the `response_column` dropdown menu\n# click the box next to `name` in the table for `ignored_columns`\n\n# then set the following fields using the parameter listed below\n## more trees is better if the learning rate is small enough \n## here, use \"more than enough\" trees - we have early stopping\n## ntrees = 10000      \n\n## fix a random number generator seed for reproducibility\n## seed = 1234 \n                                \n## smaller learning rate is better (this is a good value for most datasets, but see below for annealing)\n## learn_rate = 0.01\n\n## sample 80% of rows per tree\n## sample_rate = 0.8 \n    \n## sample 80% of columns per split\n## col_sample_rate = 0.8\n\n## early stopping once the validation AUC doesn't improve by at least 0.01% for 5 consecutive scoring events\n## stopping_rounds = 5, stopping_tolerance = 1e-4, stopping_metric = \"AUC\"\n\n## score every 10 trees to make early stopping reproducible (it depends on the scoring interval)\n## score_tree_interval = 10   \n  \n# click `Build Model`, 'then click 'View' when it finishes"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"gbm_lucky\"\n# click on `OUTPUT - VALIDATION_METRICS` to see the AUC for the validation set"
+    },
+    {
+      "type": "md",
+      "input": "This model doesn't seem to be much better than the previous models:\n`AUC\t0.939335`\n\nFor this small dataset, dropping 20% of observations per tree seems too aggressive in terms of adding regularization. For larger datasets, this is usually not a bad idea. But we'll let this parameter tune freshly below, so no worries.\n\nNote: To see what other `stopping_metric` parameters you can specify, simply pass an invalid option: (try entering \"yada\" into the `stopping_metric` field) \n## Hyper-Parameter Search\n\nNext, we'll do real hyper-parameter optimization to see if we can beat the best AUC so far (around 94%).\n\nThe key here is to start tuning some key parameters first (i.e., those that we expect to have the biggest impact on the results). From experience with gradient boosted trees across many datasets, we can state the following \"rules\":\n\n1. Build as many trees (`ntrees`) as it takes until the validation set error starts increasing.\n2. A lower learning rate (`learn_rate`) is generally better, but will require more trees. Using `learn_rate=0.02 `and `learn_rate_annealing=0.995` (reduction of learning rate with each additional tree) can help speed up convergence without sacrificing accuracy too much, and is great to hyper-parameter searches. For faster scans, use values of 0.05 and 0.99 instead.\n3. The optimum maximum allowed depth for the trees (`max_depth`) is data dependent, deeper trees take longer to train, especially at depths greater than 10.\n4. Row and column sampling (`sample_rate` and `col_sample_rate`) can improve generalization and lead to lower validation and test set errors. Good general values for large datasets are around 0.7 to 0.8 (sampling 70-80 percent of the data) for both parameters. Column sampling per tree (`col_sample_rate_per_tree`) can also be tuned. Note that it is multiplicative with `col_sample_rate`, so setting both parameters to 0.8 results in 64% of columns being considered at any given node to split.\n5. For highly imbalanced classification datasets (e.g., fewer buyers than non-buyers), stratified row sampling based on response class membership can help improve predictive accuracy.  It is configured with `sample_rate_per_class` (array of ratios, one per response class in lexicographic order).\n6. Most other options only have a small impact on the model performance, but are worth tuning with a Random hyper-parameter search nonetheless, if highest performance is critical.\n\nFirst we want to know what value of `max_depth` to use because it has a big impact on the model training time and optimal values depend strongly on the dataset.\nWe'll do a quick Cartesian grid search to get a rough idea of good candidate `max_depth` values. Each model in the grid search will use early stopping to tune the number of trees using the validation set AUC, as before.\nWe'll use learning rate annealing to speed up convergence without sacrificing too much accuracy."
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"grid\",\"training_frame\":\"titanic_training.hex_0.60\",\"validation_frame\":\"titanic_validation.hex_0.20\",\"nfolds\":0,\"response_column\":\"survived\",\"ignored_columns\":[\"name\"],\"ignore_const_cols\":true,\"ntrees\":\"10000\",\"min_rows\":10,\"nbins\":20,\"seed\":\"1234\",\"learn_rate\":\"0.05\",\"distribution\":\"AUTO\",\"sample_rate\":\"0.8\",\"col_sample_rate\":\"0.8\",\"score_each_iteration\":false,\"score_tree_interval\":\"10\",\"balance_classes\":false,\"nbins_top_level\":1024,\"nbins_cats\":1024,\"r2_stopping\":0.999999,\"stopping_rounds\":\"5\",\"stopping_metric\":\"AUC\",\"stopping_tolerance\":\"1e-4\",\"max_runtime_secs\":0,\"learn_rate_annealing\":\"0.99\",\"checkpoint\":\"\",\"col_sample_rate_per_tree\":1,\"min_split_improvement\":0,\"histogram_type\":\"AUTO\",\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"col_sample_rate_change_per_level\":1,\"max_abs_leafnode_pred\":1.7976931348623157e+308,\"grid_id\":\"depth_grid\",\"hyper_parameters\":{\"max_depth\":[\"1\",\"3\",\"5\",\"9\",\"11\",\"13\",\"15\",\"17\",\"19\",\"21\",\"23\",\"25\",\"27\",\"29\"]},\"search_criteria\":{\"strategy\":\"Cartesian\"}}\n\n# steps taken:\n# same as previous model builds: set train and validation frames, response column, and column to ignore\n# to set a grid option click on the box next to parameter that needs to take multiple inputs\n# for example in the in the Max_depth field, click the Grid checkbox on the right, then specify the maximum number of edges between the top node and the furthest node as a stopping criteria (for this example, use values of 1;3;5;9;11;13;15;17;19;21;23;25;27;29). "
+    },
+    {
+      "type": "md",
+      "input": "To see the performance of your grid search click on the `View` button. By default it will sort the models by logloss, but you can specify the models to be sorted by AUC as well:"
+    },
+    {
+      "type": "cs",
+      "input": "getGrid \"depth_grid\""
+    },
+    {
+      "type": "cs",
+      "input": "grid inspect 'summary', getGrid \"depth_grid\", sort_by:\"auc\", decreasing:true "
+    },
+    {
+      "type": "md",
+      "input": "It appears that `max_depth` values 19 to 29 (top 5) are best suited for this dataset, which is unusally deep!\n\nNow that we know a good range for max_depth, we can tune all other parameters in more detail. Since we don't know what combinations of hyper-parameters will result in the best model, we'll use random hyper-parameter search to \"let the machine get luckier than a best guess of any human\"."
+    },
+    {
+      "type": "md",
+      "input": "### Adding Hyperparameters When Building a Model\n* restrict the search to the range of max_depth established above\n    ```max_depth= 19;20;21;22;23;24;25;26;27;28;29```\n\n* search a large space of row sampling rates per tree\n    ```sample_rate = 0.20; 0.21; 0.22; 0.23; 0.24; 0.25; 0.26; 0.27; 0.28; 0.29; 0.30; 0.31; 0.32; 0.33; 0.34; 0.35; 0.36; 0.37; 0.38; 0.39; 0.40; 0.41; 0.42; 0.43; 0.44; 0.45; 0.46; 0.47; 0.48; 0.49; 0.50; 0.51; 0.52; 0.53; 0.54: 0.55; 0.56; 0.57; 0.58; 0.59; 0.60; 0.61; 0.62; 0.63; 0.64; 0.65; 0.66; 0.67; 0.68; 0.69; 0.70; 0.71; 0.72; 0.73; 0.74; 0.75; 0.76; 0.77; 0.78; 0.79; 0.80; 0.81; 0.82; 0.83; 0.84; 0.85; 0.86; 0.87; 0.88; 0.89; 0.90; 0.91; 0.92; 0.93; 0.94; 0.95; 0.96; 0.97; 0.98; 0.99; 1.00```                                         \n\n* search a large space of column sampling rates per split\n    ```col_sample_rate = 0.20; 0.21; 0.22; 0.23; 0.24; 0.25; 0.26; 0.27; 0.28; 0.29; 0.30; 0.31; 0.32; 0.33; 0.34; 0.35; 0.36; 0.37; 0.38; 0.39; 0.40; 0.41; 0.42; 0.43; 0.44; 0.45; 0.46; 0.47; 0.48; 0.49; 0.50; 0.51; 0.52; 0.53; 0.54: 0.55; 0.56; 0.57; 0.58; 0.59; 0.60; 0.61; 0.62; 0.63; 0.64; 0.65; 0.66; 0.67; 0.68; 0.69; 0.70; 0.71; 0.72; 0.73; 0.74; 0.75; 0.76; 0.77; 0.78; 0.79; 0.80; 0.81; 0.82; 0.83; 0.84; 0.85; 0.86; 0.87; 0.88; 0.89; 0.90; 0.91; 0.92; 0.93; 0.94; 0.95; 0.96; 0.97; 0.98; 0.99; 1.00```                                        \n\n* search a large space of column sampling rates per tree\n    ```col_sample_rate_per_tree = 0.20; 0.21; 0.22; 0.23; 0.24; 0.25; 0.26; 0.27; 0.28; 0.29; 0.30; 0.31; 0.32; 0.33; 0.34; 0.35; 0.36; 0.37; 0.38; 0.39; 0.40; 0.41; 0.42; 0.43; 0.44; 0.45; 0.46; 0.47; 0.48; 0.49; 0.50; 0.51; 0.52; 0.53; 0.54: 0.55; 0.56; 0.57; 0.58; 0.59; 0.60; 0.61; 0.62; 0.63; 0.64; 0.65; 0.66; 0.67; 0.68; 0.69; 0.70; 0.71; 0.72; 0.73; 0.74; 0.75; 0.76; 0.77; 0.78; 0.79; 0.80; 0.81; 0.82; 0.83; 0.84; 0.85; 0.86; 0.87; 0.88; 0.89; 0.90; 0.91; 0.92; 0.93; 0.94; 0.95; 0.96; 0.97; 0.98; 0.99; 1.00```                              \n\n* search a large space of how column sampling per split should change as a function of the depth of the split\n    ```col_sample_rate_change_per_level = 0.90; 0.91; 0.92; 0.93; 0.94; 0.95; 0.96; 0.97; 0.98; 0.99; 1.00; 1.01; 1.02; 1.03; 1.04; 1.05; 1.06; 1.07; 1.08; 1.09; 1.10```\n\n* search a large space of the number of min rows in a terminal node\n    ```min_rows = 1.0; 2.0; 4.0; 8.0; 16.0; 32.0; 64.0; 128.0; 256.0; 512.0```   \n\n* search a large space of the number of bins for split-finding for continuous and integer columns\n    ```nbins = 16; 32; 64; 128; 256; 512;1024```\n\n* search a large space of the number of bins for split-finding for categorical columns\n    ```nbins_cats = 16; 32; 64; 128; 256; 512; 1024; 2048; 4096```           \n\n* search a few minimum required relative error improvement thresholds for a split to happen\n    ```min_split_improvement = 0e+00; 1e-08; 1e-06; 1e-04```\n\n* try all histogram types (QuantilesGlobal and RoundRobin are good for numeric columns with outliers).\nIn the histogram_type field select:     ```\"UniformAdaptive\", \"QuantilesGlobal\", and \"RoundRobin\"```\n\n* In the search_criteria dropdown menu select `\"RandomDiscrete\"`    \n\n* limit the runtime to 10 minutes\n    ```max_runtime_secs = 600  ```       \n\n* build no more than 100 models\n    ```max_models = 100```                  \n\n* random number generator seed to make sampling of parameter combinations reproducible\n    ```seed = 1234```                        \n\n* early stopping once the leaderboard of the top 5 models is converged to 0.1% relative difference\n    ```stopping_rounds = 5```               \n    ```stopping_metric = \"AUC\"```\n    ```stopping_tolerance = 1e-3```\n\n\n* For parameters with one value:\nmore trees is better if the learning rate is small enough\nuse \"more than enough\" trees - we have early stopping\n    ```ntrees = 10000``` \n\n* smaller learning rate is better since we have learning_rate_annealing, we can afford to start with a bigger learning rate\n    ```learn_rate = 0.05```           \n\n* learning rate annealing: learning_rate shrinks by 1% after every tree (use 1.00 to disable, but then lower the learning_rate)\n    ```learn_rate_annealing = 0.99```   \n\n* early stopping based on timeout (no model should take more than 1 hour - modify as needed)\n    ```max_runtime_secs = 3600```                                                 \n\n* early stopping once the validation AUC doesn't improve by at least 0.01% for 5 consecutive scoring events\n    ```stopping_rounds = 5```\n     ```stopping_tolerance = 1e-4```\n     ```stopping_metric = \"AUC\"``` \n\n* score every 10 trees to make early stopping reproducible (it depends on the scoring interval)\n    ```score_tree_interval = 10```                                                \n\n* base random number generator seed for each model (automatically gets incremented internally for each model)\n    ```seed = 1234```                                                             "
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'gbm', {\"model_id\":\"grid\",\"training_frame\":\"titanic_training.hex_0.60\",\"validation_frame\":\"titanic_validation.hex_0.20\",\"nfolds\":0,\"response_column\":\"survived\",\"ignored_columns\":[\"name\"],\"ignore_const_cols\":true,\"ntrees\":\"10000\",\"seed\":\"1234\",\"learn_rate\":\"0.05\",\"distribution\":\"AUTO\",\"score_each_iteration\":false,\"score_tree_interval\":\"10\",\"balance_classes\":false,\"nbins_top_level\":1024,\"r2_stopping\":0.999999,\"stopping_rounds\":\"5\",\"stopping_metric\":\"AUC\",\"stopping_tolerance\":\"1e-4\",\"max_runtime_secs\":\"3600\",\"learn_rate_annealing\":\"0.99\",\"checkpoint\":\"\",\"build_tree_one_node\":false,\"sample_rate_per_class\":[],\"max_abs_leafnode_pred\":1.7976931348623157e+308,\"grid_id\":\"final_grid\",\"hyper_parameters\":{\"max_depth\":[\"19\",\"20\",\"21\",\"22\",\"23\",\"24\",\"25\",\"26\",\"27\",\"28\",\"29\"],\"min_rows\":[\"1\";\"2\";\"4\";\"8\";\"16\";\"32\";\"64\";\"128\";\"256\"],\"nbins\":[\"16\",\"32\",\"64\",\"128\",\"256\",\"512\",\"1024\"],\"sample_rate\":[\"0.20\",\"0.21\",\"0.22\",\"0.23\",\"0.24\",\"0.25\",\"0.26\",\"0.27\",\"0.28\",\"0.29\",\"0.30\",\"0.31\",\"0.32\",\"0.33\",\"0.34\",\"0.35\",\"0.36\",\"0.37\",\"0.38\",\"0.39\",\"0.40\",\"0.41\",\"0.42\",\"0.43\",\"0.44\",\"0.45\",\"0.46\",\"0.47\",\"0.48\",\"0.49\",\"0.50\",\"0.51\",\"0.52\",\"0.53\",\"0.54\",\"0.55\",\"0.56\",\"0.57\",\"0.58\",\"0.59\",\"0.60\",\"0.61\",\"0.62\",\"0.63\",\"0.64\",\"0.65\",\"0.66\",\"0.67\",\"0.68\",\"0.69\",\"0.70\",\"0.71\",\"0.72\",\"0.73\",\"0.74\",\"0.75\",\"0.76\",\"0.77\",\"0.78\",\"0.79\",\"0.80\",\"0.81\",\"0.82\",\"0.83\",\"0.84\",\"0.85\",\"0.86\",\"0.87\",\"0.88\",\"0.89\",\"0.90\",\"0.91\",\"0.92\",\"0.93\",\"0.94\",\"0.95\",\"0.96\",\"0.97\",\"0.98\",\"0.99\",\"1.00\"],\"col_sample_rate\":[\"0.20\",\"0.21\",\"0.22\",\"0.23\",\"0.24\",\"0.25\",\"0.26\",\"0.27\",\"0.28\",\"0.29\",\"0.30\",\"0.31\",\"0.32\",\"0.33\",\"0.34\",\"0.35\",\"0.36\",\"0.37\",\"0.38\",\"0.39\",\"0.40\",\"0.41\",\"0.42\",\"0.43\",\"0.44\",\"0.45\",\"0.46\",\"0.47\",\"0.48\",\"0.49\",\"0.50\",\"0.51\",\"0.52\",\"0.53\",\"0.54\",\"0.55\",\"0.56\",\"0.57\",\"0.58\",\"0.59\",\"0.60\",\"0.61\",\"0.62\",\"0.63\",\"0.64\",\"0.65\",\"0.66\",\"0.67\",\"0.68\",\"0.69\",\"0.70\",\"0.71\",\"0.72\",\"0.73\",\"0.74\",\"0.75\",\"0.76\",\"0.77\",\"0.78\",\"0.79\",\"0.80\",\"0.81\",\"0.82\",\"0.83\",\"0.84\",\"0.85\",\"0.86\",\"0.87\",\"0.88\",\"0.89\",\"0.90\",\"0.91\",\"0.92\",\"0.93\",\"0.94\",\"0.95\",\"0.96\",\"0.97\",\"0.98\",\"0.99\",\"1.00\"],\"nbins_cats\":[\"16\",\"32\",\"64\",\"128\",\"256\",\"512\",\"1024\",\"2048\",\"4096\"],\"col_sample_rate_per_tree\":[\"0.20\",\"0.21\",\"0.22\",\"0.23\",\"0.24\",\"0.25\",\"0.26\",\"0.27\",\"0.28\",\"0.29\",\"0.30\",\"0.31\",\"0.32\",\"0.33\",\"0.34\",\"0.35\",\"0.36\",\"0.37\",\"0.38\",\"0.39\",\"0.40\",\"0.41\",\"0.42\",\"0.43\",\"0.44\",\"0.45\",\"0.46\",\"0.47\",\"0.48\",\"0.49\",\"0.50\",\"0.51\",\"0.52\",\"0.53\",\"0.54\",\"0.55\",\"0.56\",\"0.57\",\"0.58\",\"0.59\",\"0.60\",\"0.61\",\"0.62\",\"0.63\",\"0.64\",\"0.65\",\"0.66\",\"0.67\",\"0.68\",\"0.69\",\"0.70\",\"0.71\",\"0.72\",\"0.73\",\"0.74\",\"0.75\",\"0.76\",\"0.77\",\"0.78\",\"0.79\",\"0.80\",\"0.81\",\"0.82\",\"0.83\",\"0.84\",\"0.85\",\"0.86\",\"0.87\",\"0.88\",\"0.89\",\"0.90\",\"0.91\",\"0.92\",\"0.93\",\"0.94\",\"0.95\",\"0.96\",\"0.97\",\"0.98\",\"0.99\",\"1.00\"],\"min_split_improvement\":[\"0e+00\",\"1e-08\",\"1e-06\",\"1e-04\"],\"histogram_type\":[\"UniformAdaptive\",\"QuantilesGlobal\",\"RoundRobin\"],\"col_sample_rate_change_per_level\":[\"0.90\",\"0.91\",\"0.92\",\"0.93\",\"0.94\",\"0.95\",\"0.96\",\"0.97\",\"0.98\",\"0.99\",\"1.00\",\"1.01\",\"1.02\",\"1.03\",\"1.04\",\"1.05\",\"1.06\",\"1.07\",\"1.08\",\"1.09\",\"1.10\"]},\"search_criteria\":{\"strategy\":\"RandomDiscrete\",\"max_models\":100,\"max_runtime_secs\":600,\"stopping_rounds\":5,\"stopping_tolerance\":0.001,\"stopping_metric\":\"AUC\"}}"
+    },
+    {
+      "type": "md",
+      "input": "To see the auc performance of your grid search click on the `View` button. Within the next cell click on `Inspect Grid Summary`, which will show each grid sorted by the log loss.\n\nIf, however, you'd like to see the grid results sorted by auc, add `, sort_by:\"auc\", decreasing:true` within the CS cell."
+    },
+    {
+      "type": "cs",
+      "input": "grid inspect 'summary', getGrid \"final_grid\", {\"sort_by\":\"auc\",\"decreasing\":true}"
+    },
+    {
+      "type": "md",
+      "input": "## Model Inspection and Final Test Set Scoring\n\nLet's see how well the best model of the grid search (as judged by validation set AUC) does on the held out test set:"
+    },
+    {
+      "type": "cs",
+      "input": "predict\n# Select the model with the highest auc from your grid search from the `Model` dropdown menu\n# select the test frame `titanic_testing.hex_0.20` from the `Frame` dropdown menu"
+    },
+    {
+      "type": "md",
+      "input": "To see how your best model performed on the held out test set run the code snippet below:"
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"final_grid_model_68\", frame: \"titanic_testing.hex_0.20\", predictions_frame: \"predict_1\""
+    },
+    {
+      "type": "md",
+      "input": "Good news. It does as well on the test set as on the validation set, so it looks like our best GBM model generalizes well to the unseen test set:\n\n```AUC\t0.970750```\n\nWe can inspect the winning model’s parameters:\nclick on `MODEL PARAMETERS` to expand and view the model parameters"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"final_grid_model_68\""
+    },
+    {
+      "type": "md",
+      "input": "Alternatively, you can display all parameters like this:"
+    },
+    {
+      "type": "cs",
+      "input": "grid inspect \"parameters\", getModel \"final_grid_model_68\""
+    },
+    {
+      "type": "md",
+      "input": "The model and the predictions can be saved to file as follows:\n\nTo generate a Plain Old Java Object (POJO) that can use the model outside of H2O, click the Download POJO button (At the top of the Model cell).\n\n**Note**: A POJO can be run in standalone mode or it can be integrated into a platform, such as Hadoop’s Storm. To make the POJO work in your Java application, you will also need the h2o-genmodel.jar file (available in h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar).\n\nTo export a built model:\n\n1. Click the Model menu at the top of the screen.\n2. Select Export Model…\n3. In the exportModel cell that appears, select the model from the drop-down Model: list.\n4. Enter a location for the exported model in the Path: entry field.\n\n   **Note**: If you specify a location that doesn’t exist, it will be created. For example, if you only enter test in the Path: entry field, the model will be exported to h2o-3/test.\n\n   To overwrite any files with the same name, check the Overwrite: checkbox.\n\n   Click the Export button. A confirmation message displays when the model has been successfully exported.   "
+    },
+    {
+      "type": "md",
+      "input": "## Ensembling Techniques\n\nEnsembling techniques are not yet available in Flow, to see examples check out the [R](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd) and [Python](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb)\n GBM tuning demos.\n"
+    },
+    {
+      "type": "md",
+      "input": "## Summary\nWe learned how to build H2O GBM models for a binary classification task on a small but realistic dataset with numerical and categorical variables, with the goal to maximize the AUC (ranges from 0.5 to 1). We first established a baseline with the default model, then carefully tuned the remaining hyper-parameters without \"too much\" human guess-work. We used both Cartesian and Random hyper-parameter searches to find good models. We were able to get the AUC on a holdout test set from the low 94% range with the default model to and the mid 97% after tuning. We performed simple cross-validation variance analysis to learn that results were slightly \"lucky\" due to the specific train/valid/test set splits, and settled to expect mid 96% AUCs instead.\n\nNote that this script and the findings therein are directly transferrable to large datasets on distributed clusters including Spark/Hadoop environments.\n\nMore information can be found here [http://www.h2o.ai/docs/](http://www.h2o.ai/docs/).\n"
+    }
+  ]
+}

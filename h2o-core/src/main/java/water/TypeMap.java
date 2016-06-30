@@ -1,6 +1,8 @@
 package water;
 
 import java.util.Arrays;
+
+import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -28,34 +30,33 @@ public class TypeMap {
 
     // Status pages looked at without locking the cloud
     water.api.Schema.class.getName(),
-    water.api.Schema.Meta.class.getName(),
-    water.api.RequestSchema.class.getName(),
-    water.api.CloudV3.class.getName(),
-    water.api.CloudV3.NodeV3.class.getName(),
-    water.api.AboutHandler.AboutV3.class.getName(),
-    water.api.AboutHandler.AboutEntryV3.class.getName(),
+    SchemaV3.Meta.class.getName(),
+    SchemaV3.class.getName(),
+    CloudV3.class.getName(),
+    CloudV3.NodeV3.class.getName(),
+    AboutV3.class.getName(),
+    AboutEntryV3.class.getName(),
     water.UDPRebooted.ShutdownTsk.class.getName(),
 
     // Mistyped hack URLs
-    water.api.H2OErrorV3.class.getName(),
+    H2OErrorV3.class.getName(),
 
     // Ask for ModelBuilders list
-    water.api.RouteBase.class.getName(),
-    water.api.ModelBuildersV3.class.getName(),  // So Flow can ask about possible Model Builders without locking
-    water.api.ModelBuildersBase.class.getName(),
+    RouteV3.class.getName(),
+    ModelBuildersV3.class.getName(),  // So Flow can ask about possible Model Builders without locking
     water.util.IcedSortedHashMap.class.getName(), // Seems wildly not-needed
     hex.schemas.ModelBuilderSchema.IcedHashMapStringModelBuilderSchema.class.getName(),
 
     // Checking for Flow clips
-    water.api.NodePersistentStorageV3.class.getName(),
-    water.api.NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
+    NodePersistentStorageV3.class.getName(),
+    NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
 
     // Beginning to hunt for files
     water.util.IcedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringString.class.getName(),
     water.util.IcedHashMap.IcedHashMapStringObject.class.getName(),
-    water.api.TypeaheadV3.class.getName(),    // Allow typeahead without locking
+    TypeaheadV3.class.getName(),    // Allow typeahead without locking
 
   };
   // Class name -> ID mapping
@@ -221,6 +222,11 @@ public class TypeMap {
       Icer f = goForGold(id);
       return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) {
-      throw Log.throwErr(e); }
+      throw Log.throwErr(e);
+    }
+  }
+  public static Freezable getTheFreezableOrThrow(int id) throws ClassNotFoundException {
+    Icer f = goForGold(id);
+    return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
   }
 }

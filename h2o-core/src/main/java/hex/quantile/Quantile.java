@@ -60,11 +60,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   // ----------------------
   private class QuantileDriver extends Driver {
 
-    @Override public void compute2() {
+    @Override public void computeImpl() {
       QuantileModel model = null;
       try {
-        Scope.enter();
-        _parms.read_lock_frames(_job); // Fetch & read-lock source frame
         init(true);
 
         // The model to be built
@@ -80,7 +78,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         for( int n=0; n<_ncols; n++ ) {
           if( stop_requested() ) return; // Stopped/cancelled
           Vec vec = vecs[n];
-          if (vec.isBad()) {
+          if (vec.isBad() || vec.isCategorical() || vec.isString() || vec.isTime() || vec.isUUID()) {
             model._output._quantiles[n] = new double[_parms._probs.length];
             Arrays.fill(model._output._quantiles[n], Double.NaN);
             continue;
@@ -112,10 +110,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         }
       } finally {
         if( model != null ) model.unlock(_job);
-        _parms.read_unlock_frames(_job);
-        Scope.exit(model == null ? null : model._key);
       }
-      tryComplete();
     }
   }
 

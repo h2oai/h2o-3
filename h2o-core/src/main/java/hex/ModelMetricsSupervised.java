@@ -7,8 +7,8 @@ public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes
   public final double _sigma;   // stddev of the response (if any)
 
-  public ModelMetricsSupervised(Model model, Frame frame, double mse, String[] domain, double sigma) {
-    super(model, frame, mse, null);
+  public ModelMetricsSupervised(Model model, Frame frame, long nobs, double mse, String[] domain, double sigma) {
+    super(model, frame, nobs, mse, null);
     _domain = domain;
     _sigma = sigma;
   }
@@ -23,7 +23,8 @@ public class ModelMetricsSupervised extends ModelMetrics {
 
   public final double r2() {
     double var = _sigma*_sigma;
-    return 1.0-(_MSE /var);
+    double r2 = 1.0-(_MSE /var);
+    return r2 >= 0 ? r2 : Double.NaN;
   }
 
   public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {

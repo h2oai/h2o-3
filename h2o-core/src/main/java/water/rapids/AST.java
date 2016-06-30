@@ -31,6 +31,9 @@ public abstract class AST extends Iced<AST> {
   public abstract String str();
   @Override public String toString() { return str(); }
 
+  public abstract String example();
+  public abstract String description();
+
   // Number of arguments, if that makes sense.  Always count 1 for self, so a
   // binary operator like '+' actually has 3 nargs.
   abstract int nargs();
@@ -90,6 +93,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTTanh  ());
     init(new ASTTriGamma());
     init(new ASTTrunc ());
+    init(new ASTNoOp());
 
     // Math binary ops
     init(new ASTAnd ());
@@ -167,6 +171,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTTable());
     init(new ASTUnique());
     init(new ASTVariance());
+    init(new ASTCorrelation());
 
     // Generic data mungers
     init(new ASTAnyFactor());
@@ -185,6 +190,8 @@ public abstract class AST extends Iced<AST> {
     init(new ASTRowSlice());
     init(new ASTSetDomain());
     init(new ASTSetLevel());
+    init(new ASTReLevel());
+    init(new ASTNAOmit());
 
     // Assignment; all of these lean heavily on Copy-On-Write optimizations.
     init(new ASTAppend());      // Add a column
@@ -248,16 +255,19 @@ public abstract class AST extends Iced<AST> {
 
 /** A number.  Execution is just to return the constant. */
 class ASTNum extends ASTParameter {
-  ASTNum( Exec e ) { super(e); }
+  public ASTNum() {}
+  ASTNum( Rapids e ) { super(e); }
   ASTNum( double d ) { super(d); }
   @Override public Val exec(Env env) { return _v; }
   @Override int[] columns( String[] names ) { return new int[]{(int)_v.getNum()}; }
+  public void setNum(double d) { ((ValNum)_v).setNum(d); }
 }
 
 /** A String.  Execution is just to return the constant. */
 class ASTStr extends ASTParameter {
+  public ASTStr() {}
   ASTStr(String str) { super(str); }
-  ASTStr(Exec e, char c) { super(e,c); }
+  ASTStr(Rapids e, char c) { super(e,c); }
   @Override public String str() { return _v.toString().replaceAll("^\"|^\'|\"$|\'$",""); }
   @Override public Val exec(Env env) { return _v; }
   @Override public String toJavaString() { return "\"" + str() + "\""; }
@@ -271,8 +281,11 @@ class ASTStr extends ASTParameter {
 /** A Frame.  Execution is just to return the constant. */
 class ASTFrame extends AST {
   final ValFrame _fr;
+  public ASTFrame() { _fr = null; }
   ASTFrame(Frame fr) { _fr = new ValFrame(fr); }
   @Override public String str() { return _fr.toString(); }
+  @Override public String example() { return null; }
+  @Override public String description() { return null; }
   @Override public Val exec(Env env) { return env.returning(_fr); }
   @Override int nargs() { return 1; }
 }
@@ -280,7 +293,8 @@ class ASTFrame extends AST {
 /** An ID.  Execution does lookup in the current scope. */
 class ASTId extends ASTParameter {
   final String _id;
-  ASTId(Exec e) { _id = e.token(); }
+  public ASTId() { _id = null; }
+  ASTId(Rapids e) { _id = e.token(); }
   ASTId(String id) { _id=id; }
   @Override public String str() { return _id; }
   @Override public Val exec(Env env) { return env.returning(env.lookup(_id)); }
@@ -291,6 +305,8 @@ class ASTId extends ASTParameter {
 /** A primitive operation.  Execution just returns the function.  *Application*
  *  (not execution) applies the function to the arguments. */
 abstract class ASTPrim extends AST {
+  @Override public String example() { return null; }
+  @Override public String description() { return null; }
   @Override public Val exec(Env env) { return new ValFun(this); }
   public abstract String[] args();
 }

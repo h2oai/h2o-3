@@ -57,6 +57,11 @@ This error output indicates that your Java version is not supported. Upgrade to 
 
 ---
 
+**I am not launching on Hadoop. How can I increase the amount of time that H2O allows for expected nodes to connect?**
+
+ For cluster startup, if you are not launching on Hadoop, then you will not need to specify a timeout. You can add additional nodes to the cloud as long as you haven't submitted any jobs to the cluster. When you do submit a job to the cluster, the cluster will lock and will print a message similar to `"Locking cloud to new members, because <reason>..."`.
+
+---
 
 
 ##Algorithms
@@ -189,7 +194,7 @@ Here is an example of how the prediction process works in H2O:
 
 The behavior for unseen categorical levels depends on the algorithm and how it handles missing levels (NA values): 
 
-- DRF and GBM treat missing or NA factor levels as the smallest value present (left-most in the bins), which can go left or right for any split. Unseen factor levels always go left in any split. 
+- For DRF and GBM, missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 - Deep Learning creates an extra input neuron for missing and unseen categorical levels, which can remain untrained if there were no missing or unseen categorical levels in the training data, resulting in a random contribution to the next layer during testing. 
 - GLM skips unseen levels in the beta*x dot product. 
 
@@ -788,6 +793,11 @@ After creating and applying the desired node labels and associating them with sp
 - `-mapperXmx 6g` launches H2O with 6g of memory
 - `-output hdfsOutputDirName` specifies the HDFS output directory as `hdfsOutputDirName`
 
+---
+
+**How does H2O handle UDP packet failures? Does H2O quit or retry?**
+
+ In standard settings, H2O only uses UDP for cloud forming and only if you do not provide a flat file. All other communication is done via TCP. Cloud forming with no flat file is done by repeated broadcasts that are repeated until the cloud forms.
 
 ---
 
@@ -825,7 +835,7 @@ When you are running H2O on Hadoop, H2O tries to determine the home HDFS directo
 
 ---
 
-**How do I access data in HDFS without launching H2O on Yarn?**
+**How do I access data in HDFS without launching H2O on YARN?**
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so in order to have a working HDFS connection download the h2odriver.jar file for your Hadoop distribution.
 
@@ -1388,11 +1398,9 @@ To replace specific column names, you can also use a `sub/gsub` in R:
 ```
 header <- c("user", "specified", "column", "names")
 ```
-To replace "user" column with "computer"
-<<<<<<< HEAD
-=======
 
->>>>>>> master
+To replace "user" column with "computer"
+
 ```
 data   <- h2o.importFile(path = pathToData)
 names(data) <- sub(pattern = "user", replacement = "computer", x = names(header))

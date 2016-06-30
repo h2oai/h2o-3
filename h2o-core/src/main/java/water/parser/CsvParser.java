@@ -574,7 +574,7 @@ MAIN_LOOP:
     for( int i = 0; i < s1.length; ++i ) {
       if( s1[i] == 0 ) continue;   // Separator does not appear; ignore it
       if( s1[max] < s1[i] ) max=i; // Largest count sep on 1st line
-      if( s1[i] == s2[i] ) {       // Sep counts are equal?
+      if( s1[i] == s2[i] && s1[i] >= s1[max]>>1 ) {  // Sep counts are equal?  And at nearly as large as the larger header sep?
         try {
           String[] t1 = determineTokens(l1, separators[i], singleQuote);
           String[] t2 = determineTokens(l2, separators[i], singleQuote);
@@ -719,6 +719,10 @@ MAIN_LOOP:
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
+      int i = bits.length-1;
+      for(; i > 0; --i)
+        if(bits[i] == '\n') break;
+      if(i > 0) bits = Arrays.copyOf(bits,i); // stop at the last full line
       InputStream is = new ByteArrayInputStream(bits);
       CsvParser p = new CsvParser(resSetup, null);
       PreviewParseWriter dout = new PreviewParseWriter(resSetup._number_columns);

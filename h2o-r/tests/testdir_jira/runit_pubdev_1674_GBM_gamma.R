@@ -18,7 +18,7 @@ test <- function(h) {
  
 	hcancar = as.h2o(cancar,destination_frame = "hcancar") 
 	hh = h2o.gbm(x = 1:2,y = "response",training_frame = hcancar,distribution = "gamma", 
-             ntrees = 20,max_depth = 1,min_rows = 1,learn_rate = 1) 
+             ntrees = 20,max_depth = 1,min_rows = 1,learn_rate = 1, min_split_improvement=0) 
 	ph = as.data.frame(h2o.predict(hh,newdata = hcancar))
  
 	#expect_equal(gg$initF,hh@model$init_f,tolerance = 1e-6)

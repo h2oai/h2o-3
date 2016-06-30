@@ -8,6 +8,7 @@ import hex.genmodel.easy.prediction.*;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
+import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -98,6 +99,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_predictions = false;
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
+    public boolean _auto_rebalance = true;
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
@@ -453,7 +455,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** The names of the levels for an categorical response column. */
     public String[] classNames() { assert isSupervised();
-      return _domains[_domains.length-1];
+      return _domains == null || _domains.length==0 ? null : _domains[_domains.length-1];
     }
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
@@ -563,7 +565,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     scoringInfo.cross_validation = _output._cross_validation_metrics != null;
 
     if (this._output.isBinomialClassifier()) {
-      scoringInfo.training_AUC = ((ModelMetricsBinomial)this._output._training_metrics)._auc;
+      scoringInfo.training_AUC = this._output._training_metrics == null ? null: ((ModelMetricsBinomial)this._output._training_metrics)._auc;
       scoringInfo.validation_AUC = this._output._validation_metrics == null ? null : ((ModelMetricsBinomial)this._output._validation_metrics)._auc;
     }
   }
@@ -584,6 +586,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
+      case mean_per_class_error:
+        return (float)mean_per_class_error();
+      case lift_top_group:
+        return (float)lift_top_group();
       case AUTO:
       default:
         return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());
@@ -623,6 +629,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double logloss() {
     if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._logloss : last_scored().scored_train._logloss;
+  }
+
+  public double mean_per_class_error() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mean_per_class_error : last_scored().scored_train._mean_per_class_error;
+  }
+
+  public double lift_top_group() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._lift : last_scored().scored_train._lift;
   }
 
 
@@ -1267,6 +1283,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         Class clz = JCodeGen.compile(modelName,java_text);
         genmodel = (GenModel)clz.newInstance();
       } catch (Exception e) {
+        e.printStackTrace();
         throw H2O.fail("Internal POJO compilation failed",e);
       }
 
@@ -1324,6 +1341,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                             d2 = (col==0) ? bmp.labelIndex : bmp.classProbabilities[col-1];  break;
           case Multinomial: MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
                             d2 = (col==0) ? mmp.labelIndex : mmp.classProbabilities[col-1];  break;
+          case DimReduction: d2 = ((DimReductionModelPrediction) p).dimensions[col]; break;
+
           }
           if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
             miss++;
@@ -1370,7 +1389,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  @Override public Class<water.api.KeyV3.ModelKeyV3> makeSchema() { return water.api.KeyV3.ModelKeyV3.class; }
+  @Override public Class<KeyV3.ModelKeyV3> makeSchema() { return KeyV3.ModelKeyV3.class; }
 
   public static Frame makeInteractions(Frame fr, boolean valid, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyTrainVec = fr.anyVec();
@@ -1386,11 +1405,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return new Frame(interactionNames, interactionVecs);
   }
 
+  public static InteractionWrappedVec[] makeInteractions(Frame fr, InteractionPair[] interactions, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
+    Vec anyTrainVec = fr.anyVec();
+    InteractionWrappedVec[] interactionVecs = new InteractionWrappedVec[interactions.length];
+    int idx = 0;
+    for (InteractionPair ip : interactions)
+      interactionVecs[idx++] = new InteractionWrappedVec(anyTrainVec.group().addVec(), anyTrainVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
+    return interactionVecs;
+  }
+
   public static InteractionWrappedVec makeInteraction(Frame fr, InteractionPair ip, boolean useAllFactorLevels, boolean skipMissing, boolean standardize) {
     Vec anyVec = fr.anyVec();
     return new InteractionWrappedVec(anyVec.group().addVec(), anyVec._rowLayout, ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vec(ip._v1)._key, fr.vec(ip._v2)._key);
   }
-
 
   /**
    * This class represents a pair of interacting columns plus some additional data

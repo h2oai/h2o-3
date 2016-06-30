@@ -19,7 +19,7 @@ test <- function(h) {
 	class(Insurance$Age) <- "factor"
 	df = data.frame(Insurance,ofset)
 	hdf = as.h2o(df,destination_frame = "hdf")
-	hh = h2o.gbm(x = 1:3,y = "Claims",ntrees = 600,max_depth = 1,min_rows = 1,learn_rate = .1,offset_column = "ofset",training_frame = hdf)
+	hh = h2o.gbm(x = 1:3,y = "Claims",ntrees = 600,max_depth = 1,min_rows = 1,learn_rate = .1,offset_column = "ofset",training_frame = hdf,min_split_improvement=0)
 	ph = as.data.frame(h2o.predict(hh,newdata = hdf))
 	expect_equal(fit2$initF, hh@model$init_f)
 	expect_equal( fit2$train.error[600], hh@model$training_metrics@metrics$MSE,tolerance=1e-6)
