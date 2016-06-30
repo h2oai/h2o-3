@@ -164,14 +164,14 @@ public class Session {
   /**
    * External refcnt: internal refcnt plus 1 for being global
    */
-  int getRefCnt(Vec vec) {
+  private int getRefCnt(Vec vec) {
     return _getRefCnt(vec) + (GLOBALS.contains(vec) ? 1 : 0);
   }
 
   /**
    * RefCnt +i this Vec; Global Refs can be alive with zero internal counts
    */
-  int addRefCnt(Vec vec, int i) {
+  private int addRefCnt(Vec vec, int i) {
     return _addRefCnt(vec, i) + (GLOBALS.contains(vec) ? 1 : 0);
   }
 
@@ -309,14 +309,13 @@ public class Session {
         Integer count = refcnts.get(vec);
         refcnts.put(vec, count == null ? 1 : count + 1);
       }
-    if (returning != null && returning.isFrame()) { // One more (nameless) returning frame
-      if (FRAMES.containsValue(returning.getFrame()))
-        throw new IllegalStateException("Unexpected: returning frame is not nameless after all... " + returning);
+    // Now account for the returning frame (if it is a Frame). Note that it is entirely possible that this frame is
+    // already in the FRAMES list, however we need to account for it anyways -- this is how Env works...
+    if (returning != null && returning.isFrame())
       for (Vec vec : returning.getFrame().vecs()) {
         Integer count = refcnts.get(vec);
         refcnts.put(vec, count == null ? 1 : count + 1);
       }
-    }
 
     // Now compare computed refcnts to cached REFCNTS.
     // First check that every Vec in computed refcnt is also in REFCNTS, with equal counts.
