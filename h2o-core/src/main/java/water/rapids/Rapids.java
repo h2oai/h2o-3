@@ -53,16 +53,16 @@ public class Rapids {
    * @param rapids expression to parse
    */
   public static Val exec(String rapids) {
-    Session ses = new Session();
+    Session session = new Session();
     try {
       AstRoot ast = Rapids.parse(rapids);
-      Val val = ses.exec(ast, null);
+      Val val = session.exec(ast, null);
       // Any returned Frame has it's REFCNT raised by +1, and the end(val) call
       // will account for that, copying Vecs as needed so that the returned
       // Frame is independent of the Session (which is disappearing).
-      return ses.end(val);
+      return session.end(val);
     } catch (Throwable ex) {
-      throw ses.endQuietly(ex);
+      throw session.endQuietly(ex);
     }
   }
 
@@ -86,10 +86,10 @@ public class Rapids {
       if (val.isFrame()) {
         Frame frame = val.getFrame();
         assert frame._key != null; // No nameless Frame returns, as these are hard to cleanup
-        if (session.FRAMES.containsKey(frame._key)) {
-          Log.info("UNIMPL: session.FRAMES already contains key " + frame._key);
-        }// else {
-          session.addRefCnt(frame, -1);
+//        if (session.FRAMES.containsKey(frame._key)) {
+//          Log.info("UNIMPL: session.FRAMES already contains key " + frame._key);
+//        }// else {
+        session.addRefCnt(frame, -1);
         //}
       }
       return val;
