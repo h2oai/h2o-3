@@ -43,6 +43,7 @@ public class OrcParser extends Parser {
 
   /** Orc Info */
   private final Reader orcFileReader; // can generate all the other fields from this reader
+  private static BufferedString bs = new BufferedString();
 
   OrcParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
@@ -325,20 +326,10 @@ public class OrcParser extends Parser {
     int[] stringStart = ((BytesColumnVector) oneStringColumn).start;
 
     for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
-      if (isNull[rowIndex] || (stringLength[rowIndex] == 0))
+      if (isNull[rowIndex])
         dout.addInvalidCol(cIdx);
       else {
-
-        switch(columnType) {
-          case "string":
-          case "varchar":
-          case "char":
-          case "binary":
-            BufferedString bs = new BufferedString();
-            byte[] temp = new byte[stringLength[rowIndex]];
-            System.arraycopy(oneColumn[rowIndex], stringStart[rowIndex], temp, 0, stringLength[rowIndex]);
-            dout.addStrCol(cIdx, bs.set(temp));
-        }
+        dout.addStrCol(cIdx, bs.set(oneColumn[rowIndex],stringStart[rowIndex],stringLength[rowIndex]));
       }
     }
   }
@@ -404,34 +395,14 @@ public class OrcParser extends Parser {
     long[] oneColumn = ((LongColumnVector) oneLongColumn).vector;
 
     if (noNull) {
-      switch (columnType) {
-        case "bigint":
-          for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-            dout.addNumCol(cIdx, oneColumn[rowIndex]);
-          break;
-        default:
-          for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-            dout.addNumCol(cIdx, (int) oneColumn[rowIndex]);
-      }
+      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
+        dout.addNumCol(cIdx, oneColumn[rowIndex]);
     } else {
-      switch (columnType) {
-        case "biginit":
-          for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
-            if (isNull[rowIndex])
-              dout.addInvalidCol(cIdx);
-            else {
-              dout.addNumCol(cIdx, oneColumn[rowIndex]);
-            }
-          }
-          break;
-        default:
-          for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
-            if (isNull[rowIndex])
-              dout.addInvalidCol(cIdx);
-            else {
-              dout.addNumCol(cIdx, (int) oneColumn[rowIndex]);
-            }
-          }
+      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
+        if (isNull[rowIndex])
+          dout.addInvalidCol(cIdx);
+        else
+          dout.addNumCol(cIdx, oneColumn[rowIndex]);
       }
     }
   }
