@@ -36,7 +36,6 @@ public class OrcParserProvider implements ParserProvider {
 
   @Override
   public ParseSetup createParserSetup(Key[] inputs, ParseSetup requiredSetup) {
-    // We need to get header of Orc file to configure the Orc parser.
 
     assert inputs != null && inputs.length > 0 : "Inputs cannot be empty!";
     Key firstInput = inputs[0];

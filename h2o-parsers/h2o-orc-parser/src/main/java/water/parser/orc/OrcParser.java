@@ -48,7 +48,6 @@ public class OrcParser extends Parser {
   OrcParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
     this.orcFileReader = ((OrcParser.OrcParseSetup) setup).orcFileReader;
-
   }
 
   /**
@@ -85,11 +84,6 @@ public class OrcParser extends Parser {
         List<StripeInformation> stripesInfo = ((OrcParseSetup) this._setup).getStripeInfo();
         Reader fileReader = ((OrcParseSetup) this._setup).getOrcFileReader();
 
-        // prepare parameter to read a orc file.
-//        boolean[] toInclude = new boolean[this._setup.getColumnNames().length+1];   // must equal to number of column+1
-//        Arrays.fill(toInclude, true);
-
-
         // proceed and read each stripe
         for (int stripeIndex = stripeStartEndIndex[0]; stripeIndex <= stripeStartEndIndex[1]; stripeIndex++) {
           StripeInformation thisStripe = stripesInfo.get(stripeIndex);  // get one stripe
@@ -98,9 +92,6 @@ public class OrcParser extends Parser {
           write1Stripe(thisStripe, fileReader, ((OrcParseSetup) this._setup).getToInclude(),
                   ((OrcParseSetup) this._setup).getAllColNames(),
                   ((OrcParseSetup) this._setup).getColumnTypesString(), dout);
-
-//          write1Stripe(thisStripe, fileReader, null, this._setup.getColumnNames(),
-//                  ((OrcParseSetup) this._setup).getColumnTypesString(), dout);
         }
       }
     } catch (Throwable e) {
@@ -450,11 +441,6 @@ public class OrcParser extends Parser {
       if (this.maxStripeSize > this._chunk_size)  //
         this.setChunkSize(this.maxStripeSize.intValue());
 
-
-//      // DEBUG
-//      if (this.totalFileSize > 0)
-//        this.setChunkSize(this.totalFileSize.intValue());
-
     }
 
     public OrcParseSetup(ParseSetup ps, Reader reader, Long[] allstripes, Long fileSize,
@@ -473,10 +459,7 @@ public class OrcParser extends Parser {
       // set chunk size to be the max stripe size if the stripe size exceeds the default
       if (this.maxStripeSize > this._chunk_size)  //
         this.setChunkSize(this.maxStripeSize.intValue());
-//
-//      // DEBUG
-//      if (this.totalFileSize > 0)
-//        this.setChunkSize(this.totalFileSize.intValue());
+
     }
 
     @Override
@@ -563,11 +546,6 @@ public class OrcParser extends Parser {
       Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));     // orc reader
       StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();
 
-//      // delete the temp file
-//      FileSystem hdfs = FileSystem.get(conf);
-//      if (hdfs.exists(p))
-//        hdfs.delete(p, false);    // delete the temp file now that we have read it.
-
       return processor.process(orcFileReader, insp);
     } catch (IOException safeToIgnore) {
       return null;
@@ -623,9 +601,6 @@ public class OrcParser extends Parser {
         names[columnIndex] = oneField.getFieldName();
         types[columnIndex] = schemaToColumnType(columnType);
         dataTypes[columnIndex] = columnType;
-//          if (types[columnIndex] == Vec.T_CAT) {  // Orc does not support ENUM/CATEGORICAL
-//            domains[columnIndex] = getDomain(schema);
-//          }
 
         columnIndex++;
       } else {
