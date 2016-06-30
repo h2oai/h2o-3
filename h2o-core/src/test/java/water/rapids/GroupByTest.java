@@ -205,11 +205,11 @@ public class GroupByTest extends TestUtil {
 
     Val v_ddply = Rapids.exec("(ddply cov [54] nrow)");
     System.out.println(v_ddply.toString());
-    ((ValFrame)v_ddply)._fr.delete();
+    v_ddply.getFrame().delete();
 
     Val v_groupby = Rapids.exec("(GB cov [54] nrow 54 \"all\")");
     System.out.println(v_groupby.toString());
-    ((ValFrame)v_groupby)._fr.delete();
+    v_groupby.getFrame().delete();
 
     cov.delete();
   }
@@ -223,13 +223,13 @@ public class GroupByTest extends TestUtil {
     Val v_gb = Rapids.exec("(GB cov [0] nrow 0 \"all\")");
     System.out.println("GB Time= "+(System.currentTimeMillis()-start)+"msec");
     System.out.println(v_gb.toString());
-    ((ValFrame)v_gb)._fr.delete();
+    v_gb.getFrame().delete();
     
     long start2 = System.currentTimeMillis();
     Val v_tb = Rapids.exec("(table cov FALSE)");
     System.out.println("Table Time= "+(System.currentTimeMillis()-start2)+"msec");
     System.out.println(v_tb.toString());
-    ((ValFrame)v_tb)._fr.delete();
+    v_tb.getFrame().delete();
 
     ids.delete();
   }    
@@ -254,7 +254,7 @@ public class GroupByTest extends TestUtil {
     Val val = Rapids.exec(tree);
     System.out.println(val.toString());
     if( val instanceof ValFrame )
-      return ((ValFrame)val)._fr;
+      return val.getFrame();
     return null;
   }
   private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }
@@ -264,7 +264,7 @@ public class GroupByTest extends TestUtil {
       Val val = Rapids.exec(tree);
       System.out.println(val.toString());
       if( val instanceof ValFrame )
-        return ((ValFrame)val)._fr;
+        return val.getFrame();
       throw new IllegalArgumentException("exepcted a frame return");
     } catch( IllegalArgumentException iae ) {
       if( !expectThrow ) throw iae; // If not expecting a throw, then throw which fails the junit
