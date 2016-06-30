@@ -85,7 +85,7 @@ public class ParseTestOrc extends TestUtil {
     int numOfOrcFiles = allOrcFiles.length; // number of Orc Files to test
 
 
-    for (int fIndex = 30; fIndex < numOfOrcFiles; fIndex++)
+    for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
     {
 
       if ((fIndex == 4) || (fIndex == 6) || (fIndex == 23) || (fIndex == 28) || (fIndex == 18))
@@ -100,8 +100,8 @@ public class ParseTestOrc extends TestUtil {
       if (fIndex == 26)   // abnormal orc file, no inpsector structure available
         continue;
 
-      if (fIndex ==30)    // problem getting the right column number and then comparison problem
-        continue;
+//      if (fIndex ==30)    // problem getting the right column number and then comparison problem
+//        continue;
 
 //      if (fIndex == 22)     // problem with BufferedString retrieval, wait for Tomas
 //        continue;
