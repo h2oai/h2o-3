@@ -104,7 +104,7 @@ public class H2OError extends Iced {
     _exception_msg = prefix + _exception_msg + postfix;
   }
 
-  public H2OError(Exception e, String error_url) {
+  public H2OError(Throwable e, String error_url) {
     this(System.currentTimeMillis(), error_url, e.getMessage(), e.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode(), new IcedHashMap.IcedHashMapStringObject(), e);
   }
 

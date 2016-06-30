@@ -410,6 +410,18 @@ public class RequestServer extends HttpServlet {
       Log.warn("Caught exception: " + error.toString());
       return serveError(error);
     }
+    catch (AssertionError e) {
+      H2OError error = new H2OError(
+              System.currentTimeMillis(),
+              url,
+              e.toString(),
+              e.toString(),
+              HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode(),
+              new IcedHashMap.IcedHashMapStringObject(),
+              e);
+      Log.err("Caught assertion error: " + error.toString());
+      return serveError(error);
+    }
     catch (Exception e) {
       // make sure that no Exception is ever thrown out from the request
       H2OError error = new H2OError(e, url);
