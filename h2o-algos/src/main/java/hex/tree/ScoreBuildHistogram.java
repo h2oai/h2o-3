@@ -41,8 +41,11 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
   final Distribution.Family _family;
+  final int _weightIdx;
+  final int _workIdx;
+  final int _nidIdx;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], Distribution.Family family) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], Distribution.Family family, int weightIdx, int workIdx, int nidIdx) {
     super(cc);
     _k    = k;
     _ncols= ncols;
@@ -52,12 +55,21 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _leaf = leaf;
     _hcs  = hcs;
     _family = family;
+    _weightIdx = weightIdx;
+    _workIdx = workIdx;
+    _nidIdx = nidIdx;
   }
 
   /** Marker for already decided row. */
   static public final int DECIDED_ROW = -1;
   /** Marker for sampled out rows */
   static public final int OUT_OF_BAG = -2;
+  /** Marker for rows without a response */
+  static public final int MISSING_RESPONSE = -1;
+  /** Marker for a fresh tree */
+  static public final int UNINITIALIZED = -1; //Integer.MIN_VALUE;
+
+  static public final int FRESH = 0;
 
   static public boolean isOOBRow(int nid)     { return nid <= OUT_OF_BAG; }
   static public boolean isDecidedRow(int nid) { return nid == DECIDED_ROW; }
@@ -85,9 +97,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   }
 
   @Override final public void map( Chunk[] chks ) {
-    final Chunk wrks = chks[_ncols+2]; //fitting target (same as response for DRF, residual for GBM)
-    final Chunk nids = chks[_ncols+3];
-    final Chunk weight = chks.length >= _ncols+5 ? chks[_ncols+4] : new C0DChunk(1, chks[0].len());
+    final Chunk wrks = chks[_workIdx];
+    final Chunk nids = chks[_nidIdx];
+    final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
@@ -98,8 +110,11 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     if( _leaf > 0)            // Prior pass exists?
       score_decide(chks,nids,nnids);
     else                      // Just flag all the NA rows
-      for( int row=0; row<nids._len; row++ )
-        if( isDecidedRow((int)nids.atd(row)) ) nnids[row] = -1;
+      for( int row=0; row<nids._len; row++ ) {
+        if( weight.atd(row) == 0) continue;
+        if( isDecidedRow((int)nids.atd(row)) )
+          nnids[row] = DECIDED_ROW;
+      }
 
     // Pass 2: accumulate all rows, cols into histograms
 //    if (_subset)
@@ -202,7 +217,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
     int nh[] = new int[_hcs.length+1];
-    for( int i : nnids ) if( i >= 0 ) nh[i+1]++;
+    for( int i : nnids )
+      if( i >= 0 )
+        nh[i+1]++;
     // Rollup the histogram of rows-per-NID in this chunk
     for( int i=0; i<_hcs.length; i++ ) nh[i+1] += nh[i];
     // Splat the rows into NID-groups
