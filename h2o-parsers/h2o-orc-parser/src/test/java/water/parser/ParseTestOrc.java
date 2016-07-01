@@ -37,10 +37,10 @@ import static water.parser.orc.OrcUtil.isSupportedSchema;
  */
 public class ParseTestOrc extends TestUtil {
 
-  private static double EPSILON = 1e-9;
-  private static long ERRORMARGIN = 1000L;  // error margin when compare timestamp.
+  private double EPSILON = 1e-9;
+  private long ERRORMARGIN = 1000L;  // error margin when compare timestamp.
   int totalFilesTested = 0;
-  static int numberWrong = 0;
+  int numberWrong = 0;
 
   // list all orc files in smalldata/parser/orc directory
   private String[] allOrcFiles = {"smalldata/parser/orc/TestOrcFile.columnProjection.orc",
@@ -84,14 +84,13 @@ public class ParseTestOrc extends TestUtil {
 
     int numOfOrcFiles = allOrcFiles.length; // number of Orc Files to test
 
-
     for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
     {
 
-      if ((fIndex == 4) || (fIndex == 6) || (fIndex == 23) || (fIndex == 28) || (fIndex == 18))
+      if ((fIndex == 4) || (fIndex == 6) || (fIndex == 18) || (fIndex == 23) || (fIndex == 28))
         continue;   // do not support metadata from user
 
-      if (fIndex == 31)   // contain only orc header, no column and no row.
+      if (fIndex == 31)   // contain only orc header, no column and no row, total file size is 0.
         continue;
 
       if (fIndex == 19)   // different column names are used between stripes
@@ -103,7 +102,7 @@ public class ParseTestOrc extends TestUtil {
 //      if (fIndex ==30)    // problem getting the right column number and then comparison problem
 //        continue;
 
-//      if (fIndex == 22)     // problem with BufferedString retrieval, wait for Tomas
+//      if (fIndex == 22)     // problem with BufferedString retrieval for binary, wait for Tomas
 //        continue;
 //
 //      if (fIndex == 17)   // problem with bigint retrieval, wait for Tomas
@@ -121,7 +120,7 @@ public class ParseTestOrc extends TestUtil {
 
           compareH2OFrame(h2oFrame, orcFileReader);
 
-          if (h2oFrame != null) // delete frame after one.
+          if (h2oFrame != null) // delete frame after done.
             h2oFrame.delete();
 
           totalFilesTested++;
@@ -155,7 +154,7 @@ public class ParseTestOrc extends TestUtil {
    * @param h2oFrame
    * @param orcReader
      */
-  private static void compareH2OFrame(Frame h2oFrame, Reader orcReader) {
+  private void compareH2OFrame(Frame h2oFrame, Reader orcReader) {
     // grab column names, column and row numbers
     StructObjectInspector insp = (StructObjectInspector) orcReader.getObjectInspector();
     List<StructField> allColInfo = (List<StructField>) insp.getAllStructFieldRefs();    // get info of all cols
@@ -203,9 +202,8 @@ public class ParseTestOrc extends TestUtil {
   }
 
 
-  private static void compareFrameContents(Frame h2oFrame, Reader orcReader, String[] colTypes, String[] colNames,
+  private void compareFrameContents(Frame h2oFrame, Reader orcReader, String[] colTypes, String[] colNames,
                                            boolean[] toInclude) {
-
     // prepare parameter to read a orc file.
 //    boolean[] toInclude = new boolean[colNumber+1];   // must equal to number of column+1
 //    Arrays.fill(toInclude, true);
@@ -256,7 +254,7 @@ public class ParseTestOrc extends TestUtil {
     }
   }
 
-  private static void compare1Cloumn(ColumnVector oneColumn, String columnType, int cIdx, long currentBatchRow,
+  private void compare1Cloumn(ColumnVector oneColumn, String columnType, int cIdx, long currentBatchRow,
                                      Vec h2oColumn, Long startRowIndex) {
 
     if (columnType.contains("bigint"))  // cannot handle big integer right now
@@ -295,7 +293,7 @@ public class ParseTestOrc extends TestUtil {
     }
   }
 
-  private static void compareDecimalcolumn(ColumnVector oneDecimalColumn, boolean[] isNull,
+  private void compareDecimalcolumn(ColumnVector oneDecimalColumn, boolean[] isNull,
                                            long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
     HiveDecimalWritable[] oneColumn= ((DecimalColumnVector) oneDecimalColumn).vector;
     long frameRowIndex = startRowIndex;
@@ -311,7 +309,7 @@ public class ParseTestOrc extends TestUtil {
     }
   }
 
-  private static void compareTimecolumn(ColumnVector oneTSColumn, boolean[] isNull, long currentBatchRow,
+  private void compareTimecolumn(ColumnVector oneTSColumn, boolean[] isNull, long currentBatchRow,
                                         Vec h2oFrame, Long startRowIndex) {
     long[] oneColumn = ((LongColumnVector) oneTSColumn).vector;
     long frameRowIndex = startRowIndex;
@@ -327,7 +325,7 @@ public class ParseTestOrc extends TestUtil {
     }
   }
 
-  private static void compareStringcolumn(ColumnVector oneStringColumn, boolean[] isNull,
+  private void compareStringcolumn(ColumnVector oneStringColumn, boolean[] isNull,
                                           long currentBatchRow, Vec h2oFrame, Long startRowIndex, String columnType) {
     byte[][] oneColumn = ((BytesColumnVector) oneStringColumn).vector;
     int[] stringLength = ((BytesColumnVector) oneStringColumn).length;
@@ -350,7 +348,7 @@ public class ParseTestOrc extends TestUtil {
     }
   }
 
-  private static void compareDoublecolumn(ColumnVector oneDoubleColumn, boolean[] isNull,
+  private void compareDoublecolumn(ColumnVector oneDoubleColumn, boolean[] isNull,
                                           long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
     double[] oneColumn= ((DoubleColumnVector) oneDoubleColumn).vector;
     long frameRowIndex = startRowIndex;
@@ -365,7 +363,7 @@ public class ParseTestOrc extends TestUtil {
     }
   }
 
-  private static void CompareLongcolumn(ColumnVector oneLongColumn, boolean[] isNull,
+  private void CompareLongcolumn(ColumnVector oneLongColumn, boolean[] isNull,
                                         long currentBatchRow, Vec h2oFrame, Long startRowIndex) {
     long[] oneColumn= ((LongColumnVector) oneLongColumn).vector;
     long frameRowIndex = startRowIndex;
@@ -374,10 +372,7 @@ public class ParseTestOrc extends TestUtil {
       if (isNull[rowIndex])
         assertEquals("Na is found: ", true, h2oFrame.isNA(frameRowIndex));
       else {
-        if (oneColumn[rowIndex] == h2oFrame.at8(frameRowIndex))
-          assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at8(frameRowIndex));
-        else
-          System.out.println("Oh no");
+        assertEquals("Numerical elements should equal: ", oneColumn[rowIndex], h2oFrame.at8(frameRowIndex));
       }
 
       frameRowIndex++;
