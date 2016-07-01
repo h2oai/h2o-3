@@ -580,7 +580,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
       Vec strata = vec_nids(_train,0);
       int minIndex = (int)strata.min();
-      if (DEV_DEBUG) for (int i=0;i<ktrees[0]._len;++i) System.out.println(ktrees[0].node(i).toString());
       assert(minIndex==qp._minIndex); // FIXME: remove qp._minIndex
       assert(minIndex==firstLeafIndex);
 
@@ -590,6 +589,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       sqt.join();
 
       final DTree tree = ktrees[0];
+      if (DEV_DEBUG) for (int i=0;i<tree._len-firstLeafIndex;++i) System.out.println(tree.node(firstLeafIndex+i).toString());
       assert(tree._len-firstLeafIndex==sqt._quantiles.length);
       for (int i = 0; i < tree._len - firstLeafIndex; i++) {
         double val = effective_learning_rate() * sqt._quantiles[i];
@@ -610,7 +610,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
-        if (DEV_DEBUG) for (int i=0;i<ktrees[0]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
+        if (DEV_DEBUG) for (int i=0;i<ktrees[k]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
         for (int i = 0; i < tree._len - leafs[k]; i++) {
           double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)
