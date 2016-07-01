@@ -35,7 +35,7 @@ public class GBMCheckpointTest extends TestUtil {
     testCheckPointReconstruction("smalldata/logreg/prostate.csv", 1, true, 5, 3);
   }
 
-  @Ignore // Fails currently
+  @Ignore //FIXME
   @Test
   public void testCheckpointReconstruction4Binomial2() {
     testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 8, true, 1, 1);
@@ -52,6 +52,12 @@ public class GBMCheckpointTest extends TestUtil {
   @Test
   public void testCheckpointReconstruction4Regression() {
     testCheckPointReconstruction("smalldata/logreg/prostate.csv", 8, false, 5, 3);
+  }
+
+  @Ignore //FIXME
+  @Test
+  public void testCheckpointReconstruction4Regression2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 1, false, 5, 3);
   }
 
   private void testCheckPointReconstruction(String dataset,

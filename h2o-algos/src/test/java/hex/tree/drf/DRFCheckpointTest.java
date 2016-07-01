@@ -3,6 +3,7 @@ package hex.tree.drf;
 import hex.tree.CompressedTree;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -28,6 +29,11 @@ public class DRFCheckpointTest extends TestUtil {
     testCheckPointReconstruction("smalldata/iris/iris.csv", 4, true, 5, 3);
   }
 
+  @Test
+  public void testCheckpointReconstruction4Multinomial2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 2, true, 5, 3);
+  }
+
   /** Test if reconstructed initial frame match the last iteration
    * of DRF model builder.
    *
@@ -36,6 +42,12 @@ public class DRFCheckpointTest extends TestUtil {
   @Test
   public void testCheckpointReconstruction4Binomial() {
     testCheckPointReconstruction("smalldata/logreg/prostate.csv", 1, true, 5, 3);
+  }
+
+  @Ignore //FIXME
+  @Test
+  public void testCheckpointReconstruction4Binomial2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 8, true, 1, 1);
   }
 
   /** Test throwing the right exception if non-modifiable parameter is specified.
@@ -54,6 +66,11 @@ public class DRFCheckpointTest extends TestUtil {
   @Test
   public void testCheckpointReconstruction4Regression() {
     testCheckPointReconstruction("smalldata/logreg/prostate.csv", 8, false, 5, 3);
+  }
+
+  @Test
+  public void testCheckpointReconstruction4Regression2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 1, false, 5, 3);
   }
 
   private void testCheckPointReconstruction(String dataset,
