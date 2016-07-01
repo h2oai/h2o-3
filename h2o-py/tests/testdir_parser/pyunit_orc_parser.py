@@ -11,6 +11,11 @@ def orc_parser_test():
     path_tab = "smalldata/parser/orc/double_single_col.orc"
     tab_test = h2o.import_file(path=pyunit_utils.locate(path_tab))
 
+    path_tab2 = "smalldata/parser/orc/TestOrcFile.columnProjection.orc"
+    tab_test2 = h2o.import_file(path=pyunit_utils.locate(path_tab2))
+
+    path_tab3 = "smalldata/parser/orc/demo-11-zlib.orc"
+    tab_test3 = h2o.import_file(path=pyunit_utils.locate(path_tab3))
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(orc_parser_test)
