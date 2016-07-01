@@ -751,12 +751,15 @@ public class Frame extends Lockable<Frame> {
     int len = _names.length;
     if( idx < 0 || idx >= len ) return null;
     Vec v = vecs()[idx];
-    System.arraycopy(_names,idx+1,_names,idx,len-idx-1);
-    System.arraycopy(_vecs ,idx+1,_vecs ,idx,len-idx-1);
-    System.arraycopy(_keys ,idx+1,_keys ,idx,len-idx-1);
-    _names = Arrays.copyOf(_names,len-1);
-    _vecs  = Arrays.copyOf(_vecs ,len-1);
-    _keys  = Arrays.copyOf(_keys ,len-1);
+    String[] names = Arrays.copyOf(_names, len);
+    Vec[] vecs = Arrays.copyOf(_vecs, len);
+    Key<Vec>[] keys = Arrays.copyOf(_keys, len);
+    System.arraycopy(names,idx+1,names,idx,len-idx-1);
+    System.arraycopy(vecs ,idx+1,vecs ,idx,len-idx-1);
+    System.arraycopy(keys ,idx+1,keys ,idx,len-idx-1);
+    _names = Arrays.copyOf(names,len-1);
+    _vecs  = Arrays.copyOf(vecs ,len-1);
+    _keys  = Arrays.copyOf(keys ,len-1);
     if( v == _col0 ) _col0 = null;
     return v;
   }
