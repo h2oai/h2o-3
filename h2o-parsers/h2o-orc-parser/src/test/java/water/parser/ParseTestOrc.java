@@ -17,6 +17,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
+import java.util.Random;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,6 +88,8 @@ public class ParseTestOrc extends TestUtil {
     for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
     {
 
+
+
       if ((fIndex == 4) || (fIndex == 6) || (fIndex == 18) || (fIndex == 23) || (fIndex == 28))
         continue;   // do not support metadata from user
 
@@ -107,6 +110,12 @@ public class ParseTestOrc extends TestUtil {
 //
 //      if (fIndex == 17)   // problem with bigint retrieval, wait for Tomas
 //        continue;
+
+      Random rn = new Random();
+      int randNum = rn.nextInt(10);
+
+      if (randNum > 3)  // skip test for 70% of the time
+        continue;
 
       String fileName = allOrcFiles[fIndex];
       File f = find_test_file_static(fileName);
