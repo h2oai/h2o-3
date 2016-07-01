@@ -26,8 +26,19 @@ public class GBMCheckpointTest extends TestUtil {
   }
 
   @Test
+  public void testCheckpointReconstruction4Multinomial2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 2, true, 5, 3);
+  }
+
+  @Test
   public void testCheckpointReconstruction4Binomial() {
     testCheckPointReconstruction("smalldata/logreg/prostate.csv", 1, true, 5, 3);
+  }
+
+  @Ignore // Fails currently
+  @Test
+  public void testCheckpointReconstruction4Binomial2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 8, true, 1, 1);
   }
 
   /** Test throwing the right exception if non-modifiable parameter is specified.
@@ -94,6 +105,9 @@ public class GBMCheckpointTest extends TestUtil {
       gbmFinalParams._score_each_iteration = true;
       gbmFinalParams._max_depth = 10;
       modelFinal = new GBM(gbmFinalParams,Key.<GBMModel>make("Validation model")).trainModel().get();
+
+//      System.err.println(modelFromCheckpoint.toJava(false,true));
+//      System.err.println(modelFinal.toJava(false,true));
 
       CompressedTree[][] treesFromCheckpoint = getTrees(modelFromCheckpoint);
       CompressedTree[][] treesFromFinalModel = getTrees(modelFinal);
