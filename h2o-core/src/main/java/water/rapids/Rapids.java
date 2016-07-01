@@ -37,8 +37,8 @@ import water.util.Log;
  * on the execution stack).
  */
 public class Rapids {
-  protected final String _str;  // Statement to parse and execute
-  public int _x;             // Parse pointer
+  private final String _str;  // Statement to parse and execute
+  private int _x;             // Parse pointer
 
   /**
    * Parse a Rapids expression string into an Abstract Syntax Tree object.

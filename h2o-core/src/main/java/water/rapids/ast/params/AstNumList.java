@@ -45,7 +45,7 @@ public class AstNumList extends AstParameter {
     while (true) {
       char c = e.skipWS();
       if (c == ']') break;
-      if (c == '#') e._x++;
+      if (c == '#') e.xpeek('#');
       double base = e.number(), cnt = 1, stride = 1;
       c = e.skipWS();
       if (c == ':') {
