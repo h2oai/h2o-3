@@ -17,6 +17,15 @@ repositories {
 
 String destination = "${buildDir}/reports/jacoco/report.exec"
 
+task jacocoAgentLink(type: Exec) {
+    //String location = project.configurations.testRuntime.find { it.name.startsWith("org.jacoco.agent") }
+    //commandLine "ln", "-sf", location, "${rootDir}/jacoco/jacocoagent2.jar"
+    String location = project.configurations.jacocoAgent.find { it.name.startsWith("org.jacoco.agent") }
+    commandLine "jar", "xf", location, "jacocoagent.jar"
+    workingDir "${rootDir}/jacoco/"
+    workingDir.mkdirs()
+}
+
 task jacocoMergeExecs(type: JacocoMerge) {
     FileTree execs = fileTree(dir: "${rootDir}", include: "**/*.exec")
     executionData = execs
