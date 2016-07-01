@@ -106,8 +106,7 @@ public class JStackCollectorTask extends MRTask<JStackCollectorTask> {
       ArrayList<String> trace = null;
       ThreadInfo tinfo = null;
       if(elms.length == 0) continue;
-      if(elms[elms.length-1].getClassName().contains("ForkJoinWorkerThread")) { // FJ Thread
-        assert t.getName().startsWith("FJ-");
+      if(t.getName().startsWith("FJ-") && elms[elms.length-1].getClassName().contains("ForkJoinWorkerThread")) { // H2O specific FJ Thread
         trace = fj_traces;
         Integer fjq = Integer.parseInt(t.getName().substring(3, t.getName().indexOf('-', 3)));
         if (!fjThreadSummary.containsKey(fjq))

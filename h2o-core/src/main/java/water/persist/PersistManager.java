@@ -420,6 +420,11 @@ public class PersistManager {
 
   public Persist getPersistForURI(URI uri) {
     String scheme = uri.getScheme();
+    boolean windowsPath = scheme.matches("^[a-zA-Z]$");
+    if (windowsPath) {
+      return I[Value.ICE];
+    }
+
     if (scheme != null ) {
       switch (scheme) {
         case Schemes.FILE:

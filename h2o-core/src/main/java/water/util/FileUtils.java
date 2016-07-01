@@ -40,7 +40,10 @@ public class FileUtils {
   }
 
   public static URI getURI(String path) {
-    if (path.contains(":/")) { // Seems like
+    boolean windowsPath = path.matches("^[a-zA-Z]:.*$");
+    if (windowsPath) {
+      return new File(path).toURI();
+    } else if (path.contains(":/")) { // Seems like
       return URI.create(path);
     } else {
       return new File(path).toURI();

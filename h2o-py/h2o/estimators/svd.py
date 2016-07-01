@@ -52,7 +52,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
       seed : int
         RNG seed for k-means++ initialization
-        Default: 312755816144849
+        Default: -1
 
       keep_u : bool
         Save left singular vectors?

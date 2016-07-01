@@ -610,6 +610,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
+        if (DEV_DEBUG) for (int i=0;i<ktrees[0]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
         for (int i = 0; i < tree._len - leafs[k]; i++) {
           double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)

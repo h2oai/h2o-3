@@ -35,6 +35,7 @@ import water.H2ONode;
 import water.JettyHTTPD;
 import water.util.Log;
 import water.util.NetworkUtils;
+import water.util.OSUtils;
 
 /**
  * Data structure for holding network info specified by the user on the command line.
@@ -197,6 +198,7 @@ public class NetworkInit {
       // No user-specified IP address.  Attempt auto-discovery.  Roll through
       // all the network choices on looking for a single non-local address.
       // Right now the loop up order is: site local address > link local address > fallback loopback
+      ArrayList<InetAddress> globalIps = new ArrayList();
       ArrayList<InetAddress> siteLocalIps = new ArrayList();
       ArrayList<InetAddress> linkLocalIps = new ArrayList();
 
@@ -204,17 +206,20 @@ public class NetworkInit {
       boolean isIPv4Preferred = NetworkUtils.isIPv4Preferred();
       for( InetAddress ip : ips ) {
         // Make sure the given IP address can be found here
-        if(!ip.isLoopbackAddress()) {
+        if(!(ip.isLoopbackAddress() || ip.isAnyLocalAddress())) {
           // Always prefer IPv4
           if (isIPv6Preferred && !isIPv4Preferred && ip instanceof Inet4Address) continue;
           if (isIPv4Preferred && ip instanceof Inet6Address) continue;
           if (ip.isSiteLocalAddress()) siteLocalIps.add(ip);
           if (ip.isLinkLocalAddress()) linkLocalIps.add(ip);
+          globalIps.add(ip);
         }
       }
       // The ips were already sorted in priority based way, so use it
-      // There is only a single site local address, use it
-      if( siteLocalIps.size() == 1 ) {
+      // There is only a single global or site local address, use it
+      if (globalIps.size() == 1) {
+        local = globalIps.get(0);
+      } else if (siteLocalIps.size() == 1) {
         local = siteLocalIps.get(0);
       } else if (linkLocalIps.size() > 0) { // Always use link local address on IPv6
         local = linkLocalIps.get(0);
@@ -265,7 +270,7 @@ public class NetworkInit {
   /**
    * Get address for given IP.
    * @param ip  textual representation of IP (host)
-   * @param allowedIps  range of allowed IPs
+   * @param allowedIps  range of allowed IPs on this machine
    * @return IPv4 or IPv6 address which matches given IP and is in specified range
    */
   private static InetAddress getInetAddress(String ip, List<InetAddress> allowedIps) {
@@ -345,20 +350,24 @@ public class NetworkInit {
    */
   static ArrayList<java.net.InetAddress> calcPrioritizedInetAddressList() {
     ArrayList<java.net.InetAddress> ips = new ArrayList<>();
-    {
-      ArrayList<NetworkInterface> networkInterfaceList = calcPrioritizedInterfaceList();
-
-      for (NetworkInterface nIface : networkInterfaceList) {
-        Enumeration<InetAddress> ias = nIface.getInetAddresses();
-        if (NetworkUtils.isUp(nIface)) {
-          while (ias.hasMoreElements()) {
-            InetAddress ia = ias.nextElement();
-            if (NetworkUtils.isReachable(nIface, ia, 50 /* timeout */)) {
-              ips.add(ia);
-              Log.info("Possible IP Address: " + nIface.getName() + " (" + nIface.getDisplayName() + "), " + ia.getHostAddress());
-            }
+    ArrayList<NetworkInterface> networkInterfaceList = calcPrioritizedInterfaceList();
+    boolean isWindows = OSUtils.isWindows();
+    int localIpTimeout = NetworkUtils.getLocalIpPingTimeout();
+    for (NetworkInterface nIface : networkInterfaceList) {
+      Enumeration<InetAddress> ias = nIface.getInetAddresses();
+      if (NetworkUtils.isUp(nIface)) {
+        while (ias.hasMoreElements()) {
+          InetAddress ia = ias.nextElement();
+          // Windows specific code, since isReachable was not able to detect live IPs on Windows8.1 machines
+          if (isWindows || NetworkUtils.isReachable(null, ia, localIpTimeout /* ms */)) {
+            ips.add(ia);
+            Log.info("Possible IP Address: ", nIface.getName(), " (", nIface.getDisplayName(), "), ", ia.getHostAddress());
+          } else {
+            Log.info("Network address/interface is not reachable in 150ms: ", ia, "/", nIface);
           }
         }
+      } else {
+        Log.info("Network interface is down: ", nIface);
       }
     }
 

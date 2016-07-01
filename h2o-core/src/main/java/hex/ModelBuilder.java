@@ -226,7 +226,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Work for each requested fold
   protected int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec f = train().vec(_parms._fold_column);
+    Vec f = _parms._train.get().vec(_parms._fold_column);
     Vec fc = VecUtils.toCategoricalVec(f);
     int N = fc.domain().length;
     fc.remove();
@@ -279,6 +279,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // TODO: Implement better splitting algo (with Strata if response is
   // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
   public Vec cv_AssignFold(int N) {
+    assert(N>=2);
     Vec fold = train().vec(_parms._fold_column);
     if( fold != null ) {
       if( !fold.isInt() ||

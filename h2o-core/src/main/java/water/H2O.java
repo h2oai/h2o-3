@@ -1339,7 +1339,7 @@ final public class H2O {
   /** If logging has not been setup yet, then Log.info will only print to
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
-  static void printAndLogVersion() {
+  static void printAndLogVersion(String[] arguments) {
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
@@ -1359,6 +1359,7 @@ final public class H2O {
       Log.info(n + "Built by: ", abv.compiledBy());
       Log.info(n + "Built on: ", abv.compiledOn());
     }
+    Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
     Log.info("Java availableProcessors: " + runtime.availableProcessors());
@@ -1716,7 +1717,8 @@ final public class H2O {
     }
 
     // Parse args
-    parseArguments(args2.toArray(args));
+    String[] arguments = args2.toArray(args);
+    parseArguments(arguments);
 
     // Get ice path before loading Log or Persist class
     String ice = DEFAULT_ICE_ROOT();
@@ -1728,7 +1730,7 @@ final public class H2O {
     }
 
     // Always print version, whether asked-for or not!
-    printAndLogVersion();
+    printAndLogVersion(arguments);
     if( ARGS.version ) {
       Log.flushStdout();
       exit(0);
