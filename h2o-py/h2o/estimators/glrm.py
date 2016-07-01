@@ -99,7 +99,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
       seed : int
         RNG seed for initialization
-        Default: 312755812468998
+        Default: -1
 
       init : "Random" | "SVD" | "PlusPlus" | "User"
         Initialization mode
