@@ -545,11 +545,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     public class QuantilePrep extends MRTask<QuantilePrep> {
-      int _minIndex;
-
       @Override
       public void map(Chunk[] chks, NewChunk[] nc) {
-        _minIndex = Integer.MAX_VALUE;
         final Chunk resp = chk_resp(chks);
         final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
         final Chunk preds = chk_tree(chks,0);
@@ -561,14 +558,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (weights.atd(i)==0) continue;
           assert(!nids.isNA(i));
           int nid = (int)nids.at8(i);
-          if (nid >= 0 /* not OOB, not UNINITIALIZED, etc. */)
-            _minIndex = Math.min(_minIndex, nid);
         }
-      }
-
-      @Override
-      public void reduce(QuantilePrep mrt) {
-        _minIndex = Math.min(_minIndex, mrt._minIndex);
       }
     }
 
@@ -579,9 +569,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Vec response = qp.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
       Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
       Vec strata = vec_nids(_train,0);
-      int minIndex = (int)strata.min();
-      assert(minIndex==qp._minIndex); // FIXME: remove qp._minIndex
-      assert(minIndex==firstLeafIndex);
 
       // compute quantile for all leaf nodes
       Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, response, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
@@ -589,15 +576,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       sqt.join();
 
       final DTree tree = ktrees[0];
-      if (DEV_DEBUG) for (int i=0;i<tree._len-firstLeafIndex;++i) System.out.println(tree.node(firstLeafIndex+i).toString());
-      assert(tree._len-firstLeafIndex==sqt._quantiles.length);
-      for (int i = 0; i < tree._len - firstLeafIndex; i++) {
+      for (int i = 0; i < sqt._quantiles.length; i++) {
+        if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
         double val = effective_learning_rate() * sqt._quantiles[i];
         assert !Double.isNaN(val) && !Double.isInfinite(val);
         if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
         if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
-        ((LeafNode) tree.node(firstLeafIndex+i))._pred = (float) val;
-        if (DEV_DEBUG) { Log.info("Leaf " + ((int) strata.min() + i) + " has quantile: " + sqt._quantiles[i]); }
+        ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
+        if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
       }
     }
 
