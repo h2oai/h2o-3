@@ -71,7 +71,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
       seed : int
         RNG Seed
-        Default: 312755813678146
+        Default: -1
 
       init : "Random" | "PlusPlus" | "Furthest" | "User"
         Initialization mode

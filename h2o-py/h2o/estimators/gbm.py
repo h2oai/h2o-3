@@ -11,9 +11,10 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     """
     Gradient Boosting Method
     ------------------------
-    Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
-    The default distribution function will guess the model type based on the response column type run properly
-    the response column must be an numeric for "gaussian" or an enum for "bernoulli" or "multinomial".
+    Builds gradient boosted trees on a parsed data set, for regression or classification.
+    The default distribution function will guess the model type based on the response column type.
+    Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric 
+    for all other distributions.
 
     Parameters (optional, unless specified otherwise)
     ----------
