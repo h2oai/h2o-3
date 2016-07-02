@@ -5,6 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.checkpointing <- function() {
   cars <- h2o.uploadFile(locate("smalldata/junit/cars_20mpg.csv"))
+  #set.seed(1234)
   seed <- sample(1:1000000, 1)
   Log.info(paste0("runif seed: ",seed))
   s <- h2o.runif(cars, seed=seed)
@@ -69,8 +70,8 @@ test.checkpointing <- function() {
 
 expect_mm_regression_equal <- function(a, b, msg) {
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-4*a@metrics$MSE)
-  expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-4*a@metrics$r2)
+  expect_true(abs(a@metrics$MSE-b@metrics$MSE) < 1e-8*a@metrics$MSE)
+  expect_true(abs(a@metrics$r2-b@metrics$r2) < 1e-8*a@metrics$r2)
 }
 
 expect_mm_binomial_equal <- function(a, b, msg) {
@@ -78,11 +79,11 @@ expect_mm_binomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_true(abs(h2o.mse(a)-h2o.mse(b)) < 1e-4*h2o.mse(a))
-  expect_true(abs(h2o.r2(a)-h2o.r2(b)) < 1e-4)
-  expect_true(abs(h2o.giniCoef(a)-h2o.giniCoef(b)) < 1e-4)
-  expect_true(abs(h2o.logloss(a)-h2o.logloss(b)) < 1e-4*h2o.logloss(a))
-  expect_true(abs(h2o.auc(a)-h2o.auc(b)) < 1e-4)
+  expect_true(abs(h2o.mse(a)-h2o.mse(b)) < 1e-8*h2o.mse(a))
+  expect_true(abs(h2o.r2(a)-h2o.r2(b)) < 1e-8)
+  expect_true(abs(h2o.giniCoef(a)-h2o.giniCoef(b)) < 1e-8)
+  expect_true(abs(h2o.logloss(a)-h2o.logloss(b)) < 1e-8*h2o.logloss(a))
+  expect_true(abs(h2o.auc(a)-h2o.auc(b)) < 1e-8)
 }
 
 expect_mm_multinomial_equal <- function(a, b, msg) {
@@ -90,9 +91,9 @@ expect_mm_multinomial_equal <- function(a, b, msg) {
   cmB <- b@metrics$cm$table
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
-  expect_true(abs(h2o.mse(a)-h2o.mse(b)) < 1e-4*h2o.mse(a))
-  expect_true(abs(h2o.r2(a)-h2o.r2(b)) < 1e-4)
-  expect_true(abs(h2o.logloss(a)-h2o.logloss(b)) < 1e-4*h2o.logloss(a))
+  expect_true(abs(h2o.mse(a)-h2o.mse(b)) < 1e-8*h2o.mse(a))
+  expect_true(abs(h2o.r2(a)-h2o.r2(b)) < 1e-8)
+  expect_true(abs(h2o.logloss(a)-h2o.logloss(b)) < 1e-8*h2o.logloss(a))
   expect_equal(a@metrics$hit_ratio_table$hit_ratio,b@metrics$hit_ratio_table$hit_ratio) ##not sure how to quickly add relative tolerance
 }
 

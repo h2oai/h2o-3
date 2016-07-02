@@ -913,7 +913,6 @@ public class DRFTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testRowWeightsTiny() {
     Frame tfr = null, vfr = null;

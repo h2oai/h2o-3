@@ -336,7 +336,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if( ys.isNA(row) ) continue;
           if (weights.atd(row)==0) continue;
           int nid = (int)nids.at8(row);
-          assert(nid!=ScoreBuildHistogram.UNINITIALIZED);
+          assert(nid!=ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
           if (nid < 0) continue; //skip OOB and otherwise skipped rows
           float f = (float)(preds.atd(row) + offset.atd(row));
           int idx = nid - _firstLeafIndex;
@@ -459,6 +459,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Nids <== 0
       new AddTreeContributions(ktrees).doAll(_train);
 
+      // sanity check
+      for (int k = 0; k < _nclass; k++) {
+        if (ktrees[k]!=null) assert(vec_nids(_train,k).mean()==0);
+      }
+
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
@@ -485,7 +490,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (k == 1 && _nclass == 2) continue; // Boolean Optimization (only one tree needed for 2-class problems)
           ktrees[k] = new DTree(_train, _ncols, (char)_nclass, _mtry, _mtry_per_tree, rseed, _parms);
           DHistogram[] hist = DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys());
-          new UndecidedNode(ktrees[k], -1, hist); // The "root" node
+          new UndecidedNode(ktrees[k], DTree.NO_PARENT, hist); // The "root" node
         }
       }
 
@@ -533,7 +538,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             }
             for (int i = 0; i < dn._nids.length; i++) { //L/R children
               int cnid = dn._nids[i];
-              if (cnid == ScoreBuildHistogram.UNINITIALIZED ||    // Bottomed out (predictors or responses known constant)
+              if (cnid == ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID ||    // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
                               ((DecidedNode) tree.node(cnid))._split == null))
@@ -606,10 +611,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if (gf > 1e4) gf = 1e4f; // Cap prediction, will already overflow during Math.exp(gf)
             else if (gf < -1e4) gf = -1e4f;
           }
-          assert !Double.isNaN(gf) && !Double.isInfinite(gf);
+          if (Double.isNaN(gf)) gf=0;
+          else if (Double.isInfinite(gf)) gf=Math.signum(gf)*1e4f;
           if (gf > _parms._max_abs_leafnode_pred) gf = _parms._max_abs_leafnode_pred;
           if (gf < -_parms._max_abs_leafnode_pred) gf = -_parms._max_abs_leafnode_pred;
-          ((LeafNode) tree.node(leafs[k] + i))._pred = (float)gf;
+          ((LeafNode) tree.node(leafs[k] + i))._pred = (float) gf;
         }
       }
     }
@@ -633,7 +639,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       double gamma(int tree, int nid) {
         if (_denom[tree][nid] == 0) return 0;
         double g = _num[tree][nid]/ _denom[tree][nid];
-        if (Double.isInfinite(g) || Double.isNaN(g)) return 0;
+        assert (!Double.isInfinite(g) && !Double.isNaN(g));
         if (_dist == Distribution.Family.poisson
                 || _dist == Distribution.Family.gamma
                 || _dist == Distribution.Family.tweedie)
@@ -681,6 +687,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           for( int row=0; row<nids._len; row++ ) { // For all rows
             double w = weights.atd(row);
             if (w==0) continue;
+
+            double y = resp.atd(row); //response
+            if (Double.isNaN(y)) continue;
+
+            // Compute numerator and denominator of terminal node estimate (gamma)
             int nid = (int)nids.at8(row);          // Get Node to decide from
             final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
             if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
@@ -705,8 +716,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
             if (wasOOBRow || _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.quantile) continue;
 
-            // Compute numerator and denominator of terminal node estimate (gamma)
-            double y = resp.atd(row); //response
             double z = ress.atd(row); //residual
             double f = preds.atd(row) + offset.atd(row);
             int idx=leafnid-leaf;
@@ -731,11 +740,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if( tree == null ) continue;
           final Chunk nids = chk_nids(chks,k);
           final Chunk ct   = chk_tree(chks, k);
+          final Chunk y   = chk_resp(chks);
           final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
           for( int row=0; row<nids._len; row++ ) {
             int nid = (int)nids.at8(row);
             nids.set(row, ScoreBuildHistogram.FRESH);
             if( nid < 0 ) continue;
+            if (y.isNA(row)) continue;
             if (weights.atd(row)==0) continue;
             // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
             // <tree_klazz> fields from tree prediction
