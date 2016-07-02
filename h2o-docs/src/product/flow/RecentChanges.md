@@ -23,8 +23,6 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3032'>PUBDEV-3032</a>] -         Cached errors are not printed if H2O exits
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3061'>PUBDEV-3061</a>] -         WaterMeter does not work
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3072'>PUBDEV-3072</a>] -          java.lang.ClassCastException for Quantile GBM
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3077'>PUBDEV-3077</a>] -         model_summary number of trees is too high for multinomial DRF/GBM models
@@ -47,12 +45,6 @@
 </li>
 </ul>
 
-<h4>        New Feature
-</h4>
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3066'>PUBDEV-3066</a>] -         Stop GBM models once the effective learning rate drops below 1e-6.
-</li>
-</ul>
 
 <h4>        Task
 </h4>
@@ -69,6 +61,8 @@
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2822'>PUBDEV-2822</a>] -         Improved handling of missing values in tree models (training and testing)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3060'>PUBDEV-3060</a>] -         IPv6 documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3066'>PUBDEV-3066</a>] -         Stop GBM models once the effective learning rate drops below 1e-6.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3094'>PUBDEV-3094</a>] -         Log input parameters during boot of H2O
 </li>
