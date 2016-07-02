@@ -2,6 +2,78 @@
 
 ##H2O
 
+###Turin (3.8.3.1) - 7/1/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-898'>PUBDEV-898</a>] -         DRF: sample_rate=1 not permitted unless validation is performed
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2087'>PUBDEV-2087</a>] -         create a set of tests which create large POJOs for each algo and compiles them
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2322'>PUBDEV-2322</a>] -         Merge (method=&quot;radix&quot;) bug1
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2325'>PUBDEV-2325</a>] -         Merge (method=&quot;radix&quot;) bug2
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2565'>PUBDEV-2565</a>] -         Fold Column not available in h2o.grid
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2964'>PUBDEV-2964</a>] -         h2o.merge(,method=&quot;radix&quot;) failing 15/40 runs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3030'>PUBDEV-3030</a>] -         Parse: java.lang.IllegalArgumentException: 0 &gt; -2147483648
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3032'>PUBDEV-3032</a>] -         Cached errors are not printed if H2O exits
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3061'>PUBDEV-3061</a>] -         WaterMeter does not work
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3072'>PUBDEV-3072</a>] -          java.lang.ClassCastException for Quantile GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3077'>PUBDEV-3077</a>] -         model_summary number of trees is too high for multinomial DRF/GBM models
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3079'>PUBDEV-3079</a>] -         NPE when accessing invalid null Frame cache in a Frame&#39;s vecs()
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3081'>PUBDEV-3081</a>] -         TwoDimTable version of a Frame prints missing value (NA) as 0
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3089'>PUBDEV-3089</a>] -         Fix tree split finding logic for some cases where min_rows wasn&#39;t satisfied and the entire column was no longer considered even if there were allowed split points
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3093'>PUBDEV-3093</a>] -         saveModel and loadModel don&#39;t work with windows c:/ paths
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3095'>PUBDEV-3095</a>] -         getStackTrace fails on NumberFormatException
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3096'>PUBDEV-3096</a>] -         TwoDimTable for Frame Summaries doesn&#39;t always show the full precision
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3097'>PUBDEV-3097</a>] -         DRF OOB scoring isn&#39;t using observation weights
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3099'>PUBDEV-3099</a>] -         AIOOBE when calling &#39;getModel&#39; in Flow while a GLM model is training
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3066'>PUBDEV-3066</a>] -         Stop GBM models once the effective learning rate drops below 1e-6.
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2681'>PUBDEV-2681</a>] -         Properly document the addition of missing_values_handling arg to GLM
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1617'>PUBDEV-1617</a>] -         Matt&#39;s new merge (aka join) integrated into H2O
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2822'>PUBDEV-2822</a>] -         Improved handling of missing values in tree models (training and testing)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3060'>PUBDEV-3060</a>] -         IPv6 documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3094'>PUBDEV-3094</a>] -         Log input parameters during boot of H2O
+</li>
+</ul>
+
 ###Turchin (3.8.2.9) - 6/10/2016
 
 <h4>        Bug
