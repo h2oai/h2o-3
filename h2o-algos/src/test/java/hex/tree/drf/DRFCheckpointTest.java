@@ -86,6 +86,7 @@ public class DRFCheckpointTest extends TestUtil {
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
     Vec v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
+    DKV.put(f);
     // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
