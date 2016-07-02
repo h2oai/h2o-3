@@ -210,9 +210,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Loss function.
         Default: "Automatic"
 
-      distribution : "AUTO" | "bernoulli" | "multinomial" | "gaussian" | "poisson" | "gamma" | "tweedie" | "laplace" |
-                     "huber" | "quantile"
-        Distribution function.
+      distribution : "AUTO" | "bernoulli" | "modified_huber" | "multinomial" | "gaussian" | "poisson" | "gamma" |
+                     "tweedie" | "laplace" | "quantile"
+        Distribution function
         Default: "AUTO"
 
       quantile_alpha : float
@@ -220,8 +220,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Default: 0.5
 
       tweedie_power : float
-        Tweedie power.
+        Tweedie power for Tweedie regression.
         Default: 1.5
+
+      huber_delta : float
+        Desired delta value for Huber regression (>= 0).
+        Default: 1.0
 
       score_interval : float
         Shortest time interval (in seconds) between model scoring.
@@ -379,13 +383,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
                      "epsilon", "rate", "rate_annealing", "rate_decay", "momentum_start", "momentum_ramp",
                      "momentum_stable", "nesterov_accelerated_gradient", "input_dropout_ratio", "hidden_dropout_ratios",
                      "l1", "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale", "initial_weights",
-                     "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power", "score_interval",
-                     "score_training_samples", "score_validation_samples", "score_duty_cycle", "classification_stop",
-                     "regression_stop", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
-                     "score_validation_sampling", "diagnostics", "fast_mode", "force_load_balance",
-                     "variable_importances", "replicate_training_data", "single_node_mode", "shuffle_training_data",
-                     "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major",
-                     "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
+                     "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power", "huber_delta",
+                     "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
+                     "classification_stop", "regression_stop", "stopping_rounds", "stopping_metric",
+                     "stopping_tolerance", "max_runtime_secs", "score_validation_sampling", "diagnostics", "fast_mode",
+                     "force_load_balance", "variable_importances", "replicate_training_data", "single_node_mode",
+                     "shuffle_training_data", "missing_values_handling", "quiet_mode", "autoencoder", "sparse",
+                     "col_major", "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
                      "export_weights_and_biases", "mini_batch_size", "elastic_averaging",
                      "elastic_averaging_moving_rate", "elastic_averaging_regularization"]:
             pname = name[:-1] if name[-1] == '_' else name
@@ -807,6 +811,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @tweedie_power.setter
     def tweedie_power(self, value):
         self._parms["tweedie_power"] = value
+
+    @property
+    def huber_delta(self):
+        return self._parms["huber_delta"]
+
+    @huber_delta.setter
+    def huber_delta(self, value):
+        self._parms["huber_delta"] = value
 
     @property
     def score_interval(self):

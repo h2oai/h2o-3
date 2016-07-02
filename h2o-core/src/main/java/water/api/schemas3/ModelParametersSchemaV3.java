@@ -1,5 +1,6 @@
 package water.api.schemas3;
 
+import hex.Distribution;
 import hex.Model;
 import hex.ScoreKeeper;
 import water.*;
@@ -59,6 +60,20 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
 
   @API(help="Allow parallel training of cross-validation models", direction=API.Direction.INOUT, level = API.Level.expert)
   public boolean parallelize_cross_validation;
+
+  @API(help = "Distribution function", values = { "AUTO", "bernoulli", "modified_huber", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile" }, level = API.Level.secondary, gridable = true)
+  public Distribution.Family distribution;
+
+  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true, help = "Tweedie power for Tweedie regression.")
+  public double tweedie_power;
+
+  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
+          help = "Desired quantile for quantile regression (from 0.0 to 1.0).")
+  public double quantile_alpha;
+
+  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
+          help = "Desired delta value for Huber regression (>= 0).")
+  public double huber_delta;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
       is_member_of_frames = {"training_frame", "validation_frame"},

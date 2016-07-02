@@ -453,20 +453,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         help = "Loss function.")
     public DeepLearningParameters.Loss loss;
 
-    @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
-        values = {"AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "huber", "quantile"},
-        help = "Distribution function.")
-    public Distribution.Family distribution;
-
-    @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
-        help = "Tweedie power.")
-    public double tweedie_power;
-
-    @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
-        help = "Desired quantile for quantile regression (from 0.0 to 1.0).")
-    public double quantile_alpha;
-
-
     /*Scoring*/
 
     /**

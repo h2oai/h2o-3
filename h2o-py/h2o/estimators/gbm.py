@@ -158,18 +158,22 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
         Default: 1.0
 
-      distribution : "AUTO" | "bernoulli" | "multinomial" | "gaussian" | "poisson" | "gamma" | "tweedie" | "laplace" |
-                     "quantile"
+      distribution : "AUTO" | "bernoulli" | "modified_huber" | "multinomial" | "gaussian" | "poisson" | "gamma" |
+                     "tweedie" | "laplace" | "quantile"
         Distribution function
         Default: "AUTO"
 
       quantile_alpha : float
-        Desired quantile for quantile regression (from 0.0 to 1.0)
+        Desired quantile for quantile regression (from 0.0 to 1.0).
         Default: 0.5
 
       tweedie_power : float
-        Tweedie Power (between 1 and 2)
+        Tweedie power for Tweedie regression.
         Default: 1.5
+
+      huber_delta : float
+        Desired delta value for Huber regression (>= 0).
+        Default: 1.0
 
       checkpoint : str
         Model checkpoint to resume training with.
@@ -217,7 +221,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                      "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                      "learn_rate", "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power",
-                     "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
+                     "huber_delta", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                      "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                      "histogram_type", "max_abs_leafnode_pred"]:
             pname = name[:-1] if name[-1] == '_' else name
@@ -518,6 +522,14 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @tweedie_power.setter
     def tweedie_power(self, value):
         self._parms["tweedie_power"] = value
+
+    @property
+    def huber_delta(self):
+        return self._parms["huber_delta"]
+
+    @huber_delta.setter
+    def huber_delta(self, value):
+        self._parms["huber_delta"] = value
 
     @property
     def checkpoint(self):
