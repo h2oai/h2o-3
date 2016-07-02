@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
+import hex.Distribution;
 import static java.lang.Double.isNaN;
 
 import hex.Model;
@@ -171,8 +172,9 @@ final public class DeepLearningModelInfo extends Iced {
     DeepLearningParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
 
     final int num_input = dinfo.fullN();
-    final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
-    if (!get_params()._autoencoder) assert(num_output == nClasses);
+    final int num_output = get_params()._autoencoder ? num_input :
+            (_classification && parameters._distribution!= Distribution.Family.modified_huber ? train.lastVec().cardinality() : 1);
+    if (!get_params()._autoencoder) assert(num_output == nClasses || parameters._distribution== Distribution.Family.modified_huber );
 
     _saw_missing_cats = dinfo._cats > 0 ? new boolean[data_info._cats] : null;
     assert (num_input > 0);

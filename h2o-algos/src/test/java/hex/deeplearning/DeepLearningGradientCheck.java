@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -38,6 +39,17 @@ public class DeepLearningGradientCheck extends TestUtil {
         tfr.add(s, f);
       }
       DKV.put(tfr);
+      tfr.add("Binary", tfr.anyVec().makeZero());
+      new MRTask() {
+        public void map(Chunk[] c) {
+          for (int i=0;i<c[0]._len;++i)
+            if (c[0].at8(i)==1) c[1].set(i,1);
+        }
+      }.doAll(tfr.vecs(new String[]{"Class","Binary"}));
+      Vec cv = tfr.vec("Binary").toCategoricalVec();
+      tfr.remove("Binary").remove();
+      tfr.add("Binary", cv);
+      DKV.put(tfr);
 
       Random rng = new Random(0xDECAF);
       int count=0;
@@ -49,10 +61,13 @@ public class DeepLearningGradientCheck extends TestUtil {
               Distribution.Family.laplace,
               Distribution.Family.quantile,
               Distribution.Family.huber,
+              Distribution.Family.modified_huber,
               Distribution.Family.gamma,
               Distribution.Family.poisson,
+              Distribution.Family.AUTO,
               Distribution.Family.tweedie,
               Distribution.Family.multinomial,
+              Distribution.Family.bernoulli,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
 //            DeepLearningParameters.Activation.ExpRectifier,
@@ -61,7 +76,8 @@ public class DeepLearningGradientCheck extends TestUtil {
 //                DeepLearningParameters.Activation.Maxout,
         }) {
           for (String response : new String[]{
-                  "Class", //classification
+                  "Binary", //binary classification
+                  "Class", //multi-class
                   "Cost", //regression
           }) {
             for (boolean adaptive : new boolean[]{
@@ -71,11 +87,22 @@ public class DeepLearningGradientCheck extends TestUtil {
               for (int miniBatchSize : new int[]{
                       1
               }) {
-                boolean classification = response.equals("Class");
-                if (classification && dist != Distribution.Family.multinomial) continue;
-                if (!classification && dist == Distribution.Family.multinomial) continue;
+                if (response.equals("Class")) {
+                  if (dist != Distribution.Family.multinomial && dist != Distribution.Family.AUTO)
+                    continue;
+                }
+                else if (response.equals("Binary")) {
+                  if (dist != Distribution.Family.modified_huber && dist != Distribution.Family.bernoulli && dist != Distribution.Family.AUTO)
+                    continue;
+                }
+                else {
+                  if (dist == Distribution.Family.multinomial || dist == Distribution.Family.modified_huber || dist == Distribution.Family.bernoulli) continue;
+                }
 
                 DeepLearningParameters parms = new DeepLearningParameters();
+                parms._huber_delta = rng.nextDouble()+0.1;
+                parms._tweedie_power = 1.01 + rng.nextDouble()*0.9;
+                parms._quantile_alpha = 0.05 + rng.nextDouble()*0.9;
                 parms._train = tfr._key;
                 parms._epochs = 100; //converge to a reasonable model to avoid too large gradients
 //            parms._l1 = 1e-3; //FIXME
@@ -91,7 +118,6 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._activation = act;
                 parms._adaptive_rate = adaptive;
                 parms._rate = 1e-4;
-                parms._quantile_alpha = 0.2;
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
                 parms._mini_batch_size = miniBatchSize;
@@ -102,6 +128,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 try {
                   dl = job.trainModel().get();
 
+                  boolean classification = response.equals("Class") || response.equals("Binary");
                   if (!classification) {
                     Frame p = dl.score(tfr);
                     hex.ModelMetrics mm = hex.ModelMetrics.getFromDKV(dl, tfr);
@@ -222,6 +249,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           // if both gradients are tiny - numerically unstable relative error computation is not needed, since absolute error is small
 
                           if (relError > MAX_TOLERANCE) {
+                            Log.info("\nDistribution: " + dl._parms._distribution);
                             Log.info("\nRow: " + rId);
                             Log.info("weight (layer " + layer + ", row " + row + ", col " + col + "): " + weight + " +/- " + eps);
                             Log.info("loss: " + loss);
@@ -231,6 +259,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                             Log.info("=> Relative error             : " + PrettyPrint.formatPct(relError));
                             failedcount++;
                           }
+                          Assert.assertTrue(failedcount==0);
 
                           maxRelErr = Math.max(maxRelErr, relError);
                           assert(!Double.isNaN(maxRelErr));
@@ -270,4 +299,39 @@ public class DeepLearningGradientCheck extends TestUtil {
     }
   }
 
+  @Test public void checkDistributionGradients() {
+    Random rng = new Random(0xDECAF);
+    for (Distribution.Family dist : new Distribution.Family[]{
+            Distribution.Family.AUTO,
+            Distribution.Family.gaussian,
+            Distribution.Family.laplace,
+            Distribution.Family.quantile,
+            Distribution.Family.huber,
+            Distribution.Family.gamma,
+            Distribution.Family.poisson,
+            Distribution.Family.tweedie,
+            Distribution.Family.bernoulli,
+            Distribution.Family.modified_huber,
+//              Distribution.Family.multinomial, //no gradient/deviance implemented
+    }) {
+      DeepLearningParameters p = new DeepLearningParameters();
+      p._distribution = dist;
+      int N=1000;
+      double eps=1./(10.*N);
+      for (double y : new double[]{0,1}) { //actual - taylored for binomial, but should work for regression too
+        // scan the range -2..2 in function approximation space (link space)
+        for (int i=-5*N; i<5*N; ++i) {
+          p._huber_delta = rng.nextDouble()+0.1;
+          p._tweedie_power = 1.01 + rng.nextDouble()*0.9;
+          p._quantile_alpha = 0.05 + rng.nextDouble()*0.9;
+          Distribution d = new Distribution(p);
+          double f = (i+0.5)/N; // avoid issues at 0
+          double grad = -2*d.negHalfGradient(y, f); //f in link space (model space)
+          double approxgrad = (d.deviance(1,y,d.linkInv(f+eps)) - d.deviance(1,y,d.linkInv(f-eps)))/(2*eps); //deviance in real space
+          assert(Math.abs(grad - approxgrad) <= 1e-4);
+
+        }
+      }
+    }
+  }
 }

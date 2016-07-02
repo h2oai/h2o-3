@@ -48,6 +48,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "distribution",
       "quantile_alpha",
       "tweedie_power",
+      "huber_delta",
       "checkpoint",
       "sample_rate",
       "sample_rate_per_class",

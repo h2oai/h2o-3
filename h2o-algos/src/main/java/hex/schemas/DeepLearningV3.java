@@ -66,6 +66,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "distribution",
         "quantile_alpha",
         "tweedie_power",
+        "huber_delta",
         "score_interval",
         "score_training_samples",
         "score_validation_samples",

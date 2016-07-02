@@ -115,6 +115,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5;
     public double _quantile_alpha = 0.5;
+    public double _huber_delta = 1;
     protected double defaultStoppingTolerance() { return 1e-3; }
     abstract public long progressUnits();
 

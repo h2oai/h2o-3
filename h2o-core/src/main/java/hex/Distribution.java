@@ -11,6 +11,7 @@ public class Distribution extends Iced {
   public enum Family {
     AUTO,         //model-specific behavior
     bernoulli,    //binomial classification (nclasses == 2)
+    modified_huber, //modified huber: quadratically smoothed hinge loss for 0/1 outcome
     multinomial,  //classification (nclasses >= 2)
     gaussian, poisson, gamma, tweedie, huber, laplace, quantile //regression
   }
@@ -22,6 +23,7 @@ public class Distribution extends Iced {
     assert(family != Family.quantile);
     tweediePower = 1.5;
     quantileAlpha = 0.5;
+    huberCutoff = 1;
   }
 
   /**
@@ -31,7 +33,9 @@ public class Distribution extends Iced {
     distribution = params._distribution;
     tweediePower = params._tweedie_power;
     quantileAlpha = params._quantile_alpha;
+    huberCutoff = params._huber_delta;
     assert(tweediePower >1 && tweediePower <2);
+    assert(huberCutoff > 0);
   }
   static public double MIN_LOG = -19;
   static public double MAX = 1e19;
@@ -39,6 +43,7 @@ public class Distribution extends Iced {
   public final Family distribution;
   public final double tweediePower; //tweedie power
   public final double quantileAlpha; //for quantile regression
+  public final double huberCutoff;
 
   // helper - sanitized exponential function
   public static double exp(double x) {
@@ -65,19 +70,19 @@ public class Distribution extends Iced {
    * @param w observation weight
    * @param y (actual) response
    * @param f (predicted) response in original response space (including offset)
-   * @return value of gradient
+   * @return deviance
    */
   public double deviance(double w, double y, double f) {
     f = link(f); //bring back f to link space
     switch (distribution) {
       case AUTO:
       case gaussian:
-        return w * (y - f) * (y - f); // 2x as big as what the gradient (y-f) would suggest: we want the full squared error
+        return w * (y - f) * (y - f);
       case huber:
-        if (Math.abs(y-f) < 1) {
+        if (Math.abs(y-f) < huberCutoff) {
           return w * (y - f) * (y - f);
         } else {
-          return 2 * w * Math.abs(y-f) - 1;
+          return (2 * w * Math.abs(y-f) - huberCutoff)*huberCutoff;
         }
       case laplace:
         return w * Math.abs(y-f); // weighted absolute deviance == weighted absolute error
@@ -92,18 +97,24 @@ public class Distribution extends Iced {
       case tweedie:
         assert (tweediePower > 1 && tweediePower < 2);
         return 2 * w * (Math.pow(y, 2 - tweediePower) / ((1 - tweediePower) * (2 - tweediePower)) - y * exp(f * (1 - tweediePower)) / (1 - tweediePower) + exp(f * (2 - tweediePower)) / (2 - tweediePower));
+      case modified_huber:
+        double yf = (2*y-1)*f;
+        if (yf < -1) return -w*4*yf;
+        else if (yf > 1) return 0;
+        else return w* yf * yf;
       default:
         throw H2O.unimpl();
     }
   }
 
   /**
-   * Gradient of deviance function at predicted value f, for actual response y
+   * (Negative half) Gradient of deviance function at predicted value f, for actual response y
+   * This assumes that the deviance(w,y,f) is w*deviance(y,f), so the gradient is w * d/df deviance(y,f)
    * @param y (actual) response
    * @param f (predicted) response in link space (including offset)
-   * @return value of gradient
+   * @return -1/2 * d/df deviance(w=1,y,f)
    */
-  public double gradient(double y, double f) {
+  public double negHalfGradient(double y, double f) {
     switch (distribution) {
       case AUTO:
       case gaussian:
@@ -116,15 +127,25 @@ public class Distribution extends Iced {
         assert (tweediePower > 1 && tweediePower < 2);
         return y * exp(f * (1 - tweediePower)) - exp(f * (2 - tweediePower));
       case huber:
-        if (Math.abs(y-f) < 1) {
+        if (Math.abs(y-f) < huberCutoff) {
           return y - f;
         } else {
-          return f - 1 >= y ? -1 : 1;
+          return f >= y ? -huberCutoff : huberCutoff;
         }
       case laplace:
-        return f > y ? -1 : 1;
+        return f > y ? -0.5 : 0.5;
+//        return f > y ? -1 : 1;
       case quantile:
-        return y > f ? quantileAlpha : quantileAlpha-1;
+        return y > f ? 0.5*quantileAlpha : 0.5*(quantileAlpha-1);
+//        return y > f ? quantileAlpha : quantileAlpha-1;
+      case modified_huber:
+        double yf = (2*y-1)*f;
+        if (yf < -1)
+          return 2*(2*y-1);
+        else if (yf > 1)
+          return 0;
+        else
+          return -f*(2*y-1)*(2*y-1);
       default:
         throw H2O.unimpl();
     }
@@ -143,6 +164,7 @@ public class Distribution extends Iced {
       case laplace:
       case quantile:
         return f;
+      case modified_huber:
       case bernoulli:
         return log(f/(1-f));
       case multinomial:
@@ -168,6 +190,7 @@ public class Distribution extends Iced {
       case laplace:
       case quantile:
         return f;
+      case modified_huber:
       case bernoulli:
         return 1 / (1 + exp(-f));
       case multinomial:
@@ -194,6 +217,7 @@ public class Distribution extends Iced {
       case quantile:
         return f;
       case bernoulli:
+      case modified_huber:
         return "1/(1+" + expString("-" + f) + ")";
       case multinomial:
       case poisson:
@@ -217,6 +241,7 @@ public class Distribution extends Iced {
       case AUTO:
       case gaussian:
       case bernoulli:
+      case huber:
       case multinomial:
         return w*(y-o);
       case poisson:
@@ -225,6 +250,8 @@ public class Distribution extends Iced {
         return w*y*linkInv(-o);
       case tweedie:
         return w*y*exp(o*(1- tweediePower));
+      case modified_huber:
+        return y==1 ? w : 0;
       default:
         throw H2O.unimpl();
     }
@@ -234,20 +261,24 @@ public class Distribution extends Iced {
    * Contribution to denominator for initial value computation
    * @param w weight
    * @param o offset
+   * @param y response
    * @return weighted contribution to denominator
    */
-  public double initFDenom(double w, double o) {
+  public double initFDenom(double w, double o, double y) {
     switch (distribution) {
       case AUTO:
       case gaussian:
       case bernoulli:
       case multinomial:
+      case huber:
       case gamma:
         return w;
       case poisson:
         return w*linkInv(o);
       case tweedie:
         return w*exp(o*(2- tweediePower));
+      case modified_huber:
+        return y==1 ? 0 : w;
       default:
         throw H2O.unimpl();
     }
@@ -266,6 +297,7 @@ public class Distribution extends Iced {
       case gaussian:
       case bernoulli:
       case multinomial:
+      case huber:
         return w * z;
       case poisson:
         return w * y;
@@ -273,6 +305,11 @@ public class Distribution extends Iced {
         return w * (z+1); //z+1 == y*exp(-f)
       case tweedie:
         return w * y * exp(f*(1- tweediePower));
+      case modified_huber:
+        double yf = (2*y-1)*f;
+        if (yf < -1) return w*4*(2*y-1);
+        else if (yf > 1) return 0;
+        else return w*2*(2*y-1)*(1-yf);
       default:
         throw H2O.unimpl();
     }
@@ -290,6 +327,7 @@ public class Distribution extends Iced {
     switch (distribution) {
       case gaussian:
       case gamma:
+      case huber:
         return w;
       case bernoulli:
         double ff = y-z;
@@ -301,6 +339,11 @@ public class Distribution extends Iced {
         return w * (y-z); //y-z == exp(f)
       case tweedie:
         return w * exp(f*(2- tweediePower));
+      case modified_huber:
+        double yf = (2*y-1)*f;
+        if (yf < -1) return -w*4*yf;
+        else if (yf > 1) return 0;
+        else return w*(1-yf)*(1-yf);
       default:
         throw H2O.unimpl();
     }

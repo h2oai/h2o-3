@@ -841,7 +841,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         double y = response.atd(i);
         double o = offset.atd(i);
         _num += _dist.initFNum(w,o,y);
-        _denom += _dist.initFDenom(w,o);
+        _denom += _dist.initFDenom(w,o,y);
       }
     }
     @Override public void reduce(InitialValue mrt) {

@@ -262,25 +262,25 @@ public abstract class Neurons {
 //        Log.info("weight: my: " + _w.raw()[w] + ", consensus: " + _wEA.raw()[w] + ", delta: " + (_w.raw()[w] -_wEA.raw()[w]) + ", relative delta: " + (_w.raw()[w] -_wEA.raw()[w])/_w.raw()[w]);
         }
 
-        // store the gradient (grad is the negative gradient)
+        // store the gradient
         if (DeepLearningModelInfo.gradientCheck != null)
-          DeepLearningModelInfo.gradientCheck.apply(_index, row, col, -grad);
+          DeepLearningModelInfo.gradientCheck.apply(_index, row, col, grad);
 
         if (have_ada) {
           final double grad2 = grad*grad;
           avg_grad2 += grad2;
           float brate = computeAdaDeltaRateForWeight(grad, w, _ada_dx_g, rho, eps);
-          _w.raw()[w] += brate * grad;
+          _w.raw()[w] -= brate * grad;
         } else {
           if (!nesterov) {
-            final double delta = rate * grad;
+            final double delta = -rate * grad;
             _w.raw()[w] += delta;
             if( have_momenta ) {
               _w.raw()[w] += momentum * _wm.raw()[w];
               _wm.raw()[w] = (float)delta;
             }
           } else {
-            double tmp = grad;
+            double tmp = -grad;
             if( have_momenta ) {
               _wm.raw()[w] *= momentum;
               _wm.raw()[w] += tmp;
@@ -331,7 +331,7 @@ public abstract class Neurons {
     assert (_minfo.get_params()._autoencoder && _index == _minfo.get_params()._hidden.length);
     final double t = _input._origa != null ? _input._origa[mb].get(row) : _input._a[mb].get(row);
     final double y = _a[mb].get(row);
-    return _dist.gradient(t, y);
+    return -2*_dist.negHalfGradient(t, y);
   }
 
   /**
@@ -417,14 +417,14 @@ public abstract class Neurons {
       rate = computeAdaDeltaRateForBias(avg_grad2, b, _bias_ada_dx_g, rho, eps);
     }
     if (!params._nesterov_accelerated_gradient) {
-      final double delta = rate * partial_grad[mb];
+      final double delta = -rate * partial_grad[mb];
       _b.add(b, delta);
       if (have_momenta) {
         _b.add(b, momentum * _bm.get(b));
         _bm.set(b, delta);
       }
     } else {
-      double d = partial_grad[mb];
+      double d = -partial_grad[mb];
       if (have_momenta) {
         _bm.set(b, _bm.get(b) * momentum);
         _bm.add(b, d);
@@ -888,34 +888,12 @@ public abstract class Neurons {
         final double y = _a[mb].get(row);
         //dy/dnet = derivative of softmax = (1-y)*y
         switch(params._loss) {
-          case Automatic:
           case CrossEntropy:
-            //nothing else needed, -dCE/dy * dy/dnet = target - y
-            //cf. http://www.stanford.edu/group/pdplab/pdphandbook/handbookch6.html
-            g = t - y;
+            //shortcut possible -dCE/dy * dy/dnet = target - y
+            g = y - t;
             break;
-          case Absolute:
-            g = (2 * t - 1) * (1f - y) * y; //-dL/dy = 2*t-1
-            break;
-          case Quadratic:
-            //-dMSE/dy = target-y
-            g = (t - y) * (1f - y) * y;
-            break;
-          case Huber:
-            if (t == 0) {
-              if (y < 0.5) {
-                g = -4 * y; //L=2*y^2 for y<0.5
-              } else {
-                g = -2;   //L=2*y-0.5 for y>=0.5
-              }
-            } else {
-              if (y > 0.5) {
-                g = 4 * (1 - y); //L=2*(1-y)^2 for y<0.5
-              } else {
-                g = 2;   //L=2*(1-y)-0.5 for y>=0.5
-              }
-            }
-            g *= (1f - y) * y;
+          case ModifiedHuber:
+            g = -2*_dist.negHalfGradient(t, y) * (1 - y) * y;
             break;
           default:
             throw H2O.unimpl();
@@ -944,7 +922,7 @@ public abstract class Neurons {
     @Override protected void setOutputLayerGradient(double target, int mb, int n) {
       final int row = 0;
       final double y = _a[mb].get(row);
-      double g = _dist.gradient(target, y);
+      double g = -2*_dist.negHalfGradient(target, y);
       _e[mb].set(row, g/n); //minibatch normalization
     }
   }

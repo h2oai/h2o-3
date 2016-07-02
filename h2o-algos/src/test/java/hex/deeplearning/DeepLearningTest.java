@@ -235,7 +235,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         100,
-        ard(ard(189, 38),
+        ard(ard(188, 39),
             ard(30, 123)),
         s("0", "1"),
         DeepLearningParameters.Activation.Maxout);
@@ -269,7 +269,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             1,
-            46.2696942006363,
+            46.26961741541022,
             DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -285,7 +285,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         1,
-        43.458837416075966,
+            43.45703932447497,
         DeepLearningParameters.Activation.Tanh);
 
   }
@@ -301,7 +301,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         100,
-        32.79983057944052,
+            32.80397240113137,
         DeepLearningParameters.Activation.Maxout);
 
   }
@@ -317,7 +317,7 @@ public class DeepLearningTest extends TestUtil {
           }
         },
         5,
-        41.85026474777778,
+            41.849938471234594,
         DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -333,7 +333,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             50,
-            37.894819598316246,
+            37.930232892825686,
             DeepLearningParameters.Activation.Rectifier);
 
   }
@@ -362,7 +362,7 @@ public class DeepLearningTest extends TestUtil {
               }
             },
             10,
-            4.628994955036487E-6,
+            9.298463401470183E-6,
             DeepLearningParameters.Activation.Rectifier);
   }
 
@@ -665,10 +665,10 @@ public class DeepLearningTest extends TestUtil {
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7592592592592592, mm.auc_obj()._auc, 1e-8);
+      assertEquals(0.7222222222222222, mm.auc_obj()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.31481334186707816, mse, 1e-8);
+      assertEquals(0.3169947529691508, mse, 1e-8);
 
       assertTrue(dl.testJavaScoring(tfr, fr2 = dl.score(tfr), 1e-5));
       dl.delete();
@@ -705,10 +705,10 @@ public class DeepLearningTest extends TestUtil {
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
-      assertEquals(0.7592592592592592, mm.auc_obj()._auc, 1e-8);
+      assertEquals(0.7222222222222222, mm.auc_obj()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.314813341867078, mse, 1e-8); //Note: better results than non-shuffled
+      assertEquals(0.3169947529691508, mse, 1e-8); //Note: better results than non-shuffled
 
 //      assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr, 1e-5)); //PUBDEV-1900
       dl.delete();
@@ -747,7 +747,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7222222222222222, mm.auc_obj()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3164307133994674, mse, 1e-8);
+      assertEquals(0.3171486183300009, mse, 1e-8);
 
       assertTrue(dl.testJavaScoring(tfr, fr2 = dl.score(tfr), 1e-5));
       dl.delete();
@@ -787,7 +787,7 @@ public class DeepLearningTest extends TestUtil {
       assertEquals(0.7592592592592592, mm.auc_obj()._auc, 1e-8);
 
       double mse = dl._output._training_metrics.mse();
-      assertEquals(0.3116490253190556, mse, 1e-8);
+      assertEquals(0.31070661329904065, mse, 1e-8);
 
 //      Assert.assertTrue(dl.testJavaScoring(tfr,fr2=dl.score(tfr),1e-5)); //PUBDEV-1900
       dl.delete();
@@ -1437,6 +1437,49 @@ public class DeepLearningTest extends TestUtil {
     }
   }
   @Test
+  public void testConvergenceAUC_ModifiedHuber() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      for (String s : new String[]{
+              "CAPSULE"
+      }) {
+        Vec resp = tfr.vec(s).toCategoricalVec();
+        tfr.remove(s).remove();
+        tfr.add(s, resp);
+        DKV.put(tfr);
+      }
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1000000;
+      parms._response_column = "CAPSULE";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2,2};
+      parms._seed = 0xdecaf;
+      parms._variable_importances = true;
+      parms._distribution = modified_huber;
+
+      parms._score_duty_cycle = 1.0;
+      parms._score_interval = 0;
+      parms._classification_stop = -1; //don't stop based on absolute classification error
+      parms._stopping_rounds = 2; //don't stop based on absolute classification error
+      parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC; //don't stop based on absolute classification error
+      parms._stopping_tolerance = 0.0;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertTrue(dl.epoch_counter < parms._epochs);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+  @Test
   public void testCrossValidation() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -1453,8 +1496,8 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(dl._output._training_metrics._MSE,12.892871729257042,1e-6);
-      Assert.assertEquals(dl._output._cross_validation_metrics._MSE,17.2918678,1e-6);
+      Assert.assertEquals(12.959355363801334,dl._output._training_metrics._MSE,1e-6);
+      Assert.assertEquals(17.296871012606317,dl._output._cross_validation_metrics._MSE,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1480,7 +1523,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(dl._output._training_metrics._MSE,12.957507332154576,1e-6);
+      Assert.assertEquals(12.938076268040659,dl._output._training_metrics._MSE,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1506,7 +1549,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(15.664562089179249, dl._output._training_metrics._MSE, 1e-6);
+      Assert.assertEquals(15.594774935758249, dl._output._training_metrics._MSE, 1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1532,7 +1575,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(23.14666210443877,dl._output._training_metrics._MSE,1e-6);
+      Assert.assertEquals(22.555132824953393,dl._output._training_metrics._MSE,1e-6);
 
     } finally {
       if (tfr != null) tfr.delete();
