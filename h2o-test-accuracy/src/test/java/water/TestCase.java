@@ -799,6 +799,9 @@ public class TestCase {
             case "huber":
               dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
               break;
+            case "modified_huber":
+              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.ModifiedHuber;
+              break;
             case "absolute":
               dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute;
               break;

@@ -895,6 +895,9 @@ public abstract class Neurons {
           case ModifiedHuber:
             g = -2*_dist.negHalfGradient(t, y) * (1 - y) * y;
             break;
+          case Quadratic:
+            g = (y - t) * (1f - y) * y;
+            break;
           default:
             throw H2O.unimpl();
         }

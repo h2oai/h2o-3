@@ -1686,8 +1686,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   
     /**
      * Loss functions
-     * Absolute, Quadratic, Huber for regression
-     * Absolute, Quadratic, Huber or CrossEntropy for classification
+     * Absolute, Quadratic, Huber, Quantile for regression
+     * Quadratic, ModifiedHuber or CrossEntropy for classification
      */
     public enum Loss {
       Automatic, Quadratic, CrossEntropy, ModifiedHuber, Huber, Absolute, Quantile
