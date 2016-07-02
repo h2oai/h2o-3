@@ -53,6 +53,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
     sb.append(" MSE: " + (float)_MSE + "\n");
+    sb.append(" RMSE: " + (float)rmse() + "\n");
     return sb.toString();
   }
 
@@ -60,6 +61,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   public double mse() { return _MSE; }
+  public double rmse() { return Math.sqrt(_MSE);}
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }

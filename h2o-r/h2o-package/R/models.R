@@ -1024,6 +1024,79 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+#' Retrieves Root Mean Squared Error Value
+#'
+#' Retrieves the root mean squared error value from an \linkS4class{H2OModelMetrics}
+#' object.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training RMSEvalue is returned. If more
+#' than one parameter is set to TRUE, then a named vector of RMSEs are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' This function only supports \linkS4class{H2OBinomialMetrics},
+#' \linkS4class{H2OMultinomialMetrics}, and \linkS4class{H2ORegressionMetrics} objects.
+#'
+#' @param object An \linkS4class{H2OModelMetrics} object of the correct type.
+#' @param train Retrieve the training RMSE
+#' @param valid Retrieve the validation RMSE
+#' @param xval Retrieve the cross-validation RMSE
+#' @seealso \code{\link{h2o.auc}} for AUC, \code{\link{h2o.mse}} for RMSE, and
+#'          \code{\link{h2o.metric}} for the various threshold metrics. See
+#'          \code{\link{h2o.performance}} for creating H2OModelMetrics objects.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.uploadFile(prosPath)
+#'
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' perf <- h2o.performance(model, hex)
+#' h2o.rmse(perf)
+#' }
+#' @export
+h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$RMSE )
+  if( is(object, "H2OModel") ) {
+    metrics <- NULL # break out special for clustering vs the rest
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$RMSE
+      if ( !is.null(metric) ) return(metric)
+    }
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      if( is(object, "H2OClusteringModel") ) v <- model.parts$tm@metrics$centroid_stats$within_cluster_sum_of_squares
+      else v <- c(v,model.parts$tm@metrics$RMSE)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$vm@metrics$MSE)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
+        else v <- c(v,model.parts$xm@metrics$MSE)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No MSE for ",class(object)))
+  invisible(NULL)
+}
+
 #' Retrieve the Log Loss Value
 #'
 #' Retrieves the log loss output for a \linkS4class{H2OBinomialMetrics} or

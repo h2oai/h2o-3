@@ -59,6 +59,7 @@ class MetricsBase(object):
       print(reported_on.format("test"))
     print()
     print("MSE: "                                           + str(self.mse()))
+    print("RMSE: "                                           + str(self.rmse()))
     if metric_type in types_w_r2:
       print("R^2: "                                           + str(self.r2()))
     if metric_type in types_w_mean_residual_deviance:
@@ -143,6 +144,12 @@ class MetricsBase(object):
     :return: Retrieve the MSE for this set of metrics
     """
     return self._metric_json['MSE']
+
+  def rmse(self):
+    """
+    :return: Retrieve the RMSE for this set of metrics
+    """
+    return self._metric_json['RMSE']
 
   def residual_deviance(self):
     """
