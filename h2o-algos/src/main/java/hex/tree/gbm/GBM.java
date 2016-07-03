@@ -447,7 +447,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms._distribution)).doAll(_train);
+      GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms)).doAll(_train);
       if (_parms._distribution == Distribution.Family.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
       } else if (_parms._distribution == Distribution.Family.quantile) {
