@@ -41,11 +41,11 @@ public class DeepLearningMissingTest extends TestUtil {
                     DeepLearningParameters.MissingValuesHandling.Skip
             })
     {
-      double sumerr = 0;
+      double sumloss = 0;
       Map<Double,Double> map = new TreeMap<>();
       for (double missing_fraction : new double[]{0, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99}) {
 
-        double err=0;
+        double loss =0;
         try {
           Scope.enter();
           NFSFileVec  nfs = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
@@ -76,7 +76,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._response_column = train._names[train.numCols()-1];
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
-          p._loss = DeepLearningParameters.Loss.Huber;
+          p._loss = DeepLearningParameters.Loss.ModifiedHuber;
           p._activation = DeepLearningParameters.Activation.Rectifier;
           p._hidden = new int[]{50,50};
           p._l1 = 1e-5;
@@ -99,12 +99,12 @@ public class DeepLearningMissingTest extends TestUtil {
           mymodel = dl.trainModel().get();
 
           // Extract the scoring on validation set from the model
-          err = mymodel.loss();
+          loss = mymodel.loss();
 
-          Log.info("Missing " + missing_fraction * 100 + "% -> logloss: " + err);
+          Log.info("Missing " + missing_fraction * 100 + "% -> logloss: " + loss);
         } catch(Throwable t) {
           t.printStackTrace();
-          err = 100;
+          loss = 100;
         } finally {
           Scope.exit();
           // cleanup
@@ -115,20 +115,20 @@ public class DeepLearningMissingTest extends TestUtil {
           if (test != null) test.delete();
           if (data != null) data.delete();
         }
-        map.put(missing_fraction, err);
-        sumerr += err;
+        map.put(missing_fraction, loss);
+        sumloss += loss;
       }
       sb.append("\nMethod: ").append(mvh.toString()).append("\n");
-      sb.append("missing fraction --> Error\n");
+      sb.append("missing fraction --> loss\n");
       for (String s : Arrays.toString(map.entrySet().toArray()).split(",")) sb.append(s.replace("=", " --> ")).append("\n");
       sb.append('\n');
-      sb.append("Sum Err: ").append(sumerr).append("\n");
+      sb.append("sum loss: ").append(sumloss).append("\n");
 
-      sumErr.put(mvh, sumerr);
+      sumErr.put(mvh, sumloss);
     }
     Log.info(sb.toString());
-    Assert.assertEquals(405.3682, sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip), 1e-2);
-    Assert.assertEquals(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation), 5.609743, 1e-7);
+    Assert.assertEquals(406.1049, sumErr.get(DeepLearningParameters.MissingValuesHandling.Skip), 1e-2);
+    Assert.assertEquals(sumErr.get(DeepLearningParameters.MissingValuesHandling.MeanImputation), 8.70193, 1e-3);
   }
 }
 

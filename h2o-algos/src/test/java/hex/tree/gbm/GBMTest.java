@@ -9,7 +9,6 @@ import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
-import static water.fvec.FVecTest.makeByteVec;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
@@ -22,6 +21,7 @@ import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static water.fvec.FVecTest.makeByteVec;
 
 public class GBMTest extends TestUtil {
 
@@ -164,7 +164,7 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
-      if (family == Distribution.Family.bernoulli || family == Distribution.Family.multinomial) {
+      if (family == Distribution.Family.bernoulli || family == Distribution.Family.multinomial || family == Distribution.Family.modified_huber) {
         if (!fr.vecs()[idx].isCategorical()) {
           Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
         }
@@ -2408,7 +2408,7 @@ public class GBMTest extends TestUtil {
       Frame train_preds = gbm.score(tfr);
 
       // Build a POJO, validate same results
-//      Assert.assertTrue(gbm.testJavaScoring(tfr, train_preds, 1e-15));
+      Assert.assertTrue(gbm.testJavaScoring(tfr, train_preds, 1e-15));
       train_preds.remove();
 
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._training_metrics;
@@ -2452,8 +2452,8 @@ public class GBMTest extends TestUtil {
     Log.info(preds);
     Log.info(df2);
     Log.info(preds2);
-//    Assert.assertTrue(gbm.testJavaScoring(df, preds, 1e-15));
-//    Assert.assertTrue(gbm.testJavaScoring(df2, preds2, 1e-15));
+    Assert.assertTrue(gbm.testJavaScoring(df, preds, 1e-15));
+    Assert.assertTrue(gbm.testJavaScoring(df2, preds2, 1e-15));
 //    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - -2.5) < 1e-6);
 //    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 1) < 1e-6);
 //    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - -2.5) < 1e-6);

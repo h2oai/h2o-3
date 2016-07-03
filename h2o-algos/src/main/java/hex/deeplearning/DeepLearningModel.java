@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearning.makeDataInfo;
+import static hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss.*;
 import static water.H2O.technote;
 
 /**
@@ -615,7 +616,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         assert (ArrayUtils.sum(e.raw()) == 0);
       }
 
-      if (get_params()._loss == DeepLearningParameters.Loss.CrossEntropy) {
+      if (get_params()._loss == CrossEntropy) {
         if (get_params()._balance_classes) throw H2O.unimpl();
         int actual = (int) myRow.response[0];
         double pred = neurons[neurons.length - 1]._a[mb].get(actual);
@@ -1536,7 +1537,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * be used for classification as well (where it emphasizes the error on all
      * output classes, not just for the actual class).
      */
-    public Loss _loss = Loss.Automatic;
+    public Loss _loss = Automatic;
   
   /*Scoring*/
     /**
@@ -1699,7 +1700,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * @param expensive (whether or not this is the "final" check)
      */
     void validate(DeepLearning dl, boolean expensive) {
-      boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == Loss.CrossEntropy || _loss == Loss.ModifiedHuber;
+      boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == CrossEntropy || _loss == ModifiedHuber;
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)
@@ -1790,13 +1791,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
         //otherwise, we might not know whether classification=true or false (from R, for example, the training data isn't known when init(false) is called).
       } else {
-        if (_autoencoder && _loss == Loss.CrossEntropy)
+        if (_autoencoder && _loss == CrossEntropy)
           dl.error("_loss", "Cannot use CrossEntropy loss for auto-encoder.");
-        if (!classification && _loss == Loss.CrossEntropy)
+        if (!classification && _loss == CrossEntropy)
           dl.error("_loss", technote(2, "For CrossEntropy loss, the response must be categorical."));
       }
-      if (!classification && _loss == Loss.CrossEntropy)
-        dl.error("_loss", "For CrossEntropy loss, the response must be categorical. Either select Automatic, Quadratic, Absolute or Huber loss for regression, or use a categorical response.");
+      if (!classification && _loss == CrossEntropy)
+        dl.error("_loss", "For CrossEntropy loss, the response must be categorical.");
+      if (classification && (_loss != Automatic && _loss != CrossEntropy && _loss != Quadratic && _loss != ModifiedHuber))
+        dl.error("_loss", "For classification tasks, the loss must be one of: Automatic, Quadratic, CrossEntropy or ModifiedHuber.");
       if (classification) {
         switch(_distribution) {
           case gaussian:
@@ -1826,19 +1829,19 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           case tweedie:
           case gamma:
           case poisson:
-            if (_loss != Loss.Automatic)
+            if (_loss != Automatic)
               dl.error("_distribution", "Only Automatic loss (deviance) is allowed for " + _distribution + " distribution.");
             break;
           case laplace:
-            if (_loss != Loss.Absolute && _loss != Loss.Automatic)
+            if (_loss != Loss.Absolute && _loss != Automatic)
               dl.error("_distribution", "Only Automatic or Absolute loss is allowed for " + _distribution + " distribution.");
             break;
           case quantile:
-            if (_loss != Loss.Quantile && _loss != Loss.Automatic)
+            if (_loss != Loss.Quantile && _loss != Automatic)
               dl.error("_distribution", "Only Automatic or Quantile loss is allowed for " + _distribution + " distribution.");
             break;
           case huber:
-            if (_loss != Loss.Huber && _loss != Loss.Automatic)
+            if (_loss != Loss.Huber && _loss != Automatic)
               dl.error("_distribution", "Only Automatic or Huber loss is allowed for " + _distribution + " distribution.");
             break;
           case AUTO:
@@ -2186,11 +2189,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           }
         }
   
-        if (fromParms._loss == Loss.Automatic) {
+        if (fromParms._loss == Automatic) {
           switch (toParms._distribution) {
             // regression
             case gaussian:
-              toParms._loss = Loss.Quadratic;
+              toParms._loss = Quadratic;
               break;
             case quantile:
               toParms._loss = Loss.Quantile;
@@ -2204,16 +2207,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             case tweedie:
             case poisson:
             case gamma:
-              toParms._loss = Loss.Automatic; //deviance
+              toParms._loss = Automatic; //deviance
               break;
 
             // classification
             case multinomial:
             case bernoulli:
-              toParms._loss = Loss.CrossEntropy;
+              toParms._loss = CrossEntropy;
               break;
             case modified_huber:
-              toParms._loss = Loss.ModifiedHuber;
+              toParms._loss = ModifiedHuber;
               break;
             default:
               throw H2O.unimpl();
