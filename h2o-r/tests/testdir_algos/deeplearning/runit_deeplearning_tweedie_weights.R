@@ -39,10 +39,10 @@ test <- function() {
   print(mean(ph[,1]))
   print(min(ph[,1]))
   print(max(ph[,1]))
-	expect_equal(0.0013053, mean_deviance, tolerance=1e-5)
+	expect_equal(0.0013052, mean_deviance, tolerance=1e-5)
 	expect_equal(0.0443739, mean(ph[,1]), tolerance=1e-5 )
-	expect_equal(0.0252619, min(ph[,1]), tolerance=1e-5 )
-	expect_equal(0.0735932, max(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0252611, min(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0735923, max(ph[,1]), tolerance=1e-5 )
 
 	#With weights
 	#gg = gbm(formula = Loss~Class+Merit + C1M3 + C4M3, distribution = "tweedie",data = data,
@@ -62,10 +62,10 @@ test <- function() {
   print(mean(ph[,1]))
   print(min(ph[,1]))
   print(max(ph[,1]))
-	expect_equal(0.0001834897, mean_deviance, tolerance=1e-5)
-	expect_equal(0.044396, mean(ph[,1]), tolerance=1e-5 )
-	expect_equal(0.02282956, min(ph[,1]), tolerance=1e-5 )
-	expect_equal(0.0728277, max(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.0001741963, mean_deviance, tolerance=1e-5)
+	expect_equal(0.04438238, mean(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.02293591, min(ph[,1]), tolerance=1e-5 )
+	expect_equal(0.07291802, max(ph[,1]), tolerance=1e-5 )
 		
 	
 }
