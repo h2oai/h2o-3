@@ -22,6 +22,7 @@ public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   static final float MAX_TOLERANCE = 1e-2f;
+  static final float MAX_FAILED_RATIO = 0f;
   static final float SAMPLE_RATE = 0.1f;
 
   @Test
@@ -240,8 +241,8 @@ public class DeepLearningGradientCheck extends TestUtil {
                           count++;
 
                           // if either gradient is tiny, check if both are tiny
-                          if (Math.abs(gradient) < 1e-8 || Math.abs(bpropGradient) < 1e-8) {
-                            if (Math.abs(bpropGradient-gradient) < 1e-8) continue; //all good
+                          if (Math.abs(gradient) < 1e-7 || Math.abs(bpropGradient) < 1e-7) {
+                            if (Math.abs(bpropGradient-gradient) < 1e-7) continue; //all good
                           }
 
                           meanRelErr += relError;
@@ -293,6 +294,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       Log.info("Mean. relative error: " + meanRelErr/count);
       Log.info("Max. relative error: " + PrettyPrint.formatPct(maxRelErr));
       Assert.assertTrue("Error too large: " + maxRelErr + " >= " + MAX_TOLERANCE, maxRelErr < MAX_TOLERANCE);
+      Assert.assertTrue("Failed count too large: " + failedcount + " > " + MAX_FAILED_RATIO*count, failedcount <= MAX_FAILED_RATIO*count);
 
     } finally {
       if (tfr != null) tfr.remove();
