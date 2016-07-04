@@ -99,9 +99,12 @@ public class Distribution extends Iced {
         return 2 * w * (Math.pow(y, 2 - tweediePower) / ((1 - tweediePower) * (2 - tweediePower)) - y * exp(f * (1 - tweediePower)) / (1 - tweediePower) + exp(f * (2 - tweediePower)) / (2 - tweediePower));
       case modified_huber:
         double yf = (2*y-1)*f;
-        if (yf < -1) return -w*4*yf;
-        else if (yf > 1) return 0;
-        else return w* yf * yf;
+        if (yf < -1)
+          return -w*4*yf;
+        else if (yf > 1)
+          return 0;
+        else
+          return w* yf * yf;
       default:
         throw H2O.unimpl();
     }

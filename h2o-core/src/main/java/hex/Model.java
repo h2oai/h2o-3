@@ -360,12 +360,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  many classes. */
     public Output( ModelBuilder b ) {
       _job = b._job;
-      if( b == null ) {
-        _hasOffset = false;
-        _hasWeights = false;
-        _hasFold = false;
-        return;
-      }
       _isSupervised = b.isSupervised();
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());

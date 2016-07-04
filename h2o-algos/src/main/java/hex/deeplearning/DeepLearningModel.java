@@ -679,8 +679,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     if (get_params()._distribution== Distribution.Family.modified_huber) {
       preds[0] = -1;
-      preds[1] = _dist.linkInv(out[0]);
-      preds[2] = 1-preds[1];
+      preds[2] = _dist.linkInv(out[0]);
+      preds[1] = 1-preds[2];
       return preds;
     } else if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
@@ -1197,7 +1197,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       pureMatVec(bodySb);
       bodySb.i(1).p("}").nl();
     }
-    if (_output.isClassifier()) {
+    if (_output.isClassifier() && _parms._distribution!= Distribution.Family.modified_huber) {
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // softmax
       bodySb.i(2).p("double max = ACTIVATION[i][0];").nl();
@@ -1217,7 +1217,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       bodySb.i(2).p("}").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();
-    } else if (!p._autoencoder) { //Regression
+    } else if (!p._autoencoder) { //Regression and modified_huber
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // regression: set preds[1], FillPreds0 will put it into preds[0]
       if (model_info().data_info()._normRespMul != null) {
@@ -1226,7 +1226,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       else {
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
-      bodySb.i(2).p("preds[1] = " + _dist.linkInvString("preds[1]")+";").nl();
+      bodySb.i(2).p("preds[1] = " + _dist.linkInvString("preds[1]") + ";").nl();
+      if (_parms._distribution== Distribution.Family.modified_huber){
+        bodySb.i(2).p("preds[2] = preds[1];").nl();
+        bodySb.i(2).p("preds[1] = 1-preds[2];").nl();
+      }
       bodySb.i(2).p("if (Double.isNaN(preds[1])) throw new RuntimeException(\"Predicted regression target NaN!\");").nl();
       bodySb.i(1).p("}").nl();
       bodySb.i().p("}").nl();
@@ -1460,7 +1464,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * traditional gradient descent for convex functions. The method relies on
      * gradient information at various points to build a polynomial approximation that
      * minimizes the residuals in fewer iterations of the descent.
-     * This parameter is only active if adaptive learning rate is disabled.
      */
     public boolean _nesterov_accelerated_gradient = true;
   
@@ -1767,7 +1770,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         dl.hide("_momentum_start", "momentum_start is not used with adaptive_rate.");
         dl.hide("_momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
         dl.hide("_momentum_stable", "momentum_stable is not used with adaptive_rate.");
-        dl.hide("_nesterov_accelerated_gradient", "nesterov_accelerated_gradient is not used with adaptive_rate.");
+        if (_rate!=0.005) dl.warn("_rate", "rate cannot be specified if adaptive_rate is enabled.");
+        if (_rate_annealing!=1e-6) dl.warn("_rate_annealing", "rate_annealing cannot be specified if adaptive_rate is enabled.");
+        if (_rate_decay!=1e-6) dl.warn("_rate_decay", "rate_decay cannot be specified if adaptive_rate is enabled.");
+        if (_momentum_start!=0) dl.warn("_momentum_start", "momentum_start cannot be specified if adaptive_rate is enabled.");
+        if (_momentum_ramp!=1e6) dl.warn("_momentum_ramb", "momentum_ramp cannot be specified if adaptive_rate is enabled.");
+        if (_momentum_stable!=0) dl.warn("_momentum_stable", "momentum_stable cannot be specified if adaptive_rate is enabled.");
       } else {
         // ! adaptive_rate
         dl.hide("_rho", "rho is only used with adaptive_rate.");
