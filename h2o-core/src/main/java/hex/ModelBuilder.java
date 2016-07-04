@@ -973,8 +973,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_parms._quantile_alpha > 1 || _parms._quantile_alpha < 0)
         error("_quantile_alpha", "Quantile alpha must be between 0 and 1.");
     } else if (_parms._distribution == Distribution.Family.huber) {
-      if (_parms._huber_delta <0)
-        error("_huber_delta", "Huber delta must be >= 0.");
+      if (_parms._huber_delta <=0)
+        error("_huber_delta", "Huber delta must be > 0.");
     }
   }
 

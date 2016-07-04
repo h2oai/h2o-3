@@ -1754,5 +1754,138 @@ public class DeepLearningTest extends TestUtil {
       for (Key f : dl1._output.biases) if (f!=null) f.remove();
     }
   }
+
+  @Test
+  public void testLaplace() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._distribution = laplace;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(2.31398,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testGaussian() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._distribution = gaussian;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(12.93808,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testHuberDeltaLarge() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._distribution = huber;
+      parms._huber_delta = Float.MAX_VALUE; //just like gaussian
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(12.93808,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testHuberDeltaTiny() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._distribution = huber;
+      parms._huber_delta = 1e-3; // in standardized response space
+      // more like Laplace, but different slope and different prefactor -> so can't compare deviance 1:1
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(0.0048777427,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-8);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testHuber() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._distribution = huber;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(3.5715418,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
 }
 
