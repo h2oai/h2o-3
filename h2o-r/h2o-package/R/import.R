@@ -14,6 +14,7 @@
 #' \code{h2o.importFile} is a parallelized reader and pulls information from the server from a location specified
 #' by the client. The path is a server-side path. This is a fast, scalable, highly optimized way to read data. H2O
 #' pulls the data from a data store and initiates the data transfer as a read operation.
+#'
 #' Unlike the import function, which is a parallelized reader, \code{h2o.uploadFile} is a push from
 #' the client to the server. The specified path must be a client-side path. This is not scalable and is only
 #' intended for smaller data sizes. The client pushes the data from a local filesystem (for example,
@@ -60,6 +61,17 @@
 #' class(prostate.hex)
 #' summary(prostate.hex)
 #' }
+
+
+#' @rdname h2o.importFile
+#' @export
+h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
+                           col.types=NULL, na.strings=NULL) {
+  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
+                   na.strings=na.strings)
+}
+
+
 #' @name h2o.importFile
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
@@ -100,15 +112,6 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
     return( myData[[1L]] )
   else
     return( myData )
-}
-
-
-#' @rdname h2o.importFile
-#' @export
-h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
-                           col.types=NULL, na.strings=NULL) {
-  h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
-                   na.strings=na.strings)
 }
 
 
