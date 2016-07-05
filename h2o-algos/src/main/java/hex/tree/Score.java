@@ -46,13 +46,14 @@ public class Score extends MRTask<Score> {
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
     final double[] tmp = _is_train && _bldr._ntrees > 0 ? null : new double[_bldr._ncols];
+//    final double[] tmp = new double[_bldr._ncols];
 
     // Score all Rows
     float [] val= new float[1];
     for( int row=0; row<ys._len; row++ ) {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore out-of-bag rows
-      if( _oob && chks[oobColIdx].at8(row)==0 ) continue;
+      if( _oob && chks[oobColIdx].atd(row)==0 ) continue;
       double weight = weightsChunk.atd(row);
       if (weight == 0) continue; //ignore holdout rows
       double offset = offsetChunk.atd(row);

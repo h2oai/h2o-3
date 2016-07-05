@@ -7,8 +7,10 @@ import java.util.Random;
 import static hex.genmodel.GenModel.getPrediction;
 import hex.tree.CompressedTree;
 import static hex.tree.DTreeScorer.scoreTree;
+import hex.tree.SharedTree;
 import water.Iced;
 import water.MRTask;
+import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -31,13 +33,14 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   /* @IN */ final private int       _nclasses;
   /* @IN */ final private boolean   _classification;
   /* @IN */ final private double   _threshold;
+  final private SharedTree _st;
 
   /* @INOUT */ private final int _ntrees;
-  /* @OUT */ private long [/*ntrees*/] _votes; // Number of correct votes per tree (for classification only)
-  /* @OUT */ private long [/*ntrees*/] _nrows; // Number of scored row per tree (for classification/regression)
+  /* @OUT */ private double [/*ntrees*/] _votes; // Number of correct votes per tree (for classification only)
+  /* @OUT */ private double [/*ntrees*/] _nrows; // Number of scored row per tree (for classification/regression)
   /* @OUT */ private float[/*ntrees*/] _sse;   // Sum of squared errors per tree (for regression only)
 
-  private TreeMeasuresCollector(CompressedTree[/*N*/][/*nclasses*/] trees, int nclasses, int ncols, float rate, int variable, double threshold) {
+  private TreeMeasuresCollector(CompressedTree[/*N*/][/*nclasses*/] trees, int nclasses, int ncols, float rate, int variable, double threshold, SharedTree st) {
     assert trees.length > 0;
     assert nclasses == trees[0].length;
     _trees = trees; _ncols = ncols;
@@ -46,6 +49,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     _nclasses = nclasses;
     _classification = (nclasses>1);
     _threshold = threshold;
+    _st = st;
   }
 
   public static class ShuffleTask extends MRTask<ShuffleTask> {
@@ -75,14 +79,15 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   @Override public void map(Chunk[] chks) {
     double[] data = new double[_ncols];
     double[] preds = new double[_nclasses+1];
-    Chunk cresp = chk_resp(chks);
+    Chunk cresp = _st.chk_resp(chks);
+    Chunk weights = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks[0]._len);
     int   nrows = cresp._len;
     int   [] oob = new int[2+Math.round((1f-_rate)*nrows*1.2f+0.5f)]; // preallocate
     int   [] soob = null;
 
     // Prepare output data
-    _nrows      = new long[_ntrees];
-    _votes      = _classification ? new long[_ntrees] : null;
+    _nrows      = new double[_ntrees];
+    _votes      = _classification ? new double[_ntrees] : null;
     _sse        = _classification ? null : new float[_ntrees];
     long seedForOob = ShuffleTask.seed(cresp.cidx()); // seed for shuffling oob samples
     // Start iteration
@@ -98,7 +103,9 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
       }
       for(int j = 1; j < 1+oobcnt; j++) {
         int row = oob[j];
+        double w = weights.atd(row);
         if (cresp.isNA(row)) continue; // we cannot deal with this row anyhow
+        if (w==0) continue;
         // Do scoring:
         // - prepare a row data
         for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row); // 1+i - one free is expected by prediction
@@ -115,14 +122,14 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
           int actu = (int) cresp.at8(row);
           // assert preds[pred] > 0 : "There should be a vote for at least one class.";
           // - collect only correct votes
-          if (pred == actu) _votes[tidx]++;
+          if (pred == actu) _votes[tidx]+=w;
         } else { /* regression */
           double pred = preds[0]; // Important!
           double actu = cresp.atd(row);
           _sse[tidx] += (actu-pred)*(actu-pred);
         }
         // - collect rows which were used for voting
-        _nrows[tidx]++;
+        _nrows[tidx]+=w;
         //if (_var<0) System.err.println("VARIMP OOB row: " + (cresp._start+row) + " : " + Arrays.toString(data) + " tree/actu: " + pred + "/" + actu);
       }
     }
@@ -138,8 +145,6 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     scoreTree(data, preds, ts);
   }
 
-  private Chunk chk_resp( Chunk chks[] ) { return chks[_ncols]; }
-
   private Random rngForTree(CompressedTree[] ts, int cidx) {
     return _oob ? ts[0].rngForChunk(cidx) : new DummyRandom(); // k-class set of trees shares the same random number
   }
@@ -151,11 +156,11 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     return new TreeVotesCollector(trees, tmodel.nclasses(), ncols, rate, variable).doAll(f).result();
   }*/
 
-  public static TreeVotes collectVotes(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold).doAll(f).resultVotes();
+  public static TreeVotes collectVotes(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold, SharedTree st) {
+    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f).resultVotes();
   }
-  public static TreeSSE collectSSE(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold).doAll(f).resultSSE();
+  public static TreeSSE collectSSE(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold, SharedTree st) {
+    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f).resultSSE();
   }
 
   private static final class DummyRandom extends Random {
@@ -167,12 +172,12 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     /** Actual number of trees which votes are stored in this object */
     protected int _ntrees;
     /** Number of processed row per tree. */
-    protected long[/*ntrees*/]   _nrows;
+    protected double[/*ntrees*/]   _nrows;
 
-    public TreeMeasures(int initialCapacity) { _nrows = new long[initialCapacity]; }
-    public TreeMeasures(long[] nrows, int ntrees) { _nrows = nrows; _ntrees = ntrees;}
+    public TreeMeasures(int initialCapacity) { _nrows = new double[initialCapacity]; }
+    public TreeMeasures(double[] nrows, int ntrees) { _nrows = nrows; _ntrees = ntrees;}
     /** Returns number of rows which were used during voting per individual tree. */
-    public final long[] nrows() { return _nrows; }
+    public final double[] nrows() { return _nrows; }
     /** Returns number of voting predictors */
     public final int    npredictors() { return _ntrees; }
     /** Returns a list of accuracies per tree. */
@@ -198,23 +203,23 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   /** A class holding tree votes. */
   public static class TreeVotes extends TreeMeasures<TreeVotes> {
     /** Number of correct votes per tree */
-    private long[/*ntrees*/]   _votes;
+    private double[/*ntrees*/]   _votes;
 
     public TreeVotes(int initialCapacity) {
       super(initialCapacity);
-      _votes = new long[initialCapacity];
+      _votes = new double[initialCapacity];
     }
-    public TreeVotes(long[] votes, long[] nrows, int ntrees) {
+    public TreeVotes(double[] votes, double[] nrows, int ntrees) {
       super(nrows, ntrees);
       _votes = votes;
     }
     /** Returns number of positive votes per tree. */
-    public final long[] votes() { return _votes; }
+    public final double[] votes() { return _votes; }
 
     /** Returns accuracy per individual trees. */
     @Override public final double accuracy(int tidx)  {
       assert tidx < _nrows.length && tidx < _votes.length;
-      return ((double) _votes[tidx]) / _nrows[tidx];
+      return (_votes[tidx]) / _nrows[tidx];
     }
 
     /** Compute variable importance with respect to given votes.
@@ -242,7 +247,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     }
 
     /** Append a tree votes to a list of trees. */
-    public TreeVotes append(long rightVotes, long allRows) {
+    public TreeVotes append(double rightVotes, double allRows) {
       assert _votes.length > _ntrees && _votes.length == _nrows.length : "TreeVotes inconsistency!";
       _votes[_ntrees] = rightVotes;
       _nrows[_ntrees] = allRows;
@@ -266,7 +271,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
       super(initialCapacity);
       _sse = new float[initialCapacity];
     }
-    public TreeSSE(float[] sse, long[] nrows, int ntrees) {
+    public TreeSSE(float[] sse, double[] nrows, int ntrees) {
       super(nrows, ntrees);
       _sse = sse;
     }
@@ -295,7 +300,7 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
       return this;
     }
     /** Append a tree sse to a list of trees. */
-    public TreeSSE append(float sse, long allRows) {
+    public TreeSSE append(float sse, double allRows) {
       assert _sse.length > _ntrees && _sse.length == _nrows.length : "TreeVotes inconsistency!";
       _sse  [_ntrees] = sse;
       _nrows[_ntrees] = allRows;

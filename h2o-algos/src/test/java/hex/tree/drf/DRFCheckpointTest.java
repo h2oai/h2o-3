@@ -3,6 +3,7 @@ package hex.tree.drf;
 import hex.tree.CompressedTree;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -28,6 +29,11 @@ public class DRFCheckpointTest extends TestUtil {
     testCheckPointReconstruction("smalldata/iris/iris.csv", 4, true, 5, 3);
   }
 
+  @Test
+  public void testCheckpointReconstruction4Multinomial2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 1, true, 5, 3);
+  }
+
   /** Test if reconstructed initial frame match the last iteration
    * of DRF model builder.
    *
@@ -36,6 +42,11 @@ public class DRFCheckpointTest extends TestUtil {
   @Test
   public void testCheckpointReconstruction4Binomial() {
     testCheckPointReconstruction("smalldata/logreg/prostate.csv", 1, true, 5, 3);
+  }
+
+  @Test
+  public void testCheckpointReconstruction4Binomial2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 7, true, 1, 1);
   }
 
   /** Test throwing the right exception if non-modifiable parameter is specified.
@@ -53,7 +64,12 @@ public class DRFCheckpointTest extends TestUtil {
    */
   @Test
   public void testCheckpointReconstruction4Regression() {
-    testCheckPointReconstruction("smalldata/logreg/prostate.csv", 8, false, 5, 3);
+    testCheckPointReconstruction("smalldata/logreg/prostate.csv", 8, false, 4, 3);
+  }
+
+  @Test
+  public void testCheckpointReconstruction4Regression2() {
+    testCheckPointReconstruction("smalldata/junit/cars_20mpg.csv", 1, false, 4, 3);
   }
 
   private void testCheckPointReconstruction(String dataset,
@@ -69,6 +85,8 @@ public class DRFCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
+    Vec v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
+    DKV.put(f);
     // If classification turn response into categorical
     if (classification) {
       Vec respVec = f.vec(responseIdx);
@@ -86,6 +104,7 @@ public class DRFCheckpointTest extends TestUtil {
       drfParams._seed = 42;
       drfParams._max_depth = 10;
       drfParams._score_each_iteration = true;
+      drfParams._r2_stopping = Double.MAX_VALUE;
       drfParams._sample_rate = sampleRateInPriorModel;
       model = new DRF(drfParams,Key.<DRFModel>make("Initial model")).trainModel().get();
 
@@ -97,6 +116,7 @@ public class DRFCheckpointTest extends TestUtil {
       drfFromCheckpointParams._checkpoint = model._key;
       drfFromCheckpointParams._score_each_iteration = true;
       drfFromCheckpointParams._max_depth = 10;
+      drfFromCheckpointParams._r2_stopping = Double.MAX_VALUE;
       drfFromCheckpointParams._sample_rate = sampleRateInNewModel;
       modelFromCheckpoint = new DRF(drfFromCheckpointParams,Key.<DRFModel>make("Model from checkpoint")).trainModel().get();
 
@@ -108,6 +128,8 @@ public class DRFCheckpointTest extends TestUtil {
       drfFinalParams._seed = 42;
       drfFinalParams._score_each_iteration = true;
       drfFinalParams._max_depth = 10;
+      drfFinalParams._sample_rate = sampleRateInPriorModel;
+      drfFinalParams._r2_stopping = Double.MAX_VALUE;
       modelFinal = new DRF(drfFinalParams,Key.<DRFModel>make("Validation model")).trainModel().get();
 
       CompressedTree[][] treesFromCheckpoint = getTrees(modelFromCheckpoint);

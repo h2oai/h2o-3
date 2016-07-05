@@ -604,6 +604,7 @@ public final class DHistogram extends Iced {
       if( col_data < minmax[0] ) minmax[0] = col_data;
       if( col_data > minmax[1] ) minmax[1] = col_data;
       double y = ys[k];
+      assert(!Double.isNaN(y));
       double wy = weight * y;
       double wyy = wy * y;
       if (Double.isNaN(col_data)) {
