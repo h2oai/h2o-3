@@ -63,7 +63,7 @@
 #' }
 
 
-#' @rdname h2o.importFile
+#' @name h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
                            col.types=NULL, na.strings=NULL) {
@@ -72,7 +72,7 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
 }
 
 
-#' @name h2o.importFile
+#' @rdname h2o.importFile
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, col.types=NULL, na.strings=NULL) {
