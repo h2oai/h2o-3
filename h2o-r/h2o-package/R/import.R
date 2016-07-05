@@ -11,12 +11,16 @@
 #' Imports files into an H2O cloud. The default behavior is to pass-through to the parse phase
 #' automatically.
 #'
-#' Other than \code{h2o.uploadFile}, if the given path is relative, then it will be relative to the
-#' start location of the H2O instance. Additionally, the file must be on the same machine as the H2O
-#' cloud. In the case of \code{h2o.uploadFile}, a relative path will resolve relative to the working
-#' directory of the current R session.
+#' \code{h2o.importFile} is a parallelized reader and pulls information from the server from a location specified
+#' by the client. The path is a server-side path. This is a fast, scalable, highly optimized way to read data. H2O
+#' pulls the data from a data store and initiates the data transfer as a read operation.
+#' Unlike the import function, which is a parallelized reader, \code{h2o.uploadFile} is a push from
+#' the client to the server. The specified path must be a client-side path. This is not scalable and is only
+#' intended for smaller data sizes. The client pushes the data from a local filesystem (for example,
+#' on your machine where R is running) to H2O. For big-data operations, you don't want the data
+#' stored on or flowing through the client.
 #'
-#' Import an entire directory of files. If the given path is relative, then it
+#' \code{h2o.importFolder} imports an entire directory of files. If the given path is relative, then it
 #' will be relative to the start location of the H2O instance. The default
 #' behavior is to pass-through to the parse phase automatically.
 #'
@@ -52,7 +56,7 @@
 #' \donttest{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
 #' prosPath = system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate.hex = h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
+#' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' class(prostate.hex)
 #' summary(prostate.hex)
 #' }
@@ -99,6 +103,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
 }
 
 
+#' @rdname h2o.importFile
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
                            col.types=NULL, na.strings=NULL) {
