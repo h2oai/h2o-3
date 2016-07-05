@@ -161,15 +161,15 @@ public class TwoDimTable extends Iced {
             set(r, c, dblCellValues[r][c]);
           break;
         case "int":
-          for (int r = 0; r < rowDim; ++r) {
-            if (isEmpty(dblCellValues[r][c])) set(r,c, Double.NaN);
-            else set(r, c, (int) dblCellValues[r][c]);
-          }
-          break;
         case "long":
           for (int r = 0; r < rowDim; ++r) {
-            if (isEmpty(dblCellValues[r][c])) set(r, c, Double.NaN);
-            else set(r, c, (long) dblCellValues[r][c]);
+            double val = dblCellValues[r][c];
+            if (isEmpty(val))
+              set(r, c, Double.NaN);
+            else if ((long)val==val)
+              set(r, c, (long)val);
+            else
+              set(r, c, val);
           }
           break;
         case "string":
@@ -229,16 +229,8 @@ public class TwoDimTable extends Iced {
       cellValues[row][col] = new IcedWrapper(null);
     else if (o instanceof Double && Double.isNaN((double)o))
       cellValues[row][col] = new IcedWrapper(Double.NaN);
-    else if (colTypes[col].equals("double"))
-      cellValues[row][col] = new IcedWrapper(new Double(o.toString()));
-    else if (colTypes[col].equals("float"))
-      cellValues[row][col] = new IcedWrapper(new Float(o.toString()));
-    else if (colTypes[col].equals("int"))
-      cellValues[row][col] = new IcedWrapper(new Integer(o.toString()));
-    else if (colTypes[col].equals("long"))
-      cellValues[row][col] = new IcedWrapper(new Long(o.toString()));
-    else if (colTypes[col].equals("string"))
-      cellValues[row][col] = new IcedWrapper(new String(o.toString()));
+    else if (colTypes[col]=="string")
+      cellValues[row][col] = new IcedWrapper(o.toString());
     else
       cellValues[row][col] = new IcedWrapper(o);
   }
@@ -311,25 +303,15 @@ public class TwoDimTable extends Iced {
           row++;
           continue;
         }
-        switch (colTypes[c]) {
-          case "double":
-            cellStrings[row + 1][c + 1] = String.format(formatString, (Double)cellValues[r][c].get());
-            break;
-          case "float":
-            cellStrings[row + 1][c + 1] = String.format(formatString, (Float)cellValues[r][c].get());
-            break;
-          case "int":
-            cellStrings[row + 1][c + 1] = String.format(formatString, (Integer)cellValues[r][c].get());
-            break;
-          case "long":
-            cellStrings[row + 1][c + 1] = String.format(formatString, (Long)cellValues[r][c].get());
-            break;
-          case "string":
-            cellStrings[row + 1][c + 1] = String.format(formatString, (String)cellValues[r][c].get());
-            break;
-          default:
-            cellStrings[row+1][c+1] = String.format(formatString, cellValues[r][c]);
-            break;
+        try {
+          if (o instanceof Double) cellStrings[row + 1][c + 1] = String.format(formatString, (Double) o);
+          else if (o instanceof Float) cellStrings[row + 1][c + 1] = String.format(formatString, (Float) o);
+          else if (o instanceof Integer) cellStrings[row + 1][c + 1] = String.format(formatString, (Integer) o);
+          else if (o instanceof Long) cellStrings[row + 1][c + 1] = String.format(formatString, (Long) o);
+          else if (o instanceof String) cellStrings[row + 1][c + 1] = (String)o;
+          else cellStrings[row + 1][c + 1] = String.format(formatString, cellValues[r][c]);
+        } catch(Throwable t) {
+          cellStrings[row + 1][c + 1] = o.toString();
         }
         row++;
       }

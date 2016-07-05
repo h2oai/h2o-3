@@ -274,15 +274,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());
 
-        // Tag out rows missing the response column
-        new ExcludeNAResponse().doAll(_train);
-
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
         _rand = RandomUtils.getRNG(_parms._seed);
 
         initializeModelSpecifics();
-        resumeFromCheckpoint();
+        resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
 
       } finally {
@@ -316,14 +313,17 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     /**
      * Restore the workspace from a previous model (checkpoint)
      */
-    protected final void resumeFromCheckpoint() {
+    protected final void resumeFromCheckpoint(SharedTree st) {
       if( !_parms.hasCheckpoint() ) return;
       // Reconstruct the working tree state from the checkpoint
       Timer t = new Timer();
       int ntreesFromCheckpoint = ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees;
-      new ReconstructTreeState(_ncols, _nclass, numSpecialCols(), _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train, _parms._build_tree_one_node);
+      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train, _parms._build_tree_one_node);
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
       Log.info("Reconstructing OOB stats from checkpoint took " + t);
+      if (DEV_DEBUG) {
+        System.out.println(_train.toString());
+      }
     }
 
     /**
@@ -333,19 +333,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     protected final void scoreAndBuildTrees(boolean oob) {
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        // No need to score a checkpoint with no extra trees added
-        if( tid!=0 || !_parms.hasCheckpoint() ) { // do not make initial scoring if model already exist
-          boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-          if( ((ModelMetricsSupervised)_model._output._training_metrics).r2()  >= _parms._r2_stopping ) {
-            doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
-            _job.update(_ntrees-_model._output._ntrees); //finish
-            return;             // Stop when approaching round-off error
-          }
-          if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-            doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
-            _job.update(_ntrees-_model._output._ntrees); //finish
-            return;
-          }
+        boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
+        if( ((ModelMetricsSupervised)_model._output._training_metrics).r2()  >= _parms._r2_stopping ) {
+          doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
+          _job.update(_ntrees-_model._output._ntrees); //finish
+          return;             // Stop when approaching round-off error
+        }
+        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+          doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
+          _job.update(_ntrees-_model._output._ntrees); //finish
+          return;
         }
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
@@ -489,8 +486,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _hcs[_k] = new DHistogram[new_leafs][/*ncol*/];
       for( int nl = tmax; nl<_tree.len(); nl ++ )
         _hcs[_k][nl-tmax] = _tree.undecided(nl)._hs;
-      if (_did_split && new_leafs > 0) _tree._depth++;
-//      if (_did_split) _tree._depth++;
+//      if (_did_split && new_leafs > 0) _tree._depth++;
+      if (_did_split) _tree._depth++; //
     }
   }
 
@@ -505,10 +502,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
 
-  protected Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
+  public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
-  protected Chunk chk_resp( Chunk chks[]        ) { return chks[idx_resp()]; }
-  protected Chunk chk_tree( Chunk chks[], int c ) { return chks[idx_tree(c)]; }
+  public Chunk chk_resp(Chunk chks[]) { return chks[idx_resp()]; }
+  public Chunk chk_tree(Chunk chks[], int c) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
@@ -545,18 +542,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if( !Double.isInfinite(sum) && sum>0f && sum!=1f) ArrayUtils.div(fs, sum);
       if (_parms._balance_classes)
         GenModel.correctProbabilities(fs, _model._output._priorClassDist, _model._output._modelClassDist);
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // Tag out rows missing the response column
-  class ExcludeNAResponse extends MRTask<ExcludeNAResponse> {
-    @Override public void map( Chunk chks[] ) {
-      Chunk ys = chk_resp(chks);
-      for( int row=0; row<ys._len; row++ )
-        if( ys.isNA(row) )
-          for( int t=0; t<_nclass; t++ )
-            chk_nids(chks,t).set(row, ScoreBuildHistogram.MISSING_RESPONSE);
     }
   }
 

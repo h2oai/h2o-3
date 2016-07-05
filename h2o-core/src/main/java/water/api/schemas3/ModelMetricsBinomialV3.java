@@ -76,7 +76,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       TwoDimTable thresholdsByMetrics = new TwoDimTable("Metrics for Thresholds", "Binomial metrics as a function of classification thresholds", new String[auc._nBins], colHeaders, types, formats, null );
       for( i=0; i<auc._nBins; i++ ) {
         int j=0;
-        thresholdsByMetrics.set(i, j, thresholds[i]);
+        thresholdsByMetrics.set(i, j, Double.valueOf(thresholds[i]));
         for (j = 0; j < crits.length; j++) {
           double d = crits[j].exec(auc, i); // Note: casts to Object are NOT redundant
           thresholdsByMetrics.set(i, 1+j, crits[j]._isInt ? (Object) ((long) d) : d);
