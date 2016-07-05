@@ -124,6 +124,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
     // OUTPUT
     public double[/*strata*/] _quantiles;
+    public int[] _nids;
 
     public StratifiedQuantilesTask(H2O.H2OCountedCompleter cc,
                                    double prob,
@@ -142,22 +143,32 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         return;
       }
       final int nstrata = strataMax - strataMin + 1;
-      Log.info("Computing quantiles for " + nstrata + " different strata.");
+      Log.info("Computing quantiles for (up to) " + nstrata + " different strata.");
       _quantiles = new double[nstrata];
+      _nids = new int[nstrata];
       Vec weights = _weights != null ? _weights : _response.makeCon(1);
       for (int i=0;i<nstrata;++i) { //loop over nodes
         Vec newWeights = weights.makeCopy();
         //only keep weights for this stratum (node), set rest to 0
-        if (_strata!=null) new KeepOnlyOneStrata(strataMin+i).doAll(_strata, newWeights);
+        if (_strata!=null) {
+          _nids[i] = strataMin+i;
+          new KeepOnlyOneStrata(_nids[i]).doAll(_strata, newWeights);
+        }
         double sumRows = new SumWeights().doAll(_response, newWeights).sum;
-        Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
-        h.doAll(_response, newWeights);
-        while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
-          h = h.refinePass(_prob).doAll(_response, newWeights);
-        newWeights.remove();
-        //sanity check quantiles
-        assert(_quantiles[i] <= _response.max()+1e-6);
-        assert(_quantiles[i] >= _response.min()-1e-6);
+        if (sumRows==0) {
+          // no observations with weight > 0 found - no need to compute quantiles
+          _quantiles[i] = Double.NaN;
+//          Log.warn("No observations in leaf " + _nids[i] + " - all weights are 0.");
+        } else {
+          Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
+          h.doAll(_response, newWeights);
+          while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
+            h = h.refinePass(_prob).doAll(_response, newWeights);
+          newWeights.remove();
+          //sanity check quantiles
+          assert (_quantiles[i] <= _response.max() + 1e-6);
+          assert (_quantiles[i] >= _response.min() - 1e-6);
+        }
       }
       if (_weights != weights) weights.remove();
       tryComplete();

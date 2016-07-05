@@ -529,9 +529,12 @@ public class Frame extends Lockable<Frame> {
     vec = makeCompatible(new Frame(vec))[0];
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
-    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
-    _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
-    _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
+    String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
+    Key<Vec>[] keys = Arrays.copyOf(_keys ,ncols+1);  keys [ncols] = vec._key;
+    Vec[] vecs  = Arrays.copyOf(_vecs ,ncols+1);  vecs [ncols] = vec;
+    _names = names;
+    _keys = keys;
+    _vecs = vecs;
     return vec;
   }
 
@@ -751,12 +754,15 @@ public class Frame extends Lockable<Frame> {
     int len = _names.length;
     if( idx < 0 || idx >= len ) return null;
     Vec v = vecs()[idx];
-    System.arraycopy(_names,idx+1,_names,idx,len-idx-1);
-    System.arraycopy(_vecs ,idx+1,_vecs ,idx,len-idx-1);
-    System.arraycopy(_keys ,idx+1,_keys ,idx,len-idx-1);
-    _names = Arrays.copyOf(_names,len-1);
-    _vecs  = Arrays.copyOf(_vecs ,len-1);
-    _keys  = Arrays.copyOf(_keys ,len-1);
+    String[] names = Arrays.copyOf(_names, len);
+    Vec[] vecs = Arrays.copyOf(_vecs, len);
+    Key<Vec>[] keys = Arrays.copyOf(_keys, len);
+    System.arraycopy(names,idx+1,names,idx,len-idx-1);
+    System.arraycopy(vecs ,idx+1,vecs ,idx,len-idx-1);
+    System.arraycopy(keys ,idx+1,keys ,idx,len-idx-1);
+    _names = Arrays.copyOf(names,len-1);
+    _vecs  = Arrays.copyOf(vecs ,len-1);
+    _keys  = Arrays.copyOf(keys ,len-1);
     if( v == _col0 ) _col0 = null;
     return v;
   }
@@ -1053,58 +1059,67 @@ public class Frame extends Lockable<Frame> {
   @Override public String toString( ) { return toString(0,20); }
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
-  public TwoDimTable toTwoDimTable(long off, int len ) {
+  public String toString(long off, int len, boolean rollups) { return toTwoDimTable(off, len, rollups).toString(); }
+  public TwoDimTable toTwoDimTable(long off, int len ) { return toTwoDimTable(off,len,true); }
+  public TwoDimTable toTwoDimTable(long off, int len, boolean rollups ) {
     if( off > numRows() ) off = numRows();
     if( off+len > numRows() ) len = (int)(numRows()-off);
 
-    String[] rowHeaders = new String[len+5];
-    rowHeaders[0] = "min";
-    rowHeaders[1] = "mean";
-    rowHeaders[2] = "stddev";
-    rowHeaders[3] = "max";
-    rowHeaders[4] = "missing";
-    for( int i=0; i<len; i++ ) rowHeaders[i+5]=""+(off+i);
+    String[] rowHeaders = new String[len];
+    int H=0;
+    if( rollups ) {
+      H = 5;
+      rowHeaders = new String[len+H];
+      rowHeaders[0] = "min";
+      rowHeaders[1] = "mean";
+      rowHeaders[2] = "stddev";
+      rowHeaders[3] = "max";
+      rowHeaders[4] = "missing";
+      for( int i=0; i<len; i++ ) rowHeaders[i+H]=""+(off+i);
+    }
 
     final int ncols = numCols();
     final Vec[] vecs = vecs();
     String[] coltypes = new String[ncols];
-    String[][] strCells = new String[len+5][ncols];
-    double[][] dblCells = new double[len+5][ncols];
+    String[][] strCells = new String[len+H][ncols];
+    double[][] dblCells = new double[len+H][ncols];
     final BufferedString tmpStr = new BufferedString();
     for( int i=0; i<ncols; i++ ) {
       if( DKV.get(_keys[i]) == null ) { // deleted Vec in Frame
         coltypes[i] = "string";
-        for( int j=0; j<len+5; j++ ) dblCells[j][i] = TwoDimTable.emptyDouble;
-        for( int j=0; j<len; j++ ) strCells[j+5][i] = "NO_VEC";
+        for( int j=0; j<len+H; j++ ) dblCells[j][i] = TwoDimTable.emptyDouble;
+        for( int j=0; j<len; j++ ) strCells[j+H][i] = "NO_VEC";
         continue;
       }
       Vec vec = vecs[i];
-      dblCells[0][i] = vec.min();
-      dblCells[1][i] = vec.mean();
-      dblCells[2][i] = vec.sigma();
-      dblCells[3][i] = vec.max();
-      dblCells[4][i] = vec.naCnt();
+      if( rollups ) {
+        dblCells[0][i] = vec.min();
+        dblCells[1][i] = vec.mean();
+        dblCells[2][i] = vec.sigma();
+        dblCells[3][i] = vec.max();
+        dblCells[4][i] = vec.naCnt();
+      }
       switch( vec.get_type() ) {
       case Vec.T_BAD:
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = null; dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = null; dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_STR :
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
         coltypes[i] = "string"; 
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+5][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+5][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
         coltypes[i] = vec.isInt() ? "long" : "double"; 
-        for( int j=0; j<len; j++ ) { dblCells[j+5][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+5][i] = null; }
+        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+H][i] = null; }
         break;
       case Vec.T_UUID:
         throw H2O.unimpl();

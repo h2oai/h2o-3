@@ -131,7 +131,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
       seed : int
         Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded.
-        Default: -5604147044722573272
+        Default: -1
 
       adaptive_rate : bool
         Adaptive learning rate.

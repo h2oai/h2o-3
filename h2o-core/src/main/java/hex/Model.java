@@ -107,7 +107,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
         _seed = RandomUtils.getRNG(System.nanoTime()).nextLong();
-        Log.info("Auto-generated time-based seed for pseudo-random number generator (because it was set to -1): " + _seed);
+        Log.debug("Auto-generated time-based seed for pseudo-random number generator (because it was set to -1): " + _seed);
       }
       return _seed;
     }

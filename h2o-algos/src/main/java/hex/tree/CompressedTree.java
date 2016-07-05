@@ -73,11 +73,12 @@ public class CompressedTree extends Keyed {
       }
 
       // WARNING: Generated code has to be consistent with this code:
+      assert(equal!=1); //no longer supported
       double d = row[colId];
       if ((Double.isNaN(d) && !NALeft) ||                                            // NA goes right
               !NAvsREST &&
               ( ( (equal==0            ) && d >= splitVal         ) ||  // greater or equals goes right
-                ( (equal==1            ) && d == splitVal         ) ||  // equals goes right
+//                ( (equal==1            ) && d == splitVal         ) ||  // equals goes right
                 ( (equal==2 || equal==3) && ibs.contains((int)d) ) )    // if contained in bitset, go right
       ) {
         // RIGHT

@@ -67,7 +67,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   /** Marker for rows without a response */
   static public final int MISSING_RESPONSE = -1;
   /** Marker for a fresh tree */
-  static public final int UNINITIALIZED = -1; //Integer.MIN_VALUE;
+  static public final int UNDECIDED_CHILD_NODE_ID = -1; //Integer.MIN_VALUE;
 
   static public final int FRESH = 0;
 
@@ -155,7 +155,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       boolean oob = isOOBRow(nid);
       if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
       DTree.DecidedNode dn = _tree.decided(nid);
-      if( dn._split == null ) { // Might have a leftover non-split
+      if( dn == null || dn._split == null ) { // Might have a leftover non-split
         if( DTree.isRootNode(dn) ) { nnids[row] = nid-_leaf; continue; }
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
@@ -241,7 +241,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     double[] ws = new double[chks[0]._len];
     double[] cs = new double[chks[0]._len];
     double[] ys = new double[chks[0]._len];
-    //Note: for (n) for (c) is faster than for(c) for(n) for Airlines and MNIST data for DRF and GBM and stochastic GBM
     weight.getDoubles(ws,0,ws.length);
     wrks.getDoubles(ys,0,ys.length);
     for (int c = 0; c < cols; c++) {

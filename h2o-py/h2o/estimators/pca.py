@@ -64,7 +64,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
       seed : int
         RNG seed for initialization
-        Default: 312755815554350
+        Default: -1
 
       max_runtime_secs : float
         Maximum allowed runtime in seconds for model training. Use 0 to disable.

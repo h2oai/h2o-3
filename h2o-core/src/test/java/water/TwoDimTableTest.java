@@ -296,4 +296,32 @@ public class TwoDimTableTest extends TestUtil {
       if (fr != null) fr.delete();
     }
   }
+
+  @Test public void run10() {
+    Frame fr = null;
+    try {
+      int OFFSET = 5;
+      String data = "1\n3\n4\nNA\n";
+      Key k1 = ParserTest.makeByteVec(data);
+      Key r1 = Key.make();
+      fr = ParseDataset.parse(r1, k1);
+      assertTrue(fr.numRows() == 4);
+      System.out.println(fr);
+      TwoDimTable table = fr.toTwoDimTable(0,4);
+      assertTrue(table.getColTypes()[0]=="long");
+      assertTrue((long)table.get(0,0) == 1); //min
+      assertTrue((double)table.get(1,0) > 2.66); //mean
+      assertTrue((double)table.get(1,0) < 2.67); //mean
+      assertTrue((double)table.get(2,0) > 1.52); //sd
+      assertTrue((double)table.get(2,0) < 1.53); //sd
+      assertTrue((long)table.get(3,0) == 4); //max
+      assertTrue((long)table.get(4,0) == 1); //missing
+      assertTrue((long)table.get(0 + OFFSET,0) == 1);
+      assertTrue((long)table.get(1 + OFFSET,0) == 3);
+      assertTrue((long)table.get(2 + OFFSET,0) == 4);
+      assertTrue(Double.isNaN((double)table.get(3 + OFFSET,0)));
+    } finally {
+      if (fr != null) fr.delete();
+    }
+  }
 }

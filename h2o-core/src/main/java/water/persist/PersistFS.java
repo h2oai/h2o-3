@@ -105,7 +105,14 @@ final class PersistFS extends Persist {
 
   @Override
   public OutputStream create(String path, boolean overwrite) {
-    File f = new File(URI.create(path));
+    File f;
+    boolean windowsPath = path.matches("^[a-zA-Z]:.*$");
+    if (windowsPath) {
+      f = new File(path);
+    }
+    else {
+      f = new File(URI.create(path));
+    }
     if (f.exists() && !overwrite)
       throw new FSIOException(path, "File already exists");
 
