@@ -1285,7 +1285,7 @@ class H2OFrame(object):
     if len(frames) == 0:
       raise ValueError("Input list of frames is empty! Nothing to concat.")
     elif len(frames) == 1:
-      raise ValueError("Input list of frames is of length one. Better to use cbind for one frame.")
+      raise ValueError("Input list of frames is of length one. Better to use cbind or rbind for one frame/column.")
 
     df = self
 

@@ -1076,7 +1076,7 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
       else {
         if( is(object, "H2OClusteringModel") ) v <- model.parts$vm@metrics$centroid_stats$within_cluster_sum_of_squares
-        else v <- c(v,model.parts$vm@metrics$MSE)
+        else v <- c(v,model.parts$vm@metrics$RMSE)
         v_names <- c(v_names,"valid")
       }
     }
@@ -1084,7 +1084,7 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
       else {
         if( is(object, "H2OClusteringModel") ) v <- model.parts$xm@metrics$centroid_stats$within_cluster_sum_of_squares
-        else v <- c(v,model.parts$xm@metrics$MSE)
+        else v <- c(v,model.parts$xm@metrics$RMSE)
         v_names <- c(v_names,"xval")
       }
     }
@@ -1093,7 +1093,7 @@ h2o.rmse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
-  warning(paste0("No MSE for ",class(object)))
+  warning(paste0("No RMSE for ",class(object)))
   invisible(NULL)
 }
 
