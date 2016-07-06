@@ -1988,6 +1988,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
                   ) {
             if (f.getName().equals("_hidden")) continue;
             if (f.getName().equals("_ignored_columns")) continue;
+	    if (f.getName().equals("$jacocoData")) continue; // If code coverage is enabled
             throw H2O.unimpl("Please add " + f.getName() + " to either cp_modifiable or cp_not_modifiable");
           }
       }

@@ -11,6 +11,7 @@ _IS_PYUNIT_                   = False
 _IS_PYBOOKLET_                = False
 _RESULTS_DIR_                 = False
 _TEST_NAME_                   = None
+_FORCE_CONNECT_               = False
 
 def parse_args(args):
     global _H2O_IP_
@@ -23,6 +24,7 @@ def parse_args(args):
     global _IS_PYBOOKLET_
     global _RESULTS_DIR_
     global _TEST_NAME_
+    global _FORCE_CONNECT_
 
     i = 1
     while (i < len(args)):
@@ -55,6 +57,8 @@ def parse_args(args):
             i = i + 1
             if (i > len(args)): usage()
             _TEST_NAME_ = args[i]
+        elif (s == "--forceConnect"):
+            _FORCE_CONNECT_ = True
         else:
             unknownArg(s)
         i = i + 1
@@ -83,6 +87,8 @@ def usage():
     print("    --resultsDir      the results directory.")
     print("")
     print("    --testName        name of the pydemo, pyunit, or pybooklet.")
+    print("")
+    print("    --forceConnect    h2o will attempt to connect to cluster regardless of cluster's health.")
     print("")
     sys.exit(1) #exit with nonzero exit code
 
@@ -120,7 +126,7 @@ def h2o_test_setup(sys_args):
                                 "{0}".format(_TEST_NAME_))
 
     print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
-    h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False)
+    h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False, force_connect=_FORCE_CONNECT_)
 
     #rest_log = os.path.join(_RESULTS_DIR_, "rest.log")
     #h2o.start_logging(rest_log)

@@ -784,9 +784,9 @@ def cluster_status():
 
 
 def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
-         license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None, 
+         license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None,
          strict_version_check=True, proxy=None, https=False, insecure=False, username=None, 
-         password=None, cluster_name=None, max_mem_size_GB=None, min_mem_size_GB=None, proxies=None, size=None):
+         password=None, cluster_name=None, force_connect=False, max_mem_size_GB=None, min_mem_size_GB=None, proxies=None, size=None):
   """Initiate an H2O connection to the specified ip and port.
 
   Parameters
@@ -827,6 +827,8 @@ def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
     Password to login with.
   cluster_name : str
     Cluster to login to.
+  force_connect : bool
+    When set to True, a connection to the cluster will attempt to be established regardless of its reported health.
   max_mem_size_GB : DEPRECATED
     Use max_mem_size instead.
   min_mem_size_GB : DEPRECATED
@@ -850,7 +852,7 @@ def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
   H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,
                 nthreads=nthreads,max_mem_size=max_mem_size,min_mem_size=min_mem_size,ice_root=ice_root,
                 strict_version_check=strict_version_check,proxy=proxy,https=https,insecure=insecure,username=username,
-                password=password,cluster_name=cluster_name,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,proxies=proxies,size=size)
+                password=password,cluster_name=cluster_name,force_connect=force_connect,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,proxies=proxies,size=size)
   return None
 
 
@@ -862,10 +864,8 @@ def export_file(frame,path,force=False):
   ----------
     frame : H2OFrame
       The Frame to save to disk.
-
     path : str
       The path to the save point on disk.
-
     force : bool
       Overwrite any preexisting file with the same path
   """
