@@ -567,14 +567,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final Chunk resp = chk_resp(chks);
         final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
         final Chunk preds = chk_tree(chks,0);
-        final Chunk nids  = chk_nids(chks,0);
-        final Chunk weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
         for (int i=0; i<chks[0].len(); ++i) {
           nc[0].addNum(resp.atd(i) - (preds.atd(i) + offset.atd(i))); //y - (f+o)
-          if (resp.isNA(i)) continue;
-          if (weights.atd(i)==0) continue;
-          assert(!nids.isNA(i));
-          int nid = (int)nids.at8(i);
         }
       }
     }
