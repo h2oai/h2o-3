@@ -255,13 +255,13 @@ popular programming language. Python users can also use H2O with IPython
 notebooks. For more information, refer to the following links.
 
 -  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html#Python>`__
+   `here <http://www.h2o.ai/download/h2o/python>`__
    to view instructions on how to use H2O with Python.
 
 -  `Python readme <https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst>`_: This document describes how to setup and install the
    prerequisites for using Python with H2O.
 
--  `Python docs <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-py/docs/index.html>`_: This document represents the definitive guide to using
+-  `Python docs <../h2o-py/docs/index.html>`_: This document represents the definitive guide to using
    Python with H2O.
 
 -  `Python Parity <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md>`_: This document is is a list of Python capabilities that
@@ -297,7 +297,7 @@ To check which version of H2O is installed in R, use
    `here <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html#R>`__
    to view instructions for using H2O with R.
 
--  `R User Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O
+-  `R User Documentation <../h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O
    package for R, including examples and arguments. It represents the
    definitive guide to using H2O in R.
 
@@ -343,9 +343,9 @@ the sensor data falls below a specified threshold.
    commands are used in H2O, versioning, experimental APIs, verbs,
    status codes, formats, schemas, payloads, metadata, and examples.
 
--  `REST API Reference <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-docs/index.html#route-reference>`_: This document represents the definitive guide to the H2O REST API.
+-  `REST API Reference <rest-api-reference.html>`_: This document represents the definitive guide to the H2O REST API.
 
--  `REST API Schema Reference <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-docs/index.html#schema-reference>`_: This document represents the definitive guide to the H2O REST API schemas.
+-  `REST API Schema Reference <rest-api-reference.html#schema-reference>`_: This document represents the definitive guide to the H2O REST API schemas.
 
 
 Java Users
@@ -354,13 +354,13 @@ Java Users
 For Java developers, the following resources will help you create your
 own custom app that uses H2O.
 
--  `H2O Core Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide
+-  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
 
--  `H2O Algos Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-algos/javadoc/index.html>`_: The definitive Java API guide
+-  `H2O Algos Java Developer Documentation <../h2o-algos/javadoc/index.html>`_: The definitive Java API guide
    for the algorithms used by H2O.
 
--  `h2o-genmodel (POJO) Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/5/docs-website/h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
+-  `h2o-genmodel (POJO) Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
 
 SDK Information
 ---------------

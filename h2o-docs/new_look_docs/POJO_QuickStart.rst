@@ -3,7 +3,7 @@ POJO Quick Start
 
 This document describes how to build and implement a POJO to use
 predictive scoring. Java developers should refer to the
-`Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`__
+`Javadoc <../h2o-genmodel/javadoc/index.html>`__
 for more information, including packages.
 
     **Note**: POJOs are not supported for source files larger than 1G.
@@ -190,7 +190,7 @@ FAQ
 
 -  **How should I format my data before calling the POJO?**
 
-    Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the `Javadoc <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-genmodel/javadoc/index.html>`__).
+    Here are our requirements (assuming you are using the "easy" Prediction API for the POJO as described in the `Javadoc <../h2o-genmodel/javadoc/index.html>`__).
 
     -  Input columns must only contain categorical levels that were seen during training
     -  Any additional input columns not used for training are ignored

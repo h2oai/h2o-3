@@ -622,10 +622,10 @@ Caveats/In Progress
 Additional Documentation
 ------------------------
 
--  `H2O Core Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-core/javadoc/index.html>`_: The definitive Java API guide
+-  `H2O Core Java Developer Documentation <../h2o-core/javadoc/index.html>`_: The definitive Java API guide
    for the core components of H2O.
 
--  `H2O Algos Java Developer Documentation <http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/3/docs-website/h2o-algos/javadoc/index.html>`_: The definitive Java API guide
+-  `H2O Algos Java Developer Documentation <../h2o-algos/javadoc/index.html>`_: The definitive Java API guide
    for the algorithms used by H2O.
 
 -  `Hyperparameter Optimization in H2O <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/random%20hyperparmeter%20search%20and%20roadmap.md>`_: A guide to Grid Search and Random Search in H2O. 

@@ -855,10 +855,8 @@ There is no involvement from H2O in this case.
 
 To compare multiple models simultaneously, use the POJO to call the
 models using multiple threads. For more information on using POJOs,
-refer to the `POJO Quick Start
-Guide <http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-docs/index.html#POJO%20Quick%20Start>`__
-and `POJO Java
-Documentation <http://h2o-release.s3.amazonaws.com/h2o/master/3167/docs-website/h2o-genmodel/javadoc/index.html>`__
+refer to the `POJO Quick Start Guide <POJO_QuickStart.html>`__
+and `POJO Java Documentation <../h2o-genmodel/javadoc/index.html>`__
 
 In-H2O scoring is triggered on an existing H2O cluster, typically using
 a REST API call. H2O evaluates the predictions in a parallel and
@@ -1104,28 +1102,16 @@ You can view the default download directory in the logs by clicking
 
 Each h2odriver.jar file is built with a specific Hadoop distribution so
 in order to have a working HDFS connection download the h2odriver.jar
-file for your Hadoop distribution.
+file for your Hadoop distribution `from here <http://www.h2o.ai/download/h2o/hadoop>`__.
 
-::
-
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.2.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-cdh5.3.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.1.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.2.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-hdp2.3.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr3.1.1.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr4.0.1.zip
-        wget http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/h2o-{{project_version}}-mapr5.0.zip
-        
-    **Note**: Enter only one of the above commands.
 
 Then run the command to launch the H2O Application in the driver by
 specifying the classpath:
 
 ::
 
-        unzip h2o-{{project_version}}-*.zip
-        cd h2o-{{project_version}}-*
+        unzip h2o-<version>.zip
+        cd h2o-<version>
         java -cp h2odriver.jar water.H2OApp
 
 --------------
@@ -1140,8 +1126,7 @@ REST API from your Java program to a remote cluster and should meet the
 needs of most users.
 
 You can access the REST API documentation within Flow, or on our
-`documentation
-site <http://h2o-release.s3.amazonaws.com/h2o/%7B%7Bbranch_name%7D%7D/%7B%7Bbuild_number%7D%7D/docs-website/h2o-docs/index.html#route-reference>`__.
+`documentation site <rest-api-reference.html>`__.
 
 Flow, Python, and R all rely on the REST API to run H2O. For example,
 each action in Flow translates into one or more REST API calls. The
@@ -1601,7 +1586,7 @@ Finally, install the latest version of the H2O package for R:
 
 ::
 
-    install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/master/{{build_number}}/R")))
+    install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/<branch_name>/<build_number>/R")))
     library(h2o)
     localH2O = h2o.init(nthreads=-1)
 
