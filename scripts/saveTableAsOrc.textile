@@ -1,0 +1,80 @@
+set hive.execution.engine=mr;
+set mapreduce.map.memory.mb=5240;
+set mapreduce.reduce.memory.mb=5240;
+set mapreduce.map.java.opts=-DAMYWANG_MAP=1 -Xmx4G -XX:PermSize=256m -XX:MaxPermSize=256m -XX:+PrintGCDetails -XX:+PrintGCTimeStamps;
+set mapreduce.reduce.java.opts=-DAMYWANG_REDUCE=1 -Xmx4G -XX:PermSize=256m -XX:MaxPermSize=256m -XX:+PrintGCDetails -XX:+PrintGCTimeStamps;
+create table airlines_all_05p(
+Year INT,
+Month INT,
+DayofMonth INT,
+DayOfWeek INT,
+DepTime INT,
+CRSDepTime INT,
+ArrTime INT,
+CRSArrTime INT,
+UniqueCarrier STRING,
+FlightNum INT,
+TailNum INT,
+ActualElapsedTime INT,
+CRSElapsedTime INT,
+AirTime INT,
+ArrDelay INT,
+DepDelay INT,
+Dest STRING,
+Origin STRING,
+Distance INT,
+TaxiIn INT,
+TaxiOut INT,
+Cancelled INT,
+CancellationCode STRING,
+Diverted INT,
+CarrierDelay INT,
+WeatherDelay INT,
+NASDelay INT,
+SecurityDelay INT,
+LateAircraftDelay INT,
+IsArrDelayed STRING,
+IsDepDelayed STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+location '/apps/hive/warehouse/data/airlines_all_05p';
+load data inpath 'hdfs://mr-0xd6.0xdata.loc:8020/user/amy/airlines_all.05p.csv' into table airlines_all_05p;
+create table orc_airlines_all_05p(
+Year INT,
+Month INT,
+DayofMonth INT,
+DayOfWeek INT,
+DepTime INT,
+CRSDepTime INT,
+ArrTime INT,
+CRSArrTime INT,
+UniqueCarrier STRING,
+FlightNum INT,
+TailNum INT,
+ActualElapsedTime INT,
+CRSElapsedTime INT,
+AirTime INT,
+ArrDelay INT,
+DepDelay INT,
+Dest STRING,
+Origin STRING,
+Distance INT,
+TaxiIn INT,
+TaxiOut INT,
+Cancelled INT,
+CancellationCode STRING,
+Diverted INT,
+CarrierDelay INT,
+WeatherDelay INT,
+NASDelay INT,
+SecurityDelay INT,
+LateAircraftDelay INT,
+IsArrDelayed STRING,
+IsDepDelayed STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS ORC;
+INSERT OVERWRITE TABLE orc_airlines_all_05p select * from airlines_all_05p;
+
