@@ -15,5 +15,18 @@ public class RegisterV4Api extends AbstractRegister {
         "Returns the list of all REST API (v4) endpoints."
     );
 
+
+    //------------ Rapids ----------------------------------------------------------------------------------------------
+    RequestServer.registerEndpoint("newSession4",
+        "POST /4/sessions",
+        RapidsHandler.class, "startSession",
+        "Start a new Rapids session, and return the session id."
+    );
+
+    RequestServer.registerEndpoint("endSession4",
+        "DELETE /4/sessions/{session_key}",
+        RapidsHandler.class, "endSession",
+        "Close the Rapids session."
+    );
   }
 }

@@ -389,11 +389,11 @@ public class RegisterV3Api extends AbstractRegister {
         "Save a message to the H2O logfile.");
 
     RequestServer.registerEndpoint("newSession",
-        "GET /3/InitID", InitIDHandler.class, "issue",
+        "GET /3/InitID", RapidsHandler.class, "startSession",
         "Issue a new session ID.");
 
     RequestServer.registerEndpoint("endSession",
-        "DELETE /3/InitID", InitIDHandler.class, "endSession",
+        "DELETE /3/InitID", RapidsHandler.class, "endSession",
         "End a session.");
 
     RequestServer.registerEndpoint("garbageCollect",
