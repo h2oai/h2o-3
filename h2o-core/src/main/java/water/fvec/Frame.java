@@ -1380,15 +1380,30 @@ public class Frame extends Lockable<Frame> {
     public volatile int _curChkIdx;
     long _row;
 
+    // Quote string x if it contains non-ASCII characters or the column separator
+    private boolean needsQuote( String x ) {
+      int len = x.length();
+      for( int i=0; i<len; i++ ) {
+        char c = x.charAt(i);
+        if( c < ' ' || c >= 128 || c==',' ) 
+          return true;
+      }
+      return false;
+    }
+    private void q( StringBuilder sb, String x ) {
+      if( needsQuote(x) ) sb.append('"').append(x).append('"');
+      else sb.append(x);
+    }
+
     CSVStream(boolean headers, boolean hex_string) {
       _curChkIdx=0;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
       Vec vs[] = vecs();
       if( headers ) {
-        sb.append('"').append(_names[0]).append('"');
+        q(sb,_names[0]);
         for(int i = 1; i < vs.length; i++)
-          sb.append(',').append('"').append(_names[i]).append('"');
+          q(sb.append(','),_names[i]);
         sb.append('\n');
       }
       _line = sb.toString().getBytes();
@@ -1401,10 +1416,10 @@ public class Frame extends Lockable<Frame> {
       for( int i = 0; i < vs.length; i++ ) {
         if(i > 0) sb.append(',');
         if(!vs[i].isNA(_row)) {
-          if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
+          if( vs[i].isCategorical() ) q(sb,vs[i].factor(vs[i].at8(_row)));
           else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
           else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(tmpStr, _row)).append('"');
+          else if (vs[i].isString()) q(sb,vs[i].atStr(tmpStr, _row).toString());
           else {
             double d = vs[i].at(_row);
             // R 3.1 unfortunately changed the behavior of read.csv().
