@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Argument parsing
+if [ "$1" = "jacoco" ]
+then
+    JACOCO_ENABLED=true
+else
+    JACOCO_ENABLED=false
+fi
+
 # Clean out any old sandbox, make a new one
 OUTDIR=sandbox
 rm -fr $OUTDIR; mkdir -p $OUTDIR
@@ -44,7 +52,19 @@ fi
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
-JVM="nice $JAVA_CMD -ea -Xmx3g -Xms3g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+
+MAX_MEM="-Xmx3g"
+
+# Check if coverage should be run
+if [ $JACOCO_ENABLED = true ]
+then
+    AGENT="../jacoco/jacocoagent.jar"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-algos.exec"
+    MAX_MEM="-Xmx8g"
+else
+    COVERAGE=""
+fi
+JVM="nice $JAVA_CMD $COVERAGE -ea $MAX_MEM -Xms3g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test
@@ -85,9 +105,18 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $O
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
+# If coverage is being run, then pass a system variable flag so that timeout limits are increased.
+if [ $JACOCO_ENABLED = true ]
+then
+    JACOCO_FLAG="-Dtest.jacocoEnabled=true"
+else
+    JACOCO_FLAG=""
+fi
+
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-algos junit tests...
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 grep EXECUTION $OUTDIR/out.0 | cut "-d " -f22,19 | awk '{print $2 " " $1}'| sort -gr | head -n 10 >> $OUTDIR/out.0
 

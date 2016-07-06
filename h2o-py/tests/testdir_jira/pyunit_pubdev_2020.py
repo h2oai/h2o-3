@@ -7,7 +7,7 @@ from tests import pyunit_utils
 def test1():
     df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.75])
-    assert df.nrow == splits[0].nrow + splits[1].nrow
+    assert df.nrow == (splits[0].nrow + splits[1].nrow)
 
     part0 = splits[0]
     split_was_sequential = True

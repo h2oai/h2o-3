@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Argument parsing
+if [ "$1" = "jacoco" ]
+then
+    JACOCO_ENABLED=true
+else
+    JACOCO_ENABLED=false
+fi
+
 # Clean out any old sandbox, make a new one
 OUTDIR=sandbox
 rm -fr $OUTDIR; mkdir -p $OUTDIR
@@ -27,6 +35,18 @@ function cleanup () {
 
 trap cleanup SIGTERM SIGINT
 
+
+MAX_MEM="-Xmx2g"
+# Check if coverage should be run
+if [ $JACOCO_ENABLED = true ]
+then
+    AGENT="../jacoco/jacocoagent.jar"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-scala.exec"
+    MAX_MEM="-Xmx8g"
+else
+    COVERAGE=""
+fi
+
 # Find java command
 if [ -z "$TEST_JAVA_HOME" ]; then
   # Use default
@@ -37,7 +57,7 @@ else
   # Increase XMX since JAVA_HOME can point to java6
   JAVA6_REGEXP=".*1\.6.*"
   if [[ $TEST_JAVA_HOME =~ $JAVA6_REGEXP ]]; then
-    JAVA_CMD="${JAVA_CMD} -Xmx2g"
+    JAVA_CMD="${JAVA_CMD} $MAX_MEM"
   fi
 fi
 
@@ -45,8 +65,10 @@ fi
 #   build/classes/main - Main h2o core classes
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
+
+
 # Command to invoke test
-JVM="nice $JAVA_CMD -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner
@@ -72,8 +94,17 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT --ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
+# If coverage is being run, then pass a system variable flag so that timeout limits are increased.
+if [ $JACOCO_ENABLED = true ]
+then
+    JACOCO_FLAG="-Dtest.jacocoEnabled=true"
+else
+    JACOCO_FLAG=""
+fi
+
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-scala junit tests...
-($JVM -Ddoonly.tests=$DOONLY -Dignore.tests=$IGNORE -Dbuild.id=$BUILD_ID -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+
+($JVM -Ddoonly.tests=$DOONLY -Dignore.tests=$IGNORE -Dbuild.id=$BUILD_ID -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 cleanup

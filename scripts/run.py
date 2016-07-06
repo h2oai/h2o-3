@@ -331,6 +331,27 @@ class H2OCloudNode:
                "-baseport", str(self.my_base_port),
                "-ga_opt_out"]
 
+
+        # If the jacoco flag was included, then modify cmd to generate coverage
+        # data using the jacoco agent
+        if g_jacoco_include:
+            root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
+            agent_dir = os.path.join(root_dir,"jacoco","jacocoagent.jar")
+            jresults_dir = os.path.join(self.output_dir,"jacoco")
+            if not os.path.exists(jresults_dir):
+                os.mkdir(jresults_dir)
+            jresults_dir = os.path.join(jresults_dir, "{cloud}_{node}".format(cloud = self.cloud_num, node = self.node_num))
+            jacoco = "-javaagent:" + agent_dir + "=destfile=" + \
+                     os.path.join(jresults_dir,"{cloud}_{node}.exec".format(cloud=self.cloud_num,
+                                                                            node=self.node_num))
+            if g_jacoco_options[0]:
+                jacoco += ",includes={inc}".format(inc=g_jacoco_options[0].replace(',',':'))
+            if g_jacoco_options[1]:
+                jacoco += ",excludes={ex}".format(ex=g_jacoco_options[1].replace(',',':'))
+
+            cmd = cmd[:1] + [jacoco] + cmd[1:]
+
+
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
         # if (os.path.exists(ec2_hdfs_config_file_name)):
@@ -704,7 +725,6 @@ class Test:
         self.output_file_name = \
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
-
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 
@@ -876,6 +896,7 @@ class Test:
             raise ValueError("Unsupported R test type: {1}".format(test_name))
         return cmd
 
+
     @staticmethod
     def _pytest_cmd(test_name, ip, port, on_hadoop, hadoop_namenode):
         if g_pycoverage:
@@ -899,6 +920,9 @@ class Test:
             cmd += ["--pyDemo"]
         else:
             cmd += ["--pyBooklet"]
+        if g_jacoco_include:
+            cmd += ["--forceConnect"] # When using JaCoCo we don't want the test to return an error
+                                      # if a cloud reports as unhealthy
         return cmd
 
     def _javascript_cmd(self, test_name, ip, port):
@@ -995,6 +1019,7 @@ class TestRunner:
         self.start_seconds = time.time()
         self.terminated = False
         self.clouds = []
+        self.suspicious_clouds = []
         self.bad_clouds = []
         self.tests = []
         self.tests_not_started = []
@@ -1344,15 +1369,19 @@ class TestRunner:
             self._start_next_test_on_ip_port(ip, port)
 
         # As each test finishes, send a new one to the cloud that just freed up.
-        while len(self.tests_not_started) > 0:
-            if self.terminated: return
-            completed_test = self._wait_for_one_test_to_complete()
-            if self.terminated: return
-            self._report_test_result(completed_test, nopass)
-            ip_of_completed_test = completed_test.get_ip()
-            port_of_completed_test = completed_test.get_port()
-            if self._h2o_exists_and_healthy(ip_of_completed_test, port_of_completed_test):
-                self._start_next_test_on_ip_port(ip_of_completed_test, port_of_completed_test)
+        while (len(self.tests_not_started) > 0):
+            if (self.terminated):
+                return
+            cld = self._wait_for_available_cloud(nopass)
+            # Check if no cloud was found
+            if cld is None:
+                self._log('NO GOOD CLOUDS REMAINING...')
+                self.terminate()
+            available_ip, available_port = cld
+            if (self.terminated):
+                return
+            if self._h2o_exists_and_healthy(available_ip, available_port):
+                self._start_next_test_on_ip_port(available_ip, available_port)
 
         # Wait for remaining running tests to complete.
         while len(self.tests_running) > 0:
@@ -1651,6 +1680,39 @@ class TestRunner:
                 self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
                 sys.exit(1)
 
+    def _wait_for_available_cloud(self, nopass, timeout=60):
+        """
+        Waits for an available cloud to appear by either a test completing or by a cloud on the suspicious_clouds list
+        reporting as healthy, and then returns a tuple containing its ip and port. If no tests are running and no clouds
+        are reporting as healthy, then the function will wait until the designated timeout time expires before returning
+        None.
+        """
+        timer_on = False
+        t_start = None
+        while True:
+            if timer_on:
+                if time.time() - t_start > timeout:
+                    return None
+
+            for ip, port in self.suspicious_clouds:
+                if (self._h2o_exists_and_healthy(ip, port)):
+                    self.suspicious_clouds.remove([ip, port])
+                    return (ip, port)
+
+            if len(self.tests_running) > 0:
+                for test in self.tests_running:
+                    if (test.is_completed()):
+                        self.tests_running.remove(test)
+                        self._report_test_result(test, nopass)
+                        return (test.get_ip(), test.get_port())
+            elif len(self.suspicious_clouds) == 0:
+                self._log('WAITING FOR ONE TEST TO COMPLETE, BUT THERE ARE NO RUNNING TESTS. EXITING...')
+                sys.exit(1)
+            else:
+                t_start = time.time()
+                timer_on = True
+
+
     def _report_test_result(self, test, nopass):
         self.completed_tests_count += 1
         index = self.completed_tests_count
@@ -1814,9 +1876,12 @@ class TestRunner:
             json = http.json()
             if "cloud_healthy" in json:
                 h2o_okay = json["cloud_healthy"]
-        except exceptions.ConnectionError:
-            pass
-        if not h2o_okay: self._remove_cloud(ip, port)
+        except exceptions.ConnectionError: pass
+        if not h2o_okay:
+            # JaCoCo tends to cause clouds to temporarily report as unhealthy even when they aren't,
+            # so we'll just consider an unhealthy cloud as suspicious
+            if g_jacoco_include: self._suspect_cloud(ip, port)
+            else: self._remove_cloud(ip, port)
         return h2o_okay
 
     def _remove_cloud(self, ip, port):
@@ -1837,7 +1902,13 @@ class TestRunner:
             self._log('NO GOOD CLOUDS REMAINING...')
             self.terminate()
 
-
+    def _suspect_cloud(self, ip, port):
+        """
+        add the ip, port to TestRunner's suspicious cloud list. This way the cloud is considered to have the potential
+        to report as being healthy sometime in the future. Unlike _remove_cloud(), the suspicious cloud is not removed from the
+        TestRunner's cloud list.
+        """
+        if not [ip, str(port)] in self.suspicious_clouds: self.suspicious_clouds.append([ip, str(port)])
 # --------------------------------------------------------------------
 # Main program
 # --------------------------------------------------------------------
@@ -1869,6 +1940,8 @@ g_jvm_cp = ""
 g_nopass = False
 g_nointernal = False
 g_convenient = False
+g_jacoco_include = False
+g_jacoco_options = [None,None]
 g_path_to_h2o_jar = None
 g_path_to_tar = None
 g_path_to_whl = None
@@ -2004,6 +2077,10 @@ def usage():
     print("                     pass, ncpus, os, and job name of each test to perf.csv in the results directory.")
     print("                     Takes three parameters: git hash, git branch, and build id, job name in that order.")
     print("")
+    print("    --jacoco         Generate code coverage data using JaCoCo. Class includes and excludes may optionally")
+    print("                     follow in the format of [includes]:[excludes] where [...] denotes a list of")
+    print("                     classes, each separated by a comma (,). Wildcard characters (* and ?) may be used.")
+    print("")
     print("    --geterrs        Generate xml file that contains the actual unit test errors and the actual Java error.")
     print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
@@ -2037,6 +2114,9 @@ def usage():
     print("")
     print("    Run tests on a pre-existing cloud (e.g. in a debugger), keeping old random seeds:")
     print("        " + g_script_name + " --wipe --usecloud ip:port")
+    print("")
+    print("    Run tests with JaCoCo enabled, excluding org.example1 and org.example2")
+    print("        " + g_script_name + " --jacoco :org.example1,org.example2")
     sys.exit(1)
 
 
@@ -2090,6 +2170,8 @@ def parse_args(argv):
     global g_path_to_h2o_jar
     global g_path_to_tar
     global g_path_to_whl
+    global g_jacoco_include
+    global g_jacoco_options
     global g_produce_unit_reports
     global g_phantomjs_to
     global g_phantomjs_packs
@@ -2117,7 +2199,7 @@ def parse_args(argv):
 
         if s == "--baseport":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_base_port = int(argv[i])
         elif s == "--py3":
@@ -2126,12 +2208,12 @@ def parse_args(argv):
             g_pycoverage = True
         elif s == "--numclouds":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_num_clouds = int(argv[i])
         elif s == "--numnodes":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_nodes_per_cloud = int(argv[i])
         elif s == "--wipeall":
@@ -2141,27 +2223,27 @@ def parse_args(argv):
             g_wipe_output_dir = True
         elif s == "--test":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_test_to_run = TestRunner.find_test(argv[i])
         elif s == "--testlist":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_test_list_file = argv[i]
         elif s == "--excludelist":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_exclude_list_file = argv[i]
         elif s == "--testgroup":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_test_group = argv[i]
         elif s == "--testsize":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             v = argv[i]
             if re.match(r'(s)?(m)?(l)?', v):
@@ -2177,7 +2259,7 @@ def parse_args(argv):
                 bad_arg(s)
         elif s == "--usecloud":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             s = argv[i]
             m = re.match(r'(\S+):([1-9][0-9]*)', s)
@@ -2189,7 +2271,7 @@ def parse_args(argv):
             g_use_port = int(port_string)
         elif s == "--usecloud2":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             s = argv[i]
             if s is None:
@@ -2221,7 +2303,7 @@ def parse_args(argv):
             g_path_to_whl = os.path.abspath(argv[i])
         elif s == "--jvm.xmx":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_jvm_xmx = argv[i]
         elif s == "--jvm.cp":
@@ -2233,7 +2315,15 @@ def parse_args(argv):
             g_no_run = True
         elif s == "--noxunit":
             g_produce_unit_reports = False
-        elif s == "-h" or s == "--h" or s == "-help" or s == "--help":
+        elif (s == "--jacoco"):
+            g_jacoco_include = True
+            if (i + 1 < len(argv)):
+                s = argv[i + 1]
+                m = re.match(r'(?P<includes>([^:,]+(,[^:,]+)*)?):(?P<excludes>([^:,]+(,[^:,]+)*)?)$', s)
+                if m is not None:
+                    g_jacoco_options[0] = m.group("includes")
+                    g_jacoco_options[1] = m.group("excludes")
+        elif (s == "-h" or s == "--h" or s == "-help" or s == "--help"):
             usage()
         elif s == "--rPkgVerChk":
             g_r_pkg_ver_chk = True
@@ -2241,35 +2331,35 @@ def parse_args(argv):
             g_on_hadoop = True
         elif s == "--hadoopNamenode":
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_hadoop_namenode = argv[i]
         elif s == "--perf":
             g_perf = True
 
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_git_hash = argv[i]
 
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_git_branch = argv[i]
 
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_build_id = argv[i]
 
             i += 1
-            if i > len(argv):
+            if (i >= len(argv)):
                 usage()
             g_job_name = argv[i]
         elif s == "--geterrs":
             g_use_xml2 = True
         else:
-            unknown_arg(s)
+           unknown_arg(s)
 
         i += 1
 

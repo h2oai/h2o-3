@@ -20,7 +20,6 @@ import java.util.List;
 public class H2OTestRunner {
 
   public Result run(String[] args) throws Exception {
-
     // List all classes - adapted from JUnitCore code
     List<Class<?>> classes = new ArrayList<Class<?>>();
     List<Failure> missingClasses = new ArrayList<Failure>();
@@ -51,7 +50,8 @@ public class H2OTestRunner {
 
   public static void main(String[] args) throws Exception {
     H2OTestRunner testRunner = new H2OTestRunner();
-    Result result = testRunner.run(args);
+    Result result = null;
+    result = testRunner.run(args);
     System.exit(result.wasSuccessful() ? 0 : 1);
   }
 }
