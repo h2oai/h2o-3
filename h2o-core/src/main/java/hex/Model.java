@@ -359,7 +359,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  (Key/Data leak management issues), and might throw IAE if there are too
      *  many classes. */
     public Output( ModelBuilder b ) {
-      _job = b._job;
       _isSupervised = b.isSupervised();
       if( b.error_count() > 0 )
         throw new IllegalArgumentException(b.validationErrors());
@@ -371,6 +370,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
+      assert(_job==null); //only set after job completion
     }
 
     /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */

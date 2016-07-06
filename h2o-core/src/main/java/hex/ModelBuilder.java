@@ -170,6 +170,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         exceptional=true;
         throw t;
       } finally {
+        dest().get()._output._job = _job;
         _parms.read_unlock_frames(_job);
         Scope.exit();
       }

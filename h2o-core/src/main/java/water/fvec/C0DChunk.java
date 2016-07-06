@@ -1,6 +1,5 @@
 package water.fvec;
 
-import water.AutoBuffer;
 import water.util.UnsafeUtils;
 
 import java.util.Arrays;
