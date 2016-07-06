@@ -492,7 +492,7 @@ There are a few ways to import files shown in the following examples:
 
 \subsection{Uploading Files}
 
-To upload a file in a directory local to your H2O instance, use {\texttt{h2o.importFile()}}.  {\texttt{h2o.uploadFile()}}  uploads data local to your H2O instance as well as uploading data local to your R session. In the parentheses, specify the H2O reference object in R and the complete URL or normalized file path for the file.
+To upload a file in a directory local or remote to your H2O cluster, use {\texttt{h2o.importFile()}}, which is a parallel/distributed read of the data (this is the recommended option).  This requires the data to be visible to all H2O nodes in a multi-node cluster. {\texttt{h2o.uploadFile()}} uploads data local to your H2O cluster as well as uploading data local to your R session. The data only needs to be on the client machine (rather than all the nodes on the H2O cluster), and the upload is single threaded. In the parentheses, specify the H2O reference object in R and the complete URL or normalized file path for the file.
 
 
 \waterExampleInR
