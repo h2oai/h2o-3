@@ -72,7 +72,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public double quantile_alpha;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
-          help = "Huber delta (for Huber regression, must be >= 0).")
+          help = "Threshold between quadratic and linear loss for Huber regression (must be > 0).")
   public double huber_delta;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,

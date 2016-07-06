@@ -21,9 +21,10 @@ public class Distribution extends Iced {
     distribution = family;
     assert(family != Family.tweedie);
     assert(family != Family.quantile);
+    assert(family != Family.huber);
     tweediePower = 1.5;
     quantileAlpha = 0.5;
-    huberCutoff = 1;
+    huberDelta = 1;
   }
 
   /**
@@ -33,9 +34,8 @@ public class Distribution extends Iced {
     distribution = params._distribution;
     tweediePower = params._tweedie_power;
     quantileAlpha = params._quantile_alpha;
-    huberCutoff = params._huber_delta;
+    huberDelta = params._huber_delta;
     assert(tweediePower >1 && tweediePower <2);
-    assert(huberCutoff > 0);
   }
   static public double MIN_LOG = -19;
   static public double MAX = 1e19;
@@ -43,7 +43,10 @@ public class Distribution extends Iced {
   public final Family distribution;
   public final double tweediePower; //tweedie power
   public final double quantileAlpha; //for quantile regression
-  public final double huberCutoff;
+  public double huberDelta;
+
+  // required for Huber aka M-regressioN
+  public void setHuberDelta(double huberDelta) { this.huberDelta = huberDelta; }
 
   // helper - sanitized exponential function
   public static double exp(double x) {
@@ -79,10 +82,10 @@ public class Distribution extends Iced {
       case gaussian:
         return w * (y - f) * (y - f);
       case huber:
-        if (Math.abs(y-f) < huberCutoff) {
+        if (Math.abs(y-f) <= huberDelta) {
           return w * (y - f) * (y - f);
         } else {
-          return (2 * w * Math.abs(y-f) - huberCutoff)*huberCutoff;
+          return (2 * w * Math.abs(y-f) - huberDelta)* huberDelta;
         }
       case laplace:
         return w * Math.abs(y-f); // weighted absolute deviance == weighted absolute error
@@ -130,10 +133,10 @@ public class Distribution extends Iced {
         assert (tweediePower > 1 && tweediePower < 2);
         return y * exp(f * (1 - tweediePower)) - exp(f * (2 - tweediePower));
       case huber:
-        if (Math.abs(y-f) < huberCutoff) {
+        if (Math.abs(y-f) <= huberDelta) {
           return y - f;
         } else {
-          return f >= y ? -huberCutoff : huberCutoff;
+          return f >= y ? -huberDelta : huberDelta;
         }
       case laplace:
         return f > y ? -0.5 : 0.5;
@@ -244,7 +247,6 @@ public class Distribution extends Iced {
       case AUTO:
       case gaussian:
       case bernoulli:
-      case huber:
       case multinomial:
         return w*(y-o);
       case poisson:
@@ -273,7 +275,6 @@ public class Distribution extends Iced {
       case gaussian:
       case bernoulli:
       case multinomial:
-      case huber:
       case gamma:
         return w;
       case poisson:
@@ -300,7 +301,6 @@ public class Distribution extends Iced {
       case gaussian:
       case bernoulli:
       case multinomial:
-      case huber:
         return w * z;
       case poisson:
         return w * y;
@@ -330,7 +330,6 @@ public class Distribution extends Iced {
     switch (distribution) {
       case gaussian:
       case gamma:
-      case huber:
         return w;
       case bernoulli:
         double ff = y-z;

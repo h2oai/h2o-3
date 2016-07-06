@@ -61,7 +61,7 @@
 #'        "laplace", "huber", "quantile" or "gaussian"
 #' @param quantile_alpha Quantile (only for Quantile regression, must be between 0 and 1)
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2).
-#' @param huber_delta Huber delta (only for Huber regression, must be >= 0).
+#' @param huber_delta Threshold between quadratic and linear loss for Huber regression (must be > 0).
 #' @param score_interval Shortest time interval (in secs) between model scoring.
 #' @param score_training_samples Number of training set samples for scoring (0 for all).
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all).
@@ -176,7 +176,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "huber", "quantile"),
                              quantile_alpha = 0.5,
                              tweedie_power = 1.5,
-                             huber_delta = 1,
+                             huber_delta,
                              score_interval = 5,
                              score_training_samples,
                              score_validation_samples,

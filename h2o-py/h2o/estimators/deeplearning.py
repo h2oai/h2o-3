@@ -211,7 +211,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Default: "Automatic"
 
       distribution : "AUTO" | "bernoulli" | "modified_huber" | "multinomial" | "gaussian" | "poisson" | "gamma" |
-                     "tweedie" | "laplace" | "quantile"
+                     "tweedie" | "laplace" | "quantile" | "huber"
         Distribution function
         Default: "AUTO"
 
@@ -224,7 +224,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Default: 1.5
 
       huber_delta : float
-        Desired delta value for Huber regression (>= 0).
+        Threshold between quadratic and linear loss for Huber regression (must be > 0).
         Default: 1.0
 
       score_interval : float

@@ -140,12 +140,14 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       final int strataMax = (int)_strata.max();
       if (strataMin < 0 || strataMax < 0) {
         Log.warn("No quantiles can be computed since there are no non-OOB rows.");
+        tryComplete();
         return;
       }
       final int nstrata = strataMax - strataMin + 1;
       Log.info("Computing quantiles for (up to) " + nstrata + " different strata.");
       _quantiles = new double[nstrata];
       _nids = new int[nstrata];
+      Arrays.fill(_quantiles,Double.NaN);
       Vec weights = _weights != null ? _weights : _response.makeCon(1);
       for (int i=0;i<nstrata;++i) { //loop over nodes
         Vec newWeights = weights.makeCopy();
@@ -155,11 +157,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           new KeepOnlyOneStrata(_nids[i]).doAll(_strata, newWeights);
         }
         double sumRows = new SumWeights().doAll(_response, newWeights).sum;
-        if (sumRows==0) {
-          // no observations with weight > 0 found - no need to compute quantiles
-          _quantiles[i] = Double.NaN;
-//          Log.warn("No observations in leaf " + _nids[i] + " - all weights are 0.");
-        } else {
+        if (sumRows>0) {
           Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
           h.doAll(_response, newWeights);
           while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))

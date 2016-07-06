@@ -159,7 +159,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Default: 1.0
 
       distribution : "AUTO" | "bernoulli" | "modified_huber" | "multinomial" | "gaussian" | "poisson" | "gamma" |
-                     "tweedie" | "laplace" | "quantile"
+                     "tweedie" | "laplace" | "quantile" | "huber"
         Distribution function
         Default: "AUTO"
 
@@ -171,9 +171,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Tweedie power for Tweedie regression.
         Default: 1.5
 
-      huber_delta : float
-        Desired delta value for Huber regression (>= 0).
-        Default: 1.0
+      huber_alpha : float
+        Huber alpha (quantile threshold for Huber (M-)regression, must be between 0 and 1).
+        Default: 0.9
 
       checkpoint : str
         Model checkpoint to resume training with.
@@ -221,7 +221,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                      "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                      "learn_rate", "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power",
-                     "huber_delta", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
+                     "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                      "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                      "histogram_type", "max_abs_leafnode_pred"]:
             pname = name[:-1] if name[-1] == '_' else name
@@ -524,12 +524,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         self._parms["tweedie_power"] = value
 
     @property
-    def huber_delta(self):
-        return self._parms["huber_delta"]
+    def huber_alpha(self):
+        return self._parms["huber_alpha"]
 
-    @huber_delta.setter
-    def huber_delta(self, value):
-        self._parms["huber_delta"] = value
+    @huber_alpha.setter
+    def huber_alpha(self, value):
+        self._parms["huber_alpha"] = value
 
     @property
     def checkpoint(self):

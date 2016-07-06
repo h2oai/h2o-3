@@ -18,7 +18,7 @@
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "modified_huber", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" or "gaussian"
 #' @param quantile_alpha Quantile (only for Quantile regression, must be between 0 and 1)
-#' @param huber_delta Huber delta (for Huber regression, must be >= 0)
+#' @param huber_alpha Huber alpha (quantile threshold for M-regression, must be between 0 and 1).
 #' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
@@ -94,7 +94,7 @@ h2o.gbm <- function(x, y, training_frame,
                     distribution = c("AUTO","gaussian", "bernoulli", "modified_huber","multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                     quantile_alpha = 0.5,
                     tweedie_power = 1.5,
-                    huber_delta = 1,
+                    huber_alpha,
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
@@ -171,8 +171,8 @@ h2o.gbm <- function(x, y, training_frame,
     parms$quantile_alpha <- quantile_alpha
   if (!missing(tweedie_power))
     parms$tweedie_power <- tweedie_power
-  if (!missing(huber_delta))
-    parms$huber_delta <- huber_delta
+  if (!missing(huber_alpha))
+    parms$huber_alpha <- huber_alpha
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))

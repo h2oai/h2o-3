@@ -2497,7 +2497,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 114.80957) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 37.53331) < 1e-4);
 
     } finally {
       parms._train.remove();
@@ -2523,7 +2523,7 @@ public class GBMTest extends TestUtil {
 
       dl = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(1.4229760,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(8.05716257,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2547,7 +2547,7 @@ public class GBMTest extends TestUtil {
 
       dl = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(2.9423857564,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2568,11 +2568,11 @@ public class GBMTest extends TestUtil {
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      parms._huber_delta = Float.MAX_VALUE; //just like gaussian (but different init_f)
+      parms._huber_alpha = 1; // nothing is an outlier - everything is quadratic loss
 
       dl = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.94238,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(2.94238,((ModelMetricsRegression)dl._output._training_metrics)._MSE,2e-2);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2593,12 +2593,11 @@ public class GBMTest extends TestUtil {
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      parms._huber_delta = 1e-3; // in original space for tree 1 and then in residual space
-      // acts more like Laplace, but different slope and different prefactor -> so can't compare deviance 1:1
+      parms._huber_alpha = 1e-4; //everything is an outlier and we should get laplace loss
 
       dl = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(0.013053461,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-8);
+      Assert.assertEquals(8.05716257,((ModelMetricsRegression)dl._output._training_metrics)._MSE,0.5);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2619,10 +2618,11 @@ public class GBMTest extends TestUtil {
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
+      //parms._huber_alpha = 0.9; //that's the default
 
       dl = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(6.94647622,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(4.447062185,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();

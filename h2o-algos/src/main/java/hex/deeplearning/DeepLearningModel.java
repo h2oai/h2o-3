@@ -1997,6 +1997,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_nfolds",
               "_distribution",
               "_quantile_alpha",
+              "_huber_alpha",
               "_tweedie_power"
       };
   
