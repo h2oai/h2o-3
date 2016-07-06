@@ -38,7 +38,7 @@ public final class Categorical extends Iced {
     if( m == null ) return Integer.MAX_VALUE;     // Nuked already
     Integer res = m.get(str);
     if( res != null ) return res; // Recorded already
-    assert str.length() < 65535; // Length limit so 65535 can be used as a sentinel
+//    assert str.length() < 65535; // Length limit so 65535 can be used as a sentinel
     int newVal = _id.incrementAndGet();
     res = m.putIfAbsent(new BufferedString(str), newVal);
     if( res != null ) return res;

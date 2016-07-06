@@ -16,7 +16,7 @@ import water.parser.ParserProvider;
 /**
  * Avro parser provider.
  */
-public class AvroParserProvider implements ParserProvider {
+public class AvroParserProvider extends ParserProvider {
 
   /* Setup for this parser */
   static ParserInfo AVRO_INFO = new ParserInfo("AVRO", DefaultParserProviders.MAX_CORE_PRIO + 10, true, true);
@@ -32,7 +32,7 @@ public class AvroParserProvider implements ParserProvider {
   }
 
   @Override
-  public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+  public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                int checkHeader, String[] columnNames, byte[] columnTypes,
                                String[][] domains, String[][] naStrings) {
     return AvroParser.guessSetup(bits);

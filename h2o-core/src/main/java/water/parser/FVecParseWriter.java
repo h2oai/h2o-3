@@ -169,7 +169,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     _errCnt++;
   }
 
-  @Override public void setIsAllASCII(int colIdx, boolean b) {_nvs[colIdx]._isAllASCII = b;}
+  @Override public void setIsAllASCII(int colIdx, boolean b) {
+    if(colIdx < _nvs.length)
+      _nvs[colIdx]._isAllASCII = b;
+  }
 
   @Override
   public boolean hasErrors() {

@@ -9,6 +9,14 @@ public abstract class FileVec extends ByteVec {
   long _len;                    // File length
   final byte _be;
 
+  // Returns String with path for given key.
+  public static String getPathForKey(Key k) {
+    final int off = k._kb[0]==Key.CHK   || k._kb[0]==Key.VEC ? Vec.KEY_PREFIX_LEN : 0;
+    String p = new String(k._kb,off,k._kb.length-off);
+    if(p.startsWith("nfs:/"))
+      p = p.substring("nfs:/".length());
+    return p;
+  }
   /** Log-2 of Chunk size. */
   public static final int DFLT_LOG2_CHUNK_SIZE = 20/*1Meg*/+2/*4Meg*/;
   /** Default Chunk size in bytes, useful when breaking up large arrays into

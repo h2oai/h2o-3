@@ -1,18 +1,25 @@
 package water.parser.orc;
 
-import water.DKV;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.ByteVec;
-import water.fvec.Frame;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+
+import org.apache.hadoop.hive.ql.io.orc.OrcFile;
+import org.apache.hadoop.hive.ql.io.orc.Reader;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import water.*;
+import water.fvec.*;
 import water.parser.*;
+import water.persist.PersistHdfs;
+
+import java.io.IOException;
+
+import static water.fvec.FileVec.getPathForKey;
+
 
 /**
  * Orc parser provider.
  */
-public class OrcParserProvider implements ParserProvider {
+public class OrcParserProvider extends ParserProvider {
 
   /* Setup for this parser */
   static ParserInfo ORC_INFO = new ParserInfo("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true, true);
@@ -28,30 +35,54 @@ public class OrcParserProvider implements ParserProvider {
   }
 
   @Override
-  public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+  public ParseSetup guessSetup(ByteVec bv, byte [] bits, byte sep, int ncols, boolean singleQuotes,
                                int checkHeader, String[] columnNames, byte[] columnTypes,
                                String[][] domains, String[][] naStrings) {
-    return OrcParser.guessSetup(bits);
+    if(bv instanceof FileVec)
+      return readSetup((FileVec)bv);
+    throw new UnsupportedOperationException("ORC only works on Files");
   }
 
   @Override
   public ParseSetup createParserSetup(Key[] inputs, ParseSetup requiredSetup) {
-
-    assert inputs != null && inputs.length > 0 : "Inputs cannot be empty!";
-    Key firstInput = inputs[0];
-    Iced ice = DKV.getGet(firstInput);
-    if (ice == null)
-      throw new H2OIllegalArgumentException("Missing data", "Did not find any data under key " + firstInput);
-    ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
-    byte [] bits = bv.getFirstBytes();
-
+    if(inputs.length != 1)
+      throw H2O.unimpl("ORC only supports single file parse at the moment");
+    FileVec f = DKV.getGet(inputs[0]);
+    return readSetup(f);
+  }
+  private Reader getReader(FileVec f) throws IOException {
+    String strPath = getPathForKey(f._key);
+    Path path = new Path(strPath);
+    if(f instanceof HDFSFileVec)
+      return OrcFile.createReader(PersistHdfs.getFS(strPath), path);
+    else
+      return OrcFile.createReader(path, OrcFile.readerOptions(new Configuration()));
+  }
+  public ParseSetup readSetup(FileVec f) {
     try {
-      OrcParser.OrcInfo OrcInfo = OrcParser.extractOrcInfo(bits, requiredSetup);
-      return new OrcParser.OrcParseSetup(requiredSetup, OrcInfo.orcFileReader, OrcInfo.cumStripeSizes,
-              OrcInfo.totalFileSize, OrcInfo.stripesInfo, OrcInfo.columnTypesString, OrcInfo.maxStripeSize,
-              OrcInfo.toInclude, OrcInfo.allColumnNames);
-    } catch (Throwable e) {
-      throw new H2OIllegalArgumentException("Wrong data", "Cannot find Orc header in input file: " + firstInput, e);
+      Reader orcFileReader = getReader(f);
+      StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();
+      OrcParser.OrcParseSetup stp = OrcParser.deriveParseSetup(orcFileReader, insp);
+      if(stp.stripesInfo.length == 0) { // empty file
+        f.setChunkSize(stp._chunk_size = (int)f.length());
+        return stp;
+      }
+      stp._chunk_size = (int)(f.length()/(stp.stripesInfo.length));
+      if((f.length()%stp.stripesInfo.length) != 0) // need  exact match between stripes and chunks
+        stp._chunk_size = (int)((f.length()+stp.stripesInfo.length)/stp.stripesInfo.length);
+      f.setChunkSize(stp._chunk_size);
+      assert f.nChunks() == stp.stripesInfo.length; // ORC parser needs one-to one mapping between chunk and strip (just ids, offsets do not matter)
+      return stp;
+    } catch(IOException ioe) {
+      throw new RuntimeException(ioe);
     }
+  }
+  @Override
+  public void setupLocal(Vec v, ParseSetup setup){
+    if(!(v instanceof FileVec)) throw H2O.unimpl("ORC only implemented for HDFS / NFS files");
+    try {
+      if(((OrcParser.OrcParseSetup)setup).getOrcFileReader() == null)
+        ((OrcParser.OrcParseSetup)setup).setOrcFileReader(getReader((FileVec)v));
+    } catch (IOException e) {throw new RuntimeException(e);}
   }
 }

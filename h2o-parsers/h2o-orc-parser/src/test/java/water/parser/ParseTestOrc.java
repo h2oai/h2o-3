@@ -17,11 +17,11 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
-import java.util.Random;
+
+import java.util.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -44,63 +44,64 @@ public class ParseTestOrc extends TestUtil {
   int numberWrong = 0;
 
   // list all orc files in smalldata/parser/orc directory
-  private String[] allOrcFiles = {"smalldata/parser/orc/TestOrcFile.columnProjection.orc",
-          "smalldata/parser/orc/bigint_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.emptyFile.orc",
-          "smalldata/parser/orc/bool_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.metaData.orc",
-          "smalldata/parser/orc/decimal.orc",
-          "smalldata/parser/orc/TestOrcFile.test1.orc",
-          "smalldata/parser/orc/demo-11-zlib.orc",
-          "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
-          "smalldata/parser/orc/demo-12-zlib.orc",
-          "smalldata/parser/orc/TestOrcFile.testDate2038.orc",
-          "smalldata/parser/orc/double_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.testMemoryManagementV11.orc",
-          "smalldata/parser/orc/float_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.testMemoryManagementV12.orc",
-          "smalldata/parser/orc/int_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.testPredicatePushdown.orc",
-          "smalldata/parser/orc/nulls-at-end-snappy.orc",
-          "smalldata/parser/orc/TestOrcFile.testSeek.orc",
-          "smalldata/parser/orc/orc-file-11-format.orc",
-          "smalldata/parser/orc/TestOrcFile.testSnappy.orc",
-          "smalldata/parser/orc/orc_split_elim.orc",
-          "smalldata/parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc",
-          "smalldata/parser/orc/over1k_bloom.orc",
-          "smalldata/parser/orc/TestOrcFile.testStripeLevelStats.orc",
-          "smalldata/parser/orc/smallint_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.testTimestamp.orc",
-          "smalldata/parser/orc/string_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.testUnionAndTimestamp.orc",
-          "smalldata/parser/orc/tinyint_single_col.orc",
-          "smalldata/parser/orc/TestOrcFile.testWithoutIndex.orc",
-          "smalldata/parser/orc/version1999.orc"};
+  private String[] allOrcFiles = {
+      "smalldata/parser/orc/TestOrcFile.columnProjection.orc",
+      "smalldata/parser/orc/bigint_single_col.orc",
+      "smalldata/parser/orc/TestOrcFile.emptyFile.orc",
+      "smalldata/parser/orc/bool_single_col.orc",
+//          "smalldata/parser/orc/TestOrcFile.metaData.orc",
+//      "smalldata/parser/orc/decimal.orc",
+//      "smalldata/parser/orc/TestOrcFile.test1.orc",
+      "smalldata/parser/orc/demo-11-zlib.orc",
+      "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
+      "smalldata/parser/orc/TestOrcFile.testDate1900.orc",
+      "smalldata/parser/orc/demo-12-zlib.orc",
+      "smalldata/parser/orc/TestOrcFile.testDate2038.orc",
+      "smalldata/parser/orc/double_single_col.orc",
+      "smalldata/parser/orc/TestOrcFile.testMemoryManagementV11.orc",
+      "smalldata/parser/orc/float_single_col.orc",
+      "smalldata/parser/orc/TestOrcFile.testMemoryManagementV12.orc",
+      "smalldata/parser/orc/int_single_col.orc",
+      "smalldata/parser/orc/TestOrcFile.testPredicatePushdown.orc",
+      "smalldata/parser/orc/nulls-at-end-snappy.orc",
+//      "smalldata/parser/orc/TestOrcFile.testSeek.orc",
+//      "smalldata/parser/orc/orc-file-11-format.orc",
+      "smalldata/parser/orc/TestOrcFile.testSnappy.orc",
+      "smalldata/parser/orc/orc_split_elim.orc",
+      "smalldata/parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc",
+//          "smalldata/parser/orc/over1k_bloom.orc",
+      "smalldata/parser/orc/TestOrcFile.testStripeLevelStats.orc",
+      "smalldata/parser/orc/smallint_single_col.orc",
+//          "smalldata/parser/orc/TestOrcFile.testTimestamp.orc",
+      "smalldata/parser/orc/string_single_col.orc",
+//          "smalldata/parser/orc/TestOrcFile.testUnionAndTimestamp.orc",
+      "smalldata/parser/orc/tinyint_single_col.orc",
+      "smalldata/parser/orc/TestOrcFile.testWithoutIndex.orc",
+//          "smalldata/parser/orc/version1999.orc"
+  };
 
   @BeforeClass
   static public void setup() { TestUtil.stall_till_cloudsize(1); }
 
   @Test
   public void testParseAllOrcs() {
-
+    Set<String> failedFiles = new TreeSet<>();
     int numOfOrcFiles = allOrcFiles.length; // number of Orc Files to test
 
     for (int fIndex = 0; fIndex < numOfOrcFiles; fIndex++)
     {
 
-
-
-      if ((fIndex == 4) || (fIndex == 6) || (fIndex == 18) || (fIndex == 23) || (fIndex == 28))
-        continue;   // do not support metadata from user
-
-      if (fIndex == 31)   // contain only orc header, no column and no row, total file size is 0.
-        continue;
-
-      if (fIndex == 19)   // different column names are used between stripes
-        continue;
-
-      if (fIndex == 26)   // abnormal orc file, no inpsector structure available
-        continue;
+//      if ((fIndex == 4) || (fIndex == 6) || (fIndex == 18) || (fIndex == 23) || (fIndex == 28))
+//        continue;   // do not support metadata from user
+//
+//      if (fIndex == 31)   // contain only orc header, no column and no row, total file size is 0.
+//        continue;
+//
+//      if (fIndex == 19)   // different column names are used between stripes
+//        continue;
+//
+//      if (fIndex == 26)   // abnormal orc file, no inpsector structure available
+//        continue;
 
 //      if (fIndex ==30)    // problem getting the right column number and then comparison problem
 //        continue;
@@ -111,13 +112,14 @@ public class ParseTestOrc extends TestUtil {
 //      if (fIndex == 17)   // problem with bigint retrieval, wait for Tomas
 //        continue;
 
-      Random rn = new Random();
-      int randNum = rn.nextInt(10);
-
-      if (randNum > 3)  // skip test for 70% of the time
-        continue;
+//      Random rn = new Random();
+//      int randNum = rn.nextInt(10);
+//
+//      if (randNum > 3)  // skip test for 70% of the time
+//        continue;
 
       String fileName = allOrcFiles[fIndex];
+      System.out.println("parsing " + fileName);
       File f = find_test_file_static(fileName);
 
       if (f != null && f.exists()) {
@@ -127,7 +129,7 @@ public class ParseTestOrc extends TestUtil {
           Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));     // orc reader
           Frame h2oFrame = parse_test_file(fileName);     // read one orc file and build a H2O frame
 
-          compareH2OFrame(h2oFrame, orcFileReader);
+          compareH2OFrame(fileName, failedFiles, h2oFrame, orcFileReader);
 
           if (h2oFrame != null) // delete frame after done.
             h2oFrame.delete();
@@ -136,6 +138,7 @@ public class ParseTestOrc extends TestUtil {
 
         } catch (IOException e) {
           e.printStackTrace();
+          failedFiles.add(fileName);
           numberWrong++;
         }
 
@@ -146,7 +149,7 @@ public class ParseTestOrc extends TestUtil {
 
     if (numberWrong > 0) {
       Log.warn("There are errors in your test.");
-      assertEquals("Number of orc files failed to parse is: ", 0, numberWrong);
+      assertEquals("Number of orc files failed to parse is: "  + ", failed files = " + failedFiles.toString(), 0, numberWrong);
     }
   }
 
@@ -163,7 +166,7 @@ public class ParseTestOrc extends TestUtil {
    * @param h2oFrame
    * @param orcReader
      */
-  private void compareH2OFrame(Frame h2oFrame, Reader orcReader) {
+  private void compareH2OFrame(String fileName, Set<String> failedFiles, Frame h2oFrame, Reader orcReader) {
     // grab column names, column and row numbers
     StructObjectInspector insp = (StructObjectInspector) orcReader.getObjectInspector();
     List<StructField> allColInfo = (List<StructField>) insp.getAllStructFieldRefs();    // get info of all cols
@@ -203,7 +206,7 @@ public class ParseTestOrc extends TestUtil {
     assertArrayEquals("Column names need to be the same: ", colNames, h2oFrame._names);
 
     // compare one column at a time of the whole row?
-    compareFrameContents(h2oFrame, orcReader, colTypes, colNames, null);
+    compareFrameContents(fileName, failedFiles, h2oFrame, orcReader, colTypes, colNames, null);
 
     Long totalRowNumber = orcReader.getNumberOfRows();    // get and check row number
     assertEquals("Number of rows need to be the same: ", totalRowNumber, (Long) h2oFrame.numRows());
@@ -211,8 +214,8 @@ public class ParseTestOrc extends TestUtil {
   }
 
 
-  private void compareFrameContents(Frame h2oFrame, Reader orcReader, String[] colTypes, String[] colNames,
-                                           boolean[] toInclude) {
+  private void compareFrameContents(String fileName, Set<String> failedFiles, Frame h2oFrame, Reader orcReader, String[] colTypes, String[] colNames,
+                                    boolean[] toInclude) {
     // prepare parameter to read a orc file.
 //    boolean[] toInclude = new boolean[colNumber+1];   // must equal to number of column+1
 //    Arrays.fill(toInclude, true);
@@ -256,6 +259,7 @@ public class ParseTestOrc extends TestUtil {
           perStripe.close();
         } catch (Throwable e) {
           numberWrong++;
+          failedFiles.add(fileName);
           e.printStackTrace();
  //         assertEquals("Test failed! ", true, false);
         }

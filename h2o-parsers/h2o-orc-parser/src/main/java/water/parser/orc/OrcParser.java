@@ -2,22 +2,27 @@ package water.parser.orc;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.ql.exec.vector.*;
-import org.apache.hadoop.hive.ql.io.orc.OrcFile;
-import org.apache.hadoop.hive.ql.io.orc.Reader;
-import org.apache.hadoop.hive.ql.io.orc.RecordReader;
-import org.apache.hadoop.hive.ql.io.orc.StripeInformation;
+import org.apache.hadoop.hive.ql.io.orc.*;
 import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.StructField;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
+import water.H2O;
+import water.Iced;
 import water.Job;
 import water.Key;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.*;
+import water.persist.PersistHdfs;
 import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static water.parser.orc.OrcUtil.isSupportedSchema;
@@ -55,7 +60,7 @@ public class OrcParser extends Parser {
    * only single threading is supported in reading each stripe, we will never split one stripe
    * over different chunks.
    *
-   * @param cidx: chunk index, calculated as file size/chunk size.  The file size is calculated
+   * @param chunkId: chunk index, calculated as file size/chunk size.  The file size is calculated
    *            with data plus overhead in terms of headers and other info, number of chunks
    *            calculated will be higher than the actual chunks needed.  If the chunk number
    *            is too high, the method will return without writing to
@@ -65,140 +70,41 @@ public class OrcParser extends Parser {
      * @return: Parsewriter dout.
      */
   @Override
-  protected final ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
-
-    // figure out which stripes we are trying to read in this thread
-    int[] stripeStartEndIndex = new int[2];
-
+  protected final ParseWriter parseChunk(int chunkId, ParseReader din, ParseWriter dout) {
+    // only do something if within file size and the orc file is not empty
+    StripeInformation [] stripesInfo = ((OrcParseSetup) this._setup).getStripeInfo();
+    if(stripesInfo.length == 0) return dout; // empty file
+    OrcParseSetup setup = (OrcParseSetup) this._setup;
+    StripeInformation thisStripe = stripesInfo[chunkId];  // get one stripe
+    // write one stripe of data to H2O frame
+    final String [] columnNames = setup.getColumnNames();
+    final int ncols = columnNames.length;
+    String [] orcTypes = setup.getColumnTypesString();
     try {
-      double numChunks = (double) ((OrcParseSetup) this._setup).getTotalFileSize() / this._setup._chunk_size;
-      // only do something if within file size and the orc file is not empty
-      if ((((OrcParseSetup) this._setup).getStripeInfo().size() > 0) &&
-              (!(cidx >= numChunks))) {
-        // calculate the correct stripe start index and end index
-        stripeStartEndIndex = findStripeIndices(cidx, this._setup._chunk_size,
-                ((OrcParseSetup) this._setup).getCumstripeSizes());
-
-        Log.info("chunk index "+cidx+" start index "+stripeStartEndIndex[0]+" end index "+stripeStartEndIndex[1]);
-
-        List<StripeInformation> stripesInfo = ((OrcParseSetup) this._setup).getStripeInfo();
-        Reader fileReader = ((OrcParseSetup) this._setup).getOrcFileReader();
-
-        // proceed and read each stripe
-        for (int stripeIndex = stripeStartEndIndex[0]; stripeIndex <= stripeStartEndIndex[1]; stripeIndex++) {
-          StripeInformation thisStripe = stripesInfo.get(stripeIndex);  // get one stripe
-
-          // write one stripe of data to H2O frame
-          write1Stripe(thisStripe, fileReader, ((OrcParseSetup) this._setup).getToInclude(),
-                  ((OrcParseSetup) this._setup).getAllColNames(),
-                  ((OrcParseSetup) this._setup).getColumnTypesString(), dout);
-        }
-      }
-    } catch (Throwable e) {
-      e.printStackTrace();
-    }
-
-    Log.trace(String.format("Orc: ChunkIdx: %d read %d stripes, start at stripe index, end at stripe index", cidx,
-            stripeStartEndIndex[1]-stripeStartEndIndex[0]+1, stripeStartEndIndex[0], stripeStartEndIndex[1]));
-
-    return dout;
-  }
-
-
-  /**
-   * Find the starting stripe and ending stripe index to read data in for a chunk.
-   *
-   * @param cidx: integer denoting chunk index;
-   * @param chunk_size: integer representing file size in bytes to be read
-   * @return: integer array of two elements denoting the starting and ending stripes.
-     */
-  public int[] findStripeIndices(int cidx, int chunk_size, Long[] cumStripeSizes) {
-    int[] tempIndices = new int[2];
-    int startingByte = cidx * chunk_size;
-    int lastChunkIndex = cumStripeSizes.length-1;
-
-    if (startingByte > cumStripeSizes[lastChunkIndex]) { // last chunk
-      startingByte = startingByte - chunk_size;
-      for (int index = 0; index < cumStripeSizes.length; index++) {
-        if (startingByte <= cumStripeSizes[index]) {
-          if (index+1 < cumStripeSizes.length)
-            tempIndices[0] = index+1;
-          else
-            tempIndices[0] = index;
-          break;
-        }
-      }
-      tempIndices[1] = lastChunkIndex;
-    } else {
-      for (int index = 0; index < cumStripeSizes.length; index++) {
-        if (startingByte < cumStripeSizes[index]) {
-          tempIndices[0] = index;
-          break;
-        }
-      }
-
-      startingByte = startingByte + chunk_size; // find ending stripe
-      for (int index = tempIndices[0]; index < cumStripeSizes.length; index++) {
-        if (cumStripeSizes[index] >= startingByte) {
-          if (index > tempIndices[0])
-            tempIndices[1] = index - 1;
-          else
-            tempIndices[1] = tempIndices[0];
-          break;
-        }
-      }
-
-      // could be at the end of the file or the stripe is the size of the chunk
-      if (cumStripeSizes[lastChunkIndex] <= startingByte)
-        tempIndices[1] = lastChunkIndex;
-    }
-
-    return tempIndices;
-  }
-
-  /**
-   * This method reads in one stripe of data at a time and write them to a H2O frame.
-   *
-   * @param oneStripe:  contain information on the stripe
-   * @param orcFileReader: Reader pointing to the orc file to be read in
-   * @param toInclude: boolean array to denote columns to be read
-   * @param columnNames: string array denoting column names;
-   * @param columnTypes: string array denoting column types;
-     * @param dout
-     */
-  private void write1Stripe(StripeInformation oneStripe, Reader orcFileReader, boolean[] toInclude,
-                                   String[] columnNames, String[] columnTypes, ParseWriter dout) {
-    try {
-      RecordReader perStripe = orcFileReader.rows(oneStripe.getOffset(), oneStripe.getDataLength(), toInclude, null,
-              columnNames);
+      RecordReader perStripe = orcFileReader.rows(thisStripe.getOffset(), thisStripe.getDataLength(), setup.getToInclude(), null, setup.getColumnNames());
       VectorizedRowBatch batch = perStripe.nextBatch(null);  // read orc file stripes in vectorizedRowBatch
-
       boolean done = false;
-      Long rowCounts = 0L;
-      Long rowNumber = oneStripe.getNumberOfRows();
-
-      while(!done) {
+      long rowCounts = 0L;
+      long rowNumber = thisStripe.getNumberOfRows();
+      while (!done) {
         long currentBatchRow = batch.count();
-
         ColumnVector[] dataVectors = batch.cols;
-
-        for (int cIdx = 0; cIdx < columnNames.length; cIdx++) {   // read one column at a time;
-          write1column(dataVectors[cIdx], columnTypes[cIdx].toLowerCase(), cIdx, currentBatchRow, dout);
-        }
-
-        rowCounts = rowCounts+currentBatchRow;    // record number of rows of data actually read
+        for (int col = 0; col < ncols; ++col)    // read one column at a time;
+          write1column(dataVectors[col], orcTypes[col], col, currentBatchRow, dout);
+        rowCounts = rowCounts + currentBatchRow;    // record number of rows of data actually read
         if (rowCounts >= rowNumber)               // read all rows of the stripe already.
           done = true;
-
         if (!done)  // not done yet, get next batch
           batch = perStripe.nextBatch(batch);
       }
-
+      assert rowCounts == rowNumber:"rowCounts = " + rowCounts + ", rowNumber = " + rowNumber;
       perStripe.close();
-    } catch (Throwable e) {
-      e.printStackTrace();
+    } catch(IOException ioe) {
+      throw new RuntimeException(ioe);
     }
+    return dout;
   }
+
 
   /**
    * This method writes one column of H2O data frame at a time.
@@ -211,33 +117,38 @@ public class OrcParser extends Parser {
      */
   private void write1column(ColumnVector oneColumn, String columnType, int cIdx, Long rowNumber,
                                    ParseWriter dout) {
-    switch (columnType) {
-      case "boolean":
-      case "bigint":
-      case "int":
-      case "smallint":
-      case "tinyint":
-      case "date":  //FIXME: make sure this is what the customer wants
-        writeLongcolumn(oneColumn, columnType, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
-        break;
-      case "float":
-      case "double":
-        writeDoublecolumn(oneColumn, columnType, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
-        break;
-      case "string":
-      case "varchar":
-      case "char":
-      case "binary":  //FIXME: only reading it as string right now.
-        writeStringcolumn(oneColumn, columnType, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
-        break;
-      case "timestamp": //FIXME: read in as a number
-        writeTimecolumn(oneColumn, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
-        break;
-      case "decimal":   //FIXME: make sure we interpret this correctly, ignore the scale right now
-        writeDecimalcolumn(oneColumn, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
-        break;
-      default:
-        throw new IllegalArgumentException("Unsupported Orc schema type: " + columnType);
+    try {
+      switch (columnType) {
+        case "boolean":
+        case "bigint":
+        case "int":
+        case "smallint":
+        case "tinyint":
+        case "date":  //FIXME: make sure this is what the customer wants
+          writeLongcolumn(oneColumn, columnType, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
+          break;
+        case "float":
+        case "double":
+          writeDoublecolumn(oneColumn, columnType, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
+          break;
+        case "string":
+        case "varchar":
+        case "char":
+        case "binary":  //FIXME: only reading it as string right now.
+          writeStringcolumn(oneColumn, columnType, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
+          break;
+        case "timestamp": //FIXME: read in as a number
+          writeTimecolumn(oneColumn, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
+          break;
+        case "decimal":   //FIXME: make sure we interpret this correctly, ignore the scale right now
+          writeDecimalcolumn(oneColumn, oneColumn.noNulls, oneColumn.isNull, cIdx, rowNumber, dout);
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported Orc schema type: " + columnType);
+      }
+    } catch(Throwable t ) {
+      t.printStackTrace();
+
     }
 
   }
@@ -284,18 +195,11 @@ public class OrcParser extends Parser {
      */
   private void writeDecimalcolumn(ColumnVector oneDecimalColumn, boolean noNulls, boolean[] isNull, int cIdx,
                                          Long rowNumber, ParseWriter dout) {
-    HiveDecimalWritable[] oneColumn= ((DecimalColumnVector) oneDecimalColumn).vector;
-
-    if (noNulls) {
-      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addNumCol(cIdx, Double.parseDouble(oneColumn[rowIndex].toString()));
-    } else {
-      for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
-        if (isNull[rowIndex])
-          dout.addInvalidCol(cIdx);
-        else
-          dout.addNumCol(cIdx, Double.parseDouble(oneColumn[rowIndex].toString()));
-      }
+    HiveDecimalWritable[] oneColumn = ((DecimalColumnVector) oneDecimalColumn).vector;
+    for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
+      HiveDecimal hd = oneColumn[rowIndex].getHiveDecimal();
+      if(noNulls || !isNull[rowIndex])
+        dout.addNumCol(cIdx, hd.unscaledValue().longValue(),-hd.scale());
     }
   }
 
@@ -382,35 +286,57 @@ public class OrcParser extends Parser {
    * @param rowNumber
      * @param dout
      */
-  private void writeLongcolumn(ColumnVector oneLongColumn, String columnType, Boolean noNull, boolean[] isNull,
+  private void writeLongcolumn(ColumnVector oneLongColumn, String columnType, boolean noNull, boolean[] isNull,
                                       int cIdx, Long rowNumber, ParseWriter dout) {
-
     long[] oneColumn = ((LongColumnVector) oneLongColumn).vector;
-
     if (noNull) {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++)
-        dout.addNumCol(cIdx, oneColumn[rowIndex]);
+        dout.addNumCol(cIdx, oneColumn[rowIndex],0);
     } else {
       for (int rowIndex = 0; rowIndex < rowNumber; rowIndex++) {
         if (isNull[rowIndex])
           dout.addInvalidCol(cIdx);
         else
-          dout.addNumCol(cIdx, oneColumn[rowIndex]);
+          dout.addNumCol(cIdx, oneColumn[rowIndex],0);
       }
     }
   }
 
 
+  public static class IcedStripeInfo extends Iced implements StripeInformation{
+    long _off;
+    long _len;
+    long _row;
+    long _dlen;
+    long _indexLen;
+    long _flen;
+
+    public IcedStripeInfo(StripeInformation si) {
+      _off = si.getOffset();
+      _len = si.getLength();
+      _row = si.getNumberOfRows();
+      _dlen = si.getDataLength();
+      _indexLen = si.getIndexLength();
+      _flen = si.getFooterLength();
+    }
+    @Override public long getOffset() {return  _off;}
+    @Override public long getLength() {return _len;}
+    @Override public long getNumberOfRows() {return _row;}
+    @Override public long getIndexLength() { return _indexLen;}
+    @Override public long getDataLength() {return _dlen;}
+    @Override public long getFooterLength() {return _flen;}
+  }
+
   public static class OrcParseSetup extends ParseSetup {
     // expand to include Orc specific fields
-    final Reader orcFileReader;
-    final Long[] cumstripeSizes;   // stripe size, max of all stripe sizes
-    final Long totalFileSize;
-    final List<StripeInformation> stripesInfo;
-    final String[] columnTypesString;
-    final Long maxStripeSize;   // biggest stripe size
-    final boolean[] toInclude;
-    final String[] allColumnNames;
+    transient Reader orcFileReader;
+    long[] cumstripeSizes;   // stripe size, max of all stripe sizes
+    long totalFileSize;
+    IcedStripeInfo [] stripesInfo;
+    String[] columnTypesString;
+    long maxStripeSize;   // biggest stripe size
+    boolean[] toInclude;
+    String[] allColumnNames;
 
     public OrcParseSetup(int ncols,
                          String[] columnNames,
@@ -419,11 +345,11 @@ public class OrcParser extends Parser {
                          String[][] naStrings,
                          String[][] data,
                          Reader orcReader,
-                         Long[] allstripes,
-                         Long fileSize,
+                         long[] allstripes,
+                         long fileSize,
                          List<StripeInformation> stripesInfo,
                          String[] columntypes,
-                         Long maxStripeSize,
+                         long maxStripeSize,
                          boolean[] toInclude,
                          String[] allColNames) {
       super(OrcParserProvider.ORC_INFO, (byte) '|', true, HAS_HEADER ,
@@ -431,36 +357,15 @@ public class OrcParser extends Parser {
       this.orcFileReader = orcReader;
       this.cumstripeSizes = allstripes;
       this.totalFileSize = fileSize;
-      this.stripesInfo = stripesInfo;
+      this.stripesInfo = new IcedStripeInfo[stripesInfo.size()];
+      for(int i = 0; i < this.stripesInfo.length; ++i)
+        this.stripesInfo[i] = new IcedStripeInfo(stripesInfo.get(i));
       this.columnTypesString = columntypes;
       this.maxStripeSize = maxStripeSize;
       this.toInclude = toInclude;
       this.allColumnNames = allColNames;
-
-      // set chunk size to be the max stripe size if the stripe size exceeds the default
-      if (this.maxStripeSize > this._chunk_size)  //
-        this.setChunkSize(this.maxStripeSize.intValue());
-
     }
 
-    public OrcParseSetup(ParseSetup ps, Reader reader, Long[] allstripes, Long fileSize,
-                         List<StripeInformation> stripesInfo, String[] columnTypes, Long maxStripeSize,
-                         boolean[] toInclude, String[] allColNames) {
-      super(ps);
-      this.orcFileReader = reader;
-      this.cumstripeSizes = allstripes;
-      this.totalFileSize = fileSize;
-      this.stripesInfo = stripesInfo;
-      this.columnTypesString = columnTypes;
-      this.maxStripeSize = maxStripeSize;
-      this.toInclude = toInclude;
-      this.allColumnNames = allColNames;
-
-      // set chunk size to be the max stripe size if the stripe size exceeds the default
-      if (this.maxStripeSize > this._chunk_size)  //
-        this.setChunkSize(this.maxStripeSize.intValue());
-
-    }
 
     @Override
     protected Parser parser(Key jobKey) {
@@ -483,9 +388,7 @@ public class OrcParser extends Parser {
       return this.totalFileSize;
     }
 
-    public List<StripeInformation> getStripeInfo() {
-      return this.stripesInfo;
-    }
+    public StripeInformation [] getStripeInfo() {return this.stripesInfo;}
 
     public Reader getOrcFileReader() {
       return this.orcFileReader;
@@ -497,92 +400,102 @@ public class OrcParser extends Parser {
 
     public boolean[] getToInclude() { return this.toInclude; }
     public String[] getAllColNames() { return this.allColumnNames; }
+
+    public void setOrcFileReader(Reader orcFileReader) {
+      this.orcFileReader = orcFileReader;
+    }
   }
 
-  public static ParseSetup guessSetup(byte[] bits) {
-    try {
-      return runOnPreview(bits, new OrcPreviewProcessor<ParseSetup>() {
-        @Override
-        public ParseSetup process(Reader orcFileReader, StructObjectInspector inspector) {
-          return deriveParseSetup(orcFileReader, inspector);
+
+//  /**
+//   * This method basically grab the reader, the inspector of an orc file.  However, it will
+//   * return null if an exception was found.
+//   * @param bits
+//   * @param processor
+//   * @param <T>
+//   * @return
+//   * @throws IOException
+//     */
+//  static <T> T runOnPreview(byte[] bits, OrcPreviewProcessor<T> processor) throws IOException {
+//    try {
+//      String tempFile = "tempFile";
+//      Configuration conf = new Configuration();
+//      FileUtils.writeByteArrayToFile(new File(tempFile), bits);
+//
+//      Path p = new Path(tempFile);
+//      Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));     // orc reader
+//      StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();
+//
+//      return processor.process(orcFileReader, insp);
+//    } catch (IOException safeToIgnore) {
+//      return null;
+//    }
+//  }
+
+  // types are flattened in pre-order tree walk, here we just count the number of fields for non-primitve types which are ignored for now
+  static private int countStructFields(ObjectInspector x, ArrayList<String> allColumnNames) {
+    int res = 1;
+    switch(x.getCategory()) {
+      case STRUCT:
+        StructObjectInspector structObjectInspector = (StructObjectInspector) x;
+        List<StructField> allColumns = (List<StructField>) structObjectInspector.getAllStructFieldRefs();  // grab column info
+        for (StructField oneField : allColumns) {
+          allColumnNames.add(oneField.getFieldName());
+          res += countStructFields(oneField.getFieldObjectInspector(),allColumnNames);
         }
-      });
-    } catch (IOException e) {
-      throw new RuntimeException("Orc format was not recognized", e);
+        break;
+      case LIST:
+        ListObjectInspector listObjectInspector = (ListObjectInspector) x;
+        allColumnNames.add("list");
+        res += countStructFields(listObjectInspector.getListElementObjectInspector(),allColumnNames);
+        break;
+      case MAP:
+        MapObjectInspector mapObjectInspector = (MapObjectInspector) x;
+        allColumnNames.add("mapKey");
+        res += countStructFields(mapObjectInspector.getMapKeyObjectInspector(),allColumnNames);
+        allColumnNames.add("mapValue");
+        res += countStructFields(mapObjectInspector.getMapValueObjectInspector(),allColumnNames);
+        break;
+      case UNION:
+        UnionObjectInspector unionObjectInspector = (UnionObjectInspector)x;
+        allColumnNames.add("union");
+        for( ObjectInspector xx:unionObjectInspector.getObjectInspectors())
+          res += countStructFields(xx,allColumnNames);
+        break;
+      case PRIMITIVE:break;
+      default: throw H2O.unimpl();
     }
-
+    return res;
   }
-
-  /** Just like derivedOrcInfo
-   */
-  static OrcInfo extractOrcInfo(byte[] bits, final ParseSetup requiredSetup) throws IOException {
-    return runOnPreview(bits, new OrcPreviewProcessor<OrcInfo>() {
-      @Override
-      public OrcInfo process(Reader orcReader, StructObjectInspector inspector) {
-        OrcParseSetup ps = (OrcParseSetup) deriveParseSetup(orcReader, inspector);
-
-        return new OrcInfo(ps.orcFileReader, ps.cumstripeSizes, ps.totalFileSize, ps.stripesInfo, ps.columnTypesString,
-                ps.maxStripeSize, ps.toInclude, ps.allColumnNames);
-      }
-    });
-  }
-
-  /**
-   * This method basically grab the reader, the inspector of an orc file.  However, it will
-   * return null if an exception was found.
-   * @param bits
-   * @param processor
-   * @param <T>
-   * @return
-   * @throws IOException
-     */
-  static <T> T runOnPreview(byte[] bits, OrcPreviewProcessor<T> processor) throws IOException {
-    try {
-      String tempFile = "tempFile";
-      Configuration conf = new Configuration();
-      FileUtils.writeByteArrayToFile(new File(tempFile), bits);
-
-      Path p = new Path(tempFile);
-      Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));     // orc reader
-      StructObjectInspector insp = (StructObjectInspector) orcFileReader.getObjectInspector();
-
-      return processor.process(orcFileReader, insp);
-    } catch (IOException safeToIgnore) {
-      return null;
-    }
-  }
-
   /*
    * This function will derive information like column names, types and number from
    * the inspector.
    */
-  private static ParseSetup deriveParseSetup(Reader orcFileReader, StructObjectInspector insp) {
-
+  static OrcParseSetup deriveParseSetup(Reader orcFileReader, StructObjectInspector insp) {
     List<StructField> allColumns = (List<StructField>) insp.getAllStructFieldRefs();  // grab column info
     List<StripeInformation> allStripes = orcFileReader.getStripes();  // grab stripe information
-    String[] allColNames = new String[allColumns.size()];
+    ArrayList<String> allColNames = new ArrayList<>();
     boolean[] toInclude = new boolean[allColumns.size()+1];
-    toInclude[0] = true;
-
     int supportedFieldCnt = 0 ;
-    int colIndex = 1;
+    int colIdx = 0;
     for (StructField oneField:allColumns) {
+      allColNames.add(oneField.getFieldName());
       String columnType = oneField.getFieldObjectInspector().getTypeName();
       if (columnType.toLowerCase().contains("decimal")) {
         columnType = "decimal";
       }
       if (isSupportedSchema(columnType)) {
-        toInclude[colIndex] = true;
+        toInclude[colIdx+1] = true;
         supportedFieldCnt++;
-      } else
-        toInclude[colIndex] = false;
-
-      allColNames[colIndex-1] = oneField.getFieldName();
-
-      colIndex++;
+      }
+      int cnt = countStructFields(oneField.getFieldObjectInspector(),allColNames);
+      if(cnt > 1)
+        toInclude = Arrays.copyOf(toInclude,toInclude.length + cnt-1);
+      colIdx+=cnt;
     }
-
+    String [] allNames = allColNames.toArray(new String[allColNames.size()]);
     String[] names = new String[supportedFieldCnt];
+
     byte[] types = new byte[supportedFieldCnt];
     String[][] domains = new String[supportedFieldCnt][];
     String[] dataPreview = new String[supportedFieldCnt];
@@ -590,18 +503,14 @@ public class OrcParser extends Parser {
 
     // go through all column information
     int columnIndex = 0;
-
     for (StructField oneField : allColumns) {
       String columnType = oneField.getFieldObjectInspector().getTypeName();
-
       if (columnType.toLowerCase().contains("decimal"))
         columnType = "decimal"; // get rid of strange attachment
-
       if (isSupportedSchema(columnType)) {
         names[columnIndex] = oneField.getFieldName();
         types[columnIndex] = schemaToColumnType(columnType);
         dataTypes[columnIndex] = columnType;
-
         columnIndex++;
       } else {
         Log.warn("Skipping field: " + oneField.getFieldName() + " because of unsupported type: " + columnType);
@@ -609,12 +518,12 @@ public class OrcParser extends Parser {
     }
 
     // get size of each stripe
-    Long[] stripeSizes = new Long[allStripes.size()];
-    Long fileSize = 0L;
-    Long maxStripeSize = 0L;
+    long[] stripeSizes = new long[allStripes.size()];
+    long fileSize = 0L;
+    long maxStripeSize = 0L;
 
     for (int index = 0; index < allStripes.size(); index++) {
-      Long stripeSize = allStripes.get(index).getDataLength();
+      long stripeSize = allStripes.get(index).getDataLength();
 
       if (stripeSize > maxStripeSize)
         maxStripeSize = stripeSize;
@@ -622,7 +531,6 @@ public class OrcParser extends Parser {
       fileSize = fileSize + stripeSize;
       stripeSizes[index] = fileSize;
     }
-
     OrcParseSetup ps = new OrcParseSetup(
             supportedFieldCnt,
             names,
@@ -637,39 +545,8 @@ public class OrcParser extends Parser {
             dataTypes,
             maxStripeSize,
             toInclude,
-            allColNames
+            allNames
     );
     return ps;
   }
-
-  /** Helper to represent Orc Info
-   */
-  static class OrcInfo {
-
-    public OrcInfo(Reader orcReader, Long[] allstripes, Long fileSize, List<StripeInformation> stripesInfo,
-                   String[] columnTypes, Long bigStripe, boolean[] toInclude, String[] allColNames) {
-      this.orcFileReader = orcReader;
-      this.cumStripeSizes = allstripes;
-      this.totalFileSize = fileSize;
-      this.stripesInfo = stripesInfo;
-      this.columnTypesString = columnTypes;
-      this.maxStripeSize = bigStripe;
-      this.toInclude = toInclude;
-      this.allColumnNames = allColNames;
-    }
-
-    Reader orcFileReader;   // can derive all other fields from here
-    Long[] cumStripeSizes;   // information on each stripe
-    Long totalFileSize;   // size of all data
-    Long maxStripeSize;   // biggest stripe size
-    List<StripeInformation> stripesInfo;
-    String[] columnTypesString;
-    boolean[] toInclude;
-    String[] allColumnNames;  // store all column names
-  }
-
-  private interface OrcPreviewProcessor<R> {
-    R process(Reader orcFileReader, StructObjectInspector inspector);
-  }
-
 }

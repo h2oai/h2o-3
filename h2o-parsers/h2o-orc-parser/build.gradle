@@ -5,6 +5,7 @@ description = "H2O Orc Parser"
 
 dependencies {
   compile project(":h2o-core")
+  compile project(":h2o-persist-hdfs")
   // Avro support
   //compile "org.apache.avro:avro:1.8.0"
 

@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -29,6 +30,8 @@ import water.fvec.Vec;
 import water.util.FileUtils;
 import water.util.Log;
 
+import static water.fvec.FileVec.getPathForKey;
+
 /**
  * HDFS persistence layer.
  */
@@ -38,11 +41,7 @@ public final class PersistHdfs extends Persist {
   /** Root path of HDFS */
   private final Path _iceRoot;
 
-  // Returns String with path for given key.
-  private static String getPathForKey(Key k) {
-    final int off = k._kb[0]==Key.CHK ? Vec.KEY_PREFIX_LEN : 0;
-    return new String(k._kb,off,k._kb.length-off);
-  }
+
 
   // Global HDFS initialization
   // FIXME: do not share it via classes, but initialize it by object
@@ -145,13 +144,13 @@ public final class PersistHdfs extends Persist {
     long end, start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(v._max);
     Key k = v._key;
+
     long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
     final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(v));
     final long skip_ = skip;
     run(new Callable() {
       @Override public Object call() throws Exception {
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
-
         FSDataInputStream s = null;
         try {
 //          fs.getDefaultBlockSize(p);
@@ -322,6 +321,17 @@ public final class PersistHdfs extends Persist {
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
 
     return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
+  }
+
+  public static FileSystem getFS(String path) throws IOException {
+    try {
+      return getFS(new URI(path));
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+  public static FileSystem getFS(URI uri) throws IOException {
+    return FileSystem.get(uri, PersistHdfs.CONF);
   }
 
   // Is there a bucket name without a trailing "/" ?
