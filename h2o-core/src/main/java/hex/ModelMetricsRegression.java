@@ -9,9 +9,13 @@ import water.util.MathUtils;
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public double residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
-  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double meanResidualDeviance) {
+  Distribution _dist;
+  public final double _mean_absolute_error;
+  public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae, double meanResidualDeviance) {
     super(model, frame, nobs, mse, null, sigma);
     _mean_residual_deviance = meanResidualDeviance;
+    _dist = new Distribution(model._parms);
+    _mean_absolute_error = mae;
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
@@ -29,6 +33,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
     sb.append(" mean residual deviance: " + (float)_mean_residual_deviance + "\n");
+    sb.append(" mean absolute error: " + (float)_mean_absolute_error + "\n");
     return sb.toString();
   }
 
@@ -77,6 +82,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   public static class MetricBuilderRegression<T extends MetricBuilderRegression<T>> extends MetricBuilderSupervised<T> {
     double _sumdeviance;
     Distribution _dist;
+    double _abserror;
     public MetricBuilderRegression() {
       super(1,null); //this will make _work = new float[2];
     }
@@ -94,6 +100,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       // Compute error
       double err = yact[0] - ds[0]; // Error: distance from the actual
       _sumsqe += w*err*err;       // Squared error
+      _abserror += Math.abs(err);
       assert !Double.isNaN(_sumsqe);
       if (m!=null && m._parms._distribution!=Distribution.Family.huber)
         _sumdeviance += m.deviance(w, yact[0], ds[0]);
@@ -109,11 +116,13 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     @Override public void reduce( T mb ) {
       super.reduce(mb);
       _sumdeviance += mb._sumdeviance;
+      _abserror += mb._abserror;
     }
 
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = _sumsqe / _wcount;
+        double mae = _abserror/_wcount; //Mean Absolute Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
       if (m!=null && m._parms._distribution== Distribution.Family.huber) {
@@ -135,10 +144,9 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
           meanResDeviance = new MeanResidualDeviance(dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }
       } else {
-        meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
+          meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
-      return m==null? new ModelMetricsRegression( null, f, _count, mse, weightedSigma(), meanResDeviance) :
-              m._output.addModelMetrics(new ModelMetricsRegression( m, f, _count, mse, weightedSigma(), meanResDeviance));
+      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, _count, mse, weightedSigma(), mae, meanResDeviance));
     }
   }
 }
