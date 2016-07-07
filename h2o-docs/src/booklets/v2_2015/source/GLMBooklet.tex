@@ -1241,7 +1241,9 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{model\_id}: (Optional) The unique ID assigned to the generated model. If not specified, an ID is generated automatically.
 \item \texttt{validation\_frame}: An \texttt{H2OParsedData} object containing the validation dataset used to construct confusion matrix. If  blank, the training data is used by default.
 \item \texttt{max\_iterations}: A non-negative integer specifying the maximum number of iterations. 
+\item \texttt{objective\_epsilon}: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged.
 \item \texttt{beta\_epsilon}: A non-negative number specifying the magnitude of the maximum difference between the coefficient estimates from successive iterations. Defines the convergence criterion. 
+\item \texttt{gradient\_epsilon}: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 \item \texttt{solver}: A character string specifying the solver used: either \texttt{IRLSM}, which supports more features, or \texttt{L\_BFGS}, which scales better for datasets with many columns. 
 \item \texttt{standardize}: A logical value that indicates whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to model training. 
 \item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian, binomial, poisson, gamma,} or \texttt{tweedie}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
