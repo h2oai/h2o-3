@@ -600,6 +600,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     switch (_parms._stopping_metric) {
       case MSE:
         return (float) mse();
+      case MAE:
+        return (float) mae();
       case logloss:
         return (float) logloss();
       case deviance:
@@ -636,6 +638,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double mse() {
     if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double mae() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
   }
 
   public double auc() {

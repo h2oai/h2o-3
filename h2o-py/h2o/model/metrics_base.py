@@ -43,6 +43,7 @@ class MetricsBase(object):
     types_w_bin =        ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
     types_w_r2 =         ['ModelMetricsBinomial', 'ModelMetricsRegression'] + types_w_glm + types_w_mult
     types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
+    types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
     types_w_logloss =    types_w_bin + types_w_mult
     types_w_dim =        ["ModelMetricsGLRM"]
 
@@ -60,7 +61,8 @@ class MetricsBase(object):
     print()
     print("MSE: "                                           + str(self.mse()))
     print("RMSE: "                                           + str(self.rmse()))
-    print("MAE: "                                           + str(self.mae()))
+    if metric_type in types_w_mean_absolute_error:
+      print("MAE: "                                           + str(self.mae()))
     if metric_type in types_w_r2:
       print("R^2: "                                           + str(self.r2()))
     if metric_type in types_w_mean_residual_deviance:

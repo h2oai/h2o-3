@@ -643,6 +643,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (_output.getModelCategory() == ModelCategory.Regression) {
       colHeaders.add("Training Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+      colHeaders.add("Training MAE"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.isClassifier()) {
       colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
@@ -659,6 +660,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (_output.getModelCategory() == ModelCategory.Regression) {
         colHeaders.add("Validation Deviance"); colTypes.add("double"); colFormat.add("%.5f");
+        colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.isClassifier()) {
         colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
@@ -695,6 +697,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       ScoreKeeper st = _output._scored_train[i];
       table.set(row, col++, st._mse);
       if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
+      if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mae);
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, st._AUC);
@@ -706,6 +709,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         st = _output._scored_valid[i];
         table.set(row, col++, st._mse);
         if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mean_residual_deviance);
+        if (_output.getModelCategory() == ModelCategory.Regression) table.set(row, col++, st._mae);
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, st._AUC);
