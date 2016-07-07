@@ -176,6 +176,13 @@ git pull
   export R_LIBS_USER=${WORKSPACE}/Rlibrary
   ```
 
+#### Recipe 4:  Just building the docs
+
+```
+./gradlew clean && ./gradlew build -x test && (export DO_FAST=1; ./gradlew dist)
+open target/docs-website/h2o-docs/index.html
+```
+
 ### 4.2. Setup on all Platforms
 
 > **Note**: The following instructions assume you have installed the latest version of [**Pip**](https://pip.pypa.io/en/latest/installing/#install-or-upgrade-pip), which is installed with the latest version of [**Python**](https://www.python.org/downloads/).  
