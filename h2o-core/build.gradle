@@ -62,16 +62,16 @@ jar {
 // Run a single small JVM under heavy memory load, and confirm spilling works
 task testOOM(type: Exec) {
     dependsOn cpLibs, jar, testJar
-    String iceRoot = project.projectDir.toString() + File.separator + "sandbox" + File.separator + "iceRoot"
+    String iceRoot = project.projectDir.toString() + File.separator + "OOMsandbox" + File.separator + "iceRoot"
             commandLine 'java', '-ea', '-Xmx1500m', '-Xms1500m', '-XX:+PrintGC', '-Dai.h2o.cleaner', '-cp',
             'build/libs/h2o-core.jar'+File.pathSeparator+'build/libs/h2o-core-test.jar'+File.pathSeparator+'../lib/*',
             'water.OOMTest', '-ice_root', iceRoot
     // This is first action for Exec task
     doFirst {
-      File sandbox = new File(project.projectDir, "sandbox")
+      File sandbox = new File(project.projectDir, "OOMsandbox")
       if (sandbox.exists()) { sandbox.deleteDir() }
       sandbox.mkdir()
-      FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "sandbox" + File.separator +
+      FileOutputStream fos = new FileOutputStream(new File(project.projectDir, "OOMsandbox" + File.separator +
               "water.OOMTest.out"))
       standardOutput = fos;
       errorOutput = fos;

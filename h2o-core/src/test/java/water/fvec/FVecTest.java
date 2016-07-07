@@ -1,12 +1,15 @@
 package water.fvec;
 
-import static org.junit.Assert.*;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import water.*;
+import water.util.ArrayUtils;
 
 import java.io.File;
 
-import water.*;
-import water.util.ArrayUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class FVecTest extends TestUtil {
@@ -33,6 +36,13 @@ public class FVecTest extends TestUtil {
     fs.blockForPending();
     return k;
   }
+
+/*
+  Test that we actually fail on failures.  :-)
+  @Test public void testBlammo() {
+    assertEquals(1, 2);
+  }
+*/
 
   // ==========================================================================
   @Test public void testBasicCRUD() {
@@ -157,7 +167,7 @@ public class FVecTest extends TestUtil {
         for( int j=0; j<bvs.length; j++ )
           _sums[j] += bvs[j].atd(i);
     }
-    @Override public void reduce( Sum mrt ) { ArrayUtils.add(_sums, mrt._sums);  } 
+    @Override public void reduce( Sum mrt ) { ArrayUtils.add(_sums, mrt._sums);  }
   }
 
   // Simple vector sum C=A+B
