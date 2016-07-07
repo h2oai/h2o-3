@@ -18,4 +18,4 @@ numpydoc
 mysqlclient
 recommonmark
 sphinx_rtd_theme
-sphinxcontrib_osexample
+sphinxcontrib-osexample
