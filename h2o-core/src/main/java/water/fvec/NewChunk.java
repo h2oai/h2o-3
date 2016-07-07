@@ -275,6 +275,15 @@ public class NewChunk extends Chunk {
     _xs = new Exponents(4);
   }
 
+  public NewChunk(ChunkBlock cb, int vecId, boolean sparse) {
+    _cb = cb;
+    _cbId = vecId;
+    _ms = new Mantissas(4);
+    _xs = new Exponents(4);
+    if(sparse) _id = new int[4];
+    _cidx = -1;
+  }
+
   public NewChunk( Vec vec, int cidx, boolean sparse ) {
     _vec = vec; _cidx = cidx;
     _ms = new Mantissas(4);

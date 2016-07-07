@@ -41,11 +41,12 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @version 1.0
  */
 final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparable {
+
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
   public final byte[] _kb;      // Key bytes, wire-line protocol
-  transient final int _hash;    // Hash on key alone (and not value)
+  public transient int _hash;    // Hash on key alone (and not value)
 
   // The user keys must be ASCII, so the values 0..31 are reserved for system
   // keys. When you create a system key, please do add its number to this list
@@ -240,13 +241,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // k-v pairs start with this replication factor.
   static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 1;
 
-  // Construct a new Key.
-  private Key(byte[] kb) {
-    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
-    _kb = kb;
-    // Quicky hash: http://en.wikipedia.org/wiki/Jenkins_hash_function
+  public void computeHash(){
     int hash = 0;
-    for( byte b : kb ) {
+    for( byte b : _kb ) {
       hash += b;
       hash += (hash << 10);
       hash ^= (hash >> 6);
@@ -256,14 +253,21 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     hash += (hash << 15);
     _hash = hash;
   }
+  // Construct a new Key.
+  private Key(byte[] kb) {
+    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
+    _kb = kb;
+    // Quicky hash: http://en.wikipedia.org/wiki/Jenkins_hash_function
+    computeHash();
+  }
 
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
   static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
     if( rf == -1 ) throw new IllegalArgumentException();
     Key key = new Key(kb);
-    Key key2 = H2O.getk(key); // Get the interned version, if any
-    if( key2 != null ) // There is one! Return it instead
-      return key2;
+//    Key key2 = H2O.getk(key); // Get the interned version, if any
+//    if( key2 != null ) // There is one! Return it instead
+//      return key2;
 
     // Set the cache with desired replication factor, and a fake cloud index
     H2O cloud = H2O.CLOUD; // Read once

@@ -172,7 +172,7 @@ public class NewChunkTest extends TestUtil {
 
 
   @Test public void testSparseDoubles2(){
-    NewChunk nc = new NewChunk(null, 0, false);
+    NewChunk nc = new NewChunk((Vec)null, 0, false);
     int N = 1000;
     nc.addZeros(N);
     nc.addNum(Math.PI);
@@ -187,7 +187,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(i,c.nextNZ(c.nextNZ(-1)));
     assertEquals(         Math.E,c.atd(i  ),1e-16);
 
-    nc = new NewChunk(null, 0, false);
+    nc = new NewChunk((Vec)null, 0, false);
     nc.addNum(Math.PI);
     nc.addNum(Double.MAX_VALUE);
     nc.addNum(Double.MIN_VALUE);
@@ -203,7 +203,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(c.atd(8), Math.E,1e-16);
 
     // test flip from dense -> sparse0 -> desne
-    nc = new NewChunk(null, 0, false);
+    nc = new NewChunk((Vec)null, 0, false);
     double [] rvals = new double[2*1024];
     nc.addNum(rvals[0] = Math.PI);
     nc.addNum(rvals[1] = Double.MAX_VALUE);
@@ -224,7 +224,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(rvals[j],c.atd(j),0);
 
     // test flip from dense -> sparseNA -> desne
-    nc = new NewChunk(null, 0, false);
+    nc = new NewChunk((Vec)null, 0, false);
     rvals = new double[2*1024];
     Arrays.fill(rvals,Double.NaN);
     nc.addNum(rvals[0] = Math.PI);

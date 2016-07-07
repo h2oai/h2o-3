@@ -109,6 +109,13 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
  */
 
 public abstract class Chunk extends Iced<Chunk> {
+  protected transient ChunkBlock _cb;
+  protected transient int _cbId;
+
+  Chunk setCB(ChunkBlock cb) {
+    _cb = cb;
+    return this;
+  }
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
@@ -202,6 +209,7 @@ public abstract class Chunk extends Iced<Chunk> {
 
   /** Owning Vec; a read-only field */
   transient Vec _vec;
+
   /** Owning Vec */
   public Vec vec() { return _vec; }
 
@@ -554,7 +562,10 @@ public abstract class Chunk extends Iced<Chunk> {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
-    DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
+    if(_cb != null)
+      _cb.updateChunk(_cbId,_chk2);
+    else
+      DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     return fs;
   }
 

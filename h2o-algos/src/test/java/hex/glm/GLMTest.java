@@ -10,6 +10,8 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;
+import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.junit.*;
 
 import hex.glm.GLMModel.GLMParameters;
@@ -24,6 +26,9 @@ import water.util.ArrayUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -33,6 +38,203 @@ public class GLMTest  extends TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
+
+  @Test
+  public void testWideData(){
+    int M = 1000000;
+    int P = 100000;
+    double fillRatio = 0.0001;
+    final double[] res = new double[1];
+
+    Vec [] vs = null;
+    int nchunks = 0;
+    long [] espc = null;
+    try {
+      System.out.println("making the vecs");
+      long t0 = System.currentTimeMillis();
+      Vec v = Vec.makeCon(0, M, 15, true);
+      nchunks = v.nChunks();
+      System.out.println("got " + nchunks + " chunks.");
+      vs = v.makeZeros(P);
+      v.remove();
+      espc = vs[0].espc();
+      long t1 = System.currentTimeMillis();
+      System.out.println("done in " + (t1 - t0) + " ms");
+      System.out.println("filling the vecs");
+      t0 = System.currentTimeMillis();
+      final AtomicInteger sum1 = new AtomicInteger();
+      final AtomicInteger sum2 = new AtomicInteger();
+      // fill vecs
+      new MRTask() {
+        @Override
+        public void map(Chunk[] chks) {
+          Random r = new Random();
+          PoissonDistribution ps = new PoissonDistribution(3.2768);
+          Futures fs = new Futures();
+          for (int i = 0; i < chks.length; ++i) {
+            int cnt = ps.sample();
+            sum1.addAndGet(cnt);
+            int[] ids = new int[cnt];
+            for (int j = 0; j < cnt; ++j)
+              ids[j] = r.nextInt(chks[0].len());
+            Arrays.sort(ids);
+            NewChunk nc = new NewChunk(chks[i].vec(), chks[i].cidx(), true);
+            int x = -1;
+            for (int id : ids) {
+              if(x == id) ++x;
+              nc.addZeros(id - x - 1);
+              nc.addNum(1);
+              sum2.incrementAndGet();
+              x = id;
+            }
+            nc.addZeros(chks[i].len()-x);
+            nc.close(fs);
+          }
+          fs.blockForPending();
+        }
+      }.doAll(vs);
+      t1 = System.currentTimeMillis();
+      System.out.println("done in " + (t1 - t0) + " ms");
+      System.out.println("sum1 = " + sum1.get() + ", sum2 = " + sum2.get());
+      System.out.println("Running task");
+      t0 = System.currentTimeMillis();
+      for(int i = 0; i < 100; ++i) {
+        res[0] = 0;
+        // access vecs
+        new MRTask() {
+          double sum;
+
+          @Override
+          public void map(Chunk[] chks) {
+            double[] vals = new double[chks[0].len()];
+            int[] ids = new int[chks[0]._len];
+            for (int i = 0; i < chks.length; ++i) {
+              int n = chks[i].asSparseDoubles(vals, ids);
+              for (int j = 0; j < n; ++j)
+                sum += vals[j];
+            }
+          }
+
+          @Override
+          public void reduce(MRTask m) {
+            sum += ((Double) m.result());
+          }
+
+          @Override
+          public void postGlobal() {
+            res[0] = sum;
+          }
+
+          @Override
+          public Double result() {
+            return sum;
+          }
+        }.doAll(vs);
+      }
+      System.out.println("sum = " + res[0]);
+      t1 = System.currentTimeMillis();
+      System.out.println("done in " + (t1 - t0) + " ms");
+    } finally {
+      if(vs != null)
+      for (Vec v : vs) if(v != null) v.remove();
+    }
+
+    System.out.println();
+    System.out.println("===========================================");
+    System.out.println();
+    System.out.println("doing blocks now");
+    Key [] ks = new Key[nchunks];
+    try {
+      System.out.println("making the vecs");
+      long t0 = System.currentTimeMillis();
+      for(int i = 0; i < nchunks; ++i) {
+        Chunk [] chunks = new Chunk[P];
+        int nrows = (int)(espc[i+1] - espc[i]);
+        Arrays.fill(chunks,new C0DChunk(0,nrows));;
+        ChunkBlock cb = new ChunkBlock(0,P,null,chunks);
+        ks[i] = Key.make("chunk" + i);
+        DKV.put(ks[i],cb);
+      }
+      long t1 = System.currentTimeMillis();
+      System.out.println("done in " + (t1-t0) + "ms");
+      System.out.println("filling the values");
+      final AtomicInteger sum1 = new AtomicInteger();
+      final AtomicInteger sum2 = new AtomicInteger();
+      new MRTask(){
+        @Override public void map(Key k) {
+          ChunkBlock cb = DKV.getGet(k);
+          Random r = new Random();
+          PoissonDistribution ps = new PoissonDistribution(3.2768);
+          Futures fs = new Futures();
+          for (int i = cb.vecStart(); i < cb.vecEnd(); ++i) {
+            int cnt = ps.sample();
+            sum1.addAndGet(cnt);
+            int[] ids = new int[cnt];
+            for (int j = 0; j < cnt; ++j)
+              ids[j] = r.nextInt(cb.len());
+            Arrays.sort(ids);
+            NewChunk nc = new NewChunk(cb, i ,true);
+            int x = -1;
+            for (int id : ids) {
+              if(x == id) ++x;
+              nc.addZeros(id - x - 1);
+              nc.addNum(1);
+              sum2.incrementAndGet();
+              x = id;
+            }
+            nc.addZeros(cb.len()-x);
+            nc.close(fs);
+          }
+          fs.blockForPending();
+          DKV.put(cb._key = k,cb,_fs);
+        }
+      }.doAll(ks);
+      long t2 = System.currentTimeMillis();
+      System.out.println("done in " + (t2 - t1) + " ms");
+      System.out.println("sum1 = " + sum1 + ", sum2 = " + sum2);
+      System.out.println("running the sum");
+      for(int i = 0; i < 100; ++i) {
+        res[0] = 0;
+        // access vecs
+        new MRTask() {
+          double sum;
+          @Override
+          public void map(Key k) {
+            ChunkBlock cb = DKV.getGet(k);
+            double[] vals = new double[cb.len()];
+            int[] ids = new int[cb.len()];
+            Chunk[] chunks = cb.chunks();
+            for (int i = cb.vecStart(); i < cb.vecEnd(); ++i) {
+              int n = chunks[i].asSparseDoubles(vals, ids);
+              for (int j = 0; j < n; ++j)
+                sum += vals[j];
+            }
+          }
+
+          @Override
+          public void reduce(MRTask m) {
+            sum += ((Double) m.result());
+          }
+
+          @Override
+          public void postGlobal() {
+            res[0] = sum;
+//            System.out.println("sum = " + sum);
+          }
+
+          @Override
+          public Double result() {
+            return sum;
+          }
+        }.doAll(ks);
+      }
+      System.out.println("sum = " + res[0]);
+      long t3 = System.currentTimeMillis();
+      System.out.println("done in " + (t3 - t2) + " ms");
+    } finally {
+      for(Key k:ks) if(k != null)DKV.remove(k);
+    }
+  }
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
     // standard predictions
