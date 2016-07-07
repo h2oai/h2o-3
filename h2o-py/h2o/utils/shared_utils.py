@@ -243,3 +243,21 @@ def get_human_readable_time(time_ms):
         res = " %d ms" % millis
 
     return res.strip()
+
+
+
+gen_header = _gen_header
+py_tmp_key = _py_tmp_key
+locate = _locate
+quoted = _quoted
+is_list = _is_list
+is_fr = _is_fr
+is_str = _is_str
+handle_python_dicts = _handle_python_dicts
+handle_pandas_data_frame = _handle_pandas_data_frame
+handle_numpy_array = _handle_numpy_array
+is_list_of_lists = _is_list_of_lists
+is_num_list = _is_num_list
+is_str_list = _is_str_list
+handle_python_lists = _handle_python_lists
+check_lists_of_lists = _check_lists_of_lists
