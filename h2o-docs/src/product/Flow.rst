@@ -1539,8 +1539,8 @@ Creating Frames
 
 To create a frame with a large amount of random data (for example, to use for testing), click the drop-down **Admin** menu, then select **Create Synthetic Frame**. Customize the frame as needed, then click the **Create** button to create the frame. 
 
-.. figure:: images/Flow_createFrame.png
-   :alt: createFrame
+.. figure:: images/Flow_CreateFrame.png
+   :alt: Create Frame
 
 Viewing Frames
 ^^^^^^^^^^^^^^

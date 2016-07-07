@@ -70,7 +70,7 @@ software, version, and job status, see `Accessing YARN`_.
 3. Copy the information that displays and send it in an email to
    support@h2o.ai.
    
-   .. figure:: images/YARN_history_Logs2.png
+   .. figure:: images/YARN_History_Logs2.png
        :alt: Logs for Support
 
 --------------
