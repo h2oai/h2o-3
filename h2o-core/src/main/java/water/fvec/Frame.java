@@ -1380,9 +1380,11 @@ public class Frame extends Lockable<Frame> {
     public volatile int _curChkIdx;
     long _row;
 
-    // Quote string x if it contains non-ASCII characters or the column separator
+    // Quote string x if it contains non-ASCII characters or the column
+    // separator or is empty
     private boolean needsQuote( String x ) {
       int len = x.length();
+      if( len == 0 ) return true; // Have to quote the empty string, or else it prints as nothing at all!
       for( int i=0; i<len; i++ ) {
         char c = x.charAt(i);
         if( c < ' ' || c >= 128 || c==',' ) 
