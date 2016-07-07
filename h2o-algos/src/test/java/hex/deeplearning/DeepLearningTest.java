@@ -1772,7 +1772,8 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(2.31398,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(2.31398/*MAE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(14.889,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-3);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1798,7 +1799,8 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(12.93808,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1821,11 +1823,12 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{20,20};
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      parms._huber_delta = Float.MAX_VALUE; //just like gaussian
+      parms._huber_alpha = 1; //just like gaussian
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(12.93808,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,0.7);
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._MSE,0.7);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1848,12 +1851,14 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{20,20};
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      parms._huber_delta = 1e-3; // in standardized response space
+      parms._huber_alpha = 1e-2;
       // more like Laplace, but different slope and different prefactor -> so can't compare deviance 1:1
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(0.0048777427,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-8);
+      double delta = 0.011996;
+      Assert.assertEquals((2*2.31398/*MAE*/-delta)*delta,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,2e-2);
+      Assert.assertEquals(19.856,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-3);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -1879,7 +1884,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(3.5715418,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(8.54210618691587,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();

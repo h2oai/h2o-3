@@ -2484,6 +2484,7 @@ public class GBMTest extends TestUtil {
       parms._train = train._key;
       parms._response_column = "DSDist"; // Train on the outcome
       parms._distribution = huber;
+      parms._huber_alpha = 0.5;
       parms._sample_rate = 0.6f;
       parms._col_sample_rate = 0.8f;
       parms._col_sample_rate_per_tree = 0.8f;
@@ -2497,7 +2498,8 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 37.53331) < 1e-4);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._MSE - 1485) < 1);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 290.87) < 1);
 
     } finally {
       parms._train.remove();
@@ -2511,7 +2513,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testLaplace() {
     Frame tfr = null;
-    GBMModel dl = null;
+    GBMModel gbm = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -2521,21 +2523,22 @@ public class GBMTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._distribution = laplace;
 
-      dl = new GBM(parms).trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(8.05716257,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(8.05716257,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(1.42298/*MAE*/,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
+      if (gbm != null) gbm.deleteCrossValidationModels();
+      if (gbm != null) gbm.delete();
     }
   }
 
   @Test
   public void testGaussian() {
     Frame tfr = null;
-    GBMModel dl = null;
+    GBMModel gbm = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -2545,21 +2548,22 @@ public class GBMTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._distribution = gaussian;
 
-      dl = new GBM(parms).trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
+      if (gbm != null) gbm.deleteCrossValidationModels();
+      if (gbm != null) gbm.delete();
     }
   }
 
   @Test
   public void testHuberDeltaLarge() {
     Frame tfr = null;
-    GBMModel dl = null;
+    GBMModel gbm = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -2568,23 +2572,25 @@ public class GBMTest extends TestUtil {
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      parms._huber_alpha = 1; // nothing is an outlier - everything is quadratic loss
+      parms._huber_alpha = 1; // nothing is an outlier - same as gaussian
 
-      dl = new GBM(parms).trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.94238,((ModelMetricsRegression)dl._output._training_metrics)._MSE,2e-2);
+      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._MSE,1e-2);
+      // huber loss with delta -> max(error) goes to MSE
+      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-2);
 
     } finally {
       if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
+      if (gbm != null) gbm.deleteCrossValidationModels();
+      if (gbm != null) gbm.delete();
     }
   }
 
   @Test
   public void testHuberDeltaTiny() {
     Frame tfr = null;
-    GBMModel dl = null;
+    GBMModel gbm = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -2593,23 +2599,28 @@ public class GBMTest extends TestUtil {
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      parms._huber_alpha = 1e-4; //everything is an outlier and we should get laplace loss
+      parms._huber_alpha = 1e-2; //everything is an outlier and we should get laplace loss
 
-      dl = new GBM(parms).trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(8.05716257,((ModelMetricsRegression)dl._output._training_metrics)._MSE,0.5);
+      Assert.assertEquals(8.05716257,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,0.3);
+
+      // Huber loss can be derived from MAE
+      double delta = 0.0047234; //hardcoded from output
+      double MAE = 1.42298; //see laplace above
+      Assert.assertEquals((2*MAE-delta)*delta,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,2e-4);
 
     } finally {
       if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
+      if (gbm != null) gbm.deleteCrossValidationModels();
+      if (gbm != null) gbm.delete();
     }
   }
 
   @Test
   public void testHuber() {
     Frame tfr = null;
-    GBMModel dl = null;
+    GBMModel gbm = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -2618,16 +2629,17 @@ public class GBMTest extends TestUtil {
       parms._response_column = tfr.lastVecName();
       parms._seed = 0xdecaf;
       parms._distribution = huber;
-      //parms._huber_alpha = 0.9; //that's the default
+      parms._huber_alpha = 0.9; //that's the default
 
-      dl = new GBM(parms).trainModel().get();
+      gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(4.447062185,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(4.447062185,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(0,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
 
     } finally {
       if (tfr != null) tfr.delete();
-      if (dl != null) dl.deleteCrossValidationModels();
-      if (dl != null) dl.delete();
+      if (gbm != null) gbm.deleteCrossValidationModels();
+      if (gbm != null) gbm.delete();
     }
   }
 

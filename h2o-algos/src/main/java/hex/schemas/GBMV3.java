@@ -73,7 +73,5 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
     @API(help="Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
     public double max_abs_leafnode_pred;
 
-    @API(help = "Huber alpha (quantile threshold for Huber (M-)regression, must be between 0 and 1).", level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true)
-    public double huber_alpha;
   }
 }

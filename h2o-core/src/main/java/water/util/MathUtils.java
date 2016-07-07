@@ -4,9 +4,9 @@ import edu.emory.mathcs.jtransforms.dct.DoubleDCT_1D;
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_2D;
 import edu.emory.mathcs.jtransforms.dct.DoubleDCT_3D;
 import edu.emory.mathcs.utils.ConcurrencyUtils;
-import water.Iced;
-import water.MRTask;
-import water.MemoryManager;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -30,6 +30,33 @@ public class MathUtils {
       return l;
     }
     return y * Math.log(y) - y + .5*Math.log(2*Math.PI*y);
+  }
+
+  static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
+    QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+    Frame tempFrame = weight == null ?
+            new Frame(Key.make(), new String[]{"y"},     new Vec[]{values}) :
+            new Frame(Key.make(), new String[]{"y","w"}, new Vec[]{values, weight});
+    DKV.put(tempFrame);
+    parms._train = tempFrame._key;
+    parms._probs = new double[]{alpha};
+    parms._weights_column = weight == null ? null : "w";
+    Job<QuantileModel> job = new Quantile(parms).trainModel();
+    QuantileModel kmm = job.get();
+    double value = kmm._output._quantiles[0/*col*/][0/*quantile*/];
+    assert(!Double.isNaN(value));
+    Log.info("weighted " + alpha + "-quantile: " + value);
+    job.remove();
+    kmm.remove();
+    DKV.remove(tempFrame._key);
+    return value;
+  }
+
+  static public class ComputeAbsDiff extends MRTask<ComputeAbsDiff> {
+    @Override public void map(Chunk chks[], NewChunk nc[]) {
+      for (int i=0; i<chks[0].len(); ++i)
+        nc[0].addNum(Math.abs(chks[0].atd(i) - chks[1].atd(i)));
+    }
   }
 
   /**

@@ -24,7 +24,7 @@ public class Distribution extends Iced {
     assert(family != Family.huber);
     tweediePower = 1.5;
     quantileAlpha = 0.5;
-    huberDelta = 1;
+    huberDelta = Double.NaN;
   }
 
   /**
@@ -34,7 +34,7 @@ public class Distribution extends Iced {
     distribution = params._distribution;
     tweediePower = params._tweedie_power;
     quantileAlpha = params._quantile_alpha;
-    huberDelta = params._huber_delta;
+    huberDelta = 1; //should be updated to huber_alpha quantile of absolute error of predictions via settier
     assert(tweediePower >1 && tweediePower <2);
   }
   static public double MIN_LOG = -19;
@@ -45,7 +45,7 @@ public class Distribution extends Iced {
   public final double quantileAlpha; //for quantile regression
   public double huberDelta;
 
-  // required for Huber aka M-regressioN
+  // required for Huber aka M-regression
   public void setHuberDelta(double huberDelta) { this.huberDelta = huberDelta; }
 
   // helper - sanitized exponential function

@@ -216,16 +216,16 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Default: "AUTO"
 
       quantile_alpha : float
-        Desired quantile for quantile regression (from 0.0 to 1.0).
+        Desired quantile for Quantile regression, must be between 0 and 1.
         Default: 0.5
 
       tweedie_power : float
-        Tweedie power for Tweedie regression.
+        Tweedie power for Tweedie regression, must be between 1 and 2.
         Default: 1.5
 
-      huber_delta : float
-        Threshold between quadratic and linear loss for Huber regression (must be > 0).
-        Default: 1.0
+      huber_alpha : float
+        Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
+        Default: 0.9
 
       score_interval : float
         Shortest time interval (in seconds) between model scoring.
@@ -383,7 +383,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                      "epsilon", "rate", "rate_annealing", "rate_decay", "momentum_start", "momentum_ramp",
                      "momentum_stable", "nesterov_accelerated_gradient", "input_dropout_ratio", "hidden_dropout_ratios",
                      "l1", "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale", "initial_weights",
-                     "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power", "huber_delta",
+                     "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power", "huber_alpha",
                      "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
                      "classification_stop", "regression_stop", "stopping_rounds", "stopping_metric",
                      "stopping_tolerance", "max_runtime_secs", "score_validation_sampling", "diagnostics", "fast_mode",
@@ -813,12 +813,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         self._parms["tweedie_power"] = value
 
     @property
-    def huber_delta(self):
-        return self._parms["huber_delta"]
+    def huber_alpha(self):
+        return self._parms["huber_alpha"]
 
-    @huber_delta.setter
-    def huber_delta(self, value):
-        self._parms["huber_delta"] = value
+    @huber_alpha.setter
+    def huber_alpha(self, value):
+        self._parms["huber_alpha"] = value
 
     @property
     def score_interval(self):

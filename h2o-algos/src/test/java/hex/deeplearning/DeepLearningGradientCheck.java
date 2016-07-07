@@ -101,7 +101,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 }
 
                 DeepLearningParameters parms = new DeepLearningParameters();
-                parms._huber_delta = rng.nextDouble()+0.1;
+                parms._huber_alpha = rng.nextDouble()+0.1;
                 parms._tweedie_power = 1.01 + rng.nextDouble()*0.9;
                 parms._quantile_alpha = 0.05 + rng.nextDouble()*0.9;
                 parms._train = tfr._key;
@@ -323,7 +323,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       for (double y : new double[]{0,1}) { //actual - taylored for binomial, but should work for regression too
         // scan the range -2..2 in function approximation space (link space)
         for (int i=-5*N; i<5*N; ++i) {
-          p._huber_delta = rng.nextDouble()+0.1;
+          p._huber_alpha = rng.nextDouble()+0.1;
           p._tweedie_power = 1.01 + rng.nextDouble()*0.9;
           p._quantile_alpha = 0.05 + rng.nextDouble()*0.9;
           Distribution d = new Distribution(p);

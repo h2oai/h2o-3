@@ -63,7 +63,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return ((ModelMetricsBinomial)_output._training_metrics)._auc.defaultThreshold();
     return 0.5;
   }
-
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   /** Model-specific parameter class.  Each model sub-class contains
@@ -93,6 +92,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The Java class name for this Model (e.g., hex.tree.gbm.GBM, rather than GBM).*/
     abstract public String javaName();
 
+    /** Default relative tolerance for convergence-based early stopping  */
+    protected double defaultStoppingTolerance() { return 1e-3; }
+
+    /** How much work will be done for this model? */
+    abstract public long progressUnits();
+
     public Key<Frame> _train;               // User-Key of the Frame the Model is trained on
     public Key<Frame> _valid;               // User-Key of the Frame the Model is validated on, if any
     public int _nfolds = 0;
@@ -112,12 +117,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return _seed;
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
+
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5;
     public double _quantile_alpha = 0.5;
-    public double _huber_delta = 1;
-    protected double defaultStoppingTolerance() { return 1e-3; }
-    abstract public long progressUnits();
+    public double _huber_alpha = 0.9;
 
     // TODO: This field belongs in the front-end column-selection process and
     // NOT in the parameters - because this requires all model-builders to have
@@ -525,6 +529,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected String[][] scoringDomains() {return _output._domains;}
   public O _output; // TODO: move things around so that this can be protected
+  public Distribution _dist;
 
   public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
 
@@ -537,6 +542,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     _output = output;  // Output won't be set if we're assert output != null;
     if (_output!=null)
       _output.startClock();
+    _dist = isSupervised() && _output.nclasses()==1 ? new Distribution(_parms) : null;
   }
 
   /**
@@ -547,7 +553,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return value of gradient
    */
   public double deviance(double w, double y, double f) {
-    return new Distribution(Distribution.Family.gaussian).deviance(w, y, f);
+    return _dist.deviance(w, y, f);
   }
 
   protected ScoringInfo[] scoringInfo;
@@ -919,7 +925,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     BigScore bs = new BigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
   }
-
 
   private class BigScore extends MRTask<BigScore> {
     final String[] _domain; // Prediction domain; union of test and train classes

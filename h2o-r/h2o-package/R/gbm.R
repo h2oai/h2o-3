@@ -17,9 +17,9 @@
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "modified_huber", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" or "gaussian"
-#' @param quantile_alpha Quantile (only for Quantile regression, must be between 0 and 1)
-#' @param huber_alpha Huber alpha (quantile threshold for M-regression, must be between 0 and 1).
-#' @param tweedie_power Tweedie power (only for Tweedie distribution, must be between 1 and 2)
+#' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1.
+#' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
+#' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2.
 #' @param ntrees A nonnegative integer that determines the number of trees to grow.
 #' @param max_depth Maximum depth to grow the tree.
 #' @param min_rows Minimum number of rows to assign to teminal nodes.

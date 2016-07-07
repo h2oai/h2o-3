@@ -426,33 +426,22 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Compute predictions and resulting residuals
       // ESL2, page 387, Steps 2a, 2b
-      double huberDelta = 1;
+      // fills "Work" columns for all rows (incl. OOB) with the residuals
+      double huberDelta = Double.NaN;
       if (_parms._distribution== Distribution.Family.huber) {
+        // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
+        // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
         Vec diff = new ComputeAbsDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-        // compute the huber delta (alpha-th weighted quantile of diff)
-        QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-        Frame residualFrame = hasWeightCol() ?
-                new Frame(Key.make(), new String[]{"residual",_parms._weights_column}, new Vec[]{diff, _weights}) :
-                new Frame(Key.make(), new String[]{"residual"}, new Vec[]{diff});
-        DKV.put(residualFrame);
-        parms._train = residualFrame._key;
-        parms._probs = new double[]{_parms._huber_alpha};
-        parms._weights_column = _parms._weights_column;
-        Job<QuantileModel> job = new Quantile(parms).trainModel();
-        QuantileModel kmm = job.get();
-        huberDelta = kmm._output._quantiles[0/*col*/][0/*quantile*/];
-        Log.info("huber delta (" + (_parms._huber_alpha*100) + "-th weighted quantile of residuals): " + huberDelta);
-        job.remove();
-        kmm.remove();
-        residualFrame.remove();
-        Distribution huber = new Distribution(_parms);
-        huber.setHuberDelta(huberDelta);
-        // now compute residuals using the gradient of the per-leaf huber loss function
-        new StoreResiduals(huber).doAll(_train, _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB) with the residuals
+        Distribution dist = new Distribution(_parms);
+        // compute weighted alpha-quantile of the absolute residual -> this is the delta for the huber loss
+        huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
+        dist.setHuberDelta(huberDelta);
+        // now compute residuals using the gradient of the huber loss (with a globally adjusted delta)
+        new StoreResiduals(dist).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
-        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB) with the residuals
+        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
@@ -659,10 +648,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     public class DiffMinusMedianDiff extends MRTask<DiffMinusMedianDiff> {
       Vec _strata;
-      double[] _quantilesForLeafNodes;
-      DiffMinusMedianDiff(Vec strata, double[] quantilesForLeafNodes) {
+      double[] _terminalMedians;
+      DiffMinusMedianDiff(Vec strata, double[] terminalMedians) {
         _strata = strata;
-        _quantilesForLeafNodes = quantilesForLeafNodes;
+        _terminalMedians = terminalMedians;
       }
       @Override
       public void map(Chunk[] chks) {
@@ -671,7 +660,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final int strataMin = (int)_strata.min();
         for (int i=0; i<chks[0].len(); ++i) {
           int nid = (int)strata.atd(i);
-          diff.set(i, diff.atd(i) - _quantilesForLeafNodes[nid-strataMin]);
+          diff.set(i, diff.atd(i) - _terminalMedians[nid-strataMin]);
         }
       }
     }
@@ -681,7 +670,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       final double _huberDelta;
       final Vec _strata;
       // OUTPUT
-      double[/*leaves*/] _huberCorrection, _wcounts;
+      double[/*leaves*/] _huberGamma, _wcounts;
       public HuberLeafMath(double huberDelta, Vec strata) {
         _huberDelta = huberDelta;
         _strata = strata;
@@ -696,30 +685,32 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         }
         final int nstrata = strataMax - strataMin + 1;
         Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
-        _huberCorrection = new double[nstrata];
+        _huberGamma = new double[nstrata];
         _wcounts = new double[nstrata];
         Chunk weights = hasWeightCol() ? chk_weight(cs) : new C0DChunk(1, cs[0]._len);
         Chunk stratum = chk_nids(cs, 0 /*regression*/);
         Chunk diffMinusMedianDiff = cs[cs.length-1];
         for (int row=0;row<cs[0]._len;++row) {
           int nidx = (int) stratum.at8(row) - strataMin; //get terminal node for this row
-          _huberCorrection[nidx] += Math.signum(diffMinusMedianDiff.atd(row)) * Math.min(Math.abs(diffMinusMedianDiff.atd(row)), _huberDelta);
+          _huberGamma[nidx] += weights.atd(row) * Math.signum(diffMinusMedianDiff.atd(row)) * Math.min(Math.abs(diffMinusMedianDiff.atd(row)), _huberDelta);
                   _wcounts[nidx] += weights.atd(row);
         }
       }
       @Override
       public void reduce(HuberLeafMath mrt) {
-        ArrayUtils.add(_huberCorrection,mrt._huberCorrection);
+        ArrayUtils.add(_huberGamma,mrt._huberGamma);
         ArrayUtils.add(_wcounts,mrt._wcounts);
       }
 
       @Override
       protected void postGlobal() {
-        for (int i = 0; i< _huberCorrection.length; ++i)
-          _huberCorrection[i]/=_wcounts[i];
+        for (int i = 0; i< _huberGamma.length; ++i)
+          _huberGamma[i]/=_wcounts[i];
       }
     }
 
+    // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
+    // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
     private void fitBestConstantsHuber(DTree[] ktrees, int firstLeafIndex, double huberDelta) {
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
@@ -744,12 +735,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // where huberDelta is the alpha-percentile of the residual across all observations
       Frame tmpFrame2 = new Frame(_train.vecs());
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
-      double[] huberCorrection = new HuberLeafMath(huberDelta,strata).doAll(tmpFrame2)._huberCorrection;
+      double[] huberGamma = new HuberLeafMath(huberDelta,strata).doAll(tmpFrame2)._huberGamma;
 
       // now assign the median per leaf + the above _huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
       for (int i = 0; i < sqt._quantiles.length; i++) {
-        double huber = (sqt._quantiles[i] /*median*/ + huberCorrection[i]);
+        double huber = (sqt._quantiles[i] /*median*/ + huberGamma[i]);
         if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
         double val = effective_learning_rate() * huber;
         assert !Double.isNaN(val) && !Double.isInfinite(val);

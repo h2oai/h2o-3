@@ -90,11 +90,6 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     }
   }
 
-  @Override
-  public double deviance(double w, double y, double f) {
-    return new Distribution(_parms).deviance(w, y, f);
-  }
-
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);

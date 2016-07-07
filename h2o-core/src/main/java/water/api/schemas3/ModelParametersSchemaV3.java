@@ -64,16 +64,18 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(help = "Distribution function", values = { "AUTO", "bernoulli", "modified_huber", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" }, level = API.Level.secondary, gridable = true)
   public Distribution.Family distribution;
 
-  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true, help = "Tweedie power for Tweedie regression.")
+  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
+          help = "Tweedie power for Tweedie regression, must be between 1 and 2.")
   public double tweedie_power;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
-          help = "Desired quantile for quantile regression (from 0.0 to 1.0).")
+          help = "Desired quantile for Quantile regression, must be between 0 and 1.")
   public double quantile_alpha;
 
-  @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
-          help = "Threshold between quadratic and linear loss for Huber regression (must be > 0).")
-  public double huber_delta;
+
+  @API(help = "Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).",
+          level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true)
+  public double huber_alpha;
 
   @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
       is_member_of_frames = {"training_frame", "validation_frame"},

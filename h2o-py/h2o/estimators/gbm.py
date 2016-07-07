@@ -164,15 +164,15 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Default: "AUTO"
 
       quantile_alpha : float
-        Desired quantile for quantile regression (from 0.0 to 1.0).
+        Desired quantile for Quantile regression, must be between 0 and 1.
         Default: 0.5
 
       tweedie_power : float
-        Tweedie power for Tweedie regression.
+        Tweedie power for Tweedie regression, must be between 1 and 2.
         Default: 1.5
 
       huber_alpha : float
-        Huber alpha (quantile threshold for Huber (M-)regression, must be between 0 and 1).
+        Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
         Default: 0.9
 
       checkpoint : str

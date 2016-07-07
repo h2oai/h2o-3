@@ -69,18 +69,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
   } // DeepLearningModelOutput
 
-  /**
-   * Deviance of given distribution function at predicted value f
-   * @param w observation weight
-   * @param y (actual) response
-   * @param f (predicted) response in original response space
-   * @return value of gradient
-   */
-  @Override
-  public double deviance(double w, double y, double f) {
-    return _dist.deviance(w,y,f);
-  }
-
   // Default publicly visible Schema is V2
   public ModelSchemaV3 schema() { return new DeepLearningModelV3(); }
 
@@ -116,12 +104,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
   private float _bestLoss = Float.POSITIVE_INFINITY;
-  final private Distribution _dist;
 
   public Key actual_best_model_key;
   public Key model_info_key;
 
   public DeepLearningScoringInfo last_scored() { return (DeepLearningScoringInfo) super.last_scored(); }
+
 
   /**
    * Get the parameters actually used for model building, not the user-given ones (_parms)
@@ -376,6 +364,13 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         final String m = model_info().toString();
         if (m.length() > 0) Log.info(m);
         final Frame trainPredict = score(fTrain);
+        if (get_params()._distribution == Distribution.Family.huber) {
+          Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
+                  new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), trainPredict.anyVec()})
+          ).outputFrame().anyVec();
+          double huberDelta = MathUtils.computeWeightedQuantile(fTrain.vec(get_params()._weights_column), absdiff, get_params()._huber_alpha);
+          _dist.setHuberDelta(huberDelta);
+        }
         trainPredict.delete();
 
         hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this, fTrain);
