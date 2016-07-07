@@ -127,9 +127,9 @@ mkdir target/maven
 cp -rp build/repo target/maven
 
 # Build main h2o sphinx documentation.
-cd h2o-docs/new_look_docs
+cd h2o-docs/src/product
 sphinx-build -b html -d _build/doctrees . _build/html
-cd ../..
+cd ../../..
 
 # Add documentation to target.
 mkdir target/docs-website
@@ -141,7 +141,7 @@ mkdir target/docs-website/h2o-core
 mkdir target/docs-website/h2o-algos
 mkdir target/docs-website/h2o-genmodel
 mkdir target/docs-website/h2o-scala
-cp -rp h2o-docs/new_look_docs/_build/html/* target/docs-website/h2o-docs
+cp -rp h2o-docs/src/product/_build/html/* target/docs-website/h2o-docs
 cp -rp h2o-docs/web/* target/docs-website/h2o-docs
 cp -p h2o-docs/src/booklets/v2_2015/source/*.pdf target/docs-website/h2o-docs/booklets
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r

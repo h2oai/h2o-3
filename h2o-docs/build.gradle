@@ -108,7 +108,7 @@ clean.dependsOn cleanBooklets
 
 // create sphinx documentation project version number
 
-def sphinxProjectVersionFile = new File("$rootDir/h2o-docs/new_look_docs/project_version")
+def sphinxProjectVersionFile = new File("$rootDir/h2o-docs/src/product/project_version")
 
 task(createSphinxProjectVersionNumber) << {
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
