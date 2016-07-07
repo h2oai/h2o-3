@@ -103,9 +103,14 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   # Return only the files that successfully imported
   if(length(res$files) <= 0L) stop("all files failed to import")
   if(parse) {
-    srcKey <- res$destination_frames
-    return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1), destination_frame=destination_frame,
-                         header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
+    if(pattern=="") {srcKey <- res$destination_frames
+    } else {srcKey  <- res$destination_frames[grepl(pattern,res$destination_frames)]}
+    if(length(srcKey)>0){
+      return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1), destination_frame=destination_frame,
+                           header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
+    }else{
+      stop("all files failed to import - No file has this `pattern` ")
+    }
   }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
