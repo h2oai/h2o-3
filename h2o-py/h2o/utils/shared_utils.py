@@ -1,13 +1,16 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
+#
 """Shared utilities used by various classes, all placed here to avoid circular imports.
 
 This file INTENTIONALLY has NO module dependencies!
 """
-from builtins import map
-from builtins import str
-from builtins import zip
-from builtins import range
+from __future__ import division, print_function, absolute_import, unicode_literals
+# noinspection PyUnresolvedReferences
+from future.builtins import *
 import os
-from past.builtins import basestring
 from six import PY3
 import imp
 import itertools
@@ -70,7 +73,7 @@ def _check_lists_of_lists(python_obj):
       if isinstance(ll, (tuple,list)):
         raise ValueError("`python_obj` is not a list of flat lists!")
   return most_cols
-  
+
 
 def _handle_python_lists(python_obj, check_header):
   #convert all inputs to lol
@@ -92,7 +95,7 @@ def _is_list(l):
   return isinstance(l, (tuple, list))
 
 def _is_str_list(l):
-  return isinstance(l, (tuple, list)) and all([isinstance(i,basestring) for i in l])
+  return isinstance(l, (tuple, list)) and all([isinstance(i,str) for i in l])
 
 def _is_num_list(l):
   return isinstance(l, (tuple, list)) and all([isinstance(i,(float,int)) for i in l])
@@ -124,8 +127,7 @@ def _handle_python_dicts(python_obj):
   return header, data_to_write
 
 def _is_str(s):
-  try: return isinstance(s, (str, basestring, unicode)) # python 2.x
-  except NameError: return isinstance(s, str) # python 3.x
+  return isinstance(s, str)
 
 def _is_fr(o):
   return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports
@@ -164,3 +166,80 @@ def _locate(path):
 
     tmp_dir = next_tmp_dir
     possible_result = os.path.join(tmp_dir, path)
+
+
+def get_human_readable_bytes(size):
+    """
+    Convert given number of bytes into a human readable representation, i.e. add prefix such as kb, Mb, Gb,
+    etc. The `size` argument must be a non-negative integer.
+
+    :param size: integer representing byte size of something
+    :return: string representation of the size, in human-readable form
+    """
+    if size == 0: return "0"
+    if size is None: return ""
+    assert isinstance(size, int) and size >= 0, "Expected a numeric argument: %r" % size
+    suffixes = "PTGMk"
+    maxl = len(suffixes)
+    for i in range(maxl + 1):
+        shift = (maxl - i) * 10
+        if size >> shift == 0: continue
+        ndigits = 0
+        for nd in [3, 2, 1]:
+            if size >> (shift + 12 - nd * 3) == 0:
+                ndigits = nd
+                break
+        if ndigits == 0 or size == (size >> shift) << shift:
+            rounded_val = str(size >> shift)
+        else:
+            rounded_val = "%.*f" % (ndigits, size / (1 << shift))
+        return "%s %sb" % (rounded_val, suffixes[i] if i < maxl else "")
+
+
+def get_human_readable_time(time_ms):
+    """
+    Convert given duration in milliseconds into a human-readable representation, i.e. hours, minutes, seconds,
+    etc. More specifically, the returned string may look like following:
+        1 day 3 hours 12 mins
+        3 days 0 hours 0 mins
+        8 hours 12 mins
+        34 mins 02 secs
+        13 secs
+        541 ms
+    In particular, the following rules are applied:
+        * milliseconds are printed only if the duration is less than a second;
+        * seconds are printed only if the duration is less than an hour;
+        * for durations greater than 1 hour we print days, hours and minutes keeping zeros in the middle (i.e. we
+          return "4 days 0 hours 12 mins" instead of "4 days 12 mins").
+
+    :param time_ms: duration, as a number of elapsed milliseconds.
+    :return: human-readable string representation of the provided duration.
+    """
+    millis = time_ms % 1000
+    secs = (time_ms // 1000) % 60
+    mins = (time_ms // 60000) % 60
+    hours = (time_ms // 3600000) % 24
+    days = (time_ms // 86400000)
+
+    res = ""
+    if days > 1:
+        res += "%d days" % days
+    elif days == 1:
+        res += "1 day"
+
+    if hours > 1 or (hours == 0 and res):
+        res += " %d hours" % hours
+    elif hours == 1:
+        res += " 1 hour"
+
+    if mins > 1 or (mins == 0 and res):
+        res += " %d mins" % mins
+    elif mins == 1:
+        res += " 1 min"
+
+    if days == 0 and hours == 0:
+        res += " %02d secs" % secs
+    if not res:
+        res = " %d ms" % millis
+
+    return res.strip()
