@@ -99,7 +99,7 @@
         {
             "name" : "Recent Changes",
             "id"   : "doc-recent-changes",
-            "path" : "https://github.com/h2oai/h2o-dev/blob/SUBST_LAST_COMMIT_HASH/h2o-docs/src/product/flow/RecentChanges.md"
+            "path" : "https://github.com/h2oai/h2o-3/blob/SUBST_LAST_COMMIT_HASH/Changes.md"
         },
         {
             "name" : "R User Documentation",
@@ -132,7 +132,7 @@
         {
             "name" : "REST API Documentation",
             "id"   : "doc-rest",
-            "path" : "docs-website/h2o-docs/index.html"
+            "path" : "docs-website/h2o-docs/rest-api-reference.html"
         },
         {
             "name" : "H2O Core Java Developer Documentation (Javadoc)",
