@@ -1371,6 +1371,7 @@ h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.metric <- function(object, thresholds, metric) {
+  if(!is(object, "H2OModelMetrics")) stop(paste0("No ", metric, " for ",class(object)," .Should be a H2OModelMetrics object!"))
   if(is(object, "H2OBinomialMetrics")){
     if(!missing(thresholds)) lapply(thresholds, function(t,object,metric) h2o.find_row_by_threshold(object, t)[, metric], object, metric)
     else {
