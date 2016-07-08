@@ -1,5 +1,7 @@
 package hex.genmodel.easy;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -269,6 +271,47 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     System.arraycopy(preds, 1, p.classProbabilities, 0, p.classProbabilities.length);
 
     return p;
+  }
+
+  /**
+   * Sort in descending order.
+   */
+  private SortedClassProbability[] sortByDescendingClassProbability(String[] domainValues, double[] classProbabilities) {
+    assert (classProbabilities.length == domainValues.length);
+    SortedClassProbability[] arr = new SortedClassProbability[domainValues.length];
+    for (int i = 0; i < domainValues.length; i++) {
+      arr[i] = new SortedClassProbability();
+      arr[i].name = domainValues[i];
+      arr[i].probability = classProbabilities[i];
+    }
+    Arrays.sort(arr, Collections.reverseOrder());
+    return arr;
+  }
+
+  /**
+   * A helper function to return an array of binomial class probabilities for a prediction in sorted order.
+   * The returned array has the most probable class in position 0.
+   *
+   * @param p The prediction.
+   * @return An array with sorted class probabilities.
+   */
+  public SortedClassProbability[] sortByDescendingClassProbability(BinomialModelPrediction p) {
+    String[] domainValues = m.getDomainValues(m.getResponseIdx());
+    double[] classProbabilities = p.classProbabilities;
+    return sortByDescendingClassProbability(domainValues, classProbabilities);
+  }
+
+  /**
+   * A helper function to return an array of multinomial class probabilities for a prediction in sorted order.
+   * The returned array has the most probable class in position 0.
+   *
+   * @param p The prediction.
+   * @return An array with sorted class probabilities.
+   */
+  public SortedClassProbability[] sortByDescendingClassProbability(MultinomialModelPrediction p) {
+    String[] domainValues = m.getDomainValues(m.getResponseIdx());
+    double[] classProbabilities = p.classProbabilities;
+    return sortByDescendingClassProbability(domainValues, classProbabilities);
   }
 
   /**

@@ -3,6 +3,8 @@ package hex.genmodel.easy;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
+import hex.genmodel.easy.prediction.BinomialModelPrediction;
+import hex.genmodel.easy.prediction.SortedClassProbability;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,8 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EasyPredictModelWrapperTest {
-  static class MyModel extends GenModel {
-    public MyModel(String[] names, String[][] domains) {
+  private static class MyModel extends GenModel {
+    MyModel(String[] names, String[][] domains) {
       super(names, domains);
     }
 
@@ -45,7 +47,7 @@ public class EasyPredictModelWrapperTest {
     }
   }
 
-  static MyModel makeModel() {
+  private static MyModel makeModel() {
     String[] names = {
             "C1",
             "C2",
@@ -135,6 +137,23 @@ public class EasyPredictModelWrapperTest {
       Assert.assertEquals(m.getTotalUnknownCategoricalLevelsSeen(), 4);
       Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C1").get(), 1);
       Assert.assertEquals(m.getUnknownCategoricalLevelsSeenPerColumn().get("C2").get(), 3);
+    }
+  }
+
+  @Test
+  public void testSortedClassProbability() throws Exception {
+    MyModel rawModel = makeModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+
+    {
+      RowData row = new RowData();
+      row.put("C1", "c1level1");
+      BinomialModelPrediction p = m.predictBinomial(row);
+      SortedClassProbability[] arr = m.sortByDescendingClassProbability(p);
+      Assert.assertEquals(arr[0].name, "NO");
+      Assert.assertEquals(arr[0].probability, 1.0, 0.001);
+      Assert.assertEquals(arr[1].name, "YES");
+      Assert.assertEquals(arr[1].probability, 0.0, 0.001);
     }
   }
 }
