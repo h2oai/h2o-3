@@ -2634,7 +2634,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       Assert.assertEquals(4.447062185,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
-      Assert.assertEquals(0,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(2.4882489,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
 
     } finally {
       if (tfr != null) tfr.delete();
