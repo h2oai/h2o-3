@@ -2182,7 +2182,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' plot(gbm)
 #' plot(gbm, timestep = "duration", metric = "deviance")
 #' plot(gbm, timestep = "number_of_trees", metric = "deviance")
-#' plot(gbm, timestep = "number_of_trees", metric = "MSE")
+#' plot(gbm, timestep = "number_of_trees", metric = "rmse")
 #' plot(gbm, timestep = "number_of_trees", metric = "MAE")
 
 #' }
@@ -2212,20 +2212,20 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
         metric <- "logloss"
-      } else if (!(metric %in% c("logloss","AUC","classification_error","MSE"))) {
-        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      } else if (!(metric %in% c("logloss","AUC","classification_error","rmse"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, rmse")
       }
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
-      } else if (!(metric %in% c("logloss","classification_error","MSE"))) {
-        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, MSE")
+      } else if (!(metric %in% c("logloss","classification_error","rmse"))) {
+        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, rmse")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
-        metric <- "MSE"
-      } else if (!(metric %in% c("MSE","deviance","MAE"))) {
-        stop("metric for H2ORegressionModel must be one of: AUTO, MSE, MAE, or deviance")
+        metric <- "rmse"
+      } else if (!(metric %in% c("rmse","deviance","MAE"))) {
+        stop("metric for H2ORegressionModel must be one of: AUTO, rmse, MAE, or deviance")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
@@ -2246,7 +2246,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
         timestep <- "epochs"
       } else if (!(timestep %in% c("epochs","samples","duration"))) {
         stop("timestep for deeplearning must be one of: epochs, samples, duration")
-      }
+             }
     }
     training_metric <- sprintf("training_%s", metric)
     validation_metric <- sprintf("validation_%s", metric)

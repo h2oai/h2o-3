@@ -19,6 +19,7 @@ public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
   public double _mean_residual_deviance = Double.NaN;
   public double _mse = Double.NaN;
+  public double _rmse = Double.NaN;
   public double _mae = Double.NaN;
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
@@ -66,6 +67,7 @@ public class ScoreKeeper extends Iced {
   public void fillFrom(ModelMetrics m) {
     if (m == null) return;
     _mse = m._MSE;
+    _rmse = m.rmse();
     if (m instanceof ModelMetricsSupervised) {
       _r2 = ((ModelMetricsSupervised)m).r2();
     }
@@ -93,7 +95,7 @@ public class ScoreKeeper extends Iced {
     }
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE,MAE, AUC, lift_top_group, r2, misclassification, mean_per_class_error}
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE, AUC, lift_top_group, r2, misclassification, mean_per_class_error}
   public static boolean moreIsBetter(StoppingMetric criterion) {
     return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.r2 || criterion == StoppingMetric.lift_top_group);
   }
@@ -145,6 +147,9 @@ public class ScoreKeeper extends Iced {
             break;
           case MSE:
             val = skj._mse;
+            break;
+          case RMSE:
+            val = skj._rmse;
             break;
           case MAE:
             val = skj._mae;
@@ -231,11 +236,11 @@ public class ScoreKeeper extends Iced {
             return (int)Math.signum(o2._AUC - o1._AUC); // moreIsBetter
           }
         };
-      case MSE:
+      case RMSE:
         return new Comparator<ScoreKeeper>() {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
-            return (int)Math.signum(o1._mse - o2._mse); // lessIsBetter
+            return (int)Math.signum(o1._rmse - o2._rmse); // lessIsBetter
           }
         };
       case MAE:
@@ -297,7 +302,7 @@ public class ScoreKeeper extends Iced {
     return "ScoreKeeper{" +
         "_r2=" + _r2 +
         ", _mean_residual_deviance=" + _mean_residual_deviance +
-        ", _mse=" + _mse +
+        ", _rmse=" + _rmse +
             ",_mae=" + _mae +
         ", _logloss=" + _logloss +
         ", _AUC=" + _AUC +
