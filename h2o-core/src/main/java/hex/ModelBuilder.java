@@ -170,8 +170,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         exceptional=true;
         throw t;
       } finally {
-        if (dest() != null && dest().get() != null && dest().get()._output != null)
+        if (dest() != null && dest().get() != null && dest().get()._output != null) {
           dest().get()._output._job = _job;
+        }
         _parms.read_unlock_frames(_job);
         Scope.exit();
       }
@@ -519,11 +520,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _offset; // Handy offset column
   protected transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
+  protected transient String[] _origNames;
+  protected transient String[][] _origDomains;
 
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
   public boolean hasFoldCol(){return _parms._fold_column != null;} // don't look at transient Vec
   public int numSpecialCols() { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
+  public String[] specialColNames() {
+    String[] n = new String[numSpecialCols()];
+    int i=0;
+    if (hasOffsetCol()) n[i++]=_parms._offset_column;
+    if (hasWeightCol()) n[i++]=_parms._weights_column;
+    if (hasFoldCol())   n[i++]=_parms._fold_column;
+    return n;
+  }
   // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
 
   protected int _nclass; // Number of classes; 1 for regression; 2+ for classification
@@ -867,7 +878,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true, null);
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
@@ -877,7 +888,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             warn("_valid", s);
           }
         }
-        assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
       }
@@ -885,6 +895,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _valid = null;
       _vresponse = null;
     }
+
+    if (expensive && isSupervised()) {
+      if (_parms._categorical_encoding== Model.Parameters.CategoricalEncodingScheme.Binary) {
+        String[] skipCols = Arrays.copyOf(specialColNames(), numSpecialCols() + 1); //weight,offset,fold
+        skipCols[numSpecialCols()] = _parms._response_column; //response
+        _origNames = _train.names();
+        _origDomains = _train.domains();
+        _train = new FrameUtils.CategoricalBinaryEncoder(_train, skipCols).exec().get();
+        DKV.remove(_train._key);
+        separateFeatureVecs(); //fix up the pointers to the special vecs
+        if (_valid != null) {
+          _valid = new FrameUtils.CategoricalBinaryEncoder(_valid, skipCols).exec().get();
+          DKV.remove(_valid._key);
+          _vresponse = _valid.vec(_parms._response_column);
+        }
+      }
+    }
+    assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names));
 
     if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
       error("_checkpoint", "Checkpoint has to point to existing model!");

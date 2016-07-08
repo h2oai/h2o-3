@@ -109,6 +109,11 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
           "stratify the folds based on the response variable, for classification problems.")
   public Model.Parameters.FoldAssignmentScheme fold_assignment;
 
+  @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+          values = {"AUTO", "Enum", "OneHot", "Binary", "Eigen"},
+          help = "Encoding scheme for categorical features")
+  public Model.Parameters.CategoricalEncodingScheme categorical_encoding;
+
   @API(level = API.Level.critical, direction = API.Direction.INOUT,
       is_member_of_frames = {"training_frame", "validation_frame"},
       help = "Names of columns to ignore for training.")

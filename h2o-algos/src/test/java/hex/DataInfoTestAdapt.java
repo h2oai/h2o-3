@@ -43,7 +43,9 @@ public class DataInfoTestAdapt extends TestUtil {
 
       // now take the test frame from frSplits, and adapt it to a DataInfo built on the train frame
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize);
-      Model.adaptTestForTrain(dinfo._adaptedFrame.names(),null,null,null,"petal_wid",dinfo._adaptedFrame.domains(),frSplits[1],Double.NaN,true,false,interactions);
+      GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._response_column = "petal_wid";
+      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions);
 
       scoreInfo = dinfo.scoringInfo(frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1]);
@@ -88,7 +90,9 @@ public class DataInfoTestAdapt extends TestUtil {
 
       // now take the test frame from frSplits, and adapt it to a DataInfo built on the train frame
       dinfo = makeInfo(frSplits[0], interactions, useAll, standardize,skipMissing);
-      Model.adaptTestForTrain(dinfo._adaptedFrame.names(),null,null,null,"IsDepDelayed",dinfo._adaptedFrame.domains(),frSplits[1],Double.NaN,true,false,interactions);
+      GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
+      parms._response_column = "IsDepDelayed";
+      Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions);
 
       scoreInfo = dinfo.scoringInfo(frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1], skipMissing);

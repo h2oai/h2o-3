@@ -108,6 +108,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
+    public enum CategoricalEncodingScheme {
+      AUTO, Enum, OneHot, Binary, Eigen
+    }
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -117,6 +120,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return _seed;
     }
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
+    public CategoricalEncodingScheme _categorical_encoding = CategoricalEncodingScheme.AUTO;
 
     public Distribution.Family _distribution = Distribution.Family.AUTO;
     public double _tweedie_power = 1.5;
@@ -334,6 +338,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** Columns used in the model and are used to match up with scoring data
      *  columns.  The last name is the response column name (if any). */
     public String _names[];
+    public String _origNames[];
+
+    /** Categorical/factor mappings, per column.  Null for non-categorical cols.
+     *  Columns match the post-init cleanup columns.  The last column holds the
+     *  response col categoricals for SupervisedModels.  */
+    public String _domains[][];
+    public String _origDomains[][];
 
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
     public Key _cross_validation_models[];
@@ -369,6 +380,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Capture the data "shape" the model is valid on
       _names  = b._train.names  ();
       _domains= b._train.domains();
+      _origNames = b._origNames;
+      _origDomains = b._origDomains;
       _hasOffset = b.hasOffsetCol();
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();
@@ -381,11 +394,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int nfeatures() {
       return _names.length - (_hasOffset?1:0)  - (_hasWeights?1:0) - (_hasFold?1:0) - (isSupervised()?1:0);
     }
-
-    /** Categorical/factor mappings, per column.  Null for non-categorical cols.
-     *  Columns match the post-init cleanup columns.  The last column holds the
-     *  response col categoricals for SupervisedModels.  */
-    public String _domains[][];
 
     /** List of all the associated ModelMetrics objects, so we can delete them
      *  when we delete this model. */
@@ -692,18 +700,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  if any factor column has no levels in common.
    */
   public String[] adaptTestForTrain( Frame test, boolean expensive, boolean computeMetrics) {
-    return adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), _output.responseName(), _output._domains, test, _parms.missingColumnsType(), expensive, computeMetrics, _output.interactions());
+    return adaptTestForTrain(
+            test,
+            _output._origNames,
+            _output._origDomains,
+            _output._names,
+            _output._domains,
+            _parms, expensive, computeMetrics, _output.interactions());
   }
   /**
+   * @param test Frame to be adapted
+   * @param origNames Training column names before categorical column encoding - otherwise null
+   * @param origDomains Training column levels before categorical column encoding - otherwise null
    * @param names Training column names
-   * @param weights  Name of column with observation weights, weights are NOT filled in if missing in test frame
-   * @param offset   Name of column with offset, if not null (i.e. trained with offset), offset MUST be present in test data as well, otherwise can not scorew and IAE is thrown.
-   * @param fold
-   * @param response Name of response column,  response is NOT filled in if missing in test frame
    * @param domains Training column levels
-   * @param missing Substitute for missing columns; usually NaN
-   * */
-  public static String[] adaptTestForTrain(String[] names, String weights, String offset, String fold, String response, String[][] domains, Frame test, double missing, boolean expensive, boolean computeMetrics, String[] interactions) throws IllegalArgumentException {
+   * @param parms Model parameters
+   * @param expensive Whether to actually do the hard work
+   * @param computeMetrics Whether metrics can be (and should be) computed
+   * @param interactions Column names to create pairwise interactions with
+   */
+  public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
+                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -712,6 +729,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Fast path cutout: already compatible but needs work to test
     if( Arrays.equals(names,test._names) && Arrays.deepEquals(domains,tdomains) )
       return new String[0];
+    if( Arrays.equals(origNames,test._names) && Arrays.deepEquals(origDomains,tdomains) )
+      return new String[0];
+    if (origNames != null) names = origNames;
+    if (origDomains != null) domains = origDomains;
 
     // create the interactions now and bolt them on to the front of the test Frame
     if( null!=interactions ) {
@@ -721,6 +742,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       test.add(makeInteractions(test, false, InteractionPair.generatePairwiseInteractionsFromList(interactionIndexes), true, true, false));
     }
 
+    final String response = parms._response_column;
+    final String weights = parms._weights_column;
+    final String offset = parms._offset_column;
+    final String fold = parms._fold_column;
+    final double missing = parms.missingColumnsType();
+    final Parameters.CategoricalEncodingScheme catEncoding = parms._categorical_encoding;
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
@@ -795,6 +822,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
+
+    if (expensive && catEncoding==Parameters.CategoricalEncodingScheme.Binary) {
+      Frame updated = new FrameUtils.CategoricalBinaryEncoder(test, new String[]{weights, offset, fold, response}).exec().get();
+      DKV.remove(updated._key);
+      test.restructure(updated.names(),updated.vecs());
+    }
     return msgs.toArray(new String[msgs.size()]);
   }
 
@@ -900,7 +933,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
  
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
+    final boolean computeMetrics = (!isSupervised() || adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];

@@ -83,6 +83,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
           Vec weight = adaptedFrame.vec(m._parms._weights_column);
           //compute huber delta based on huber alpha quantile on absolute prediction error
           double huberDelta = MathUtils.computeWeightedQuantile(weight, absdiff, m._parms._huber_alpha);
+          absdiff.remove();
           dist.setHuberDelta(huberDelta);
           meanResDeviance = new MeanResidualDeviance(dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }

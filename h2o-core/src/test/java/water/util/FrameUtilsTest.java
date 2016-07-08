@@ -58,7 +58,7 @@ public class FrameUtilsTest extends TestUtil {
         auxFrames[i]._names[0] = catNames[i];
         mainFrame.add(auxFrames[i]);
       }
-      FrameUtils.CategoricalBinaryEncoder cbed = new FrameUtils.CategoricalBinaryEncoder(frameKey);
+      FrameUtils.CategoricalBinaryEncoder cbed = new FrameUtils.CategoricalBinaryEncoder(mainFrame);
       transformedFrame = cbed.exec().get();
       assert transformedFrame != null : "Unable to transform a frame";
 

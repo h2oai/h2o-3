@@ -96,6 +96,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "reproducible",
         "export_weights_and_biases",
         "mini_batch_size",
+        "categorical_encoding",
         "elastic_averaging",
         "elastic_averaging_moving_rate",
         "elastic_averaging_regularization"

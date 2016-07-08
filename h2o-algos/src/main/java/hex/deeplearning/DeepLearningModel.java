@@ -39,7 +39,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * 3) variable importances (TwoDimTable)
    */
   public static class DeepLearningModelOutput extends Model.Output {
-    public DeepLearningModelOutput() { super(); autoencoder = false;}
     public DeepLearningModelOutput(DeepLearning b) {
       super(b);
       autoencoder = b._parms._autoencoder;
@@ -761,12 +760,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if (layer < 0 || layer >= model_info().get_params()._hidden.length)
       throw new H2OIllegalArgumentException("hidden layer (index) to extract must be between " + 0 + " and " + (model_info().get_params()._hidden.length-1),"");
     final int len = _output.nfeatures();
-    Vec resp = null;
     if (isSupervised()) {
       int ridx = frame.find(_output.responseName());
       if (ridx != -1) { // drop the response for scoring!
         frame = new Frame(frame);
-        resp = frame.vecs()[ridx];
         frame.remove(ridx);
       }
     }
@@ -778,7 +775,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
-    adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, get_params().missingColumnsType(), true, true,_output.interactions());
+    adaptTestForTrain(adaptFrm, null, null, _output._names, _output._domains, get_params(), true, true, _output.interactions());
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
@@ -805,7 +802,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     // Return just the output columns
     int x=_output._names.length, y=adaptFrm.numCols();
     Frame ret = adaptFrm.extractFrame(x, y);
-//    if (resp != null) ret.prepend(_output.responseName(), resp);
     Scope.exit();
     return ret;
   }

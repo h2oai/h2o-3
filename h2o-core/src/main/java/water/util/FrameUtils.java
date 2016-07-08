@@ -152,11 +152,17 @@ public class FrameUtils {
    * See http://www.willmcginnis.com/2015/11/29/beyond-one-hot-an-exploration-of-categorical-variables/
    */
   public static class CategoricalBinaryEncoder extends Iced {
-    final Key<Frame> _frameKey;
+    final Frame _frame;
     Job<Frame> _job;
+    final String[] _skipCols;
 
-    public CategoricalBinaryEncoder(Key<Frame> dataset) {
-      _frameKey = dataset;
+    public CategoricalBinaryEncoder(Frame dataset) {
+      this(dataset,null);
+    }
+
+    public CategoricalBinaryEncoder(Frame dataset, String[] skipCols) {
+      _frame = dataset;
+      _skipCols = skipCols;
     }
 
     /**
@@ -165,7 +171,8 @@ public class FrameUtils {
     class CategoricalBinaryEncoderDriver extends H2O.H2OCountedCompleter {
       final Frame _frame;
       final Key<Frame> _destKey;
-      CategoricalBinaryEncoderDriver(Frame frame, Key<Frame> destKey) { _frame = frame; _destKey = destKey; }
+      final String[] _skipCols;
+      CategoricalBinaryEncoderDriver(Frame frame, Key<Frame> destKey, String[] skipCols) { _frame = frame; _destKey = destKey; _skipCols = skipCols; }
 
       class BinaryConverter extends MRTask<BinaryConverter> {
         int[] _categorySizes;
@@ -192,15 +199,22 @@ public class FrameUtils {
       @Override public void compute2() {
         Vec[] frameVecs = _frame.vecs();
         int numCategoricals = 0;
-        for (Vec v : frameVecs)
-          if (v.isCategorical())
+        for (int i=0;i<frameVecs.length;++i)
+          if (frameVecs[i].isCategorical() && ArrayUtils.find(_skipCols, _frame._names[i])==-1)
             numCategoricals++;
+
+        Vec[] extraVecs = new Vec[_skipCols.length];
+        for (int i=0; i< extraVecs.length; ++i) {
+          Vec v = _frame.vec(_skipCols[i]); //can be null
+          if (v!=null) extraVecs[i] = v; //.makeCopy();
+        }
 
         Frame categoricalFrame = new Frame();
         Frame outputFrame = new Frame(_destKey);
         int[] binaryCategorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
         for (int i = 0, j = 0; i < frameVecs.length; ++i) {
+          if (ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
           int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
             categoricalFrame.add(_frame.name(i), frameVecs[i]);
@@ -208,7 +222,7 @@ public class FrameUtils {
             numOutputColumns += binaryCategorySizes[j];
             ++j;
           } else
-            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+            outputFrame.add(_frame.name(i), frameVecs[i]);//.makeCopy());
         }
         BinaryConverter mrtask = new BinaryConverter(binaryCategorySizes);
         Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
@@ -219,19 +233,22 @@ public class FrameUtils {
           }
         }
         outputFrame.add(binaryCols);
+        for (int i=0;i<extraVecs.length;++i) {
+          if (extraVecs[i]!=null)
+            outputFrame.add(_skipCols[i], extraVecs[i]);
+        }
         DKV.put(outputFrame);
         tryComplete();
       }
     }
 
     public Job<Frame> exec() {
-      final Frame frame = DKV.getGet(_frameKey);
-      if (frame == null)
-        throw new IllegalArgumentException("Invalid Frame key " + _frameKey + " (Frame doesn't exist).");
+      if (_frame == null)
+        throw new IllegalArgumentException("Frame doesn't exist.");
       Key<Frame> destKey = Key.make();
       _job = new Job<>(destKey, Frame.class.getName(), "CategoricalBinaryEncoder");
-      int workAmount = frame.lastVec().nChunks();
-      return _job.start(new CategoricalBinaryEncoderDriver(frame, destKey), workAmount);
+      int workAmount = _frame.lastVec().nChunks();
+      return _job.start(new CategoricalBinaryEncoderDriver(_frame, destKey, _skipCols), workAmount);
     }
   }
 
