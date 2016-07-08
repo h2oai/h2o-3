@@ -792,7 +792,6 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
-  transient ThreadLocal<Key> _key2 = new ThreadLocal<>();
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
   public Key chunkKey(int cidx ) {
@@ -800,18 +799,7 @@ public class Vec extends Keyed<Vec> {
   }
 
 
-  public Key chunkKey2(int cidx ) {
-    if(_key2.get() == null) {
-      byte [] bits = _key._kb.clone();
-      bits[0] = Key.CHK;
-      _key2.set(Key.make(bits));
-    }
-    Key k = _key2.get();
-    UnsafeUtils.set4(k._kb, 6, cidx); // chunk#
-    k._kb[0] = Key.CHK;
-    k.computeHash();
-    return k;
-  }
+
 
   /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
    *  actual Vec object.  Basically the index-to-key map.
@@ -838,7 +826,6 @@ public class Vec extends Keyed<Vec> {
     return val;
   }
 
-  public Chunk chunkIdx2( int cidx ) {return H2O.STORE.get(chunkKey2(cidx)).get();}
 
   private boolean checkMissing(int cidx, Value val) {
     if( val != null ) return true;
@@ -910,29 +897,6 @@ public class Vec extends Keyed<Vec> {
     long start = chunk2StartElem(cidx); // Chunk# to chunk starting element#
     Value dvec = chunkIdx(cidx);        // Chunk# to chunk data
     Chunk c = dvec.get();               // Chunk data to compression wrapper
-    long cstart = c._start;             // Read once, since racily filled in
-    Vec v = c._vec;
-    int tcidx = c._cidx;
-    if( cstart == start && v != null && tcidx == cidx)
-      return c;                       // Already filled-in
-    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
-    c._vec = this;             // Fields not filled in by unpacking from Value
-    c._start = start;          // Fields not filled in by unpacking from Value
-    c._cidx = cidx;
-    return c;
-  }
-
-
-  /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
-   *  call on every Chunk index on the same node will probably trigger an OOM!
-   *  @return Chunk for a chunk# */
-  public Chunk chunkForChunkIdx2(int cidx) {
-    long start = chunk2StartElem(cidx); // Chunk# to chunk starting element#
-    Chunk c = chunkIdx2(cidx);        // Chunk# to chunk data
-    if(c == null) {
-      System.out.println("haha");
-      c = chunkIdx2(cidx);
-    }
     long cstart = c._start;             // Read once, since racily filled in
     Vec v = c._vec;
     int tcidx = c._cidx;

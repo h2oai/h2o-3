@@ -610,7 +610,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           if( vecs[i] != null ) {
             assert _run_local || vecs[i].chunkKey(_lo).home()
               : "Chunk="+_lo+" v0="+v0+", k="+v0.chunkKey(_lo)+"   v["+i+"]="+vecs[i]+", k="+vecs[i].chunkKey(_lo);
-            bvs[i] = vecs[i].chunkForChunkIdx2(_lo);
+            bvs[i] = vecs[i].chunkForChunkIdx(_lo);
           }
 
         if(_output_types != null) {
