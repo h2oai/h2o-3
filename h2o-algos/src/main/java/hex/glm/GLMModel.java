@@ -1168,7 +1168,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j){
     // Build up the names & domains.
-    final boolean computeMetrics = adaptFrm.find(_output.responseName()) >= 0;
+    final boolean computeMetrics = adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad();
     String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
     return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);

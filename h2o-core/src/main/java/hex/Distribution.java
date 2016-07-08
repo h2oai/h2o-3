@@ -80,15 +80,15 @@ public class Distribution extends Iced {
     switch (distribution) {
       case AUTO:
       case gaussian:
-        return w * (y - f) * (y - f);
+        return w * (y - f) * (y - f); // leads to wMSE
       case huber:
         if (Math.abs(y-f) <= huberDelta) {
-          return w * (y - f) * (y - f);
+          return w * (y - f) * (y - f); // same as wMSE
         } else {
-          return (2 * w * Math.abs(y-f) - huberDelta)* huberDelta;
+          return (2 * w * Math.abs(y-f) - huberDelta)* huberDelta; //same as (2*wMAE-delta)*delta
         }
       case laplace:
-        return w * Math.abs(y-f); // weighted absolute deviance == weighted absolute error
+        return w * Math.abs(y-f); // same as wMAE
       case quantile:
         return y > f ? w*quantileAlpha*(y-f) : w*(1-quantileAlpha)*(f-y);
       case bernoulli:
@@ -140,7 +140,6 @@ public class Distribution extends Iced {
         }
       case laplace:
         return f > y ? -0.5 : 0.5;
-//        return f > y ? -1 : 1;
       case quantile:
         return y > f ? 0.5*quantileAlpha : 0.5*(quantileAlpha-1);
 //        return y > f ? quantileAlpha : quantileAlpha-1;

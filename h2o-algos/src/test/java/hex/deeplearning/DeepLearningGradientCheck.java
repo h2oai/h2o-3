@@ -23,7 +23,7 @@ public class DeepLearningGradientCheck extends TestUtil {
 
   static final float MAX_TOLERANCE = 1e-2f;
   static final float MAX_FAILED_RATIO = 0f;
-  static final float SAMPLE_RATE = 0.1f;
+  static final float SAMPLE_RATE = 0.01f;
 
   @Test
   public void gradientCheck() {
@@ -122,7 +122,8 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._momentum_start = 0.9;
                 parms._momentum_stable = 0.99;
                 parms._mini_batch_size = miniBatchSize;
-                DeepLearningModelInfo.gradientCheck = null;
+//                DeepLearningModelInfo.gradientCheck = null;
+                DeepLearningModelInfo.gradientCheck = new DeepLearningModelInfo.GradientCheck(0, 0, 0); //tell it what gradient to collect
 
                 // Build a first model; all remaining models should be equal
                 DeepLearning job = new DeepLearning(parms);
@@ -204,7 +205,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           assert (before == dl.model_info().checksum_impl());
 
                           double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
-                          DeepLearningModelInfo.gradientCheck = null;
+//                          DeepLearningModelInfo.gradientCheck = null;
 
                           // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
 //                    double actualResponse=myRow.response[0];

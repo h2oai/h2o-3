@@ -897,16 +897,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive && isSupervised()) {
-      if (_parms._categorical_encoding== Model.Parameters.CategoricalEncodingScheme.Binary) {
-        String[] skipCols = Arrays.copyOf(specialColNames(), numSpecialCols() + 1); //weight,offset,fold
-        skipCols[numSpecialCols()] = _parms._response_column; //response
-        _origNames = _train.names();
-        _origDomains = _train.domains();
-        _train = new FrameUtils.CategoricalBinaryEncoder(_train, skipCols).exec().get();
+      String[] skipCols = Arrays.copyOf(specialColNames(), numSpecialCols() + 1); //weight,offset,fold
+      skipCols[numSpecialCols()] = _parms._response_column; //response
+      Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding);
+      if (newtrain!=_train) {
+        _train = newtrain;
         DKV.remove(_train._key);
         separateFeatureVecs(); //fix up the pointers to the special vecs
-        if (_valid != null) {
-          _valid = new FrameUtils.CategoricalBinaryEncoder(_valid, skipCols).exec().get();
+      }
+      if (_valid != null) {
+        Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding);
+        if (newvalid!=_valid) {
           DKV.remove(_valid._key);
           _vresponse = _valid.vec(_parms._response_column);
         }

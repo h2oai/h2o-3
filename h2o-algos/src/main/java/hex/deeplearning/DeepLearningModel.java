@@ -368,7 +368,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
                   new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), trainPredict.anyVec()})
           ).outputFrame().anyVec();
           double huberDelta = MathUtils.computeWeightedQuantile(fTrain.vec(get_params()._weights_column), absdiff, get_params()._huber_alpha);
-          _dist.setHuberDelta(huberDelta);
+          if (model_info().gradientCheck==null) _dist.setHuberDelta(huberDelta);
         }
         trainPredict.delete();
 
@@ -1722,7 +1722,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
         }
       }
-  
+      if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
+        dl.error("_categorical_encoding", "Cannot use Enum encoding for categoricals - need numbers!");
+      }
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
         dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       }

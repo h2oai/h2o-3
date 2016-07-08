@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
+import static water.util.FrameUtils.categoricalEncoder;
 
 /**
  * A Model models reality (hopefully).
@@ -109,7 +110,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO, Enum, OneHot, Binary, Eigen
+      AUTO, Enum, Binary, Eigen
     }
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -710,8 +711,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   /**
    * @param test Frame to be adapted
-   * @param origNames Training column names before categorical column encoding - otherwise null
-   * @param origDomains Training column levels before categorical column encoding - otherwise null
+   * @param origNames Training column names before categorical column encoding - can be the same as names
+   * @param origDomains Training column levels before categorical column encoding - can be the same as domains
    * @param names Training column names
    * @param domains Training column levels
    * @param parms Model parameters
@@ -823,10 +824,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
 
-    if (expensive && catEncoding==Parameters.CategoricalEncodingScheme.Binary) {
-      Frame updated = new FrameUtils.CategoricalBinaryEncoder(test, new String[]{weights, offset, fold, response}).exec().get();
-      DKV.remove(updated._key);
-      test.restructure(updated.names(),updated.vecs());
+    if (expensive) {
+      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding);
+      if (updated!=test) {
+        DKV.remove(updated._key);
+        test.restructure(updated.names(), updated.vecs());
+      }
     }
     return msgs.toArray(new String[msgs.size()]);
   }
@@ -864,7 +867,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   
   public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    boolean computeMetrics = (!isSupervised() || adaptFr.find(_output.responseName()) != -1);
+    final boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     Frame output = predictScoreImpl(fr, adaptFr, destination_key, j); // Predict & Score
     // Log modest confusion matrices
@@ -933,7 +936,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
  
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final boolean computeMetrics = (!isSupervised() || adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
+    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
@@ -951,7 +954,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return MetricBuilder
    */
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    final boolean computeMetrics = (!isSupervised() || adaptFrm.find(_output.responseName()) != -1);
+    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
@@ -1297,7 +1300,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
     assert data.numRows()==model_predictions.numRows();
     final Frame fr = new Frame(data);
-    boolean computeMetrics = data.find(_output.responseName()) != -1;
+    boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
     try {
       String[] warns = adaptTestForTrain(fr,true, computeMetrics);
       if( warns.length > 0 )

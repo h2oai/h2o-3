@@ -8,7 +8,6 @@ import org.hamcrest.CoreMatchers;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.FrameUtils;
 
 
 /**
@@ -58,7 +57,7 @@ public class FrameUtilsTest extends TestUtil {
         auxFrames[i]._names[0] = catNames[i];
         mainFrame.add(auxFrames[i]);
       }
-      FrameUtils.CategoricalBinaryEncoder cbed = new FrameUtils.CategoricalBinaryEncoder(mainFrame);
+      FrameUtils.CategoricalBinaryEncoder cbed = new FrameUtils.CategoricalBinaryEncoder(mainFrame, null);
       transformedFrame = cbed.exec().get();
       assert transformedFrame != null : "Unable to transform a frame";
 

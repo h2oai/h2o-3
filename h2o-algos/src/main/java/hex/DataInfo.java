@@ -351,7 +351,7 @@ public class DataInfo extends Keyed<DataInfo> {
     res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
     res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
     int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
-    if(resId == -1 || adaptFrame.vec(resId).naCnt() == adaptFrame.numRows())
+    if(resId == -1 || adaptFrame.vec(resId).isBad())
       res._responses = 0;
     else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
       res._responses = 1;
