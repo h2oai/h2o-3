@@ -16,6 +16,8 @@ import java.util.*;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
+  public ToEigenVec getToEigenVec() { return null; }
+
   public Job _job;     // Job controlling this build
   /** Block till completion, and return the built model from the DKV.  Note the
    *  funny assert: the Job does NOT have to be controlling this model build,
@@ -878,7 +880,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null);
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec());
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
@@ -896,19 +898,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _vresponse = null;
     }
 
-    if (expensive && isSupervised()) {
+    if (expensive) {
       String[] skipCols = Arrays.copyOf(specialColNames(), numSpecialCols() + 1); //weight,offset,fold
       skipCols[numSpecialCols()] = _parms._response_column; //response
-      Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding);
+      Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
       if (newtrain!=_train) {
+        _origNames = _train.names();
+        _origDomains = _train.domains();
         _train = newtrain;
-        DKV.remove(_train._key);
+        Scope.track(_train);
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
-        Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding);
+        Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding, getToEigenVec());
         if (newvalid!=_valid) {
-          DKV.remove(_valid._key);
+          Scope.track(_valid);
           _vresponse = _valid.vec(_parms._response_column);
         }
       }

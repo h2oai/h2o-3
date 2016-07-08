@@ -51,7 +51,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
     double p = LinearAlgebraUtils.numColsExp(_train,true);
-    long mem_usage = (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
+    long mem_usage = _parms._svd_method == SVDParameters.Method.GramSVD ? (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)) : 1; //one gram per core
     long max_mem = hb.get_free_mem();
     if (mem_usage > max_mem) {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
@@ -460,17 +460,23 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(_job);
-      } finally {
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw t;
+      }
+      finally {
         if( model != null ) model.unlock(_job);
         if( dinfo != null ) dinfo.remove();
         if( u != null & !_parms._keep_u ) u.delete();
         if( qfrm != null ) qfrm.delete();
 
         List<Key> keep = new ArrayList<>();
-        Frame uFrm = DKV.getGet(model._output._u_key);
-        if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
-        Frame vFrm = DKV.getGet(model._output._v_key);
-        if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
+        if (model._output!=null) {
+          Frame uFrm = DKV.getGet(model._output._u_key);
+          if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
+          Frame vFrm = DKV.getGet(model._output._v_key);
+          if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
+        }
         Scope.untrack(keep.toArray(new Key[0]));
       }
     }

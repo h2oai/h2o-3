@@ -18,6 +18,7 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
             "ignore_const_cols",
             "radius_scale",
             "transform",
+            "categorical_encoding",
 //            "pca_method",
 //            "k",
 //            "max_iterations",

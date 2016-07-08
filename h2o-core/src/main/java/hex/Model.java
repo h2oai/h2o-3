@@ -66,6 +66,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public final boolean isSupervised() { return _output.isSupervised(); }
 
+  public ToEigenVec getToEigenVec() { return null; }
+
   /** Model-specific parameter class.  Each model sub-class contains
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a
@@ -110,7 +112,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       AUTO, Random, Modulo, Stratified
     }
     public enum CategoricalEncodingScheme {
-      AUTO, Enum, Binary, Eigen
+      AUTO, OneHotInternal, OneHotExplicit, Enum, Binary, Eigen
     }
     public long _seed = -1;
     public long getOrMakeRealSeed(){
@@ -707,7 +709,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactions());
+            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec());
   }
   /**
    * @param test Frame to be adapted
@@ -721,7 +723,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param interactions Column names to create pairwise interactions with
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions) throws IllegalArgumentException {
+                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -730,10 +732,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Fast path cutout: already compatible but needs work to test
     if( Arrays.equals(names,test._names) && Arrays.deepEquals(domains,tdomains) )
       return new String[0];
-    if( Arrays.equals(origNames,test._names) && Arrays.deepEquals(origDomains,tdomains) )
-      return new String[0];
-    if (origNames != null) names = origNames;
-    if (origDomains != null) domains = origDomains;
+    if( Arrays.equals(origNames,test._names) && Arrays.deepEquals(origDomains,tdomains) ) {
+      if (origNames != null) names = origNames;
+      if (origDomains != null) domains = origDomains;
+    }
 
     // create the interactions now and bolt them on to the front of the test Frame
     if( null!=interactions ) {
@@ -825,7 +827,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       test.restructure(names,vvecs,good);
 
     if (expensive) {
-      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding);
+      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
         DKV.remove(updated._key);
         test.restructure(updated.names(), updated.vecs());

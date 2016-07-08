@@ -1,22 +1,21 @@
 package hex.util;
 
 import hex.CreateFrame;
+import hex.DataInfo;
+import hex.Model;
 import hex.aggregator.Aggregator;
 import hex.aggregator.AggregatorModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.H2O;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.util.Log;
 
 public class AggregatorTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(2); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testAggregator() {
     CreateFrame cf = new CreateFrame();
@@ -37,10 +36,112 @@ public class AggregatorTest extends TestUtil {
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
+    System.out.println(output);
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
+    agg.remove();
+  }
+
+  @Test public void testAggregatorEigen() {
+    CreateFrame cf = new CreateFrame();
+    cf.rows = 1000;
+    cf.cols = 10;
+    cf.categorical_fraction = 0.6;
+    cf.integer_fraction = 0.0;
+    cf.binary_fraction = 0.0;
+    cf.real_range = 100;
+    cf.integer_range = 100;
+    cf.missing_fraction = 0.1;
+    cf.factors = 5;
+    cf.seed = 1234;
+    Frame frame = cf.execImpl().get();
+
+    Scope.enter();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._radius_scale = 1.0;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
+    agg.checkConsistency();
+    Frame output = agg._output._output_frame.get();
+    System.out.println(output);
+    Log.info("Number of exemplars: " + agg._exemplars.length);
+//    Assert.assertTrue(agg._exemplars.length==649);
+    output.remove();
+    frame.remove();
+    Scope.exit();
+    agg.remove();
+  }
+
+  @Test public void testAggregatorBinary() {
+    CreateFrame cf = new CreateFrame();
+    cf.rows = 1000;
+    cf.cols = 10;
+    cf.categorical_fraction = 0.6;
+    cf.integer_fraction = 0.0;
+    cf.binary_fraction = 0.0;
+    cf.real_range = 100;
+    cf.integer_range = 100;
+    cf.missing_fraction = 0.1;
+    cf.factors = 5;
+    cf.seed = 1234;
+    Frame frame = cf.execImpl().get();
+
+    Scope.enter();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._radius_scale = 1.0;
+    parms._transform = DataInfo.TransformType.NORMALIZE;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
+    agg.checkConsistency();
+    Frame output = agg._output._output_frame.get();
+    System.out.println(output);
+    Log.info("Number of exemplars: " + agg._exemplars.length);
+//    Assert.assertTrue(agg._exemplars.length==649);
+    output.remove();
+    frame.remove();
+    Scope.exit();
+    agg.remove();
+  }
+
+  @Test public void testAggregatorOneHot() {
+    CreateFrame cf = new CreateFrame();
+    cf.rows = 1000;
+    cf.cols = 10;
+    cf.categorical_fraction = 0.6;
+    cf.integer_fraction = 0.0;
+    cf.binary_fraction = 0.0;
+    cf.real_range = 100;
+    cf.integer_range = 100;
+    cf.missing_fraction = 0.1;
+    cf.factors = 5;
+    cf.seed = 1234;
+    Frame frame = cf.execImpl().get();
+
+    Scope.enter();
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._radius_scale = 1.0;
+    parms._transform = DataInfo.TransformType.NORMALIZE;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+    long start = System.currentTimeMillis();
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();  // 0.905
+    System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
+    agg.checkConsistency();
+    Frame output = agg._output._output_frame.get();
+    System.out.println(output);
+    Log.info("Number of exemplars: " + agg._exemplars.length);
+//    Assert.assertTrue(agg._exemplars.length==649);
+    output.remove();
+    frame.remove();
+    Scope.exit();
     agg.remove();
   }
 

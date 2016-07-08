@@ -1,10 +1,8 @@
 package hex.aggregator;
 
-import hex.DataInfo;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.pca.PCAModel;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -14,6 +12,11 @@ import water.fvec.Vec;
 import java.util.Arrays;
 
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
+
+  @Override
+  public ToEigenVec getToEigenVec() {
+    return LinearAlgebraUtils.toEigen;
+  }
 
   public static class AggregatorParameters extends Model.Parameters {
     public String algoName() { return "Aggregator"; }
@@ -65,7 +68,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     return preds;
   }
 
-  public Frame createFrameOfExemplars(Key destination_key) {
+  public Frame createFrameOfExemplars(Frame orig, Key destination_key) {
     final long[] keep = new long[_exemplars.length];
     for (int i=0;i<keep.length;++i)
       keep[i]=_exemplars[i].gid;
@@ -83,7 +86,6 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       }
     }.doAll(new Frame(new Vec[]{exAssignment, exAssignment.makeZero()}))._fr.vec(1);
 
-    Frame orig = _parms.train();
     Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
     vecs[vecs.length-1] = booleanCol;
 
@@ -99,6 +101,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       vw.set(i, _counts[i]);
     vw.close();
     res.add("counts", cnts);
+    DKV.put(destination_key, res);
     return res;
   }
 

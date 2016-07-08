@@ -4,6 +4,7 @@ import hex.*;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.schemas.DeepLearningModelV3;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.api.schemas3.ModelSchemaV3;
 import water.codegen.CodeGenerator;
@@ -31,6 +32,11 @@ import static water.H2O.technote;
  */
 
 public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
+
+  @Override
+  public ToEigenVec getToEigenVec() {
+    return LinearAlgebraUtils.toEigen;
+  }
 
   /**
    * The Deep Learning model output contains a few extra fields in addition to the metrics in Model.Output
@@ -775,7 +781,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
-    adaptTestForTrain(adaptFrm, null, null, _output._names, _output._domains, get_params(), true, false, _output.interactions());
+    adaptTestForTrain(adaptFrm, null, null, _output._names, _output._domains, get_params(), true, false, _output.interactions(), getToEigenVec());
     for (int j=0; j<features; ++j) {
       adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
     }
@@ -1725,6 +1731,9 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
         dl.error("_categorical_encoding", "Cannot use Enum encoding for categoricals - need numbers!");
       }
+      if (_categorical_encoding==CategoricalEncodingScheme.OneHotExplicit) {
+        dl.error("_categorical_encoding", "Won't use explicit Enum encoding for categoricals - it's much faster with OneHotInternal!");
+      }
       if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
         dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
       }
@@ -2123,6 +2132,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
+        if (fromParms._categorical_encoding==CategoricalEncodingScheme.AUTO) {
+          if (!fromParms._quiet_mode)
+            Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
+          toParms._categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
+         }
         if (fromParms._adaptive_rate) {
           if (!fromParms._quiet_mode)
             Log.info("_adaptive_rate: Using automatic learning rate. Ignoring the following input parameters: "

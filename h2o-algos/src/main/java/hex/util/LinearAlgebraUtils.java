@@ -4,7 +4,12 @@ import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import hex.DataInfo;
 import hex.FrameTask;
+import hex.Model;
+import hex.ToEigenVec;
 import hex.gram.Gram;
+import hex.pca.PCA;
+import hex.pca.PCAModel;
+import water.DKV;
 import water.Job;
 import water.Key;
 import water.MRTask;
@@ -347,4 +352,29 @@ public class LinearAlgebraUtils {
       cols += (vec.isCategorical() && vec.domain() != null) ? vec.domain().length - uAFL : 1;
     return cols;
   }
+
+  public static Vec toEigen(Vec src) {
+    Frame train = new Frame(Key.make(), new String[]{"enum"}, new Vec[]{src});
+    DKV.put(train);
+    PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
+    parms._train = train._key;
+    parms._k = 1;
+    parms._max_iterations = 10;
+    parms._transform = DataInfo.TransformType.NONE;
+    parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
+    parms._impute_missing = true;
+    parms._use_all_factor_levels = false;
+    parms._compute_metrics = false;
+    parms._pca_method = src.cardinality() <= 1000 ? PCAModel.PCAParameters.Method.GramSVD : PCAModel.PCAParameters.Method.Power;
+    PCAModel model = new PCA(parms).trainModel().get();
+    Frame score = model.score(train);
+    model.remove();
+    Vec ret = score.vec(0).makeCopy();
+    DKV.remove(train._key);
+    score.remove();
+    return ret;
+  }
+  public static ToEigenVec toEigen = new ToEigenVec() {
+    @Override public Vec toEigenVec(Vec src) { return toEigen(src); }
+  };
 }
