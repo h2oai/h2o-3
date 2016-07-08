@@ -67,7 +67,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  smarts (done by the big data Chunks) nor de-dup smarts (done by the
    *  nature of a K/V).  This is just a local placeholder for some user bits
    *  being held at this local Node. */
-  public int _max;
+  public int _max = -1;
 
   // ---
   // A array of this Value when cached in DRAM, or NULL if not cached.  The
@@ -113,8 +113,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     byte[] mem = _mem;          // Read once!
     if( mem != null ) return mem;
     Freezable pojo = _pojo;     // Read once!
-    if( pojo != null )          // Has the POJO, make raw bytes
-      return _mem = pojo.asBytes();
+    if( pojo != null ) {          // Has the POJO, return raw bytes but do not cache (we already have pojo which trumps raw bytes)
+      byte [] res = pojo.asBytes();
+      _max = res.length;
+      return res;
+    }
     if( _max == 0 ) return (_mem = new byte[0]);
     return (_mem = loadPersist());
   }
@@ -130,7 +133,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Iced pojo = (Iced)_pojo;    // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newInstance(_type);
-    return (T)(_pojo = pojo.reloadFromBytes(memOrLoad()));
+    _pojo = pojo.reloadFromBytes(memOrLoad());
+    freeMem(); // have pojo, do not need the bytes anymore (avoid doubling the data)
+    return (T)_pojo;
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.  This
@@ -142,7 +147,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return pojo;
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
-   *  Will (re)build the POJO from the _mem array.  Never returns NULL.  
+   *  Will (re)build the POJO from the _mem array.  Never returns NULL.
    *  @return The POJO, probably the cached instance.  */
   public final <T extends Freezable> T getFreezable() {
     touch();
@@ -150,7 +155,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newFreezable(_type);
     pojo.reloadFromBytes(memOrLoad());
-    return (T)(_pojo = pojo);
+    _pojo = pojo;
+    freeMem();
+    return (T)_pojo;
   }
 
   // ---
@@ -314,9 +321,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.asBytes();
-    _max = _mem.length;
-    assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
+//    assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
     // For the ICE backend, assume new values are not-yet-written.
     // For HDFS & NFS backends, assume we from global data and preserve the
     // passed-in persist bits
@@ -331,8 +336,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.asBytes();
-    _max = _mem.length;
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
     _rwlock = new AtomicInteger(1);
