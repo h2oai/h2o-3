@@ -139,6 +139,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public String _offset_column;
     public String _fold_column;
 
+    public boolean _is_cv_model; //internal helper
+
     // Scoring a model on a dataset is not free; sometimes it is THE limiting
     // factor to model building.  By default, partially built models are only
     // scored every so many major model iterations - throttled to limit scoring
@@ -709,8 +711,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec());
+            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec(), _toDelete);
   }
+
   /**
    * @param test Frame to be adapted
    * @param origNames Training column names before categorical column encoding - can be the same as names
@@ -723,7 +726,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param interactions Column names to create pairwise interactions with
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev) throws IllegalArgumentException {
+                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev,
+                                           IcedHashMap<Key, StackTraceElement[]> toDelete) throws IllegalArgumentException {
     if( test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -829,12 +833,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
-        DKV.remove(updated._key);
+        if (toDelete!=null) toDelete.put(updated._key, Thread.currentThread().getStackTrace());
         test.restructure(updated.names(), updated.vecs());
       }
     }
     return msgs.toArray(new String[msgs.size()]);
   }
+
+  private IcedHashMap<Key,StackTraceElement[]> _toDelete = new IcedHashMap<>();
 
   /**
    * Bulk score the frame, and auto-name the resulting predictions frame.
@@ -1075,6 +1081,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         k.remove(fs);
+    FrameUtils.cleanUp(_toDelete);
     return super.remove_impl(fs);
   }
 

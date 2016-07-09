@@ -18,6 +18,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public ToEigenVec getToEigenVec() { return null; }
 
+  private IcedHashMap<Key,StackTraceElement[]> _toDelete = new IcedHashMap<>();
+  void cleanUp() { FrameUtils.cleanUp(_toDelete); }
+
   public Job _job;     // Job controlling this build
   /** Block till completion, and return the built model from the DKV.  Note the
    *  funny assert: the Job does NOT have to be controlling this model build,
@@ -272,6 +275,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 6: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
+
+
+      // Step 7: Clean up potentially created temp frames
+      for (ModelBuilder mb : cvModelBuilders)
+        mb.cleanUp();
+      cleanUp();
+
       _job.setReadyForView(true);
       DKV.put(_job);
 
@@ -361,6 +371,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
+      cv_mb._parms._is_cv_model = true;
       cv_mb._parms._weights_column = weightName;// All submodels have a weight column, which the main model does not
       cv_mb._parms._train = cvTrain._key;       // All submodels have a weight column, which the main model does not
       cv_mb._parms._valid = cvValid._key;
@@ -417,7 +428,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions) {
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions || (nclasses()==1 && _parms._distribution==Distribution.Family.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, null);
       }
@@ -455,7 +466,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
     Frame holdoutPreds = null;
-    if (_parms._keep_cross_validation_predictions || nclasses()==2 /*GainsLift needs this*/) {
+    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution== Distribution.Family.huber)) {
       Key cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
       if (_parms._keep_cross_validation_predictions) //only show the user if they asked for it
         mainModel._output._cross_validation_holdout_predictions_frame_id = cvhp;
@@ -880,7 +891,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec());
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
@@ -903,16 +914,25 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       skipCols[numSpecialCols()] = _parms._response_column; //response
       Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
       if (newtrain!=_train) {
+        assert(newtrain._key!=null);
         _origNames = _train.names();
         _origDomains = _train.domains();
         _train = newtrain;
-        Scope.track(_train);
+        if (!_parms._is_cv_model)
+          Scope.track(_train);
+        else
+          _toDelete.put(_train._key, Thread.currentThread().getStackTrace());
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
         Frame newvalid = FrameUtils.categoricalEncoder(_valid, skipCols, _parms._categorical_encoding, getToEigenVec());
         if (newvalid!=_valid) {
-          Scope.track(_valid);
+          assert(newvalid._key!=null);
+          _valid=newvalid;
+          if (!_parms._is_cv_model)
+            Scope.track(_valid); //for CV, need to score one more time in outer loop
+          else
+            _toDelete.put(_valid._key, Thread.currentThread().getStackTrace());
           _vresponse = _valid.vec(_parms._response_column);
         }
       }

@@ -58,7 +58,6 @@ public class AggregatorTest extends TestUtil {
     cf.seed = 1234;
     Frame frame = cf.execImpl().get();
 
-    Scope.enter();
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 1.0;
@@ -73,7 +72,6 @@ public class AggregatorTest extends TestUtil {
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
     frame.remove();
-    Scope.exit();
     agg.remove();
   }
 
@@ -91,7 +89,6 @@ public class AggregatorTest extends TestUtil {
     cf.seed = 1234;
     Frame frame = cf.execImpl().get();
 
-    Scope.enter();
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 1.0;
@@ -107,7 +104,6 @@ public class AggregatorTest extends TestUtil {
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
     frame.remove();
-    Scope.exit();
     agg.remove();
   }
 
@@ -125,7 +121,6 @@ public class AggregatorTest extends TestUtil {
     cf.seed = 1234;
     Frame frame = cf.execImpl().get();
 
-    Scope.enter();
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._radius_scale = 1.0;
@@ -141,7 +136,6 @@ public class AggregatorTest extends TestUtil {
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
     frame.remove();
-    Scope.exit();
     agg.remove();
   }
 

@@ -2,9 +2,7 @@ package water.util;
 
 import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import hex.Model;
 import hex.ToEigenVec;
@@ -581,5 +579,14 @@ public class FrameUtils {
       int workAmount = _frame.lastVec().nChunks();
       return _job.start(new CategoricalEigenEncoderDriver(_tev, _frame, destKey, _skipCols), workAmount);
     }
+  }
+
+  static public void cleanUp(IcedHashMap<Key, StackTraceElement[]> toDelete) {
+    Futures fs = new Futures();
+    for (Key k : toDelete.keySet()) {
+      k.remove(fs);
+    }
+    fs.blockForPending();
+    toDelete.clear();
   }
 }

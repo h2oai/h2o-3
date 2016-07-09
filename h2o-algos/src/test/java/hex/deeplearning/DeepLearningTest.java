@@ -1,10 +1,7 @@
 package hex.deeplearning;
 
 
-import hex.Distribution;
-import hex.ModelMetricsAutoEncoder;
-import hex.ModelMetricsRegression;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -1892,5 +1889,156 @@ public class DeepLearningTest extends TestUtil {
       if (dl != null) dl.delete();
     }
   }
+
+  @Test
+  public void testCategoricalEncodingAUTO() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      Vec v = tfr.remove("survived");
+      tfr.add("survived", v.toCategoricalVec());
+      v.remove();
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._valid = tfr._key;
+      parms._response_column = "survived";
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._nfolds = 3;
+      parms._distribution = bernoulli;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(0.97329 , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-3);
+      Assert.assertEquals(0.97329 , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
+      Assert.assertEquals(0.93152165, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testCategoricalEncodingBinary() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      String response = "survived";
+      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      if (tfr.vec(response).isBinary()) {
+        Vec v = tfr.remove(response);
+        tfr.add(response, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._valid = tfr._key;
+      parms._response_column = response;
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._nfolds = 3;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.86556613, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.86556613, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
+
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testCategoricalEncodingEigen() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      String response = "survived";
+      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      if (tfr.vec(response).isBinary()) {
+        Vec v = tfr.remove(response);
+        tfr.add(response, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._valid = tfr._key;
+      parms._response_column = response;
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._nfolds = 3;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(0.94905686, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.94905686, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.90714833, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.90714833, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
+
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testCategoricalEncodingRegressionHuber() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      String response = "age";
+      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      if (tfr.vec(response).isBinary()) {
+        Vec v = tfr.remove(response);
+        tfr.add(response, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._valid = tfr._key;
+      parms._response_column = response;
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._nfolds = 3;
+      parms._distribution = huber;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(122.1590512, ((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(122.1590512, ((ModelMetricsRegression)dl._output._validation_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(165.93782, ((ModelMetricsRegression)dl._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(165.93782, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(2,0)), 1);
+
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (dl != null) dl.deleteCrossValidationModels();
+      if (dl != null) dl.delete();
+    }
+  }
+
 }
 
