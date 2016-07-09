@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Overview
-^^^^^^^^
+Welcome to H2O 3
+^^^^^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 3
