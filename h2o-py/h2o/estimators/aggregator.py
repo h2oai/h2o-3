@@ -38,12 +38,16 @@ class H2OAggregatorEstimator(H2OEstimator):
         Transformation of training data
         Default: "NORMALIZE"
 
+      categorical_encoding : "AUTO" | "Enum" | "OneHotInternal" | "OneHotExplicit" | "Binary" | "Eigen"
+        Encoding scheme for categorical features
+        Default: "AUTO"
+
     """
     def __init__(self, **kwargs):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
         for name in ["model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                     "radius_scale", "transform"]:
+                     "radius_scale", "transform", "categorical_encoding"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
 
@@ -94,4 +98,12 @@ class H2OAggregatorEstimator(H2OEstimator):
     @transform.setter
     def transform(self, value):
         self._parms["transform"] = value
+
+    @property
+    def categorical_encoding(self):
+        return self._parms["categorical_encoding"]
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, value):
+        self._parms["categorical_encoding"] = value
 

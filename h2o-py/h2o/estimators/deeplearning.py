@@ -347,6 +347,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).
         Default: 1
 
+      categorical_encoding : "AUTO" | "Enum" | "OneHotInternal" | "OneHotExplicit" | "Binary" | "Eigen"
+        Encoding scheme for categorical features
+        Default: "AUTO"
+
       elastic_averaging : bool
         Elastic averaging between compute nodes can improve distributed model convergence. #Experimental
         Default: False
@@ -390,7 +394,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                      "force_load_balance", "variable_importances", "replicate_training_data", "single_node_mode",
                      "shuffle_training_data", "missing_values_handling", "quiet_mode", "autoencoder", "sparse",
                      "col_major", "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
-                     "export_weights_and_biases", "mini_batch_size", "elastic_averaging",
+                     "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
                      "elastic_averaging_moving_rate", "elastic_averaging_regularization"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
@@ -1051,6 +1055,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @mini_batch_size.setter
     def mini_batch_size(self, value):
         self._parms["mini_batch_size"] = value
+
+    @property
+    def categorical_encoding(self):
+        return self._parms["categorical_encoding"]
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, value):
+        self._parms["categorical_encoding"] = value
 
     @property
     def elastic_averaging(self):
