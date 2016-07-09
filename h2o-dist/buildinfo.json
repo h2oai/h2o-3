@@ -114,12 +114,12 @@
         {
             "name" : "Sparkling Water Readme",
             "id"   : "doc-sparkling-water",
-            "path" : "docs-website/h2o-docs/index.html#Welcome%20to%20H2O%203.0-Sparkling%20Water%20Users"
+            "path" : "https://github.com/h2oai/sparkling-water/blob/master/README.md"
         },
         {
-            "name" : "Migrating to H2O 3.0",
+            "name" : "Migrating to H2O 3",
             "id"   : "doc-migration",
-            "path" : "docs-website/h2o-docs/index.html#Migrating%20to%20H2O%203.0"
+            "path" : "docs-website/h2o-docs/Migration.html"
         }
     ],
 
