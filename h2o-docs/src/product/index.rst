@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Overview
-=====================================
+^^^^^^^^
 
 .. toctree::
    :maxdepth: 3
@@ -12,7 +12,7 @@ Overview
    SiteIntro
    
 Architecture
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 3
