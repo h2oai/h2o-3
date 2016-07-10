@@ -85,7 +85,7 @@ public class VecUtils {
             nc.addNA();
           } else {
             c.atStr(bs, row);
-            nc.addCategorical(lookupTable.get(bs.bytesToString()));
+            nc.addNum(lookupTable.get(bs.bytesToString()), 0);
           }
         }
       }
