@@ -85,7 +85,7 @@ public class Distribution extends Iced {
         if (Math.abs(y-f) <= huberDelta) {
           return w * (y - f) * (y - f); // same as wMSE
         } else {
-          return (2 * w * Math.abs(y-f) - huberDelta)* huberDelta; //same as (2*wMAE-delta)*delta
+          return 2 * w * (Math.abs(y-f) - huberDelta)*huberDelta; // note quite the same as wMAE
         }
       case laplace:
         return w * Math.abs(y-f); // same as wMAE

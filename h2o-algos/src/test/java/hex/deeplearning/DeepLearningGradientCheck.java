@@ -330,9 +330,9 @@ public class DeepLearningGradientCheck extends TestUtil {
           Distribution d = new Distribution(p);
           double f = (i+0.5)/N; // avoid issues at 0
           double grad = -2*d.negHalfGradient(y, f); //f in link space (model space)
-          double approxgrad = (d.deviance(1,y,d.linkInv(f+eps)) - d.deviance(1,y,d.linkInv(f-eps)))/(2*eps); //deviance in real space
+          double w = rng.nextDouble()*10;
+          double approxgrad = (d.deviance(w,y,d.linkInv(f+eps)) - d.deviance(w,y,d.linkInv(f-eps)))/(2*eps*w); //deviance in real space
           assert(Math.abs(grad - approxgrad) <= 1e-4);
-
         }
       }
     }
