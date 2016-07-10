@@ -1861,6 +1861,7 @@ public class DeepLearningTest extends TestUtil {
       dl = new DeepLearning(parms).trainModel().get();
 
       double delta = 0.011996;
+      // can compute huber loss from MAE since no obs weights
       Assert.assertEquals((2*2.31398/*MAE*/-delta)*delta,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,2e-2);
       Assert.assertEquals(19.856,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-3);
 
@@ -1888,7 +1889,7 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(8.54210618691587,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
+      Assert.assertEquals(6.4964976811,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -2035,10 +2036,10 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(122.1590512, ((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
-      Assert.assertEquals(122.1590512, ((ModelMetricsRegression)dl._output._validation_metrics)._mean_residual_deviance,1e-4);
-      Assert.assertEquals(165.93782, ((ModelMetricsRegression)dl._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
-      Assert.assertEquals(165.93782, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(2,0)), 1);
+      Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._validation_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(117.8014, ((ModelMetricsRegression)dl._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(2,0)), 1);
 
     } finally {
       if (tfr != null) tfr.remove();

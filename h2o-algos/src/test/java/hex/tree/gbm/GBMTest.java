@@ -2499,7 +2499,7 @@ public class GBMTest extends TestUtil {
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
       Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._MSE - 1485) < 1);
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 290.87) < 1);
+      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 256.88) < 1);
 
     } finally {
       parms._train.remove();
@@ -2605,7 +2605,7 @@ public class GBMTest extends TestUtil {
 
       Assert.assertEquals(8.05716257,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,0.3);
 
-      // Huber loss can be derived from MAE
+      // Huber loss can be derived from MAE since no obs weights
       double delta = 0.0047234; //hardcoded from output
       double MAE = 1.42298; //see laplace above
       Assert.assertEquals((2*MAE-delta)*delta,((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,2e-4);
@@ -2634,7 +2634,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       Assert.assertEquals(4.447062185,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
-      Assert.assertEquals(2.4882489,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(1.962926332,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
 
     } finally {
       if (tfr != null) tfr.delete();
