@@ -26,9 +26,9 @@ function cleanup () {
   RC=`cat $OUTDIR/status.0`
   if [ $RC -ne 0 ]; then
     cat $OUTDIR/out.0
-    echo h2o-scala junit tests FAILED
+    echo $PROJECT_NAME junit tests FAILED
   else
-    echo h2o-scala junit tests PASSED
+    echo $PROJECT_NAME junit tests PASSED
   fi
   exit $RC
 }
@@ -68,7 +68,7 @@ fi
 
 
 # Command to invoke test
-JVM="nice $JAVA_CMD $COVERAGE -ea -cp build/libs/h2o-scala_2.10.jar${SEP}build/libs/h2o-scala_2.10-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -Djunit.reports.dir="$BUILD_DIR/test-results" -ea -cp build/${PROJECT_NAME}/libs/${PROJECT_NAME}.jar${SEP}build/${PROJECT_NAME}/libs/${PROJECT_NAME}-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Runner

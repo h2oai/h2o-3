@@ -1,9 +1,22 @@
 apply plugin: 'scala'
 
-// Specify properties
-ext {
-  scalaBinaryVersion = '2.10'
-  scalaVersion = '2.10.4'
+//
+// The Scala module expects scalaVersion and scalaBaseVersion
+// to be setup as extension properties on this project.
+//
+
+// Setup additional sources
+sourceSets {
+    main {
+        scala {
+            srcDir "src/main/scala_$scalaBaseVersion"
+        }
+    }
+    test {
+        scala {
+            srcDirs "src/test/scala_$scalaBaseVersion"
+        }
+    }
 }
 
 // Activate Zinc compiler and configure scalac
@@ -13,19 +26,14 @@ tasks.withType(ScalaCompile) {
     scalaCompileOptions.additionalParameters = ['-target:jvm-1.6']
 }
 
-jar {
-  baseName = "${project.name}_${scalaBinaryVersion}"
-}
-
 // Create jar
 task testJar(type: Jar, dependsOn: testClasses) {
-    baseName = "${project.name}_${scalaBinaryVersion}"
     appendix = 'test'
     from sourceSets.test.output
 }
 
 // Create jar with scaladoc
-task scaladocJar(type: Jar, dependsOn: scaladoc) {
+task scaladocJar(type: Jar) {
     classifier = 'scaladoc'
     from scaladoc
 }
