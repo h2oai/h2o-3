@@ -1,11 +1,9 @@
 package hex.aggregator;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ToEigenVec;
+import hex.*;
 import hex.util.LinearAlgebraUtils;
 import water.*;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -97,15 +95,20 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
   @Override
   public void init(boolean expensive) {
+    if (expensive && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO){
+      _parms._categorical_encoding=Model.Parameters.CategoricalEncodingScheme.Eigen;
+    }
     super.init(expensive);
     if (expensive) {
       byte[] types = _train.types();
       for (byte b : types) {
         if (b != Vec.T_NUM) {
-          error("_categorical_encoding", "Categorical features must be turned into numeric features. Specify categorical_encoding=\"Eigen\" or \"Binary\"");
+          error("_categorical_encoding", "Categorical features must be turned into numeric features. Specify categorical_encoding=\"Eigen\", \"OneHotExplicit\" or \"Binary\"");
         }
       }
     }
+    if (error_count() > 0)
+      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(Aggregator.this);
   }
 
   class AggregatorDriver extends Driver {
