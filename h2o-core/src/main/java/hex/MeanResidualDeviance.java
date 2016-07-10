@@ -1,12 +1,10 @@
 package hex;
 
-import water.*;
-import water.fvec.C0DChunk;
+import water.Iced;
+import water.MRTask;
+import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.PrettyPrint;
-import water.util.TwoDimTable;
 
 public class MeanResidualDeviance extends Iced {
 
@@ -62,7 +60,7 @@ public class MeanResidualDeviance extends Iced {
     return this;
   }
 
-  // Compute Gains table via MRTask
+  // Compute Mean Residual Deviance table via MRTask
   public static class MeanResidualBuilder extends MRTask<MeanResidualBuilder> {
     public double _mean_residual_deviance;
     private double _wcount;
@@ -70,7 +68,7 @@ public class MeanResidualDeviance extends Iced {
 
     MeanResidualBuilder(Distribution dist) { _dist = dist; }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,new C0DChunk(1.0, ca.len())); }
+    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
     @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
       _mean_residual_deviance=0;
       _wcount=0;
@@ -80,7 +78,7 @@ public class MeanResidualDeviance extends Iced {
         if (cp.isNA(i)) continue;
         final double a = ca.atd(i);
         final double pr = cp.atd(i);
-        final double w = cw.atd(i);
+        final double w = cw!=null?cw.atd(i):1;
         perRow(pr, a, w);
       }
     }

@@ -1109,6 +1109,7 @@ public class DeepLearningTest extends TestUtil {
     }) {
       Frame tfr = null;
       DeepLearningModel dl = null;
+      Frame pred = null;
 
       try {
         tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
@@ -1143,11 +1144,17 @@ public class DeepLearningTest extends TestUtil {
 //          assertTrue(de.getMessage().contains("Trying to predict with an unstable model."));
         }
         dl = DKV.getGet(job.dest());
+        try {
+          pred = dl.score(tfr);
+        } catch ( RuntimeException ex) {
+          // OK
+        }
         assertTrue(dl.model_info().isUnstable());
         assertTrue(dl._output._job.isCrashed());
       } finally {
         if (tfr != null) tfr.delete();
         if (dl != null) dl.delete();
+        if (pred != null) pred.delete();
       }
     }
   }

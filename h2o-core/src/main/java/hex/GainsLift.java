@@ -3,7 +3,6 @@ package hex;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.*;
-import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -203,7 +202,7 @@ public class GainsLift extends Iced {
       _thresh = thresh.clone();
     }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,new C0DChunk(1.0, ca.len())); }
+    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
     @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
@@ -215,7 +214,7 @@ public class GainsLift extends Iced {
         if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
         if (cp.isNA(i)) continue;
         final double pr = cp.atd(i);
-        final double w = cw.atd(i);
+        final double w = cw!=null?cw.atd(i):1;
         perRow(pr, a, w);
       }
     }

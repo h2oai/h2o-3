@@ -17,7 +17,9 @@ import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static water.util.MRUtils.sampleFrame;
 import static water.util.MRUtils.sampleFrameStratified;

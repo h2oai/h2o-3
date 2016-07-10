@@ -281,12 +281,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   /**
    * Score this DeepLearning model
    * @param fTrain potentially downsampled training data for scoring
-   * @param fTest  potentially downsampled validation data for scoring
+   * @param fValid  potentially downsampled validation data for scoring
    * @param jobKey key of the owning job
    * @param iteration Map/Reduce iteration count
    * @return true if model building is ongoing
    */
-  boolean doScoring(Frame fTrain, Frame fTest, Key<Job> jobKey, int iteration, boolean finalScoring) {
+  boolean doScoring(Frame fTrain, Frame fValid, Key<Job> jobKey, int iteration, boolean finalScoring) {
     final long now = System.currentTimeMillis();
     final double time_since_last_iter = now - _timeLastIterationEnter;
     updateTiming(jobKey);
@@ -328,7 +328,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     if( !keep_running || get_params()._score_each_iteration ||
         (sinceLastScore > get_params()._score_interval *1000 //don't score too often
             &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
-      jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fTest != null ? (", " + fTest.numRows() + " validation samples") : ""));
+      jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fValid != null ? (", " + fValid.numRows() + " validation samples") : ""));
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
       model_info().computeStats(); //might not be necessary, but is done to be certain that numbers are good
@@ -341,7 +341,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       scoringInfo.epoch_counter = epoch_counter;
       scoringInfo.iterations = iterations;
       scoringInfo.training_samples = (double)model_info().get_processed_total();
-      scoringInfo.validation = fTest != null;
+      scoringInfo.validation = fValid != null;
       scoringInfo.score_training_samples = fTrain.numRows();
       scoringInfo.is_classification = _output.isClassifier();
       scoringInfo.is_autoencoder = _output.isAutoencoder();
@@ -356,10 +356,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           _output._training_metrics = mtrain;
           scoringInfo.scored_train = new ScoreKeeper(mtrain);
         }
-        if (fTest != null) {
-          final Frame mse_frame = scoreAutoEncoder(fTest, Key.make(), false);
+        if (fValid != null) {
+          final Frame mse_frame = scoreAutoEncoder(fValid, Key.make(), false);
           mse_frame.delete();
-          ModelMetrics mtest = ModelMetrics.getFromDKV(this, fTest); //updated by model.score
+          ModelMetrics mtest = ModelMetrics.getFromDKV(this, fValid); //updated by model.score
           _output._validation_metrics = mtest;
           scoringInfo.scored_valid = new ScoreKeeper(mtest);
         }
@@ -368,20 +368,32 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         // compute errors
         final String m = model_info().toString();
         if (m.length() > 0) Log.info(m);
-        final Frame trainPredict = score(fTrain);
-        if (get_params()._distribution == Distribution.Family.huber) {
-          Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
-                  new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), trainPredict.anyVec()})
-          ).outputFrame().anyVec();
-          double huberDelta = MathUtils.computeWeightedQuantile(fTrain.vec(get_params()._weights_column), absdiff, get_params()._huber_alpha);
-          if (model_info().gradientCheck==null) _dist.setHuberDelta(huberDelta);
-        }
-        trainPredict.delete();
 
-        hex.ModelMetrics mtrain = ModelMetrics.getFromDKV(this, fTrain);
+        // For GainsLift and Huber, we need the full predictions to compute the model metrics
+        boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ || get_params()._distribution==Distribution.Family.huber;
+
+        // Scoring on training data
+        hex.ModelMetrics mtrain;
+        Frame preds = null;
+        if (needPreds) {
+          // allocate predictions since they are needed
+          preds = score(fTrain);
+          mtrain = ModelMetrics.getFromDKV(this, fTrain);
+          if (get_params()._distribution == Distribution.Family.huber) {
+            Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
+                new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), preds.anyVec()})
+            ).outputFrame().anyVec();
+            double huberDelta = MathUtils.computeWeightedQuantile(fTrain.vec(get_params()._weights_column), absdiff, get_params()._huber_alpha);
+            if (model_info().gradientCheck==null) _dist.setHuberDelta(huberDelta);
+          }
+        } else {
+          // no need to allocate predictions
+          ModelMetrics.MetricBuilder mb = scoreMetrics(fTrain);
+          mtrain = mb.makeModelMetrics(this,fTrain,fTrain,null);
+        }
+        if (preds!=null) preds.remove();
         _output._training_metrics = mtrain;
         scoringInfo.scored_train = new ScoreKeeper(mtrain);
-        hex.ModelMetrics mtest;
         hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)mtrain;
         if (mm1 instanceof ModelMetricsBinomial) {
           ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
@@ -395,23 +407,33 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           _output._training_metrics._description = "Metrics reported on full training frame";
         }
 
-        if (fTest != null) {
-          Frame validPred = score(fTest);
-          validPred.delete();
-          mtest = ModelMetrics.getFromDKV(this, fTest);
-          _output._validation_metrics = mtest;
-          scoringInfo.scored_valid = new ScoreKeeper(mtest);
-          if (mtest != null) {
-            if (mtest instanceof ModelMetricsBinomial) {
-              ModelMetricsBinomial mm = (ModelMetricsBinomial)mtest;
+        // Scoring on validation data
+        hex.ModelMetrics mvalid;
+        if (fValid != null) {
+          preds = null;
+          if (needPreds) {
+            // allocate predictions since they are needed
+            preds = score(fValid);
+            mvalid = ModelMetrics.getFromDKV(this, fValid);
+          } else {
+            // no need to allocate predictions
+            ModelMetrics.MetricBuilder mb = scoreMetrics(fValid);
+            mvalid = mb.makeModelMetrics(this, fValid, fValid,null);
+          }
+          if (preds!=null) preds.remove();
+          _output._validation_metrics = mvalid;
+          scoringInfo.scored_valid = new ScoreKeeper(mvalid);
+          if (mvalid != null) {
+            if (mvalid instanceof ModelMetricsBinomial) {
+              ModelMetricsBinomial mm = (ModelMetricsBinomial) mvalid;
               scoringInfo.validation_AUC = mm._auc;
             }
-            if (fTest.numRows() != validation_rows) {
-              _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + fTest.numRows() + " samples";
+            if (fValid.numRows() != validation_rows) {
+              _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + fValid.numRows() + " samples";
               if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
                 _output._validation_metrics._description += " (stratified sampling)";
               }
-            } else if (fTest._key != null && fTest._key.toString().contains("chunks")){
+            } else if (fValid._key != null && fValid._key.toString().contains("chunks")){
               _output._validation_metrics._description = "Metrics reported on temporary (load-balanced) validation frame";
             } else {
               _output._validation_metrics._description = "Metrics reported on full validation frame";

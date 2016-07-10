@@ -1,6 +1,5 @@
 package hex;
 
-import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -158,32 +157,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
-    @Override public void onCompletion(CountedCompleter caller) {
-      try { dest().get()._output.stopClock(); } catch(Throwable t) {}
-    }
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
     // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
     // 2) Train/Valid frame locking and unlocking
     // 3) calling tryComplete()
     public void compute2() {
-      boolean exceptional=false;
       try {
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
-      } catch(Throwable t) {
-        exceptional=true;
-        throw t;
       } finally {
-        if (dest() != null && dest().get() != null && dest().get()._output != null) {
-          dest().get()._output._job = _job;
-        }
+        setFinalState();
         _parms.read_unlock_frames(_job);
         Scope.exit();
       }
-      if (!exceptional) tryComplete();
+      tryComplete();
     }
     public abstract void computeImpl();
+  }
+
+  private void setFinalState() {
+    if (dest() != null && dest().get() != null && dest().get()._output != null) {
+      dest().get()._output._job = _job;
+      dest().get()._output.stopClock();
+    }
   }
   
   /** Method to launch training of a Model, based on its parameters. */
@@ -428,7 +425,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions || (nclasses()==1 && _parms._distribution==Distribution.Family.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions || (_parms._distribution==Distribution.Family.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, null);
       }

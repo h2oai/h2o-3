@@ -3,7 +3,6 @@ package water.util;
 import hex.Interaction;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -162,14 +161,14 @@ public class Tabulate extends Keyed<Tabulate> {
 
     @Override
     public void map(Chunk x, Chunk y) {
-      map(x,y,new C0DChunk(1, x.len()));
+      map(x,y,null);
     }
     @Override
     public void map(Chunk x, Chunk y, Chunk w) {
       for (int r=0; r<x.len(); ++r) {
         int xbin = _sp.bin(0, x.atd(r));
         int ybin = _sp.bin(1, y.atd(r));
-        double weight = w.atd(r);
+        double weight = w!=null?w.atd(r):1;
         if (Double.isNaN(weight)) continue;
         AtomicUtils.DoubleArray.add(_sp._count_data[xbin], ybin, weight); //increment co-occurrence count by w
         if (!y.isNA(r)) {

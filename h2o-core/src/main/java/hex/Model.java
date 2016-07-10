@@ -22,6 +22,7 @@ import java.util.*;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import static water.util.FrameUtils.categoricalEncoder;
+import static water.util.FrameUtils.cleanUp;
 
 /**
  * A Model models reality (hopefully).
@@ -840,7 +841,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return msgs.toArray(new String[msgs.size()]);
   }
 
-  private IcedHashMap<Key,StackTraceElement[]> _toDelete = new IcedHashMap<>();
+  public IcedHashMap<Key,StackTraceElement[]> _toDelete = new IcedHashMap<>();
 
   /**
    * Bulk score the frame, and auto-name the resulting predictions frame.
@@ -902,7 +903,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
       }
     }
-
     cleanup_adapt(adaptFr, fr);
     return output;
   }
@@ -990,8 +990,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
-      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
-      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
+      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
+      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
       double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
@@ -1006,7 +1006,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       double[] preds = _mb._work;  // Sized for the union of test and train classes
       int len = chks[0]._len;
       for (int row = 0; row < len; row++) {
-        double weight = weightsChunk.atd(row);
+        double weight = weightsChunk!=null?weightsChunk.atd(row):1;
         if (weight == 0) {
           if (_makePreds) {
             for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
@@ -1014,7 +1014,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
           continue;
         }
-        double offset = offsetChunk.atd(row);
+        double offset = offsetChunk!=null?offsetChunk.atd(row):0;
         double [] p = score0(chks, weight, offset, row, tmp, preds);
         if (_computeMetrics) {
           if(isSupervised()) {
@@ -1081,7 +1081,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         k.remove(fs);
-    FrameUtils.cleanUp(_toDelete);
+    cleanUp(_toDelete);
     return super.remove_impl(fs);
   }
 
