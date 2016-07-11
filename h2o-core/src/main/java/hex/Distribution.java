@@ -166,10 +166,10 @@ public class Distribution extends Iced {
       case AUTO:
       case gaussian:
       case huber:
+      case modified_huber:
       case laplace:
       case quantile:
         return f;
-      case modified_huber:
       case bernoulli:
         return log(f/(1-f));
       case multinomial:
@@ -192,10 +192,10 @@ public class Distribution extends Iced {
       case AUTO:
       case gaussian:
       case huber:
+      case modified_huber:
       case laplace:
       case quantile:
         return f;
-      case modified_huber:
       case bernoulli:
         return 1 / (1 + exp(-f));
       case multinomial:
@@ -218,11 +218,11 @@ public class Distribution extends Iced {
       case AUTO:
       case gaussian:
       case huber:
+      case modified_huber:
       case laplace:
       case quantile:
         return f;
       case bernoulli:
-      case modified_huber:
         return "1/(1+" + expString("-" + f) + ")";
       case multinomial:
       case poisson:

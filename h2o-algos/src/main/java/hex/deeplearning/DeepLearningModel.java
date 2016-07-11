@@ -704,7 +704,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     if (get_params()._distribution== Distribution.Family.modified_huber) {
       preds[0] = -1;
-      preds[2] = _dist.linkInv(out[0]);
+      preds[2] = new Distribution(Distribution.Family.bernoulli).linkInv(out[0]);
       preds[1] = 1-preds[2];
       return preds;
     } else if (_output.isClassifier()) {
@@ -1250,6 +1250,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
       bodySb.i(2).p("preds[1] = " + _dist.linkInvString("preds[1]") + ";").nl();
       if (_parms._distribution== Distribution.Family.modified_huber){
+        bodySb.i(2).p("preds[1] = " + new Distribution(Distribution.Family.bernoulli).linkInvString("preds[1]") + ";").nl();
         bodySb.i(2).p("preds[2] = preds[1];").nl();
         bodySb.i(2).p("preds[1] = 1-preds[2];").nl();
       }
