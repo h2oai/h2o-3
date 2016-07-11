@@ -22,7 +22,7 @@ public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   static final float MAX_TOLERANCE = 1e-2f;
-  static final float MAX_FAILED_RATIO = 0f;
+  static final float MAX_FAILED_COUNT = 10;
   static final float SAMPLE_RATE = 0.01f;
 
   @Test
@@ -386,7 +386,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       Log.info("Mean. relative error: " + meanRelErr/count);
       Log.info("Max. relative error: " + PrettyPrint.formatPct(maxRelErr));
       Assert.assertTrue("Error too large: " + maxRelErr + " >= " + MAX_TOLERANCE, maxRelErr < MAX_TOLERANCE);
-      Assert.assertTrue("Failed count too large: " + failedcount + " > " + MAX_FAILED_RATIO*count, failedcount <= MAX_FAILED_RATIO*count);
+      Assert.assertTrue("Failed count too large: " + failedcount + " > " + MAX_FAILED_COUNT, failedcount <= MAX_FAILED_COUNT);
 
     } finally {
       if (tfr != null) tfr.remove();
