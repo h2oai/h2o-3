@@ -17,19 +17,19 @@ plot_scoring <- function(model) {
   par(mfrow=c(1,2))
 
   if(model@algorithm == "gbm" | model@algorithm == "drf"){
-    min <- min(range(sh$training_MSE), range(sh$validation_MSE))
-    max <- max(range(sh$training_MSE), range(sh$validation_MSE))
-    plot(x = sh$number_of_trees, y = sh$validation_MSE, col = "orange", main = model@model_id, ylim = c(min,max))
-    points(x = sh$number_of_trees, y = sh$training_MSE, col = "blue")
-    min <- min(range(sh$training_AUC), range(sh$validation_AUC))
-    max <- max(range(sh$training_AUC), range(sh$validation_AUC))
-    plot(x = sh$number_of_trees, y = sh$validation_AUC, col = "orange", main = model@model_id, ylim = c(min,max))
-    points(x = sh$number_of_trees, y = sh$training_AUC, col = "blue")
-    return(data.frame(number_of_trees = sh$number_of_trees, validation_auc = sh$validation_AUC, validation_mse = sh$validation_MSE))
+    min <- min(range(sh$training_rmse), range(sh$validation_rmse))
+    max <- max(range(sh$training_rmse), range(sh$validation_rmse))
+    plot(x = sh$number_of_trees, y = sh$validation_rmse, col = "orange", main = model@model_id, ylim = c(min,max))
+    points(x = sh$number_of_trees, y = sh$training_rmse, col = "blue")
+    min <- min(range(sh$training_auc), range(sh$validation_auc))
+    max <- max(range(sh$training_auc), range(sh$validation_auc))
+    plot(x = sh$number_of_trees, y = sh$validation_auc, col = "orange", main = model@model_id, ylim = c(min,max))
+    points(x = sh$number_of_trees, y = sh$training_auc, col = "blue")
+    return(data.frame(number_of_trees = sh$number_of_trees, validation_auc = sh$validation_auc, validation_rmse = sh$validation_rmse))
   }
   if(model@algorithm == "deeplearning"){
-    plot(x = sh$epochs, y = sh$validation_MSE, col = "orange", main = model@model_id)
-    plot(x = sh$epochs, y = sh$validation_AUC, col = "orange", main = model@model_id)
+    plot(x = sh$epochs, y = sh$validation_rmse, col = "orange", main = model@model_id)
+    plot(x = sh$epochs, y = sh$validation_auc, col = "orange", main = model@model_id)
   }
 }
 
@@ -128,7 +128,7 @@ gbm_model <- h2o.gbm(x = myX, y = myY, training_frame = train, validation_frame 
                      learn_rate = 0.05, score_each_iteration = T, ntrees = 100, max_depth = i)
 end       <- Sys.time()
 gbmBuild  <- end - start
-print(paste("Took", gbmBuild, units(gbmBuild), "to build a GBM Model with 100 trees and a AUC of :",
+print(paste("Took", gbmBuild, units(gbmBuild), "to build a GBM Model with 100 trees and a auc of :",
             h2o.auc(gbm_model) , "on the training set and",
             h2o.auc(gbm_model, valid = T), "on the validation set."))
 gbm_score <- plot_scoring(model = gbm_model)
@@ -139,11 +139,11 @@ models <- c(models, gbm_model)
 max_auc_on_valid <- c()
 for(model in models) {
 sh <- h2o.scoreHistory(model)
-best_model <- sh[sh$validation_AUC == max(sh$validation_AUC),]
+best_model <- sh[sh$validation_auc == max(sh$validation_auc),]
 max_auc_on_valid <- rbind(max_auc_on_valid, best_model)
 }
 
-best_model = which(max_auc_on_valid$validation_AUC == max(max_auc_on_valid$validation_AUC))
+best_model = which(max_auc_on_valid$validation_auc == max(max_auc_on_valid$validation_auc))
 gbm_model = models [[best_model]]
 
 print("The variable importance for the GBM model...")

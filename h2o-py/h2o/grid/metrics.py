@@ -349,7 +349,7 @@ class H2OBinomialGridSearch(object):
     If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
     and "xval"
 
-    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
+    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1"}
     :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
     :param train: If train is True, then return the confusion matrix value for the training data.
     :param valid: If valid is True, then return the confusion matrix value for the validation data.

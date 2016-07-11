@@ -1428,7 +1428,7 @@ h2o.mean_per_class_accuracy <- function(object, thresholds){
 #' @rdname h2o.metric
 #' @export
 h2o.mcc <- function(object, thresholds){
-  h2o.metric(object, thresholds, "absolute_MCC")
+  h2o.metric(object, thresholds, "absolute_mcc")
 }
 
 #' @rdname h2o.metric
@@ -2031,7 +2031,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' @param thresholds (Optional) A value or a list of valid values between 0.0 and 1.0.
 #'        This value is only used in the case of
 #'        \linkS4class{H2OBinomialMetrics} objects.
-#' @param metrics (Optional) A metric or a list of valid metrics ("min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1").
+#' @param metrics (Optional) A metric or a list of valid metrics ("min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1").
 #'        This value is only used in the case of
 #'        \linkS4class{H2OBinomialMetrics} objects.
 #' @param valid Retrieve the validation metric.
@@ -2106,7 +2106,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
   # error check the metrics_list and thresholds_list
   if( !all(sapply(thresholds_list, f <- function(x) is.numeric(x) && x >= 0 && x <= 1)) )
     stop("All thresholds must be numbers between 0 and 1 (inclusive).")
-  allowable_metrics <- c("min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr","precision", "accuracy", "f0point5", "f2", "f1")
+  allowable_metrics <- c("min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr","precision", "accuracy", "f0point5", "f2", "f1")
   if( !all(sapply(metrics_list, f <- function(x) x %in% allowable_metrics)) )
       stop(paste("The only allowable metrics are ", paste(allowable_metrics, collapse=', ')))
 
@@ -2183,7 +2183,7 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' plot(gbm, timestep = "duration", metric = "deviance")
 #' plot(gbm, timestep = "number_of_trees", metric = "deviance")
 #' plot(gbm, timestep = "number_of_trees", metric = "rmse")
-#' plot(gbm, timestep = "number_of_trees", metric = "MAE")
+#' plot(gbm, timestep = "number_of_trees", metric = "mae")
 
 #' }
 #' @export
@@ -2212,8 +2212,8 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     if (is(x, "H2OBinomialModel")) {
       if (metric == "AUTO") {
         metric <- "logloss"
-      } else if (!(metric %in% c("logloss","AUC","classification_error","rmse"))) {
-        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, rmse")
+      } else if (!(metric %in% c("logloss","auc","classification_error","rmse"))) {
+        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, auc, classification_error, rmse")
       }
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
@@ -2224,8 +2224,8 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "rmse"
-      } else if (!(metric %in% c("rmse","deviance","MAE"))) {
-        stop("metric for H2ORegressionModel must be one of: AUTO, rmse, MAE, or deviance")
+      } else if (!(metric %in% c("rmse","deviance","mae"))) {
+        stop("metric for H2ORegressionModel must be one of: AUTO, rmse, mae, or deviance")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
