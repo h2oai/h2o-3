@@ -662,17 +662,20 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
 
       // add L1/L2 penalty of model coefficients (weights & biases)
-      for (int i = 0; i < get_params()._hidden.length + 1; ++i) {
-        if (neurons[i]._w == null) continue;
-        for (int row = 0; row < neurons[i]._w.rows(); ++row) {
-          for (int col = 0; col < neurons[i]._w.cols(); ++col) {
-            loss += get_params()._l1 * Math.abs(neurons[i]._w.get(row, col));
-            loss += 0.5 * get_params()._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+      for (int i = 0; i <= get_params()._hidden.length+1; ++i) {
+        if (neurons[i]._w != null) {
+          for (int row = 0; row < neurons[i]._w.rows(); ++row) {
+            for (int col = 0; col < neurons[i]._w.cols(); ++col) {
+              loss += get_params()._l1 * Math.abs(neurons[i]._w.get(row, col));
+              loss += 0.5 * get_params()._l2 * Math.pow(neurons[i]._w.get(row, col), 2);
+            }
           }
         }
-        for (int row = 0; row < neurons[i]._b.size(); ++row) {
-          loss += get_params()._l1 * Math.abs(neurons[i]._b.get(row));
-          loss += 0.5 * get_params()._l2 * Math.pow(neurons[i]._b.get(row), 2);
+        if (neurons[i]._b != null) {
+          for (int row = 0; row < neurons[i]._b.size(); ++row) {
+            loss += get_params()._l1 * Math.abs(neurons[i]._b.get(row));
+            loss += 0.5 * get_params()._l2 * Math.pow(neurons[i]._b.get(row), 2);
+          }
         }
       }
     }

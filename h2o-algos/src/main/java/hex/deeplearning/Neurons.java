@@ -3,7 +3,8 @@ package hex.deeplearning;
 import hex.DataInfo;
 import hex.Distribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import water.*;
+import water.H2O;
+import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -256,9 +257,9 @@ public abstract class Neurons {
         if (fast_mode && previous_a == 0) continue;
 
         //this is the actual gradient dE/dw
-        double grad = partial_grad[mb] * previous_a - Math.signum(weight) * l1 - weight * l2;
+        double grad = partial_grad[mb] * previous_a + Math.signum(weight) * l1 + weight * l2;
         if (_wEA !=null) {
-          grad -= params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
+          grad += params._elastic_averaging_regularization * (_w.raw()[w] -_wEA.raw()[w]);
 //        Log.info("weight: my: " + _w.raw()[w] + ", consensus: " + _wEA.raw()[w] + ", delta: " + (_w.raw()[w] -_wEA.raw()[w]) + ", relative delta: " + (_w.raw()[w] -_wEA.raw()[w])/_w.raw()[w]);
         }
 
@@ -408,8 +409,12 @@ public abstract class Neurons {
     final int b = _k != 0 ? _k*row+_maxIncoming[mb][row] : row;
     final double bias = _b.get(b);
 
-    partial_grad[mb] -= Math.signum(bias) * l1 + bias * l2;
-    if (_bEA != null) partial_grad[mb] -= (bias - _bEA.get(b)) * params._elastic_averaging_regularization;
+    partial_grad[mb] += Math.signum(bias) * l1 + bias * l2;
+    if (_bEA != null) partial_grad[mb] += (bias - _bEA.get(b)) * params._elastic_averaging_regularization;
+
+    // store the gradient
+    if (DeepLearningModelInfo.gradientCheck != null)
+      DeepLearningModelInfo.gradientCheck.apply(_index, row, -1, partial_grad[mb]);
 
     if (have_ada) {
       final float rho = (float)params._rho;

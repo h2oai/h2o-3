@@ -106,9 +106,8 @@ public class DeepLearningGradientCheck extends TestUtil {
                 parms._quantile_alpha = 0.05 + rng.nextDouble()*0.9;
                 parms._train = tfr._key;
                 parms._epochs = 100; //converge to a reasonable model to avoid too large gradients
-//            parms._l1 = 1e-3; //FIXME
-//            parms._l2 = 1e-3; //FIXME
-//            parms._reproducible = true;
+                parms._l1 = 1e-3;
+                parms._l2 = 1e-3;
                 parms._force_load_balance = false;
                 parms._hidden = new int[]{10, 10, 10};
                 parms._fast_mode = false; //otherwise we introduce small bprop errors
@@ -169,7 +168,100 @@ public class DeepLearningGradientCheck extends TestUtil {
 
                     for (int layer = 0; layer <= parms._hidden.length; ++layer) {
                       int rows = dl.model_info().get_weights(layer).rows();
+                      assert(dl.model_info().get_biases(layer).size()==rows);
                       for (int row = 0; row < rows; ++row) {
+
+                        //check bias
+                        if (true) {
+
+                          // start from scratch - with a clean model
+                          dl.set_model_info(modelInfo.deep_clone());
+
+                          // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
+                          Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
+                          double[] responses = new double[miniBatchSize];
+                          double[] offsets = new double[miniBatchSize];
+                          int n = 0;
+                          for (DataInfo.Row myRow : rowsMiniBatch) {
+                            if (myRow == null) continue;
+                            ((Neurons.Input) neurons[0]).setInput(-1, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, n);
+                            responses[n] = myRow.response(0);
+                            offsets[n] = myRow.offset;
+                            n++;
+                          }
+                          DeepLearningTask.fpropMiniBatch(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, responses, offsets, n);
+
+                          // check that we didn't change the model's weights/biases
+                          long after = dl.model_info().checksum_impl();
+                          assert (after == before);
+
+                          // record the gradient since gradientChecking is enabled
+                          DeepLearningModelInfo.gradientCheck = new DeepLearningModelInfo.GradientCheck(layer, row, -1); //tell it what gradient to collect
+                          DeepLearningTask.bpropMiniBatch(neurons, n); //update the weights and biases
+                          assert (before != dl.model_info().checksum_impl());
+
+                          // reset the model back to the trained model
+                          dl.set_model_info(modelInfo.deep_clone());
+                          assert (before == dl.model_info().checksum_impl());
+
+                          double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
+
+                          // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
+//                    double actualResponse=myRow.response[0];
+//                    double predResponseLinkSpace = neurons[neurons.length-1]._a.get(0);
+//                    if (di._normRespMul != null) {
+//                      bpropGradient /= di._normRespMul[0]; //no shift for gradient
+//                      actualResponse = (actualResponse / di._normRespMul[0] + di._normRespSub[0]);
+//                      predResponseLinkSpace = (predResponseLinkSpace / di._normRespMul[0] + di._normRespSub[0]);
+//                    }
+//                    bpropGradient *= new Distribution(parms._distribution).gradient(actualResponse, predResponseLinkSpace);
+
+                          final double bias = dl.model_info().get_biases(layer).get(row);
+
+                          double eps = 1e-4 * Math.abs(bias); //don't make the weight deltas too small, or the float weights "won't notice"
+                          if (eps == 0)
+                            eps = 1e-6;
+
+                          // loss at bias + eps
+                          dl.model_info().get_biases(layer).set(row, bias + eps);
+                          double up = dl.meanLoss(rowsMiniBatch);
+
+                          // loss at bias - eps
+                          dl.model_info().get_biases(layer).set(row, bias - eps);
+                          double down = dl.meanLoss(rowsMiniBatch);
+
+                          if (Math.abs(up - down) / Math.abs(up + down) < 1e-8) {
+                            continue; //relative change in loss function is too small -> skip
+                          }
+
+                          double gradient = ((up - down) / (2. * eps));
+
+                          double relError = 2 * Math.abs(bpropGradient - gradient) / (Math.abs(gradient) + Math.abs(bpropGradient));
+
+                          count++;
+
+                          // if either gradient is tiny, check if both are tiny
+                          if (Math.abs(gradient) < 1e-7 || Math.abs(bpropGradient) < 1e-7) {
+                            if (Math.abs(bpropGradient - gradient) < 1e-7) continue; //all good
+                          }
+
+                          meanRelErr += relError;
+
+                          // if both gradients are tiny - numerically unstable relative error computation is not needed, since absolute error is small
+
+                          if (relError > MAX_TOLERANCE) {
+                            Log.info("\nDistribution: " + dl._parms._distribution);
+                            Log.info("\nRow: " + rId);
+                            Log.info("bias (layer " + layer + ", row " + row + "): " + bias + " +/- " + eps);
+                            Log.info("loss: " + loss);
+                            Log.info("losses up/down: " + up + " / " + down);
+                            Log.info("=> Finite differences gradient: " + gradient);
+                            Log.info("=> Back-propagation gradient  : " + bpropGradient);
+                            Log.info("=> Relative error             : " + PrettyPrint.formatPct(relError));
+                            failedcount++;
+                          }
+                        }
+
                         int cols = dl.model_info().get_weights(layer).cols();
                         for (int col = 0; col < cols; ++col) {
                           if (rng.nextFloat() >= SAMPLE_RATE) continue;
@@ -205,7 +297,6 @@ public class DeepLearningGradientCheck extends TestUtil {
                           assert (before == dl.model_info().checksum_impl());
 
                           double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
-//                          DeepLearningModelInfo.gradientCheck = null;
 
                           // FIXME: re-enable this once the loss is computed from the de-standardized prediction/response
 //                    double actualResponse=myRow.response[0];
