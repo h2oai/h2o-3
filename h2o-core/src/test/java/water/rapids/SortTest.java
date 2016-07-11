@@ -3,10 +3,7 @@ package water.rapids;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 
 import java.util.Random;
@@ -17,27 +14,47 @@ public class SortTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
-    Frame fr = null;
+    Frame fr = null, res = null;
 
+    // Stable sort columns 0 and 1
     String tree = "(sort hex [0 1])";
     try {
 
       // Build a frame which is unsorted on small-count categoricals in columns
       // 0 and 1, and completely sorted on a record-number based column 2.
-      // Sort will be on columns 0 and 1 and 2, in that order.
+      // Sort will be on columns 0 and 1, in that order, and is expected stable.
       fr = buildFrame(3,4);
-
       // 
       Val val = Rapids.exec(tree);
       System.out.println(val.toString());
       assertTrue( val instanceof ValFrame );
-      Frame res = ((ValFrame)val)._fr;
+      res = ((ValFrame)val)._fr;
 
-      // assert that result is indeed sorted
-
+      // Assert that result is indeed sorted - on all 3 columns, as this is a
+      // stable sort.
+      final long max0 = (long)fr.vec(0).max();
+      new MRTask() {
+        @Override public void map( Chunk cs[] ) {
+          long x0 = val(cs[0].at8(0),cs[1].at8(0),cs[2].at8(0));
+          for( int i=1; i<cs[0]._len; i++ ) {
+            long x1 = val(cs[0].at8(i),cs[1].at8(i),cs[2].at8(i));
+            assertTrue(x0<x1);
+            x0 = x1;
+          }
+          // Last row of chunk is sorted relative to 1st row of next chunk
+          long row = cs[0].start()+cs[0]._len;
+          if( row < cs[0].vec().length() ) {
+            long x1 = val(cs[0].vec().at8(row),cs[1].vec().at8(row),cs[2].vec().at8(row));
+            assertTrue(x0<x1);
+          }
+        }
+        // Collapse 3 cols of data into a long
+        private long val( long a, long b, long c ) { return ((b*max0+a)<<32)+c; }
+      }.doAll(res);
 
     } finally {
-      if( fr != null ) fr.delete();
+      if( fr  != null ) fr .delete();
+      if( res != null ) res.delete();
       Keyed.remove(Key.make("hex"));
     }
   }
