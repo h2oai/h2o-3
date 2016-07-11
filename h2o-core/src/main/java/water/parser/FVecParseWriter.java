@@ -3,7 +3,6 @@ package water.parser;
 import water.Futures;
 import water.Iced;
 import water.fvec.AppendableVec;
-import water.fvec.C1Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -169,7 +168,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     _errCnt++;
   }
 
-  @Override public void setIsAllASCII(int colIdx, boolean b) {_nvs[colIdx]._isAllASCII = b;}
+  @Override public void setIsAllASCII(int colIdx, boolean b) {
+    if(colIdx < _nvs.length)
+      _nvs[colIdx]._isAllASCII = b;
+  }
 
   @Override
   public boolean hasErrors() {

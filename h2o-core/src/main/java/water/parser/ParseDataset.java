@@ -928,9 +928,10 @@ public final class ParseDataset {
         super.setupLocal();
         _visited = new NonBlockingSetInt();
         _espc = MemoryManager.malloc8(_nchunks);
+        ParserService.INSTANCE.getByInfo(_setup._parse_type).setupLocal(_fr.anyVec(),_setup);
       }
       @Override public void map( Chunk in ) {
-        if( _jobKey.get().stop_requested() ) return;
+        if( _jobKey.get().stop_requested() ) throw new Job.JobCancelledException();
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           if (_setup._column_types == null) // SVMLight

@@ -25,7 +25,7 @@ public class ParseSetup extends Iced {
   public static final int HAS_HEADER = 1;
   public static final int GUESS_COL_CNT = -1;
 
-  ParserInfo _parse_type;     // CSV, XLS, XSLX, SVMLight, Auto, ARFF
+  ParserInfo _parse_type;     // CSV, XLS, XSLX, SVMLight, Auto, ARFF, ORC
   byte _separator;            // Field separator, usually comma ',' or TAB or space ' '
   // Whether or not single-quotes quote a field.  E.g. how do we parse:
   // raw data:  123,'Mally,456,O'Mally
@@ -338,7 +338,7 @@ public class ParseSetup extends Iced {
                 || bv.length() <= FileVec.DFLT_CHUNK_SIZE
                 || decompRatio > 1.0) { */
         try {
-          _gblSetup = guessSetup(bits, _userSetup);
+          _gblSetup = guessSetup(bv, bits, _userSetup);
           for(ParseWriter.ParseErr e:_gblSetup._errs) {
             e._byteOffset += e._cidx*Parser.StreamData.bufSz;
             e._cidx = 0;
@@ -506,14 +506,14 @@ public class ParseSetup extends Iced {
    * @param bits Initial bytes from a parse source
    * @return ParseSetup settings from looking at all files
    */
-  public static ParseSetup guessSetup( byte[] bits, ParseSetup userSetup ) {
-    return guessSetup(bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, userSetup._column_names, userSetup._column_types, null, null);
+  public static ParseSetup guessSetup( ByteVec bv, byte [] bits, ParseSetup userSetup ) {
+    return guessSetup(bv, bits, userSetup._parse_type, userSetup._separator, GUESS_COL_CNT, userSetup._single_quotes, userSetup._check_header, userSetup._column_names, userSetup._column_types, null, null);
   }
 
-  public static ParseSetup guessSetup(byte[] bits, ParserInfo parserType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
+  public static ParseSetup guessSetup(ByteVec bv, byte [] bits, ParserInfo parserType, byte sep, int ncols, boolean singleQuotes, int checkHeader, String[] columnNames, byte[] columnTypes, String[][] domains, String[][] naStrings ) {
     ParserProvider pp = ParserService.INSTANCE.getByInfo(parserType);
     if (pp != null) {
-      return pp.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
+      return pp.guessSetup(bv, bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
     }
     throw new ParseDataset.H2OParseException("Cannot determine file type.");
   }
@@ -540,6 +540,7 @@ public class ParseSetup extends Iced {
             || n.endsWith("xls")
             || n.endsWith("txt")
             || n.endsWith("svm")
+            || n.endsWith("orc")
             || n.endsWith("arff"))) {
       n = n.substring(0, dot);
       dot = n.lastIndexOf('.');

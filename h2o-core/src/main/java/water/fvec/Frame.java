@@ -529,12 +529,9 @@ public class Frame extends Lockable<Frame> {
     vec = makeCompatible(new Frame(vec))[0];
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
-    String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
-    Key<Vec>[] keys = Arrays.copyOf(_keys ,ncols+1);  keys [ncols] = vec._key;
-    Vec[] vecs  = Arrays.copyOf(_vecs ,ncols+1);  vecs [ncols] = vec;
-    _names = names;
-    _keys = keys;
-    _vecs = vecs;
+    _names = Arrays.copyOf(_names,ncols+1);  _names[ncols] = name;
+    _keys  = Arrays.copyOf(_keys ,ncols+1);  _keys [ncols] = vec._key;
+    _vecs  = Arrays.copyOf(_vecs ,ncols+1);  _vecs [ncols] = vec;
     return vec;
   }
 
