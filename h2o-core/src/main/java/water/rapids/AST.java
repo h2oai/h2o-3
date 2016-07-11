@@ -211,6 +211,7 @@ public abstract class AST extends Iced<AST> {
     init(new ASTGroupedPermute());
     init(new ASTMerge());
     init(new ASTQtile());
+    init(new ASTSort());
 
     // String Ops
     init(new ASTStrSplit());
