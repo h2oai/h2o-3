@@ -122,7 +122,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
       r2_stopping : float
         Stop making trees when the R^2 metric equals or exceeds this
-        Default: 0.999999
+        Default: 1.79769313486e+308
 
       stopping_rounds : int
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
