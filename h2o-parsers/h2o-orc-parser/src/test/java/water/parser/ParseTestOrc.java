@@ -81,7 +81,7 @@ public class ParseTestOrc extends TestUtil {
   };
 
   @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(1); }
+  static public void setup() { TestUtil.stall_till_cloudsize(5); }
 
   @Test
   public void testParseAllOrcs() {
