@@ -886,15 +886,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
     if(_output.isClassifier() && computeMetrics) {
-//      assert(mdomain != null); // label must be categorical
-      ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
-      ConfusionMatrix cm = mm.cm();
-      if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
-          Log.info(cm.table().toString(1));
+      if (false) {
+        assert(mdomain != null); // label must be categorical
+        ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
+        ConfusionMatrix cm = mm.cm();
+        if (cm != null && cm._domain != null) //don't print table for regression
+          if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
+            Log.info(cm.table().toString(1));
+          }
+        if (mm.hr() != null) {
+          Log.info(getHitRatioTable(mm.hr()));
         }
-      if (mm.hr() != null) {
-        Log.info(getHitRatioTable(mm.hr()));
       }
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does

@@ -2108,5 +2108,53 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testBinomial() {
+    Frame train = null;
+    Frame preds = null;
+    Frame small = null, large = null;
+    DeepLearningModel model = null;
+    Scope.enter();
+    try {
+      train = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      Vec v = train.remove("survived");
+      train.add("survived", v.toCategoricalVec());
+      v.remove();
+      DKV.put(train);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = train._key;
+      parms._response_column = "survived";
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      model = new DeepLearning(parms).trainModel().get();
+
+      FrameSplitter fs = new FrameSplitter(train, new double[]{0.901},new Key[]{Key.make("small"),Key.make("large")},null);
+      fs.compute2();
+      small = fs.getResult()[0];
+      large = fs.getResult()[1];
+      preds = model.score(small);
+      Vec labels = small.vec("survived"); //actual
+      String[] fullDomain = train.vec("survived").domain(); //actual
+
+      ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), labels, fullDomain, 0.5);
+      Log.info(mm.toString());
+
+      small.remove();
+      large.remove();
+    } catch(Throwable t) {
+      t.printStackTrace();
+      throw t;
+    }
+    finally {
+      if (model!=null)  model.delete();
+      if (preds!=null)  preds.remove();
+      if (train!=null)  train.remove();
+      if (small!=null)  small.delete();
+      if (large!=null)  large.delete();
+      Scope.exit();
+    }
+  }
+
 }
 
