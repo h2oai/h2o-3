@@ -12,12 +12,15 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
 import water.util.RandomUtils;
 
+import java.io.File;
 import java.util.Arrays;
 
 import static hex.Distribution.Family.*;
@@ -2045,6 +2048,63 @@ public class DeepLearningTest extends TestUtil {
       if (tfr != null) tfr.remove();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+    }
+  }
+
+  @Ignore
+  @Test
+  public void testMultinomial() {
+    Frame train = null;
+    Frame preds = null;
+    Frame small = null, large = null;
+    DeepLearningModel model = null;
+    Scope.enter();
+    try {
+      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      if (file != null) {
+        NFSFileVec trainfv = NFSFileVec.make(file);
+        train = ParseDataset.parse(Key.make(), trainfv._key);
+        int ci = train.find("C785");
+        Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));
+        DKV.put(train);
+
+        DeepLearningParameters p = new DeepLearningParameters();
+        p._train = train._key;
+        p._response_column = "C785"; // last column is the response
+        p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+        p._hidden = new int[]{50,50};
+        p._epochs = 1;
+        p._adaptive_rate = false;
+        p._rate = 0.005;
+        p._sparse = true;
+        model = new DeepLearning(p).trainModel().get();
+
+        FrameSplitter fs = new FrameSplitter(train, new double[]{0.0001},new Key[]{Key.make("small"),Key.make("large")},null);
+        fs.compute2();
+        small = fs.getResult()[0];
+        large = fs.getResult()[1];
+        preds = model.score(small);
+        preds.remove(0); //remove label, keep only probs
+        Vec labels = small.vec("C785"); //actual
+        String[] fullDomain = train.vec("C785").domain(); //actual
+
+        ModelMetricsMultinomial mm = new ModelMetricsMultinomial.MakeMultinomialMetrics(preds, labels, fullDomain).get();
+        Log.info(mm.toString());
+
+        small.remove();
+        large.remove();
+      }
+    } catch(Throwable t) {
+      t.printStackTrace();
+      throw t;
+    }
+    finally {
+      if (model!=null)  model.delete();
+      if (preds!=null)  preds.remove();
+      if (train!=null)  train.remove();
+      if (small!=null)  small.delete();
+      if (large!=null)  large.delete();
+      Scope.exit();
     }
   }
 

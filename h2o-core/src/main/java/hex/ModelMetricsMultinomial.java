@@ -1,8 +1,13 @@
 package hex;
 
 import hex.genmodel.GenModel;
+import water.Iced;
+import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
@@ -95,6 +100,77 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
 
+  public static class MakeMultinomialMetrics extends Iced {
+    public Frame _preds; //probabilities
+    final int K = 10;
+
+    private Vec _labels; //actuals
+    private String[] _domain; //actuals
+
+    public MakeMultinomialMetrics(Frame preds, Vec labels, String[] domain) {
+      _preds = preds;
+      _labels = labels.toCategoricalVec();
+      if (_labels == null || _preds == null)
+        throw new IllegalArgumentException("Missing actualLabels or predictedProbs!");
+      if (_labels.length() != _preds.numRows())
+        throw new IllegalArgumentException("Both arguments must have the same length (" + _labels.length() + "!=" + _preds.numRows() + ")!");
+      if (_labels.cardinality() <= 1)
+        throw new IllegalArgumentException("Labels, must have cardinality >1, but found " + _labels.cardinality() + "!");
+      for (Vec p : _preds.vecs())
+        if (p.isCategorical())
+          throw new IllegalArgumentException("Predicted probabilities cannot be class labels, expect only per-class probabilities.");
+      int nclasses = _preds.numCols();
+      if (domain.length!=nclasses)
+        throw new IllegalArgumentException("Given domain has " + domain.length + " classes, but predictions have " + nclasses + " columns (per-class probabilities).");
+      _labels = _labels.adaptTo(domain);
+    }
+
+    public ModelMetricsMultinomial get() {
+      Frame predsLabel = new Frame(_preds);
+      predsLabel.add("labels", _labels);
+      ModelMetricsMultinomial mm = new MultinomialMetrics(_labels.domain(), K).doAll(predsLabel)._mm;
+      _labels.remove();
+      return mm;
+    }
+
+    private class MultinomialMetrics extends MRTask<MultinomialMetrics> {
+      // OUTPUT
+      public ModelMetricsMultinomial _mm;
+
+      public MultinomialMetrics(String[] domain, int hitRatioK) {
+        this.domain = domain;
+        this.hitRatioK = hitRatioK;
+      }
+      private MetricBuilderMultinomial _mb;
+      int hitRatioK;
+      String[] domain;
+
+      @Override
+      public void map(Chunk[] chks) {
+        _mb = new MetricBuilderMultinomial(hitRatioK, domain);
+        Chunk actuals = chks[chks.length-1];
+        double [] ds = new double[chks.length];
+        for (int i=0;i<chks[0]._len;++i) {
+          for (int c=1;c<chks.length;++c)
+            ds[c] = chks[c-1].atd(i); //per-class probs - user-given
+          ds[0] = GenModel.getPrediction(ds, null, ds, 0.5 /*ignored*/);
+          _mb.perRow(ds, new float[]{actuals.at8(i)}, null);
+        }
+      }
+
+      @Override
+      public void reduce(MultinomialMetrics mrt) {
+        _mb.reduce(mrt._mb);
+      }
+
+      @Override
+      protected void postGlobal() {
+        _mm = (ModelMetricsMultinomial)_mb.makeModelMetrics(null, _fr, null, null);
+      }
+    }
+  }
+
+
   public static class MetricBuilderMultinomial<T extends MetricBuilderMultinomial<T>> extends MetricBuilderSupervised<T> {
     double[/*nclasses*/][/*nclasses*/] _cm;
     double[/*K*/] _hits;            // the number of hits for hitratio, length: K
@@ -164,7 +240,10 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
       }
-      return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,   hr,   logloss));
+      if (m==null)
+        return new ModelMetricsMultinomial(null, f, _count, mse, _domain, sigma, cm,   hr,   logloss);
+      else
+        return m._output.addModelMetrics(new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,   hr,   logloss));
     }
   }
 }
