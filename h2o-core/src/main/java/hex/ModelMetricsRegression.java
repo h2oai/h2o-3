@@ -9,12 +9,10 @@ import water.util.MathUtils;
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public double residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
-  Distribution _dist;
   public final double _mean_absolute_error;
   public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae, double meanResidualDeviance) {
     super(model, frame, nobs, mse, null, sigma);
     _mean_residual_deviance = meanResidualDeviance;
-    _dist = new Distribution(model._parms);
     _mean_absolute_error = mae;
   }
 
@@ -122,7 +120,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     // Having computed a MetricBuilder, this method fills in a ModelMetrics
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
       double mse = _sumsqe / _wcount;
-        double mae = _abserror/_wcount; //Mean Absolute Error
+      double mae = _abserror/_wcount; //Mean Absolute Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
       if (m!=null && m._parms._distribution== Distribution.Family.huber) {
@@ -146,7 +144,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       } else {
           meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
-      return m._output.addModelMetrics(new ModelMetricsRegression( m, f, _count, mse, weightedSigma(), mae, meanResDeviance));
+      return m==null? new ModelMetricsRegression( null, f, _count, mse, weightedSigma(), mae, meanResDeviance) :
+              m._output.addModelMetrics(new ModelMetricsRegression( m, f, _count, mse, weightedSigma(), mae, meanResDeviance));
     }
   }
 }
