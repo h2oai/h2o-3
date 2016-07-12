@@ -119,7 +119,7 @@ public class ParseTestOrc extends TestUtil {
         continue;
 
       String fileName = allOrcFiles[fIndex];
-      Log.info("\nOrc parser parsing: " + fileName);
+      System.out.println("parsing " + fileName);
       File f = find_test_file_static(fileName);
 
       if (f != null && f.exists()) {
@@ -143,13 +143,13 @@ public class ParseTestOrc extends TestUtil {
         }
 
       } else {
-        Log.warn("\nThe following file was not found: " + fileName);
+        Log.warn("The following file was not found: " + fileName);
       }
     }
 
     if (numberWrong > 0) {
-      Log.warn("\nThere are errors in your test.");
-      assertEquals("\nNumber of orc files failed to parse is: "  + ", failed files = " + failedFiles.toString(), 0, numberWrong);
+      Log.warn("There are errors in your test.");
+      assertEquals("Number of orc files failed to parse is: "  + ", failed files = " + failedFiles.toString(), 0, numberWrong);
     }
   }
 
