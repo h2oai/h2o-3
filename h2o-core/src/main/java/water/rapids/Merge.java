@@ -4,56 +4,26 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MRUtils;
-
-import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
 
-  // Hack to cleanup helpers made during merge
-  // TODO: Keep radix order (Keys) around as hidden objects for a given frame and key column
-  // TODO: delete as we now delete keys on the fly as soon as we getGet them ...
-  /*static void cleanUp() {
-    new MRTask() {
-      protected void setupLocal() {
-        Object [] kvs = H2O.STORE.raw_array();
-        for(int i = 2; i < kvs.length; i+= 2){
-          Object ok = kvs[i];
-          if( !(ok instanceof Key  ) ) continue; // Ignore tombstones and Primes and null's
-          Key key = (Key )ok;
-          if(!key.home())continue;
-          String st = key.toString();
-          if (st.contains("__radix_order__") || st.contains("__binary_merge__")) {
-            DKV.remove(key);
-          }
-        }
-      }
-    }.doAllNodes();
-  }*/
-
-  static void waitForSignalFromMatt() {
-    System.out.println("waiting at the spot");
-    File f = new File("/home/mdowle/GOFLAG");
-    while (true) {
-      System.out.println("Waiting for GOFLAG ...");
-      if (f.exists()) {
-        f.delete();
-        System.out.println("GOFLAG seen, deleted and moved on");
-        break;
-      }
-      try { Thread.sleep(1000); } catch (Exception ignore) {}
-    }
-  }
+  //static void waitForSignalFromMatt() {
+  //  System.out.println("waiting at the spot");
+  //  File f = new File("/home/mdowle/GOFLAG");
+  //  while (true) {
+  //    System.out.println("Waiting for GOFLAG ...");
+  //    if (f.exists()) {
+  //      f.delete();
+  //      System.out.println("GOFLAG seen, deleted and moved on");
+  //      break;
+  //    }
+  //    try { Thread.sleep(1000); } catch (Exception ignore) {}
+  //  }
+  //}
 
   // single-threaded driver logic
   static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft, int[][] id_maps) {
@@ -74,22 +44,12 @@ public class Merge {
       }
     }
 
-    /* for (int s=0; s<5; s++) {
-      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
-      System.gc();
-    } */
-
     ///waitForSignalFromMatt();
 
     H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, id_maps));
     left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
                  // a little slower (97s) than one by one (89s).  TODO: retest in future
     System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
-
-    /* for (int s=0; s<5; s++) {
-      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
-      System.gc();
-    } */
 
     ///waitForSignalFromMatt();
 
@@ -99,17 +59,18 @@ public class Merge {
     H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, null));
     right.join();
     System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
-    /*for (int s=0; s<5; s++) {
-      try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
-      System.gc();
-    }*/
 
     // TODO: start merging before all indexes had been created. Use callback?
 
-    // TODO: Tomas showed this method which takes 'true' argument to H2OCountedCompleter directly.  Not sure how that
-    // relates to new of RadixOrder which itself extends H2OCountedCompleter.  That true argument isn't available that way.
-    // H2O.submitTask(new H2O.H2OCountedCompleter(true) {   // true just to bump priority and prevent deadlock (no different to speed, in theory - Tomas) in case
-    // this Merge ever called from within another counted completer
+    // TODO: Tomas showed this method which takes 'true' argument to
+    // H2OCountedCompleter directly.  Not sure how that relates to new of
+    // RadixOrder which itself extends H2OCountedCompleter.  That true argument
+    // isn't available that way.
+
+    // true just to bump priority and prevent deadlock (no different to speed,
+    // in theory - Tomas) in case this Merge ever called from within another
+    // counted completer
+    // H2O.submitTask(new H2O.H2OCountedCompleter(true) {   
     // @Override
     // protected void compute2() {
     //   RadixOrder.compute(leftFrame, /*left=*/true, leftCols);  // when RadixOrder had just a static compute() method
@@ -140,10 +101,12 @@ public class Merge {
         // The left range ends before the right range starts.  So every left row is a no-match to the right
         leftMSBfrom = 256;  // so that the loop below runs for all MSBs (0-255) to fetch the left rows only
       }
-      // run the merge for the whole lefts that end before the first right.  The overlapping one with the right base is dealt with inside BinaryMerge (if _allLeft)
+      // run the merge for the whole lefts that end before the first right.
+      // The overlapping one with the right base is dealt with inside
+      // BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
         bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, allLeft
+          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, true
         )));
       }
     } else {
@@ -153,19 +116,21 @@ public class Merge {
     }
 
     long leftMSBto = (rightIndex._base[0] + (256L<<rightShift) - 1 - leftIndex._base[0]) >> leftShift;
-    // -1 because the 256L<<rightShift is one after the max extent.  No need for +1 for NA here because, as for leftMSBfrom above, the NA spot is on both sides
+    // -1 because the 256L<<rightShift is one after the max extent.  
+    // No need -for +1 for NA here because, as for leftMSBfrom above, the NA spot is on -both sides
 
     // deal with the left range above the right maximum, if any
     if ((leftIndex._base[0] + (256L<<leftShift)) > (rightIndex._base[0] + (256L<<rightShift))) {
       assert leftMSBto <= 255;
       if (leftMSBto<0) {
-        // The left range starts after the right range ends.  So every left row is a no-match to the right
+        // The left range starts after the right range ends.  So every left row
+        // is a no-match to the right
         leftMSBto = -1;  // all MSBs (0-255) need to fetch the left rows only
       }
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
         bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, allLeft
+          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, true
         )));
       }
     } else {
@@ -183,14 +148,15 @@ public class Merge {
       assert leftMSB <= 255;
 
       // calculate the key values at the bin extents:  [leftFrom,leftTo] in terms of keys
-      long leftFrom = ((long)leftMSB << leftShift) -1 + leftIndex._base[0];  // -1 to cater for leading NA spot
-      long leftTo = (((long)leftMSB+1) << leftShift) + leftIndex._base[0] - 1 - 1;  // -1 for leading NA spot and another -1 to get last of previous bin
+      long leftFrom= (((long)leftMSB  ) << leftShift) -1 + leftIndex._base[0]  ;  // -1 for leading NA spot
+      long leftTo  = (((long)leftMSB+1) << leftShift) -1 + leftIndex._base[0]-1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
       int rightMSBfrom = (int)((leftFrom - rightIndex._base[0] + 1) >> rightShift);   // +1 again for the leading NA spot
-      int rightMSBto = (int)((leftTo - rightIndex._base[0] + 1) >> rightShift);
+      int rightMSBto   = (int)((leftTo   - rightIndex._base[0] + 1) >> rightShift);
 
-      if (rightMSBfrom < 0) rightMSBfrom = 0;   // the non-matching part of this region will have been dealt with above when allLeft==true
+      // the non-matching part of this region will have been dealt with above when allLeft==true
+      if (rightMSBfrom < 0) rightMSBfrom = 0;
       assert rightMSBfrom <= 255;
       if (rightMSBto > 255) rightMSBto = 255;
       assert rightMSBto >= rightMSBfrom;
@@ -200,18 +166,14 @@ public class Merge {
         H2ONode node = SplitByMSBLocal.ownerOfMSB(rightMSB);
         // TODO: choose the bigger side to execute on (where that side of index already is) to minimize transfer
 
-        // System.out.println("Calling BinaryMerge for " + leftMSB + " " + rightMSB + " on node " + node.index());
-
         // within BinaryMerge it will recalculate the extents in terms of keys and bsearch for them within the (then local) both sides
         bmList.add(new RPC<>(node,
-          new BinaryMerge(leftFrame, rightFrame,
-                  leftMSB, rightMSB,
-                  leftShift, rightShift,
-                  leftIndex._bytesUsed,   // field sizes for each column in the key
-                  rightIndex._bytesUsed,
-                  leftIndex._base,
-                  rightIndex._base,
-                  allLeft
+          new BinaryMerge(leftFrame,            rightFrame,
+                          leftMSB,              rightMSB,
+                          leftShift,            rightShift,
+                          leftIndex._bytesUsed, rightIndex._bytesUsed,// field sizes for each column in the key
+                          leftIndex._base,      rightIndex._base,
+                          allLeft
           )
         ));
       }
@@ -220,7 +182,7 @@ public class Merge {
 
     int queueSize = bmList.size();
     // Now that gc issues resolved, it seems ok to send them all at once.
-    // No longer floods the cluster it seems
+    // No longer floods the cluster it seems.
     // TODO: can remove manual queuing now and save risk of waitMS slowing unnecessarily
     System.out.println("Dispatching in queue size of "+queueSize+". H2O.NUMCPUS="+H2O.NUMCPUS + " H2O.CLOUD.size()="+H2O.CLOUD.size());
     
@@ -243,7 +205,6 @@ public class Merge {
       } catch(InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
-      // System.out.println("Sweeping queue. leftOnQueue="+leftOnQueue+" queueSize="+queueSize+" ...");
       int doneInSweep = 0;
       for (int q=0; q<queueSize; q++) {
         int thisBM = queue[q];
@@ -268,13 +229,6 @@ public class Merge {
         }
       }
       if (doneInSweep == 0) waitMS = Math.min(1000, waitMS*2);  // if last sweep caught none, then double wait time to avoid cost of sweeping
-      else {
-        // When tracing memory going one-by-one
-        /*for (int s=0; s<3; s++) {
-          try { Thread.sleep(1000); } catch(InterruptedException ex) { Thread.currentThread().interrupt(); }
-          System.gc();
-        }*/
-      }
     }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
@@ -285,12 +239,12 @@ public class Merge {
     t0 = System.nanoTime();
     for (int msb=0; msb<256; msb++) {
       for (int isLeft=0; isLeft<2; isLeft++) {
-        Key k = getSortedOXHeaderKey(isLeft==0 ? false : true, msb);
+        Key k = getSortedOXHeaderKey(isLeft!=0, msb);
         SingleThreadRadixOrder.OXHeader oxheader = DKV.getGet(k);
         DKV.remove(k);
         if (oxheader != null) {
           for (int b=0; b<oxheader._nBatch; ++b) {
-            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft==0 ? false : true, msb, b);
+            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft!=0, msb, b);
             DKV.remove(k);
           }
         }
@@ -298,25 +252,6 @@ public class Merge {
     }
     System.out.println("took: " + (System.nanoTime() - t0)/1e9);
 
-    /*System.out.println("Waiting for BinaryMerge RPCs to finish ... ");
-    t0 = System.nanoTime();
-    BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];   // all the results were being collected on one node here?  No. bmResults are small.
-    int i=0;
-    for (RPC rpc : bmList) {
-      System.out.print(String.format("%4d: ", i));
-      BinaryMerge thisbm;
-      bmResults[i++] = thisbm = (BinaryMerge)rpc.get(); //block
-      for (int t=0; t<12; t++) System.out.print(String.format("%5.2f ", thisbm._timings[t]));
-      System.out.println();
-      if (thisbm._numRowsInResult == 0) continue;
-      numChunks += thisbm._chunkSizes.length;
-      ansN += thisbm._numRowsInResult;
-      // There is no BinaryMerge[i] = null incrementally.  No wonder it is blowing up!
-    }
-    System.out.println("\nBinaryMerge RPCs took: " + (System.nanoTime() - t0) / 1e9);
-    assert(i == bmList.size());
-*/
-    //return new Frame();
     System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");
     t0 = System.nanoTime();
     long chunkSizes[] = new long[numChunks];
@@ -338,8 +273,8 @@ public class Merge {
     }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
-    // Now we can stitch together the final frame from the raw chunks that were put into the store
-
+    // Now we can stitch together the final frame from the raw chunks that were
+    // put into the store
     System.out.print("Allocating and populated espc ...");
     t0 = System.nanoTime();
     long espc[] = new long[chunkSizes.length+1];
@@ -371,9 +306,8 @@ public class Merge {
       doms[numLeftCols + j] = rightFrame.domains()[j+numJoinCols];
       names[numLeftCols + j] = rightFrame.names()[j+numJoinCols];
     }
-    Key key = Vec.newKey();
+    Key<Vec> key = Vec.newKey();
     Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
-    // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
     System.out.print("Finally stitch together by overwriting dummies ...");
@@ -388,25 +322,19 @@ public class Merge {
   }
 
   static class ChunkStitcher extends MRTask<ChunkStitcher> {
-    //final Frame _leftFrame;
-    //final Frame _rightFrame;
     final long _chunkSizes[];
-    final int _chunkLeftMSB[];
-    final int _chunkRightMSB[];
-    final int _chunkBatch[];
-    public ChunkStitcher(//Frame leftFrame,
-                         //Frame rightFrame,
-                         long[] chunkSizes,
-                         int[] chunkLeftMSB,
-                         int[] chunkRightMSB,
-                         int[] chunkBatch
+    final int  _chunkLeftMSB[];
+    final int  _chunkRightMSB[];
+    final int  _chunkBatch[];
+    ChunkStitcher(long[] chunkSizes,
+                  int[]  chunkLeftMSB,
+                  int[]  chunkRightMSB,
+                  int[]  chunkBatch
     ) {
-      //_leftFrame = leftFrame;
-      //_rightFrame = rightFrame;
-      _chunkSizes = chunkSizes;
+      _chunkSizes   = chunkSizes;
       _chunkLeftMSB = chunkLeftMSB;
-      _chunkRightMSB = chunkRightMSB;
-      _chunkBatch = chunkBatch;
+      _chunkRightMSB= chunkRightMSB;
+      _chunkBatch   = chunkBatch;
     }
     @Override
     public void map(Chunk[] cs) {

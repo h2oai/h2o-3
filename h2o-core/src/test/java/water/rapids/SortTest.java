@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 public class SortTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void testBasic() {
+  /*@Test*/ public void testBasic() {
     Frame fr = null, res = null;
 
     // Stable sort columns 0 and 1
