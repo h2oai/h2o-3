@@ -99,31 +99,35 @@ def _except_hook(exc_type, exc_value, exc_tb):
         frame_file = frame.f_code.co_filename
         frame_func = frame.f_code.co_name
         frame_locl = frame.f_locals
-        if frame_func != "decorator_invisible" and frame_locl:
-            err("\n  Within %s() line %s in file %s:" % (frame_func, tb_line, frame_file))
-            for key in sorted(frame_locl.keys(), reverse=True):
-                if key.startswith("__") and key.endswith("__"): continue
-                value = frame_locl[key]
-                if value.__class__ is ModuleType: continue  # omit imported modules
-                if value.__class__ is ClassType: continue  # omit class declarations
-                if value.__class__ is print_function.__class__: continue  # omit __future__ declarations
-                if value is None: continue  # do not print uninitialized variables
-                try:
-                    strval = repr(value)
-                    n_lines = strval.count("\\n")
-                    if n_lines > 1:
-                        strval = "%s... (+ %d line%s)" % (strval[:strval.index("\\n")], n_lines - 1,
-                                                          "s" if n_lines > 2 else "")
-                    err("%25s: %s" % (key, strval))
-                except:
-                    err("%25s: <UNABLE TO PRINT VALUE>" % key)
         tb = tb.tb_next
+        if frame_func == "decorator_invisible": continue
+        if frame_func == "__getattribute__": continue
+        if not frame_locl: continue
+        err("\n  Within %s() line %s in file %s:" % (frame_func, tb_line, frame_file))
+        for key in sorted(frame_locl.keys(), reverse=True):
+            if key.startswith("__") and key.endswith("__"): continue
+            value = frame_locl[key]
+            if value.__class__ is ModuleType: continue  # omit imported modules
+            if value.__class__ is ClassType: continue  # omit class declarations
+            if value.__class__ is print_function.__class__: continue  # omit __future__ declarations
+            if value is None: continue  # do not print uninitialized variables
+            try:
+                strval = str(value)
+                n_lines = strval.count("\n")
+                if n_lines > 1:
+                    strval = "%s... (+ %d line%s)" % (strval[:strval.index("\n")], n_lines - 1,
+                                                      "s" if n_lines > 2 else "")
+                err("%25s: %s" % (key, strval))
+            except:
+                err("%25s: <UNABLE TO PRINT VALUE>" % key)
     err()
 
     # Print the traceback
     err("[STACKTRACE]")
     last_file = None
     tb = exc_tb
+    prev_info = None
+    skip_frames = 0
     while tb:
         tb_lineno = tb.tb_lineno
         frame = tb.tb_frame
@@ -132,11 +136,23 @@ def _except_hook(exc_type, exc_value, exc_tb):
         frame_glob = frame.f_globals
         tb = tb.tb_next
         if frame_func == "decorator_invisible": continue
+        if frame_func == "__getattribute__": continue
+        if (tb_lineno, frame_file) == prev_info:
+            skip_frames += 1
+            continue
+        else:
+            if skip_frames:
+                err("    %20s   ... +%d nested calls" % ("", skip_frames))
+            skip_frames = 0
+            prev_info = (tb_lineno, frame_file)
+
         if frame_file != last_file:
             last_file = frame_file
             err("\n  File %s:" % frame_file)
         line_txt = linecache.getline(frame_file, tb_lineno, frame_glob)
         err("    %20s() #%04d  %s" % (frame_func, tb_lineno, line_txt.strip()))
+    if skip_frames:
+        err("    %20s   ... +%d nested calls" % ("", skip_frames))
     err()
 
     # Print the exception message
