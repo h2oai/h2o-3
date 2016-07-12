@@ -375,8 +375,12 @@ public class LinearAlgebraUtils {
     final double[] _yCoord; //projection
     @Override public void map(Chunk[] cs, NewChunk[] nc) {
       for (int i=0;i<cs[0]._len;++i) {
-        int which = (int)cs[0].at8(i);
-        nc[0].addNum(_yCoord[which]);
+        if (cs[0].isNA(i)) {
+          nc[0].addNA();
+        } else {
+          int which = (int) cs[0].at8(i);
+          nc[0].addNum(_yCoord[which]);
+        }
       }
     }
   }

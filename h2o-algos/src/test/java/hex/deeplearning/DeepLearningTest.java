@@ -1997,13 +1997,14 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._nfolds = 3;
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+      parms._score_training_samples = 0;
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(0.94905686, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
-      Assert.assertEquals(0.94905686, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
-      Assert.assertEquals(0.90714833, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
-      Assert.assertEquals(0.90714833, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
+      Assert.assertEquals(0.95176, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.94829, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
+      Assert.assertEquals(0.91912, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.9200, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2137,7 +2138,7 @@ public class DeepLearningTest extends TestUtil {
       Vec labels = small.vec("survived"); //actual
       String[] fullDomain = train.vec("survived").domain(); //actual
 
-      ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), labels, fullDomain, 0.5);
+      ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), labels, fullDomain);
       Log.info(mm.toString());
 
       small.remove();

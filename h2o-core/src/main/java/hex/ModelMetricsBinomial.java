@@ -63,10 +63,20 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
    * @param targetClassProbs A Vec containing target class probabilities
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
+   * @return ModelMetrics object
+   */
+  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels) {
+    return make(targetClassProbs,actualLabels,new String[]{"0","1"});
+  }
+
+  /**
+   * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
+   * @param targetClassProbs A Vec containing target class probabilities
+   * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
    * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
    * @return ModelMetrics object
    */
-  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain, double threshold) {
+  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
     Vec _labels = actualLabels.toCategoricalVec();
     if (_labels == null || targetClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs!");
@@ -76,13 +86,11 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1.");
     if (domain.length!=2)
       throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain));
-    if (threshold < 0 || threshold > 1)
-      throw new IllegalArgumentException("Classification threshold must be between 0 and 1.");
     _labels = _labels.adaptTo(domain);
     Frame predsLabel = new Frame(targetClassProbs);
     predsLabel.add("labels", _labels);
-    ModelMetricsBinomial mm = new BinomialMetrics(_labels.domain(), threshold).doAll(predsLabel)._mm;
-    mm._description = "Computed on user-given predictions and labels";
+    ModelMetricsBinomial mm = new BinomialMetrics(_labels.domain()).doAll(predsLabel)._mm;
+    mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold();
     _labels.remove();
     return mm;
   }
@@ -90,9 +98,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   // helper to build a ModelMetricsBinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
   private static class BinomialMetrics extends MRTask<BinomialMetrics> {
     public ModelMetricsBinomial _mm; //OUTPUT
-    public BinomialMetrics(String[] domain, double threshold) { this.domain = domain; this.threshold = threshold; }
+    public BinomialMetrics(String[] domain) { this.domain = domain; }
     String[] domain;
-    double threshold;
     private MetricBuilderBinomial _mb;
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderBinomial(domain);
@@ -101,7 +108,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       for (int i=0;i<chks[0]._len;++i) {
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
         ds[1] = 1-ds[2]; //class 0 probs
-        ds[0] = GenModel.getPrediction(ds, null, ds, threshold); //label
+        ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
         _mb.perRow(ds, new float[]{actuals.at8(i)}, null);
       }
     }
