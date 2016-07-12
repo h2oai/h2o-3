@@ -2088,7 +2088,7 @@ public class DeepLearningTest extends TestUtil {
         Vec labels = small.vec("C785"); //actual
         String[] fullDomain = train.vec("C785").domain(); //actual
 
-        ModelMetricsMultinomial mm = new ModelMetricsMultinomial.MakeMultinomialMetrics(preds, labels, fullDomain).get();
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds, labels, fullDomain);
         Log.info(mm.toString());
 
         small.remove();
