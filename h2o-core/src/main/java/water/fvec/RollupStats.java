@@ -54,6 +54,7 @@ final class RollupStats extends Iced {
   volatile long[] _bins;
   // Approximate data value closest to the Xth percentile
   double[] _pctiles;
+  public byte _type;
 
   public boolean hasHisto(){return _bins != null;}
 
@@ -62,9 +63,9 @@ final class RollupStats extends Iced {
   // Check for: Rollups currently being computed
   private boolean isComputing() { return _naCnt==-1; }
   // Check for: Rollups available
-  private boolean isReady() { return _naCnt>=0; }
+  boolean isReady() { return _naCnt>=0; }
 
-  private RollupStats(int mode) {
+  RollupStats(int mode) {
     _mins = new double[5];
     _maxs = new double[5];
     Arrays.fill(_mins, Double.MAX_VALUE);
@@ -78,7 +79,7 @@ final class RollupStats extends Iced {
   private static RollupStats makeComputing() { return new RollupStats(-1); }
   static RollupStats makeMutating () { return new RollupStats(-2); }
 
-  private RollupStats map( Chunk c ) {
+  RollupStats map(Chunk c) {
     _size = c.byteSize();
     boolean isUUID = c._vec.isUUID();
     boolean isString = c._vec.isString();
@@ -216,7 +217,7 @@ final class RollupStats extends Iced {
     return this;
   }
 
-  private void reduce( RollupStats rs ) {
+  void reduce(RollupStats rs) {
     for( double d : rs._mins ) if (!Double.isNaN(d)) min(d);
     for( double d : rs._maxs ) if (!Double.isNaN(d)) max(d);
     _naCnt += rs._naCnt;
@@ -249,6 +250,52 @@ final class RollupStats extends Iced {
         { double tmp = _maxs[i];  _maxs[i] = d;  d = tmp; }
     return _maxs[_maxs.length-1];
   }
+
+  public void postGlobal() {
+    _sigma = Math.sqrt(_sigma/(_rows-1));
+    if (_rows == 1) _sigma = 0;
+    if (_rows < 5) for (int i=0; i<5-_rows; i++) {  // Fix PUBDEV-150 for files under 5 rows
+      _maxs[4-i] = Double.NaN;
+      _mins[4-i] = Double.NaN;
+    }
+    // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
+    if(_type == Vec.T_CAT && _rows > 2 && _maxs[2] != _mins[2])
+      _mean = _sigma = Double.NaN;
+  }
+
+  public void computePercentiles() {
+    _pctiles = new double[Vec.PERCENTILES.length];
+    int j = 0;                 // Histogram bin number
+    int k = 0;                 // The next non-zero bin after j
+    long hsum = 0;             // Rolling histogram sum
+    double base = h_base();
+    double stride = h_stride();
+    double lastP = -1.0;       // any negative value to pass assert below first time
+    for (int i = 0; i < Vec.PERCENTILES.length; i++) {
+      final double P = Vec.PERCENTILES[i];
+      assert P >= 0 && P <= 1 && P >= lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
+      lastP = P;
+      double pdouble = 1.0 + P * (_rows - 1);   // following stats:::quantile.default type 7
+      long pint = (long) pdouble;          // 1-based into bin vector
+      double h = pdouble - pint;           // any fraction h to linearly interpolate between?
+      assert P != 1 || (h == 0.0 && pint == _rows);  // i.e. max
+      while (hsum < pint) hsum += _bins[j++];
+      // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
+      // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
+      _pctiles[i] = base + stride * (j - 1);
+      if (h > 0 && pint == hsum) {
+        // linearly interpolate between adjacent non-zero bins
+        //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
+        // AND ii) h>0 so we do need to find the next non-zero bin
+        if (k < j) k = j; // if j jumped over the k needed for the last P, catch k up to j
+        // Saves potentially winding k forward over the same zero stretch many times
+        while (_bins[k] == 0) k++;  // find the next non-zero bin
+        _pctiles[i] += h * stride * (k - j + 1);
+      } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
+      // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
+    }
+  }
+
 
   private static class Roll extends MRTask<Roll> {
     final Key _rskey;
@@ -338,7 +385,7 @@ final class RollupStats extends Iced {
   // Histogram base & stride
   double h_base() { return _mins[0]; }
   double h_stride() { return h_stride(_bins.length); }
-  private double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
+  double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
 
   // Compute expensive histogram
   private static class Histo extends MRTask<Histo> {

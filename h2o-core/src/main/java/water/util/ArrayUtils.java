@@ -876,6 +876,11 @@ public class ArrayUtils {
     System.arraycopy(b, 0, res, a.length, b.length);
     return res;
   }
+  public static int[] join(int[] a, int[] b) {
+    int[] res = Arrays.copyOf(a, a.length+b.length);
+    System.arraycopy(b, 0, res, a.length, b.length);
+    return res;
+  }
   public static float [] join(float[] a, float[] b) {
     float[] res = Arrays.copyOf(a, a.length+b.length);
     System.arraycopy(b, 0, res, a.length, b.length);

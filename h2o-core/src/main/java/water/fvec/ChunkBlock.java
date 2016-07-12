@@ -13,8 +13,9 @@ import java.util.Arrays;
  * Simple storage for multiple chunks.
  */
 public class ChunkBlock extends Keyed<ChunkBlock> {
-
-  private int _chunkId;
+  transient VecBlock _vb;
+  transient long _start;
+  int _cidx;
   private int _vecStart;    // VecGroup vecId
   private int _vecEnd;      // VecGroup vecId
   public final int vecStart(){return _vecStart;}
@@ -37,7 +38,7 @@ public class ChunkBlock extends Keyed<ChunkBlock> {
     _chunks = chunks;
     _len = chunks[0]._len;
   }
-  public int chunkId(){return _chunkId;}
+  public int chunkId(){return _cidx;}
   public boolean isSparse(){return _nzChunks != null;}
 
   public transient volatile boolean _modified;
@@ -80,6 +81,7 @@ public class ChunkBlock extends Keyed<ChunkBlock> {
     _modified = true;
   }
 
+  public Chunk [] getChunks(){return _chunks;}
   public Chunk getChunk(int i) {
     if(i < _vecStart || i > _vecEnd)
       throw new IndexOutOfBoundsException(_vecStart + " <= " + i + " < " + _vecEnd);

@@ -20,6 +20,7 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
+import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
@@ -43,7 +44,7 @@ public class GLMTest  extends TestUtil {
   public void testWideData(){
     int M = 1000000;
     int P = 100000;
-    double fillRatio = 0.0001;
+    double fillRatio = 0.001;
     final double[] res = new double[1];
 
     Vec [] vs = null;
@@ -134,6 +135,10 @@ public class GLMTest  extends TestUtil {
       System.out.println("sum = " + res[0]);
       t1 = System.currentTimeMillis();
       System.out.println("done in " + (t1 - t0) + " ms");
+      long r = NonBlockingHashMap.reprobeCount.get();
+      long o = NonBlockingHashMap.opsCount.get();
+      if(o % 1000000 == 0)
+        System.out.println("avg reprobe count after " + o + " operations = " + (double)r/(double)o);
     } finally {
       if(vs != null)
       for (Vec v : vs) if(v != null) v.remove();
