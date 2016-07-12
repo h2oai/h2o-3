@@ -102,10 +102,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
   public static class MakeMultinomialMetrics extends Iced {
     public Frame _preds; //probabilities
-    final int K = 10;
-
     private Vec _labels; //actuals
-    private String[] _domain; //actuals
+    final int K = 10; //K for hit ratio
 
     public MakeMultinomialMetrics(Frame preds, Vec labels, String[] domain) {
       _preds = preds;
