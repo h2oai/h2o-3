@@ -15,6 +15,7 @@ except AttributeError:
 
 import re
 from six import PY3
+import copy
 from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
 from .connection import H2OConnection
 from .expr import ExprNode
@@ -419,10 +420,11 @@ def parse_raw(setup, id=None, first_line_is_header=(-1,0,1)):
 
 def assign(data,xid):
   if data.frame_id == xid: ValueError("Desination key must differ input frame")
-  data._ex = ExprNode("assign",xid,data)._eval_driver(False)
-  data._ex._cache._id = xid
-  data._ex._children = None
-  return data
+  d = copy.deepcopy(data)
+  d._ex = ExprNode("assign",xid,data)._eval_driver(False)
+  d._ex._cache._id = xid
+  d._ex._children = None
+  return d
 
 
 def get_model(model_id):
