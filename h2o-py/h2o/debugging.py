@@ -72,6 +72,9 @@ def _except_hook(exc_type, exc_value, exc_tb):
                    moving to exc_tb.tb_next) in order to find the execution frame where the actual exception occurred.
     """
     import linecache
+    if not exc_tb:  # Happens on SyntaxError exceptions
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
 
     # Helper function for printing to stderr
     def err(msg=""):

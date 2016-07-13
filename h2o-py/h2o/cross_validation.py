@@ -1,4 +1,5 @@
-class H2OPartitionIterator:
+
+class H2OPartitionIterator(object):
   def __init__(self, n):
     if abs(n - int(n)) >= 1e-15: raise ValueError("n must be an integer")
     self.n = int(n)

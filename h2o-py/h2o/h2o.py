@@ -4,16 +4,16 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
+# noinspection PyUnresolvedReferences
+from .compatibility import *
+from future.standard_library import install_aliases
 import warnings
 import re
 import os
 import sys
-from future.standard_library import install_aliases
-from past.builtins import basestring
-from six import PY3
-import copy
-from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
-from .connection import H2OConnection
+
+from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen
+from .connection import H2OConnection, H2OConnectionError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
@@ -29,6 +29,9 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .grid.grid_search import H2OGridSearch
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
+# noinspection PyUnresolvedReferences
+from .debugging import *
+
 
 warnings.simplefilter('always', DeprecationWarning)
 try:
@@ -37,6 +40,129 @@ except AttributeError:
     if os.path.exists(os.path.join(sys.path[0], "test.py")):
         print("File named `test` is conflicting with python module `test` used by the future library.")
 
+# the @deprecated decorator
+def deprecated(message):
+    from traceback import extract_stack
+    assert message, "`message` argument in @deprecated is required."
+
+    def deprecated_decorator(fun):
+        def decorator_invisible(*args, **kwargs):
+            stack = extract_stack()
+            assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack
+            print("[WARNING] in %s line %d:" % (stack[-2][0], stack[-2][1]))
+            print("    >>> %s" % stack[-2][3])
+            print("        ^^^^ %s" % message)
+            return fun(*args, **kwargs)
+        return decorator_invisible
+
+    return deprecated_decorator
+
+
+h2oconn = None
+
+
+def connect(ip="localhost", port=54321, https=False, verify_ssl_cert=True, auth=None, proxy=None, cluster_name=None,
+            verbose=True):
+    """
+    Connect to an existing H₂O server, remote or local.
+
+    :param ip: The ip address (or host name) of the server where H₂O is running.
+    :param port: Port number that H₂O service is listening to.
+    :param https: Set to True to connect via https:// instead of http://.
+    :param verify_ssl_cert: When using https, setting this to False will disable SSL certificates verification.
+    :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
+                 authenticator objects.
+    :param proxy: Proxy server address.
+    :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
+    :param verbose: Set to False to disable printing connection status messages.
+    :return  None
+    """
+    global h2oconn
+    h2oconn = H2OConnection.connect(**locals())
+    if verbose:
+        h2oconn.info().pprint()
+    return h2oconn
+
+
+def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
+          verbose=True):
+    """
+    :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
+    :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
+    :param enable_assertions: If True, then the server will start with the -ea JVM option (enabling code assertions).
+    :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
+    :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
+    :param ice_root: A temporary directory where H₂O log files will be placed. If not specified, then the folder will
+        be chosen by `tempfile.mkdtemp()`.
+    :param verbose: Whether to print connection progress messages to the stdout or not.
+    :return:
+    """
+    global h2oconn
+    h2oconn = H2OConnection.start(**locals())
+    if verbose:
+        h2oconn.info().pprint()
+    return h2oconn
+
+
+def connection():
+    return h2oconn
+
+
+def version_check():
+    """
+    Used to verify that h2o-python module and the H2O server are compatible with each other.
+    """
+    if os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"): return
+    ci = h2oconn.info()
+    if not ci:
+        raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
+    ver_h2o = ci.version
+    from .__init__ import __version__ as ver_pkg
+    if ver_pkg == "SUBST_PROJECT_VERSION": ver_pkg = "UNKNOWN"
+    if str(ver_h2o) != str(ver_pkg):
+        branch_name_h2o = ci.branch_name
+        build_number_h2o = ci.build_number
+        if build_number_h2o is None or build_number_h2o == "unknown":
+            raise H2OConnectionError(
+                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                "Upgrade H2O and h2o-Python to latest stable version - "
+                "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
+                "".format(ver_h2o, ver_pkg))
+        elif build_number_h2o == "99999":
+            raise H2OConnectionError(
+                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                "This is a developer build, please contact your developer."
+                "".format(ver_h2o, ver_pkg))
+        else:
+            raise H2OConnectionError(
+                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                "Install the matching h2o-Python version from - "
+                "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
+                "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
+
+
+def init(ip="localhost", port=54321, https=False, insecure=False, username=None, password=None, cluster_name=None,
+         proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
+         max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
+    """DEPRECATED. Use h2o.start() or h2o.connect() instead."""
+    scheme = "https" if https else "http"
+    proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
+        kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
+    mmax = int(max_mem_size) if max_mem_size is not None else \
+        kwargs["max_mem_size_GB"] << 30 if "max_mem_size_GB" in kwargs else None
+    mmin = int(min_mem_size) if min_mem_size is not None else \
+        kwargs["min_mem_size_GB"] << 30 if "min_mem_size_GB" in kwargs else None
+    try:
+        connect(ip=ip, port=port, https=https, verify_ssl_cert=not insecure, auth=(username, password), proxy=proxy,
+                cluster_name=cluster_name, verbose=True)
+    except H2OConnectionError:
+        if start_h2o:
+            start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax, min_mem_size=mmin,
+                  ice_root=ice_root)
+        else:
+            raise
+    if strict_version_check:
+        version_check()
 
 
 def lazy_import(path):
@@ -51,7 +177,7 @@ def lazy_import(path):
 
 
 def _import(path):
-    j = H2OConnection.get_json(url_suffix="ImportFiles", path=path)
+    j = h2oconn.get_json(url_suffix="ImportFiles", path=path)
     if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
     return j['destination_frames']
 
@@ -106,9 +232,7 @@ def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names
 
     Examples
     --------
-      >>> import h2o as ml
-      >>> ml.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
-      ...
+      >> h2o.upload_file(path="/path/to/local/data", destination_frame="my_local_data")
     """
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
@@ -117,7 +241,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
                 col_names=None, col_types=None, na_strings=None):
     """Have H2O import a dataset into memory. The path to the data must be a valid path for
     each node in the H2O cluster. If some node in the H2O cluster cannot see the file, then
-    an exception will be thrown by the H2O cluster. Does a parallel/distributed multi-threaded pull 
+    an exception will be thrown by the H2O cluster. Does a parallel/distributed multi-threaded pull
     of the data. Also see upload_file.
 
     Parameters
@@ -210,11 +334,11 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
 
     Examples
     --------
-      >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-      >>> table = "citibike20k"
-      >>> username = "root"
-      >>> password = "abc123"
-      >>> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
+      >> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+      >> table = "citibike20k"
+      >> username = "root"
+      >> password = "abc123"
+      >> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
     """
     if columns is not None:
         if not isinstance(columns, list): raise ValueError("`columns` must be a list of column names")
@@ -222,7 +346,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     p = {}
     p.update({k: v for k, v in locals().items() if k is not "p"})
     p["_rest_version"] = 99
-    j = H2OJob(H2OConnection.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+    j = H2OJob(h2oconn.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
@@ -260,16 +384,16 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
     Examples
     --------
-      >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-      >>> select_query = "SELECT bikeid from citibike20k"
-      >>> username = "root"
-      >>> password = "abc123"
-      >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
+      >> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+      >> select_query = "SELECT bikeid from citibike20k"
+      >> username = "root"
+      >> password = "abc123"
+      >> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
     """
     p = {}
     p.update({k: v for k, v in locals().items() if k is not "p"})
     p["_rest_version"] = 99
-    j = H2OJob(H2OConnection.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+    j = H2OJob(h2oconn.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
@@ -329,7 +453,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     """
 
     # The H2O backend only accepts things that are quoted
-    if isinstance(raw_frames, basestring): raw_frames = [raw_frames]
+    if isinstance(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
     kwargs = {}
@@ -340,11 +464,11 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
     # set separator
     if separator:
-        if not isinstance(separator, basestring) or len(separator) != 1: raise ValueError(
-            "separator should be a single character string")
+        if not isinstance(separator, str) or len(separator) != 1:
+            raise ValueError("separator should be a single character string; got %r" % separator)
         kwargs["separator"] = ord(separator)
 
-    j = H2OConnection.post_json(url_suffix="ParseSetup", source_frames=[_quoted(id) for id in raw_frames], **kwargs)
+    j = h2oconn.post_json(url_suffix="ParseSetup", source_frames=[quoted(id) for id in raw_frames], **kwargs)
     if j['warnings']:
         for w in j['warnings']:
             warnings.warn(w)
@@ -359,7 +483,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
         if isinstance(column_types, dict):
             # overwrite dictionary to ordered list of column types. if user didn't specify column type for all names, use type provided by backend
             if j["column_names"] is None:  # no colnames discovered! (C1, C2, ...)
-                j["column_names"] = _gen_header(j["number_columns"])
+                j["column_names"] = gen_header(j["number_columns"])
             if not set(column_types.keys()).issubset(set(j["column_names"])): raise ValueError(
                 "names specified in col_types is not a subset of the column names")
             idx = 0
@@ -388,22 +512,22 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
             j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
             for name, na in na_strings.items():
                 idx = j["column_names"].index(name)
-                if isinstance(na, basestring): na = [na]
-                for n in na: j["na_strings"][idx].append(_quoted(n))
-        elif _is_list_of_lists(na_strings):
+                if isinstance(na, str): na = [na]
+                for n in na: j["na_strings"][idx].append(quoted(n))
+        elif is_list_of_lists(na_strings):
             if len(na_strings) != len(j["column_types"]): raise ValueError(
                 "length of na_strings should be equal to the number of columns")
-            j["na_strings"] = [[_quoted(na) for na in col] if col is not None else [] for col in na_strings]
+            j["na_strings"] = [[quoted(na) for na in col] if col is not None else [] for col in na_strings]
         elif isinstance(na_strings, list):
-            j["na_strings"] = [[_quoted(na) for na in na_strings]] * len(j["column_types"])
+            j["na_strings"] = [[quoted(na) for na in na_strings]] * len(j["column_types"])
         else:  # not a dictionary or list
             raise ValueError(
                 "na_strings should be a list, a list of lists (one list per column), or a dictionary of column "
                 "names to strings which are to be interpreted as missing values")
 
     # quote column names and column types also when not specified by user
-    if j["column_names"]: j["column_names"] = list(map(_quoted, j["column_names"]))
-    j["column_types"] = list(map(_quoted, j["column_types"]))
+    if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
+    j["column_types"] = list(map(quoted, j["column_types"]))
     return j
 
 
@@ -426,7 +550,7 @@ def parse_raw(setup, id=None, first_line_is_header=(-1, 0, 1)):
     -------
       H2OFrame
     """
-    if id: setup["destination_frame"] = _quoted(id).replace("%", ".").replace("&", ".")
+    if id: setup["destination_frame"] = quoted(id).replace("%", ".").replace("&", ".")
     if first_line_is_header != (-1, 0, 1):
         if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
         setup["check_header"] = first_line_is_header
@@ -455,7 +579,7 @@ def get_model(model_id):
       -------
         Subclass of H2OEstimator
     """
-    model_json = H2OConnection.get_json("Models/"+model_id)["models"][0]
+    model_json = h2oconn.get_json("Models/"+model_id)["models"][0]
     algo = model_json["algo"]
     if   algo == "svd":          m = H2OSVD()
     elif algo == "pca":          m = H2OPCA()
@@ -472,6 +596,7 @@ def get_model(model_id):
     m._resolve_model(model_id, model_json)
     return m
 
+
 def get_grid(grid_id):
     """Return the specified grid
 
@@ -484,10 +609,10 @@ def get_grid(grid_id):
     -------
       H2OGridSearch instance
     """
-    grid_json = H2OConnection.get_json("Grids/" + grid_id, _rest_version=99)
+    grid_json = h2oconn.get_json("Grids/" + grid_id, _rest_version=99)
     models = [get_model(key['name']) for key in grid_json['model_ids']]
     # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-    first_model_json = H2OConnection.get_json("Models/" + grid_json['model_ids'][0]['name'])['models'][0]
+    first_model_json = h2oconn.get_json("Models/" + grid_json['model_ids'][0]['name'])['models'][0]
     gs = H2OGridSearch(None, {}, grid_id)
     gs._resolve_grid(grid_id, grid_json, first_model_json)
     gs.models = models
@@ -543,14 +668,11 @@ def log_and_echo(message):
 
     Sends a message to H2O for logging. Generally used for debugging purposes.
 
-    Parameters
-    ----------
-      message : str
-        A character string with the message to write to the log.
-
+    :param message: (str)message to write to the log.
+    :return None
     """
     if message is None: message = ""
-    H2OConnection.post_json("LogAndEcho", message=message)
+    h2oconn.post_json("LogAndEcho", message=str(message))
 
 
 def remove(x):
@@ -558,7 +680,7 @@ def remove(x):
 
     Parameters
     ----------
-      x : H2OFrame, H2OEstimator, or basestring, or a list/tuple of those things.
+      x : H2OFrame, H2OEstimator, or string, or a list/tuple of those things.
         The object(s) or unique id(s) pointing to the object(s) to be removed.
     """
     if not isinstance(x, (list, tuple)): x = (x,)
@@ -571,21 +693,21 @@ def remove(x):
             rapids("(rm {})".format(xi_id))
             xi._ex = None
         elif isinstance(xi, H2OEstimator):
-            H2OConnection.delete("DKV/" + xi.model_id)
+            h2oconn.delete("DKV/" + xi.model_id)
             xi._id = None
-        elif isinstance(xi, basestring):
+        elif isinstance(xi, str):
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
-                H2OConnection.delete("DKV/" + xi)
+                h2oconn.delete("DKV/" + xi)
         else:
-            raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or basestring')
+            raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or string')
 
 
 def remove_all():
     """Remove all objects from H2O."""
-    H2OConnection.delete("DKV")
+    h2oconn.api("DELETE /3/DKV")
 
 
 def rapids(expr):
@@ -625,7 +747,7 @@ def frame(frame_id, exclude=""):
     -------
       Python dict containing the frame meta-information
     """
-    return H2OConnection.get_json("Frames/" + frame_id + exclude)
+    return h2oconn.get_json("Frames/" + frame_id + exclude)
 
 
 def frames():
@@ -635,7 +757,7 @@ def frames():
     -------
       Meta information on the frames
     """
-    return H2OConnection.get_json("Frames")
+    return h2oconn.get_json("Frames")
 
 
 def download_pojo(model, path="", get_jar=True):
@@ -653,7 +775,7 @@ def download_pojo(model, path="", get_jar=True):
       get_jar : bool
         Retrieve the h2o-genmodel.jar also.
     """
-    java = H2OConnection.get("Models.java/" + model.model_id)
+    java = h2oconn.get("Models.java/" + model.model_id)
 
     # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
     # TODO: clients should extract Java class name from header.
@@ -663,12 +785,12 @@ def download_pojo(model, path="", get_jar=True):
     filepath = path + "/" + pojoname + ".java"
     print("Filepath: {}".format(filepath))
     if path == "":
-        print(java.text)
+        print(java)
     else:
         with open(filepath, 'wb') as f:
-            f.write(java.text.encode("utf-8"))
+            f.write(java.encode("utf-8"))
     if get_jar and path != "":
-        url = H2OConnection.make_url("h2o-genmodel.jar")
+        url = h2oconn.make_url("h2o-genmodel.jar")
         filename = path + "/" + "h2o-genmodel.jar"
         response = urlopen()(url)
         with open(filename, "wb") as f:
@@ -691,7 +813,7 @@ def download_csv(data, filename):
     """
     if not isinstance(data, H2OFrame):
         raise ValueError
-    url = H2OConnection.make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(data.frame_id)
+    url = h2oconn.make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(data.frame_id)
     with open(filename, 'wb') as f:
         f.write(urlopen()(url).read())
 
@@ -711,12 +833,12 @@ def download_all_logs(dirname=".", filename=None):
     -------
       Path of logs written.
     """
-    url = 'http://{}:{}/3/Logs/download'.format(H2OConnection.ip(), H2OConnection.port())
+    url = "%s/3/Logs/download" % h2oconn.base_url
     opener = urlopen()
     response = opener(url)
 
     if not os.path.exists(dirname): os.mkdir(dirname)
-    if filename == None:
+    if filename is None:
         if PY3:
             headers = [h[1] for h in response.headers._headers]
         else:
@@ -753,7 +875,7 @@ def save_model(model, path="", force=False):
       The path of the saved model (string)
     """
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return H2OConnection.get_json("Models.bin/" + model.model_id, dir=path, force=force, _rest_version=99)["dir"]
+    return h2oconn.get_json("Models.bin/" + model.model_id, dir=path, force=force, _rest_version=99)["dir"]
 
 
 def load_model(path):
@@ -771,10 +893,10 @@ def load_model(path):
 
     Examples
     --------
-      >>> path = h2o.save_mode(my_model,dir=my_path)
-      >>> h2o.load_model(path)
+      >> path = h2o.save_mode(my_model,dir=my_path)
+      >> h2o.load_model(path)
     """
-    res = H2OConnection.post_json("Models.bin/", dir=path, _rest_version=99)
+    res = h2oconn.post_json("Models.bin/", dir=path, _rest_version=99)
     return get_model(res['models'][0]['model_id']['name'])
 
 
@@ -783,104 +905,32 @@ def cluster_status():
     but if a user tries to do any remoteSend, they will get a "cloud sick warning"
     Retrieve information on the status of the cluster running H2O.
     """
-    cluster_json = H2OConnection.get_json("Cloud?skip_ticks=true")
+    cluster = h2oconn.api("GET /3/Cloud?skip_ticks=true")
 
-    print("Version: {0}".format(cluster_json['version']))
-    print("Cloud name: {0}".format(cluster_json['cloud_name']))
-    print("Cloud size: {0}".format(cluster_json['cloud_size']))
-    if cluster_json['locked']:
-        print("Cloud is locked\n")
+    print("Version: %s" % cluster.version)
+    print("Cloud name: %s" % cluster.cloud_name)
+    print("Cloud size: %d" % cluster.cloud_size)
+    if cluster.locked:
+        print("Cloud is locked")
     else:
-        print("Accepting new members\n")
-    if cluster_json['nodes'] == None or len(cluster_json['nodes']) == 0:
+        print("Accepting new members")
+    if not cluster.nodes:
         print("No nodes found")
         return
 
     status = []
-    for node in cluster_json['nodes']:
-        for k, v in zip(node.keys(), node.values()):
-            if k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load",
-                     "mem_value_size", "free_mem", "pojo_mem", "swap_mem",
-                     "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
-                     "open_fds", "rpcs_active"]: status.append(k + ": {0}".format(v))
-        print(', '.join(status))
-        print()
+    for node in cluster.nodes:
+        for k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load",
+                  "mem_value_size", "free_mem", "pojo_mem", "swap_mem",
+                  "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
+                  "open_fds", "rpcs_active"]:
+            if k in node:
+                status.append("%s: %s" % (k, node[k]))
+        print(", ".join(status))
+    print()
 
 
-def init(ip="localhost", port=54321, start_h2o=True, enable_assertions=True,
-         license=None, nthreads=-1, max_mem_size=None, min_mem_size=None, ice_root=None,
-         strict_version_check=True, proxy=None, https=False, insecure=False, username=None,
-         password=None, cluster_name=None, force_connect=False, max_mem_size_GB=None, min_mem_size_GB=None, proxies=None, size=None):
-  """Initiate an H2O connection to the specified ip and port.
-
-  Parameters
-  ----------
-  ip : str
-    A string representing the hostname or IP address of the server where H2O is running.
-  port : int
-    A port, default is 54321
-  start_h2o : bool
-    A boolean dictating whether this module should start the H2O jvm. An attempt is made
-    anyways if _connect fails.
-  enable_assertions : bool
-    If start_h2o, pass `-ea` as a VM option.
-  license : str
-    If not None, is a path to a license file.
-  nthreads : int
-    Number of threads in the thread pool. This relates very closely to the number of CPUs used. 
-    -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly. 
-    This value is only used when Python starts H2O.
-  max_mem_size : int
-    Maximum heap size (jvm option Xmx) in gigabytes.
-  min_mem_size : int
-    Minimum heap size (jvm option Xms) in gigabytes.
-  ice_root : str
-    A temporary directory (default location is determined by tempfile.mkdtemp()) to hold
-    H2O log files.
-  strict_version_check : bool 
-    Setting this to False is unsupported and should only be done when advised by technical support.
-  proxy : dict
-    A dictionary with keys 'ftp', 'http', 'https' and values that correspond to a proxy path.
-  https : bool
-    Set this to True to use https instead of http.
-  insecure : bool
-    Set this to True to disable SSL certificate checking.
-  username : str
-    Username to login with.
-  password : str
-    Password to login with.
-  cluster_name : str
-    Cluster to login to.
-  force_connect : bool
-    When set to True, a connection to the cluster will attempt to be established regardless of its reported health.
-  max_mem_size_GB : DEPRECATED
-    Use max_mem_size instead.
-  min_mem_size_GB : DEPRECATED
-    Use min_mem_size instead.
-  proxies : DEPRECATED
-    Use proxy instead.
-  size : DEPRECATED
-    Size is deprecated.
-
-  Examples
-  --------
-  Using the 'proxy' parameter
-
-  >>> import h2o
-  >>> import urllib
-  >>> proxy_dict = urllib.getproxies()
-  >>> h2o.init(proxy=proxy_dict)
-  Starting H2O JVM and connecting: ............... Connection successful!
-
-  """
-  H2OConnection(ip=ip, port=port,start_h2o=start_h2o,enable_assertions=enable_assertions,license=license,
-                nthreads=nthreads,max_mem_size=max_mem_size,min_mem_size=min_mem_size,ice_root=ice_root,
-                strict_version_check=strict_version_check,proxy=proxy,https=https,insecure=insecure,username=username,
-                password=password,cluster_name=cluster_name,force_connect=force_connect,max_mem_size_GB=max_mem_size_GB,min_mem_size_GB=min_mem_size_GB,proxies=proxies,size=size)
-  return None
-
-
-def export_file(frame,path,force=False):
+def export_file(frame, path, force=False):
     """Export a given H2OFrame to a path on the machine this python session is currently
     connected to. To view the current session, call h2o.cluster_info().
 
@@ -893,30 +943,27 @@ def export_file(frame,path,force=False):
     force : bool
       Overwrite any preexisting file with the same path
     """
-    H2OJob(H2OConnection.get_json("Frames/"+frame.frame_id+"/export/"+path+"/overwrite/"+("true" if force else "false")), "Export File").poll()
+    H2OJob(h2oconn.get_json(
+        "Frames/" + frame.frame_id + "/export/" + path + "/overwrite/" + ("true" if force else "false")),
+           "Export File").poll()
 
 
 def cluster_info():
-    """Display the current H2O cluster information.
     """
-    H2OConnection._cluster_info()
+    Display the current H2O cluster information.
+    """
+    h2oconn.info().pprint()
 
 
-def shutdown(conn=None, prompt=True):
-    """Shut down the specified instance. All data will be lost.
+def shutdown(prompt=True):
+    """
+    Shut down the specified instance. All data will be lost.
     This method checks if H2O is running at the specified IP address and port,
     and if it is, shuts down that H2O instance.
 
-    Parameters
-    ----------
-      conn : H2OConnection
-        An H2OConnection object containing the IP address and port of the server running H2O.
-
-      prompt : bool
-        A logical value indicating whether to prompt the user before shutting down the H2O server.
+    :param prompt: (bool) A logical value indicating whether to prompt the user before shutting down the H2O server.
     """
-    if conn is None: conn = H2OConnection.current_connection()
-    H2OConnection._shutdown(conn=conn, prompt=prompt)
+    h2oconn.shutdown(prompt)
 
 
 def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_range=100,
@@ -996,7 +1043,7 @@ def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_ran
     -------
       H2OFrame
     """
-    parms = {"dest": _py_tmp_key(append=H2OConnection.session_id()) if id is None else id,
+    parms = {"dest": py_tmp_key(append=h2oconn.session_id()) if id is None else id,
              "rows": rows,
              "cols": cols,
              "randomize": randomize,
@@ -1016,7 +1063,7 @@ def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_ran
              "seed": -1 if seed is None else seed,
              "seed_for_column_types": -1 if seed_for_column_types is None else seed_for_column_types,
              }
-    H2OJob(H2OConnection.post_json("CreateFrame", **parms), "Create Frame").poll()
+    H2OJob(h2oconn.post_json("CreateFrame", **parms), "Create Frame").poll()
     return get_frame(parms["dest"])
 
 
@@ -1053,14 +1100,14 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
       H2OFrame
     """
     factors = [data.names[n] if isinstance(n, int) else n for n in factors]
-    parms = {"dest": _py_tmp_key(append=H2OConnection.session_id()) if destination_frame is None else destination_frame,
+    parms = {"dest": py_tmp_key(append=h2oconn.session_id()) if destination_frame is None else destination_frame,
              "source_frame": data.frame_id,
-             "factor_columns": [_quoted(f) for f in factors],
+             "factor_columns": [quoted(f) for f in factors],
              "pairwise": pairwise,
              "max_factors": max_factors,
              "min_occurrence": min_occurrence,
              }
-    H2OJob(H2OConnection.post_json("Interaction", **parms), "Interactions").poll()
+    H2OJob(h2oconn.post_json("Interaction", **parms), "Interactions").poll()
     return get_frame(parms["dest"])
 
 
@@ -1089,8 +1136,8 @@ def as_list(data, use_pandas=True):
 
 
 def network_test():
-    res = H2OConnection.get_json(url_suffix="NetworkTest")
-    res["table"].show()
+    res = h2oconn.api("GET /3/NetworkTest")
+    res.table.show()
 
 
 def set_timezone(tz):
@@ -1124,50 +1171,30 @@ def list_timezones():
     return H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
 
 
-#  ALL DEPRECATED METHODS BELOW #
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+#  ALL DEPRECATED METHODS BELOW
+#-----------------------------------------------------------------------------------------------------------------------
 
 # the @h2o_deprecated decorator
 def h2o_deprecated(newfun=None):
     def o(fun):
         def i(*args, **kwargs):
-            print('\n')
-            if newfun is None: raise DeprecationWarning("{} is deprecated.".format(fun.__name__))
-            warnings.warn("{} is deprecated. Use {}.".format(fun.__name__, newfun.__name__),
-                          category=DeprecationWarning, stacklevel=2)
-            return newfun(*args, **kwargs)
-
+            print("\n")
+            if newfun is None:
+                raise DeprecationWarning("%s is deprecated." % fun.__name__)
+            else:
+                warnings.warn("%s is deprecated. Use %s instead." % (fun.__name__, newfun.__name__),
+                              category=DeprecationWarning, stacklevel=2)
+                return newfun(*args, **kwargs)
         return i
-
     return o
-
 
 @h2o_deprecated(import_file)
 def import_frame():
-    """Deprecated for import_file.
-
-    Parameters
-    ----------
-      path : str
-        A path specifying the location of the data to import.
-
-    Returns
-    -------
-      A new H2OFrame
-    """
-
+    """Deprecated (use import_file)."""
 
 @h2o_deprecated()
 def parse():
-    """
-    External use of parse is deprecated. parse has been renamed H2OFrame._parse for internal
-    use.
-
-    Parameters
-    ----------
-      setup : dict
-        The result of calling parse_setup.
-
-    Returns
-    -------
-      A new H2OFrame
-    """
+    """Deprecated (converted to a private method)."""

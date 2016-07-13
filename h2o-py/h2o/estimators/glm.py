@@ -5,7 +5,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from .estimator_base import H2OEstimator
-from h2o.connection import H2OConnection
+import h2o
 
 
 class H2OGeneralizedLinearEstimator(H2OEstimator):
@@ -600,7 +600,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Extract full regularization path explored during lambda search from glm model.
         @param model - source lambda search model
         """
-        x = H2OConnection.get_json("GetGLMRegPath", model=model._model_json["model_id"]["name"])
+        x = h2o.connection().get_json("GetGLMRegPath", model=model._model_json["model_id"]["name"])
         ns = x.pop("coefficient_names")
         res = {
             "lambdas": x["lambdas"],
@@ -621,7 +621,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
           @param coefs - dictionary containing model coefficients
           @param threshold - (optional, only for binomial) decision threshold used for classification
         """
-        model_json = H2OConnection.post_json("MakeGLMModel", model=model._model_json["model_id"]["name"],
+        model_json = h2o.connection().post_json("MakeGLMModel", model=model._model_json["model_id"]["name"],
             names=list(coefs.keys()), beta=list(coefs.values()), threshold=threshold)
         m = H2OGeneralizedLinearEstimator()
         m._resolve_model(model_json["model_id"]["name"], model_json)

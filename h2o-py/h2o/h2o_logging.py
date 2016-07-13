@@ -12,8 +12,11 @@ def _calc_log_file_name(): return tempfile.mkdtemp()+"/rest.log"
 
 def _get_log_file_name(): return __LOG_FILE_NAME__ if __LOG_FILE_NAME__ != None else _calc_log_file_name()
 
+def is_logging(): return __IS_LOGGING__
 def _is_logging(): return __IS_LOGGING__
 
+def log_rest(message):
+    _log_rest(message)
 def _log_rest(message):
     if _is_logging():
         name = _get_log_file_name()

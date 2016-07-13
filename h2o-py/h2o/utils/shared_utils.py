@@ -9,9 +9,8 @@ This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
-from future.builtins import *
+from ..compatibility import *
 import os
-from six import PY3
 import imp
 import itertools
 import re
@@ -46,13 +45,15 @@ def can_use_numpy():
         return False
 
 
-def quote(stuff_to_quote):
-    if PY3:
-        from urllib.request import quote
-        return quote(stuff_to_quote)
-    else:
-        from urllib2 import quote
-        return quote(stuff_to_quote)
+_url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
+_url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in range(256)]
+
+def url_encode(s):
+    # Note: type cast str(s) will not be needed once all code is made compatible
+    return "".join(_url_chars_map[c] for c in str(s).encode("utf-8"))
+
+def quote(s):
+    return url_encode(s)
 
 
 def urlopen():
@@ -101,6 +102,11 @@ def _handle_python_lists(python_obj, check_header):
     return header, data_to_write
 
 
+def stringify_list(arr):
+    return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else str(item)
+                             for item in arr)
+
+
 def _is_list(l):
     return isinstance(l, (tuple, list))
 
@@ -124,7 +130,7 @@ def _handle_numpy_array(python_obj, header):
 def _handle_pandas_data_frame(python_obj, header):
     return _handle_numpy_array(python_obj.as_matrix(), header)
 
-
+@translate_args
 def _handle_python_dicts(python_obj):
     header = list(python_obj.keys())
     is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?

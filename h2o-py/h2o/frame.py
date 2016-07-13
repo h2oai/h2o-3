@@ -1,7 +1,11 @@
-# -*- coding: utf-8 -*-
-# import numpy    no numpy cuz windoz
-from __future__ import print_function
-from __future__ import absolute_import
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
+#
+from __future__ import division, print_function, absolute_import, unicode_literals
+# noinspection PyUnresolvedReferences
+from future.builtins import *
 
 import requests
 from six import iteritems, itervalues
@@ -13,10 +17,8 @@ import os
 import tempfile
 import sys
 import traceback
-import random
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote
 from .display import H2ODisplay
-from .connection import H2OConnection
 from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
@@ -199,7 +201,8 @@ class H2OFrame(object):
 
   def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings):
     fui = {"file": os.path.abspath(path)}
-    rawkey = H2OConnection.post_json(url_suffix="PostFile", file_upload_info=fui)["destination_frame"]
+    ret = h2o.connection().post_json(url_suffix="PostFile", file_upload_info=fui)
+    rawkey = ret["destination_frame"]
     self._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings)
     return self
 
@@ -243,7 +246,7 @@ class H2OFrame(object):
     tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
     tmp_file = os.fdopen(tmp_handle,'w')
     # create a new csv writer object thingy
-    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=",", quoting=csv.QUOTE_ALL)
+    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=b",", quoting=csv.QUOTE_ALL)
     csv_writer.writeheader()              # write the header
     #because we have written the header, header in this newly created tmp csv file must be 1
     header = 1
@@ -327,7 +330,7 @@ class H2OFrame(object):
     # Extract only 'name' from each src in the array of srcs
     p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
 
-    H2OJob(H2OConnection.post_json(url_suffix="Parse", **p), "Parse").poll()
+    H2OJob(h2o.connection().post_json(url_suffix="Parse", **p), "Parse").poll()
     # Need to return a Frame here for nearly all callers
     # ... but job stats returns only a dest_key, requiring another REST call to get nrow/ncol
     self._ex._cache._id = p["destination_frame"]
@@ -416,7 +419,7 @@ class H2OFrame(object):
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
 
-    res = H2OConnection.get_json("Frames/"+self.frame_id+"?row_count="+str(10))["frames"][0]
+    res = h2o.connection().get_json("Frames/"+self.frame_id+"?row_count="+str(10))["frames"][0]
     self._ex._cache._fill_data(res)
     print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
     res["chunk_summary"].show()
@@ -933,10 +936,11 @@ class H2OFrame(object):
       A local python string, each line is a row and each element separated by commas,
       containing this H2OFrame instance's data.
     """
-    url = H2OConnection.make_url("DownloadDataset",3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+    url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+    # TODO: this should be moved into H2OConnection class
     return requests.get(url, headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')},
-                        auth = (H2OConnection.username(), H2OConnection.password()),
-                        verify = not H2OConnection.insecure(), stream = True).text
+                        auth = h2o.connection()._auth,
+                        verify = h2o.connection()._verify_ssl_cert, stream = True).text
 
   def __getitem__(self, item):
     """Frame slicing. Supports R-like row and column slicing.
@@ -1454,7 +1458,8 @@ class H2OFrame(object):
     else:
       res = ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values)._eager_scalar()
 
-    self._ex._cache.flush(); self._ex._cache.fill(10)
+    self._ex._cache.flush()
+    self._ex._cache.fill(10)
     return res
 
   def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
@@ -1531,7 +1536,7 @@ class H2OFrame(object):
     kwargs['fraction'] = fraction
     if seed is not None: kwargs['seed'] = seed
     job = {}
-    job['job'] = H2OConnection.post_json("MissingInserter", **kwargs)
+    job['job'] = h2o.connection().post_json("MissingInserter", **kwargs)
     H2OJob(job, job_type=("Insert Missing Values")).poll()
     self._ex._cache.flush()
     return self
@@ -1606,19 +1611,19 @@ class H2OFrame(object):
     Parameters
     ----------
     y : H2OFrame, default=None
-      If y is None and self is a single column, then the variance is computed for self. If self has 
-      multiple columns, then its covariance matrix is returned. Single rows are treated as single columns. 
-      If y is not None, then a covariance matrix between the columns of self and the columns of y is computed. 
+      If y is None and self is a single column, then the variance is computed for self. If self has
+      multiple columns, then its covariance matrix is returned. Single rows are treated as single columns.
+      If y is not None, then a covariance matrix between the columns of self and the columns of y is computed.
     na_rm : bool, default=False
       Remove NAs from the computation.
     use : str, default=None, which acts as "everything" if na_rm is False, and "complete.obs" if na_rm is True
-      A string indicating how to handle missing values. This must be one of the following: 
+      A string indicating how to handle missing values. This must be one of the following:
         "everything"            - outputs NaNs whenever one of its contributing observations is missing
         "all.obs"               - presence of missing observations will throw an error
         "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
     Returns
     -------
-      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y 
+      An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
       (if y is given). If self and y are single rows or single columns, the variance or covariance is given as a scalar.
     """
     symmetric = False
@@ -1833,7 +1838,7 @@ class H2OFrame(object):
 
     Returns
     -------
-      An H2OFrame of Shannon entropies. 
+      An H2OFrame of Shannon entropies.
     """
     fr = H2OFrame._expr(expr=ExprNode("entropy", self))
     fr._ex._cache.nrows = self.nrow
@@ -1841,17 +1846,17 @@ class H2OFrame(object):
     return fr
 
   def num_valid_substrings(self, path_to_words):
-    """For each string, find the count of all possible substrings >= 2 characters that are contained in 
+    """For each string, find the count of all possible substrings >= 2 characters that are contained in
     the line-separated text file whose path is given.
-    
+
     Parameters
     ----------
       path_to_words : str
-        Path to file that contains a line-separated list of strings considered valid. 
-        
+        Path to file that contains a line-separated list of strings considered valid.
+
     Returns
     -------
-      An H2OFrame with the number of substrings that are contained in the given word list. 
+      An H2OFrame with the number of substrings that are contained in the given word list.
     """
     fr = H2OFrame._expr(expr=ExprNode("num_valid_substrings", self, path_to_words))
     fr._ex._cache.nrows = self.nrow

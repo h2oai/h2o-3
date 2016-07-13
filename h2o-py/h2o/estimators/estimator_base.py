@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
+#
+from __future__ import division, print_function, absolute_import, unicode_literals
+# noinspection PyUnresolvedReferences
+from h2o.compatibility import *
+
 from ..model.model_base import ModelBase
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
@@ -6,8 +15,8 @@ from ..model.dim_reduction import H2ODimReductionModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
+from ..utils.shared_utils import quoted
 import h2o
-from h2o.connection import H2OConnection
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 import inspect
@@ -33,6 +42,7 @@ class H2OEstimator(ModelBase):
   H2O model API.
   """
 
+  @translate_args
   def start(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     """Asynchronous model build by specifying the predictor columns, response column, and any
     additional frame-specific values.
@@ -79,6 +89,7 @@ class H2OEstimator(ModelBase):
     self._job.poll()
     self._job=None
 
+  @translate_args
   def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,max_runtime_secs=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any
     additional frame-specific values.
@@ -151,20 +162,22 @@ class H2OEstimator(ModelBase):
     folds  = kwargs["fold_column"]
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
-    kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
-    kwargs["interactions"] = None if ("interactions" not in kwargs or kwargs["interactions"] is None) else [h2o.h2o._quoted(col) for col in kwargs["interactions"]]
+    kwargs["ignored_columns"] = None if ignored_columns==[] else [quoted(col) for col in ignored_columns]
+    kwargs["interactions"] = None if ("interactions" not in kwargs or kwargs["interactions"] is None) else [quoted(col) for col in kwargs["interactions"]]
     kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs])  # gruesome one-liner
     algo = self._compute_algo()
 
-    model = H2OJob(H2OConnection.post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))
+    model = H2OJob(h2o.connection().post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))
 
     if self._future:
       self._job = model
       return
 
     model.poll()
-    if '_rest_version' in list(kwargs.keys()): model_json = H2OConnection.get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
-    else:                                model_json = H2OConnection.get_json("Models/"+model.dest_key)["models"][0]
+    if '_rest_version' in list(kwargs.keys()):
+      model_json = h2o.connection().get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
+    else:
+      model_json = h2o.connection().get_json("Models/"+model.dest_key)["models"][0]
     self._resolve_model(model.dest_key,model_json)
 
   @staticmethod
@@ -172,7 +185,7 @@ class H2OEstimator(ModelBase):
     if isinstance(item, H2OFrame):
       return item.frame_id
     elif isinstance(item, list) and all(i is None or isinstance(i, H2OFrame) for i in item):
-      return [h2o.h2o._quoted(i) if i is None else h2o.h2o._quoted(i.frame_id) for i in item]
+      return [quoted(i) if i is None else quoted(i.frame_id) for i in item]
     else:
       return item
 

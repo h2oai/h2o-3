@@ -1,10 +1,16 @@
-from __future__ import absolute_import
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
+#
+from __future__ import division, print_function, absolute_import, unicode_literals
+# noinspection PyUnresolvedReferences
+from h2o.compatibility import *
+
 import math, collections, tabulate, gc, sys, copy
-from six import iteritems, PY3, itervalues
-from past.builtins import long, basestring
-from future.backports.urllib.request import quote
-from .connection import H2OConnection
+import h2o
 from .utils.shared_utils import _is_fr, _py_tmp_key
+from .connection import H2OConnectionError
 
 
 class ExprNode(object):
@@ -57,8 +63,9 @@ class ExprNode(object):
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
+  @translate_args
   def __init__(self, op="", *args):
-    assert isinstance(op,str), op
+    # assert isinstance(op, str), op
     self._op        = op          # Base opcode string
     self._children  = tuple(a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
     self._cache     = H2OCache()  # ncols, nrows, names, types
@@ -78,6 +85,7 @@ class ExprNode(object):
     assert self._cache.is_scalar()
     return self._cache._data
 
+  @translate_args
   def _eval_driver(self, top):
     exec_str = self._do_it(top)
     res = ExprNode.rapids(exec_str)
@@ -91,6 +99,8 @@ class ExprNode(object):
       self._cache.ncols = res['num_cols']
     return self
 
+  # redefine
+  MAGIC_REF_COUNT = 13 if sys.gettrace() is None else 15
   # Recursively build a rapids execution string.  Any object with more than
   # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
   # cycle - consuming memory.  Do Not Call This except when you need to do some
@@ -98,6 +108,14 @@ class ExprNode(object):
   # dataset time parse vs changing the global timezone.  Global timezone change
   # is eager, so the time parse as to occur in the correct order relative to
   # the timezone change, so cannot be lazy.
+  #
+  # FIXME !!!
+  # This horrible abomination of a function must be sent back to the seventh circle of hell from where it emerged.
+  # The reliance on gc.get_referrers() makes it so that any innoculous change in some far-away piece of code may
+  # cause this function to break. And of course when it does, the error doesn't appear here, but manifests somewhere
+  # at yet another place...
+  # On top of all that, it's nearly impossible to know what the correct value of "MAGIC_REF_COUNT" should be...
+  #
   def _do_it(self,top):
     if not self._cache.is_empty():    # Data already computed and cached; could a "false-like" cached value
       return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
@@ -106,28 +124,34 @@ class ExprNode(object):
     exec_str = "({} {})".format(self._op," ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
     gc_ref_cnt = len(gc.get_referrers(self))
     if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
-      self._cache._id = _py_tmp_key(append=H2OConnection.session_id())
+      self._cache._id = _py_tmp_key(append=h2o.connection().session_id())
       exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
     return exec_str
 
   @staticmethod
+  @translate_args
   def _arg_to_expr(arg):
-    if arg is not None and PY3 and isinstance(arg, range): arg=list(arg)
-    if arg is None:                           return "[]"  # empty list
-    elif isinstance(arg, ExprNode):           return arg._do_it(False)
-    elif isinstance(arg, ASTId):              return str(arg)
-    elif isinstance(arg, bool):               return "{}".format("TRUE" if arg else "FALSE")
-    elif isinstance(arg, (int, long, float)): return "{}".format("NaN" if math.isnan(arg) else arg)
-    elif isinstance(arg, basestring):         return '"'+arg+'"'
-    elif isinstance(arg, slice):              return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start))
-    elif isinstance(arg, list):               return ("[\"" + "\" \"".join(arg) + "\"]") if all(isinstance(i, basestring) for i in arg) else ("[" + " ".join(["NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg])+"]")
+    if arg is not None and isinstance(arg, range): arg = list(arg)
+    if arg is None:                     return "[]"  # empty list
+    elif isinstance(arg, ExprNode):     return arg._do_it(False)
+    elif isinstance(arg, ASTId):        return str(arg)
+    elif isinstance(arg, bool):         return "{}".format("TRUE" if arg else "FALSE")
+    elif isinstance(arg, (int, float)): return "{}".format("NaN" if math.isnan(arg) else arg)
+    elif isinstance(arg, str):          return '"'+arg+'"'
+    elif isinstance(arg, slice):        return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start))
+    elif isinstance(arg, list):
+        allstrs = all(isinstance(elem, str) for elem in arg)
+        if allstrs:
+            return "[%s]" % " ".join('"%s"' % elem for elem in arg)
+        else:
+            return "[%s]" % " ".join("NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg)
     raise ValueError("Unexpected arg type: " + str(type(arg))+" "+str(arg.__class__)+" "+arg.__repr__())
 
   def __del__(self):
     try:
       if self._cache._id is not None and self._children is not None:
         ExprNode.rapids("(rm {})".format(self._cache._id))
-    except AttributeError:
+    except (AttributeError, H2OConnectionError):
       pass
 
   @staticmethod
@@ -162,7 +186,7 @@ class ExprNode(object):
     -------
       The JSON response (as a python dictionary) of the Rapids execution
     """
-    return H2OConnection.post_json("Rapids", ast=expr,session_id=H2OConnection.session_id(), _rest_version=99)
+    return h2o.connection().post_json("Rapids", ast=expr,session_id=h2o.connection().session_id(), _rest_version=99)
 
 class ASTId:
   def __init__(self, name=None):
@@ -224,7 +248,7 @@ class H2OCache(object):
     if self._data is not None:
       if rows <= len(self):
         return
-    res = H2OConnection.get_json("Frames/"+self._id, row_count=rows)["frames"][0]
+    res = h2o.connection().get_json("Frames/"+self._id, row_count=rows)["frames"][0]
     self._l     = rows
     self._nrows = res["rows"]
     self._ncols = res["total_column_count"]
@@ -281,7 +305,7 @@ class H2OCache(object):
   def fill_from(self, cache):
     assert isinstance(cache, H2OCache)
     cur_id = self._id
-    self.__dict__ = copy.deepcopy(cache.__dict__)
+    self.__dict__ = copy.copy(cache.__dict__)  # copy.deepcopy is buggy :( https://bugs.python.org/issue16251
     self._data=None
     self._id = cur_id
 

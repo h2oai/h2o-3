@@ -1,17 +1,21 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
+#
 """
 A job is an object with states: CREATED, RUNNING, DONE, FAILED, CANCELLED
 A job can be polled for completion and reports the progress so far if it is still RUNNING.
 """
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import, unicode_literals
 
-from .connection import H2OConnection
+import h2o
 import time
 import sys, signal
 import warnings
 
 
-class H2OJob:
+class H2OJob(object):
   """A class representing an H2O Job."""
   __PROGRESS_BAR__ = True  # display & update progress bar while polling
   POLLING=False
@@ -74,7 +78,7 @@ class H2OJob:
     return self
 
   def _refresh_job_view(self):
-      jobs = H2OConnection.get_json(url_suffix="Jobs/" + self.job_key)
+      jobs = h2o.connection().get_json(url_suffix="Jobs/" + self.job_key)
       self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
       self.status = self.job["status"]
       self.progress = self.job["progress"]
@@ -98,7 +102,7 @@ class H2OJob:
 
   def signal_handler(self, signum, stackframe):
     if POLLING:
-      H2OConnection.post(url_suffix="Jobs/" + self.job_key + "/cancel")
+      h2o.connection().post(url_suffix="Jobs/" + self.job_key + "/cancel")
       print("Job {} was cancelled.".format(self.job_key))
     else:
       signal.default_int_handler()

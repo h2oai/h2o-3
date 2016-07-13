@@ -1,6 +1,6 @@
 from builtins import zip
 from ..frame import H2OFrame
-from ..h2o import H2OConnection
+import h2o
 from .model_base import ModelBase
 
 class H2OMultinomialModel(ModelBase):
@@ -14,7 +14,7 @@ class H2OMultinomialModel(ModelBase):
     """
     if not isinstance(data, H2OFrame): raise ValueError("data argument must be of type H2OFrame, but got {0}"
                                                         .format(type(data)))
-    j = H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + data.frame_id)
+    j = h2o.connection().post_json("Predictions/models/" + self._id + "/frames/" + data.frame_id)
     return j["model_metrics"][0]["cm"]["table"]
 
   def hit_ratio_table(self, train=False, valid=False, xval=False):
