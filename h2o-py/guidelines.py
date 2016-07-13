@@ -31,7 +31,8 @@ assert 3 / 2 == 1.5
 
 # Python 3 has no "long" integer types (long is the same as int). Do not use repr() on integers, prefer str(). The
 # former appends "L" to long integers on Python 2 but not on Python 3.
-# `from future.builtins` import int` ensures that type-checking works both in Py2 and Py3.
+#     from future.builtins import int
+# ensures that type-checking works both in Py2 and Py3.
 x = 1234567890987654321234567890987654321
 assert str(x) == "1234567890987654321234567890987654321"
 assert isinstance(x, int)
@@ -39,13 +40,13 @@ assert isinstance(2**128, int)
 
 # With the future "unicode_literals" import all string literals are unicode.
 # In order to test whether a variable is a string, import the following:
-# `from future.builtins` import str` ensures that type-checking works both in Py2 and Py3.
+#     from future.builtins import str
 s = "こんにちは"
 assert len(s) == 5
 assert isinstance(s, str)
 
 # In Py2 range() created a list, which is inefficient. Use the following import:
-# `range` is being imported from future.builtins.
+#     from future.builtins import range
 for i in range(10 ** 5): pass
 seq = list(range(7))
 assert seq == [0, 1, 2, 3, 4, 5, 6]
