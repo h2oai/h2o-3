@@ -229,14 +229,14 @@ class H2OConnection(backwards_compatible()):
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
                        "X-Cluster": self._cluster_name}
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
-                                    headers=headers,
+                                    headers=headers, timeout=3,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
             self._log_end_transaction(start_time, resp)
             return self._process_response(resp)
 
-        except requests.ConnectionError as e:
+        except (requests.ConnectionError, requests.ReadTimeout) as e:
             self._log_end_exception(e)
-            raise H2OConnectionError("Unexpected HTTP error %s" % e)
+            raise H2OConnectionError("Unexpected HTTP error: %s" % e)
         except H2OResponseError as e:
             err = e.args[0]
             err.endpoint = endpoint
@@ -277,17 +277,28 @@ class H2OConnection(backwards_compatible()):
 
     @property
     def base_url(self):
-        """Base URL of the server, for example "https://example.com:54321"."""
+        """Base URL of the server, without trailing '/'. For example: "https://example.com:54321"."""
         return self._base_url
 
     @property
     def proxy(self):
-        if self._proxies is None: return
+        """URL of the proxy server used for the connection (or None if there is no proxy)."""
+        if self._proxies is None: return None
         return self._proxies[self._scheme]
 
     @property
     def requests_count(self):
+        """Total number of api requests made since the connection was opened. Used mainly for debug purposes"""
         return self._requests_counter
+
+    @property
+    def timeout_interval(self):
+        return self._timeout
+
+    @timeout_interval.setter
+    def timeout_interval(self, v):
+        assert v is None or isinstance(v, (int, float)), "`timeout_interval` should be numeric, got %s" % type(v)
+        self._timeout = v
 
 
     def shutdown(self, prompt):
@@ -352,6 +363,7 @@ class H2OConnection(backwards_compatible()):
         self._verbose = None
         self._child = None
         self._requests_counter = 0  # how many API requests were made
+        self._timeout = 3.0         # timeout for a single request (in seconds)
 
 
     def _test_connection(self, max_retries=5):
