@@ -12,7 +12,9 @@ class RadixCount extends MRTask<RadixCount> {
   private final int _shift;
   private final int _col;
   private final long _base;
-  private final boolean _isLeft; // used to determine the unique DKV names since DF._key is null now and before only an RTMP name anyway
+  // used to determine the unique DKV names since DF._key is null now and
+  // before only an RTMP name anyway
+  private final boolean _isLeft; 
   private final int _id_maps[][];
 
   RadixCount(boolean isLeft, long base, int shift, int col, int id_maps[][]) {
@@ -28,7 +30,7 @@ class RadixCount extends MRTask<RadixCount> {
   static Key getKey(boolean isLeft, int col, H2ONode node) {
     return Key.make("__radix_order__MSBNodeCounts_col" + col + "_node" + node.index() + (isLeft ? "_LEFT" : "_RIGHT"));
     // Each node's contents is different so the node number needs to be in the key
-    // TO DO: need the biggestBit in here too, that the MSB is offset from
+    // TODO: need the biggestBit in here too, that the MSB is offset from
   }
 
   @Override protected void setupLocal() {
@@ -37,22 +39,27 @@ class RadixCount extends MRTask<RadixCount> {
 
   @Override public void map( Chunk chk ) {
     long tmp[] = _counts._val[chk.cidx()] = new long[256];
-    // TO DO: assert chk instanceof integer or enum;  -- but how since many integers (C1,C2 etc)? // alternatively: chk.getClass().equals(C8Chunk.class)
+    // TODO: assert chk instanceof integer or enum; -- but how since many
+    // integers (C1,C2 etc)?  Alternatively: chk.getClass().equals(C8Chunk.class)
     if (!(_isLeft && chk.vec().isCategorical())) {
       if (chk.vec().naCnt() == 0) {
-        // There are no NA in this join column; hence branch-free loop. Most common case as should never really have NA in join columns.
+        // There are no NA in this join column; hence branch-free loop. Most
+        // common case as should never really have NA in join columns.
         for (int r=0; r<chk._len; r++) {
           tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
-          // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
+          // TODO - use _mem directly.  Hist the compressed bytes and then shift
+          // the histogram afterwards when reducing.
         }
       } else {
-        // There are some NA in the column so have to branch. TODO: warn user NA are present in join column
+        // There are some NA in the column so have to branch.  TODO: warn user
+        // NA are present in join column
         for (int r=0; r<chk._len; r++) {
           if (chk.isNA(r)) tmp[0]++;
           else tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
           // Done - we will join NA to NA as data.table does
-          // TODO: allow NA-to-NA join to be turned off. Do that in bmerge as a simple low-cost switch.
-          // Note that NA and the minimum may well both be in MSB 0 but most of the time we will not have NA in join columns
+          // TODO: allow NA-to-NA join to be turned off.  Do that in bmerge as a simple low-cost switch.
+          // Note that NA and the minimum may well both be in MSB 0 but most of
+          // the time we will not have NA in join columns
         }
       }
     } else {
@@ -76,8 +83,7 @@ class RadixCount extends MRTask<RadixCount> {
   @Override protected void closeLocal() {
     DKV.put(getKey(_isLeft, _col, H2O.SELF), _counts, _fs, true);
     // just the MSB counts per chunk on this node.  Most of this spine will be empty here.  
-    // TO DO: could condense to just the chunks on this node but for now, leave sparse.
+    // TODO: could condense to just the chunks on this node but for now, leave sparse.
     // We'll use this sparse spine right now on this node and the reduce happens on _o and _x later
   }
 }
-

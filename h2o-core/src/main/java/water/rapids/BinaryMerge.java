@@ -57,7 +57,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
       _chunkNode  = new int[vec.nChunks()];
       for( int i=0; i<_chunkNode.length; i++ )
         _chunkNode[i] = vec.chunkKey(i).home_node().index();
-      assert 0<=msb && msb<=255;
+      assert -1<=msb && msb<=255; // left ranges from 0 to 255, right from -1 to 255
       _msb = msb;
       _shift = shift;
       _fieldSizes = fieldSizes;
