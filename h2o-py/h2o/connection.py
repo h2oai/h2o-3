@@ -21,7 +21,6 @@ from random import choice
 from requests.auth import AuthBase
 
 from .utils.backward_compatibility import backwards_compatible
-from .h2o_logging import is_logging, log_rest
 from .two_dim_table import H2OTwoDimTable
 from .utils.shared_utils import stringify_list
 from .schemas.cloud import CloudV3
@@ -338,6 +337,29 @@ class H2OConnection(backwards_compatible()):
         except (H2OConnectionError, H2OServerError):
             return False
 
+    @translate_args
+    def start_logging(self, dest=None):
+        """
+        Start logging all API requests to the provided destination.
+        :param dest: Where to write the log: either a filename (str), or an open file handle (file). If not given,
+            then a new temporary file will be created.
+        """
+        if dest is None:
+            dest = os.path.join(tempfile.mkdtemp(), "h2o-connection.log")
+        if not isinstance(dest, (str, type(sys.stdout))):
+            raise ValueError("Logging destination should be either a string (filename), or an open file handle")
+        name = dest if isinstance(dest, str) else dest.name
+        self._print("Start logging H2OConnection.api() requests into file %s" % name)
+        self._is_logging = True
+        self._logging_dest = dest
+
+    def stop_logging(self):
+        """
+        Stop logging API requests.
+        """
+        if self._is_logging:
+            self._print("Logging stopped.")
+            self._is_logging = False
 
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -364,6 +386,9 @@ class H2OConnection(backwards_compatible()):
         self._child = None
         self._requests_counter = 0  # how many API requests were made
         self._timeout = 3.0         # timeout for a single request (in seconds)
+        self._is_logging = False    # when True, log every request
+        self._logging_dest = None   # where the log messages will be written, either filename or open file handle
+        # self.start_logging(sys.stdout)
 
 
     def _test_connection(self, max_retries=5):
@@ -602,32 +627,44 @@ class H2OConnection(backwards_compatible()):
 
     def _log_start_transaction(self, endpoint, data, json, files, params):
         """Log the beginning of an API request."""
+        # TODO: add information about the caller, i.e. which module + line of code called the .api() method
+        #       This can be done by fetching current traceback and then traversing it until we find the api() function
         self._requests_counter += 1
-        if not is_logging(): return
-        msg = "---- %d --------------------------------------------------------\n" % self._requests_counter
+        if not self._is_logging: return
+        msg = "\n---- %d --------------------------------------------------------\n" % self._requests_counter
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
         if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
         if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
         if json is not None:   msg += "     json: %s\n" % json.dumps(json)
         if files is not None:  msg += "     file: %s\n" % ", ".join(viewkeys(files))
-        log_rest(msg + "\n")
+        self._log_message(msg + "\n")
 
-    @staticmethod
-    def _log_end_transaction(start_time, response):
+    def _log_end_transaction(self, start_time, response):
         """Log response from an API request."""
-        if not is_logging(): return
+        if not self._is_logging: return
         elapsed_time = int((time.time() - start_time) * 1000)
         msg = "<<< HTTP %d %s   (%d ms)\n" % (response.status_code, response.reason, elapsed_time)
         if "Content-Type" in response.headers:
             msg += "    Content-Type: %s\n" % response.headers["Content-Type"]
         msg += response.text
-        log_rest(msg + "\n\n")
+        self._log_message(msg + "\n\n")
 
-    @staticmethod
-    def _log_end_exception(exception):
+    def _log_end_exception(self, exception):
         """Log API request that resulted in an exception."""
-        if not is_logging(): return
-        log_rest(">>> %s\n\n" % str(exception))
+        if not self._is_logging: return
+        self._log_message(">>> %s\n\n" % str(exception))
+
+    def _log_message(self, msg):
+        """
+        Actually log the message to the `self._logging_dest` destination. If this destination is a file name,
+        then we append the message to the file and then close the file immediately. If the destination is an open
+        file handle, then we simply write the message there and do not attempt to close it.
+        """
+        if isinstance(self._logging_dest, str):
+            with open(self._logging_dest, "at", encoding="utf-8") as f:
+                f.write(msg)
+        else:
+            self._logging_dest.write(msg)
 
 
     @staticmethod
