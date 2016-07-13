@@ -105,9 +105,10 @@ public class Merge {
       // The overlapping one with the right base is dealt with inside
       // BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
-        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, true
-        )));
+        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), 
+                             new BinaryMerge(new BinaryMerge.FFSB( leftFrame,   leftMSB    , leftShift, leftIndex._bytesUsed, leftIndex._base),
+                                             new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1,rightShift,rightIndex._bytesUsed,rightIndex._base),
+                                             true)));
       }
     } else {
       // completely ignore right MSBs below the left base
@@ -129,9 +130,10 @@ public class Merge {
       }
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
-        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), new BinaryMerge(
-          leftFrame, rightFrame, leftMSB, /*rightMSB*/-1, leftShift, rightShift, leftIndex._bytesUsed, rightIndex._bytesUsed, leftIndex._base, rightIndex._base, true
-        )));
+        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), 
+                             new BinaryMerge(new BinaryMerge.FFSB( leftFrame,   leftMSB    , leftShift, leftIndex._bytesUsed, leftIndex._base),
+                                             new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1,rightShift,rightIndex._bytesUsed,rightIndex._base),
+                                             true)));
       }
     } else {
       // completely ignore right MSBs after the right peak
@@ -168,14 +170,9 @@ public class Merge {
 
         // within BinaryMerge it will recalculate the extents in terms of keys and bsearch for them within the (then local) both sides
         bmList.add(new RPC<>(node,
-          new BinaryMerge(leftFrame,            rightFrame,
-                          leftMSB,              rightMSB,
-                          leftShift,            rightShift,
-                          leftIndex._bytesUsed, rightIndex._bytesUsed,// field sizes for each column in the key
-                          leftIndex._base,      rightIndex._base,
-                          allLeft
-          )
-        ));
+                             new BinaryMerge(new BinaryMerge.FFSB( leftFrame, leftMSB, leftShift, leftIndex._bytesUsed, leftIndex._base),
+                                             new BinaryMerge.FFSB(rightFrame,rightMSB,rightShift,rightIndex._bytesUsed,rightIndex._base),
+                                             allLeft)));
       }
     }
     System.out.println("took: " + String.format("%.3f", (System.nanoTime() - t0) / 1e9));
@@ -265,8 +262,8 @@ public class Merge {
       int thisChunkSizes[] = thisbm._chunkSizes;
       for (int j=0; j<thisChunkSizes.length; j++) {
         chunkSizes[k] = thisChunkSizes[j];
-        chunkLeftMSB[k] = thisbm._leftMSB;
-        chunkRightMSB[k] = thisbm._rightMSB;
+        chunkLeftMSB [k] = thisbm._leftSB._msb;
+        chunkRightMSB[k] = thisbm._riteSB._msb;
         chunkBatch[k] = j;
         k++;
       }
@@ -313,7 +310,7 @@ public class Merge {
     System.out.print("Finally stitch together by overwriting dummies ...");
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
-    ChunkStitcher ff = new ChunkStitcher(/*leftFrame, rightFrame,*/ chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
@@ -343,7 +340,7 @@ public class Merge {
       for (int i=0;i<cs.length;++i) {
         Key destKey = cs[i].vec().chunkKey(chkIdx);
         assert(cs[i].len() == _chunkSizes[chkIdx]);
-        Key k = BinaryMerge.getKeyForMSBComboPerCol(/*_leftFrame, _rightFrame,*/ _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
+        Key k = BinaryMerge.getKeyForMSBComboPerCol(_chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
         Chunk ck = DKV.getGet(k);
         DKV.put(destKey, ck, fs, /*don't cache*/true);
         DKV.remove(k);
