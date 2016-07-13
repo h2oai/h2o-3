@@ -2003,7 +2003,7 @@ public class DeepLearningTest extends TestUtil {
 
       Assert.assertEquals(0.95176, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.94829, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
-      Assert.assertEquals(0.91912, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.9128, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-2);
       Assert.assertEquals(0.9200, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
 
     } finally {
