@@ -636,8 +636,9 @@ class H2OConnection(backwards_compatible()):
         if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
         if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
         if json is not None:   msg += "     json: %s\n" % json.dumps(json)
-        if files is not None:  msg += "     file: %s\n" % ", ".join(viewkeys(files))
+        if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
         self._log_message(msg + "\n")
+
 
     def _log_end_transaction(self, start_time, response):
         """Log response from an API request."""
@@ -649,10 +650,12 @@ class H2OConnection(backwards_compatible()):
         msg += response.text
         self._log_message(msg + "\n\n")
 
+
     def _log_end_exception(self, exception):
         """Log API request that resulted in an exception."""
         if not self._is_logging: return
         self._log_message(">>> %s\n\n" % str(exception))
+
 
     def _log_message(self, msg):
         """
