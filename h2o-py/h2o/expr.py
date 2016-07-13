@@ -280,7 +280,7 @@ class H2OCache(object):
     d = collections.OrderedDict()
     # If also printing the rollup stats, build a full row-header
     if rollups:
-      col = next(viewvalues(self._data)) # Get a sample column
+      col = next(iter(viewvalues(self._data))) # Get a sample column
       lrows = len(col['data'])  # Cached rows being displayed
       d[""] = ["type", "mins", "mean", "maxs", "sigma", "zeros", "missing"]+list(map(str,range(lrows)))
     # For all columns...

@@ -3,6 +3,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
+from .compatibility import viewitems, viewvalues
 # noinspection PyUnresolvedReferences
 from future.builtins import *
 
