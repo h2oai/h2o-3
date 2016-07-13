@@ -63,7 +63,8 @@ public class EnumUtils {
       String unifName = name.toUpperCase().replaceAll("[^0-9A-Z]", "");
       value = map.get(unifName);
       // Save the mapping name -> value, so that subsequent requests with the same name will be faster.
-      map.put(name, value);
+      if (value != null)
+        map.put(name, value);
     }
 
     if (value == null)
