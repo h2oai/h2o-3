@@ -16,7 +16,8 @@ import os
 import tempfile
 import sys
 import traceback
-from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote
+from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list,\
+  _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
 from .display import H2ODisplay
 from .job import H2OJob
 from .expr import ExprNode
@@ -1371,6 +1372,7 @@ class H2OFrame(object):
 
     splits = []
     tmp_runif = self.runif(seed)
+    tmp_runif.frame_id = "%s_splitter" % _py_tmp_key()
 
     i = 0
     while i < num_slices:
@@ -1395,6 +1397,8 @@ class H2OFrame(object):
         splits.append(tmp_slice)
 
       i += 1
+
+    del tmp_runif
 
     return splits
 
