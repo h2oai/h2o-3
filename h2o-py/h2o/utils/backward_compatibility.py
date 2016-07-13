@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
@@ -65,7 +64,7 @@ class BackwardsCompatibleBase(object):
         self._bcin = {
             # Creating lambdas in a loop, need to make sure that `fun` is bound to each lambda separately.
             name: (lambda fun: lambda *args, **kwargs: fun(self, *args, **kwargs))(fun)
-            for name, fun in iteritems(self._bc["im"])
+            for name, fun in viewitems(self._bc["im"])
         }
 
     def __getattr__(self, item):

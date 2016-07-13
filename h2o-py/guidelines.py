@@ -55,27 +55,24 @@ assert seq == [0, 1, 2, 3, 4, 5, 6]
 #---- Dictionaries ----
 # Python 3 discards of .iterkeys(), .itervalues() and .iteritems(), so don't use those (see PEP-3106).
 #   .keys() in Py2 returns a list of dict's keys, in Py3 it's a dictionary view object.
+# The .compatibility layer exports symbols `viewkeys`, `viewitems`, `viewvalues`, which should be the
+# preferred way for iterating over keys/items/values.
 #
 planets = {"Mercury": 0.330, "Venus": 4.87, "Earth": 5.97, "Mars": 0.642, "Jupyter": 1898, "Saturn": 568,
            "Uranus": 86.8, "Neptune": 102}
 
 # Iterating through keys:
-for name in planets: pass
+for name in viewkeys(planets): pass
 
-# Iterating through dictionary items requires a library import:
-if True:
-    from future.utils import iteritems
-    for _, mass in iteritems(planets): pass
+# Iterating through dictionary items:
+for name, mass in viewitems(planets): pass
+
+# Iterating through values:
+for mass in viewvalues(planets): pass
 
 # Getting keys as a list:
 keyslist = list(planets)
 assert isinstance(keyslist, list)
-
-# Getting values as a list:
-if True:
-    from future.utils import listvalues
-    valslist = listvalues(planets)
-    assert isinstance(valslist, list)
 
 # Checking if dictionary contains a key (note that `smth in dictionary.keys()` is horribly inefficient!)
 assert "Earth" in planets

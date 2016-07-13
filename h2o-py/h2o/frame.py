@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
@@ -8,7 +7,6 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 from future.builtins import *
 
 import requests
-from six import iteritems, itervalues
 import collections
 from io import StringIO
 import csv
@@ -325,7 +323,7 @@ class H2OFrame(object):
     if setup["column_names"]: p["column_names"] = None
     if setup["na_strings"]: p["na_strings"] = None
 
-    p.update({k: v for k, v in iteritems(setup) if k in p})
+    p.update({k: v for k, v in viewitems(setup) if k in p})
 
     # Extract only 'name' from each src in the array of srcs
     p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
@@ -801,7 +799,7 @@ class H2OFrame(object):
       True if the column is numeric, otherwise return False
     """
     if self._ex._cache.types_valid():
-      return [str(list(itervalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
+      return [str(list(viewvalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
     return [bool(o) for o in ExprNode("is.numeric",self)._eager_scalar()]
 
   def isstring(self):
@@ -1146,7 +1144,7 @@ class H2OFrame(object):
          not src._ex._cache.types_valid():
           self._ex._cache.types = None
       else:
-        self._ex._cache._types[colname] = list(itervalues(src._ex._cache.types))[0]
+        self._ex._cache._types[colname] = list(viewvalues(src._ex._cache.types))[0]
     if isinstance(src, H2OFrame) and src_in_self:
       src._ex=None  # wipe out to keep ref counts correct
     # self._frame()  # setitem is eager
@@ -1698,7 +1696,7 @@ class H2OFrame(object):
     """
     #TODO: list for fr.ncol > 1 ?
     if self._ex._cache.types_valid():
-      return [str(list(itervalues(self._ex._cache.types))[0]) == "enum"]
+      return [str(list(viewvalues(self._ex._cache.types))[0]) == "enum"]
     return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
   def anyfactor(self):

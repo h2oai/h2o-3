@@ -555,7 +555,7 @@ class H2OConnection(backwards_compatible()):
         if not data: return None
         if not isinstance(data, dict): raise ValueError("Invalid `data` argument, should be a dict: %r" % data)
         res = {}
-        for key, value in iteritems(data):
+        for key, value in viewitems(data):
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
                 res[key] = stringify_list(value)
@@ -594,10 +594,10 @@ class H2OConnection(backwards_compatible()):
         if not is_logging(): return
         msg = "---- %d --------------------------------------------------------\n" % self._requests_counter
         msg += "[%s] %s\n" % (time.strftime("%H:%M:%S"), endpoint)
-        if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in iteritems(data))
+        if params is not None: msg += "     params: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(params))
+        if data is not None:   msg += "     body: {%s}\n" % ", ".join("%s:%s" % item for item in viewitems(data))
         if json is not None:   msg += "     json: %s\n" % json.dumps(json)
-        if files is not None:  msg += "     file: %s\n" % ", ".join(iterkeys(files))
-        if params is not None: msg += "     params: %s\n" % ", ".join(iterkeys(params))
+        if files is not None:  msg += "     file: %s\n" % ", ".join(viewkeys(files))
         log_rest(msg + "\n")
 
     @staticmethod

@@ -46,10 +46,9 @@ if PY2:
 if PY2:
     # noinspection PyUnresolvedReferences
     from future.builtins.iterators import (range, filter, map, zip)
+if PY2 or PY3:
     # noinspection PyUnresolvedReferences
-    from future.utils import (viewitems, iteritems,
-                              viewkeys, iterkeys,
-                              viewvalues, itervalues)
+    from future.utils import (viewitems, viewkeys, viewvalues)
 
 #
 # Disabled functions
@@ -99,7 +98,7 @@ def translate_args(fun):
 
     def translate_dict(d):
         newdict = dict()
-        for k, v in iteritems(d):
+        for k, v in viewitems(d):
             kk = str(k)
             if type(v) is type: newdict[kk] = v
             elif isinstance(v, strings): newdict[kk] = str(v)
