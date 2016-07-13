@@ -7,7 +7,7 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 # noinspection PyUnresolvedReferences
 from .compatibility import *
 import sys
-from types import ModuleType, ClassType
+from types import ModuleType
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
 __all__ = []
@@ -110,10 +110,11 @@ def _except_hook(exc_type, exc_value, exc_tb):
         for key in sorted(frame_locl.keys(), reverse=True):
             if key.startswith("__") and key.endswith("__"): continue
             value = frame_locl[key]
-            if value.__class__ is ModuleType: continue  # omit imported modules
-            if value.__class__ is ClassType: continue  # omit class declarations
-            if value.__class__ is print_function.__class__: continue  # omit __future__ declarations
             if value is None: continue  # do not print uninitialized variables
+            if hasattr(value, "__class__"):
+                if value.__class__ is ModuleType: continue  # omit imported modules
+                if value.__class__ is type: continue  # omit class declarations (new-style classes only)
+                if value.__class__ is print_function.__class__: continue  # omit __future__ declarations
             try:
                 strval = str(value)
                 n_lines = strval.count("\n")
