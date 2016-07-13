@@ -16,7 +16,6 @@ import time
 import subprocess
 import atexit
 import warnings
-from simplejson import JSONDecodeError
 from sysconfig import get_config_var
 from random import choice
 from requests.auth import AuthBase
@@ -24,7 +23,7 @@ from requests.auth import AuthBase
 from .utils.backward_compatibility import backwards_compatible
 from .h2o_logging import is_logging, log_rest
 from .two_dim_table import H2OTwoDimTable
-from .utils.shared_utils import quote, stringify_list
+from .utils.shared_utils import stringify_list
 from .schemas.cloud import CloudV3
 from .schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 
@@ -789,6 +788,16 @@ class H2OResponse(dict):
     #         return self[key]
     #     return None
 
+
+# Find the exception that occurs on invalid JSON input
+JSONDecodeError, _r = None, None
+try:
+    _r = requests.Response()
+    _r._content = "haha"
+    _r.json()
+except Exception as exc:
+    JSONDecodeError = type(exc)
+    del _r
 
 
 #-----------------------------------------------------------------------------------------------------------------------
