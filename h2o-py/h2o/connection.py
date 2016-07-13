@@ -27,11 +27,6 @@ from .utils.shared_utils import stringify_list
 from .schemas.cloud import CloudV3
 from .schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 
-try:
-    warnings.simplefilter("ignore", requests.packages.urllib3.exceptions.InsecureRequestWarning)
-except:
-    pass
-
 __all__ = ("H2OConnection", "H2OStartupError", "H2OConnectionError", "H2OServerError", "H2OResponseError")
 
 
@@ -568,6 +563,13 @@ class H2OConnection(backwards_compatible()):
                 res[key] = value["name"]
             else:
                 res[key] = str(value)
+            # Some hackery here... It appears that requests library cannot stomach "upgraded" strings if they contain
+            # certain characters such as '/'. Therefore we explicitly cast them to their native representation.
+            # Reproduction steps:
+            #   >>> import requests
+            #   >>> from future.types import newstr as str
+            #   >>> requests.get("http://www.google.com/search", params={"q": str("/foo/bar")})
+            # (throws a "KeyError 47" exception).
             if PY2 and hasattr(res[key], "__native__"): res[key] = res[key].__native__()
         return res
 
@@ -707,12 +709,13 @@ class H2OConnection(backwards_compatible()):
         "check_conn": lambda: _deprecated_check_conn(),
         # "cluster_is_up" used to be static (required `conn` parameter) -> now it's non-static w/o any patching needed
         "make_url": lambda url_suffix, _rest_version=3: __H2OCONN__.make_url(url_suffix, _rest_version),
-        "get": lambda url_suffix, **kwargs: __H2OCONN__.get(url_suffix, **kwargs),
-        "post": lambda url_suffix, file_upload_info=None, **kwa: __H2OCONN__.post(url_suffix, file_upload_info, **kwa),
-        "delete": lambda url_suffix, **kwargs: __H2OCONN__.delete(url_suffix, **kwargs),
-        "get_json": lambda url_suffix, **kwargs: __H2OCONN__.get_json(url_suffix, **kwargs),
+        "get": lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
+        "post": lambda url_suffix, file_upload_info=None, **kwa:
+            _deprecated_post(__H2OCONN__, url_suffix, file_upload_info=file_upload_info, **kwa),
+        "delete": lambda url_suffix, **kwargs: _deprecated_delete(__H2OCONN__, url_suffix, **kwargs),
+        "get_json": lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
         "post_json": lambda url_suffix, file_upload_info=None, **kwa:
-            __H2OCONN__.post_json(url_suffix, file_upload_info, **kwa),
+            _deprecated_post(__H2OCONN__, url_suffix, file_upload_info=file_upload_info, **kwa),
         "rest_ctr": lambda: __H2OCONN__.requests_count,
     }
     _bcim = {
