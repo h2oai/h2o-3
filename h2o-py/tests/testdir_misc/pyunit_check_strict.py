@@ -6,11 +6,23 @@ from tests import pyunit_utils
 
 
 def check_strict():
-  args, varargs, keywords, defaults = inspect.getargspec(h2o.init)
-  assert dict(list(zip(args[-len(defaults):], defaults)))['strict_version_check'], "strict version checking got turned off! TURN IT BACK ON NOW YOU JERK!"
+    # inspection doesn't work with decorated functions.
+    out = {"version_check_called": False}
+    def tracefunc(frame, event, arg):
+        if frame.f_code.co_name == "version_check":
+            out["version_check_called"] = True
+        return None
+    sys.settrace(tracefunc)
+    try:
+        h2o.init()
+    except h2o.H2OConnectionError:
+        pass
+
+    assert out["version_check_called"], \
+        "Strict version checking got turned off! TURN IT BACK ON NOW YOU JERK!"
 
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(check_strict)
+    pyunit_utils.standalone_test(check_strict)
 else:
-  check_strict()
+    check_strict()
