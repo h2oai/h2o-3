@@ -329,14 +329,14 @@ class H2OConnection(backwards_compatible()):
 
     def cluster_is_up(self):
         """
-        Determine if an H2O cluster is up or not.
-
+        Determine if an H₂O cluster is running or not.
         :return: True if the cluster is up; False otherwise
         """
-        rv = self.api("GET /")
-        if rv.status_code == 401:
-            warnings.warn("401 Unauthorized Access. Did you forget to provide a username and password?")
-        return rv.status_code == 200 or rv.status_code == 301
+        try:
+            self.api("GET /")
+            return True
+        except (H2OConnectionError, H2OServerError):
+            return False
 
 
 
@@ -638,7 +638,7 @@ class H2OConnection(backwards_compatible()):
            * detect Content-Type, and based on that either parse the response as JSON or return as plain text.
         """
         content_type = response.headers["Content-Type"] if "Content-Type" in response.headers else ""
-        if ";" in content_type:
+        if ";" in content_type:  # Remove a ";charset=..." part
             content_type = content_type[:content_type.index(";")]
         status_code = response.status_code
 
@@ -659,7 +659,9 @@ class H2OConnection(backwards_compatible()):
         if status_code in {400, 404, 412} and isinstance(data, (H2OErrorV3, H2OModelBuilderErrorV3)):
             raise H2OResponseError(data)
 
-        # Server errors
+        # Server errors (notably 500 = "Server Error")
+        # Note that it is possible to receive valid H2OErrorV3 object in this case, however it merely means the server
+        # did not provide the correct status code.
         raise H2OServerError("HTTP %d %s:\n%r" % (status_code, response.reason, data))
 
 
