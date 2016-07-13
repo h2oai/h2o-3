@@ -1,12 +1,12 @@
-#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
+"""
+
+ :copyright: (c) 2016 H2O.ai
+ :license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
 from h2o.compatibility import *
-from future import standard_library
 import requests
 import tempfile
 import os
@@ -27,7 +27,6 @@ from .utils.shared_utils import stringify_list
 from .schemas.cloud import CloudV3
 from .schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 
-standard_library.install_aliases()  # install newer version of subprocess
 try:
     warnings.simplefilter("ignore", requests.packages.urllib3.exceptions.InsecureRequestWarning)
 except:
@@ -687,8 +686,8 @@ class H2OConnection(backwards_compatible()):
     #-------------------------------------------------------------------------------------------------------------------
     # DEPRECATED
     #
-    # Access to any of these vars / methods will produce deprecating warnings.
-    # Please do not use them in any new code.
+    # Access to any of these vars / methods will produce deprecation warnings.
+    # Consult backwards_compatible.py for the description of these vars.
     #
     # These methods are deprecated since July 2016. Please remove them if it's 2017 already...
     #-------------------------------------------------------------------------------------------------------------------
@@ -712,8 +711,8 @@ class H2OConnection(backwards_compatible()):
         "post": lambda url_suffix, file_upload_info=None, **kwa: __H2OCONN__.post(url_suffix, file_upload_info, **kwa),
         "delete": lambda url_suffix, **kwargs: __H2OCONN__.delete(url_suffix, **kwargs),
         "get_json": lambda url_suffix, **kwargs: __H2OCONN__.get_json(url_suffix, **kwargs),
-        "post_json": lambda url_suffix, file_upload_info=None, **kwa: __H2OCONN__.post_json(url_suffix,
-                                                                                            file_upload_info, **kwa),
+        "post_json": lambda url_suffix, file_upload_info=None, **kwa:
+            __H2OCONN__.post_json(url_suffix, file_upload_info, **kwa),
         "rest_ctr": lambda: __H2OCONN__.requests_count,
     }
     _bcim = {
@@ -793,7 +792,7 @@ class H2OResponse(dict):
 JSONDecodeError, _r = None, None
 try:
     _r = requests.Response()
-    _r._content = "haha"
+    _r._content = b"haha"
     _r.json()
 except Exception as exc:
     JSONDecodeError = type(exc)
