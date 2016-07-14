@@ -429,7 +429,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // _leftKO._perNodeNumRowsToFetch above to populate and pass the assert near
     // the end of the compute2() above.
     if (lLow > lLowIn && (rLow > rLowIn || _allLeft)) // '|| _allLeft' is needed here in H2O (but not data.table)
-      bmerge_r(lLowIn, lLow + 1, rLowIn, rLow+1);
+      bmerge_r(lLowIn, lLow+1, rLowIn, rLow+1);
     if (lUpp < lUppIn && (rUpp < rUppIn || _allLeft))
       bmerge_r(lUpp-1, lUppIn, rUpp-1, rUppIn);
 

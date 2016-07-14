@@ -5,96 +5,51 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import java.util.ArrayList;
-import java.util.List;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
 
-  //static void waitForSignalFromMatt() {
-  //  System.out.println("waiting at the spot");
-  //  File f = new File("/home/mdowle/GOFLAG");
-  //  while (true) {
-  //    System.out.println("Waiting for GOFLAG ...");
-  //    if (f.exists()) {
-  //      f.delete();
-  //      System.out.println("GOFLAG seen, deleted and moved on");
-  //      break;
-  //    }
-  //    try { Thread.sleep(1000); } catch (Exception ignore) {}
-  //  }
-  //}
-
   // single-threaded driver logic
-  static Frame merge(final Frame leftFrame, final Frame rightFrame, final int leftCols[], final int rightCols[], boolean allLeft, int[][] id_maps) {
+  static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], boolean allLeft, int[][] id_maps) {
 
-    // each of those launches an MRTask
-    System.out.println("\nCreating left index ...");
-    long t0 = System.nanoTime();
-    RadixOrder leftIndex;
-
-    // map missing levels to -1 (rather than increasing slots after the end) for now to save a deep branch later
+    // map missing levels to -1 (rather than increasing slots after the end)
+    // for now to save a deep branch later
     for (int i=0; i<id_maps.length; i++) {
       if (id_maps[i] == null) continue;
       assert id_maps[i].length == leftFrame.vec(leftCols[i]).max()+1;
-      int right_max = (int)rightFrame.vec(rightCols[i]).max();
+      int right_max = (int)riteFrame.vec(riteCols[i]).max();
       for (int j=0; j<id_maps[i].length; j++) {
         assert id_maps[i][j] >= 0;
         if (id_maps[i][j] > right_max) id_maps[i][j] = -1;
       }
     }
 
-    ///waitForSignalFromMatt();
-
-    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, id_maps));
-    left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
-                 // a little slower (97s) than one by one (89s).  TODO: retest in future
-    System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
-
-    ///waitForSignalFromMatt();
-
-    System.out.println("\nCreating right index ...");
-    t0 = System.nanoTime();
-    RadixOrder rightIndex;
-    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, null));
-    right.join();
-    System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
-
+    // Running 3 consecutive times on an idle cluster showed that running left
+    // and right in parallel was a little slower (97s) than one by one (89s).
+    // TODO: retest in future
+    RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps);
+    RadixOrder riteIndex = createIndex(false,riteFrame,riteCols,id_maps);
     // TODO: start merging before all indexes had been created. Use callback?
-
-    // TODO: Tomas showed this method which takes 'true' argument to
-    // H2OCountedCompleter directly.  Not sure how that relates to new of
-    // RadixOrder which itself extends H2OCountedCompleter.  That true argument
-    // isn't available that way.
-
-    // true just to bump priority and prevent deadlock (no different to speed,
-    // in theory - Tomas) in case this Merge ever called from within another
-    // counted completer
-    // H2O.submitTask(new H2O.H2OCountedCompleter(true) {   
-    // @Override
-    // protected void compute2() {
-    //   RadixOrder.compute(leftFrame, /*left=*/true, leftCols);  // when RadixOrder had just a static compute() method
-    //   tryComplete();
-    // }
 
     long ansN = 0;
     int numChunks = 0;
 
-    System.out.println("Left base[0]: "+leftIndex._base[0]);
-    System.out.println("Left shift: "+leftIndex._shift[0]);
-    System.out.println("Right base[0]: "+rightIndex._base[0]);
-    System.out.println("Right shift: "+rightIndex._shift[0]);
+    System.out.println("Left  base[0]: "+leftIndex._base [0]);
+    System.out.println("Left  shift: "  +leftIndex._shift[0]);
+    System.out.println("Right base[0]: "+riteIndex._base [0]);
+    System.out.println("Right shift: "  +riteIndex._shift[0]);
 
     System.out.print("Making BinaryMerge RPC calls ... ");
-    t0 = System.nanoTime();
-    List<RPC> bmList = new ArrayList<>();
-    int leftShift = leftIndex._shift[0];
-    int rightShift = rightIndex._shift[0];
+    long t0 = System.nanoTime();
+    ArrayList<RPC> bmList = new ArrayList<>();
+    final int leftShift = leftIndex._shift[0];
+    final int riteShift = riteIndex._shift[0];
 
-    long leftMSBfrom = (rightIndex._base[0] - leftIndex._base[0]) >> leftShift;  // which leftMSB does the overlap start
+    long leftMSBfrom = (riteIndex._base[0] - leftIndex._base[0]) >> leftShift;  // which leftMSB does the overlap start
 
     // deal with the left range below the right minimum, if any
-    if (leftIndex._base[0] < rightIndex._base[0]) {
+    if (leftIndex._base[0] < riteIndex._base[0]) {
       // deal with the range of the left below the start of the right, if any
       assert leftMSBfrom >= 0;
       if (leftMSBfrom>255) {
@@ -106,8 +61,8 @@ public class Merge {
       // BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
         bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), 
-                             new BinaryMerge(new BinaryMerge.FFSB( leftFrame,   leftMSB    , leftShift, leftIndex._bytesUsed, leftIndex._base),
-                                             new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1,rightShift,rightIndex._bytesUsed,rightIndex._base),
+                             new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
+                                             new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
                                              true)));
       }
     } else {
@@ -116,12 +71,12 @@ public class Merge {
       leftMSBfrom = 0;
     }
 
-    long leftMSBto = (rightIndex._base[0] + (256L<<rightShift) - 1 - leftIndex._base[0]) >> leftShift;
-    // -1 because the 256L<<rightShift is one after the max extent.  
+    long leftMSBto = (riteIndex._base[0] + (256L<<riteShift) - 1 - leftIndex._base[0]) >> leftShift;
+    // -1 because the 256L<<riteShift is one after the max extent.  
     // No need -for +1 for NA here because, as for leftMSBfrom above, the NA spot is on -both sides
 
     // deal with the left range above the right maximum, if any
-    if ((leftIndex._base[0] + (256L<<leftShift)) > (rightIndex._base[0] + (256L<<rightShift))) {
+    if ((leftIndex._base[0] + (256L<<leftShift)) > (riteIndex._base[0] + (256L<<riteShift))) {
       assert leftMSBto <= 255;
       if (leftMSBto<0) {
         // The left range starts after the right range ends.  So every left row
@@ -131,8 +86,8 @@ public class Merge {
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
         bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), 
-                             new BinaryMerge(new BinaryMerge.FFSB( leftFrame,   leftMSB    , leftShift, leftIndex._bytesUsed, leftIndex._base),
-                                             new BinaryMerge.FFSB(rightFrame,/*rightMSB*/-1,rightShift,rightIndex._bytesUsed,rightIndex._base),
+                             new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
+                                             new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
                                              true)));
       }
     } else {
@@ -154,8 +109,8 @@ public class Merge {
       long leftTo  = (((long)leftMSB+1) << leftShift) -1 + leftIndex._base[0]-1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
-      int rightMSBfrom = (int)((leftFrom - rightIndex._base[0] + 1) >> rightShift);   // +1 again for the leading NA spot
-      int rightMSBto   = (int)((leftTo   - rightIndex._base[0] + 1) >> rightShift);
+      int rightMSBfrom = (int)((leftFrom - riteIndex._base[0] + 1) >> riteShift);   // +1 again for the leading NA spot
+      int rightMSBto   = (int)((leftTo   - riteIndex._base[0] + 1) >> riteShift);
 
       // the non-matching part of this region will have been dealt with above when allLeft==true
       if (rightMSBfrom < 0) rightMSBfrom = 0;
@@ -170,8 +125,8 @@ public class Merge {
 
         // within BinaryMerge it will recalculate the extents in terms of keys and bsearch for them within the (then local) both sides
         bmList.add(new RPC<>(node,
-                             new BinaryMerge(new BinaryMerge.FFSB( leftFrame, leftMSB, leftShift, leftIndex._bytesUsed, leftIndex._base),
-                                             new BinaryMerge.FFSB(rightFrame,rightMSB,rightShift,rightIndex._bytesUsed,rightIndex._base),
+                             new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base),
+                                             new BinaryMerge.FFSB(riteFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
                                              allLeft)));
       }
     }
@@ -289,7 +244,7 @@ public class Merge {
     t0 = System.nanoTime();
     int numJoinCols = leftIndex._bytesUsed.length;
     int numLeftCols = leftFrame.numCols();
-    int numColsInResult = numLeftCols + rightFrame.numCols() - numJoinCols ;
+    int numColsInResult = numLeftCols + riteFrame.numCols() - numJoinCols ;
     final byte[] types = new byte[numColsInResult];
     final String[][] doms = new String[numColsInResult][];
     final String[] names = new String[numColsInResult];
@@ -298,10 +253,10 @@ public class Merge {
       doms[j] = leftFrame.domains()[j];
       names[j] = leftFrame.names()[j];
     }
-    for (int j=0; j<rightFrame.numCols()-numJoinCols; j++) {
-      types[numLeftCols + j] = rightFrame.vec(j+numJoinCols).get_type();
-      doms[numLeftCols + j] = rightFrame.domains()[j+numJoinCols];
-      names[numLeftCols + j] = rightFrame.names()[j+numJoinCols];
+    for (int j=0; j<riteFrame.numCols()-numJoinCols; j++) {
+      types[numLeftCols + j] = riteFrame.vec(j+numJoinCols).get_type();
+      doms[numLeftCols + j] = riteFrame.domains()[j+numJoinCols];
+      names[numLeftCols + j] = riteFrame.names()[j+numJoinCols];
     }
     Key<Vec> key = Vec.newKey();
     Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
@@ -316,6 +271,16 @@ public class Merge {
 
     //Merge.cleanUp();
     return fr;
+  }
+
+  private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps) {
+    System.out.println("\nCreating "+(isLeft ? "left" : "right")+" index ...");
+    long t0 = System.nanoTime();
+    RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps);
+    H2O.submitTask(idxTask);    // each of those launches an MRTask
+    idxTask.join(); 
+    System.out.println("***\n*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
+    return idxTask;
   }
 
   static class ChunkStitcher extends MRTask<ChunkStitcher> {

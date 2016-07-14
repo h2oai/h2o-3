@@ -1,43 +1,36 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.Pair;
-import water.util.PrettyPrint;
-
-import java.util.Arrays;
-import java.util.Hashtable;
 
 
 // counted completer so that left and right index can run at the same time
-public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  
-  int _shift[];
-  int _bytesUsed[];
-  long _base[];
-  //long[][][] _o;
-  //byte[][][] _x;
-  Frame _DF;
-  boolean _isLeft;
-  int _whichCols[], _id_maps[][];
+class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
+  private final Frame _DF;
+  private final boolean _isLeft;
+  private final int _whichCols[], _id_maps[][];
+  final int _shift[];
+  final int _bytesUsed[];
+  final long _base[];
 
   RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][]) {
     _DF = DF;
     _isLeft = isLeft;
     _whichCols = whichCols;
     _id_maps = id_maps;
+    _shift = new int[_whichCols.length];   // currently only _shift[0] is used
+    _bytesUsed = new int[_whichCols.length];
+    _base = new long[_whichCols.length];
   }
 
   @Override
   public void compute2() {
+    if( _whichCols.length == 0 ) { tryComplete();  return; } // Sort has no right index
 
     long t0 = System.nanoTime();
-    _shift = new int[_whichCols.length];   // currently only _shift[0] is used
-    _bytesUsed = new int[_whichCols.length];
-    _base = new long[_whichCols.length];
     for (int i=0; i<_whichCols.length; i++) {
       Vec col = _DF.vec(_whichCols[i]);
       // TODO: strings that aren't already categoricals and fixed precision double.
@@ -113,9 +106,8 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     t0 = System.nanoTime();
     Key linkTwoMRTask = Key.make();
-    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
+    new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
-    System.out.println(tmp.profString());
 
     t0 = System.nanoTime();
     new SendSplitMSB(linkTwoMRTask).doAllNodes();
@@ -132,12 +124,8 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
 
     System.out.print("Waiting for RPC SingleThreadRadixOrder to finish ... ");
     t0 = System.nanoTime();
-    int i=0;
-    for (RPC rpc : radixOrders) { //TODO: Use a queue to make this fully async
-      // System.out.print(i+" ");
+    for( RPC rpc : radixOrders ) //TODO: Use a queue to make this fully async
       rpc.get();
-      i++;
-    }
     System.out.println("took " + (System.nanoTime() - t0) / 1e9);
 
     tryComplete();
