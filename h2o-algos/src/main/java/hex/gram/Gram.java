@@ -14,7 +14,7 @@ import java.util.Arrays;
 public final class Gram extends Iced<Gram> {
   boolean _hasIntercept;
   public double[][] _xx;
-  double[] _diag;
+  public double[] _diag;
   public int _diagN;
   final int _denseN;
   int _fullN;

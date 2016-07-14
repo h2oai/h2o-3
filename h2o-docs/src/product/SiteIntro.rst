@@ -1,40 +1,6 @@
 Welcome to H2O 3
 ==================
 
-.. todo :: add bullets at the top and then link through
-.. todo :: add missing links throughout page
-.. todo :: add back in the information for enterprise users, but remove the enterprise edition link
-
-Welcome to the H2O documentation site! Depending on your area of
-interest, select a learning path from the sidebar.
-
-We're glad you're interested in learning more about H2O - if you have
-any questions or need general support, please email them to our Google
-Group, `h2ostream <mailto:h2ostream@googlegroups.com>`__, or post them on
-our Google groups forum, h2ostream. This is a public forum, so your
-question will be visible to other users.
-
-**Note**: To join our Google group on h2ostream, you need a Google
-account (such as Gmail or Google+). On the h2ostream page, click the
-**Join group** button, then click the **New Topic** button to post a new
-message. You don't need to request or leave a message to join - you
-should be added to the group automatically.
-
-We welcome your feedback! Please let us know if you have any questions
-or comments about H2O by clicking the chat balloon button in the
-lower-right corner in Flow (H2O's web UI).
-
-.. image:: images/ChatButton.png
-   :alt: Chat Button
-
-Type your question in the entry field that appears at the bottom of the
-sidebar and you will be connected with an H2O expert who will respond to
-your query in real time.
-
-.. image:: images/ChatSidebar.png
-   :alt: Chat Sidebar
- 
-
 New Users
 ---------
 

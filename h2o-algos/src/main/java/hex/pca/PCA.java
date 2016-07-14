@@ -1,5 +1,6 @@
 package hex.pca;
 
+import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import hex.DataInfo;
@@ -16,6 +17,7 @@ import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
+import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;

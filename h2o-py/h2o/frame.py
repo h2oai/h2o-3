@@ -1266,6 +1266,37 @@ class H2OFrame(object):
     fr._ex._cache.types = None  # invalidate for possibly duplicate names
     return fr
 
+  def concat(self,frames,axis = 1):
+    """Append multiple data to this H2OFrame column-wise
+
+    Parameters
+    ----------
+      frames : List of H2OFrame's
+        H2OFrame's to be column bound to the right of this H2OFrame.
+      axis : int, default = 1
+        Type of concatenation to conduct.
+        If axis = 1, then column-wise (Default).
+        If axis = 0, then row-wise.
+
+    Returns
+    -------
+      H2OFrame of the combined datasets.
+    """
+    if len(frames) == 0:
+      raise ValueError("Input list of frames is empty! Nothing to concat.")
+    elif len(frames) == 1:
+      raise ValueError("Input list of frames is of length one. Better to use cbind or rbind for one frame/column.")
+
+    df = self
+
+    if axis == 1:
+      for i in frames:
+        df = df.cbind(i)
+    else:
+      for i in frames:
+        df = df.rbind(i)
+    return df
+
   def rbind(self, data):
     """Combine H2O Datasets by rows.
     Takes a sequence of H2O data sets and combines them by rows.

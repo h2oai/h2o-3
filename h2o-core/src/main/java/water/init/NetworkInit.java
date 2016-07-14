@@ -187,7 +187,7 @@ public class NetworkInit {
         for (NetworkInit.CIDRBlock n : networkList) {
           if (n.isInetAddressOnNetwork(ip)) {
             Log.info("    Matched " + ip.getHostAddress());
-            return (H2O.SELF_ADDRESS = ip);
+            return ip;
           }
         }
       }
@@ -241,7 +241,7 @@ public class NetworkInit {
         Log.throwErr(e);
       }
     }
-    return (H2O.SELF_ADDRESS = local);
+    return local;
   }
 
   private static InetAddress guessInetAddress(List<InetAddress> ips) {
@@ -454,7 +454,12 @@ public class NetworkInit {
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (! H2O.ARGS.disable_web) {
           apiSocket.close();
-          H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
+          try {
+            H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
+          } catch (Exception e) {
+            Log.err("Cannot start Jetty server for REST interface!", e);
+            H2O.exit(-1);
+          }
         }
         break;
       } catch (Exception e) {
@@ -472,6 +477,10 @@ public class NetworkInit {
       }
       // Try next available port to bound
       H2O.API_PORT += 2;
+      if (H2O.API_PORT > (1<<16)) {
+        Log.err("Cannot find free port for " + H2O.SELF_ADDRESS);
+        H2O.exit(-1);
+      }
     }
     boolean isIPv6 = H2O.SELF_ADDRESS instanceof Inet6Address; // Is IPv6 address was assigned to this node
     H2O.SELF = H2ONode.self(H2O.SELF_ADDRESS);

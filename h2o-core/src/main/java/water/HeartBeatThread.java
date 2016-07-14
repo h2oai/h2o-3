@@ -62,15 +62,6 @@ public class HeartBeatThread extends Thread {
       hb._hb_version = HB_VERSION++;
       hb._jvm_boot_msec= TimeLine.JVM_BOOT_MSEC;
 
-      // Run mini-benchmark every 5 mins.  However, on startup - do not have
-      // all JVMs immediately launch a all-core benchmark - they will fight
-      // with each other.  Stagger them using the hashcode.
-      // Run this benchmark *before* testing the heap or GC, so the GC numbers
-      // are current as of the send time.
-      if( (counter+Math.abs(H2O.SELF.hashCode()*0xDECAF /*spread wider than 1 apart*/)) % (300/(Float.isNaN(hb._gflops)?10:1)) == 0) {
-        hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
-        hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
-      }
 
       // Memory utilization as of last FullGC
       long kv_gc = Cleaner.KV_USED_AT_LAST_GC;
@@ -158,6 +149,16 @@ public class HeartBeatThread extends Thread {
           Paxos.print("hart: regained contact with node",cloud._memary,h2o.toString());
           h2o._announcedLostContact = false;
         }
+      }
+
+      // Run mini-benchmark every 5 mins.  However, on startup - do not have
+      // all JVMs immediately launch a all-core benchmark - they will fight
+      // with each other.  Stagger them using the hashcode.
+      // Run this benchmark *before* testing the heap or GC, so the GC numbers
+      // are current as of the send time.
+      if( (counter+Math.abs(H2O.SELF.hashCode()*0xDECAF /*spread wider than 1 apart*/)) % (300/(Float.isNaN(hb._gflops)?10:1)) == 0) {
+        hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
+        hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
       }
       counter++;
 

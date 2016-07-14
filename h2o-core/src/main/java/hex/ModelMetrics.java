@@ -35,10 +35,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     super(buildKey(model, frame));
     _description = desc;
     // Do not cache fields now
-    _modelKey = model._key;
-    _frameKey = frame._key;
-    _model_category = model._output.getModelCategory();
-    _model_checksum = model.checksum();
+    _modelKey = model == null ? null : model._key;
+    _frameKey = frame == null ? null : frame._key;
+    _model_category = model == null ? null : model._output.getModelCategory();
+    _model_checksum = model == null ? 0 : model.checksum();
     try { _frame_checksum = frame.checksum(); } catch (Throwable t) { }
     _MSE = MSE;
     _nobs = nobs;
@@ -53,6 +53,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
     sb.append(" MSE: " + (float)_MSE + "\n");
+    sb.append(" RMSE: " + (float)rmse() + "\n");
     return sb.toString();
   }
 
@@ -60,6 +61,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
 
   public double mse() { return _MSE; }
+  public double rmse() { return Math.sqrt(_MSE);}
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
@@ -255,7 +257,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   public static Key<ModelMetrics> buildKey(Model model, Frame frame) {
-    return frame==null ? null : buildKey(model._key, model.checksum(), frame._key, frame.checksum());
+    return frame==null || model == null ? null : buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
   public boolean isForModel(Model m) { return _model_checksum == m.checksum(); }

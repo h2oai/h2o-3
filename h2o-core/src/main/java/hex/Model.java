@@ -600,6 +600,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     switch (_parms._stopping_metric) {
       case MSE:
         return (float) mse();
+      case MAE:
+        return (float) mae();
       case logloss:
         return (float) logloss();
       case deviance:
@@ -636,6 +638,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double mse() {
     if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._mse : last_scored().scored_train._mse;
+  }
+
+  public double mae() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
   }
 
   public double auc() {
@@ -886,15 +893,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
     if(_output.isClassifier() && computeMetrics) {
-//      assert(mdomain != null); // label must be categorical
-      ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
-      ConfusionMatrix cm = mm.cm();
-      if (cm != null && cm._domain != null) //don't print table for regression
-        if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
-          Log.info(cm.table().toString(1));
+      if (false) {
+        assert(mdomain != null); // label must be categorical
+        ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
+        ConfusionMatrix cm = mm.cm();
+        if (cm != null && cm._domain != null) //don't print table for regression
+          if( cm._cm.length < _parms._max_confusion_matrix_size/*Print size limitation*/ ) {
+            Log.info(cm.table().toString(1));
+          }
+        if (mm.hr() != null) {
+          Log.info(getHitRatioTable(mm.hr()));
         }
-      if (mm.hr() != null) {
-        Log.info(getHitRatioTable(mm.hr()));
       }
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does

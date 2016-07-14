@@ -15,6 +15,7 @@ except AttributeError:
 
 import re
 from six import PY3
+import copy
 from .utils.shared_utils import _quoted, _is_list_of_lists, _gen_header, _py_tmp_key, quote, urlopen
 from .connection import H2OConnection
 from .expr import ExprNode

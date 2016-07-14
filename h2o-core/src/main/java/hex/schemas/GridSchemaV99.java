@@ -27,7 +27,7 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   @API(help = "Grid id")
   public KeyV3.GridKeyV3 grid_id;
 
-  @API(help = "Model performance metric to sort by. Examples: logloss, residual_deviance, mse, auc, r2, f1, recall, precision, accuracy, mcc, err, err_count, lift_top_group, max_per_class_error", required = false, direction = API.Direction.INOUT)
+  @API(help = "Model performance metric to sort by. Examples: logloss, residual_deviance, mse, rmse, mae, auc, r2, f1, recall, precision, accuracy, mcc, err, err_count, lift_top_group, max_per_class_error", required = false, direction = API.Direction.INOUT)
   public String sort_by;
 
   @API(help = "Specify whether sort order should be decreasing.", required = false, direction = API.Direction.INOUT)

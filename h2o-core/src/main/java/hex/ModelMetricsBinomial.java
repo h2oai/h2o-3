@@ -1,12 +1,15 @@
 package hex;
 
+import hex.genmodel.GenModel;
+import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
-import java.awt.color.ICC_ColorSpace;
+import java.util.Arrays;
 
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
@@ -56,6 +59,62 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public double auc() { return auc_obj()._auc; }
   public double lift_top_group() { return gainsLift().response_rates[0] / gainsLift().avg_response_rate; }
 
+  /**
+   * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
+   * @param targetClassProbs A Vec containing target class probabilities
+   * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
+   * @return ModelMetrics object
+   */
+  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels) {
+    return make(targetClassProbs,actualLabels,new String[]{"0","1"});
+  }
+
+  /**
+   * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
+   * @param targetClassProbs A Vec containing target class probabilities
+   * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
+   * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
+   * @return ModelMetrics object
+   */
+  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
+    Vec _labels = actualLabels.toCategoricalVec();
+    if (_labels == null || targetClassProbs == null)
+      throw new IllegalArgumentException("Missing actualLabels or predictedProbs!");
+    if (!targetClassProbs.isNumeric())
+      throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities.");
+    if (targetClassProbs.min() < 0 || targetClassProbs.max() > 1)
+      throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1.");
+    if (domain.length!=2)
+      throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain));
+    _labels = _labels.adaptTo(domain);
+    Frame predsLabel = new Frame(targetClassProbs);
+    predsLabel.add("labels", _labels);
+    ModelMetricsBinomial mm = new BinomialMetrics(_labels.domain()).doAll(predsLabel)._mm;
+    mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold();
+    _labels.remove();
+    return mm;
+  }
+
+  // helper to build a ModelMetricsBinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
+  private static class BinomialMetrics extends MRTask<BinomialMetrics> {
+    public ModelMetricsBinomial _mm; //OUTPUT
+    public BinomialMetrics(String[] domain) { this.domain = domain; }
+    String[] domain;
+    private MetricBuilderBinomial _mb;
+    @Override public void map(Chunk[] chks) {
+      _mb = new MetricBuilderBinomial(domain);
+      Chunk actuals = chks[1];
+      double [] ds = new double[3];
+      for (int i=0;i<chks[0]._len;++i) {
+        ds[2] = chks[0].atd(i); //class 1 probs (user-given)
+        ds[1] = 1-ds[2]; //class 0 probs
+        ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
+        _mb.perRow(ds, new float[]{actuals.at8(i)}, null);
+      }
+    }
+    @Override public void reduce(BinomialMetrics mrt) { _mb.reduce(mrt._mb); }
+    @Override protected void postGlobal() { _mm = (ModelMetricsBinomial)_mb.makeModelMetrics(null, _fr, null, null); }
+  }
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
     protected double _logloss;
@@ -109,24 +168,26 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       double sigma = Double.NaN;
+      AUC2 auc = null;
+      GainsLift gl = null;
       if (_wcount > 0) {
         sigma = weightedSigma();
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
-        AUC2 auc = new AUC2(_auc);
-        GainsLift gl = null;
+        auc = new AUC2(_auc);
+        gl = null;
         if (preds!=null) {
-          Vec resp = f.vec(m._parms._response_column);
-          Vec weight = frameWithWeights.vec(m._parms._weights_column);
+          Vec resp = m==null && f.vec(f.numCols()-1).isCategorical() ? f.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+                  : f.vec(m._parms._response_column);
+          Vec weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
           if (resp != null) {
             gl = new GainsLift(preds.lastVec(), resp, weight);
             gl.exec(m._output._job);
           }
         }
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl));
-      } else {
-        return m._output.addModelMetrics(new ModelMetricsBinomial(m, f, _count, mse,   null,  sigma, null, logloss, null));
       }
+      return m==null ? new ModelMetricsBinomial(null, f, _count, mse, _domain, sigma, auc,  logloss, gl)
+              : m._output.addModelMetrics(new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl));
     }
     public String toString(){
       if(_wcount == 0) return "empty, no rows";

@@ -43,6 +43,7 @@ class MetricsBase(object):
     types_w_bin =        ['ModelMetricsBinomial', 'ModelMetricsBinomialGLM']
     types_w_r2 =         ['ModelMetricsBinomial', 'ModelMetricsRegression'] + types_w_glm + types_w_mult
     types_w_mean_residual_deviance = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
+    types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegression']
     types_w_logloss =    types_w_bin + types_w_mult
     types_w_dim =        ["ModelMetricsGLRM"]
 
@@ -59,6 +60,9 @@ class MetricsBase(object):
       print(reported_on.format("test"))
     print()
     print("MSE: "                                           + str(self.mse()))
+    print("RMSE: "                                           + str(self.rmse()))
+    if metric_type in types_w_mean_absolute_error:
+      print("MAE: "                                           + str(self.mae()))
     if metric_type in types_w_r2:
       print("R^2: "                                           + str(self.r2()))
     if metric_type in types_w_mean_residual_deviance:
@@ -143,6 +147,18 @@ class MetricsBase(object):
     :return: Retrieve the MSE for this set of metrics
     """
     return self._metric_json['MSE']
+
+  def rmse(self):
+    """
+    :return: Retrieve the RMSE for this set of metrics
+    """
+    return self._metric_json['RMSE']
+
+  def mae(self):
+    """
+    :return: Retrieve the MAE for this set of metrics
+    """
+    return self._metric_json['mae']
 
   def residual_deviance(self):
     """
@@ -366,7 +382,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
     :return: The absolute MCC (a value between 0 and 1, 0 being totally dissimilar, 1 being identical)
     """
-    return self.metric("absolute_MCC", thresholds=thresholds)
+    return self.metric("absolute_mcc", thresholds=thresholds)
 
   def max_per_class_error(self, thresholds=None):
     """
@@ -456,7 +472,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     """
     Get the confusion matrix for the specified metric
 
-    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
+    :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
     :param thresholds: A value (or list of values) between 0 and 1
     :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix (if there is only one)
     """
@@ -476,8 +492,8 @@ class H2OBinomialModelMetrics(MetricsBase):
             not all(t >= 0 or t <= 1 for t in thresholds_list):
       raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
 
-    if not all(m in ["min_per_class_accuracy", "absolute_MCC", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
-      raise ValueError("The only allowable metrics are min_per_class_accuracy, absolute_MCC, precision, accuracy, f0point5, f2, f1, mean_per_class_accuracy")
+    if not all(m in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
+      raise ValueError("The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, f2, f1, mean_per_class_accuracy")
 
     # make one big list that combines the thresholds and metric-thresholds
     metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
@@ -510,7 +526,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
   def find_threshold_by_max_metric(self,metric):
     """
-    :param metric: A string in {"min_per_class_accuracy", "absolute_MCC", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"}
+    :param metric: A string in {"min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity", "accuracy", "f0point5", "f2", "f1", "mean_per_class_accuracy"}
     :return: the threshold at which the given metric is maximum.
     """
     crit2d = self._metric_json['max_criteria_and_metric_scores']

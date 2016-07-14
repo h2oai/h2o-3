@@ -15,8 +15,8 @@ def test_relevel():
     mh2o1.train(x=list(range(1, d.ncol)), y=0, training_frame=d)
     ns = mh2o1.coef().keys()
     print(ns)
-    assert("DPROS.None" in ns, "None level IS NOT expected to be skipped by default")
-    assert(("DPROS.Both" not in ns), "Both level IS expected to be skipped by default")
+    assert "DPROS.None" in ns, "None level IS NOT expected to be skipped by default"
+    assert "DPROS.Both" not in ns, "Both level IS expected to be skipped by default"
     x = d["DPROS"].relevel("None")
     print(x)
     d["DPROS"] = x[0]
@@ -25,8 +25,8 @@ def test_relevel():
     mh2o2.train(x=list(range(1, d.ncol)), y=0, training_frame=d)
     ns2 = mh2o2.coef().keys()
     print(ns2)
-    assert("DPROS.None" in ns2, "None level IS NOT expected to be skipped by default")
-    assert(("DPROS.Both" not in ns2), "Both level IS expected to be skipped by default")
+    assert "DPROS.None" not in ns2, "None level IS NOT expected to be skipped by default"
+    assert "DPROS.Both" in ns2, "Both level IS expected to be skipped by default"
 
     #Second, compare against R input (taken from runit_relevel.R)
     dr = h2o.import_file(path = pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"))
@@ -35,7 +35,7 @@ def test_relevel():
     exp_coefs = {"Intercept": -7.63245 , "DPROS.Both": 1.39185, "DPROS.Left": 0.73482, "DPROS.Right": 1.51437, "RACE.White": 0.65160, "DCAPS.Yes": 0.49233,
                  "AGE":-0.01189 , "PSA": 0.02990, "VOL": -0.01141, "GLEASON": 0.96466927}
     coeff_diff = {key: abs(exp_coefs[key] - mh2o2.coef().get(key, 0)) for key in exp_coefs.keys()}
-    assert (max(coeff_diff.values()) < 1e-4)
+    assert max(coeff_diff.values()) < 1e-4
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_relevel)

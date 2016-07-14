@@ -492,7 +492,7 @@ class H2OBinomialModel(ModelBase):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("absolute_MCC", thresholds=thresholds)
+    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.metric("absolute_mcc", thresholds=thresholds)
     return list(m.values())[0] if len(m) == 1 else m
 
   def max_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
@@ -601,8 +601,8 @@ class H2OBinomialModel(ModelBase):
 
     if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
       if metric == "AUTO": metric = "logloss"
-      elif metric not in ("logloss","AUC","classification_error","MSE"):
-        raise ValueError("metric for H2OBinomialModel must be one of: AUTO, logloss, AUC, classification_error, MSE")
+      elif metric not in ("logloss","auc","classification_error","rmse"):
+        raise ValueError("metric for H2OBinomialModel must be one of: AUTO, logloss, auc, classification_error, rmse")
 
     self._plot(timestep=timestep, metric=metric, **kwargs)
 
@@ -672,7 +672,7 @@ class H2OBinomialModel(ModelBase):
     Parameters
     ----------
       metrics : str, list
-        One or more of "min_per_class_accuracy", "absolute_MCC", "tnr", "fnr", "fpr",
+        One or more of "min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr",
         "tpr", "precision", "accuracy", "f0point5", "f2", "f1".
 
       thresholds : list, optional

@@ -112,7 +112,7 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
   }
 
   /**
-   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_MSE"
+   * Turn a description such as "Avg. Training MSE" into a JSON-usable field name "avg_training_mse"
    * @param n
    * @return
    */
@@ -123,11 +123,11 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
     for (int i=0; i<modified.length; ++i) {
       if (i!=0) sb.append("_");
       String s = modified[i];
-      if (!s.matches("^[A-Z]{2,3}$")) {
-        sb.append(s.toLowerCase());
-      } else {
-        sb.append(s);
-      }
+//      if (!s.matches("^[A-Z]{2,3}$")) {
+        sb.append(s.toLowerCase()); //everything goes lowercase
+//      } else {
+//        sb.append(s);
+//      }
     }
     String newString = sb.toString().replaceAll("[^\\w]", "");
 //    if (!newString.equals(name)) {

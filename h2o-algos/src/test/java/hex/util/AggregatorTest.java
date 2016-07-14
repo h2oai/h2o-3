@@ -53,7 +53,7 @@ public class AggregatorTest extends TestUtil {
     cf.binary_fraction = 0.0;
     cf.real_range = 100;
     cf.integer_range = 100;
-    cf.missing_fraction = 0.1;
+    cf.missing_fraction = 0;
     cf.factors = 5;
     cf.seed = 1234;
     Frame frame = cf.execImpl().get();

@@ -20,9 +20,9 @@ class H2ORegressionModel(ModelBase):
     """
 
     if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
-      if metric == "AUTO": metric = "MSE"
-      elif metric not in ("MSE","deviance"):
-        raise ValueError("metric for H2ORegressionModel must be one of: AUTO, MSE, deviance")
+      if metric == "AUTO": metric = "rmse"
+      elif metric not in ("rmse","deviance","mae"):
+        raise ValueError("metric for H2ORegressionModel must be one of: AUTO, rmse, deviance, or mae")
 
     self._plot(timestep=timestep, metric=metric, **kwargs)
 

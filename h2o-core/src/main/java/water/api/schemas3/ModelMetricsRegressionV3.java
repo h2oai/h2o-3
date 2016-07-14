@@ -10,10 +10,14 @@ public class ModelMetricsRegressionV3<I extends ModelMetricsRegression, S extend
   @API(help="The mean residual deviance for this scoring run.", direction=API.Direction.OUTPUT)
   public double mean_residual_deviance;
 
+  @API(help="The mean absolute error for this scoring run.", direction=API.Direction.OUTPUT)
+  public double mae;
+
   @Override
   public S fillFromImpl(I modelMetrics) {
     super.fillFromImpl(modelMetrics);
     r2 = modelMetrics.r2();
+    mae = modelMetrics._mean_absolute_error;
     return (S) this;
   }
 }

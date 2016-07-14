@@ -81,7 +81,7 @@ public class AUCTest extends TestUtil {
     Assert.assertEquals(1.0, AUC2.ThresholdCriterion.precision.max_criterion(auc), 1e-4);
 
     double ROCR_max_abs_mcc = 0.4553512;
-    Assert.assertEquals(ROCR_max_abs_mcc, AUC2.ThresholdCriterion.absolute_MCC.max_criterion(auc), 1e-3);
+    Assert.assertEquals(ROCR_max_abs_mcc, AUC2.ThresholdCriterion.absolute_mcc.max_criterion(auc), 1e-3);
 
     double ROCR_f1 = 0.9920445; // same as ROCR "f" with alpha=0, or alternative beta=1
     Assert.assertEquals(ROCR_f1, AUC2.ThresholdCriterion.f1.max_criterion(auc), 1e-4);
