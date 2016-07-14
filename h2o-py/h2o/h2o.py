@@ -12,7 +12,7 @@ import os
 import sys
 
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen
-from .connection import H2OConnection, H2OConnectionError
+from .connection import H2OConnection, H2OConnectionError, H2OServerError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
@@ -84,7 +84,7 @@ def connect(ip="localhost", port=54321, https=False, verify_ssl_cert=True, auth=
 
 
 def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
-          verbose=True):
+          port=54321, verbose=True):
     """
     :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
     :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
@@ -93,6 +93,7 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
     :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
     :param ice_root: A temporary directory where H₂O log files will be placed. If not specified, then the folder will
         be chosen by `tempfile.mkdtemp()`.
+    :param port: Port that the server should start listening to.
     :param verbose: Whether to print connection progress messages to the stdout or not.
     :return:
     """

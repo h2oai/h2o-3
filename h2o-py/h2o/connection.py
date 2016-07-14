@@ -131,7 +131,7 @@ class H2OConnection(backwards_compatible()):
     @staticmethod
     @translate_args
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, verbose=True):
+              ice_root=None, port=54321, verbose=True):
         """
         Start new H₂O server locally and then connect to to it.
 
@@ -144,6 +144,7 @@ class H2OConnection(backwards_compatible()):
         :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
         :param ice_root: A directory where H₂O stores its temporary files. Default location is determined by
                 tempfile.mkdtemp().
+        :param port: Port where to start the new server.
         :param verbose: If True, then connection info will be printed to the stdout.
         :return self
         """
@@ -177,7 +178,8 @@ class H2OConnection(backwards_compatible()):
 
         # Start local jar
         if verbose: print("Starting server from " + resolved_jar_path)
-        (ip, port, child) = H2OConnection._start_h2o_server(jar_path=resolved_jar_path, nthreads=int(nthreads),
+        (ip, port, child) = H2OConnection._start_h2o_server(port=port, jar_path=resolved_jar_path,
+                                                            nthreads=int(nthreads),
                                                             ea=enable_assertions, logs_dir=ice_root,
                                                             mmax=max_mem_size, mmin=min_mem_size, verbose=verbose)
         conn = H2OConnection.connect(ip=ip, port=port, verbose=verbose)
@@ -466,7 +468,7 @@ class H2OConnection(backwards_compatible()):
 
 
     @staticmethod
-    def _start_h2o_server(mmax, mmin, ea, logs_dir, jar_path, nthreads, verbose):
+    def _start_h2o_server(port, mmax, mmin, ea, logs_dir, jar_path, nthreads, verbose):
         """
         Actually start the h2o.jar executable (helper method for H2OConnection.start()).
         :return tuple (ip, port, child), where `child` is the handle to the server's process.
@@ -474,7 +476,6 @@ class H2OConnection(backwards_compatible()):
         # For now we hardcode the server's location. Eventually we might want to explore multiple ports  until we find
         # an unoccupied one.
         ip = "127.0.0.1"
-        port = 54321
 
         # Find Java executable
         command = H2OConnection._find_java()
