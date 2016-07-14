@@ -232,7 +232,7 @@ class H2OConnection(backwards_compatible()):
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
                        "X-Cluster": self._cluster_name}
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
-                                    headers=headers, timeout=3,
+                                    headers=headers, timeout=self._timeout,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
             self._log_end_transaction(start_time, resp)
             return self._process_response(resp)
