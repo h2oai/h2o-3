@@ -115,7 +115,11 @@ class H2OConnection(backwards_compatible()):
         try:
             # Make a fake _session_id, otherwise .api() will complain that the connection is not initialized
             conn._stage = 1
+            conn._timeout = 3.0
             conn._cluster_info = conn._test_connection()
+            # If a server is unable to respond within 1s, it should be considered a bug. However for now we set the
+            # timeout to 10s, simply because the server isn't very responsive yet...
+            conn._timeout = 10.0
             atexit.register(lambda: conn.close())
         except Exception:
             # Reset _session_id so that we know the connection was not initialized properly.
@@ -385,7 +389,7 @@ class H2OConnection(backwards_compatible()):
         self._verbose = None
         self._child = None
         self._requests_counter = 0  # how many API requests were made
-        self._timeout = 3.0         # timeout for a single request (in seconds)
+        self._timeout = None        # timeout for a single request (in seconds)
         self._is_logging = False    # when True, log every request
         self._logging_dest = None   # where the log messages will be written, either filename or open file handle
         # self.start_logging(sys.stdout)
