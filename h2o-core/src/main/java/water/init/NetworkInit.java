@@ -454,12 +454,7 @@ public class NetworkInit {
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (! H2O.ARGS.disable_web) {
           apiSocket.close();
-          try {
-            H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
-          } catch (Exception e) {
-            Log.err("Cannot start Jetty server for REST interface!", e);
-            H2O.exit(-1);
-          }
+          H2O.getJetty().start(H2O.ARGS.web_ip, H2O.API_PORT);
         }
         break;
       } catch (Exception e) {
