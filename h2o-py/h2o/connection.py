@@ -226,8 +226,8 @@ class H2OConnection(backwards_compatible()):
             data = None
 
         # Make the requst
+        start_time = time.time()
         try:
-            start_time = time.time()
             self._log_start_transaction(endpoint, data, json, files, params)
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
                        "X-Cluster": self._cluster_name}
@@ -237,9 +237,13 @@ class H2OConnection(backwards_compatible()):
             self._log_end_transaction(start_time, resp)
             return self._process_response(resp)
 
-        except (requests.ConnectionError, requests.ReadTimeout) as e:
+        except requests.ConnectionError as e:
             self._log_end_exception(e)
             raise H2OConnectionError("Unexpected HTTP error: %s" % e)
+        except requests.ReadTimeout as e:
+            self._log_end_exception(e)
+            elapsed_time = time.time() - start_time
+            raise H2OConnectionError("Timeout after %fs (timeout_interval = %fs)" % (elapsed_time, self._timeout))
         except H2OResponseError as e:
             err = e.args[0]
             err.endpoint = endpoint
