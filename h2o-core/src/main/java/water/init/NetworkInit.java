@@ -187,7 +187,7 @@ public class NetworkInit {
         for (NetworkInit.CIDRBlock n : networkList) {
           if (n.isInetAddressOnNetwork(ip)) {
             Log.info("    Matched " + ip.getHostAddress());
-            return (H2O.SELF_ADDRESS = ip);
+            return ip;
           }
         }
       }
@@ -241,7 +241,7 @@ public class NetworkInit {
         Log.throwErr(e);
       }
     }
-    return (H2O.SELF_ADDRESS = local);
+    return local;
   }
 
   private static InetAddress guessInetAddress(List<InetAddress> ips) {

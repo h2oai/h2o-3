@@ -97,8 +97,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
+      assert repl == 0 : "No replication is support now";
       assert _kb[0] != Key.CHK;
-      H2ONode h2o = H2ONode.intern(_kb,2+repl*(4+2/*serialized bytesize of H2OKey*/));
+      H2ONode h2o = H2ONode.intern(_kb,2+repl*(H2ONode.H2Okey.SIZE /* serialized bytesize of H2OKey - depends on IP protocol */));
       // Reverse the home to the index
       int idx = h2o.index();
       if( idx >= 0 ) return idx;

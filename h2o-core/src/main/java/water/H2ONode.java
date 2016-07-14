@@ -37,24 +37,25 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
 
-  /** Identification of the node via IP and PORT */
+  /** Identification of the node via IP and PORT.
+   *
+   */
   static final class H2Okey extends InetSocketAddress implements Comparable {
     // Numeric representation of IP
     // For IPv6 the both fields are valid and describes full IPv6 address, for IPv4 only low 32 bits of _ipLow are valid
     // But still need a flag to distinguish between IPv4 and IPv6
     final long _ipHigh, _ipLow; // IPv4: A.B.C.D ~ DCBA
-    final boolean _isIPv4;
     H2Okey(InetAddress inet, int port) {
       super(inet, port);
       byte[] b = inet.getAddress(); // 4bytes or 16bytes
       if (b.length == 4) {
+        assert !H2O.IS_IPV6 : "IPv4 stack specified but IPv6 address passed! " + inet;
         _ipHigh = 0;
-        _ipLow = ArrayUtils.encodeAsLong(b);
-        _isIPv4 = true;
+        _ipLow = ArrayUtils.encodeAsInt(b) & 0XFFFFFFFFL;
       } else {
+        assert H2O.IS_IPV6 : "IPv6 stack specified but IPv4 address passed! " + inet;
         _ipHigh = ArrayUtils.encodeAsLong(b, 8, 8);
         _ipLow = ArrayUtils.encodeAsLong(b, 0, 8);
-        _isIPv4 = false;
       }
     }
     public int htm_port() { return getPort()-1; }
@@ -64,14 +65,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       return getAddress().getHostAddress() + ":" + htm_port();
     }
     AutoBuffer write( AutoBuffer ab ) {
-      return (_isIPv4
-              ? ab.put1(1).put4((int) _ipLow)
-              : ab.put1(0).put8(_ipLow).put8(_ipHigh)).put2((char) udp_port());
+      return (!H2O.IS_IPV6
+              ? ab.put4((int) _ipLow)
+              : ab.put8(_ipLow).put8(_ipHigh)).put2((char) udp_port());
     }
     static H2Okey read( AutoBuffer ab ) {
       try {
-        int size = ab.get1() == 1 ? 4 : 16; // IPv4 or IPv6 address
-        InetAddress inet = InetAddress.getByAddress(ab.getA1(size));
+        InetAddress inet = InetAddress.getByAddress(ab.getA1(SIZE_OF_IP));
         int port = ab.get2();
         return new H2Okey(inet, port);
       } catch( UnknownHostException e ) { throw Log.throwErr(e); }
@@ -85,6 +85,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       int res = MathUtils.compareUnsigned(_ipHigh, _ipLow, key._ipHigh, key._ipLow);
       return res != 0 ? res : udp_port() - key.udp_port();
     }
+
+    static int SIZE_OF_IP = H2O.IS_IPV6 ? 16 : 4;
+    /** Size of serialized H2OKey */
+    static int SIZE = SIZE_OF_IP /* ip */ + 2 /* port */;
   }
 
   public String getIpPortString() {
@@ -138,9 +142,16 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   public static H2ONode intern( InetAddress ip, int port ) { return intern(new H2Okey(ip,port)); }
 
   public static H2ONode intern( byte[] bs, int off ) {
-    byte[] b = new byte[4];
-    UnsafeUtils.set4(b, 0, UnsafeUtils.get4(bs, off));
-    int port = UnsafeUtils.get2(bs,off+4)&0xFFFF;
+    byte[] b = new byte[H2Okey.SIZE_OF_IP]; // the size depends on version of selected IP stack
+    int port;
+    // The static constant should be optimized
+    if (!H2O.IS_IPV6) { // IPv4
+      UnsafeUtils.set4(b, 0, UnsafeUtils.get4(bs, off));
+    } else { // IPv6
+      UnsafeUtils.set8(b, 0, UnsafeUtils.get8(bs, off));
+      UnsafeUtils.set8(b, 8, UnsafeUtils.get8(bs, off + 8));
+    }
+    port = UnsafeUtils.get2(bs,off + H2Okey.SIZE_OF_IP) & 0xFFFF;
     try { return intern(InetAddress.getByAddress(b),port); } 
     catch( UnknownHostException e ) { throw Log.throwErr(e); }
   }
