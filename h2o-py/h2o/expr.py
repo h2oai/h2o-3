@@ -186,7 +186,8 @@ class ExprNode(object):
     -------
       The JSON response (as a python dictionary) of the Rapids execution
     """
-    return h2o.connection().post_json("Rapids", ast=expr,session_id=h2o.connection().session_id(), _rest_version=99)
+    return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.connection().session_id})
+
 
 class ASTId:
   def __init__(self, name=None):
