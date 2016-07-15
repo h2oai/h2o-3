@@ -24,7 +24,7 @@ RUN \
 
 # Install Oracle Java 7
 RUN \
-  DEBIAN_FRONTEND=noninteractive apt-get install -y wget unzip python-sklearn python-pandas python-numpy python-matplotlib software-properties-common python-software-properties && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y wget unzip python-pip python-sklearn python-pandas python-numpy python-matplotlib software-properties-common python-software-properties && \
   add-apt-repository -y ppa:webupd8team/java && \
   apt-get update -q && \
   echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
@@ -41,6 +41,7 @@ RUN \
   cd /opt && \
   cd `find . -name 'h2o.jar' | sed 's/.\///;s/\/h2o.jar//g'` && \ 
   cp h2o.jar /opt && \
+  /usr/bin/pip install `find . -name "*.whl"` && \
   wget https://raw.githubusercontent.com/h2oai/h2o-3/master/docker/start-h2o-docker.sh
 
 # Get Content
