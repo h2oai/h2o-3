@@ -53,7 +53,7 @@ class H2OAssembly(object):
   @translate_args
   def to_pojo(self, pojo_name="", path="", get_jar=True):
     if pojo_name=="": pojo_name = "AssemblyPOJO_" + str(uuid.uuid4())
-    java = h2o.connection().api("GET /99/Assembly.java/%s/%s" % (self.id, pojo_name))
+    java = h2o.connection().request("GET /99/Assembly.java/%s/%s" % (self.id, pojo_name))
     file_path = path + "/" + pojo_name + ".java"
     if path == "":
       print(java)

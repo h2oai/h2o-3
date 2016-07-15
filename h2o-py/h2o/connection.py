@@ -1,42 +1,59 @@
 # -*- encoding: utf-8 -*-
 """
+Collection of methods for communication with H₂O servers.
 
- :copyright: (c) 2016 H2O.ai
- :license:   Apache License Version 2.0 (see LICENSE for details)
+`H2OConnection` is the main class of this module, and it handles the connection itself. Public interface:
+    hc = H2OConnection.open() : open a new connection
+    hc.request(endpoint, [data|json|filename]) : make a REST API request to the server
+    hc.info() : return information about the current connection
+    hc.close() : close the connection
+    hc.session_id() : return the current session id
+
+`H2OLocalServer`
+    hs = H2OLocalServer.start() : start a new local server
+    assert hs.is_running() : check if the server is running
+    hs.shutdown() : shut down the server
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from h2o.compatibility import *
-import requests
-import tempfile
-import os
-import re
-import sys
-import time
-import subprocess
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import atexit
-import warnings
-from sysconfig import get_config_var
+import os
+import subprocess
+import sys
+import tempfile
+import time
 from random import choice
+from sysconfig import get_config_var
+from warnings import warn
+
+import requests
 from requests.auth import AuthBase
 
-from .utils.backward_compatibility import backwards_compatible
-from .two_dim_table import H2OTwoDimTable
-from .utils.shared_utils import stringify_list
+from .compatibility import *  # NOQA
 from .schemas.cloud import CloudV3
 from .schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
+from .two_dim_table import H2OTwoDimTable
+from .utils.backward_compatibility import backwards_compatible, CallableString
+from .utils.shared_utils import stringify_list
 
-__all__ = ("H2OConnection", "H2OStartupError", "H2OConnectionError", "H2OServerError", "H2OResponseError")
+__all__ = ("H2OConnection", "H2OLocalServer", "H2OStartupError", "H2OConnectionError", "H2OServerError",
+           "H2OResponseError")
 
 
+
+#----------------------------------------------------------------------------------------------------------------------#
+#   H2OConnection
+#----------------------------------------------------------------------------------------------------------------------#
 
 class H2OConnection(backwards_compatible()):
     """
     Single connection to an H₂O server.
 
-    There are two main methods for establishing a connection:
-        conn = H2OConnection.connect(...)  connect to an existing H₂O server;
-        conn = H2OConnection.start(...)    launch a new local H₂O server and then connect to it.
+    Instances of this class are created through a static method `.open()`:
+        conn = H2OConnection.open(...)    connect to an existing H₂O server;
     We will autom
     You can also use this class as a context manager:
         with H2OConnection.connect() as conn:
@@ -45,7 +62,7 @@ class H2OConnection(backwards_compatible()):
 
     This class contains methods for performing the common REST methods GET, POST, and DELETE.
 
-    TODO: Maybe move start() and 4 private methods _jar_paths, _start_h2o_server, _find_java, _tmp_file into a separate
+    TODO: Maybe move start() and 4 private methods _jar_paths, _launch_server, _find_java, _tmp_file into a separate
     class H2OLocalServer. Better communicate with the subprocess. Right now if the server dies, no exception is
     raised anywhere. Also if the server decides to start listening to a port other than 54321, we have no way of
     knowing this.
@@ -53,141 +70,104 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     @translate_args
-    def connect(ip="localhost", port=54321, https=False, verify_ssl_cert=True, auth=None, proxy=None,
-                cluster_name=None, verbose=True):
+    def open(ip=None, port=None, server=None, https=False, verify_ssl_certificates=True, auth=None, proxy=None,
+             cluster_name=None, verbose=True):
         """
-        Connect to an existing H₂O server at address ip:port, either via http or https.
+        Establish connection to an existing H₂O server at address ip:port.
 
         The connection is not kept alive, so what this method actually does is it attempts to connect to the
-        specified server, checks that the server is healthy and responds to REST API requests, and finally opens a new
-        session on the server. The parameters of the connection are stored so that all subsequent requests do not
-        need to specify them.
-        If the H₂O server cannot be reached, an H2OConnectionError will be raised.
+        specified server, and checks that the server is healthy and responds to REST API requests. If the H₂O server
+        cannot be reached, an `H2OConnectionError` will be raised. On success this method returns a new
+        `H2OConnection` object, and it is the only "official" way to create instances of this class.
 
-        Note: connecting to the server will effectively lock the cloud.
-
-        :param ip: Server's IP address, default is "localhost".
-        :param port: Server's port, default is 54321.
-        :param https: Set this to True to use https instead of http.
-        :param verify_ssl_cert: Set to False to disable SSL certificate checking; has no effect if https=False.
-        :param auth: Authenticator object (from requests.auth), or a (username, password) tuple.
-        :param proxy: (str) URL address of a proxy server.
+        :param ip: Target server's IP address or hostname (default "localhost").
+        :param port: H₂O server's port (default 54321).
+        :param server: (H2OLocalServer) connect to the specified local server instance. There is a slight difference
+            between connecting to a local server by specifying its ip and address, and connecting through
+            an H2OLocalServer instance: if the server becomes unresponsive, then having access to its process handle
+            will allow us to query the server status through OS, and potentially provide snapshot of the server's
+            error log in the exception information.
+            This setting cannot be used together with `ip` or `port`.
+        :param https: If True then connect using https instead of http (default False).
+        :param verify_ssl_certificates: If False then SSL certificate checking will be disabled (default True). This
+            setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
+            used, it will generate a warning from the requests library. Has no effect when `https` is False.
+        :param auth: Authentication token for connecting to the remote server. This can be either a
+            (username, password) tuple, or an authenticator (AuthBase) object. Please refer to the documentation in
+            the `requests.auth` module.
+        :param proxy: (str) URL address of a proxy server. If you do not specify the proxy, then the requests module
+            will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
+            check for the presence of these variables and issue a warning if they are found. In order to suppress
+            that warning and use proxy from the environment, pass `proxy`="(default)".
         :param cluster_name: Name of the H₂O cluster to connect to. This option is used from Steam only.
-        :param verbose: If True, then connection progress info will be printed to the stdout.
-        :return self
-        :raise H2OConnectionError if the server cannot be reached
-        :raise H2OServerError if the server is in an unhealthy state (although this is a recoverable error, the client
-                itself should decide whether it wants to retry or not)
+        :param verbose: If True (default), then connection progress info will be printed to the stdout.
+        :return A new H2OConnection instance.
+        :raise H2OConnectionError if the server cannot be reached.
+        :raise H2OServerError if the server is in an unhealthy state (although this might be a recoverable error, the
+            client itself should decide whether it wants to retry or not).
         """
-        assert isinstance(ip, str), "`ip` must be a string, got %r" % ip
-        assert isinstance(port, (str, int)), "`port` must be an integer, got %r" % port
-        port = int(port)  # We also allow `port` to be a string that is convertible into a number, for convenience
-        assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
-        assert https is None or isinstance(https, bool), "`https` should be boolean, got %r" % https
-        assert proxy is None or isinstance(proxy, str), "`proxy` must be a string, got %r" % proxy
+        if server is None:
+            if ip is None: ip = str("localhost")
+            if port is None: port = 54321
+            if isinstance(port, str) and port.isdigit(): port = int(port)
+            assert isinstance(ip, str), "`ip` must be a string, got %s" % type(ip)
+            assert isinstance(port, int), "`port` must be an integer, got %s" % type(port)
+            assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
+        else:
+            assert isinstance(server, H2OLocalServer), \
+                "`server` must be an H2OLocalServer instance, got %s" % type(server)
+            assert ip is None and port is None, "`ip` and `port` parameters cannot be used together with `server`"
+            ip = server.ip
+            port = server.port
+        if https is None: https = False
+        if verify_ssl_certificates is None: verify_ssl_certificates = True
+        assert isinstance(https, bool), "`https` should be boolean, got %s" % type(https)
+        assert isinstance(verify_ssl_certificates, bool), \
+            "`verify_ssl_certificates` should be boolean, got %s" % type(verify_ssl_certificates)
+        assert proxy is None or isinstance(proxy, str), "`proxy` must be a string, got %s" % type(proxy)
         assert auth is None or isinstance(auth, tuple) and len(auth) == 2 or isinstance(auth, AuthBase), \
-            "Invalid authentication token: %r" % auth
+            "Invalid authentication token of type %s" % type(auth)
         assert cluster_name is None or isinstance(cluster_name, str), \
-            "`cluster_name` must be a string, got %r" % cluster_name
+            "`cluster_name` must be a string, got %s" % type(cluster_name)
 
+        scheme = "https" if https else "http"
         conn = H2OConnection()
         conn._verbose = bool(verbose)
-        conn._ip = ip
-        conn._port = port
-        conn._https = https
-        conn._scheme = "https" if https else "http"
-        conn._base_url = "%s://%s:%d" % (conn._scheme, conn._ip, conn._port)
-        conn._verify_ssl_cert = bool(verify_ssl_cert)
+        conn._local_server = server
+        conn._base_url = "%s://%s:%d" % (scheme, ip, port)
+        conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
         conn._cluster_name = cluster_name
         conn._proxies = None
-        if proxy:
-            conn._proxies = {conn._scheme: proxy}
-        elif proxy is not None:
+        if proxy and proxy != "(default)":
+            conn._proxies = {scheme: proxy}
+        elif not proxy:
             # Give user a warning if there are any "*_proxy" variables in the environment. [PUBDEV-2504]
-            # To suppress the warning just pass the proxy setting explicitly.
+            # To suppress the warning pass proxy = "(default)".
             for name in os.environ:
-                if name.lower() == conn._scheme + "_proxy":
-                    warnings.warn("Proxy is defined in the environment: %s. "
-                                  "This may interfere with your H2O Connection." %
-                                  os.environ[name])
+                if name.lower() == scheme + "_proxy":
+                    warn("Proxy is defined in the environment: %s. "
+                         "This may interfere with your H2O Connection." % os.environ[name])
 
         try:
-            # Make a fake _session_id, otherwise .api() will complain that the connection is not initialized
+            # Make a fake _session_id, otherwise .request() will complain that the connection is not initialized
+            retries = 20 if server else 5
             conn._stage = 1
             conn._timeout = 3.0
-            conn._cluster_info = conn._test_connection()
+            conn._cluster_info = conn._test_connection(retries)
             # If a server is unable to respond within 1s, it should be considered a bug. However for now we set the
-            # timeout to 10s, simply because the server isn't very responsive yet...
+            # timeout to 10s, simply because the server isn't very well-behaving yet...
             conn._timeout = 10.0
             atexit.register(lambda: conn.close())
-        except Exception:
+        except:
             # Reset _session_id so that we know the connection was not initialized properly.
             conn._stage = 0
             raise
         return conn
 
 
-    @staticmethod
     @translate_args
-    def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
-              ice_root=None, port=54321, verbose=True):
-        """
-        Start new H₂O server locally and then connect to to it.
-
-        :param jar_path: Path to the h2o.jar executable. If not given, then we will search for that executable in the
-                locations suggested by ._jar_paths().
-        :param nthreads: Number of threads in the thread pool. This relates very closely to the number of CPUs used.
-                -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly.
-        :param enable_assertions: If True, pass `-ea` option to the JVM.
-        :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
-        :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
-        :param ice_root: A directory where H₂O stores its temporary files. Default location is determined by
-                tempfile.mkdtemp().
-        :param port: Port where to start the new server.
-        :param verbose: If True, then connection info will be printed to the stdout.
-        :return self
-        """
-        assert jar_path is None or isinstance(jar_path, str), "`jar_path` should be string, got %r" % jar_path
-        assert isinstance(nthreads, int), "`nthreads` should be integer, got %r" % nthreads
-        assert -1 <= nthreads <= 1024, "`nthreads` is out of bounds: %d" % nthreads
-        assert max_mem_size is None or isinstance(max_mem_size, int), \
-            "`max_mem_size` should be integer, got %r" % max_mem_size
-        assert min_mem_size is None or isinstance(min_mem_size, int), \
-            "`min_mem_size` should be integer, got %r" % min_mem_size
-        assert max_mem_size is None or max_mem_size >= 1 << 25, "`max_mem_size` too small: %d" % max_mem_size
-        assert min_mem_size is None or max_mem_size is None or min_mem_size <= max_mem_size, \
-            "`min_mem_size`=%d is larger than the `max_mem_size`=%d" % (min_mem_size, max_mem_size)
-        assert ice_root is None or isinstance(ice_root, str), "`ice_root` should be string, got %r" % ice_root
-
-        # Find location of the h2o.jar executable
-        resolved_jar_path = None
-        for jp in H2OConnection._jar_paths(jar_path):
-            if os.path.exists(jp):
-                resolved_jar_path = jp
-                break
-        if not resolved_jar_path:
-            if verbose:
-                print("No jar file found. Paths searched:")
-                print("".join("    %s\n" % jp for jp in H2OConnection._jar_paths(jar_path)))
-            raise H2OStartupError("Cannot start local server: h2o.jar not found.")
-
-        # Even though this creates a new folder, we will not attempt to clear it on shutdown, so that server logs can
-        # be later examined by the user.
-        if not ice_root: ice_root = tempfile.mkdtemp()
-
-        # Start local jar
-        if verbose: print("Starting server from " + resolved_jar_path)
-        (ip, port, child) = H2OConnection._start_h2o_server(port=port, jar_path=resolved_jar_path,
-                                                            nthreads=int(nthreads),
-                                                            ea=enable_assertions, logs_dir=ice_root,
-                                                            mmax=max_mem_size, mmin=min_mem_size, verbose=verbose)
-        conn = H2OConnection.connect(ip=ip, port=port, verbose=verbose)
-        conn._child = child
-        return conn
-
-
-    def api(self, endpoint, data=None, json=None, filename=None):
+    def request(self, endpoint, data=None, json=None, filename=None):
         """
         Perform a REST API request to the backend H₂O server.
 
@@ -240,8 +220,12 @@ class H2OConnection(backwards_compatible()):
             return self._process_response(resp)
 
         except requests.ConnectionError as e:
-            self._log_end_exception(e)
-            raise H2OConnectionError("Unexpected HTTP error: %s" % e)
+            if self._local_server and not self._local_server.is_running():
+                self._log_end_exception("Local server has died.")
+                raise H2OConnectionError("Local server has died unexpectedly. RIP.")
+            else:
+                self._log_end_exception(e)
+                raise H2OConnectionError("Unexpected HTTP error: %s" % e)
         except requests.ReadTimeout as e:
             self._log_end_exception(e)
             elapsed_time = time.time() - start_time
@@ -254,17 +238,32 @@ class H2OConnection(backwards_compatible()):
 
 
     def info(self, refresh=False):
+        """
+        Information about the current state of the connection, or None if it has not been initialized properly.
+
+        :param refresh: If False, then retrieve the latest known info; if True then fetch the newest info from the
+            server. Usually you want `refresh` to be True, except right after establishing a connection when it is
+            still fresh.
+        :return: CloudV3 object.
+        """
         if self._stage == 0: return None
         if refresh:
-            self._cluster_info = self.api("GET /3/Cloud")
+            self._cluster_info = self.request("GET /3/Cloud")
         self._cluster_info.connection = self
         return self._cluster_info
 
 
     def close(self):
+        """
+        Close an existing connection; once closed it cannot be used again.
+
+        Strictly speaking it is not necessary to close all connection that you opened -- we have several mechanisms
+        in place that will do so automatically (__del__(), __exit__() and atexit() handlers), however there is also
+        no good reason to make this method private.
+        """
         if self._session_id:
             try:
-                self.api("DELETE /4/sessions/%s" % self._session_id)
+                self.request("DELETE /4/sessions/%s" % self._session_id)
                 self._print("H2O session %s closed." % self._session_id)
             except:
                 pass
@@ -279,10 +278,18 @@ class H2OConnection(backwards_compatible()):
         self._stage = -1
 
 
+    @property
     def session_id(self):
+        """
+        Return the session id of the current connection.
+
+        The session id is issued (through an API request) the first time it is requested, but no sooner. This is
+        because generating a session id puts it into the DKV on the server, which effectively locks the cloud. Once
+        issued, the session id will stay the same until the connection is closed.
+        """
         if self._session_id is None:
-            self._session_id = self.api("POST /4/sessions")["session_key"]
-        return self._session_id
+            self._session_id = self.request("POST /4/sessions")["session_key"]
+        return CallableString(self._session_id)
 
     @property
     def base_url(self):
@@ -293,15 +300,16 @@ class H2OConnection(backwards_compatible()):
     def proxy(self):
         """URL of the proxy server used for the connection (or None if there is no proxy)."""
         if self._proxies is None: return None
-        return self._proxies[self._scheme]
+        return self._proxies.values()[0]
 
     @property
     def requests_count(self):
-        """Total number of api requests made since the connection was opened. Used mainly for debug purposes"""
+        """Total number of request requests made since the connection was opened (used for debug purposes)."""
         return self._requests_counter
 
     @property
     def timeout_interval(self):
+        """Timeout length for each request, in seconds."""
         return self._timeout
 
     @timeout_interval.setter
@@ -310,11 +318,12 @@ class H2OConnection(backwards_compatible()):
         self._timeout = v
 
 
-    def shutdown(self, prompt):
+    def shutdown_server(self, prompt):
         """
-        Shut down the specified server. All data will be lost.
+        Shut down the specified server.
+
         This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O
-        instance.
+        instance. All data will be lost.
         :param self: An H2OConnection object containing the IP address and port of the server running H2O.
         :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
         :return: None
@@ -332,17 +341,18 @@ class H2OConnection(backwards_compatible()):
         else:
             response = "Y"
         if response == "Y" or response == "y":
-            self.api("POST /3/Shutdown")
+            self.request("POST /3/Shutdown")
             self.close()
 
 
     def cluster_is_up(self):
         """
         Determine if an H₂O cluster is running or not.
+
         :return: True if the cluster is up; False otherwise
         """
         try:
-            self.api("GET /")
+            self.request("GET /")
             return True
         except (H2OConnectionError, H2OServerError):
             return False
@@ -351,6 +361,7 @@ class H2OConnection(backwards_compatible()):
     def start_logging(self, dest=None):
         """
         Start logging all API requests to the provided destination.
+
         :param dest: Where to write the log: either a filename (str), or an open file handle (file). If not given,
             then a new temporary file will be created.
         """
@@ -359,14 +370,12 @@ class H2OConnection(backwards_compatible()):
         if not isinstance(dest, (str, type(sys.stdout))):
             raise ValueError("Logging destination should be either a string (filename), or an open file handle")
         name = dest if isinstance(dest, str) else dest.name
-        self._print("Start logging H2OConnection.api() requests into file %s" % name)
+        self._print("Start logging H2OConnection.request() requests into file %s" % name)
         self._is_logging = True
         self._logging_dest = dest
 
     def stop_logging(self):
-        """
-        Stop logging API requests.
-        """
+        """Stop logging API requests."""
         if self._is_logging:
             self._print("Logging stopped.")
             self._is_logging = False
@@ -382,10 +391,6 @@ class H2OConnection(backwards_compatible()):
         globals()["__H2OCONN__"] = self  # for backward-compatibility
         self._stage = 0             # 0 = not connected, 1 = connected, -1 = disconnected
         self._session_id = None     # Rapids session id. Connection is considered established when this is not null
-        self._ip = None             # "host" part of the URL (why is it called ip?)
-        self._port = None           # "port" part of the URL
-        self._https = None          # True if using secure connection (https://), False if using http://
-        self._scheme = None         # "http" or "https"
         self._base_url = None       # "{scheme}://{ip}:{port}"
         self._verify_ssl_cert = None
         self._auth = None           # Authentication token
@@ -398,6 +403,7 @@ class H2OConnection(backwards_compatible()):
         self._timeout = None        # timeout for a single request (in seconds)
         self._is_logging = False    # when True, log every request
         self._logging_dest = None   # where the log messages will be written, either filename or open file handle
+        self._local_server = None   # H2OLocalServer instance to which we are connected (if known)
         # self.start_logging(sys.stdout)
 
 
@@ -416,7 +422,7 @@ class H2OConnection(backwards_compatible()):
             if self._child and self._child.poll() is not None:
                 raise H2OServerError("Local server was unable to start")
             try:
-                cld = self.api("GET /3/Cloud")
+                cld = self.request("GET /3/Cloud")
                 if cld.consensus and cld.cloud_healthy:
                     self._print(" successful!")
                     return cld
@@ -436,167 +442,12 @@ class H2OConnection(backwards_compatible()):
 
 
     @staticmethod
-    def _jar_paths(path0=None):
-        """
-        Produce potential paths for an h2o.jar executable. This function knows several locations where the H2O
-        library might get installed, and returns them in sequence.
-
-        :param path0: If given, this will be the first path yielded by this function
-        :return generator of potential paths for h2o.jar executable
-        """
-        # First yield `path0` as promised
-        if path0: yield path0
-        # Second, check if running from an h2o-3 src folder, in which case use the freshly-built h2o.jar
-        cwd_chunks = os.path.abspath(".").split("/")
-        for i in range(len(cwd_chunks) - 1, -1, -1):
-            if cwd_chunks[i] == "h2o-3":
-                yield "/".join(cwd_chunks[:i + 1]) + "/build/h2o.jar"
-                break
-        # Finally try several alternative locations where h2o.jar might be installed
-        prefix1 = prefix2 = sys.prefix.replace("\\", "/")  # sys.prefix is the system path of the Python folder
-        # On Unix-like systems Python typically gets installed into /Library/... or /System/Library/... If one of
-        # those paths is sys.prefix, then we also build its counterpart.
-        if prefix1.startswith("/Library"):
-            prefix2 = "/System" + prefix1
-        elif prefix1.startswith("/System"):
-            prefix2 = prefix1[len("/System"):]
-        yield prefix1 + "/h2o_jar/h2o.jar"
-        yield "/usr/local/h2o_jar/h2o.jar"
-        yield prefix1 + "/local/h2o_jar/h2o.jar"
-        yield get_config_var("userbase") + "/h2o_jar/h2o.jar"
-        yield prefix2 + "/h2o_jar/h2o.jar"
-
-
-    @staticmethod
-    def _start_h2o_server(port, mmax, mmin, ea, logs_dir, jar_path, nthreads, verbose):
-        """
-        Actually start the h2o.jar executable (helper method for H2OConnection.start()).
-        :return tuple (ip, port, child), where `child` is the handle to the server's process.
-        """
-        # For now we hardcode the server's location. Eventually we might want to explore multiple ports  until we find
-        # an unoccupied one.
-        ip = "127.0.0.1"
-
-        # Find Java executable
-        command = H2OConnection._find_java()
-        if not command:
-            raise H2OStartupError("Cannot find Java. Please install the latest JDK from\n"
-                                  "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
-
-        # Detect Java version. (Note that subprocess.check_output returns the output as a bytes object, not string)
-        jver_bytes = subprocess.check_output([command, "-version"], stderr=subprocess.STDOUT)
-        jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
-        if verbose:
-            print("Java Version: " + jver.strip().replace("\n", "; "))
-        if "GNU libgcj" in jver:
-            raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
-                                  "Please download the latest 64-bit Java SE JDK from Oracle.")
-        if "Client VM" in jver:
-            warnings.warn("WARNING:\n"
-                          "You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
-                          "Please download the latest 64-bit Java SE JDK from Oracle.\n")
-
-        # Construct java command to launch the process
-        cmd = [command]
-
-        # ...add JVM options
-        cmd += ["-ea"] if ea else []
-        for (mq, num) in [("-Xms", mmin), ("-Xmx", mmax)]:
-            if num is None: continue
-            numstr = "%dG" % (num >> 30) if num == (num >> 30) << 30 else \
-                     "%dM" % (num >> 20) if num == (num >> 20) << 20 else \
-                     str(num)
-            cmd += [mq + numstr]
-        cmd += ["-verbose:gc", "-XX:+PrintGCDetails", "-XX:+PrintGCTimeStamps"]
-        cmd += ["-jar", jar_path]  # This should be the last JVM option
-
-        # ...add H2O options
-        cmd += ["-ip", ip]
-        cmd += ["-port", str(port)]
-        cmd += ["-ice_root", logs_dir]
-        cmd += ["-nthreads", str(nthreads)] if nthreads > 0 else []
-        cmd += ["-name", "H2O_from_python_%s" % H2OConnection._tmp_file("salt")]
-
-        # Create stdout and stderr files
-        cwd = os.path.abspath(os.getcwd())
-        out = open(H2OConnection._tmp_file("stdout"), "w")
-        err = open(H2OConnection._tmp_file("stderr"), "w")
-        if verbose:
-            print("Ice root: " + logs_dir)
-            print("JVM stdout: " + out.name)
-            print("JVM stderr: " + err.name)
-
-        # Launch the process
-        win32 = sys.platform == "win32"
-        flags = subprocess.CREATE_NEW_PROCESS_GROUP if win32 else 0
-        prex = os.setsid if not win32 else None
-        try:
-            child = subprocess.Popen(args=cmd, stdout=out, stderr=err, cwd=cwd, creationflags=flags, preexec_fn=prex)
-        except OSError as e:
-            raise H2OServerError("Cannot start server: %s" % e)
-        time.sleep(0.5)  # Give the server some time to start
-        if child.poll() is not None:
-            raise H2OServerError("Server process terminated with error code %d" % child.poll())
-        return ip, port, child
-
-
-    @staticmethod
-    def _find_java():
-        """
-        Find location of the java executable (helper for ._start_h2o_server()). This method is not particularly robust,
-        and may require additional tweaking for different platforms...
-        """
-        # is java in PATH?
-        if os.access("java", os.X_OK):
-            return "java"
-        for path in os.getenv("PATH").split(os.pathsep):
-            full_path = os.path.join(path, "java")
-            if os.access(full_path, os.X_OK):
-                return full_path
-
-        # check if JAVA_HOME is set (for Windows)
-        if os.getenv("JAVA_HOME"):
-            return os.path.join(os.getenv("JAVA_HOME"), "bin", "java.exe")
-
-        # check "/Program Files" and "/Program Files (x86)" on Windows
-        if sys.platform == "win32":
-            program_folders = [os.path.join("C:", "Program Files", "Java"),
-                               os.path.join("C:", "Program Files (x86)", "Java")]
-            # Look for JDK
-            for folder in program_folders:
-                for jdk in os.listdir(folder):
-                    if "jdk" not in jdk.lower(): continue
-                    path = os.path.join(folder, jdk, "bin", "java.exe")
-                    if os.path.exists(path):
-                        return path
-            # check for JRE and warn
-            for folder in program_folders:
-                path = os.path.join(folder, "jre7", "bin", "java.exe")
-                if os.path.exists(path):
-                    warnings.warn("Found JRE at " + path + "; but H2O requires the JDK to run.")
-
-
-    @staticmethod
-    def _tmp_file(kind):
-        """
-        Generate names for temporary files. `kind` is one of "stdout", "stderr", "pid" and "salt". The "salt" kind
-        is used for process name, not for a file, so it doesn't contain a path. All generated names are based on the
-        user name of the currently logged-in user. This is a helper method for ._start_h2o_server().
-        """
-        username = (os.getenv("USERNAME") if sys.platform == "win32" else os.getenv("USER")) or "unknownUser"
-        usr = re.sub(r"\W", "_", username)
-        if kind == "salt":
-            return usr + "_" + "".join(choice("0123456789abcdefghijklmnopqrstuvwxyz") for _ in range(6))
-        ext = "pid" if kind == "pid" else kind[3:]
-        return os.path.join(tempfile.mkdtemp(), "h2o_%s_started_from_python.%s" % (usr, ext))
-
-
-    @staticmethod
     def _prepare_data_payload(data):
         """
-        Make a copy of the `data` object, preparing it to be sent to the server via x-www-form-urlencoded or
-        multipart/form-data mechanisms. Both of them work with plain lists of key/value pairs, so this method
-        converts the data into such format.
+        Make a copy of the `data` object, preparing it to be sent to the server.
+
+        The data will be sent via x-www-form-urlencoded or multipart/form-data mechanisms. Both of them work with
+        plain lists of key/value pairs, so this method converts the data into such format.
         """
         if not data: return None
         if not isinstance(data, dict): raise ValueError("Invalid `data` argument, should be a dict: %r" % data)
@@ -604,11 +455,11 @@ class H2OConnection(backwards_compatible()):
         for key, value in viewitems(data):
             if value is None: continue  # don't send args set to None so backend defaults take precedence
             if isinstance(value, list):
-                res[key] = stringify_list(value)
+                value = stringify_list(value)
             elif isinstance(value, dict) and "__meta" in value and value["__meta"]["schema_name"].endswith("KeyV3"):
-                res[key] = value["name"]
+                value = value["name"]
             else:
-                res[key] = str(value)
+                value = str(value)
             # Some hackery here... It appears that requests library cannot stomach "upgraded" strings if they contain
             # certain characters such as '/'. Therefore we explicitly cast them to their native representation.
             # Reproduction steps:
@@ -616,14 +467,18 @@ class H2OConnection(backwards_compatible()):
             #   >>> from future.types import newstr as str
             #   >>> requests.get("http://www.google.com/search", params={"q": str("/foo/bar")})
             # (throws a "KeyError 47" exception).
-            if PY2 and hasattr(res[key], "__native__"): res[key] = res[key].__native__()
+            if PY2 and hasattr(value, "__native__"): value = value.__native__()
+            if PY2 and hasattr(key, "__native__"): key = key.__native__()
+            res[key] = value
         return res
 
 
     @staticmethod
     def _prepare_file_payload(filename):
         """
-        Prepare `filename` to be sent to the server. The "preparation" consists of creating a data structure suitable
+        Prepare `filename` to be sent to the server.
+
+        The "preparation" consists of creating a data structure suitable
         for passing to requests.request().
         """
         if not filename: return None
@@ -636,8 +491,8 @@ class H2OConnection(backwards_compatible()):
 
     def _log_start_transaction(self, endpoint, data, json, files, params):
         """Log the beginning of an API request."""
-        # TODO: add information about the caller, i.e. which module + line of code called the .api() method
-        #       This can be done by fetching current traceback and then traversing it until we find the api() function
+        # TODO: add information about the caller, i.e. which module + line of code called the .request() method
+        #       This can be done by fetching current traceback and then traversing it until we find the request function
         self._requests_counter += 1
         if not self._is_logging: return
         msg = "\n---- %d --------------------------------------------------------\n" % self._requests_counter
@@ -668,9 +523,11 @@ class H2OConnection(backwards_compatible()):
 
     def _log_message(self, msg):
         """
-        Actually log the message to the `self._logging_dest` destination. If this destination is a file name,
-        then we append the message to the file and then close the file immediately. If the destination is an open
-        file handle, then we simply write the message there and do not attempt to close it.
+        Log the message `msg` to the destination `self._logging_dest`.
+
+        If this destination is a file name, then we append the message to the file and then close the file
+        immediately. If the destination is an open file handle, then we simply write the message there and do not
+        attempt to close it.
         """
         if isinstance(self._logging_dest, str):
             with open(self._logging_dest, "at", encoding="utf-8") as f:
@@ -682,7 +539,9 @@ class H2OConnection(backwards_compatible()):
     @staticmethod
     def _process_response(response):
         """
-        Given a response object, prepare it to be handed over to the external caller. Preparation steps include:
+        Given a response object, prepare it to be handed over to the external caller.
+
+        Preparation steps include:
            * detect if the response has error status, and convert it to an appropriate exception;
            * detect Content-Type, and based on that either parse the response as JSON or return as plain text.
         """
@@ -738,7 +597,6 @@ class H2OConnection(backwards_compatible()):
         return self
 
     def __exit__(self, *args):
-        # Called at the end of the `with ...` block.
         self.close()
         assert len(args) == 3  # Avoid warning about unused args...
         return False  # ensure that any exception will be re-raised
@@ -760,11 +618,11 @@ class H2OConnection(backwards_compatible()):
     _bcsv = {"__ENCODING__": "utf-8", "__ENCODING_ERROR__": "replace"}
     _bcsm = {
         "default": lambda: _deprecated_default(),
-        "jar_paths": lambda: list(H2OConnection._jar_paths()),
+        "jar_paths": lambda: list(getattr(H2OLocalServer, "_jar_paths")()),
         "rest_version": lambda: 3,
-        "ip": lambda: getattr(__H2OCONN__, "_ip"),
-        "port": lambda: getattr(__H2OCONN__, "_port"),
-        "https": lambda: getattr(__H2OCONN__, "_https"),
+        "https": lambda: __H2OCONN__.base_url.split(":")[0] == "https",
+        "ip": lambda: __H2OCONN__.base_url.split(":")[1][2:],
+        "port": lambda: __H2OCONN__.base_url.split(":")[2],
         "username": lambda: _deprecated_username(),
         "password": lambda: _deprecated_password(),
         "insecure": lambda: not getattr(__H2OCONN__, "_verify_ssl_cert"),
@@ -793,36 +651,403 @@ class H2OConnection(backwards_compatible()):
 
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+#   H2OLocalServer
+#-----------------------------------------------------------------------------------------------------------------------
+
+class H2OLocalServer(object):
+    """
+    Handle to an H₂O server launched locally.
+
+    Public interface:
+        hs = H2OLocalServer.start(...)   launch a new local H₂O server
+    """
+
+    _TIME_TO_START = 10  # Maximum time we wait for the server to start up (in seconds)
+    _TIME_TO_KILL = 3    # Maximum time we wait for the server to shut down until we kill it (in seconds)
+
+
+    @staticmethod
+    @translate_args
+    def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
+              ice_root=None, port="54321+", verbose=True):
+        """
+        Start new H₂O server on the local machine.
+
+        :param jar_path: Path to the h2o.jar executable. If not given, then we will search for h2o.jar in the
+            locations returned by `._jar_paths()`.
+        :param nthreads: Number of threads in the thread pool. This should be related to the number of CPUs used.
+            -1 means use all CPUs on the host. A positive integer specifies the number of CPUs directly.
+        :param enable_assertions: If True, pass `-ea` option to the JVM.
+        :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
+        :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
+        :param ice_root: A directory where H₂O stores its temporary files. Default location is determined by
+            tempfile.mkdtemp().
+        :param port: Port where to start the new server. This could be either an integer, or a string of the form
+            "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
+        :param verbose: If True, then connection info will be printed to the stdout.
+        :return a new H2OLocalServer instance
+        """
+        assert jar_path is None or isinstance(jar_path, str), "`jar_path` should be string, got %s" % type(jar_path)
+        assert jar_path is None or jar_path.endswith("h2o.jar"), \
+            "`jar_path` should be a path to an h2o.jar executable, got %s" % jar_path
+        assert isinstance(nthreads, int), "`nthreads` should be integer, got %s" % type(nthreads)
+        assert nthreads == -1 or 1 <= nthreads <= 4096, "`nthreads` is out of bounds: %d" % nthreads
+        assert isinstance(enable_assertions, bool), \
+            "`enable_assertions` should be bool, got %s" % type(enable_assertions)
+        assert max_mem_size is None or isinstance(max_mem_size, int), \
+            "`max_mem_size` should be integer, got %s" % type(max_mem_size)
+        assert max_mem_size is None or max_mem_size >= 1 << 25, "`max_mem_size` too small: %d" % max_mem_size
+        assert min_mem_size is None or isinstance(min_mem_size, int), \
+            "`min_mem_size` should be integer, got %s" % type(min_mem_size)
+        assert min_mem_size is None or max_mem_size is None or min_mem_size <= max_mem_size, \
+            "`min_mem_size`=%d is larger than the `max_mem_size`=%d" % (min_mem_size, max_mem_size)
+        if ice_root:
+            assert isinstance(ice_root, str), "`ice_root` should be string, got %r" % type(ice_root)
+            assert os.path.isdir(ice_root), "`ice_root` is not a valid directory: %s" % ice_root
+        if port is None: port = "54321+"
+        baseport = None
+        if isinstance(port, str):
+            if port.isdigit():
+                port = int(port)
+            else:
+                assert port[-1] == "+" and port[:-1].isdigit(), \
+                    "`port` should be of the form 'DDDD+', where D is a digit. Got: %s" % port
+                baseport = int(port[:-1])
+                port = 0
+        assert isinstance(port, int), "`port` should be integer (or string). Got: %s" % type(port)
+
+        hs = H2OLocalServer()
+        hs._verbose = bool(verbose)
+        hs._jar_path = hs._find_jar(jar_path)
+        hs._ice_root = ice_root or tempfile.mkdtemp()
+
+        hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
+                          mmax=max_mem_size, mmin=min_mem_size)
+        atexit.register(lambda: hs.shutdown())
+        return hs
+
+
+    def is_running(self):
+        """Return True if the server process is still running, False otherwise."""
+        return self._process is not None and self._process.poll() is None
+
+
+    def shutdown(self):
+        """
+        Shut down the server by trying to terminate/kill its process.
+
+        First we attempt to terminate the server process gracefully (sending SIGTERM signal). However after
+        _TIME_TO_KILL seconds if the process didn't shutdown, we forcefully kill it with a SIGKILL signal.
+        """
+        if not self._process: return
+        try:
+            kill_time = time.time() + self._TIME_TO_KILL
+            while self._process.poll() is None and time.time() < kill_time:
+                self._process.terminate()
+                time.sleep(0.2)
+            if self._process().poll() is None:
+                self._process.kill()
+                time.sleep(0.2)
+            if self._verbose:
+                print("Local H2O server %s:%s stopped." % (self.ip, self.port))
+        except:
+            pass
+        self._process = None
+
+
+    @property
+    def ip(self):
+        """IP address of the server."""
+        return self._ip
+
+    @property
+    def port(self):
+        """Port that the server is listening to."""
+        return self._port
+
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Private
+    #-------------------------------------------------------------------------------------------------------------------
+
+    def __init__(self):
+        """[Internal] please use H2OLocalServer.start() to launch a new server."""
+        self._ip = None
+        self._port = None
+        self._process = None
+        self._verbose = None
+        self._jar_path = None
+        self._ice_root = None
+        self._stdout = None
+        self._stderr = None
+
+
+    def _find_jar(self, path0=None):
+        """
+        Return the location of an h2o.jar executable.
+
+        :param path0: Explicitly given h2o.jar path. If provided, then we will simply check whether the file is there,
+            otherwise we will search for an executable in locations returned by ._jar_paths().
+        :raise H2OStartupError if no h2o.jar executable can be found.
+        """
+        jar_paths = [path0] if path0 else list(self._jar_paths())
+        for jp in jar_paths:
+            if os.path.exists(jp):
+                return jp
+        if self._verbose:
+            print("No jar file found. Paths searched:")
+            print("".join("    %s\n" % jar_paths))
+        raise H2OStartupError("Cannot start local server: h2o.jar not found.")
+
+    @staticmethod
+    def _jar_paths():
+        """Produce potential paths for an h2o.jar executable."""
+        # Check if running from an h2o-3 src folder, in which case use the freshly-built h2o.jar
+        cwd_chunks = os.path.abspath(".").split(os.path.sep)
+        for i in range(len(cwd_chunks), 0, -1):
+            if cwd_chunks[i - 1] == "h2o-3":
+                yield os.path.sep.join(cwd_chunks[:i] + ["build", "h2o.jar"])
+        # Finally try several alternative locations where h2o.jar might be installed
+        prefix1 = prefix2 = sys.prefix.replace("\\", "/")  # sys.prefix is the system path of the Python folder
+        # On Unix-like systems Python typically gets installed into /Library/... or /System/Library/... If one of
+        # those paths is sys.prefix, then we also build its counterpart.
+        if prefix1.startswith("/Library"):
+            prefix2 = "/System" + prefix1
+        elif prefix1.startswith("/System"):
+            prefix2 = prefix1[len("/System"):]
+        yield prefix1 + "/h2o_jar/h2o.jar"
+        yield "/usr/local/h2o_jar/h2o.jar"
+        yield prefix1 + "/local/h2o_jar/h2o.jar"
+        yield get_config_var("userbase") + "/h2o_jar/h2o.jar"
+        yield prefix2 + "/h2o_jar/h2o.jar"
+
+
+    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads):
+        """Actually start the h2o.jar executable (helper method for `.start()`)."""
+        self._ip = "127.0.0.1"
+
+        # Find Java and check version. (Note that subprocess.check_output returns the output as a bytes object)
+        java = self._find_java()
+        jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
+        jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
+        if self._verbose:
+            print("Java Version: " + jver.strip().replace("\n", "; "))
+        if "GNU libgcj" in jver:
+            raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
+                                  "Please download the latest 64-bit Java SE JDK from Oracle.")
+        if "Client VM" in jver:
+            warn("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
+                 "Please download the latest 64-bit Java SE JDK from Oracle.\n")
+
+        if self._verbose:
+            print("Starting server from " + self._jar_path)
+            print("Ice root: " + self._ice_root)
+
+        # Construct java command to launch the process
+        cmd = [java]
+
+        # ...add JVM options
+        cmd += ["-ea"] if ea else []
+        for (mq, num) in [("-Xms", mmin), ("-Xmx", mmax)]:
+            if num is None: continue
+            numstr = "%dG" % (num >> 30) if num == (num >> 30) << 30 else \
+                     "%dM" % (num >> 20) if num == (num >> 20) << 20 else \
+                     str(num)
+            cmd += [mq + numstr]
+        cmd += ["-verbose:gc", "-XX:+PrintGCDetails", "-XX:+PrintGCTimeStamps"]
+        cmd += ["-jar", self._jar_path]  # This should be the last JVM option
+
+        # ...add H2O options
+        cmd += ["-ip", self._ip]
+        cmd += ["-port", str(port)] if port else []
+        cmd += ["-baseport", str(baseport)] if baseport else []
+        cmd += ["-ice_root", self._ice_root]
+        cmd += ["-nthreads", str(nthreads)] if nthreads > 0 else []
+        cmd += ["-name", "H2O_from_python_%s" % self._tmp_file("salt")]
+        # Warning: do not change to any higher log-level, otherwise we won't be able to know which port the
+        # server is listening to.
+        cmd += ["-log_level", "INFO"]
+
+        # Create stdout and stderr files
+        self._stdout = self._tmp_file("stdout")
+        self._stderr = self._tmp_file("stderr")
+        cwd = os.path.abspath(os.getcwd())
+        out = open(self._stdout, "w")
+        err = open(self._stderr, "w")
+        if self._verbose:
+            print("JVM stdout: " + out.name)
+            print("JVM stderr: " + err.name)
+
+        # Launch the process
+        win32 = sys.platform == "win32"
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP if win32 else 0
+        prex = os.setsid if not win32 else None
+        try:
+            proc = subprocess.Popen(args=cmd, stdout=out, stderr=err, cwd=cwd, creationflags=flags, preexec_fn=prex)
+        except OSError as e:
+            traceback = getattr(e, "child_traceback", None)
+            raise H2OServerError("Unable to start server: %s" % e, traceback)
+
+        # Wait until the server is up-and-running
+        giveup_time = time.time() + self._TIME_TO_START
+        while True:
+            if proc.poll() is not None:
+                raise H2OServerError("Server process terminated with error code %d" % proc.returncode)
+            ret = self._get_server_info_from_logs()
+            if ret:
+                self._ip = ret[0]
+                self._port = ret[1]
+                self._process = proc
+                break
+            if time.time() > giveup_time:
+                elapsed_time = time.time() - (giveup_time - self._TIME_TO_START)
+                raise H2OServerError("Server wasn't able to start in %f seconds." % elapsed_time)
+            time.sleep(0.2)
+
+
+    @staticmethod
+    def _find_java():
+        """
+        Find location of the java executable (helper for `._launch_server()`).
+
+        This method is not particularly robust, and may require additional tweaking for different platforms...
+        :return: Path to the java executable.
+        :raises H2OStartupError if java cannot be found.
+        """
+        # is java in PATH?
+        if os.access("java", os.X_OK):
+            return "java"
+        for path in os.getenv("PATH").split(os.pathsep):  # not same as os.path.sep!
+            full_path = os.path.join(path, "java")
+            if os.access(full_path, os.X_OK):
+                return full_path
+
+        # check if JAVA_HOME is set (for Windows)
+        if os.getenv("JAVA_HOME"):
+            return os.path.join(os.getenv("JAVA_HOME"), "bin", "java.exe")
+
+        # check "/Program Files" and "/Program Files (x86)" on Windows
+        if sys.platform == "win32":
+            program_folders = [os.path.join("C:", "Program Files", "Java"),
+                               os.path.join("C:", "Program Files (x86)", "Java")]
+            # Look for JDK
+            for folder in program_folders:
+                for jdk in os.listdir(folder):
+                    if "jdk" not in jdk.lower(): continue
+                    path = os.path.join(folder, jdk, "bin", "java.exe")
+                    if os.path.exists(path):
+                        return path
+            # check for JRE and warn
+            for folder in program_folders:
+                path = os.path.join(folder, "jre7", "bin", "java.exe")
+                if os.path.exists(path):
+                    warn("Found JRE at " + path + "; but H2O requires the JDK to run.")
+        # not found...
+        raise H2OStartupError("Cannot find Java. Please install the latest JDK from\n"
+                              "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
+
+
+    @staticmethod
+    def _tmp_file(kind):
+        """
+        Generate names for temporary files (helper method for `._launch_server()`).
+
+        :param kind: one of "stdout", "stderr" or "salt". The "salt" kind is used for process name, not for a
+            file, so it doesn't contain a path. All generated names are based on the user name of the currently
+            logged-in user.
+        """
+        if sys.platform == "win32":
+            username = os.getenv("USERNAME")
+        else:
+            username = os.getenv("USER")
+        if not username:
+            username = "unknownUser"
+        usr = "".join(ch if ch.isalnum() else "_" for ch in username)
+
+        if kind == "salt":
+            return usr + "_" + "".join(choice("0123456789abcdefghijklmnopqrstuvwxyz") for _ in range(6))
+        else:
+            return os.path.join(tempfile.mkdtemp(), "h2o_%s_started_from_python.%s" % (usr, kind[3:]))
+
+
+    def _get_server_info_from_logs(self):
+        """
+        Check server's output log, and determine its IP / port (helper method for `._launch_server()`).
+
+        This method is polled during process startup. It looks at the server output log and checks for a presence of
+        a particular string ("INFO: Open H2O Flow in your web browser:") which indicates that the server is
+        up-and-running. If the method detects this string, it extracts the server's ip and port and returns them;
+        otherwise it returns None.
+
+        :returns: (ip, port) tuple if the server has already started, None otherwise.
+        """
+        searchstr = "INFO: Open H2O Flow in your web browser:"
+        with open(self._stdout, "rt") as f:
+            for line in f:
+                if searchstr in line:
+                    url = line[line.index(searchstr) + len(searchstr):].strip()
+                    parts = url.split(":")
+                    assert (parts[0] == "http" or parts[1] == "https") and len(parts) == 3 and parts[2].isdigit(), \
+                        "Unexpected URL: %s" % url
+                    return parts[1][2:], int(parts[2])
+        return None
+
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.shutdown()
+        assert len(args) == 3  # Avoid warning about unused args...
+        return False  # ensure that any exception will be re-raised
+
+    def __del__(self):
+        self.shutdown()
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+#   Exceptions
+#-----------------------------------------------------------------------------------------------------------------------
+
 class H2OStartupError(Exception):
-    """
-    Raised when the class fails to launch a local H₂O server.
-    """
-    pass
+    """Raised by H2OLocalServer when the class fails to launch a server."""
+
 
 class H2OConnectionError(Exception):
     """
-    Raised when connection to an H₂O server cannot be established. This can be raised if the connection was not
-    initialized; or the server cannot be reached at the specified address; or there is an authentication error; or
-    the request times out; etc.
-    """
-    pass
+    Raised when connection to an H₂O server cannot be established.
 
-class H2OServerError(Exception):
+    This can be raised if the connection was not initialized; or the server cannot be reached at the specified address;
+    or there is an authentication error; or the request times out; etc.
     """
-    This exception is raised when any kind of server error is encountered. This includes: server returning http
-    status 500; or server sending malformed JSON; or server returning an unexpected response (e.g. lacking a
-    "__schema" field); or server indicating that it is in an unhealthy state.
-    """
-    pass
 
 
 # This should have been extending from Exception as well; however in old code version all exceptions were
 # EnvironmentError's, so for old code to work we extend H2OResponseError from EnvironmentError.
 class H2OResponseError(EnvironmentError):
+    """Raised when the server encounters a user error and sends back an H2OErrorV3 response."""
+
+
+class H2OServerError(Exception):
     """
-    This exception is raised when the server encounters a user error and sends back an H2OErrorV3 response.
+    Raised when any kind of server error is encountered.
+
+    This includes: server returning HTTP status 500; or server sending malformed JSON; or server returning an
+    unexpected response (e.g. lacking a "__schema" field); or server indicating that it is in an unhealthy state; etc.
     """
-    pass
+
+    def __init__(self, message, stacktrace=None):
+        """
+        Instantiate a new H2OServerError exception.
+
+        :param message: error message describing the exception.
+        :param stacktrace: (optional, list(str)) server-side stacktrace, if available. This will be printed out by
+            our custom except hook (see debugging.py).
+        """
+        super(H2OServerError, self).__init__(message)
+        self.stacktrace = stacktrace
+
 
 
 
@@ -878,13 +1103,11 @@ def _deprecated_default():
 
 def _deprecated_username():
     auth = getattr(__H2OCONN__, "_auth")
-    if isinstance(auth, tuple) and len(auth) == 2:
-        return auth[0]
+    return auth[0] if isinstance(auth, tuple) else None
 
 def _deprecated_password():
     auth = getattr(__H2OCONN__, "_auth")
-    if isinstance(auth, tuple) and len(auth) == 2:
-        return auth[1]
+    return auth[1] if isinstance(auth, tuple) else None
 
 def _deprecated_check_conn():
     if not __H2OCONN__:
@@ -894,7 +1117,7 @@ def _deprecated_check_conn():
 def _deprecated_get(self, url_suffix, **kwargs):
     restver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
     endpoint = "GET /%d/%s" % (restver, url_suffix)
-    return self.api(endpoint, data=kwargs)
+    return self.request(endpoint, data=kwargs)
 
 def _deprecated_post(self, url_suffix, **kwargs):
     restver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
@@ -902,12 +1125,12 @@ def _deprecated_post(self, url_suffix, **kwargs):
     filename = None
     if "file_upload_info" in kwargs:
         filename = kwargs.pop("file_upload_info").values()[0]
-    return self.api(endpoint, data=kwargs, filename=filename)
+    return self.request(endpoint, data=kwargs, filename=filename)
 
 def _deprecated_delete(self, url_suffix, **kwargs):
     restver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
     endpoint = "DELETE /%d/%s" % (restver, url_suffix)
-    return self.api(endpoint, data=kwargs)
+    return self.request(endpoint, data=kwargs)
 
 
 def end_session():

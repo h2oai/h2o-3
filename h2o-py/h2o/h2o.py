@@ -1,18 +1,19 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
-from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from .compatibility import *
-from future.standard_library import install_aliases
-import warnings
-import re
-import os
-import sys
+"""
+h2o -- module for using H2O services.
 
+  :copyright: (c) 2016 H2O.ai
+  :license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import division, print_function, absolute_import, unicode_literals
+import os
+import re
+import warnings
+
+from .compatibility import *
+from .debugging import *
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen
-from .connection import H2OConnection, H2OConnectionError, H2OServerError
+from .connection import H2OConnection, H2OLocalServer, H2OConnectionError, H2OServerError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
@@ -28,16 +29,10 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .grid.grid_search import H2OGridSearch
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
-# noinspection PyUnresolvedReferences
-from .debugging import *
 
 
 warnings.simplefilter('always', DeprecationWarning)
-try:
-    install_aliases()
-except AttributeError:
-    if os.path.exists(os.path.join(sys.path[0], "test.py")):
-        print("File named `test` is conflicting with python module `test` used by the future library.")
+
 
 # the @deprecated decorator
 def deprecated(message):
@@ -60,15 +55,19 @@ def deprecated(message):
 h2oconn = None
 
 
-def connect(ip="localhost", port=54321, https=False, verify_ssl_cert=True, auth=None, proxy=None, cluster_name=None,
-            verbose=True):
+def connect(server=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None, proxy=None,
+            cluster_name=None, verbose=True):
     """
     Connect to an existing H₂O server, remote or local.
 
+    There are two ways to connect to a server: either pass a `server` parameter containing an instance of
+    an H2OLocalServer, or specify `ip` and `port` of the server that you want to connect to.
+
+    :param server: An H2OLocalServer instance to connect to (optional).
     :param ip: The ip address (or host name) of the server where H₂O is running.
     :param port: Port number that H₂O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
-    :param verify_ssl_cert: When using https, setting this to False will disable SSL certificates verification.
+    :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
     :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
                  authenticator objects.
     :param proxy: Proxy server address.
@@ -77,14 +76,14 @@ def connect(ip="localhost", port=54321, https=False, verify_ssl_cert=True, auth=
     :return  None
     """
     global h2oconn
-    h2oconn = H2OConnection.connect(**locals())
+    h2oconn = H2OConnection.open(**locals())
     if verbose:
         h2oconn.info().pprint()
     return h2oconn
 
 
 def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
-          port=54321, verbose=True):
+          port="54321+", verbose=True):
     """
     :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
     :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
@@ -97,11 +96,7 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
     :param verbose: Whether to print connection progress messages to the stdout or not.
     :return:
     """
-    global h2oconn
-    h2oconn = H2OConnection.start(**locals())
-    if verbose:
-        h2oconn.info().pprint()
-    return h2oconn
+    return H2OLocalServer.start(**locals())
 
 
 def connection():
@@ -144,7 +139,30 @@ def version_check():
 def init(ip="localhost", port=54321, https=False, insecure=False, username=None, password=None, cluster_name=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
-    """DEPRECATED. Use h2o.start() or h2o.connect() instead."""
+    """
+    Attempt to connect to a local server, or if not successful start a new server and connect to it.
+
+    The use of this method is discouraged, and it may be removed in the future. Prefer `h2o.connect()` and
+    `h2o.start()`.
+
+    :param ip:
+    :param port:
+    :param https:
+    :param insecure:
+    :param username:
+    :param password:
+    :param cluster_name:
+    :param proxy:
+    :param start_h2o:
+    :param nthreads:
+    :param ice_root:
+    :param enable_assertions:
+    :param max_mem_size:
+    :param min_mem_size:
+    :param strict_version_check:
+    :param kwargs: (all other deprecated attributes)
+    :returns: nothing
+    """
     scheme = "https" if https else "http"
     proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
         kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
@@ -152,15 +170,21 @@ def init(ip="localhost", port=54321, https=False, insecure=False, username=None,
         kwargs["max_mem_size_GB"] << 30 if "max_mem_size_GB" in kwargs else None
     mmin = int(min_mem_size) if min_mem_size is not None else \
         kwargs["min_mem_size_GB"] << 30 if "min_mem_size_GB" in kwargs else None
+    auth = (username, password) if username and password else None
+    if not start_h2o:
+        print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
+    if ip != "localhost" and ip != "127.0.0.1" and start_h2o:
+        print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
-        connect(ip=ip, port=port, https=https, verify_ssl_cert=not insecure, auth=(username, password), proxy=proxy,
-                cluster_name=cluster_name, verbose=True)
+        connect(ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,
+                proxy=proxy, cluster_name=cluster_name, verbose=True)
     except H2OConnectionError:
-        if start_h2o:
-            start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax, min_mem_size=mmin,
-                  ice_root=ice_root)
-        else:
-            raise
+        if not start_h2o: raise
+        global h2oconn
+        hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
+                                  min_mem_size=mmin, ice_root=ice_root, port="%d+" % port)
+        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
+                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True)
     if strict_version_check:
         version_check()
 
@@ -707,7 +731,7 @@ def remove(x):
 
 def remove_all():
     """Remove all objects from H2O."""
-    h2oconn.api("DELETE /3/DKV")
+    h2oconn.request("DELETE /3/DKV")
 
 
 def rapids(expr):
@@ -905,7 +929,7 @@ def cluster_status():
     but if a user tries to do any remoteSend, they will get a "cloud sick warning"
     Retrieve information on the status of the cluster running H2O.
     """
-    cluster = h2oconn.api("GET /3/Cloud?skip_ticks=true")
+    cluster = h2oconn.request("GET /3/Cloud?skip_ticks=true")
 
     print("Version: %s" % cluster.version)
     print("Cloud name: %s" % cluster.cloud_name)
@@ -1136,7 +1160,7 @@ def as_list(data, use_pandas=True):
 
 
 def network_test():
-    res = h2oconn.api("GET /3/NetworkTest")
+    res = h2oconn.request("GET /3/NetworkTest")
     res.table.show()
 
 

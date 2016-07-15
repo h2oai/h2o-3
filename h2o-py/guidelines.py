@@ -12,13 +12,7 @@
 #   the future.builtins import replaces several builtin types/functions in Py2 with their Py3 equivalents. The important
 #       ones are: str, int, list, dict, object, range, open, next, pow, round, ...
 from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from future.builtins import *
-
-# Add the following import if you use any of these standard libararies: queue, html, http, urllib, collections.User*,
-# subprocess, configparser, etc.
-from future import standard_library
-standard_library.install_aliases()
+from h2o.compatibility import *  # NOQA
 
 
 # Use print() as a function only:
