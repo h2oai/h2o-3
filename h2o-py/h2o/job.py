@@ -31,7 +31,6 @@ class H2OJob(object):
         else:
             job = jobs
 
-        self.jobs = jobs
         self.job = job
         self.status = job["status"]
         self.job_key = job["key"]["name"]
@@ -61,6 +60,7 @@ class H2OJob(object):
         last_poll_time = start_time
         last_display_time = start_time
         last_display_amnt = 0
+        width = self._progress_bar_width
         self._update_progress_bar()
         while self._is_running():
             #
@@ -76,10 +76,10 @@ class H2OJob(object):
                 estimated_finish_time = start_time + (last_poll_time - start_time) / self.progress
             # Figure out when we need to display the next '#' symbol, so that all the remaining symbols will be printed
             # out in a uniform fashion assuming our estimate of finish time is correct.
+            symbols_remaining = width - last_display_amnt
             if estimated_finish_time > last_display_time:
-                symbols_remaining = self._progress_bar_width - last_display_amnt
                 display_speed = symbols_remaining / (estimated_finish_time - last_display_time)
-                next_display_time = last_display_time + 1 / display_speed
+                next_display_time = last_display_time + 1 / max(display_speed, 1)
             else:
                 display_speed = 0
                 next_display_time = next_poll_time + 1  # Force polling before displaying an update
@@ -95,9 +95,15 @@ class H2OJob(object):
                     time.sleep(next_display_time - current_time)
                     current_time = time.time()
                 # Usually `last_display_amnt` will increment by 1, unless progress goes much faster than expected.
-                last_display_amnt += int((current_time - last_display_time) * display_speed + 0.1)
-                last_display_time = current_time
-                self._update_progress_bar(last_display_amnt)
+                if self.progress == 1:
+                    display_incr = symbols_remaining
+                else:
+                    display_incr = min(symbols_remaining - 1,
+                                       int((current_time - last_display_time) * display_speed + 0.1))
+                if display_incr > 0:
+                    last_display_amnt += display_incr
+                    last_display_time = current_time
+                    self._update_progress_bar(last_display_amnt)
 
         self._polling = False
         self._update_progress_bar()
@@ -164,3 +170,10 @@ class H2OJob(object):
             print("Job {} was cancelled.".format(self.job_key))
         else:
             signal.default_int_handler()
+
+    def __repr__(self):
+        if self.status in {"CREATED", "RUNNING"}:
+            desc = "at %d%%" % int(self.progress * 100 + 0.5)
+        else:
+            desc = self.status.lower()
+        return "<H2OJob id=%s %s>" % (self.job_key, desc)
