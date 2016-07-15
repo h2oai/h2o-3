@@ -82,9 +82,21 @@ def connect(server=None, ip=None, port=None, https=None, verify_ssl_certificates
     return h2oconn
 
 
+@translate_args
+def api(endpoint, data=None, json=None, filename=None):
+    """Perform a REST API request to a previously connected server."""
+    assert h2oconn is not None, "Connection was not established. Did you run `h2o.connect()`?"
+    return h2oconn.request(endpoint, data=data, json=json, filename=filename)
+
+
+@translate_args
 def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
           port="54321+", verbose=True):
     """
+    Start a new local H₂O server.
+
+    This server object can then be passed to `h2o.connect()` to connect to that server; or you can launch multiple
+    local servers and connect to only one of them. The servers will connect into a cloud.
     :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
     :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
     :param enable_assertions: If True, then the server will start with the -ea JVM option (enabling code assertions).
