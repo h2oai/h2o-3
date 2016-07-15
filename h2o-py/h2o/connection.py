@@ -352,6 +352,7 @@ class H2OConnection(backwards_compatible()):
         :return: True if the cluster is up; False otherwise
         """
         try:
+            if self._local_server and not self._local_server.is_running(): return False
             self.request("GET /")
             return True
         except (H2OConnectionError, H2OServerError):

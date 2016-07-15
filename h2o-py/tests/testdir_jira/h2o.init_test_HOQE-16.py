@@ -23,8 +23,9 @@ except h2o.H2OConnectionError:
     pass
 
 
-# Now start a new H2O server.
-conn = h2o.start(port=PORT)
+# Now start a new H2O server and connect to it.
+server = h2o.start(port=str(PORT) + "+")
+conn = h2o.connect(server=server)
 
 # Get if cluster is up (True) or not (False)
 cluster_up = conn.cluster_is_up()
