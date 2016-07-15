@@ -151,7 +151,7 @@ def version_check():
 
 
 @translate_args
-def init(ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
+def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
     """
@@ -160,6 +160,7 @@ def init(ip=None, port=None, https=None, insecure=False, username=None, password
     The use of this method is discouraged, and it may be removed in the future. Prefer `h2o.connect()` and
     `h2o.start()`.
 
+    :param url:
     :param ip:
     :param port:
     :param https:
@@ -191,7 +192,7 @@ def init(ip=None, port=None, https=None, insecure=False, username=None, password
     if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
-        connect(ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,
+        connect(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,
                 proxy=proxy, cluster_name=cluster_name, verbose=True)
     except H2OConnectionError:
         if not start_h2o: raise
