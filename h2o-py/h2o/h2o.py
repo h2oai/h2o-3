@@ -150,7 +150,8 @@ def version_check():
                 "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
 
 
-def init(ip="localhost", port=54321, https=False, insecure=False, username=None, password=None, cluster_name=None,
+@translate_args
+def init(ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
     """
@@ -196,7 +197,7 @@ def init(ip="localhost", port=54321, https=False, insecure=False, username=None,
         if not start_h2o: raise
         global h2oconn
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
-                                  min_mem_size=mmin, ice_root=ice_root, port="%d+" % port)
+                                  min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True)
     if strict_version_check:
