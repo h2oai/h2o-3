@@ -51,19 +51,19 @@ class BinaryMerge extends DTask<BinaryMerge> {
     private final int _keySize; // the total width in bytes of the key, sum of field sizes
 
     FFSB( Frame frame, int msb, int shift, int fieldSizes[], long base[] ) { 
-      _frame = frame;
-      // Create fast lookups to go from chunk index to node index of that chunk
-      Vec vec = _vec = frame.anyVec();
-      assert vec != null;
-      _chunkNode  = new int[vec.nChunks()];
-      for( int i=0; i<_chunkNode.length; i++ )
-        _chunkNode[i] = vec.chunkKey(i).home_node().index();
       assert -1<=msb && msb<=255; // left ranges from 0 to 255, right from -1 to 255
+      _frame = frame;
       _msb = msb;
       _shift = shift;
       _fieldSizes = fieldSizes;
       _keySize = ArrayUtils.sum(fieldSizes);
       _base = base;
+      // Create fast lookups to go from chunk index to node index of that chunk
+      Vec vec = _vec = frame.anyVec();
+      _chunkNode = vec==null ? null : new int[vec.nChunks()];
+      if( vec == null ) return; // Zero-columns for Sort
+      for( int i=0; i<_chunkNode.length; i++ )
+        _chunkNode[i] = vec.chunkKey(i).home_node().index();
     }
 
     long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
@@ -136,8 +136,8 @@ class BinaryMerge extends DTask<BinaryMerge> {
     final long leftMin = _leftSB.min();  // the first key possible in this bucket
     final long leftMax = _leftSB.max();  // the last  key possible in this bucket
     // if _riteSB._msb==-1 then the values in riteMin and riteMax here are redundant and not used
-    final long riteMin = _riteSB.min();  // the first key possible in this bucket
-    final long riteMax = _riteSB.max();  // the last  key possible in this bucket
+    final long riteMin = _riteSB._msb==-1 ? -1 : _riteSB.min();  // the first key possible in this bucket
+    final long riteMax = _riteSB._msb==-1 ? -1 : _riteSB.max();  // the last  key possible in this bucket
 
     _leftFrom =   (_riteSB._msb==-1 || leftMin>=riteMin || (_allLeft && _riteSB._msb==0  )) ? -1    : bsearchLeft(riteMin, /*retLow*/true , leftN);
     long leftTo = (_riteSB._msb==-1 || leftMax<=riteMax || (_allLeft && _riteSB._msb==255)) ? leftN : bsearchLeft(riteMax, /*retLow*/false, leftN);
@@ -694,7 +694,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     return Key.make("__binary_merge__Chunk_for_col" + col + "_batch" + batch
                     // + rightFrame._key.toString() + "_joined_with" + leftFrame._key.toString()
                     + "_leftSB._msb" + leftMSB + "_riteSB._msb" + rightMSB,
-            (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB)
+            (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(rightMSB==-1 ? leftMSB : rightMSB)
     ); //TODO home locally
   }
 

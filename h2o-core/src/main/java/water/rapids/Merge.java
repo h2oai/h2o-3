@@ -10,8 +10,17 @@ import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
 
-  // single-threaded driver logic
+  // Radix-sort a Frame using the given columns as keys.
+  // This is a fully distributed and parallel sort.
+  // It is not currently an in-place sort, so the data is doubled and a sorted copy is returned.
+  public static Frame sort( final Frame fr, int[] cols ) {
+    return Merge.merge(fr, new Frame(), cols, new int[0], true/*allLeft*/, new int[cols.length][]);
+  }
+
+
+  // single-threaded driver logic.  Merge left and right frames based on common columns.
   static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], boolean allLeft, int[][] id_maps) {
+    final boolean hasRite = riteCols.length > 0;
 
     // map missing levels to -1 (rather than increasing slots after the end)
     // for now to save a deep branch later
@@ -35,21 +44,18 @@ public class Merge {
     long ansN = 0;
     int numChunks = 0;
 
-    System.out.println("Left  base[0]: "+leftIndex._base [0]);
-    System.out.println("Left  shift: "  +leftIndex._shift[0]);
-    System.out.println("Right base[0]: "+riteIndex._base [0]);
-    System.out.println("Right shift: "  +riteIndex._shift[0]);
-
     System.out.print("Making BinaryMerge RPC calls ... ");
     long t0 = System.nanoTime();
     ArrayList<RPC> bmList = new ArrayList<>();
     final int leftShift = leftIndex._shift[0];
-    final int riteShift = riteIndex._shift[0];
+    final long leftBase = leftIndex._base[0];
+    final int riteShift = hasRite ? riteIndex._shift[0] : -1;
+    final long riteBase = hasRite ? riteIndex._base [0] : leftBase;
 
-    long leftMSBfrom = (riteIndex._base[0] - leftIndex._base[0]) >> leftShift;  // which leftMSB does the overlap start
+    long leftMSBfrom = (riteBase - leftBase) >> leftShift;  // which leftMSB does the overlap start
 
     // deal with the left range below the right minimum, if any
-    if (leftIndex._base[0] < riteIndex._base[0]) {
+    if (leftBase < riteBase) {
       // deal with the range of the left below the start of the right, if any
       assert leftMSBfrom >= 0;
       if (leftMSBfrom>255) {
@@ -71,12 +77,12 @@ public class Merge {
       leftMSBfrom = 0;
     }
 
-    long leftMSBto = (riteIndex._base[0] + (256L<<riteShift) - 1 - leftIndex._base[0]) >> leftShift;
+    long leftMSBto = (riteBase + (256L<<riteShift) - 1 - leftBase) >> leftShift;
     // -1 because the 256L<<riteShift is one after the max extent.  
     // No need -for +1 for NA here because, as for leftMSBfrom above, the NA spot is on -both sides
 
     // deal with the left range above the right maximum, if any
-    if ((leftIndex._base[0] + (256L<<leftShift)) > (riteIndex._base[0] + (256L<<riteShift))) {
+    if( (leftBase + (256L<<leftShift)) > (riteBase + (256L<<riteShift)) ) {
       assert leftMSBto <= 255;
       if (leftMSBto<0) {
         // The left range starts after the right range ends.  So every left row
@@ -105,12 +111,12 @@ public class Merge {
       assert leftMSB <= 255;
 
       // calculate the key values at the bin extents:  [leftFrom,leftTo] in terms of keys
-      long leftFrom= (((long)leftMSB  ) << leftShift) -1 + leftIndex._base[0]  ;  // -1 for leading NA spot
-      long leftTo  = (((long)leftMSB+1) << leftShift) -1 + leftIndex._base[0]-1;  // -1 for leading NA spot and another -1 to get last of previous bin
+      long leftFrom= (((long)leftMSB  ) << leftShift) -1 + leftBase  ;  // -1 for leading NA spot
+      long leftTo  = (((long)leftMSB+1) << leftShift) -1 + leftBase-1;  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
-      int rightMSBfrom = (int)((leftFrom - riteIndex._base[0] + 1) >> riteShift);   // +1 again for the leading NA spot
-      int rightMSBto   = (int)((leftTo   - riteIndex._base[0] + 1) >> riteShift);
+      int rightMSBfrom = (int)((leftFrom - riteBase + 1) >> riteShift);   // +1 again for the leading NA spot
+      int rightMSBto   = (int)((leftTo   - riteBase + 1) >> riteShift);
 
       // the non-matching part of this region will have been dealt with above when allLeft==true
       if (rightMSBfrom < 0) rightMSBfrom = 0;
@@ -242,7 +248,7 @@ public class Merge {
 
     System.out.print("Allocating dummy vecs/chunks of the final frame ...");
     t0 = System.nanoTime();
-    int numJoinCols = leftIndex._bytesUsed.length;
+    int numJoinCols = hasRite ? leftIndex._bytesUsed.length : 0;
     int numLeftCols = leftFrame.numCols();
     int numColsInResult = numLeftCols + riteFrame.numCols() - numJoinCols ;
     final byte[] types = new byte[numColsInResult];

@@ -20,8 +20,6 @@ public class ASTSort extends ASTPrim {
       if( col < 0 || col >= fr.numCols() )
         throw new IllegalArgumentException("Column "+col+" is out of range of "+fr.numCols());
 
-    int leftCols[] = new int[cols.length];
-    for (int i=0; i<cols.length; i++) leftCols[i] = i;
-    return new ValFrame(Merge.merge(fr, new Frame(new Vec[0]), leftCols, new int[0], true/*allLeft*/, new int[cols.length][]));
+    return new ValFrame(Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, new int[cols.length][]));
   }
 }

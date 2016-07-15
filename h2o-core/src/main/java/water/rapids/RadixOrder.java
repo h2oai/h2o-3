@@ -28,9 +28,78 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
 
   @Override
   public void compute2() {
-    if( _whichCols.length == 0 ) { tryComplete();  return; } // Sort has no right index
+    long t0 = System.nanoTime(), t1=0;
+    initBaseShift();
 
-    long t0 = System.nanoTime();
+    // The MSB is stored (seemingly wastefully on first glance) because we need
+    // it when aligning two keys in Merge()
+    int keySize = ArrayUtils.sum(_bytesUsed);
+    // 256MB is the DKV limit.  / 2 because we fit o and x together in one OXBatch.
+    int batchSize = 256*1024*1024 / Math.max(keySize, 8) / 2 ;
+    // The Math.max ensures that batches of o and x are aligned, even for wide
+    // keys.  To save % and / in deep iteration; e.g. in insert().
+    System.out.println("Time to use rollup stats to determine biggestBit: " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
+
+    if( _whichCols.length > 0 )
+      new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null ).doAll(_DF.vec(_whichCols[0]));
+    System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
+
+    // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
+    // o is the full ordering vector of the right size
+    // x is the byte key aligned with o
+    // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
+
+    // Workaround for incorrectly blocking closeLocal() in MRTask is to do a
+    // double MRTask and pass a key between them to pass output from first on
+    // that node to second on that node.
+    // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
+    Key linkTwoMRTask = Key.make();
+    if( _whichCols.length > 0 )
+      new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols)); // postLocal needs DKV.put()
+    System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
+
+    if( _whichCols.length > 0 )
+      new SendSplitMSB(linkTwoMRTask).doAllNodes();
+    System.out.println("SendSplitMSB across all nodes took : " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
+
+    // dispatch in parallel
+    RPC[] radixOrders = new RPC[256];
+    System.out.print("Sending SingleThreadRadixOrder async RPC calls ... ");
+    for (int i = 0; i < 256; i++)
+      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_DF, _isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
+    System.out.println("took : " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
+
+    System.out.print("Waiting for RPC SingleThreadRadixOrder to finish ... ");
+    for( RPC rpc : radixOrders ) //TODO: Use a queue to make this fully async
+      rpc.get();
+    System.out.println("took " + (System.nanoTime() - t0) / 1e9);
+
+    tryComplete();
+
+    // serial, do one at a time
+//    for (int i = 0; i < 256; i++) {
+//      H2ONode node = MoveByFirstByte.ownerOfMSB(i);
+//      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call().get();
+//      _o[i] = radixOrder._o;
+//      _x[i] = radixOrder._x;
+//    }
+
+    // If sum(nGroup) == nrow then the index is unique.
+    // 1) useful to know if an index is unique or not (when joining to it we
+    //    know multiples can't be returned so can allocate more efficiently)
+    // 2) If all groups are size 1 there's no need to actually allocate an
+    //    all-1 group size vector (perhaps user was checking for uniqueness by
+    //    counting group sizes)
+    // 3) some nodes may have unique input and others may contain dups; e.g.,
+    //    in the case of looking for rare dups.  So only a few threads may have
+    //    found dups.
+    // 4) can sweep again in parallel and cache-efficient finding the groups,
+    //    and allocate known size up front to hold the group sizes.
+    // 5) can return to Flow early with the group count. User may now realise
+    //    they selected wrong columns and cancel early.
+  }
+
+  private void initBaseShift() {
     for (int i=0; i<_whichCols.length; i++) {
       Vec col = _DF.vec(_whichCols[i]);
       // TODO: strings that aren't already categoricals and fixed precision double.
@@ -82,75 +151,6 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
       assert chk <= 255;
       assert chk >= 0;
     }
-    // The MSB is stored (seemingly wastefully on first glance) because we need
-    // it when aligning two keys in Merge()
-    int keySize = ArrayUtils.sum(_bytesUsed);
-    // 256MB is the DKV limit.  / 2 because we fit o and x together in one OXBatch.
-    int batchSize = 256*1024*1024 / Math.max(keySize, 8) / 2 ;
-    // The Math.max ensures that batches of o and x are aligned, even for wide
-    // keys.  To save % and / in deep iteration; e.g. in insert().
-    System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
-
-    t0 = System.nanoTime();
-    new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null ).doAll(_DF.vec(_whichCols[0]));
-    System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
-
-    // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
-    // o is the full ordering vector of the right size
-    // x is the byte key aligned with o
-    // o AND x are what bmerge() needs. Pushing x to each node as well as o avoids inter-node comms.
-
-    // Workaround for incorrectly blocking closeLocal() in MRTask is to do a
-    // double MRTask and pass a key between them to pass output from first on
-    // that node to second on that node.
-    // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
-    t0 = System.nanoTime();
-    Key linkTwoMRTask = Key.make();
-    new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
-    System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
-
-    t0 = System.nanoTime();
-    new SendSplitMSB(linkTwoMRTask).doAllNodes();
-    System.out.println("SendSplitMSB across all nodes took : " + (System.nanoTime() - t0) / 1e9);
-
-    // dispatch in parallel
-    RPC[] radixOrders = new RPC[256];
-    System.out.print("Sending SingleThreadRadixOrder async RPC calls ... ");
-    t0 = System.nanoTime();
-    for (int i = 0; i < 256; i++) {
-      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_DF, _isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
-    }
-    System.out.println("took : " + (System.nanoTime() - t0) / 1e9);
-
-    System.out.print("Waiting for RPC SingleThreadRadixOrder to finish ... ");
-    t0 = System.nanoTime();
-    for( RPC rpc : radixOrders ) //TODO: Use a queue to make this fully async
-      rpc.get();
-    System.out.println("took " + (System.nanoTime() - t0) / 1e9);
-
-    tryComplete();
-
-    // serial, do one at a time
-//    for (int i = 0; i < 256; i++) {
-//      H2ONode node = MoveByFirstByte.ownerOfMSB(i);
-//      SingleThreadRadixOrder radixOrder = new RPC<>(node, new SingleThreadRadixOrder(DF, batchSize, keySize, nGroup, i)).call().get();
-//      _o[i] = radixOrder._o;
-//      _x[i] = radixOrder._x;
-//    }
-
-    // If sum(nGroup) == nrow then the index is unique.
-    // 1) useful to know if an index is unique or not (when joining to it we
-    //    know multiples can't be returned so can allocate more efficiently)
-    // 2) If all groups are size 1 there's no need to actually allocate an
-    //    all-1 group size vector (perhaps user was checking for uniqueness by
-    //    counting group sizes)
-    // 3) some nodes may have unique input and others may contain dups; e.g.,
-    //    in the case of looking for rare dups.  So only a few threads may have
-    //    found dups.
-    // 4) can sweep again in parallel and cache-efficient finding the groups,
-    //    and allocate known size up front to hold the group sizes.
-    // 5) can return to Flow early with the group count. User may now realise
-    //    they selected wrong columns and cancel early.
   }
 
   private static class SendSplitMSB extends MRTask<SendSplitMSB> {

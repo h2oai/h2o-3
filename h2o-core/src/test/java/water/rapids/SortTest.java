@@ -13,73 +13,97 @@ import static org.junit.Assert.assertTrue;
 public class SortTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  /*@Test*/ public void testBasic() {
+  @Test public void testBasicSortRapids() {
     Frame fr = null, res = null;
 
-    // Stable sort columns 0 and 1
-    String tree = "(sort hex [0 1])";
+    // Stable sort columns 1 and 2
+    String tree = "(sort hex [1 2])";
     try {
 
       // Build a frame which is unsorted on small-count categoricals in columns
       // 0 and 1, and completely sorted on a record-number based column 2.
       // Sort will be on columns 0 and 1, in that order, and is expected stable.
-      fr = buildFrame(3,4);
+      fr = buildFrame(1000,10);
+      fr.insertVec(0,"row",fr.remove(2));
       // 
       Val val = Rapids.exec(tree);
-      System.out.println(val.toString());
       assertTrue( val instanceof ValFrame );
       res = ((ValFrame)val)._fr;
+      res.add("row",res.remove(0));
 
-      // Assert that result is indeed sorted - on all 3 columns, as this is a
-      // stable sort.
-      final long max0 = (long)fr.vec(0).max();
-      new MRTask() {
-        @Override public void map( Chunk cs[] ) {
-          long x0 = val(cs[0].at8(0),cs[1].at8(0),cs[2].at8(0));
-          for( int i=1; i<cs[0]._len; i++ ) {
-            long x1 = val(cs[0].at8(i),cs[1].at8(i),cs[2].at8(i));
-            assertTrue(x0<x1);
-            x0 = x1;
-          }
-          // Last row of chunk is sorted relative to 1st row of next chunk
-          long row = cs[0].start()+cs[0]._len;
-          if( row < cs[0].vec().length() ) {
-            long x1 = val(cs[0].vec().at8(row),cs[1].vec().at8(row),cs[2].vec().at8(row));
-            assertTrue(x0<x1);
-          }
-        }
-        // Collapse 3 cols of data into a long
-        private long val( long a, long b, long c ) { return ((b*max0+a)<<32)+c; }
-      }.doAll(res);
+      new CheckSort().doAll(res);
 
     } finally {
       if( fr  != null ) fr .delete();
       if( res != null ) res.delete();
-      Keyed.remove(Key.make("hex"));
     }
   }
 
+  @Test public void testBasicSortJava() {
+    Frame fr = null, res = null;
+    try {
+      fr = buildFrame(1000,10);
+      fr.insertVec(0,"row",fr.remove(2));
+      res = Merge.sort(fr,new int[]{1,2});
+      res.add("row",res.remove(0));
+      new CheckSort().doAll(res);
+    } finally {
+      if( fr  != null ) fr .delete();
+      if( res != null ) res.delete();
+    }
+  }
+
+  // Assert that result is indeed sorted - on all 3 columns, as this is a
+  // stable sort.
+  private class CheckSort extends MRTask<CheckSort> {
+    @Override public void map( Chunk cs[] ) {
+      long x0 = cs[0].at8(0);
+      long x1 = cs[1].at8(0);
+      long x2 = cs[2].at8(0);
+      for( int i=1; i<cs[0]._len; i++ ) {
+        long y0 = cs[0].at8(i);
+        long y1 = cs[1].at8(i);
+        long y2 = cs[2].at8(i);
+        assertTrue(x0<y0 || (x0==y0 && (x1<y1 || (x1==y1 && x2<y2))));
+        x0=y0; x1=y1; x2=y2;
+      }
+      // Last row of chunk is sorted relative to 1st row of next chunk
+      long row = cs[0].start()+cs[0]._len;
+      if( row < cs[0].vec().length() ) {
+        long y0 = cs[0].vec().at8(row);
+        long y1 = cs[1].vec().at8(row);
+        long y2 = cs[2].vec().at8(row);
+        assertTrue(x0<y0 || (x0==y0 && (x1<y1 || (x1==y1 && x2<y2))));
+      }
+    }
+  }
 
   // Build a 3 column frame.  Col #0 is categorical with # of cats given; col
   // #1 is categorical with 10x more choices.  A set of pairs of col#0 and
   // col#1 is made; each pair is given about 100 rows.  Col#2 is a row number.
   private static Frame buildFrame( int card0, int nChunks ) {
     // Compute the pairs
-    int scale0 = 3;
-    int scale1 = 10;
-    int scale2 = 100;
+    int scale0 = 3;    // approximate ratio actual pairs vs all possible pairs; so scale0=3/scale1=10 is about 30% actual unique pairs
+    int scale1 = 10;   // scale of |col#1| / |col#0|, i.e., col#1 has 10x more levels than col#0
+    int scale2 = 100;  // number of rows per pair
+    if( nChunks == -1 ) {
+      long len = (long)card0*(long)scale0*(long)scale2;
+      int rowsPerChunk = 100000;
+      nChunks = (int)((len+rowsPerChunk-1)/rowsPerChunk);
+    }
     NonBlockingHashMapLong<String> pairs_hash = new NonBlockingHashMapLong<>();
     Random R = new Random(card0*scale0*nChunks);
     for( int i=0; i<card0*scale0; i++ ) {
       long pair = (((long)R.nextInt(card0))<<32) | (R.nextInt(card0*scale1));
-      if( pairs_hash.contains(pair) ) i--; // Reroll dice on collisions
+      if( pairs_hash.containsKey(pair) ) i--; // Reroll dice on collisions
       else pairs_hash.put(pair,"");
     }
     long[] pairs = pairs_hash.keySetLong();
 
-    AppendableVec col0 = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-    AppendableVec col1 = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-    AppendableVec col2 = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+    Key[] keys = new Vec.VectorGroup().addVecs(3);
+    AppendableVec col0 = new AppendableVec(keys[0], Vec.T_NUM);
+    AppendableVec col1 = new AppendableVec(keys[1], Vec.T_NUM);
+    AppendableVec col2 = new AppendableVec(keys[2], Vec.T_NUM);
 
     NewChunk ncs0[] = new NewChunk[nChunks];
     NewChunk ncs1[] = new NewChunk[nChunks];
