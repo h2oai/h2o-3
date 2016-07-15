@@ -210,8 +210,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Loss function.
         Default: "Automatic"
 
-      distribution : "AUTO" | "bernoulli" | "modified_huber" | "multinomial" | "gaussian" | "poisson" | "gamma" |
-                     "tweedie" | "laplace" | "quantile" | "huber"
+      distribution : "AUTO" | "bernoulli" | "multinomial" | "gaussian" | "poisson" | "gamma" | "tweedie" | "laplace" |
+                     "quantile" | "huber"
         Distribution function
         Default: "AUTO"
 

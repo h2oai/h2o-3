@@ -158,8 +158,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
         Default: 1.0
 
-      distribution : "AUTO" | "bernoulli" | "modified_huber" | "multinomial" | "gaussian" | "poisson" | "gamma" |
-                     "tweedie" | "laplace" | "quantile" | "huber"
+      distribution : "AUTO" | "bernoulli" | "multinomial" | "gaussian" | "poisson" | "gamma" | "tweedie" | "laplace" |
+                     "quantile" | "huber"
         Distribution function
         Default: "AUTO"
 
