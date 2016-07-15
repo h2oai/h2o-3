@@ -1452,10 +1452,10 @@ class H2OFrame(object):
     if isinstance(column, basestring): column = self.names.index(column)
     if isinstance(by, basestring):     by     = self.names.index(by)
 
-    if values is None: values="_"
-    if group_by_frame is None: group_by_frame="_"
+    if values is None: values = "_"
+    if group_by_frame is None: group_by_frame = "_"
     if self._ex._cache._id is None:
-      self._ex._cache._id = _py_tmp_key()
+      self._ex._cache._id = "%s_%s" % (_py_tmp_key(), h2o.connection().session_id)
       self._ex._eager_frame()
 
     if by is not None or group_by_frame is not "_":
