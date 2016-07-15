@@ -1213,6 +1213,10 @@ public class Vec extends Keyed<Vec> {
       return Key.make(bits);
     }
 
+    public VecAry makeCons(int rowLayout, int len, long cons) {
+      throw H2O.unimpl();
+    }
+
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */
     private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup> {

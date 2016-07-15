@@ -31,6 +31,20 @@ import static hex.ModelMetricsMultinomial.getHitRatioTable;
  */
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
+  // ---
+  /** Write this Keyed object, and all nested Keys. */
+  public AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
+
+  /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
+   *  overwriting what was there before.  */
+  public static Keyed readAll(AutoBuffer ab) {
+    Futures fs = new Futures();
+    Keyed k = ab.getKey(fs);
+    fs.blockForPending();       // Settle out all internal Key puts
+    return k;
+  }
+
+
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
     Frame scoreDeepFeatures(Frame frame, final int layer);
@@ -1041,17 +1055,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /** Write out K/V pairs, in this case model metrics. */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+  protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         ab.putKey(k);
-    return super.writeAll_impl(ab);
+    return ab;
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         ab.getKey(k,fs);        // Load model metrics
-    return super.readAll_impl(ab,fs);
+    return this;
   }
 
   @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }

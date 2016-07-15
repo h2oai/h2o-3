@@ -130,18 +130,18 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
   /** The number and type of output Vec instances produced by an MRTask.  If
    *  null then there are no outputs, _appendables will be null, and calls to
    *  <code>outputFrame</code> will return null. */
-  private byte _output_types[];
+  private byte _output_types[][];
 
   /** First reserved VectorGroup key index for all output VecAry */
   private int _vid;
 
   /** New Output vectors; may be null.
    * @return the set of AppendableVec instances or null if _output_types is null  */
-  public AppendableVec[] appendables() { return _appendables; }
+  public AppendableVecBlock[] appendables() { return _appendables; }
 
   /** Appendables are treated separately (roll-ups computed in map/reduce
    *  style, can not be passed via K/V store).*/
-  protected AppendableVec[] _appendables;
+  protected AppendableVecBlock[] _appendables;
 
   /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
   transient protected RPC<T> _nleft, _nrite;
@@ -196,7 +196,11 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
    *  @param domains The domains of the columns in the resulting Frame.
    *  @return The result Frame, or null if no outputs
    */
-  public Frame outputFrame(String [] names, String [][] domains){ return outputFrame(null,names,domains); }
+  public Frame outputFrame(String [] names, String [][] domains){
+    assert _output_types.length == 1;
+    return outputFrame(null,names,new String[][][]{domains});
+  }
+  public Frame outputFrame(String [] names, String [][][] domains){ return outputFrame(null,names,domains); }
 
   /**
    * Get the resulting Frame from this invoked MRTask. If the passed in <code>key</code>
@@ -209,7 +213,7 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
    * @param domains The domains of the columns in the resulting Frame.
    * @return null if _noutputs is 0, otherwise returns a Frame.
    */
-  public Frame outputFrame(Key key, String [] names, String [][] domains){
+  public Frame outputFrame(Key key, String [] names, String [][][] domains){
     Futures fs = new Futures();
     Frame res = closeFrame(key, names, domains, fs);
     if( key != null ) DKV.put(res,fs);
@@ -218,15 +222,14 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
   }
 
   // the work-horse for the outputFrame calls
-  private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
+  private Frame closeFrame(Key key, String[] names, String[][][] domains, Futures fs) {
     if( _output_types == null ) return null;
     final int noutputs = _output_types.length;
-    Vec[] vecs = new Vec[noutputs];
+
     int rowLayout = _appendables[0].compute_rowLayout();
-    for( int i = 0; i < noutputs; i++ ) {
-      _appendables[i].setDomain(domains==null ? null : domains[i]);
-      vecs[i] = _appendables[i].close(rowLayout,fs);
-    }
+    for( int i = 0; i < noutputs; i++ )
+      _appendables[i].setDomains(domains==null ? null : domains[i]);
+    VecAry vecs = AppendableVecBlock.closeAll(_appendables,fs);
     return new Frame(key,names,vecs);
   }
 
@@ -235,8 +238,9 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
    *  single column in a input Frame.  All map variants are called, but only one is
    *  expected to be overridden. */
   public void map( Chunk c ) { }
-  public void map( Chunk c, NewChunk nc ) { }
-  public void map(Chunk c1, Chunk c2, NewChunk nc1, NewChunk nc2){}
+  public void map( Chunk c, NewChunkBlock nc ) { }
+  public void map(Chunk c1, Chunk c2, NewChunkBlock nc){}
+  public void map(Chunk c1, Chunk c2, NewChunkBlock nc1, NewChunkBlock nc2){}
 
   /** Override with your map implementation.  This overload is given two
    *  <strong>local</strong> Chunks.  All map variants are called, but only one
@@ -265,9 +269,9 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
    * @param cs  input vectors
    * @param nc  output vector
    */
-  public void map( Chunk cs[], NewChunk nc ) { }
-  public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
-  public void map( Chunk cs[], NewChunk [] ncs ) { }
+  public void map( Chunk cs[], NewChunkBlock nc ) { }
+  public void map( Chunk cs[], NewChunkBlock nc1, NewChunkBlock nc2 ) { }
+  public void map( Chunk cs[], NewChunkBlock [] ncs ) { }
 
   /** Override with your map implementation.  Used when doAll is called with 
    *  an array of Keys, and called once-per-Key on the Key's Home node */
@@ -364,16 +368,17 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
    *  blocking.  */
   public final T doAll( VecAry vecs, boolean run_local) { return doAll(null, vecs, run_local); }
   public final T doAll( VecAry vecs ) { return doAll(null,vecs, false); }
-  public final T doAll( byte[] types, VecAry vecs) {return doAll(types,vecs,false);}
-  public final T doAll( byte type, VecAry vecs) {return doAll(new byte[]{type},vecs,false);}
-  public final T doAll( byte[] types, VecAry vecs, boolean run_local) {
+  public final T doAll( byte[] types, VecAry vecs) {return doAll(new byte[][]{types},vecs,false);}
+  public final T doAll( byte[][] types, VecAry vecs) {return doAll(types,vecs,false);}
+  public final T doAll( byte type, VecAry vecs) {return doAll(new byte[][]{{type}},vecs,false);}
+  public final T doAll( byte[][] types, VecAry vecs, boolean run_local) {
     dfork(types,vecs, run_local);
     return getResult();
   }
   // Output is several vecs of the same type
   public final T doAll( int nouts, byte type, VecAry vecs) {
-    byte[] types = new byte[nouts];
-    Arrays.fill(types, type);
+    byte[][] types = new byte[1][nouts];
+    Arrays.fill(types[0],type);
     return doAll(types,vecs,false);
   }
 
@@ -414,7 +419,7 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
    */
-  public final T dfork( byte[] types, VecAry vecs, boolean run_local) {
+  public final T dfork( byte[][] types, VecAry vecs, boolean run_local) {
     _topGlobal = true;
     _output_types = types;
     _vecs = vecs;
@@ -572,14 +577,16 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
 
         // Make decompression chunk headers for these chunks
         Chunk bvs[] = _vecs.getChunks(_lo);
-        NewChunk [] appendableChunks = null;
+        NewChunkBlock [] appendableBlocks = null;
+
         if(_output_types != null) {
           final VectorGroup vg = v0.group();
-          _appendables = new AppendableVec[_output_types.length];
-          appendableChunks = new NewChunk[_output_types.length];
+          _appendables = new AppendableVecBlock[_output_types.length];
+          appendableBlocks = new NewChunkBlock[_output_types.length];
+
           for(int i = 0; i < _appendables.length; ++i) {
-            _appendables[i] = new AppendableVec(vg.vecKey(_vid+i),_output_types[i]);
-            appendableChunks[i] = _appendables[i].chunkForChunkIdx(_lo);
+            _appendables[i] = new AppendableVecBlock(vg.vecKey(_vid+i),_output_types[i]);
+            appendableBlocks[i] = _appendables[i].chunkForChunkIdx(_lo);
           }
         }
         // Call all the various map() calls that apply
@@ -594,34 +601,24 @@ public abstract class MRTask2<T extends MRTask2<T>> extends DTask<T> implements 
             map(bvs);
             break;
         }
-        if( _output_types != null && _output_types.length == 1 ) { // convenience versions for cases with single output.
-          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
+        if( _output_types != null && _output_types.length == 1 && _output_types[0].length == 1) { // convenience versions for cases with single output.
+          if( appendableBlocks == null ) throw H2O.fail(); // Silence IdeaJ warnings
           switch(_vecs.len()) {
-            case 1: map(bvs[0],appendableChunks[0]); break;
-            case 2: map(bvs[0],bvs[1], appendableChunks[0]); break;
-            case 3: map(bvs[0],bvs[1], appendableChunks[0]); break;
+            case 1: map(bvs[0],appendableBlocks[0]); break;
+            case 2: map(bvs[0],bvs[1], appendableBlocks[0]); break;
+            case 3: map(bvs[0],bvs[1], appendableBlocks[0]); break;
             default:
-              map(bvs,appendableChunks[0]);
+              map(bvs,appendableBlocks[0]);
               break;
           }
         }
-        if( _output_types != null && _output_types.length == 2) { // convenience versions for cases with 2 outputs (e.g split).
-          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
-          switch(_vecs.len()) {
-            case 1: map(bvs[0],appendableChunks[0],appendableChunks[1]); break;
-            case 2: map(bvs[0],bvs[1],appendableChunks[0],appendableChunks[1]); break;
-            default:
-              map(bvs,appendableChunks[0],appendableChunks[1]);
-              break;
-          }
-        }
-        map(bvs,appendableChunks);
+        map(bvs,appendableBlocks);
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
         if(_profile!=null)
           _profile._closestart = System.currentTimeMillis();
         _vecs.close();
-        if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
+        if( _output_types != null) for(NewChunkBlock nch:appendableBlocks)nch.close(_fs);
       }
     }
     if(_profile!=null)

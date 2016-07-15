@@ -136,8 +136,8 @@ public class NonBlockingHashMapLong<TypeV>
   // Optimize for space: use a 1/2-sized table and allow more re-probes
   private final boolean _opt_for_space;
 
-  // --- Minimum table size ----------------
-  // Pick size 16 K/V pairs, which turns into (16*2)*4+12 = 140 bytes on a
+  // --- Minimum table nVecs ----------------
+  // Pick nVecs 16 K/V pairs, which turns into (16*2)*4+12 = 140 bytes on a
   // standard 32-bit HotSpot, and (16*2)*8+12 = 268 bytes on 64-bit Azul.
   private static final int MIN_SIZE_LOG=4;             //
   private static final int MIN_SIZE=(1<<MIN_SIZE_LOG); // Must be power of 2
@@ -211,15 +211,15 @@ public class NonBlockingHashMapLong<TypeV>
   // --- NonBlockingHashMapLong ----------------------------------------------
   // Constructors
 
-  /** Create a new NonBlockingHashMapLong with default minimum size (currently set
+  /** Create a new NonBlockingHashMapLong with default minimum nVecs (currently set
    *  to 8 K/V pairs or roughly 84 bytes on a standard 32-bit JVM). */
   public NonBlockingHashMapLong( ) { this(MIN_SIZE,true); }
 
   /** Create a new NonBlockingHashMapLong with initial room for the given
    *  number of elements, thus avoiding internal resizing operations to reach
-   *  an appropriate size.  Large numbers here when used with a small count of
+   *  an appropriate nVecs.  Large numbers here when used with a small count of
    *  elements will sacrifice space for a small amount of time gained.  The
-   *  initial size will be rounded up internally to the next larger power of 2. */
+   *  initial nVecs will be rounded up internally to the next larger power of 2. */
   public NonBlockingHashMapLong( final int initial_sz ) { this(initial_sz,true); }
 
   /** Create a new NonBlockingHashMapLong, setting the space-for-speed
@@ -228,7 +228,7 @@ public class NonBlockingHashMapLong<TypeV>
    *  speed improvement.  */
   public NonBlockingHashMapLong( final boolean opt_for_space ) { this(1,opt_for_space); }
 
-  /** Create a new NonBlockingHashMapLong, setting both the initial size and
+  /** Create a new NonBlockingHashMapLong, setting both the initial nVecs and
    *  the space-for-speed tradeoff.  {@code true} optimizes for space and is
    *  the default.  {@code false} optimizes for speed and doubles space costs
    *  for roughly a 10% speed improvement.  */
@@ -697,41 +697,41 @@ public class NonBlockingHashMapLong<TypeV>
       if( newchm != null )      // See if resize is already in progress
         return newchm;          // Use the new table already
 
-      // No copy in-progress, so start one.  First up: compute new table size.
+      // No copy in-progress, so start one.  First up: compute new table nVecs.
       int oldlen = _keys.length; // Old count of K,V pairs allowed
       int sz = size();          // Get current table count of active K,V pairs
-      int newsz = sz;           // First size estimate
+      int newsz = sz;           // First nVecs estimate
 
-      // Heuristic to determine new size.  We expect plenty of dead-slots-with-keys
+      // Heuristic to determine new nVecs.  We expect plenty of dead-slots-with-keys
       // and we need some decent padding to avoid endless reprobing.
       if( _nbhml._opt_for_space ) {
         // This heuristic leads to a much denser table with a higher reprobe rate
         if( sz >= (oldlen>>1) ) // If we are >50% full of keys then...
-          newsz = oldlen<<1;    // Double size
+          newsz = oldlen<<1;    // Double nVecs
       } else {
         if( sz >= (oldlen>>2) ) { // If we are >25% full of keys then...
-          newsz = oldlen<<1;      // Double size
+          newsz = oldlen<<1;      // Double nVecs
           if( sz >= (oldlen>>1) ) // If we are >50% full of keys then...
-            newsz = oldlen<<2;    // Double double size
+            newsz = oldlen<<2;    // Double double nVecs
         }
       }
 
-      // Last (re)size operation was very recent?  Then double again; slows
+      // Last (re)nVecs operation was very recent?  Then double again; slows
       // down resize operations for tables subject to a high key churn rate.
       long tm = System.currentTimeMillis();
       if( newsz <= oldlen &&    // New table would shrink or hold steady?
           tm <= _nbhml._last_resize_milli+10000 && // Recent resize (less than 1 sec ago)
           //(q=_slots.estimate_sum()) >= (sz<<1) ) // 1/2 of keys are dead?
           true )
-        newsz = oldlen<<1;      // Double the existing size
+        newsz = oldlen<<1;      // Double the existing nVecs
 
       // Do not shrink, ever
       if( newsz < oldlen ) newsz = oldlen;
-      //System.out.println("old="+oldlen+" new="+newsz+" size()="+sz+" est_slots()="+q+" millis="+(tm-_nbhml._last_resize_milli));
+      //System.out.println("old="+oldlen+" new="+newsz+" nVecs()="+sz+" est_slots()="+q+" millis="+(tm-_nbhml._last_resize_milli));
 
       // Convert to power-of-2
       int log2;
-      for( log2=MIN_SIZE_LOG; (1<<log2) < newsz; log2++ ) ; // Compute log2 of size
+      for( log2=MIN_SIZE_LOG; (1<<log2) < newsz; log2++ ) ; // Compute log2 of nVecs
 
       // Now limit the number of threads actually allocating memory to a
       // handful - lest we have 750 threads all trying to allocate a giant
@@ -740,7 +740,7 @@ public class NonBlockingHashMapLong<TypeV>
       while( !_resizerUpdater.compareAndSet(this,r,r+1) )
         r = _resizers;
       // Size calculation: 2 words (K+V) per table entry, plus a handful.  We
-      // guess at 32-bit pointers; 64-bit pointers screws up the size calc by
+      // guess at 32-bit pointers; 64-bit pointers screws up the nVecs calc by
       // 2x but does not screw up the heuristic very much.
       int megs = ((((1<<log2)<<1)+4)<<3/*word to bytes*/)>>20/*megs*/;
       if( r >= 2 && megs > 0 ) { // Already 2 guys trying; wait and see

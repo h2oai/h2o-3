@@ -14,10 +14,33 @@ public class VecBlock extends Keyed<VecBlock> {
   int _vecEnd;
   int [] _removedVecs;
 
+  String [][] _domains;
+
+  public VecBlock(Key<VecBlock> key, int rowLayout, String[][] domains, byte[] types) {
+    super(key);
+    _rowLayout = rowLayout;
+    _domains = domains;
+    _types = types;
+  }
+
+
+
+  /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
+  boolean readable() { return true ; }
+  /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
+  boolean writable() { return true; }
+
+  public String[][] domains(){return _domains;}
+
   public ChunkBlock getChunkBlock(int chunkId) {
+    return getChunkBlock(chunkId,true);
+  }
+  public ChunkBlock getChunkBlock(int chunkId, boolean cache) {
 
     return null;
   }
+
+
   public boolean hasVec(int id) {return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;}
 
   public int nVecs(){return _vecEnd - _vecStart - (_removedVecs == null?0:_removedVecs.length);}
@@ -31,7 +54,7 @@ public class VecBlock extends Keyed<VecBlock> {
   }
 
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
-  byte _type;                   // Vec Type
+  byte [] _types;                   // Vec Type
 
   /** Element-start per chunk, i.e. the row layout.  Defined in the
    *  VectorGroup.  This field is dead/ignored in subclasses that are
@@ -46,7 +69,7 @@ public class VecBlock extends Keyed<VecBlock> {
   private transient Key _rollupStatsKey;
 
   long chunk2StartElem( int cidx ) { return espc()[cidx]; }
-  public long[] espc() { if( _espc==null ) _espc = Vec.ESPC.espc(this); return _espc; }
+  public long[] espc() { if( _espc==null ) _espc = VecBlock.ESPC.espc(this); return _espc; }
 
   /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
@@ -97,6 +120,9 @@ public class VecBlock extends Keyed<VecBlock> {
 
   public long length(){long [] espc = espc(); return espc[espc.length-1];}
   public int nChunks() { return espc().length-1; }
+
+  public long byteSize() { return 0; }
+
   /** Convert a row# to a chunk#.  For constant-sized chunks this is a little
    *  shift-and-add math.  For variable-sized chunks this is a binary search,
    *  with a sane API (JDK has an insane API).  Overridden by subclasses that
@@ -120,5 +146,14 @@ public class VecBlock extends Keyed<VecBlock> {
 
   public void close() {
     throw H2O.unimpl(); // TODO
+  }
+
+  public void setDomains(String[][] domains) {
+    /** Set the categorical/factor names.  No range-checking on the actual
+     *  underlying numeric domain; user is responsible for maintaining a mapping
+     *  which is coherent with the Vec contents. */
+    _domains = domains;
+    for(int i = 0; i < domains.length; ++i)
+      if( domains[i] != null ) assert _types[i] == Vec.T_CAT;
   }
 }

@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -142,8 +143,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // Time since last resize
   private transient long _last_resize_milli;
 
-  // --- Minimum table size ----------------
-  // Pick size 8 K/V pairs, which turns into (8*2+2)*4+12 = 84 bytes on a
+  // --- Minimum table nVecs ----------------
+  // Pick nVecs 8 K/V pairs, which turns into (8*2+2)*4+12 = 84 bytes on a
   // standard 32-bit HotSpot, and (8*2+2)*8+12 = 156 bytes on 64-bit Azul.
   private static final int MIN_SIZE_LOG=3;             //
   private static final int MIN_SIZE=(1<<MIN_SIZE_LOG); // Must be power of 2
@@ -254,22 +255,22 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // --- NonBlockingHashMap --------------------------------------------------
   // Constructors
 
-  /** Create a new NonBlockingHashMap with default minimum size (currently set
+  /** Create a new NonBlockingHashMap with default minimum nVecs (currently set
    *  to 8 K/V pairs or roughly 84 bytes on a standard 32-bit JVM). */
   public NonBlockingHashMap( ) { this(MIN_SIZE); }
 
   /** Create a new NonBlockingHashMap with initial room for the given number of
    *  elements, thus avoiding internal resizing operations to reach an
-   *  appropriate size.  Large numbers here when used with a small count of
+   *  appropriate nVecs.  Large numbers here when used with a small count of
    *  elements will sacrifice space for a small amount of time gained.  The
-   *  initial size will be rounded up internally to the next larger power of 2. */
+   *  initial nVecs will be rounded up internally to the next larger power of 2. */
   public NonBlockingHashMap( final int initial_sz ) { initialize(initial_sz); }
   private final void initialize( int initial_sz ) {
     if( initial_sz < 0 ) throw new IllegalArgumentException();
     int i;                      // Convert to next largest power-of-2
     if( initial_sz > 1024*1024 ) initial_sz = 1024*1024;
     for( i=MIN_SIZE_LOG; (1<<i) < (initial_sz<<2); i++ ) ;
-    // Double size for K,V pairs, add 1 for CHM and 1 for hashes
+    // Double nVecs for K,V pairs, add 1 for CHM and 1 for hashes
     _kvs = new Object[((1<<i)<<1)+2];
     _kvs[0] = new CHM(new ConcurrentAutoTable()); // CHM in slot 0
     _kvs[1] = new int[1<<i];          // Matching hash entries
@@ -284,8 +285,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
    *  @return the number of key-value mappings in this map */
   @Override 
   public int     size       ( )                       { return chm(_kvs).size(); }
-  /** Returns <tt>size() == 0</tt>.
-   *  @return <tt>size() == 0</tt> */
+  /** Returns <tt>nVecs() == 0</tt>.
+   *  @return <tt>nVecs() == 0</tt> */
   @Override 
   public boolean isEmpty    ( )                       { return size() == 0;      }
 
@@ -514,6 +515,8 @@ public class NonBlockingHashMap<TypeK, TypeV>
     return (TypeV)V;
   }
 
+  public static AtomicLong opsCount = new AtomicLong();
+  public static AtomicLong reprobeCount = new AtomicLong();
   private static final Object get_impl( final NonBlockingHashMap topmap, final Object[] kvs, final Object key ) {
     final int fullhash= hash (key); // throws NullPointerException if key is null
     final int len     = len  (kvs); // Count of key/value pairs, reads kvs.length
@@ -544,6 +547,10 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
       // Key-compare
       if( keyeq(K,key,hashes,idx,fullhash) ) {
+        long r = reprobeCount.addAndGet(reprobe_cnt);
+        long o = opsCount.incrementAndGet();
+        if(o % 10000000 == 0)
+          System.out.println("avg reprobe count after " + o + " operations = " + (double)r/(double)o);
         // Key hit!  Check for no table-copy-in-progress
         if( !(V instanceof Prime) ) // No copy?
           return (V == TOMBSTONE) ? null : V; // Return the value
@@ -553,11 +560,18 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // Finish the copy & retry in the new table.
         return get_impl(topmap,chm.copy_slot_and_check(topmap,kvs,idx,key),key); // Retry in the new table
       }
+
       // get and put must have the same key lookup logic!  But only 'put'
       // needs to force a table-resize for a too-long key-reprobe sequence.
       // Check for too-many-reprobes on get - and flip to the new table.
-      if( ++reprobe_cnt >= reprobe_limit(len) || // too many probes
+      int rlimit = reprobe_limit(len);
+      if( ++reprobe_cnt >= rlimit || // too many probes
           K == TOMBSTONE ) { // found a TOMBSTONE key, means no more keys in this table
+        if(reprobe_cnt >= rlimit) {
+          System.out.println("*** REPROBE > LIMIT, reprobe = " + reprobe_cnt + ", limit = " + reprobe_limit(len) + ", len = " + len + " ***");
+          reprobeCount.addAndGet(reprobe_cnt);
+          opsCount.incrementAndGet();
+        }
         if( newkvs == READONLY ) return null; // Missed in a locked table
         return newkvs == null ? null : get_impl(topmap,topmap.help_copy(newkvs),key); // Retry in the new table
       }
@@ -886,40 +900,40 @@ public class NonBlockingHashMap<TypeK, TypeV>
       if( newkvs != null )       // See if resize is already in progress
         return newkvs;           // Use the new table already
 
-      // No copy in-progress, so start one.  First up: compute new table size.
+      // No copy in-progress, so start one.  First up: compute new table nVecs.
       int oldlen = len(kvs);    // Old count of K,V pairs allowed
       int sz = size();          // Get current table count of active K,V pairs
-      int newsz = sz;           // First size estimate
+      int newsz = sz;           // First nVecs estimate
 
-      // Heuristic to determine new size.  We expect plenty of dead-slots-with-keys
+      // Heuristic to determine new nVecs.  We expect plenty of dead-slots-with-keys
       // and we need some decent padding to avoid endless reprobing.
       if( sz >= (oldlen>>2) ) { // If we are >25% full of keys then...
-        newsz = oldlen<<1;      // Double size, so new table will be between 12.5% and 25% full
+        newsz = oldlen<<1;      // Double nVecs, so new table will be between 12.5% and 25% full
         // For tables less than 1M entries, if >50% full of keys then...
         // For tables more than 1M entries, if >75% full of keys then...
         if( 4L*sz >= ((oldlen>>20)!=0?3L:2L)*oldlen )
-          newsz = oldlen<<2;    // Double double size, so new table will be between %12.5 (18.75%) and 25% (25%)
+          newsz = oldlen<<2;    // Double double nVecs, so new table will be between %12.5 (18.75%) and 25% (25%)
       }
       // This heuristic in the next 2 lines leads to a much denser table
       // with a higher reprobe rate
       //if( sz >= (oldlen>>1) ) // If we are >50% full of keys then...
-      //  newsz = oldlen<<1;    // Double size
+      //  newsz = oldlen<<1;    // Double nVecs
 
-      // Last (re)size operation was very recent?  Then double again; slows
+      // Last (re)nVecs operation was very recent?  Then double again; slows
       // down resize operations for tables subject to a high key churn rate.
       long tm = System.currentTimeMillis();
       long q=0;
       if( newsz <= oldlen && // New table would shrink or hold steady?
           (tm <= topmap._last_resize_milli+10000 || // Recent resize (less than 10 sec ago)
            (q=_slots.estimate_get()) >= (sz<<1)) )  // 1/2 of keys are dead?
-        newsz = oldlen<<1;      // Double the existing size
+        newsz = oldlen<<1;      // Double the existing nVecs
 
       // Do not shrink, ever
       if( newsz < oldlen ) newsz = oldlen;
 
       // Convert to power-of-2
       int log2;
-      for( log2=MIN_SIZE_LOG; (1<<log2) < newsz; log2++ ) ; // Compute log2 of size
+      for( log2=MIN_SIZE_LOG; (1<<log2) < newsz; log2++ ) ; // Compute log2 of nVecs
       long len = ((1L << log2) << 1) + 2;
       // prevent integer overflow - limit of 2^31 elements in a Java array
       // so here, 2^30 + 2 is the largest number of elements in the hash table
@@ -936,7 +950,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       while( !_resizerUpdater.compareAndSet(this,r,r+1) )
         r = _resizers;
       // Size calculation: 2 words (K+V) per table entry, plus a handful.  We
-      // guess at 64-bit pointers; 32-bit pointers screws up the size calc by
+      // guess at 64-bit pointers; 32-bit pointers screws up the nVecs calc by
       // 2x but does not screw up the heuristic very much.
       long megs = ((((1L<<log2)<<1)+8)<<3/*word to bytes*/)>>20/*megs*/;
       if( r >= 2 && megs > 0 ) { // Already 2 guys trying; wait and see
@@ -956,7 +970,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       if( newkvs != null )      // See if resize is already in progress
         return newkvs;          // Use the new table already
 
-      // Double size for K,V pairs, add 1 for CHM
+      // Double nVecs for K,V pairs, add 1 for CHM
       newkvs = water.MemoryManager.mallocObj((int)len); // This can get expensive for big arrays
       newkvs[0] = new CHM(_size); // CHM in slot 0
       newkvs[1] = water.MemoryManager.malloc4(1<<log2); // hashes in slot 1
@@ -1305,7 +1319,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
       // one.  In particular it uses a smart iteration over the NBHM.
       @Override public <T> T[] toArray(T[] a) {
         Object[] kvs = raw_array();
-        // Estimate size of array; be prepared to see more or fewer elements
+        // Estimate nVecs of array; be prepared to see more or fewer elements
         int sz = size();
         T[] r = a.length >= sz ? a :
           (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), sz);
@@ -1317,7 +1331,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
           if( K != null && K != TOMBSTONE && V != null && V != TOMBSTONE ) {
             if( j >= r.length ) {
               int sz2 = (int)Math.min(Integer.MAX_VALUE-8,((long)j)<<1);
-              if( sz2<=r.length ) throw new OutOfMemoryError("Required array size too large");
+              if( sz2<=r.length ) throw new OutOfMemoryError("Required array nVecs too large");
               r = Arrays.copyOf(r,sz2);
             }
             r[j++] = (T)K;

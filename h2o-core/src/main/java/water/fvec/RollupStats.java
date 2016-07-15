@@ -25,7 +25,7 @@ import java.util.Arrays;
  *  manage the M/R job computing the rollups.  Losers block for the same
  *  rollup.  Remote requests *always* forward to the Rollup Key's master.
  */
-final class RollupStats extends Iced {
+public final class RollupStats extends Iced {
   /** The count of missing elements.... or -2 if we have active writers and no
    *  rollup info can be computed (because the vector is being rapidly
    *  modified!), or -1 if rollups have not been computed since the last

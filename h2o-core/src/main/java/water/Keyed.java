@@ -37,22 +37,6 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     ((Keyed)val.get()).remove(fs);
   }
 
-  // ---
-  /** Write this Keyed object, and all nested Keys. */
-  public AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
-  // Override this to write out subparts
-  protected AutoBuffer writeAll_impl(AutoBuffer ab) { return ab; }
-
-  /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
-   *  overwriting what was there before.  */
-  public static Keyed readAll(AutoBuffer ab) { 
-    Futures fs = new Futures();
-    Keyed k = ab.getKey(fs);
-    fs.blockForPending();       // Settle out all internal Key puts
-    return k;
-  }
-  // Override this to read in subparts
-  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { return this; }
 
   /** High-quality 64-bit checksum of the <i>content</i> of the object.  Similar
    *  to hashcode(), but a long to reduce the chance of hash clashes.  For

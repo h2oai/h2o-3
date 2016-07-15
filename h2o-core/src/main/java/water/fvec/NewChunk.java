@@ -275,6 +275,7 @@ public class NewChunk extends Chunk {
     _xs = new Exponents(4);
   }
 
+
   public NewChunk(ChunkBlock cb, int vecId, boolean sparse) {
     _cb = cb;
     _cbId = vecId;
@@ -316,6 +317,8 @@ public class NewChunk extends Chunk {
   public NewChunk( Chunk c ) {
     this(c._vec, c.cidx());
     _start = c._start;
+    _cb = c._cb;
+    if(_cb != null) _cb._modified = true;
   }
 
   // Constructor used when inflating a Chunk.
@@ -349,6 +352,9 @@ public class NewChunk extends Chunk {
   public void set_vec(Vec vec) { _vec = vec; }
 
 
+
+
+
   public final class Value {
     int _gId; // row number in dense (ie counting zeros)
     int _lId; // local array index of this value, equal to _gId if dense
@@ -356,6 +362,7 @@ public class NewChunk extends Chunk {
     public Value(int lid, int gid){_lId = lid; _gId = gid;}
     public final int rowId0(){return _gId;}
     public void add2Chunk(NewChunk c){add2Chunk_impl(c,_lId);}
+
   }
 
   private transient BufferedString _bfstr = new BufferedString();

@@ -1079,8 +1079,21 @@ public class ArrayUtils {
     return res;
   }
 
+  public static String[][] select(String[][] ary, int[] idxs) {
+    String [][] res  = new String[idxs.length][];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+
   public static double[] select(double[] ary, int[] idxs) {
     double [] res = MemoryManager.malloc8d(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+  public static byte[] select(byte[] ary, int[] idxs) {
+    byte [] res = MemoryManager.malloc1(idxs.length);
     for(int i = 0; i < res.length; ++i)
       res[i] = ary[idxs[i]];
     return res;

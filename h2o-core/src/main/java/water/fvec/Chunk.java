@@ -324,6 +324,29 @@ public abstract class Chunk extends Iced<Chunk> {
    *  @return long value at the given row, or throw if the value is missing */
   public final long at8(int i) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
 
+  public final void add2NewChunk(NewChunk nc, int from, int to){
+    if(_chk2 != null) _chk2.add2NewChunk(nc,from, to);
+    else add2NewChunk_impl(nc, from,to);
+  }
+
+  public final void add2NewChunk(NewChunk nc, int [] lines){
+    if(_chk2 != null) _chk2.add2NewChunk(nc,lines);
+    else add2NewChunk_impl(nc, lines);
+  }
+  public abstract void add2NewChunk_impl(NewChunk nc, int from, int to);
+  public abstract void add2NewChunk_impl(NewChunk nc, int [] lines);
+
+
+
+  public static final class NumVal {
+    boolean isNa;
+    boolean isDouble;
+    public long mts; // mantissa
+    public int  exp; // exponent
+    public double dval;
+  }
+
+
   /** Missing value status using chunk-relative row numbers.
    *
    *  @return true if the value is missing */

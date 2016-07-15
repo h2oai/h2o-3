@@ -1,9 +1,6 @@
 package water.fvec;
 
-import water.AutoBuffer;
-import water.DKV;
-import water.Iced;
-import water.Keyed;
+import water.*;
 
 import java.util.Arrays;
 
@@ -23,7 +20,7 @@ public class ChunkBlock extends Keyed<ChunkBlock> {
   private int [] _nzChunks; // nz ids for sparse
   public final int[] nzChunks(){return _nzChunks;}
 
-  private Chunk [] _chunks; // data for nz vecs
+  protected Chunk [] _chunks; // data for nz vecs
   public final Chunk [] chunks(){return _chunks;}
 
   private final int _len;
@@ -92,12 +89,16 @@ public class ChunkBlock extends Keyed<ChunkBlock> {
     return _chunks[i];
   }
 
-  public synchronized void close(){
+  public synchronized Futures close(Futures fs){
     if(_modified) {
-      DKV.put(_key,this);
-      _modified = true;
+      DKV.put(_key,this,fs);
+      _modified = false;
     }
+    return fs;
   }
+
+
+
 
   public int size() {return _vecEnd - _vecStart;}
 

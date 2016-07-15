@@ -1,13 +1,9 @@
 package water.fvec;
 
 import jsr166y.CountedCompleter;
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.MRTask;
+import water.*;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 /**
  *  Created by tomasnykodym on 3/28/14.
@@ -20,10 +16,9 @@ import java.util.Iterator;
  *  /vector group/ for Vecs)
  */
 public class RebalanceDataSet extends H2O.H2OCountedCompleter {
-  final Frame _in;
+  final VecAry _src;
+  VecAry _dst;
   final int _nchunks;
-  Key _okey;
-  Frame _out;
   final Key _jobKey;
   final transient Vec.VectorGroup _vg;
   transient long[] _espc;
@@ -33,28 +28,28 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
    *
    * To be used to make frame compatible with other frame (i.e. make all vecs compatible with other vector group and rows-per-chunk).
    */
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey) {this(modelFrame,srcFrame,dstKey,null,null);}
+  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey) {
+    this(modelFrame,srcFrame,dstKey,null,null);
+  }
   public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
     super(cmp);
-    _in = srcFrame;
+    _src = srcFrame.vecs();
     _jobKey = jobKey;
-    _okey = dstKey;
-    _espc = modelFrame.anyVec().espc(); // Get prior layout
-    _vg = modelFrame.anyVec().group();
-    _nchunks = modelFrame.anyVec().nChunks();
+    _espc = modelFrame.vecs().espc(); // Get prior layout
+    _vg = modelFrame.vecs().group();
+    _nchunks = modelFrame.vecs().nChunks();
   }
 
-  public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks) { this(srcFrame, dstKey,nchunks,null,null);}
-  public RebalanceDataSet(Frame srcFrame, Key dstKey, int nchunks, H2O.H2OCountedCompleter cmp, Key jobKey) {
+  public RebalanceDataSet(VecAry src, int nchunks) { this(src, nchunks,null,null);}
+  public RebalanceDataSet(VecAry src, int nchunks, H2O.H2OCountedCompleter cmp, Key jobKey) {
     super(cmp);
-    _in = srcFrame;
+    _src = src;
     _nchunks = nchunks;
     _jobKey = jobKey;
-    _okey = dstKey;
     _vg = new Vec.VectorGroup();
   }
 
-  public Frame getResult(){join(); return _out;}
+  public VecAry getResult(){join(); return _dst;}
 
   @Override public void compute2() {
     // Simply create a bogus new vector (don't even put it into KV) with
@@ -65,8 +60,8 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     long[] espc;
     if (_espc != null) espc = _espc;
     else {
-      int rpc = (int) (_in.numRows() / _nchunks);
-      int rem = (int) (_in.numRows() % _nchunks);
+      int rpc = (int) (_src.numRows() / _nchunks);
+      int rem = (int) (_src.numRows() % _nchunks);
       espc = new long[_nchunks + 1];
       Arrays.fill(espc, rpc);
       for (int i = 0; i < rem; ++i) ++espc[i];
@@ -76,70 +71,42 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         espc[i] = sum;
         sum += s;
       }
-      assert espc[espc.length - 1] == _in.numRows() : "unexpected number of rows, expected " + _in.numRows() + ", got " + espc[espc.length - 1];
+      assert espc[espc.length - 1] == _src.numRows() : "unexpected number of rows, expected " + _src.numRows() + ", got " + espc[espc.length - 1];
     }
     final int rowLayout = Vec.ESPC.rowLayout(_vg._key,espc);
-    final Vec[] srcVecs = _in.vecs();
-    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
-    _out.delete_and_lock(_jobKey);
-    new RebalanceTask(this,srcVecs).dfork(_out);
+    _dst = _vg.makeCons(rowLayout,_src.len(),0L);
+    new RebalanceTask(this,_src).dfork(_dst);
   }
 
-  @Override public void onCompletion(CountedCompleter caller) {
-    assert _out.numRows() == _in.numRows();
-    Vec vec = _out.anyVec();
-    assert vec.nChunks() == _nchunks;
-    _out.update(_jobKey);
-    _out.unlock(_jobKey);
-  }
+
   @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
     t.printStackTrace();
-    if( _out != null ) _out.delete(_jobKey,new Futures()).blockForPending();
+    if( _dst != null ) _dst.remove();
     return true;
   }
 
-  public static class RebalanceTask extends MRTask<RebalanceTask> {
-    final Vec [] _srcVecs;
-    public RebalanceTask(H2O.H2OCountedCompleter cmp, Vec... srcVecs){super(cmp);_srcVecs = srcVecs;}
+  public static class RebalanceTask extends MRTask2<RebalanceTask> {
+    final VecAry _src;
+    public RebalanceTask(H2O.H2OCountedCompleter cmp, VecAry srcVecs){super(cmp);
+      _src = srcVecs;}
 
     @Override public boolean logVerbose() { return false; }
 
-    private void rebalanceChunk(Vec srcVec, Chunk chk){
-      NewChunk dst = new NewChunk(chk);
-      int rem = chk._len;
-      while(rem > 0 && dst._len < chk._len){
-        Chunk srcRaw = srcVec.chunkForRow(chk._start+ dst._len);
-        NewChunk src = new NewChunk((srcRaw));
-        src = srcRaw.inflate_impl(src);
-        assert src._len == srcRaw._len;
-        int srcFrom = (int)(chk._start+ dst._len - src._start);
-        final int srcTo = srcFrom + rem;
-        int off = srcFrom-1;
-        Iterator<NewChunk.Value> it = src.values(Math.max(0,srcFrom),srcTo);
-        while(it.hasNext()){
-          NewChunk.Value v = it.next();
-          final int rid = v.rowId0();
-          assert  rid < srcTo;
-          int add = rid - off;
-          off = rid;
-          if (src.isSparseZero()) dst.addZeros(add-1);
-          else dst.addNAs(add-1);
-          v.add2Chunk(dst);
-          rem -= add;
-          assert rem >= 0;
-        }
-        int trailingZeros = Math.min(rem, src._len - off -1);
-        if (src.isSparseZero()) dst.addZeros(trailingZeros);
-        else dst.addNAs(trailingZeros);
-        rem -= trailingZeros;
-      }
-      assert rem == 0:"rem = " + rem;
-      assert dst._len == chk._len :"len = " + dst._len + ", _len = " + chk._len;
-      dst.close(dst.cidx(),_fs);
-    }
     @Override public void map(Chunk [] chks){
+      int n = chks[0]._len;
+      long start = chks[0].start();
       for(int i = 0; i < chks.length; ++i)
-        rebalanceChunk(_srcVecs[i],chks[i]);
+        chks[i] = new NewChunk(chks[i]);
+      int k = 0;
+      while(k < n){
+        Chunk [] srcChks = _src.getChunks(_src.elem2ChunkId(start + k),false);
+        long srcChunkStart = srcChks[0]._start;
+        int srcFrom = (int)(start+ k - srcChunkStart);
+        final int srcTo = Math.min(srcChks[0]._len,srcFrom + n - k);
+        for(int i = 0; i < srcChks.length; ++i)
+          srcChks[i].add2NewChunk((NewChunk)chks[i],srcFrom,srcTo);
+        k += srcTo - srcFrom;
+      }
     }
   }
 }
