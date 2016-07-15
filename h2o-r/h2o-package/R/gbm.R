@@ -16,7 +16,7 @@
 #' @param checkpoint "Model checkpoint (provide the model_id) to resume training with."
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param distribution A \code{character} string. The distribution function of the response.
-#'        Must be "AUTO", "bernoulli", "modified_huber", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" or "gaussian"
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" or "gaussian"
 #' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1.
 #' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2.
@@ -91,7 +91,7 @@ h2o.gbm <- function(x, y, training_frame,
                     model_id,
                     checkpoint,
                     ignore_const_cols = TRUE,
-                    distribution = c("AUTO","gaussian", "bernoulli", "modified_huber","multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                    distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                     quantile_alpha = 0.5,
                     tweedie_power = 1.5,
                     huber_alpha,

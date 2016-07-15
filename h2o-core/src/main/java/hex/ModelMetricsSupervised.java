@@ -23,8 +23,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
 
   public final double r2() {
     double var = _sigma*_sigma;
-    double r2 = 1.0-(_MSE /var);
-    return r2 >= 0 ? r2 : Double.NaN;
+    return 1.0-_MSE /var;
   }
 
   public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {

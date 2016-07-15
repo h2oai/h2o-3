@@ -57,7 +57,7 @@
 #' @param loss Loss function: "Automatic", "CrossEntropy" (for classification only), "Quadratic", "Absolute"
 #'        (experimental) or "Huber" (experimental)
 #' @param distribution A \code{character} string. The distribution function of the response.
-#'        Must be "AUTO", "bernoulli", "modified_huber","multinomial", "poisson", "gamma", "tweedie",
+#'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie",
 #'        "laplace", "huber", "quantile" or "gaussian"
 #' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1.
 #' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).

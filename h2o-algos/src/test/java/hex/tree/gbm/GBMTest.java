@@ -1078,7 +1078,7 @@ public class GBMTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)gbm._output._cross_validation_metrics;
       assertEquals(0.6296296296296297, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.28640022521234304, mm.mse(), 1e-8);
-      assertTrue(Double.isNaN(mm.r2()));
+      assertEquals(-0.1456,mm.r2(),1e-4);
       assertEquals(0.7674117059335286, mm.logloss(), 1e-6);
 
     } finally {
