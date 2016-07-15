@@ -188,7 +188,7 @@ def init(ip=None, port=None, https=None, insecure=False, username=None, password
     auth = (username, password) if username and password else None
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
-    if ip != "localhost" and ip != "127.0.0.1" and start_h2o:
+    if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
         connect(ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,

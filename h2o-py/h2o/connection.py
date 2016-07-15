@@ -286,13 +286,6 @@ class H2OConnection(backwards_compatible()):
             except:
                 pass
             self._session_id = None
-        if self._child:
-            try:
-                self._child.kill()
-                self._print("Local H2O server stopped.")
-            except:
-                pass
-            self._child = None
         self._stage = -1
 
 
@@ -417,7 +410,6 @@ class H2OConnection(backwards_compatible()):
         self._cluster_name = None
         self._cluster_info = None   # Latest result of "GET /3/Cloud" request
         self._verbose = None
-        self._child = None
         self._requests_counter = 0  # how many API requests were made
         self._timeout = None        # timeout for a single request (in seconds)
         self._is_logging = False    # when True, log every request
@@ -438,7 +430,7 @@ class H2OConnection(backwards_compatible()):
         cld = None
         for _ in range(max_retries):
             self._print(".", end="", flush=True)
-            if self._child and self._child.poll() is not None:
+            if self._local_server and not self._local_server.is_running():
                 raise H2OServerError("Local server was unable to start")
             try:
                 cld = self.request("GET /3/Cloud")
