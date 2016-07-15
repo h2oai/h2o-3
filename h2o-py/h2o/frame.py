@@ -1458,9 +1458,7 @@ class H2OFrame(object):
     # This code below is needed to ensure the frame (self) exists on the server. Without it, self._ex._cache.fill()
     # fails with an assertion that ._id is None.
     # This code should be removed / reworked once we have a more consistent strategy of dealing with frames.
-    if self._ex._cache._id is None:
-      self._ex._cache._id = "%s_%s" % (_py_tmp_key(), h2o.connection().session_id)
-      self._ex._eval_driver(True)
+    self._ex._eager_frame()
 
     if by is not None or group_by_frame is not "_":
       res = H2OFrame._expr(expr=ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values))._frame()
