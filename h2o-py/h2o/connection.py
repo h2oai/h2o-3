@@ -1148,7 +1148,7 @@ def _deprecated_post(self, url_suffix, **kwargs):
     endpoint = "POST /%d/%s" % (restver, url_suffix)
     filename = None
     if "file_upload_info" in kwargs:
-        filename = next(iter(dictvalues(kwargs.pop("file_upload_info"))))
+        filename = next(iter(viewvalues(kwargs.pop("file_upload_info"))))
     return self.request(endpoint, data=kwargs, filename=filename)
 
 def _deprecated_delete(self, url_suffix, **kwargs):

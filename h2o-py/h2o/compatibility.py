@@ -67,6 +67,16 @@ if PY2:
     from future.builtins.misc import (ascii, chr, hex, input, next, oct, open, pow, round, super)
 
 
+def csv_dict_writer(f, fieldnames, **kwargs):
+    import csv
+    if "delimiter" in kwargs:
+        delim = kwargs.pop("delimiter")
+        if PY2: delim = str(delim).encode("utf-8")
+        if PY3: delim = str(delim)
+        kwargs["delimiter"] = delim
+    return csv.DictWriter(f, fieldnames, **kwargs)
+
+
 def translate_args(fun):
     """
     This decorator ensures that arguments supplied to a function are Python-3 compatible.

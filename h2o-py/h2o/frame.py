@@ -3,7 +3,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
-from .compatibility import viewitems, viewvalues
+from .compatibility import viewitems, viewvalues, csv_dict_writer
 # noinspection PyUnresolvedReferences
 from future.builtins import *
 
@@ -239,16 +239,17 @@ class H2OFrame(object):
     if col_header is None or data_to_write is None: raise ValueError("No data to write")
 
     #
-    ## write python data to file and upload
+    # write python data to file and upload
     #
 
     # create a temporary file that will be written to
-    tmp_handle,tmp_path = tempfile.mkstemp(suffix=".csv")
-    tmp_file = os.fdopen(tmp_handle,'w')
+    tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
+    tmp_file = os.fdopen(tmp_handle, 'w')
     # create a new csv writer object thingy
-    csv_writer = csv.DictWriter(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore", delimiter=b",", quoting=csv.QUOTE_ALL)
-    csv_writer.writeheader()              # write the header
-    #because we have written the header, header in this newly created tmp csv file must be 1
+    csv_writer = csv_dict_writer(tmp_file, fieldnames=col_header, restval=None, dialect="excel", extrasaction="ignore",
+                                 delimiter=",", quoting=csv.QUOTE_ALL)
+    csv_writer.writeheader()  # write the header
+    # Because we have written the header, header in this newly created tmp csv file must be 1
     header = 1
     if column_names is None: column_names = col_header
     csv_writer.writerows(data_to_write)    # write the data
