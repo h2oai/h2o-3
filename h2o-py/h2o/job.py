@@ -159,8 +159,8 @@ class H2OJob(object):
             else:
                 progress_pct = int(display_amount / self._progress_bar_width * 100 + 0.5)
             space_amount = self._progress_bar_width - display_amount
-            the_bar = "#" * display_amount + " " * space_amount
-            sys.stdout.write("\r" + self._job_type + " Progress: [%s] %02d%%" % (the_bar, progress_pct))
+            the_bar = "|" + "█" * display_amount + " " * space_amount + "|"
+            sys.stdout.write("\r%s Progress: %s %02d%%" % (self._job_type, the_bar, progress_pct))
             sys.stdout.flush()
 
     def signal_handler(self, signum, stackframe):
