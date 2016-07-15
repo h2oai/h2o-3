@@ -229,7 +229,7 @@ class H2OConnection(backwards_compatible()):
         except requests.ReadTimeout as e:
             self._log_end_exception(e)
             elapsed_time = time.time() - start_time
-            raise H2OConnectionError("Timeout after %fs (timeout_interval = %fs)" % (elapsed_time, self._timeout))
+            raise H2OConnectionError("Timeout after %.3fs" % (elapsed_time))
         except H2OResponseError as e:
             err = e.args[0]
             err.endpoint = endpoint
