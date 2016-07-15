@@ -733,6 +733,7 @@ class H2OLocalServer(object):
         hs._jar_path = hs._find_jar(jar_path)
         hs._ice_root = ice_root or tempfile.mkdtemp()
 
+        if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size)
         atexit.register(lambda: hs.shutdown())
@@ -813,8 +814,8 @@ class H2OLocalServer(object):
             if os.path.exists(jp):
                 return jp
         if self._verbose:
-            print("No jar file found. Paths searched:")
-            print("".join("    %s\n" % jar_paths))
+            print("  No jar file found. Paths searched:")
+            print("  " + "".join("    %s\n" % jar_paths))
         raise H2OStartupError("Cannot start local server: h2o.jar not found.")
 
     @staticmethod
@@ -849,17 +850,17 @@ class H2OLocalServer(object):
         jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
         jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
         if self._verbose:
-            print("Java Version: " + jver.strip().replace("\n", "; "))
+            print("  Java Version: " + jver.strip().replace("\n", "; "))
         if "GNU libgcj" in jver:
             raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
                                   "Please download the latest 64-bit Java SE JDK from Oracle.")
         if "Client VM" in jver:
-            warn("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
-                 "Please download the latest 64-bit Java SE JDK from Oracle.\n")
+            warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
+                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
 
         if self._verbose:
-            print("Starting server from " + self._jar_path)
-            print("Ice root: " + self._ice_root)
+            print("  Starting server from " + self._jar_path)
+            print("  Ice root: " + self._ice_root)
 
         # Construct java command to launch the process
         cmd = [java]
@@ -893,8 +894,8 @@ class H2OLocalServer(object):
         out = open(self._stdout, "w")
         err = open(self._stderr, "w")
         if self._verbose:
-            print("JVM stdout: " + out.name)
-            print("JVM stderr: " + err.name)
+            print("  JVM stdout: " + out.name)
+            print("  JVM stderr: " + err.name)
 
         # Launch the process
         win32 = sys.platform == "win32"
@@ -1020,8 +1021,12 @@ class H2OLocalServer(object):
         assert len(args) == 3  # Avoid warning about unused args...
         return False  # ensure that any exception will be re-raised
 
-    def __del__(self):
-        self.shutdown()
+    # Do not stop child process when the object is garbage collected!
+    # This ensures that simple code such as
+    #     for _ in range(5):
+    #         h2o.H2OConnection.start()
+    # will launch 5 servers, and they will not be closed down immediately (only when the program exits).
+
 
 
 #-----------------------------------------------------------------------------------------------------------------------
