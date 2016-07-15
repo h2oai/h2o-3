@@ -6,7 +6,14 @@ from tests import pyunit_utils
 
 
 def check_strict():
-    # inspection doesn't work with decorated functions.
+    # We may be either connected to an existing h2o server, or not. If we are, then discover the connection settings
+    # so that we don't have to start a new server (starting a new server may be not possible if h2o.jar is located in
+    # some unknown to us place in the system).
+    hc = h2o.connection()
+    url = None
+    if hc is not None:
+        url = hc.base_url
+
     out = {"version_check_called": False}
     def tracefunc(frame, event, arg):
         if frame.f_code.co_name == "version_check":
@@ -14,7 +21,7 @@ def check_strict():
         return None
     sys.settrace(tracefunc)
     try:
-        h2o.init()
+        h2o.init(url=url)
     except h2o.H2OConnectionError:
         pass
 
