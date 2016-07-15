@@ -1209,7 +1209,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     if (p._hidden_dropout_ratios != null) {
       bodySb.i(3).p("if (i<ACTIVATION.length-1) {").nl();
-      bodySb.i(4).p("ACTIVATION[i][r] *= HIDDEN_DROPOUT_RATIOS[i-1];").nl();
+      bodySb.i(4).p("ACTIVATION[i][r] *= 1 - HIDDEN_DROPOUT_RATIOS[i-1];").nl();
       bodySb.i(3).p("}").nl();
     }
     bodySb.i(2).p("}").nl();

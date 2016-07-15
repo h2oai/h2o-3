@@ -202,6 +202,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             Log.info("**************************)");
                                             final double epochs = 7 + rng.nextDouble() + rng.nextInt(4);
                                             final int[] hidden = new int[]{3 + rng.nextInt(4), 3 + rng.nextInt(6)};
+                                            final double[] hidden_dropout_ratios = activation.name().contains("Hidden") ? new double[]{rng.nextFloat(), rng.nextFloat()} : null;
                                             Frame valid = null; //no validation
                                             if (vf == 1) valid = frame; //use the same frame for validation
                                             else if (vf == -1)
@@ -220,7 +221,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                               p._hidden = hidden;
                                               p._input_dropout_ratio = 0.1;
-                                              p._hidden_dropout_ratios = null;
+                                              p._hidden_dropout_ratios = hidden_dropout_ratios;
                                               p._activation = activation;
 //                                      p.best_model_key = best_model_key;
                                               p._overwrite_with_best_model = overwrite_with_best_model;
