@@ -55,8 +55,9 @@ def deprecated(message):
 h2oconn = None
 
 
-def connect(server=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None, proxy=None,
-            cluster_name=None, verbose=True):
+@translate_args
+def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
+            proxy=None, cluster_name=None, verbose=True):
     """
     Connect to an existing H₂O server, remote or local.
 
@@ -64,6 +65,7 @@ def connect(server=None, ip=None, port=None, https=None, verify_ssl_certificates
     an H2OLocalServer, or specify `ip` and `port` of the server that you want to connect to.
 
     :param server: An H2OLocalServer instance to connect to (optional).
+    :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
     :param ip: The ip address (or host name) of the server where H₂O is running.
     :param port: Port number that H₂O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.

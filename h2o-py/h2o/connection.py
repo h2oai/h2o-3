@@ -70,8 +70,8 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     @translate_args
-    def open(ip=None, port=None, server=None, https=False, verify_ssl_certificates=True, auth=None, proxy=None,
-             cluster_name=None, verbose=True):
+    def open(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=True, auth=None,
+             proxy=None, cluster_name=None, verbose=True):
         """
         Establish connection to an existing H₂O server at address ip:port.
 
@@ -80,14 +80,19 @@ class H2OConnection(backwards_compatible()):
         cannot be reached, an `H2OConnectionError` will be raised. On success this method returns a new
         `H2OConnection` object, and it is the only "official" way to create instances of this class.
 
-        :param ip: Target server's IP address or hostname (default "localhost").
-        :param port: H₂O server's port (default 54321).
+        There are 3 ways to specify which server to connect to (each of these settings are exclusive):
+            * Either passing a `server` option,
+            * Or passing the full `url` for the connection,
+            * Or providing a triple of parameters `ip`, `port`, `https`.
+
         :param server: (H2OLocalServer) connect to the specified local server instance. There is a slight difference
             between connecting to a local server by specifying its ip and address, and connecting through
             an H2OLocalServer instance: if the server becomes unresponsive, then having access to its process handle
             will allow us to query the server status through OS, and potentially provide snapshot of the server's
             error log in the exception information.
-            This setting cannot be used together with `ip` or `port`.
+        :param url: Full URL of the server to connect to.
+        :param ip: Target server's IP address or hostname (default "localhost").
+        :param port: H₂O server's port (default 54321).
         :param https: If True then connect using https instead of http (default False).
         :param verify_ssl_certificates: If False then SSL certificate checking will be disabled (default True). This
             setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
@@ -106,22 +111,36 @@ class H2OConnection(backwards_compatible()):
         :raise H2OServerError if the server is in an unhealthy state (although this might be a recoverable error, the
             client itself should decide whether it wants to retry or not).
         """
-        if server is None:
+        if server is not None:
+            assert isinstance(server, H2OLocalServer), \
+                "`server` must be an H2OLocalServer instance, got %s" % type(server)
+            assert ip is None and port is None and https is None and url is None, \
+                "`url`, `ip`, `port` and `https` parameters cannot be used together with `server`"
+            ip = server.ip
+            port = server.port
+            scheme = server.scheme
+        elif url is not None:
+            assert isinstance(url, str), "`url` must be a string, got %s" % type(url)
+            assert ip is None and port is None and https is None and server is None, \
+                "`server`, `ip`, `port` and `https` parameters cannot be used together with `url`"
+            parts = url.rstrip("/").split(":")
+            assert len(parts) == 3 and (parts[0] in {"http", "https"}) and parts[2].isdigit(), \
+                "Invalid URL parameter '%s'" % url
+            ip = parts[1]
+            port = int(parts[2])
+            scheme = parts[0]
+        else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
+            if https is None: https = False
             if isinstance(port, str) and port.isdigit(): port = int(port)
             assert isinstance(ip, str), "`ip` must be a string, got %s" % type(ip)
             assert isinstance(port, int), "`port` must be an integer, got %s" % type(port)
+            assert isinstance(https, bool), "`https` must be boolean, got %s" % type(https)
             assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
-        else:
-            assert isinstance(server, H2OLocalServer), \
-                "`server` must be an H2OLocalServer instance, got %s" % type(server)
-            assert ip is None and port is None, "`ip` and `port` parameters cannot be used together with `server`"
-            ip = server.ip
-            port = server.port
-        if https is None: https = False
+            scheme = "https" if https else "http"
+
         if verify_ssl_certificates is None: verify_ssl_certificates = True
-        assert isinstance(https, bool), "`https` should be boolean, got %s" % type(https)
         assert isinstance(verify_ssl_certificates, bool), \
             "`verify_ssl_certificates` should be boolean, got %s" % type(verify_ssl_certificates)
         assert proxy is None or isinstance(proxy, str), "`proxy` must be a string, got %s" % type(proxy)
@@ -130,7 +149,6 @@ class H2OConnection(backwards_compatible()):
         assert cluster_name is None or isinstance(cluster_name, str), \
             "`cluster_name` must be a string, got %s" % type(cluster_name)
 
-        scheme = "https" if https else "http"
         conn = H2OConnection()
         conn._verbose = bool(verbose)
         conn._local_server = server
@@ -207,7 +225,7 @@ class H2OConnection(backwards_compatible()):
             params = data
             data = None
 
-        # Make the requst
+        # Make the request
         start_time = time.time()
         try:
             self._log_start_transaction(endpoint, data, json, files, params)
@@ -229,7 +247,7 @@ class H2OConnection(backwards_compatible()):
         except requests.ReadTimeout as e:
             self._log_end_exception(e)
             elapsed_time = time.time() - start_time
-            raise H2OConnectionError("Timeout after %.3fs" % (elapsed_time))
+            raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
         except H2OResponseError as e:
             err = e.args[0]
             err.endpoint = endpoint
@@ -758,6 +776,11 @@ class H2OLocalServer(object):
 
 
     @property
+    def scheme(self):
+        """Connection scheme, 'http' or 'https'."""
+        return self._scheme
+
+    @property
     def ip(self):
         """IP address of the server."""
         return self._ip
@@ -774,6 +797,7 @@ class H2OLocalServer(object):
 
     def __init__(self):
         """[Internal] please use H2OLocalServer.start() to launch a new server."""
+        self._scheme = None   # "http" or "https"
         self._ip = None
         self._port = None
         self._process = None
@@ -882,7 +906,7 @@ class H2OLocalServer(object):
 
         # Launch the process
         win32 = sys.platform == "win32"
-        flags = subprocess.CREATE_NEW_PROCESS_GROUP if win32 else 0
+        flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if win32 else 0
         prex = os.setsid if not win32 else None
         try:
             proc = subprocess.Popen(args=cmd, stdout=out, stderr=err, cwd=cwd, creationflags=flags, preexec_fn=prex)
@@ -897,8 +921,9 @@ class H2OLocalServer(object):
                 raise H2OServerError("Server process terminated with error code %d" % proc.returncode)
             ret = self._get_server_info_from_logs()
             if ret:
-                self._ip = ret[0]
-                self._port = ret[1]
+                self._scheme = ret[0]
+                self._ip = ret[1]
+                self._port = ret[2]
                 self._process = proc
                 break
             if time.time() > giveup_time:
@@ -974,14 +999,14 @@ class H2OLocalServer(object):
 
     def _get_server_info_from_logs(self):
         """
-        Check server's output log, and determine its IP / port (helper method for `._launch_server()`).
+        Check server's output log, and determine its scheme / IP / port (helper method for `._launch_server()`).
 
         This method is polled during process startup. It looks at the server output log and checks for a presence of
         a particular string ("INFO: Open H2O Flow in your web browser:") which indicates that the server is
-        up-and-running. If the method detects this string, it extracts the server's ip and port and returns them;
-        otherwise it returns None.
+        up-and-running. If the method detects this string, it extracts the server's scheme, ip and port and returns
+        them; otherwise it returns None.
 
-        :returns: (ip, port) tuple if the server has already started, None otherwise.
+        :returns: (scheme, ip, port) tuple if the server has already started, None otherwise.
         """
         searchstr = "INFO: Open H2O Flow in your web browser:"
         with open(self._stdout, "rt") as f:
@@ -989,9 +1014,9 @@ class H2OLocalServer(object):
                 if searchstr in line:
                     url = line[line.index(searchstr) + len(searchstr):].strip()
                     parts = url.split(":")
-                    assert (parts[0] == "http" or parts[1] == "https") and len(parts) == 3 and parts[2].isdigit(), \
+                    assert len(parts) == 3 and (parts[0] == "http" or parts[1] == "https") and parts[2].isdigit(), \
                         "Unexpected URL: %s" % url
-                    return parts[1][2:], int(parts[2])
+                    return parts[0], parts[1][2:], int(parts[2])
         return None
 
 
@@ -1054,6 +1079,7 @@ class H2OServerError(Exception):
 
 
 class H2OResponse(dict):
+    """Temporary..."""
 
     def __new__(cls, keyvals):
         # This method is called by the simplejson.json(object_pairs_hook=<this>)
@@ -1095,8 +1121,8 @@ except Exception as exc:
 # Deprecated method implementations
 #-----------------------------------------------------------------------------------------------------------------------
 
-__H2OCONN__ = None            # Latest instantiated H2OConnection object. Do not use in any new code!
-__H2O_REST_API_VERSION__ = 3  # Has no actual meaning
+__H2OCONN__ = H2OConnection()  # Latest instantiated H2OConnection object. Do not use in any new code!
+__H2O_REST_API_VERSION__ = 3   # Has no actual meaning
 
 def _deprecated_default():
     H2OConnection.__ENCODING__ = "utf-8"
@@ -1135,5 +1161,6 @@ def _deprecated_delete(self, url_suffix, **kwargs):
 
 
 def end_session():
+    """Deprecated, use connection.close() instead."""
     print("Warning: end_session() is deprecated")
     __H2OCONN__.close()
