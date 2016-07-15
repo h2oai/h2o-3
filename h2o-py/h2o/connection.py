@@ -126,9 +126,9 @@ class H2OConnection(backwards_compatible()):
             parts = url.rstrip("/").split(":")
             assert len(parts) == 3 and (parts[0] in {"http", "https"}) and parts[2].isdigit(), \
                 "Invalid URL parameter '%s'" % url
-            ip = parts[1]
-            port = int(parts[2])
             scheme = parts[0]
+            ip = parts[1][2:]
+            port = int(parts[2])
         else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
@@ -173,9 +173,9 @@ class H2OConnection(backwards_compatible()):
             conn._stage = 1
             conn._timeout = 3.0
             conn._cluster_info = conn._test_connection(retries)
-            # If a server is unable to respond within 1s, it should be considered a bug. However for now we set the
-            # timeout to 10s, simply because the server isn't very well-behaving yet...
-            conn._timeout = 10.0
+            # If a server is unable to respond within 1s, it should be considered a bug. However we disable this
+            # setting for now, for no good reason other than to ignore all those bugs :(
+            conn._timeout = None
             atexit.register(lambda: conn.close())
         except:
             # Reset _session_id so that we know the connection was not initialized properly.
