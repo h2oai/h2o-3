@@ -3,10 +3,12 @@ package hex.deeplearning;
 import javax.imageio.ImageIO;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.gpu.ImageIter;
 import water.gpu.ImagePred;
+import water.gpu.ImageTrain;
 import water.gpu.util;
 
 import java.awt.*;
@@ -29,7 +31,7 @@ public class DeepWaterTest extends TestUtil {
     util.loadNativeLib("mxnet");
     util.loadNativeLib("Native");
 
-    BufferedImage img = ImageIO.read(new File("/home/arno/deepwater/test/test1.jpg"));
+    BufferedImage img = ImageIO.read(new File("/home/arno/deepwater/test/test2.jpg"));
 
     int w = 224, h = 224;
 
@@ -67,53 +69,54 @@ public class DeepWaterTest extends TestUtil {
     System.out.println("\n\n" + m.predict(pixels)+"\n\n");
   }
 
+  @Ignore
   @Test
   public void inceptionFineTuning() throws IOException {
 
-        util.loadCudaLib();
-        util.loadNativeLib("mxnet");
-        util.loadNativeLib("Native");
+      util.loadCudaLib();
+      util.loadNativeLib("mxnet");
+      util.loadNativeLib("Native");
 
-        BufferedReader br = new BufferedReader(new FileReader(new File("/home/ops/Desktop/sf1_train.lst")));
+      String path = "/home/arno/kaggle/statefarm/input/";
+      BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
 
-        String line = null;
+      ArrayList<Float> label_lst = new ArrayList<>();
+      ArrayList<String> img_lst = new ArrayList<>();
 
-        ArrayList<Float> label_lst = new ArrayList<>();
-        ArrayList<String> img_lst = new ArrayList<>();
+      String line;
+      br.readLine(); //skip header
+      while ((line = br.readLine()) != null) {
+          String[] tmp = line.split(",");
+          label_lst.add(new Float(tmp[1].substring(1)).floatValue());
+          img_lst.add(path+"train/"+tmp[1]+"/"+tmp[2]);
+      }
 
-        while ((line = br.readLine()) != null) {
-            String[] tmp = line.split("\t");
+      br.close();
 
-            label_lst.add(new Float(tmp[1]).floatValue());
-            img_lst.add(tmp[2]);
-        }
+      int batch_size = 40;
 
-        br.close();
+      int max_iter = 10;
 
-        int batch_size = 40;
+      ImageTrain m = new ImageTrain();
 
-        int max_iter = 10;
+      m.buildNet(10, batch_size, "inception_bn");
 
-        ImageClassify m = new ImageClassify();
+      ImageIter img_iter = new ImageIter(img_lst, label_lst, batch_size, 224, 224);
 
-        m.buildNet(10, batch_size);
+      for (int iter = 0; iter < max_iter; iter++) {
+          img_iter.Reset();
+          while(img_iter.Nest()){
+              float[] data = img_iter.getData();
+              float[] labels = img_iter.getLabel();
+              float[] pred = m.train(data, labels);
+              System.out.println("pred " + pred.length);
 
-        ImageIter img_iter = new ImageIter(img_lst, label_lst, batch_size, 224, 224);
-
-        for (int iter = 0; iter < max_iter; iter++) {
-            img_iter.Reset();
-            while(img_iter.Nest()){
-                float[] data = img_iter.getData();
-                float[] labels = img_iter.getLabel();
-                float[] pred = m.train(data, labels, true);
-                System.out.println("pred " + pred.length);
-
-                for (int i = 0; i < batch_size * 10; i++) {
-                    System.out.print(pred[i] + " ");
-                }
-                System.out.println();
-            }
-        }
+              for (int i = 0; i < batch_size * 10; i++) {
+                  System.out.print(pred[i] + " ");
+              }
+              System.out.println();
+          }
+      }
 
 
   }
