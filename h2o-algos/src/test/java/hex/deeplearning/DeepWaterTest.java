@@ -117,16 +117,16 @@ public class DeepWaterTest extends TestUtil {
               String[] names = new String[classes];
               for (int i=0;i<classes;++i) {
                   names[i] = "c" + i;
-                  double[] vals=new double[batch_size];
-                  for (int j = 0; j < batch_size; ++j) {
+                  double[] vals=new double[labels.length];
+                  for (int j = 0; j < labels.length; ++j) {
                       int idx=i*batch_size+j; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
                       vals[j] = pred[idx];
                   }
                   classprobs[i] = Vec.makeVec(vals,Vec.newKey());
               }
               water.fvec.Frame preds = new Frame(names,classprobs);
-              long[] lab = new long[batch_size];
-              for (int i=0;i<batch_size;++i)
+              long[] lab = new long[labels.length];
+              for (int i=0;i<labels.length;++i)
                   lab[i] = (long)labels[i];
               Vec actual = Vec.makeVec(lab,names,Vec.newKey());
               ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds,actual);
@@ -159,7 +159,7 @@ public class DeepWaterTest extends TestUtil {
             float[] data = img_iter.getData();
             float[] labels = img_iter.getLabel();
             float[] pred = m.predict(data, labels);
-            for (int i=0;i<batch_size;++i) {
+            for (int i=0;i<labels.length;++i) {
                 String file = test_data.get(counter++);
                 String[] pcs = file.split("/");
                 fw.write(pcs[pcs.length-1]);
