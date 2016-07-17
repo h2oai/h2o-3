@@ -13,6 +13,7 @@ import water.gpu.ImageIter;
 import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
 import water.gpu.util;
+import water.util.RandomUtils;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -21,6 +22,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
 
 public class DeepWaterTest extends TestUtil {
   @BeforeClass
@@ -95,32 +98,40 @@ public class DeepWaterTest extends TestUtil {
 
       br.close();
 
-      int batch_size = 40;
 
-      int max_iter = 10;
+
+      int batch_size = 64;
+
+      int max_iter = 100;
 
       ImageTrain m = new ImageTrain();
 
       int classes = 10;
       m.buildNet(classes, batch_size, "inception_bn");
 
-      ImageIter img_iter = new ImageIter(img_lst, label_lst, batch_size, 224, 224);
-
       for (int iter = 0; iter < max_iter; iter++) {
-          img_iter.Reset();
-          while(img_iter.Nest()){
+          //each iteration does a different random shuffle
+          Random rng = RandomUtils.getRNG(0);
+          rng.setSeed(0xDECAF+0xD00D*iter);
+          Collections.shuffle(label_lst,rng);
+          rng.setSeed(0xDECAF+0xD00D*iter);
+          Collections.shuffle(img_lst,rng);
+
+          ImageIter img_iter = new ImageIter(img_lst, label_lst, batch_size, 224, 224);
+          while(img_iter.Next()){
               float[] data = img_iter.getData();
               float[] labels = img_iter.getLabel();
               float[] pred = m.train(data, labels);
 
               Vec[] classprobs = new Vec[classes];
               String[] names = new String[classes];
-              int cnt=0;
               for (int i=0;i<classes;++i) {
                   names[i] = "c" + i;
                   double[] vals=new double[batch_size];
-                  for (int j = 0; j < batch_size; ++j)
-                      vals[j] = pred[cnt++];
+                  for (int j = 0; j < batch_size; ++j) {
+                      int idx=i*batch_size+j;
+                      vals[j] = pred[idx];
+                  }
                   classprobs[i] = Vec.makeVec(vals,Vec.newKey());
               }
               water.fvec.Frame preds = new Frame(names,classprobs);
