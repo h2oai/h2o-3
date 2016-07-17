@@ -4,7 +4,6 @@ import javax.imageio.ImageIO;
 
 import hex.ModelMetricsMultinomial;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.*;
@@ -17,10 +16,7 @@ import water.util.RandomUtils;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -77,7 +73,6 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void inceptionFineTuning() throws IOException {
-
       util.loadCudaLib();
       util.loadNativeLib("mxnet");
       util.loadNativeLib("Native");
@@ -85,39 +80,34 @@ public class DeepWaterTest extends TestUtil {
       String path = "/home/arno/kaggle/statefarm/input/";
       BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
 
-      ArrayList<Float> label_lst = new ArrayList<>();
-      ArrayList<String> img_lst = new ArrayList<>();
+      ArrayList<Float> train_labels = new ArrayList<>();
+      ArrayList<String> train_data = new ArrayList<>();
 
       String line;
       br.readLine(); //skip header
       while ((line = br.readLine()) != null) {
           String[] tmp = line.split(",");
-          label_lst.add(new Float(tmp[1].substring(1)).floatValue());
-          img_lst.add(path+"train/"+tmp[1]+"/"+tmp[2]);
+          train_labels.add(new Float(tmp[1].substring(1)).floatValue());
+          train_data.add(path+"train/"+tmp[1]+"/"+tmp[2]);
       }
-
       br.close();
 
-
-
-      int batch_size = 64;
-
-      int max_iter = 100;
+      int batch_size = 32;
+      int classes = 10;
 
       ImageTrain m = new ImageTrain();
-
-      int classes = 10;
       m.buildNet(classes, batch_size, "inception_bn");
 
+      int max_iter = 10; //epochs
       for (int iter = 0; iter < max_iter; iter++) {
           //each iteration does a different random shuffle
           Random rng = RandomUtils.getRNG(0);
           rng.setSeed(0xDECAF+0xD00D*iter);
-          Collections.shuffle(label_lst,rng);
+          Collections.shuffle(train_labels,rng);
           rng.setSeed(0xDECAF+0xD00D*iter);
-          Collections.shuffle(img_lst,rng);
+          Collections.shuffle(train_data,rng);
 
-          ImageIter img_iter = new ImageIter(img_lst, label_lst, batch_size, 224, 224);
+          ImageIter img_iter = new ImageIter(train_data, train_labels, batch_size, 224, 224);
           while(img_iter.Next()){
               float[] data = img_iter.getData();
               float[] labels = img_iter.getLabel();
@@ -129,8 +119,7 @@ public class DeepWaterTest extends TestUtil {
                   names[i] = "c" + i;
                   double[] vals=new double[batch_size];
                   for (int j = 0; j < batch_size; ++j) {
-//                      int idx=i*batch_size+j; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
-                      int idx=j*classes+i; //[p0,...,p0,p1,...,p1,p2,...,p2, ... ,p9,...,p9]
+                      int idx=i*batch_size+j; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
                       vals[j] = pred[idx];
                   }
                   classprobs[i] = Vec.makeVec(vals,Vec.newKey());
@@ -144,10 +133,44 @@ public class DeepWaterTest extends TestUtil {
               System.out.println(mm.toString());
           }
       }
-
-
+      scoreTestSet(path,batch_size,classes,m);
   }
 
+    public static void scoreTestSet(String path, int batch_size, int classes, ImageTrain m) throws IOException {
+        // make test set predictions
+        BufferedReader br = new BufferedReader(new FileReader(new File(path+"test_list.csv")));
 
+        ArrayList<Float> test_labels = new ArrayList<>();
+        ArrayList<String> test_data = new ArrayList<>();
+
+        String line;
+        while ((line = br.readLine()) != null) {
+            test_labels.add(new Float(-999)); //dummy
+            test_data.add(path+"test/"+line);
+        }
+
+        br.close();
+
+        FileWriter fw = new FileWriter(path+"/submission.csv");
+        ImageIter img_iter = new ImageIter(test_data, test_labels, batch_size, 224, 224);
+        int counter=0;
+        fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
+        while(img_iter.Next()) {
+            float[] data = img_iter.getData();
+            float[] labels = img_iter.getLabel();
+            float[] pred = m.predict(data, labels);
+            for (int i=0;i<batch_size;++i) {
+                String file = test_data.get(counter++);
+                String[] pcs = file.split("/");
+                fw.write(pcs[pcs.length-1]);
+                for (int j=0;j<classes;++j) {
+                    int idx=i*classes+j;
+                    fw.write(","+pred[idx]);
+                }
+                fw.write("\n");
+            }
+        }
+        fw.close();
+    }
 }
 
