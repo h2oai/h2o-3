@@ -2,10 +2,13 @@ package hex.deeplearning;
 
 import javax.imageio.ImageIO;
 
+import hex.ModelMetricsMultinomial;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
+import water.fvec.*;
+import water.fvec.Frame;
 import water.gpu.ImageIter;
 import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
@@ -69,7 +72,6 @@ public class DeepWaterTest extends TestUtil {
     System.out.println("\n\n" + m.predict(pixels)+"\n\n");
   }
 
-  @Ignore
   @Test
   public void inceptionFineTuning() throws IOException {
 
@@ -99,7 +101,8 @@ public class DeepWaterTest extends TestUtil {
 
       ImageTrain m = new ImageTrain();
 
-      m.buildNet(10, batch_size, "inception_bn");
+      int classes = 10;
+      m.buildNet(classes, batch_size, "inception_bn");
 
       ImageIter img_iter = new ImageIter(img_lst, label_lst, batch_size, 224, 224);
 
@@ -109,12 +112,24 @@ public class DeepWaterTest extends TestUtil {
               float[] data = img_iter.getData();
               float[] labels = img_iter.getLabel();
               float[] pred = m.train(data, labels);
-              System.out.println("pred " + pred.length);
 
-              for (int i = 0; i < batch_size * 10; i++) {
-                  System.out.print(pred[i] + " ");
+              Vec[] classprobs = new Vec[classes];
+              String[] names = new String[classes];
+              int cnt=0;
+              for (int i=0;i<classes;++i) {
+                  names[i] = "c" + i;
+                  double[] vals=new double[batch_size];
+                  for (int j = 0; j < batch_size; ++j)
+                      vals[j] = pred[cnt++];
+                  classprobs[i] = Vec.makeVec(vals,Vec.newKey());
               }
-              System.out.println();
+              water.fvec.Frame preds = new Frame(names,classprobs);
+              long[] lab = new long[batch_size];
+              for (int i=0;i<batch_size;++i)
+                  lab[i] = (long)labels[i];
+              Vec actual = Vec.makeVec(lab,names,Vec.newKey());
+              ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds,actual);
+              System.out.println(mm.toString());
           }
       }
 
