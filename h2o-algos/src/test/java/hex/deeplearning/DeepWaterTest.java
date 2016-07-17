@@ -98,7 +98,7 @@ public class DeepWaterTest extends TestUtil {
       ImageTrain m = new ImageTrain();
       m.buildNet(classes, batch_size, "inception_bn");
 
-      int max_iter = 10; //epochs
+      int max_iter = 1; //epochs
       for (int iter = 0; iter < max_iter; iter++) {
           //each iteration does a different random shuffle
           Random rng = RandomUtils.getRNG(0);
@@ -117,26 +117,26 @@ public class DeepWaterTest extends TestUtil {
               String[] names = new String[classes];
               for (int i=0;i<classes;++i) {
                   names[i] = "c" + i;
-                  double[] vals=new double[labels.length];
-                  for (int j = 0; j < labels.length; ++j) {
+                  double[] vals=new double[batch_size];
+                  for (int j = 0; j < batch_size; ++j) {
                       int idx=i*batch_size+j; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
                       vals[j] = pred[idx];
                   }
                   classprobs[i] = Vec.makeVec(vals,Vec.newKey());
               }
               water.fvec.Frame preds = new Frame(names,classprobs);
-              long[] lab = new long[labels.length];
-              for (int i=0;i<labels.length;++i)
+              long[] lab = new long[batch_size];
+              for (int i=0;i<batch_size;++i)
                   lab[i] = (long)labels[i];
               Vec actual = Vec.makeVec(lab,names,Vec.newKey());
               ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds,actual);
               System.out.println(mm.toString());
           }
       }
-      scoreTestSet(path,batch_size,classes,m);
+      scoreTestSet(path,classes,m);
   }
 
-    public static void scoreTestSet(String path, int batch_size, int classes, ImageTrain m) throws IOException {
+    public static void scoreTestSet(String path, int classes, ImageTrain m) throws IOException {
         // make test set predictions
         BufferedReader br = new BufferedReader(new FileReader(new File(path+"test_list.csv"))); //file created with 'cut -d, -f1 sample_submission.csv > test_list.csv'
 
@@ -152,15 +152,16 @@ public class DeepWaterTest extends TestUtil {
         br.close();
 
         FileWriter fw = new FileWriter(path+"/submission.csv");
+        int batch_size = 1; //avoid issues with batching at the end of the test set
         ImageIter img_iter = new ImageIter(test_data, test_labels, batch_size, 224, 224);
-        int counter=0;
         fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
         while(img_iter.Next()) {
             float[] data = img_iter.getData();
             float[] labels = img_iter.getLabel();
+            String[] files = img_iter.getFiles();
             float[] pred = m.predict(data, labels);
-            for (int i=0;i<labels.length;++i) {
-                String file = test_data.get(counter++);
+            for (int i=0;i<batch_size;++i) {
+                String file = files[i];
                 String[] pcs = file.split("/");
                 fw.write(pcs[pcs.length-1]);
                 for (int j=0;j<classes;++j) {
