@@ -74,6 +74,8 @@ class H2OJob(object):
                 estimated_finish_time = start_time + 120
             else:
                 estimated_finish_time = start_time + (last_poll_time - start_time) / self.progress
+            if self.progress < 1:
+                estimated_finish_time = max(estimated_finish_time, next_poll_time)
             # Figure out when we need to display the next '#' symbol, so that all the remaining symbols will be printed
             # out in a uniform fashion assuming our estimate of finish time is correct.
             symbols_remaining = width - last_display_amnt
@@ -84,7 +86,7 @@ class H2OJob(object):
                 display_speed = 0
                 next_display_time = next_poll_time + 1  # Force polling before displaying an update
             # Polling should always occur if it is past due -- takes precedence over displaying
-            if next_poll_time <= min(current_time, next_display_time):
+            if next_poll_time <= max(current_time, next_display_time):
                 if next_poll_time > current_time:
                     time.sleep(next_poll_time - current_time)
                     poll_interval = min(1, poll_interval + 0.2)
