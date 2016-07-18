@@ -15,16 +15,23 @@ import water.util.RandomUtils;
 public class GroupingBench extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Test public void runBench2() {
+  @Test @Ignore public void runBench2() {
     Frame f1=null, f2=null, fx=null;
     try { 
-      // build 2 hi count card frames & time the merge in master and cliffc_jenkins
-      f1 = buildFrame(10,-1);
+      // build a hi count cardinality frame
+      final long card = (long)1e8;
+      f1 = buildFrame(card,-1);
       System.out.println(f1.toString(0,100));
-      f2 = buildFrame(10,-1);
-      System.out.println(f2.toString(0,100));
-      fx = Merge.merge(f1,f2,new int[]{0},new int[]{0},false,new int[1][]);
-      System.out.println(fx.toString(0,100));
+      Vec seq = Vec.makeSeq(card,false);
+      f2 = new Frame(seq,seq);
+      for( int i=0; i<10; i++ ) {
+        long t0 = System.currentTimeMillis();
+        fx = Merge.merge(f1, f2, new int[]{0}, new int[]{0}, false, new int[1][]);
+        long t1 = System.currentTimeMillis();
+        System.out.println("MERGE Took " + (t1 - t0) + " msec for " + f1.numRows());
+        //System.out.println(fx.toString(0,100));
+        fx.delete();
+      }
     } finally {
       if( f1 != null ) f1.delete();
       if( f2 != null ) f2.delete();
@@ -33,11 +40,11 @@ public class GroupingBench extends TestUtil {
   }
 
   // Build 2 column frame, with the given Chunks.  Col #0 is high-count
-  // categorical; we will make about 10x this many rows.  Col#1 is a row
-  // number.
+  // categorical; we will make about 1/10 this many rows drawing at random from
+  // the "card" range with replacement.  Col#1 is a row number.
   private static Frame buildFrame( final long card, int nChunks ) {
     final int scale0 = 10;
-    final long len = card*scale0;
+    final long len = card/scale0;
     if( nChunks == -1 ) {
       int rowsPerChunk = 100000;
       nChunks = (int)((len+rowsPerChunk-1)/rowsPerChunk);
