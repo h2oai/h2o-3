@@ -41,6 +41,7 @@ class H2OJob(object):
         self._job_type = job_type
         self.exception = job["exception"] if "exception" in job else None
         self._polling = False
+        self.warnings = None
         # signal.signal(signal.SIGINT,  self.signal_handler)
 
 
