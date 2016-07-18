@@ -428,6 +428,7 @@ class H2OConnection(backwards_compatible()):
         """
         self._print("Connecting to H2O server at " + self._base_url, end="..")
         cld = None
+        errors = []
         for _ in range(max_retries):
             self._print(".", end="", flush=True)
             if self._local_server and not self._local_server.is_running():
@@ -437,8 +438,8 @@ class H2OConnection(backwards_compatible()):
                 if cld.consensus and cld.cloud_healthy:
                     self._print(" successful!")
                     return cld
-            except (H2OConnectionError, H2OServerError):
-                pass
+            except (H2OConnectionError, H2OServerError) as e:
+                errors.append("[%s] %s.%d" % (time.strftime("%M:%S"), int(time.time() * 10) % 10, str(e)))
             # Cloud too small, or voting in progress, or server is not up yet; sleep then try again
             time.sleep(0.2)
 
@@ -448,8 +449,8 @@ class H2OConnection(backwards_compatible()):
         if cld and not cld.consensus:
             raise H2OServerError("Cluster cannot reach consensus")
         else:
-            raise H2OConnectionError("Could not establish link to the H2O cloud %s after %d retries"
-                                     % (self._base_url, max_retries))
+            raise H2OConnectionError("Could not establish link to the H2O cloud %s after %d retries\n%s"
+                                     % (self._base_url, max_retries, "\n".join(errors)))
 
 
     @staticmethod
