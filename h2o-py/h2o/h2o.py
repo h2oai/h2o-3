@@ -195,6 +195,9 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
         connect(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,
                 proxy=proxy, cluster_name=cluster_name, verbose=True)
     except H2OConnectionError:
+        # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
+        if not str(port).endswith("+"):
+            port = str(port) + "+"
         if not start_h2o: raise
         global h2oconn
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
