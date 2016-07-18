@@ -731,11 +731,15 @@ class H2OLocalServer(object):
         hs = H2OLocalServer()
         hs._verbose = bool(verbose)
         hs._jar_path = hs._find_jar(jar_path)
-        hs._ice_root = ice_root or tempfile.mkdtemp()
+        hs._ice_root = ice_root
+        if not ice_root:
+            hs._ice_root = tempfile.mkdtemp()
+            hs._tempdir = hs._ice_root
 
         if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size)
+        if verbose: print("Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
 
@@ -799,6 +803,7 @@ class H2OLocalServer(object):
         self._ice_root = None
         self._stdout = None
         self._stderr = None
+        self._tempdir = None
 
 
     def _find_jar(self, path0=None):
@@ -967,8 +972,7 @@ class H2OLocalServer(object):
                               "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 
 
-    @staticmethod
-    def _tmp_file(kind):
+    def _tmp_file(self, kind):
         """
         Generate names for temporary files (helper method for `._launch_server()`).
 
@@ -987,7 +991,9 @@ class H2OLocalServer(object):
         if kind == "salt":
             return usr + "_" + "".join(choice("0123456789abcdefghijklmnopqrstuvwxyz") for _ in range(6))
         else:
-            return os.path.join(tempfile.mkdtemp(), "h2o_%s_started_from_python.%s" % (usr, kind[3:]))
+            if not self._tempdir:
+                self._tempdir = tempfile.mkdtemp()
+            return os.path.join(self._tempdir, "h2o_%s_started_from_python.%s" % (usr, kind[3:]))
 
 
     def _get_server_info_from_logs(self):
