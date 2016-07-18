@@ -237,14 +237,14 @@ class H2OConnection(backwards_compatible()):
             self._log_end_transaction(start_time, resp)
             return self._process_response(resp)
 
-        except requests.ConnectionError as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             if self._local_server and not self._local_server.is_running():
                 self._log_end_exception("Local server has died.")
                 raise H2OConnectionError("Local server has died unexpectedly. RIP.")
             else:
                 self._log_end_exception(e)
                 raise H2OConnectionError("Unexpected HTTP error: %s" % e)
-        except requests.ReadTimeout as e:
+        except requests.exceptions.Timeout as e:
             self._log_end_exception(e)
             elapsed_time = time.time() - start_time
             raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
@@ -565,7 +565,7 @@ class H2OConnection(backwards_compatible()):
         if content_type == "application/json":
             try:
                 data = response.json(object_pairs_hook=H2OResponse)
-            except JSONDecodeError as e:
+            except (JSONDecodeError, requests.exceptions.ContentDecodingError) as e:
                 raise H2OServerError("Malformed JSON from server (%s):\n%s" % (str(e), response.text))
         else:
             data = response.text
