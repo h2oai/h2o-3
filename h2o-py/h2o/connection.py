@@ -1005,7 +1005,7 @@ class H2OLocalServer(object):
         with open(self._stdout, "rt") as f:
             for line in f:
                 if searchstr in line:
-                    url = line[line.index(searchstr) + len(searchstr):].strip()
+                    url = line[line.index(searchstr) + len(searchstr):].strip().rstrip("/")
                     parts = url.split(":")
                     assert len(parts) == 3 and (parts[0] == "http" or parts[1] == "https") and parts[2].isdigit(), \
                         "Unexpected URL: %s" % url
