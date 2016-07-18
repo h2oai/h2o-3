@@ -2,6 +2,15 @@
 
 ##H2O
 
+###Turin (3.8.3.4) - 7/15/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3145'>PUBDEV-3145</a>] -         Fix Deep Learning POJO for hidden dropout other than 0.5
+</li>
+</ul>
+
 ###Turin (3.8.3.2) - 7/1/2016
 
 <h4>        Bug
