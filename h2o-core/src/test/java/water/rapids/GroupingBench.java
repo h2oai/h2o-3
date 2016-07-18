@@ -9,11 +9,197 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.RandomUtils;
 
+
+public class GroupingBench extends TestUtil {
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
+  @Test public void runBench2() {
+    Frame f1=null, f2=null, fx=null;
+    try { 
+      // build 2 hi count card frames & time the merge in master and cliffc_jenkins
+      f1 = buildFrame(10,-1);
+      System.out.println(f1.toString(0,100));
+      f2 = buildFrame(10,-1);
+      System.out.println(f2.toString(0,100));
+      fx = Merge.merge(f1,f2,new int[]{0},new int[]{0},false,new int[1][]);
+      System.out.println(fx.toString(0,100));
+    } finally {
+      if( f1 != null ) f1.delete();
+      if( f2 != null ) f2.delete();
+      if( fx != null ) fx.delete();
+    }
+  }
+
+  // Build 2 column frame, with the given Chunks.  Col #0 is high-count
+  // categorical; we will make about 10x this many rows.  Col#1 is a row
+  // number.
+  private static Frame buildFrame( final long card, int nChunks ) {
+    final int scale0 = 10;
+    final long len = card*scale0;
+    if( nChunks == -1 ) {
+      int rowsPerChunk = 100000;
+      nChunks = (int)((len+rowsPerChunk-1)/rowsPerChunk);
+    }
+
+    Vec.VectorGroup g = new Vec.VectorGroup();
+    AppendableVec col0 = new AppendableVec(g.addVec(), Vec.T_NUM);
+    AppendableVec col1 = new AppendableVec(g.addVec(), Vec.T_NUM);
+    NewChunk ncs0[] = new NewChunk[nChunks];
+    NewChunk ncs1[] = new NewChunk[nChunks];
+    for( int i=0; i<nChunks; i++ ) {
+      ncs0[i] = new NewChunk(col0,i);
+      ncs1[i] = new NewChunk(col1,i);
+    }
+
+    RandomUtils.PCGRNG R = new RandomUtils.PCGRNG(card,0);
+    for( long i=0; i<len; i++ )
+      ncs0[R.nextInt(nChunks)].addNum( R.nextInt((int)card), 0 );
+
+    // Compute data layout
+    int espc[] = new int[nChunks+1];
+    for( int i=0; i<nChunks; i++ )
+      espc[i+1] = espc[i] + ncs0[i].len();
+
+    // Compute row numbers into col 2
+    for( int i=0; i<nChunks; i++ )
+      for( int j=0; j<ncs0[i].len(); j++ )
+        ncs1[i].addNum(espc[i]+j,0);
+
+    Futures fs = new Futures();
+    for( int i=0; i<nChunks; i++ ) {
+      ncs0[i].close(i,fs);
+      ncs1[i].close(i,fs);
+    }
+
+    Vec vec0 = col0.layout_and_close(fs);
+    Vec vec1 = col1.layout_and_close(fs);
+    fs.blockForPending();
+    Frame fr = new Frame(Key.make("hex"), null, new Vec[]{vec0,vec1});
+    DKV.put(fr);
+    return fr;
+  }
+
+
+
+  @Ignore @Test public void runGroupingBench() {
+    // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
+    //Vec vec = Vec.makeCon(1.1, 1000000000);
+    //Vec vec = Vec.makeRepSeq(10,10);
+    Vec vec = Vec.makeZero((long)1e5);
+    //System.out.println("Chunks: " + vec.nChunks());
+    //System.out.println("Vec length: " + vec.length());
+    //System.out.println("Populating vector... ");
+
+    //new MySeq((int)100).doAll(vec);
+    //new MySample((int)10).doAll(vec);
+    new MySample(10).doAll(vec);
+    vec.max(); // to cache rollups,  so timing below excludes it
+
+    System.out.println("\nFirst 30 of vec ...");
+    System.out.println("There are "+vec.nChunks()+" chunks");
+    for (int i=0; i<vec.nChunks(); i++) {
+      System.out.println("Chunk"+i+"is on"+vec.chunkKey(i).home_node());
+    }
+
+    CreateFrame cf = new CreateFrame();
+    cf.rows = 100;
+    cf.cols = 10;
+    cf.categorical_fraction = 0.1;
+    cf.integer_fraction = 1 - cf.categorical_fraction;
+    cf.binary_fraction = 0;
+    cf.factors = 4;
+    cf.response_factors = 2;
+    cf.positive_response = false;
+    cf.has_response = true;
+    cf.seed = 1234;
+    Frame frame = cf.execImpl().get();
+    System.out.print( frame.toString(0,14) );
+
+    for (int i=0; i<30; i++) System.out.print((int)vec.at(i) + " ");  System.out.println("\n");
+    // Vec vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
+    // makeSeq;
+
+    // Take out memory alloc before the loop to avoid GC costs, before vtune profiling
+    // Now broken up into arrays of same shape as vec.chunks. Really cannot have one array of 1e9 items in Java.
+    // nanos = System.nanoTime();
+    long heapsize=Runtime.getRuntime().totalMemory();
+    System.out.println("heapsize is::"+heapsize);
+
+    //long o[] = new long[(int)vec.length()];
+
+    int o[][] = new int[vec.nChunks()][];    // [(int)vec.length()];
+    for (int c=0; c<o.length; c++)
+      o[c] = new int[vec.chunkForChunkIdx(c)._len];
+
+    for (int timeRep=0; timeRep<3; timeRep++) {   // TO DO: caliper java project
+
+      // TO DO:  search for utils.Timer,  prettyPrint
+
+      long nanos = System.nanoTime();
+      long ans2[][] = new MyCountRange((long) vec.max(), (long) vec.min(), vec.nChunks()).doAll(vec)._counts;
+      long nanos1 = System.nanoTime() - nanos;
+      System.out.println("Counts per chunk (first 5 chunks) ...");
+      for (int c = 0; c < 5; c++) System.out.println(Arrays.toString(ans2[c]));
+
+
+
+      /*
+        nanos = System.nanoTime();
+        // cumulate across chunks
+        int nBuckets = (int)((long) vec.max() - (long) vec.min() + 1);
+        long rollSum = 0;
+        for (int b = 0; b < nBuckets; b++) {
+        for (int c = 0; c < vec.nChunks(); c++) {
+        long tmp = ans2[c][b];
+        ans2[c][b] = rollSum;
+        rollSum += tmp;
+        }
+        }
+        long nanos2 = System.nanoTime() - nanos;
+        //System.out.println("\nCounts after cumulate ...");
+        //for (int c = 0; c < vec.nChunks(); c++) System.out.println(Arrays.toString(ans2[c]));
+
+        nanos = System.nanoTime();
+        new WriteOrder(ans2, o, (long) vec.min(), (long) vec.max()).doAll(vec);
+        long nanos3 = System.nanoTime() - nanos;
+
+        //System.out.println("\nCounts after WriteOrder ...");
+        //for (int c = 0; c < vec.nChunks(); c++) System.out.println(Arrays.toString(ans2[c]));
+
+        System.out.println("\nFirst 10 of order ...");
+        //for (int i=0; i<10; i++) System.out.print(o[i] + " ");
+        for (int i=0; i<10; i++) System.out.print(o[0][i] + " ");
+
+        System.out.println("\nLast 10 of order ...");
+        //for (int i=9; i>=0; i--) System.out.print(o[(int)(vec.length()-i-1)] + " "); System.out.print("\n");
+        int c = vec.nChunks()-1;
+        long cstart = vec._espc[c];
+        for (int i=9; i>=0; i--) System.out.print(o[c][(int)(vec.length()-i-1-cstart)] + " "); System.out.print("\n");
+
+        System.out.println("\nFirst 40 of vec ...");
+        for (int i=0; i<40; i++) System.out.print((int)vec.at(i) + " ");
+        System.out.println("\nLast 40 of vec ...");
+        for (int i=39; i>=0; i--) System.out.print((int)vec.at((int)vec.length()-i-1) + " ");  System.out.print("\n");
+      */
+      System.out.println("\nInitial count: " + nanos1 / 1e9);
+      //System.out.println("Cumulate across chunks: " + nanos2 / 1e9);
+      //System.out.println("Write to order[]: " + nanos3 / 1e9);
+      //System.out.println("Total time: " + (nanos1+nanos2+nanos3) / 1e9);
+      System.out.println("");
+
+    }
+    // Next: input int, then large groups, small groups
+
+    vec.remove();
+    frame.delete();
+  }
+}
 
 class MySample extends MRTask<MySample> {
-    final int K;
-    public MySample(int K) {
+    private final int K;
+    MySample(int K) {
         this.K = K;
     }
     @Override public void map( Chunk chk ) {
@@ -24,25 +210,10 @@ class MySample extends MRTask<MySample> {
     }
 }
 
-class MySeq extends MRTask<MySeq> {
-    // Much faster than :
-    // for (int i=0; i<vec.length(); i++) vec.set(i, i % 100);
-    final int K;
-    public MySeq(int K) {
-        this.K = K;
-    }
-    @Override public void map( Chunk chk ) {
-        for (int i=0; i<chk.len(); i++) {
-            chk.set(i, (chk.start() + i) % K);
-        }
-    }
-}
-
-
 class MyCountRange extends MRTask<MyCountRange> {
-    final long _max, _min;
+    private final long _max, _min;
     long _counts[][];
-    int _nChunks;
+    private int _nChunks;
     // int ans;
     MyCountRange(long max, long min, int nChunks) {
         System.out.println("Constructor for MyCountRange");
@@ -75,16 +246,14 @@ class MyCountRange extends MRTask<MyCountRange> {
                 }
             }
             // throw H2O.unimpl();
-        } else {
-            //System.out.println("Reduce of two chunks on the same node");
         }
     }
 }
 
 
 class MyCountRangeNoSpline extends MRTask<MyCountRangeNoSpline> {
-    final long _max, _min;
-    long _counts[];
+    private final long _max, _min;
+    private long _counts[];
     MyCountRangeNoSpline(long max, long min, int nChunks) {
         System.out.println("Constructor for MyCountRange");
         _max = max; _min = min;
@@ -151,123 +320,3 @@ class WriteOrder extends MRTask<WriteOrder> {
         //System.out.print("Chunk "+chk._cidx+": "); for (int i=0; i<5; i++) System.out.print(Math.round(nanos[i]/1e6)+" "); System.out.print("\n");  // print ms
     }
 }
-
-
-public class GroupingBench extends TestUtil {
-    @BeforeClass public static void setup() { stall_till_cloudsize(2); }
-
-    @Ignore @Test public void runGroupingBench() {
-        // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
-        //Vec vec = Vec.makeCon(1.1, 1000000000);
-        //Vec vec = Vec.makeRepSeq(10,10);
-        Vec vec = Vec.makeZero((long)1e9);
-        //System.out.println("Chunks: " + vec.nChunks());
-        //System.out.println("Vec length: " + vec.length());
-        //System.out.println("Populating vector... ");
-
-        //new MySeq((int)100).doAll(vec);
-        //new MySample((int)10).doAll(vec);
-        new MySample((int)10).doAll(vec);
-        vec.max(); // to cache rollups,  so timing below excludes it
-
-        System.out.println("\nFirst 30 of vec ...");
-        System.out.println("There are "+vec.nChunks()+" chunks");
-        for (int i=0; i<vec.nChunks(); i++) {
-            System.out.println("Chunk"+i+"is on"+vec.chunkKey(i).home_node());
-        }
-
-        CreateFrame cf = new CreateFrame();
-        cf.rows = 100;
-        cf.cols = 10;
-        cf.categorical_fraction = 0.1;
-        cf.integer_fraction = 1 - cf.categorical_fraction;
-        cf.binary_fraction = 0;
-        cf.factors = 4;
-        cf.response_factors = 2;
-        cf.positive_response = false;
-        cf.has_response = true;
-        cf.seed = 1234;
-        Frame frame = cf.execImpl().get();
-        System.out.print( frame.toString(0,14) );
-
-        for (int i=0; i<30; i++) System.out.print((int)vec.at(i) + " ");  System.out.println("\n");
-        // Vec vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
-        // makeSeq;
-
-        // Take out memory alloc before the loop to avoid GC costs, before vtune profiling
-        // Now broken up into arrays of same shape as vec.chunks. Really cannot have one array of 1e9 items in Java.
-        // nanos = System.nanoTime();
-        long heapsize=Runtime.getRuntime().totalMemory();
-        System.out.println("heapsize is::"+heapsize);
-
-        //long o[] = new long[(int)vec.length()];
-
-        int o[][] = new int[vec.nChunks()][];    // [(int)vec.length()];
-        for (int c=0; c<o.length; c++)
-            o[c] = new int[vec.chunkForChunkIdx(c)._len];
-
-        for (int timeRep=0; timeRep<3; timeRep++) {   // TO DO: caliper java project
-
-            // TO DO:  search for utils.Timer,  prettyPrint
-
-            long nanos = System.nanoTime();
-            long ans2[][] = new MyCountRange((long) vec.max(), (long) vec.min(), vec.nChunks()).doAll(vec)._counts;
-            long nanos1 = System.nanoTime() - nanos;
-            System.out.println("Counts per chunk (first 5 chunks) ...");
-            for (int c = 0; c < 5; c++) System.out.println(Arrays.toString(ans2[c]));
-
-
-
-            /*
-            nanos = System.nanoTime();
-            // cumulate across chunks
-            int nBuckets = (int)((long) vec.max() - (long) vec.min() + 1);
-            long rollSum = 0;
-            for (int b = 0; b < nBuckets; b++) {
-                for (int c = 0; c < vec.nChunks(); c++) {
-                    long tmp = ans2[c][b];
-                    ans2[c][b] = rollSum;
-                    rollSum += tmp;
-                }
-            }
-            long nanos2 = System.nanoTime() - nanos;
-            //System.out.println("\nCounts after cumulate ...");
-            //for (int c = 0; c < vec.nChunks(); c++) System.out.println(Arrays.toString(ans2[c]));
-
-            nanos = System.nanoTime();
-            new WriteOrder(ans2, o, (long) vec.min(), (long) vec.max()).doAll(vec);
-            long nanos3 = System.nanoTime() - nanos;
-
-            //System.out.println("\nCounts after WriteOrder ...");
-            //for (int c = 0; c < vec.nChunks(); c++) System.out.println(Arrays.toString(ans2[c]));
-
-            System.out.println("\nFirst 10 of order ...");
-            //for (int i=0; i<10; i++) System.out.print(o[i] + " ");
-            for (int i=0; i<10; i++) System.out.print(o[0][i] + " ");
-
-            System.out.println("\nLast 10 of order ...");
-            //for (int i=9; i>=0; i--) System.out.print(o[(int)(vec.length()-i-1)] + " "); System.out.print("\n");
-            int c = vec.nChunks()-1;
-            long cstart = vec._espc[c];
-            for (int i=9; i>=0; i--) System.out.print(o[c][(int)(vec.length()-i-1-cstart)] + " "); System.out.print("\n");
-
-            System.out.println("\nFirst 40 of vec ...");
-            for (int i=0; i<40; i++) System.out.print((int)vec.at(i) + " ");
-            System.out.println("\nLast 40 of vec ...");
-            for (int i=39; i>=0; i--) System.out.print((int)vec.at((int)vec.length()-i-1) + " ");  System.out.print("\n");
-            */
-            System.out.println("\nInitial count: " + nanos1 / 1e9);
-            //System.out.println("Cumulate across chunks: " + nanos2 / 1e9);
-            //System.out.println("Write to order[]: " + nanos3 / 1e9);
-            //System.out.println("Total time: " + (nanos1+nanos2+nanos3) / 1e9);
-            System.out.println("");
-
-        }
-        // Next: input int, then large groups, small groups
-
-        vec.remove();
-        frame.delete();
-    }
-}
-
-
