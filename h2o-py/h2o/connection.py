@@ -827,18 +827,18 @@ class H2OLocalServer(object):
             if cwd_chunks[i - 1] == "h2o-3":
                 yield os.path.sep.join(cwd_chunks[:i] + ["build", "h2o.jar"])
         # Finally try several alternative locations where h2o.jar might be installed
-        prefix1 = prefix2 = sys.prefix.replace("\\", "/")  # sys.prefix is the system path of the Python folder
+        prefix1 = prefix2 = sys.prefix
         # On Unix-like systems Python typically gets installed into /Library/... or /System/Library/... If one of
         # those paths is sys.prefix, then we also build its counterpart.
-        if prefix1.startswith("/Library"):
-            prefix2 = "/System" + prefix1
-        elif prefix1.startswith("/System"):
-            prefix2 = prefix1[len("/System"):]
-        yield prefix1 + "/h2o_jar/h2o.jar"
-        yield "/usr/local/h2o_jar/h2o.jar"
-        yield prefix1 + "/local/h2o_jar/h2o.jar"
-        yield get_config_var("userbase") + "/h2o_jar/h2o.jar"
-        yield prefix2 + "/h2o_jar/h2o.jar"
+        if prefix1.startswith(os.path.sep + "Library"):
+            prefix2 = os.path.join("", "System", prefix1)
+        elif prefix1.startswith(os.path.sep + "System"):
+            prefix2 = prefix1[len(os.path.join("", "System")):]
+        yield os.path.join(prefix1, "h2o_jar", "h2o.jar")
+        yield os.path.join("", "usr", "local", "h2o_jar", "h2o.jar")
+        yield os.path.join(prefix1, "local", "h2o_jar", "h2o.jar")
+        yield os.path.join(get_config_var("userbase"), "h2o_jar", "h2o.jar")
+        yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
 
     def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads):
