@@ -204,9 +204,11 @@ class H2OConnection(backwards_compatible()):
         if self._stage == -1: raise H2OConnectionError("Connection was closed, and can no longer be used.")
 
         # Prepare URL
+        if not isinstance(endpoint, str):
+            raise ValueError("Endpoint should be a string, got %s" % type(endpoint))
         if endpoint.count(" ") != 1:
             raise ValueError("Incorrect endpoint '%s': must be of the form 'METHOD URL'." % endpoint)
-        method, urltail = endpoint.split(" ", 2)
+        method, urltail = str(endpoint).split(" ", 2)
         if method not in {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"}:
             raise ValueError("Incorrect method in endpoint '%s'" % endpoint)
         if urltail[0] != "/":
@@ -448,7 +450,8 @@ class H2OConnection(backwards_compatible()):
                     errors.append("Cloud is in a bad shape: %s (size = %d, bad nodes = %d)"
                                   % (msg, cld.cloud_size, cld.bad_nodes))
             except (H2OConnectionError, H2OServerError) as e:
-                errors.append("[%s.%d] %s" % (time.strftime("%M:%S"), int(time.time() * 10) % 10, str(e)))
+                errors.append("[%s.%02d] %s: %s" %
+                              (time.strftime("%M:%S"), int(time.time() * 100) % 100, e.__class__.__name__, e.message))
             # Cloud too small, or voting in progress, or server is not up yet; sleep then try again
             time.sleep(0.2)
 
