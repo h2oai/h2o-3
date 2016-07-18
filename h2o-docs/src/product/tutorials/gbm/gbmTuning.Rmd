@@ -5,7 +5,7 @@ In this tutorial, we show how to build a well-tuned H2O GBM model for a supervis
 
 This tutorial is written in [R Markdown](http://rmarkdown.rstudio.com). You can download the source [from H2O's github repository](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.Rmd).
 
-Ports to [Python Jupyter Notebook](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb) and [Flow UI](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.flow) are available as well.
+Ports to [Python Jupyter Notebook](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb) and [Flow UI](https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-docs/src/product/flow/packs/examples/GBM_TuningGuide.flow) (now part of Example Flows) are available as well.
 
 ## Installation of the H2O R Package
 Either download H2O from [H2O.ai's website](http://h2o.ai/download) or install the latest version of H2O into R with the following R code:
