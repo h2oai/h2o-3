@@ -438,8 +438,17 @@ class H2OConnection(backwards_compatible()):
                 if cld.consensus and cld.cloud_healthy:
                     self._print(" successful!")
                     return cld
+                else:
+                    if cld.consensus and not cld.cloud_healthy:
+                        msg = "in consensus but not healthy"
+                    elif not cld.consensus and cld.cloud_healthy:
+                        msg = "not in consensus but healthy"
+                    else:
+                        msg = "not in consensus and not healthy"
+                    errors.append("Cloud is in a bad shape: %s (size = %d, bad nodes = %d)"
+                                  % (msg, cld.cloud_size, cld.bad_nodes))
             except (H2OConnectionError, H2OServerError) as e:
-                errors.append("[%s] %s.%d" % (time.strftime("%M:%S"), int(time.time() * 10) % 10, str(e)))
+                errors.append("[%s.%d] %s" % (time.strftime("%M:%S"), int(time.time() * 10) % 10, str(e)))
             # Cloud too small, or voting in progress, or server is not up yet; sleep then try again
             time.sleep(0.2)
 
