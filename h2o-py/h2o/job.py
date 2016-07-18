@@ -162,7 +162,7 @@ class H2OJob(object):
                 progress_pct = int(100 * self.progress + 0.5)
             else:
                 progress_pct = int(display_amount / self._progress_bar_width * 100 + 0.5)
-            is_unicode = sys.stdout.encoding.lower().startswith("utf")
+            is_unicode = sys.stdout.encoding and sys.stdout.encoding.lower().startswith("utf")
             sym = "█" if is_unicode else "#"
             ends = "||" if is_unicode else "[]"
 
