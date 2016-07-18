@@ -79,11 +79,12 @@ class H2OJob(object):
             symbols_remaining = width - last_display_amnt
             if estimated_finish_time > last_display_time:
                 display_speed = symbols_remaining / (estimated_finish_time - last_display_time)
-                next_display_time = last_display_time + 1 / max(display_speed, 1)
+                next_display_time = last_display_time + 1 / max(min(display_speed, 100), 1)
             else:
                 display_speed = 0
                 next_display_time = next_poll_time + 1  # Force polling before displaying an update
-            if next_poll_time <= next_display_time:
+            # Polling should always occur if it is past due -- takes precedence over displaying
+            if next_poll_time <= min(current_time, next_display_time):
                 if next_poll_time > current_time:
                     time.sleep(next_poll_time - current_time)
                     poll_interval = min(1, poll_interval + 0.2)
