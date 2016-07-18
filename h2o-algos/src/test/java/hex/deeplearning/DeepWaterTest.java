@@ -29,11 +29,11 @@ public class DeepWaterTest extends TestUtil {
   public void inceptionPrediction() throws IOException {
 
     // load the cuda lib in CUDA_PATH, optional. theoretically we can find them if they are in LD_LIBRARY_PATH
-    util.loadCudaLib();
+//    util.loadCudaLib();
     util.loadNativeLib("mxnet");
     util.loadNativeLib("Native");
 
-    BufferedImage img = ImageIO.read(new File("/home/arno/deepwater/test/test2.jpg"));
+    BufferedImage img = ImageIO.read(new File("/users/arno/deepwater/test/test2.jpg"));
 
     int w = 224, h = 224;
 
@@ -64,7 +64,7 @@ public class DeepWaterTest extends TestUtil {
     ImagePred m = new ImagePred();
 
     // the path to Inception model
-    m.setModelPath("/home/arno/deepwater/Inception");
+    m.setModelPath("/users/arno/deepwater/Inception");
 
     m.loadInception();
 
@@ -73,11 +73,11 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void inceptionFineTuning() throws IOException {
-      util.loadCudaLib();
+//      util.loadCudaLib();
       util.loadNativeLib("mxnet");
       util.loadNativeLib("Native");
 
-      String path = "/home/arno/kaggle/statefarm/input/";
+      String path = "/users/arno/kaggle/statefarm/input/";
       BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
 
       ArrayList<Float> train_labels = new ArrayList<>();
