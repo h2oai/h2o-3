@@ -13,7 +13,7 @@ import water.util.RandomUtils;
 
 
 public class GroupingBench extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
 
   @Test @Ignore public void runBench2() {
     Frame f1=null, f2=null, fx=null;

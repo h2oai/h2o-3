@@ -41,12 +41,10 @@ public class Merge {
     RadixOrder riteIndex = createIndex(false,riteFrame,riteCols,id_maps);
     // TODO: start merging before all indexes had been created. Use callback?
 
-    long ansN = 0;
-    int numChunks = 0;
-
     System.out.print("Making BinaryMerge RPC calls ... ");
     long t0 = System.nanoTime();
-    ArrayList<RPC> bmList = new ArrayList<>();
+    ArrayList<BinaryMerge> bmList = new ArrayList<>();
+    Futures fs = new Futures();
     final int leftShift = leftIndex._shift[0];
     final long leftBase = leftIndex._base[0];
     final int riteShift = hasRite ? riteIndex._shift[0] : -1;
@@ -66,11 +64,12 @@ public class Merge {
       // The overlapping one with the right base is dealt with inside
       // BinaryMerge (if _allLeft)
       if (allLeft) for (int leftMSB=0; leftMSB<leftMSBfrom; leftMSB++) {
-        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), 
-                             new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                             new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
-                                             true)));
-      }
+          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
+                                           new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
+                                           true);
+          bmList.add(bm);
+          fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), bm).call());
+        }
     } else {
       // completely ignore right MSBs below the left base
       assert leftMSBfrom <= 0;
@@ -91,18 +90,17 @@ public class Merge {
       }
       // run the merge for the whole lefts that start after the last right
       if (allLeft) for (int leftMSB=(int)leftMSBto+1; leftMSB<=255; leftMSB++) {
-        bmList.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), 
-                             new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                             new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
-                                             true)));
+          BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame,   leftMSB    ,leftShift,leftIndex._bytesUsed,leftIndex._base),
+                                           new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
+                                           true);
+          bmList.add(bm);
+          fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), bm).call());
       }
     } else {
       // completely ignore right MSBs after the right peak
       assert leftMSBto >= 255;
       leftMSBto = 255;
     }
-
-    System.out.print("(" + bmList.size() + " left outer outside range) ... ");
 
     // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
     for (int leftMSB=(int)leftMSBfrom; leftMSB<=leftMSBto; leftMSB++) {
@@ -125,69 +123,23 @@ public class Merge {
       assert rightMSBto >= rightMSBfrom;
 
       for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
-
+        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base),
+                                         new BinaryMerge.FFSB(riteFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
+                                         allLeft);
+        bmList.add(bm);
+        // TODO: choose the bigger side to execute on (where that side of index
+        // already is) to minimize transfer.  within BinaryMerge it will
+        // recalculate the extents in terms of keys and bsearch for them within
+        // the (then local) both sides
         H2ONode node = SplitByMSBLocal.ownerOfMSB(rightMSB);
-        // TODO: choose the bigger side to execute on (where that side of index already is) to minimize transfer
-
-        // within BinaryMerge it will recalculate the extents in terms of keys and bsearch for them within the (then local) both sides
-        bmList.add(new RPC<>(node,
-                             new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                             new BinaryMerge.FFSB(riteFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
-                                             allLeft)));
+        fs.add(new RPC<>(node, bm).call());
       }
     }
     System.out.println("took: " + String.format("%.3f", (System.nanoTime() - t0) / 1e9));
 
-    int queueSize = bmList.size();
-    // Now that gc issues resolved, it seems ok to send them all at once.
-    // No longer floods the cluster it seems.
-    // TODO: can remove manual queuing now and save risk of waitMS slowing unnecessarily
-    System.out.println("Dispatching in queue size of "+queueSize+". H2O.NUMCPUS="+H2O.NUMCPUS + " H2O.CLOUD.size()="+H2O.CLOUD.size());
-    
     t0 = System.nanoTime();
-    System.out.println("Sending "+bmList.size()+" BinaryMerge async RPC calls in a queue of " + queueSize + " ... ");
-
-    int queue[] = new int[queueSize];
-    BinaryMerge bmResults[] = new BinaryMerge[bmList.size()];
-
-    int nextItem;
-    for (nextItem=0; nextItem<queueSize; nextItem++) {
-      queue[nextItem] = nextItem;
-      bmList.get(nextItem).call();  // async
-    }
-    int leftOnQueue = queueSize;
-    int waitMS = 50;  // 0.05 second for fast runs like 1E8 on 1 node
-    while (leftOnQueue > 0) {
-      try {
-        Thread.sleep(waitMS);
-      } catch(InterruptedException ex) {
-        Thread.currentThread().interrupt();
-      }
-      int doneInSweep = 0;
-      for (int q=0; q<queueSize; q++) {
-        int thisBM = queue[q];
-        if (thisBM >= 0 && bmList.get(thisBM).isDone()) {
-          BinaryMerge thisbm;
-          bmResults[thisBM] = thisbm = (BinaryMerge)bmList.get(thisBM).get();
-          leftOnQueue--;
-          doneInSweep++;
-          if (thisbm._numRowsInResult > 0) {
-            System.out.print(String.format("%3d",queue[q]) + ":");
-            for (int t=0; t<20; t++) System.out.print(String.format("%.2f ", thisbm._timings[t]));
-            System.out.println();
-            numChunks += thisbm._chunkSizes.length;
-            ansN += thisbm._numRowsInResult;
-          }
-          queue[q] = -1;  // clear the slot
-          if (nextItem < bmList.size()) {
-            bmList.get(nextItem).call();   // call next one
-            queue[q] = nextItem++;         // put on queue so we can sweep
-            leftOnQueue++;
-          }
-        }
-      }
-      if (doneInSweep == 0) waitMS = Math.min(1000, waitMS*2);  // if last sweep caught none, then double wait time to avoid cost of sweeping
-    }
+    System.out.println("Sending BinaryMerge async RPC calls in a queue ... ");
+    fs.blockForPending();
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
 
@@ -212,13 +164,19 @@ public class Merge {
 
     System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");
     t0 = System.nanoTime();
+    long ansN = 0;
+    int numChunks = 0;
+    for( BinaryMerge thisbm : bmList )
+      if( thisbm._numRowsInResult > 0 ) {
+        numChunks += thisbm._chunkSizes.length;
+        ansN += thisbm._numRowsInResult;
+      }
     long chunkSizes[] = new long[numChunks];
     int chunkLeftMSB[] = new int[numChunks];  // using too much space repeating the same value here, but, limited
     int chunkRightMSB[] = new int[numChunks];
     int chunkBatch[] = new int[numChunks];
     int k = 0;
-    for (int i=0; i<bmList.size(); i++) {
-      BinaryMerge thisbm = bmResults[i];
+    for( BinaryMerge thisbm : bmList ) {
       if (thisbm._numRowsInResult == 0) continue;
       int thisChunkSizes[] = thisbm._chunkSizes;
       for (int j=0; j<thisChunkSizes.length; j++) {
