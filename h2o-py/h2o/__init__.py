@@ -7,5 +7,5 @@ __version__ = "SUBST_PROJECT_VERSION"
 from .h2o import *
 
 __all__ = ['assembly', 'astfun', 'connection', 'cross_validation', 'demo', 'display',
-           'expr', 'frame', 'group_by', 'h2o', "compatibility",
+           'expr', 'frame', 'group_by', 'h2o',
            'job', 'two_dim_table', 'estimators', 'grid', 'model', 'transforms']

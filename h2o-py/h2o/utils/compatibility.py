@@ -6,7 +6,7 @@ This module gathers common declarations needed to ensure Python 2 / Python 3 com
 It has to be imported from all other files, so that the common header looks like this:
 
 from __future__ import absolute_import, division, print_function, unicode_literals
-from .compatibility import *  # NOQA
+from h2o.utils.compatibility import *  # NOQA
 
 ------------------------------------------------------------------------------------------------------------------------
 1. Strings

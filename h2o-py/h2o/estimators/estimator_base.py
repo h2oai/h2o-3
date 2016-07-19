@@ -5,7 +5,7 @@
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
-from h2o.compatibility import *
+from h2o.utils.compatibility import *
 
 from ..model.model_base import ModelBase
 from ..model.autoencoder import H2OAutoEncoderModel

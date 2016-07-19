@@ -1,16 +1,20 @@
-#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from h2o.compatibility import *
 
-import math, collections, tabulate, gc, sys, copy
+import collections
+import copy
+import gc
+import math
+import sys
+import tabulate
+
 import h2o
-from .utils.shared_utils import _is_fr, _py_tmp_key
-from .connection import H2OConnectionError
+from h2o.connection import H2OConnectionError
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 
 
 class ExprNode(object):

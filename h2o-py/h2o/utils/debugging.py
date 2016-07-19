@@ -3,13 +3,14 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from .compatibility import *  # NOQA
+
 import sys
 from types import ModuleType
 
+from h2o.utils.compatibility import *  # NOQA
+
 # Nothing to import; this module's only job is to install an exception hook for debugging.
-__all__ = []
+__all__ = ()
 
 
 
@@ -77,6 +78,7 @@ def _except_hook(exc_type, exc_value, exc_tb):
 
     # Helper function for printing to stderr
     def err(msg=""):
+        """Print to stderr."""
         print(msg, file=sys.stderr)
 
     err("\n================================ EXCEPTION INFO ================================\n")
@@ -106,7 +108,7 @@ def _except_hook(exc_type, exc_value, exc_tb):
         if frame_func == "__getattribute__": continue
         if not frame_locl: continue
         err("\n  Within %s() line %s in file %s:" % (frame_func, tb_line, frame_file))
-        for key in sorted(frame_locl.keys(), reverse=True):
+        for key in sorted(viewkeys(frame_locl), reverse=True):
             if key.startswith("__") and key.endswith("__"): continue
             value = frame_locl[key]
             if value is None: continue  # do not print uninitialized variables
@@ -176,14 +178,3 @@ def _except_hook(exc_type, exc_value, exc_tb):
 # The original exception hook is stored at sys.__excepthook__, and it will get called if our custom exception
 # handling function itself raises an exception.
 sys.excepthook = _except_hook
-
-
-# Replace __repr__ function on str so that it produces double-quoted strings instead of single-quoted. This makes it
-# easier to spot the difference between old-style strings of type 'str' and 'unicode', and new-style strings of type
-# "newstr". This replacement only happens on Py2, since in Py3 we use native str type throughout.
-if str("").__class__.__name__ == "newstr":
-    def _new_str_repr(self):
-        value = super(str, self).__repr__()
-        return '"' + value[2:-1].replace("\\'", "'").replace('"', '\\"') + '"'
-
-    str("").__class__.__repr__ = _new_str_repr

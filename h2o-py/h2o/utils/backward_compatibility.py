@@ -7,8 +7,7 @@ This module provides helper functions to write code that is backward-compatible.
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
 from __future__ import division, print_function, absolute_import
-# noinspection PyUnresolvedReferences
-from h2o.compatibility import *
+from h2o.utils.compatibility import *  # NOQA
 
 
 def backwards_compatible(*args):

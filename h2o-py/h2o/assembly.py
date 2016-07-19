@@ -1,12 +1,12 @@
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
-from .compatibility import *
+from .utils.compatibility import *
 
 from collections import namedtuple
 import uuid
-from .utils.shared_utils import urlopen
+from .utils.shared_utils import urlopen, quoted
 import h2o
-from .h2o import quoted, H2OFrame
+from h2o.frame import H2OFrame
 
 
 class H2OAssembly(object):

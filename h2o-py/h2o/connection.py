@@ -32,11 +32,11 @@ from warnings import warn
 import requests
 from requests.auth import AuthBase
 
-from .compatibility import *  # NOQA
 from .schemas.cloud import CloudV3
 from .schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from .two_dim_table import H2OTwoDimTable
 from .utils.backward_compatibility import backwards_compatible, CallableString
+from .utils.compatibility import *  # NOQA
 from .utils.shared_utils import stringify_list
 
 __all__ = ("H2OConnection", "H2OLocalServer", "H2OStartupError", "H2OConnectionError", "H2OServerError",

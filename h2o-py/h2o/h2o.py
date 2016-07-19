@@ -10,9 +10,6 @@ import os
 import re
 import warnings
 
-from .compatibility import *
-from .debugging import *
-from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen
 from .connection import H2OConnection, H2OLocalServer, H2OConnectionError, H2OServerError
 from .expr import ExprNode
 from .job import H2OJob
@@ -29,6 +26,9 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .grid.grid_search import H2OGridSearch
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
+from .utils.debugging import *
+from .utils.compatibility import *
+from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen
 
 
 warnings.simplefilter('always', DeprecationWarning)

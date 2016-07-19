@@ -8,12 +8,13 @@
 This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from ..compatibility import *  # NOQA
-import os
+
 import imp
 import itertools
+import os
 import re
+
+from h2o.utils.compatibility import *  # NOQA
 
 # private static methods
 _id_ctr = 0
