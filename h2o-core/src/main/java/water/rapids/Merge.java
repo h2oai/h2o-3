@@ -14,7 +14,22 @@ public class Merge {
   // This is a fully distributed and parallel sort.
   // It is not currently an in-place sort, so the data is doubled and a sorted copy is returned.
   public static Frame sort( final Frame fr, int[] cols ) {
-    return Merge.merge(fr, new Frame(), cols, new int[0], true/*allLeft*/, new int[cols.length][]);
+    if( cols.length==0 )        // Empty key list
+      return fr;                // Return original frame
+    for( int col : cols )
+      if( col < 0 || col >= fr.numCols() )
+        throw new IllegalArgumentException("Column "+col+" is out of range of "+fr.numCols());
+    // All identity ID maps
+    int id_maps[][] = new int[cols.length][];
+    for( int i=0; i<cols.length; i++ ) {
+      Vec vec = fr.vec(i);
+      if( vec.isCategorical() ) {
+        String[] domain = vec.domain();
+        id_maps[i] = new int[domain.length];
+        for( int j=0; j<domain.length; j++ ) id_maps[i][j] = j;
+      }
+    }
+    return Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, id_maps);
   }
 
   // single-threaded driver logic.  Merge left and right frames based on common columns.
@@ -25,7 +40,8 @@ public class Merge {
     // for now to save a deep branch later
     for (int i=0; i<id_maps.length; i++) {
       if (id_maps[i] == null) continue;
-      assert id_maps[i].length == leftFrame.vec(leftCols[i]).max()+1;
+      assert id_maps[i].length >= leftFrame.vec(leftCols[i]).max()+1;
+      if( !hasRite ) continue;
       int right_max = (int)riteFrame.vec(riteCols[i]).max();
       for (int j=0; j<id_maps[i].length; j++) {
         assert id_maps[i][j] >= 0;

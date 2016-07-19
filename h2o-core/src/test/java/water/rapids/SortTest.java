@@ -52,6 +52,22 @@ public class SortTest extends TestUtil {
     }
   }
 
+  @Test public void testBasicSortJava2() {
+    Frame fr = null, res = null;
+    try {
+      fr = buildFrame(1000,10);
+      String[] domain = new String[1000];
+      for( int i=0; i<1000; i++ ) domain[i] = "D"+i;
+      fr.vec(0).setDomain(domain);
+      res = fr.sort(new int[]{0,1});
+      new CheckSort().doAll(res);
+    } finally {
+      if( fr  != null ) fr .delete();
+      if( res != null ) res.delete();
+    }
+  }
+
+
   // Assert that result is indeed sorted - on all 3 columns, as this is a
   // stable sort.
   private class CheckSort extends MRTask<CheckSort> {
