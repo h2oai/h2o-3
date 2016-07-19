@@ -2,13 +2,8 @@ description = "H2O Persist HDFS"
 
 dependencies {
   compile project(":h2o-core")
-  compile("org.apache.hadoop:hadoop-common:2.7.2") {
+  compile('net.java.dev.jets3t:jets3t:0.6.1')
+  compile("org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0") {
       transitive = true
-  }
-  compile("org.apache.hadoop:hadoop-hdfs:2.7.2") {
-      transitive = false
-  }
-  compile("org.apache.hadoop:hadoop-auth:2.7.2") {
-      transitive = false
   }
 }

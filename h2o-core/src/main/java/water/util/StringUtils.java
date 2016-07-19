@@ -1,5 +1,7 @@
 package water.util;
 
+import water.parser.BufferedString;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -27,6 +29,9 @@ public class StringUtils {
    * @return True if the string is either null or empty, false otherwise
    */
   public static boolean isNullOrEmpty(String s) {
+    return s == null || s.length() == 0;
+  }
+  public static boolean isNullOrEmpty(BufferedString s) {
     return s == null || s.length() == 0;
   }
 

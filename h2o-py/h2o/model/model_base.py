@@ -92,24 +92,26 @@ class ModelBase(object):
       A new H2OFrame of predictions.
     """
     if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-    j = h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, leaf_node_assignment=True)
+    j = h2o.connection().post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id,
+                        leaf_node_assignment=True)
     return h2o.get_frame(j["predictions_frame"]["name"])
 
   def predict(self, test_data):
     """
     Predict on a dataset.
-    
+
     Parameters
-    ----------    
+    ----------
     test_data: H2OFrame
       Data on which to make predictions.
-    
+
     Returns
     -------
       A new H2OFrame of predictions.
     """
     if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-    j = H2OJob(h2o.H2OConnection.post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id, _rest_version=4), self._model_json['algo'] + " prediction")
+    j = H2OJob(h2o.connection().post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id,
+                               _rest_version=4), self._model_json['algo'] + " prediction")
     j.poll()
     return h2o.get_frame(j.dest_key)
 
@@ -151,7 +153,8 @@ class ModelBase(object):
     :param layer: 0 index hidden layer
     """
     if test_data is None: raise ValueError("Must specify test data")
-    j = H2OJob(h2o.H2OConnection.post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id, deep_features_hidden_layer=layer, _rest_version=4), "deepfeatures")
+    j = H2OJob(h2o.connection().post_json("Predictions/models/" + self._id + "/frames/" + test_data.frame_id,
+                               deep_features_hidden_layer=layer, _rest_version=4), "deepfeatures")
     j.poll()
     return h2o.get_frame(j.dest_key)
 
@@ -212,14 +215,14 @@ class ModelBase(object):
   def model_performance(self, test_data=None, train=False, valid=False, xval=False):
     """
     Generate model metrics for this model on test_data.
-    
+
     Parameters
-    ----------   
-    test_data: H2OFrame, optional 
+    ----------
+    test_data: H2OFrame, optional
       Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are ignored if test_data is not None.
     train: boolean, optional
       Report the training metrics for the model.
-    valid: boolean, optional 
+    valid: boolean, optional
       Report the validation metrics for the model.
     xval: boolean, optional
       Report the cross-validation metrics for the model. If train and valid are True, then it defaults to True.
@@ -237,7 +240,7 @@ class ModelBase(object):
     else:  # cases dealing with test_data not None
       if not isinstance(test_data, h2o.H2OFrame):
         raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
-      res = h2o.H2OConnection.post_json("ModelMetrics/models/" + self.model_id + "/frames/" + test_data.frame_id)
+      res = h2o.connection().post_json("ModelMetrics/models/" + self.model_id + "/frames/" + test_data.frame_id)
 
       # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
       raw_metrics = None
@@ -247,11 +250,11 @@ class ModelBase(object):
           break
       return self._metrics_class(raw_metrics,algo=self._model_json["algo"])
 
-  
+
   def scoring_history(self):
     """
     Retrieve Model Score History
-    
+
     Returns
     -------
       The score history as an H2OTwoDimTable or a Pandas DataFrame.
@@ -334,7 +337,7 @@ class ModelBase(object):
     ----------
     use_pandas: boolean, optional
       If True, then the variable importances will be returned as a pandas data frame.
-    
+
     Returns
     -------
       A list or Pandas DataFrame.

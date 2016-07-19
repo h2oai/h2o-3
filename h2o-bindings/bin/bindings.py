@@ -267,7 +267,9 @@ def endpoints(raw=False):
             for parm in e["path_params"]:
                 # find the metadata for the field from the input schema:
                 fields = [field for field in e["ischema"]["fields"] if field["name"] == parm]
-                assert len(fields) == 1, "Failed to find parameter: %s for endpoint: %r" % (parm, e)
+                assert len(fields) == 1, \
+                    "Failed to find parameter: %s for endpoint: %s in the input schema %s" \
+                    % (parm, e["url_pattern"], e["ischema"]["name"])
                 field = fields[0].copy()
                 schema = field["schema_name"] or ""   # {schema} is null for primitive types
                 ftype = field["type"]

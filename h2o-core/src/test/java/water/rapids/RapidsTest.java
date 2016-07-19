@@ -9,6 +9,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
 
 import java.io.File;
@@ -234,8 +235,8 @@ public class RapidsTest extends TestUtil {
       Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
-      if( val instanceof ValFrame ) {
-        Frame fr2= ((ValFrame)val)._fr;
+      if (val instanceof ValFrame) {
+        Frame fr2 = val.getFrame();
         System.out.println(fr2.vec(0));
         fr2.remove();
       }
@@ -250,8 +251,8 @@ public class RapidsTest extends TestUtil {
     Frame fr = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
     try {
       Val val = Rapids.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
-      if( val instanceof ValFrame ) {
-        Frame fr2= ((ValFrame)val)._fr;
+      if (val instanceof ValFrame ) {
+        Frame fr2 = val.getFrame();
         System.out.println(fr2.vec(0));
         fr2.remove();
       }
@@ -265,8 +266,8 @@ public class RapidsTest extends TestUtil {
     String tree = "(tmp= py_2 (:= (tmp= py_1 (cbind a.hex (== (cols_py a.hex 4.0 ) \"Iris-setosa\" ) ) ) (as.factor (cols_py py_1 5.0 ) ) 5.0 [] ) )";
     //String tree = "(:= (tmp= py_1 a.hex) (h2o.runif a.hex -1) 4 [])";
     Val val = Rapids.exec(tree);
-    if( val instanceof ValFrame ) {
-      Frame fr2= ((ValFrame)val)._fr;
+    if (val instanceof ValFrame ) {
+      Frame fr2 = val.getFrame();
       System.out.println(fr2.vec(0));
       fr2.remove();
     }

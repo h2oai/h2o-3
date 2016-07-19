@@ -5,6 +5,9 @@ import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
 import water.rapids.*;
+import water.rapids.ast.AstExec;
+import water.rapids.ast.AstParameter;
+import water.rapids.ast.AstRoot;
 
 public class H2OColOp extends Transform<H2OColOp> {
   protected final String _fun;
@@ -16,7 +19,7 @@ public class H2OColOp extends Transform<H2OColOp> {
   public H2OColOp(String name, String ast, boolean inplace, String[] newNames) { // (op (cols fr cols) {extra_args})
     super(name,ast,inplace,newNames);
     _fun = _ast._asts[0].str();
-    _oldCol = ((ASTExec)_ast._asts[1])._asts[2].str();
+    _oldCol = ((AstExec)_ast._asts[1])._asts[2].str();
     setupParams();
   }
 
@@ -29,12 +32,12 @@ public class H2OColOp extends Transform<H2OColOp> {
   }
 
   protected void setupParamsImpl(int i, String[] args) {
-    _params.put(args[i], (ASTParameter) _ast._asts[i + 1]);
+    _params.put(args[i], (AstParameter) _ast._asts[i + 1]);
   }
 
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
-    ((ASTExec)_ast._asts[1])._asts[1] = AST.newASTFrame(f);
+    ((AstExec)_ast._asts[1])._asts[1] = AstRoot.newAstFrame(f);
     Session ses = new Session();
     Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;

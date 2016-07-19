@@ -19,7 +19,27 @@ class H2OTwoDimTable(object):
     self.cell_values = cell_values if cell_values else self._parse_values(raw_cell_values, col_types)
     self.col_formats = col_formats
     self.table_description = table_description
-  
+
+  @staticmethod
+  def make(keyvals):
+      """
+      Create new H2OTwoDimTable object from list of (key,value) tuples which are a pre-cursor to JSON dict.
+      :param keyvals: list of (key, value) tuples
+      :return: new H2OTwoDimTable object
+      """
+      kwargs = {}
+      for key, value in keyvals:
+          if key == "columns":
+              kwargs["col_formats"] = [c["format"] for c in value]
+              kwargs["col_types"] = [c["type"] for c in value]
+              kwargs["col_header"] = [c["name"] for c in value]
+              kwargs["row_header"] = len(value)
+          if key == "name": kwargs["table_header"] = value
+          if key == "description": kwargs["table_description"] = value
+          if key == "data": kwargs["raw_cell_values"] = value
+      return H2OTwoDimTable(**kwargs)
+
+
   def as_data_frame(self):
     if can_use_pandas():
      import pandas

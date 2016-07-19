@@ -1975,8 +1975,11 @@ g_r_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(
 g_py_test_setup = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                 "../h2o-py/scripts/h2o-py-test-setup.py"))
 g_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-# If you get an exception in this line, then reboot your WiFi (or restart computer)
-g_machine_ip = socket.gethostbyname(socket.gethostname())
+try:
+    # If you get an exception in this line, then reboot your WiFi (or restart computer)
+    g_machine_ip = socket.gethostbyname(socket.gethostname())
+except socket.gaierror:
+    g_machine_ip = "127.0.0.1"
 g_ncpu = multiprocessing.cpu_count()
 g_os = platform.system()
 

@@ -1,12 +1,17 @@
 package water.rapids;
 
 import water.fvec.Frame;
+import water.rapids.ast.AstExec;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.*;
+import water.util.Log;
 
 /**
  * <p> Rapids is an interpreter of abstract syntax trees.
  *
- * <p> This file contains the AST parser and parser helper functions.
- * AST Execution starts in the ASTExec file, but spreads throughout Rapids.
+ * <p> This file contains the AstRoot parser and parser helper functions.
+ * AstRoot Execution starts in the AstExec file, but spreads throughout Rapids.
  *
  * <p> Trees have a Lisp-like structure with the following "reserved" special
  * characters:
@@ -32,14 +37,14 @@ import water.fvec.Frame;
  * on the execution stack).
  */
 public class Rapids {
-  protected final String _str;  // Statement to parse and execute
-  protected int _x;             // Parse pointer
+  private final String _str;  // Statement to parse and execute
+  private int _x;             // Parse pointer
 
   /**
    * Parse a Rapids expression string into an Abstract Syntax Tree object.
    * @param rapids expression to parse
    */
-  public static AST parse(String rapids) {
+  public static AstRoot parse(String rapids) {
     return new Rapids(rapids).parse();
   }
 
@@ -48,16 +53,16 @@ public class Rapids {
    * @param rapids expression to parse
    */
   public static Val exec(String rapids) {
-    Session ses = new Session();
+    Session session = new Session();
     try {
-      AST ast = Rapids.parse(rapids);
-      Val val = ses.exec(ast, null);
+      AstRoot ast = Rapids.parse(rapids);
+      Val val = session.exec(ast, null);
       // Any returned Frame has it's REFCNT raised by +1, and the end(val) call
       // will account for that, copying Vecs as needed so that the returned
       // Frame is independent of the Session (which is disappearing).
-      return ses.end(val);
+      return session.end(val);
     } catch (Throwable ex) {
-      throw ses.endQuietly(ex);
+      throw session.endQuietly(ex);
     }
   }
 
@@ -68,24 +73,24 @@ public class Rapids {
    * a normal global frame.
    * @param rapids expression to parse
    */
-  public static Val exec(String rapids, Session ses) {
-    AST ast = Rapids.parse(rapids);
+  public static Val exec(String rapids, Session session) {
+    AstRoot ast = Rapids.parse(rapids);
     // Synchronize the session, to stop back-to-back overlapping Rapids calls
     // on the same session, which Flow sometimes does
-    synchronized (ses) {
-      Val val = ses.exec(ast, null);
+    synchronized (session) {
+      Val val = session.exec(ast, null);
       // Any returned Frame has it's REFCNT raised by +1, but is exiting the
       // session.  If it's a global, we simply need to lower the internal refcnts
       // (which won't delete on zero cnts because of the global).  If it's a
       // named temp, the ref cnts are accounted for by being in the temp table.
       if (val.isFrame()) {
-        Frame fr = val.getFrame();
-        assert fr._key != null; // No nameless Frame returns, as these are hard to cleanup
-        if (ses.FRAMES.containsKey(fr)) {
-          throw water.H2O.unimpl();
-        } else {
-          ses.addRefCnt(fr, -1);
-        }
+        Frame frame = val.getFrame();
+        assert frame._key != null; // No nameless Frame returns, as these are hard to cleanup
+//        if (session.FRAMES.containsKey(frame._key)) {
+//          Log.info("UNIMPL: session.FRAMES already contains key " + frame._key);
+//        }// else {
+        session.addRefCnt(frame, -1);
+        //}
       }
       return val;
     }
@@ -102,19 +107,19 @@ public class Rapids {
    * digits: a double
    * letters or other specials: an ID
    */
-  public AST parse() {
+  public AstRoot parse() {
     switch (skipWS()) {
-      case '(':  return new ASTExec(this); // function application
-      case '{':  return new ASTFun(this);  // function definition
+      case '(':  return new AstExec(this); // function application
+      case '{':  return new AstFunction(this);  // function definition
       case '#':  _x++;                     // Skip before double, FALL THRU
       case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-        return new ASTNum(this);
-      case '\"': return new ASTStr(this,'\"');
-      case '\'': return new ASTStr(this,'\'');
-      case '[':  return isQuote(xpeek('[').skipWS()) ? new ASTStrList(this) : new ASTNumList(this);
+        return new AstNum(this);
+      case '\"': return new AstStr(this,'\"');
+      case '\'': return new AstStr(this,'\'');
+      case '[':  return isQuote(xpeek('[').skipWS()) ? new AstStrList(this) : new AstNumList(this);
       case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
-      case '-':  return (peek(1)>='0' && peek(1) <='9') ? new ASTNum(this) : new ASTId(this);
-      default:  return new ASTId(this);
+      case '-':  return (peek(1)>='0' && peek(1) <='9') ? new AstNum(this) : new AstId(this);
+      default:  return new AstId(this);
     }    
   }
 
@@ -135,7 +140,7 @@ public class Rapids {
   }
 
   // Peek, and throw if not found an expected character
-  Rapids xpeek(char c) {
+  public Rapids xpeek(char c) {
     if (peek() != c)
       throw new IllegalASTException("Expected '" + c + "'. Got: '" + peek() + "'.  unparsed: " + unparsed() + " ; _x = " + _x);
     _x++;
@@ -143,14 +148,14 @@ public class Rapids {
   }
 
   // Skip white space, return the 1st non-whitespace char or ' ' if out of text
-  char skipWS() {
+  public char skipWS() {
     char c = ' ';
     while (_x < _str.length() && isWS(c = peek())) _x++;
     return c;
   }
 
   // Parse till whitespace or close-paren
-  String token() {
+  public String token() {
     int start = _x;
     char c;
     while (!isWS(c = peek()) && c != ')' && c != '}') _x++;
@@ -159,7 +164,7 @@ public class Rapids {
   }
 
   // Parse while number-like, and return the number
-  double number() {
+  public double number() {
     int start = _x;
     char c;
     while (!isWS(c = peek()) && c != ')' && c != ']' && c != ',' && c != ':') _x++;
@@ -167,7 +172,7 @@ public class Rapids {
   }
 
   // Parse till matching
-  String match(char c) {
+  public String match(char c) {
     int start = ++_x;
     while (peek() != c) _x++;
     _x++;                       // Skip the match
@@ -183,12 +188,12 @@ public class Rapids {
     return c == ' ' || c == '\t' || c == '\n';
   }
 
-  static boolean isQuote(char c) {
+  public static boolean isQuote(char c) {
     return c == '\'' || c == '\"';
   }
 
 
-  AST throwErr(String msg) {
+  public AstRoot throwErr(String msg) {
     int idx = _str.length() - 1;
     int lo = _x, hi = idx;
 
@@ -208,8 +213,8 @@ public class Rapids {
     throw new IllegalASTException(s);
   }
 
-  static class IllegalASTException extends IllegalArgumentException {
-    IllegalASTException(String s) {
+  public static class IllegalASTException extends IllegalArgumentException {
+    public IllegalASTException(String s) {
       super(s);
     }
   }

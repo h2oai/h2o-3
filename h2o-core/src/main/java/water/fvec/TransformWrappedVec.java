@@ -4,11 +4,11 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.rapids.AST;
-import water.rapids.ASTParameter;
+import water.rapids.ast.AstParameter;
+import water.rapids.ast.AstRoot;
 import water.rapids.Env;
 
-import static water.rapids.ASTParameter.makeNum;
+import static water.rapids.ast.AstParameter.makeNum;
 
 /**
  * This wrapper pushes a transform down into each chunk so that
@@ -37,16 +37,16 @@ public class TransformWrappedVec extends WrappedVec {
 
   private final Key<Vec>[] _masterVecKeys;
   private transient Vec[] _masterVecs;
-  private final AST _fun;
+  private final AstRoot _fun;
 
-  public TransformWrappedVec(Key key, int rowLayout, AST fun, Key<Vec>... masterVecKeys) {
+  public TransformWrappedVec(Key key, int rowLayout, AstRoot fun, Key<Vec>... masterVecKeys) {
     super(key, rowLayout, null);
     _fun=fun;
     _masterVecKeys = masterVecKeys;
     DKV.put(this);
   }
 
-  public TransformWrappedVec(Vec v, AST fun) {
+  public TransformWrappedVec(Vec v, AstRoot fun) {
     this(v.group().addVec(), v._rowLayout, fun, v._key);
   }
 
@@ -79,20 +79,20 @@ public class TransformWrappedVec extends WrappedVec {
   }
 
   public static class TransformWrappedChunk extends Chunk {
-    public final AST _fun;
+    public final AstRoot _fun;
     public final transient Chunk _c[];
 
-    private final AST[] _asts;
+    private final AstRoot[] _asts;
     private final Env _env;
 
-    TransformWrappedChunk(AST fun, Vec transformWrappedVec, Chunk... c) {
+    TransformWrappedChunk(AstRoot fun, Vec transformWrappedVec, Chunk... c) {
 
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
 
       _fun=fun;
-      _asts = new AST[1+_c.length];
+      _asts = new AstRoot[1+_c.length];
       _asts[0]=_fun;
       for(int i=1;i<_asts.length;++i)
         _asts[i] = makeNum(0);
@@ -104,7 +104,7 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public double atd_impl(int idx) {
       if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
       for(int i=1;i<_asts.length;++i)
-        ((ASTParameter)_asts[i]).setNum(_c[i-1].atd(idx)); // = makeNum(_c[i-1].atd(idx));
+        ((AstParameter)_asts[i]).setNum(_c[i-1].atd(idx)); // = makeNum(_c[i-1].atd(idx));
       return _fun.apply(_env,_env.stk(),_asts).getNum();   // Make the call per-row
     }
 

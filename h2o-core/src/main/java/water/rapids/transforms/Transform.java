@@ -2,18 +2,18 @@ package water.rapids.transforms;
 
 import water.Iced;
 import water.fvec.Frame;
-import water.rapids.ASTExec;
-import water.rapids.ASTParameter;
+import water.rapids.ast.AstExec;
+import water.rapids.ast.AstParameter;
 import water.rapids.Rapids;
 import water.util.IcedHashMap;
 import water.util.SB;
 
 public abstract class Transform<T> extends Iced {
   protected final String _name;
-  protected final ASTExec _ast;
+  protected final AstExec _ast;
   protected final boolean _inplace;
   protected final String[] _newNames;
-  protected final IcedHashMap<String,ASTParameter> _params;
+  protected final IcedHashMap<String,AstParameter> _params;
   protected String[] _inNames;
   protected String[] _inTypes;
   protected String[] _outTypes;
@@ -21,7 +21,7 @@ public abstract class Transform<T> extends Iced {
 
   Transform(String name, String ast, boolean inplace, String[] newNames) {
     _name=name;
-    _ast = (ASTExec) Rapids.parse(ast);
+    _ast = (AstExec) Rapids.parse(ast);
     _inplace = inplace;
     _newNames = newNames;
     _params = new IcedHashMap<>();

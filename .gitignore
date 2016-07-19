@@ -55,6 +55,7 @@ h2o-r/h2o-package/NAMESPACE
 py2/testdir_single_jvm/h2o_fc-nodes.json
 h2o-py/demos/.ipynb_checkpoints
 Rplots.pdf
+guidelines.py
 
 # Don't delete local R packages
 Rlibrary

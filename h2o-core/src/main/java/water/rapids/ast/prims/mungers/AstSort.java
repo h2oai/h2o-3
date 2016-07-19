@@ -1,0 +1,30 @@
+package water.rapids.ast.prims.mungers;
+
+import water.fvec.*;
+import water.rapids.Env;
+import water.rapids.Merge;
+import water.rapids.Val;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
+import water.rapids.vals.ValFrame;
+
+
+/** Sort the whole frame by the given columns
+ */
+public class AstSort extends AstPrimitive {
+  @Override public String[] args() { return new String[]{"ary","cols"}; }
+  @Override public String str(){ return "sort";}
+  @Override public int nargs() { return 1+2; } // (sort ary [cols])
+
+  @Override public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    int[] cols = asts[2].columns(fr.names());
+    if( cols.length==0 )        // Empty key list
+      return new ValFrame(fr);  // Return original frame
+    for( int col : cols )
+      if( col < 0 || col >= fr.numCols() )
+        throw new IllegalArgumentException("Column "+col+" is out of range of "+fr.numCols());
+
+    return new ValFrame(Merge.merge(fr, new Frame(new Vec[0]), cols, new int[0], true/*allLeft*/, new int[cols.length][]));
+  }
+}

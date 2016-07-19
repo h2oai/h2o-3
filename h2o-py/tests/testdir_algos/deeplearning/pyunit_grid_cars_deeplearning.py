@@ -3,7 +3,7 @@ import sys
 import os
 import copy
 import random
-sys.path.insert(1, os.path.join("..",".."))
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.grid.grid_search import H2OGridSearch

@@ -17,10 +17,10 @@ public class RemoveAllHandler extends Handler {
     // Cancel and remove leftover running jobs
     for( Job j : Job.jobs() ) { j.stop_requested(); j.remove(fs); }
     // Wipe out any and all session info
-    if( InitIDHandler.SESSIONS != null ) {
-      for(String k: InitIDHandler.SESSIONS.keySet() )
-        (InitIDHandler.SESSIONS.get(k)).endQuietly(null);
-      InitIDHandler.SESSIONS.clear();
+    if( RapidsHandler.SESSIONS != null ) {
+      for(String k: RapidsHandler.SESSIONS.keySet() )
+        (RapidsHandler.SESSIONS.get(k)).endQuietly(null);
+      RapidsHandler.SESSIONS.clear();
     }
     fs.blockForPending();
     // Bulk brainless key removal.  Completely wipes all Keys without regard.

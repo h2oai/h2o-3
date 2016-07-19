@@ -6,7 +6,6 @@ from __future__ import absolute_import
 from builtins import zip
 from builtins import range
 import h2o
-from h2o.connection import H2OConnection
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.estimators.estimator_base import H2OEstimator
@@ -14,6 +13,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 import itertools
 from .metrics import *
+from h2o.utils.shared_utils import quoted
 
 
 class H2OGridSearch(object):
@@ -22,7 +22,7 @@ class H2OGridSearch(object):
   def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
     """
     Grid Search of a Hyper-Parameter Space for a Model
-  
+
     Parameters
     ----------
     model : H2OEstimator
@@ -37,17 +37,17 @@ class H2OGridSearch(object):
     search_criteria: dict, optional
       A dictionary of directives which control the search of the hyperparameter space.
       The default strategy 'Cartesian' covers the entire space of hyperparameter combinations.
-      Specify the 'RandomDiscrete' strategy to get random search of all the combinations 
-      of your hyperparameters.  RandomDiscrete should usually be combined with at least one early 
-      stopping criterion, max_models and/or max_runtime_secs, e.g. 
+      Specify the 'RandomDiscrete' strategy to get random search of all the combinations
+      of your hyperparameters.  RandomDiscrete should usually be combined with at least one early
+      stopping criterion, max_models and/or max_runtime_secs, e.g.
       search_criteria = {strategy: 'RandomDiscrete', max_models: 42, max_runtime_secs: 28800} or
       search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'AUTO', stopping_tolerance: 0.001, stopping_rounds: 10} or
       search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'misclassification', stopping_tolerance: 0.00001, stopping_rounds: 5}.
-     
+
     Returns
     -------
       A new H2OGridSearch instance.
-    
+
     Examples
     --------
       >>> from h2o.grid.grid_search import H2OGridSearch
@@ -194,13 +194,13 @@ class H2OGridSearch(object):
     folds  = kwargs["fold_column"]
     weights= kwargs["weights_column"]
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
-    kwargs["ignored_columns"] = None if ignored_columns==[] else [h2o.h2o._quoted(col) for col in ignored_columns]
+    kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
     algo = self.model._compute_algo()  #unique to grid search
     kwargs["_rest_version"] = 99  #unique to grid search
-    if self.grid_id is not None: kwargs["grid_id"] = self.grid_id 
+    if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
 
-    grid = H2OJob(H2OConnection.post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
+    grid = H2OJob(h2o.connection().post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
 
     if self._future:
       self._job = grid
@@ -208,7 +208,7 @@ class H2OGridSearch(object):
 
     grid.poll()
     if '_rest_version' in list(kwargs.keys()):
-      grid_json = H2OConnection.get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
+      grid_json = h2o.connection().get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
 
       error_index = 0
       if len(grid_json["failure_details"]) > 0:
@@ -224,14 +224,14 @@ class H2OGridSearch(object):
                   "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
           error_index += 1
     else:
-      grid_json = H2OConnection.get_json("Grids/"+grid.dest_key)
+      grid_json = h2o.connection().get_json("Grids/"+grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
 
     #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
     # sometimes no model is returned due to bad parameter values provided by the user.
     if len(grid_json['model_ids']) > 0:
-      first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'],
+      first_model_json = h2o.connection().get_json("Models/"+grid_json['model_ids'][0]['name'],
                                                 _rest_version=kwargs['_rest_version'])['models'][0]
       self._resolve_grid(grid.dest_key, grid_json, first_model_json)
     else:
@@ -404,7 +404,7 @@ class H2OGridSearch(object):
       r_values = list(model_summary.cell_values[0])
       r_values[0] = model.model_id
       table.append(r_values)
-        
+
     # if h2o.can_use_pandas():
     #  import pandas
     #  pandas.options.display.max_rows = 20
@@ -413,7 +413,7 @@ class H2OGridSearch(object):
     print()
     if header:
       print('Grid Summary:')
-    print()    
+    print()
     H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
 
@@ -623,7 +623,7 @@ class H2OGridSearch(object):
   def sort_by(self, metric, increasing=True):
     """
     Sort the models in the grid space by a metric.
-    
+
     Parameters
     ----------
     metric: str
@@ -631,12 +631,12 @@ class H2OGridSearch(object):
       they can be passed to the metric, for example 'logloss(valid=True)'
     increasing: boolean, optional
       Sort the metric in increasing (True) (default) or decreasing (False) order.
-      
+
     Returns
     -------
-      An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can 
+      An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can
       be selected and used for prediction.
-     
+
     Examples
     --------
       >>> grid_search_results = gs.sort_by('F1', False)
@@ -658,14 +658,14 @@ class H2OGridSearch(object):
   def get_hyperparams(self, id, display=True):
     """
     Get the hyperparameters of a model explored by grid search.
-    
+
     Parameters
-    ----------    
+    ----------
     id: str
       The model id of the model with hyperparameters of interest.
-    display: boolean 
+    display: boolean
       Flag to indicate whether to display the hyperparameter names.
-      
+
     Returns
     -------
       A list of the hyperparameters for the specified model.
@@ -719,7 +719,7 @@ class H2OGridSearch(object):
   def sorted_metric_table(self):
     """
     Retrieve Summary Table of an H2O Grid Search
-    
+
     Returns
     -------
       The summary table as an H2OTwoDimTable or a Pandas DataFrame.
@@ -742,10 +742,10 @@ class H2OGridSearch(object):
 
   def get_grid(self, sort_by=None, decreasing=None):
     """
-    Retrieve an H2OGridSearch instance. Optionally specify a metric by which to sort models and a sort order.  
-    
+    Retrieve an H2OGridSearch instance. Optionally specify a metric by which to sort models and a sort order.
+
     Parameters
-    ----------    
+    ----------
     sort_by : str, optional
       A metric by which to sort the models in the grid space. Choices are "logloss", "residual_deviance", "mse", "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
     decreasing : bool, optional
@@ -757,10 +757,10 @@ class H2OGridSearch(object):
     """
     if sort_by is None and decreasing is None: return self
 
-    grid_json = H2OConnection.get_json("Grids/"+self._id, sort_by=sort_by, decreasing=decreasing, _rest_version=99)
+    grid_json = h2o.connection().get_json("Grids/"+self._id, sort_by=sort_by, decreasing=decreasing, _rest_version=99)
     grid = H2OGridSearch(self.model, self.hyper_params, self._id)
     grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']] #reordered
-    first_model_json = H2OConnection.get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=99)['models'][0]
+    first_model_json = h2o.connection().get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=99)['models'][0]
     model_class = H2OGridSearch._metrics_class(first_model_json)
     m = model_class()
     m._id = self._id

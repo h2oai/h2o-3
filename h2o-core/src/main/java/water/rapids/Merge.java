@@ -17,9 +17,8 @@ public class Merge {
     return Merge.merge(fr, new Frame(), cols, new int[0], true/*allLeft*/, new int[cols.length][]);
   }
 
-
   // single-threaded driver logic.  Merge left and right frames based on common columns.
-  static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], boolean allLeft, int[][] id_maps) {
+  public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[], boolean allLeft, int[][] id_maps) {
     final boolean hasRite = riteCols.length > 0;
 
     // map missing levels to -1 (rather than increasing slots after the end)
