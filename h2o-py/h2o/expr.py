@@ -63,7 +63,6 @@ class ExprNode(object):
   #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
   MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
-  @translate_args
   def __init__(self, op="", *args):
     # assert isinstance(op, str), op
     self._op        = op          # Base opcode string
@@ -85,7 +84,6 @@ class ExprNode(object):
     assert self._cache.is_scalar()
     return self._cache._data
 
-  @translate_args
   def _eval_driver(self, top):
     exec_str = self._do_it(top)
     res = ExprNode.rapids(exec_str)
@@ -129,7 +127,6 @@ class ExprNode(object):
     return exec_str
 
   @staticmethod
-  @translate_args
   def _arg_to_expr(arg):
     if arg is not None and isinstance(arg, range): arg = list(arg)
     if arg is None:                     return "[]"  # empty list

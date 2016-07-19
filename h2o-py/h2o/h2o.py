@@ -147,7 +147,6 @@ def version_check():
                 "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
 
 
-@translate_args
 def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):

@@ -42,7 +42,6 @@ class H2OEstimator(ModelBase):
   H2O model API.
   """
 
-  @translate_args
   def start(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,**params):
     """Asynchronous model build by specifying the predictor columns, response column, and any
     additional frame-specific values.

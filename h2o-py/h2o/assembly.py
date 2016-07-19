@@ -50,7 +50,6 @@ class H2OAssembly(object):
   def names(self):
     return list(zip(*self.steps))[0][:-1]
 
-  @translate_args
   def to_pojo(self, pojo_name="", path="", get_jar=True):
     if pojo_name=="": pojo_name = "AssemblyPOJO_" + str(uuid.uuid4())
     java = h2o.connection().request("GET /99/Assembly.java/%s/%s" % (self.id, pojo_name))
@@ -78,7 +77,6 @@ class H2OAssembly(object):
   #       raise ValueError("Assembly must be a namedtuple with fields ('assembly', 'x', 'params').")
   #     self.fuzed.append(i)
 
-  @translate_args
   def fit(self, fr, **fit_params):
     res = []
     for step in self.steps:

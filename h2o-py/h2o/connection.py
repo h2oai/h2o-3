@@ -365,7 +365,6 @@ class H2OConnection(backwards_compatible()):
         except (H2OConnectionError, H2OServerError):
             return False
 
-    @translate_args
     def start_logging(self, dest=None):
         """
         Start logging all API requests to the provided destination.

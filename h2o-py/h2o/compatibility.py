@@ -8,6 +8,26 @@ It has to be imported from all other files, so that the common header looks like
 from __future__ import absolute_import, division, print_function, unicode_literals
 from .compatibility import *  # NOQA
 
+------------------------------------------------------------------------
+
+1. Strings
+    In Py2 `str` is a byte string (`bytes is str == True`), and `unicode` is a unicode string.
+    In Py3 `str` is a unicode string, `bytes` is a byte string, and symbol `unicode` is not defined.
+    Iterating over a `bytes` string in Py2 produces characters, in Py3 character codes.
+
+    For consistent results, use
+        is_str(s)  to test whether an argument is a string
+        bytes_iterator(s)  to iterate over byte-codes of strins s (which could be bytes or unicode)
+
+2. Integers
+    In Py2 there are two integer types: `int` and `long`. The latter has suffix "L" when stringified with repr().
+    In Py3 `int` is a single integer type, `long` doesn't exist.
+
+    For consistent results, use
+        is_int(x)  to test whether an argument is an integer
+        str(x)  to convert x to string (don't use repr()!)
+
+
   :copyright: (c) 2016 H2O.ai
   :license:   Apache License Version 2.0 (see LICENSE for details)
 """
@@ -62,7 +82,7 @@ def bytes_iterator(s):
         for ch in s:
             yield ord(ch)
     elif PY3 and isinstance(s, bytes):
-        for ch in s.encode("utf-8"):
+        for ch in s:
             yield ch
     else:
         raise TypeError("String argument expected, got %s" % type(s))
@@ -159,54 +179,3 @@ def csv_dict_writer(f, fieldnames, **kwargs):
         if PY3: delim = str(delim)
         kwargs["delimiter"] = delim
     return csv.DictWriter(f, fieldnames, **kwargs)
-
-
-def translate_args(fun):
-    """
-    This decorator ensures that arguments supplied to a function are Python-3 compatible.
-    The problem that it tries to solve is the following: the code in the h2o-py module is written with the
-    unicode_literals future import, and Py3 compatibility layer (which replaces some of the builtin types in Python2
-    with custom objects that are Python3-compatible). However when h2o module is imported from within the "old-style"
-    Python 2 environment, then this enviroment will provide h2o functions with incompatible arguments.
-    For example, when Python 2 environment invokes
-        h2o.connect(ip="localhost", port=12345)
-    then the `ip` argument will be of "native" Python 2 str type, instead of the augmented `str` type provided by
-    this module. As a result, simple check such as `isinstance(ip, str)` will fail, a
-
-    :param fun: Function target of the decorator
-    """
-    from functools import wraps
-    if PY3: return fun
-    strings = (native_str, native_bytes, native_unicode)
-    lists = (native_list, list)
-    dicts = (native_dict, dict)
-
-    def translate_list(arr):
-        newarr = list(arr)  # Make sure that old-style list gets replaced with the new-style list.
-        for i, a in enumerate(newarr):
-            if type(a) is type: continue
-            elif isinstance(a, strings): newarr[i] = str(a)
-            elif isinstance(a, lists): newarr[i] = translate_list(a)
-            elif isinstance(a, dicts): newarr[i] = translate_dict(a)
-            elif isinstance(a, tuple): newarr[i] = tuple(translate_list(a))
-        return newarr
-
-    def translate_dict(d):
-        newdict = dict()
-        for k, v in viewitems(d):
-            kk = str(k)
-            if type(v) is type: newdict[kk] = v
-            elif isinstance(v, strings): newdict[kk] = str(v)
-            elif isinstance(v, lists): newdict[kk] = translate_list(v)
-            elif isinstance(v, dicts): newdict[kk] = translate_dict(v)
-            elif isinstance(v, tuple): newdict[kk] = tuple(translate_list(v))
-            else: newdict[kk] = v
-        return newdict
-
-    @wraps(fun)
-    def decorator_invisible(*args, **kwargs):
-        newargs = translate_list(args)
-        newkwargs = translate_dict(kwargs)
-        return fun(*newargs, **newkwargs)
-
-    return decorator_invisible
