@@ -35,17 +35,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # noinspection PyUnresolvedReferences
 from future.utils import PY2, PY3, with_metaclass  # NOQA
 
-# Store original type declarations, in case we need them later
-native_bytes = bytes
-native_dict = dict
-native_int = int
-native_list = list
-native_object = object
-native_str = str
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Type utilities
+#-----------------------------------------------------------------------------------------------------------------------
+
 if PY2:
-    # "unicode" and "long" symbols don't exist in PY3, so
-    native_unicode = unicode
-    native_long = long
     _str_type = (str, unicode)
     _int_type = (int, long)
     _num_type = (int, long, float)
@@ -54,11 +49,6 @@ else:
     _int_type = int
     _num_type = (int, float)
 
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-# Type utilities
-#-----------------------------------------------------------------------------------------------------------------------
 
 def is_str(s):
     """Test whether the provided argument is a string."""
