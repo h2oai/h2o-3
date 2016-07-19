@@ -4,7 +4,7 @@
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
-from .compatibility import *
+from .compatibility import *  # NOQA
 import sys
 from types import ModuleType
 

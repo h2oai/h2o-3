@@ -205,7 +205,8 @@ def get_human_readable_bytes(size):
     """
     if size == 0: return "0"
     if size is None: return ""
-    assert isinstance(size, int) and size >= 0, "Expected a numeric argument: %r" % size
+    assert_is_int(size, "size")
+    assert size >= 0, "`size` cannot be negative, got %d" % size
     suffixes = "PTGMk"
     maxl = len(suffixes)
     for i in range(maxl + 1):

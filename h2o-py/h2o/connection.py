@@ -111,15 +111,14 @@ class H2OConnection(backwards_compatible()):
             client itself should decide whether it wants to retry or not).
         """
         if server is not None:
-            assert isinstance(server, H2OLocalServer), \
-                "`server` must be an H2OLocalServer instance, got %s" % type(server)
+            assert_is_type(server, "server", H2OLocalServer)
             assert ip is None and port is None and https is None and url is None, \
                 "`url`, `ip`, `port` and `https` parameters cannot be used together with `server`"
             ip = server.ip
             port = server.port
             scheme = server.scheme
         elif url is not None:
-            assert is_str(url), "`url` must be a string, got %s" % type(url)
+            assert_is_str(url, "url")
             assert ip is None and port is None and https is None and server is None, \
                 "`server`, `ip`, `port` and `https` parameters cannot be used together with `url`"
             parts = url.rstrip("/").split(":")
@@ -133,20 +132,18 @@ class H2OConnection(backwards_compatible()):
             if port is None: port = 54321
             if https is None: https = False
             if is_str(port) and port.isdigit(): port = int(port)
-            assert is_str(ip), "`ip` must be a string, got %s" % type(ip)
-            assert is_int(port), "`port` must be an integer, got %s" % type(port)
-            assert isinstance(https, bool), "`https` must be boolean, got %s" % type(https)
+            assert_is_str(ip, "ip")
+            assert_is_int(port, "port")
+            assert_is_bool(https, "https")
             assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
             scheme = "https" if https else "http"
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
-        assert isinstance(verify_ssl_certificates, bool), \
-            "`verify_ssl_certificates` should be boolean, got %s" % type(verify_ssl_certificates)
-        assert proxy is None or is_str(proxy), "`proxy` must be a string, got %s" % type(proxy)
+        assert_is_bool(verify_ssl_certificates, "verify_ssl_certificates")
+        assert_maybe_str(proxy, "proxy")
         assert auth is None or isinstance(auth, tuple) and len(auth) == 2 or isinstance(auth, AuthBase), \
             "Invalid authentication token of type %s" % type(auth)
-        assert cluster_name is None or is_str(cluster_name), \
-            "`cluster_name` must be a string, got %s" % type(cluster_name)
+        assert_maybe_str(cluster_name, "cluster_name")
 
         conn = H2OConnection()
         conn._verbose = bool(verbose)
@@ -202,8 +199,7 @@ class H2OConnection(backwards_compatible()):
         if self._stage == -1: raise H2OConnectionError("Connection was closed, and can no longer be used.")
 
         # Prepare URL
-        if not is_str(endpoint):
-            raise ValueError("Endpoint should be a string, got %s" % type(endpoint))
+        assert_is_str(endpoint, "endpoint")
         if endpoint.count(" ") != 1:
             raise ValueError("Incorrect endpoint '%s': must be of the form 'METHOD URL'." % endpoint)
         method, urltail = str(endpoint).split(" ", 2)
@@ -227,7 +223,6 @@ class H2OConnection(backwards_compatible()):
 
         # Make the request
         start_time = time.time()
-        cluster_name = self._cluster_name
         try:
             self._log_start_transaction(endpoint, data, json, files, params)
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
@@ -326,7 +321,7 @@ class H2OConnection(backwards_compatible()):
 
     @timeout_interval.setter
     def timeout_interval(self, v):
-        assert v is None or is_numeric(v), "`timeout_interval` should be numeric, got %s" % type(v)
+        assert_maybe_numeric(v, "timeout_interval")
         self._timeout = v
 
 
@@ -346,7 +341,7 @@ class H2OConnection(backwards_compatible()):
         except:
             # H2O is already shutdown on the java side
             raise ValueError("The H2O instance running at %s has already been shutdown." % self._base_url)
-        if not isinstance(prompt, bool): raise ValueError("`prompt` must be boolean")
+        assert_is_bool(prompt, "prompt")
         if prompt:
             question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " % self._base_url
             response = input(question)  # works in Py2 & Py3 because it's future.builtins.input
@@ -492,8 +487,8 @@ class H2OConnection(backwards_compatible()):
             #   >>> from future.types import newstr as str
             #   >>> requests.get("http://www.google.com/search", params={"q": str("/foo/bar")})
             # (throws a "KeyError 47" exception).
-            if PY2 and hasattr(value, "__native__"): value = value.__native__()
-            if PY2 and hasattr(key, "__native__"): key = key.__native__()
+            # if PY2 and hasattr(value, "__native__"): value = value.__native__()
+            # if PY2 and hasattr(key, "__native__"): key = key.__native__()
             res[key] = value
         return res
 
@@ -507,7 +502,7 @@ class H2OConnection(backwards_compatible()):
         for passing to requests.request().
         """
         if not filename: return None
-        if not is_str(filename): raise ValueError("Parameter `filename` must be a string: %r" % filename)
+        assert_is_str(filename, "filename")
         absfilename = os.path.abspath(filename)
         if not os.path.exists(absfilename):
             raise ValueError("File %s does not exist" % filename)
