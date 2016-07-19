@@ -89,7 +89,6 @@ class H2OEstimator(ModelBase):
     self._job.poll()
     self._job=None
 
-  @translate_args
   def train(self,x,y=None,training_frame=None,offset_column=None,fold_column=None,weights_column=None,validation_frame=None,max_runtime_secs=None,**params):
     """Train the H2O model by specifying the predictor columns, response column, and any
     additional frame-specific values.
@@ -153,10 +152,10 @@ class H2OEstimator(ModelBase):
   def _model_build(self, x, y, tframe, vframe, kwargs):
     kwargs['training_frame'] = tframe
     if vframe is not None: kwargs["validation_frame"] = vframe
-    if isinstance(y, int): y = tframe.names[y]
+    if is_int(y): y = tframe.names[y]
     if y is not None: kwargs['response_column'] = y
     if not isinstance(x, (list,tuple)): x=[x]
-    if isinstance(x[0], int):
+    if is_int(x[0]):
       x = [tframe.names[i] for i in x]
     offset = kwargs["offset_column"]
     folds  = kwargs["fold_column"]

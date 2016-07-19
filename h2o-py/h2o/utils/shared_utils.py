@@ -9,7 +9,7 @@ This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
-from ..compatibility import *
+from ..compatibility import *  # NOQA
 import os
 import imp
 import itertools
@@ -50,7 +50,7 @@ _url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in
 
 def url_encode(s):
     # Note: type cast str(s) will not be needed once all code is made compatible
-    return "".join(_url_chars_map[c] for c in str(s).encode("utf-8"))
+    return "".join(_url_chars_map[c] for c in bytes_iterator(s))
 
 def quote(s):
     return url_encode(s)
@@ -112,15 +112,15 @@ def _is_list(l):
 
 
 def _is_str_list(l):
-    return isinstance(l, (tuple, list)) and all([isinstance(i, str) for i in l])
+    return isinstance(l, (tuple, list)) and all(is_str(i) for i in l)
 
 
 def _is_num_list(l):
-    return isinstance(l, (tuple, list)) and all([isinstance(i, (float, int)) for i in l])
+    return isinstance(l, (tuple, list)) and all(is_numeric(i) for i in l)
 
 
 def _is_list_of_lists(o):
-    return any(isinstance(l, (list, tuple)) for l in o)
+    return any(isinstance(l, (tuple, list)) for l in o)
 
 
 def _handle_numpy_array(python_obj, header):
@@ -142,7 +142,7 @@ def _handle_python_dicts(python_obj):
         if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
             if _is_list_of_lists(v):
                 raise ValueError("Values in the dictionary must be flattened!")
-        elif isinstance(v, (int, float)) or _is_str(v):
+        elif is_numeric(v) or is_str(v):
             python_obj[k] = [v]
         else:
             raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
@@ -152,9 +152,7 @@ def _handle_python_dicts(python_obj):
     return header, data_to_write
 
 
-def _is_str(s):
-    return isinstance(s, str)
-
+_is_str = is_str
 
 def _is_fr(o):
     return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports
@@ -166,7 +164,7 @@ def _quoted(key):
     # key = key.replace("%", ".")
     # key = key.replace("&", ".")
     is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
-    key = key if is_quoted  else '"' + key + '"'
+    key = key if is_quoted else '"' + key + '"'
     return key
 
 

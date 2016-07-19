@@ -136,11 +136,11 @@ class ExprNode(object):
     elif isinstance(arg, ExprNode):     return arg._do_it(False)
     elif isinstance(arg, ASTId):        return str(arg)
     elif isinstance(arg, bool):         return "{}".format("TRUE" if arg else "FALSE")
-    elif isinstance(arg, (int, float)): return "{}".format("NaN" if math.isnan(arg) else arg)
-    elif isinstance(arg, str):          return '"'+arg+'"'
+    elif is_numeric(arg): return "{}".format("NaN" if math.isnan(arg) else arg)
+    elif is_str(arg):          return '"'+arg+'"'
     elif isinstance(arg, slice):        return "[{}:{}]".format(0 if arg.start is None else arg.start,"NaN" if (arg.stop is None or math.isnan(arg.stop)) else (arg.stop) if arg.start is None else (arg.stop-arg.start))
     elif isinstance(arg, list):
-        allstrs = all(isinstance(elem, str) for elem in arg)
+        allstrs = all(is_str(elem) for elem in arg)
         if allstrs:
             return "[%s]" % " ".join('"%s"' % elem for elem in arg)
         else:

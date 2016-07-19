@@ -69,7 +69,6 @@ class H2OConnection(backwards_compatible()):
     """
 
     @staticmethod
-    @translate_args
     def open(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=True, auth=None,
              proxy=None, cluster_name=None, verbose=True):
         """
@@ -120,7 +119,7 @@ class H2OConnection(backwards_compatible()):
             port = server.port
             scheme = server.scheme
         elif url is not None:
-            assert isinstance(url, str), "`url` must be a string, got %s" % type(url)
+            assert is_str(url), "`url` must be a string, got %s" % type(url)
             assert ip is None and port is None and https is None and server is None, \
                 "`server`, `ip`, `port` and `https` parameters cannot be used together with `url`"
             parts = url.rstrip("/").split(":")
@@ -133,9 +132,9 @@ class H2OConnection(backwards_compatible()):
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
             if https is None: https = False
-            if isinstance(port, str) and port.isdigit(): port = int(port)
-            assert isinstance(ip, str), "`ip` must be a string, got %s" % type(ip)
-            assert isinstance(port, int), "`port` must be an integer, got %s" % type(port)
+            if is_str(port) and port.isdigit(): port = int(port)
+            assert is_str(ip), "`ip` must be a string, got %s" % type(ip)
+            assert is_int(port), "`port` must be an integer, got %s" % type(port)
             assert isinstance(https, bool), "`https` must be boolean, got %s" % type(https)
             assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
             scheme = "https" if https else "http"
@@ -143,10 +142,10 @@ class H2OConnection(backwards_compatible()):
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert isinstance(verify_ssl_certificates, bool), \
             "`verify_ssl_certificates` should be boolean, got %s" % type(verify_ssl_certificates)
-        assert proxy is None or isinstance(proxy, str), "`proxy` must be a string, got %s" % type(proxy)
+        assert proxy is None or is_str(proxy), "`proxy` must be a string, got %s" % type(proxy)
         assert auth is None or isinstance(auth, tuple) and len(auth) == 2 or isinstance(auth, AuthBase), \
             "Invalid authentication token of type %s" % type(auth)
-        assert cluster_name is None or isinstance(cluster_name, str), \
+        assert cluster_name is None or is_str(cluster_name), \
             "`cluster_name` must be a string, got %s" % type(cluster_name)
 
         conn = H2OConnection()
@@ -184,7 +183,6 @@ class H2OConnection(backwards_compatible()):
         return conn
 
 
-    @translate_args
     def request(self, endpoint, data=None, json=None, filename=None):
         """
         Perform a REST API request to the backend H₂O server.
@@ -204,7 +202,7 @@ class H2OConnection(backwards_compatible()):
         if self._stage == -1: raise H2OConnectionError("Connection was closed, and can no longer be used.")
 
         # Prepare URL
-        if not isinstance(endpoint, str):
+        if not is_str(endpoint):
             raise ValueError("Endpoint should be a string, got %s" % type(endpoint))
         if endpoint.count(" ") != 1:
             raise ValueError("Incorrect endpoint '%s': must be of the form 'METHOD URL'." % endpoint)
@@ -229,6 +227,7 @@ class H2OConnection(backwards_compatible()):
 
         # Make the request
         start_time = time.time()
+        cluster_name = self._cluster_name
         try:
             self._log_start_transaction(endpoint, data, json, files, params)
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
@@ -327,7 +326,7 @@ class H2OConnection(backwards_compatible()):
 
     @timeout_interval.setter
     def timeout_interval(self, v):
-        assert v is None or isinstance(v, (int, float)), "`timeout_interval` should be numeric, got %s" % type(v)
+        assert v is None or is_numeric(v), "`timeout_interval` should be numeric, got %s" % type(v)
         self._timeout = v
 
 
@@ -381,9 +380,9 @@ class H2OConnection(backwards_compatible()):
         """
         if dest is None:
             dest = os.path.join(tempfile.mkdtemp(), "h2o-connection.log")
-        if not isinstance(dest, (str, type(sys.stdout))):
+        if not (isinstance(dest, type(sys.stdout)) or is_str(dest)):
             raise ValueError("Logging destination should be either a string (filename), or an open file handle")
-        name = dest if isinstance(dest, str) else dest.name
+        name = dest if is_str(dest) else dest.name
         self._print("Start logging H2OConnection.request() requests into file %s" % name)
         self._is_logging = True
         self._logging_dest = dest
@@ -450,8 +449,10 @@ class H2OConnection(backwards_compatible()):
                     errors.append("Cloud is in a bad shape: %s (size = %d, bad nodes = %d)"
                                   % (msg, cld.cloud_size, cld.bad_nodes))
             except (H2OConnectionError, H2OServerError) as e:
+                message = str(e)
+                if "\n" in message: message = message[:message.index("\n")]
                 errors.append("[%s.%02d] %s: %s" %
-                              (time.strftime("%M:%S"), int(time.time() * 100) % 100, e.__class__.__name__, e.message))
+                              (time.strftime("%M:%S"), int(time.time() * 100) % 100, e.__class__.__name__, message))
             # Cloud too small, or voting in progress, or server is not up yet; sleep then try again
             time.sleep(0.2)
 
@@ -506,7 +507,7 @@ class H2OConnection(backwards_compatible()):
         for passing to requests.request().
         """
         if not filename: return None
-        if not isinstance(filename, str): raise ValueError("Parameter `filename` must be a string: %r" % filename)
+        if not is_str(filename): raise ValueError("Parameter `filename` must be a string: %r" % filename)
         absfilename = os.path.abspath(filename)
         if not os.path.exists(absfilename):
             raise ValueError("File %s does not exist" % filename)
@@ -553,7 +554,7 @@ class H2OConnection(backwards_compatible()):
         immediately. If the destination is an open file handle, then we simply write the message there and do not
         attempt to close it.
         """
-        if isinstance(self._logging_dest, str):
+        if is_str(self._logging_dest):
             with open(self._logging_dest, "at", encoding="utf-8") as f:
                 f.write(msg)
         else:
@@ -692,7 +693,6 @@ class H2OLocalServer(object):
 
 
     @staticmethod
-    @translate_args
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
               ice_root=None, port="54321+", verbose=True):
         """
@@ -712,26 +712,26 @@ class H2OLocalServer(object):
         :param verbose: If True, then connection info will be printed to the stdout.
         :return a new H2OLocalServer instance
         """
-        assert jar_path is None or isinstance(jar_path, str), "`jar_path` should be string, got %s" % type(jar_path)
+        assert jar_path is None or is_str(jar_path), "`jar_path` should be string, got %s" % type(jar_path)
         assert jar_path is None or jar_path.endswith("h2o.jar"), \
             "`jar_path` should be a path to an h2o.jar executable, got %s" % jar_path
-        assert isinstance(nthreads, int), "`nthreads` should be integer, got %s" % type(nthreads)
+        assert is_int(nthreads), "`nthreads` should be integer, got %s" % type(nthreads)
         assert nthreads == -1 or 1 <= nthreads <= 4096, "`nthreads` is out of bounds: %d" % nthreads
         assert isinstance(enable_assertions, bool), \
             "`enable_assertions` should be bool, got %s" % type(enable_assertions)
-        assert max_mem_size is None or isinstance(max_mem_size, int), \
+        assert max_mem_size is None or is_int(max_mem_size), \
             "`max_mem_size` should be integer, got %s" % type(max_mem_size)
         assert max_mem_size is None or max_mem_size >= 1 << 25, "`max_mem_size` too small: %d" % max_mem_size
-        assert min_mem_size is None or isinstance(min_mem_size, int), \
+        assert min_mem_size is None or is_int(min_mem_size), \
             "`min_mem_size` should be integer, got %s" % type(min_mem_size)
         assert min_mem_size is None or max_mem_size is None or min_mem_size <= max_mem_size, \
             "`min_mem_size`=%d is larger than the `max_mem_size`=%d" % (min_mem_size, max_mem_size)
         if ice_root:
-            assert isinstance(ice_root, str), "`ice_root` should be string, got %r" % type(ice_root)
+            assert is_str(ice_root), "`ice_root` should be string, got %r" % type(ice_root)
             assert os.path.isdir(ice_root), "`ice_root` is not a valid directory: %s" % ice_root
         if port is None: port = "54321+"
         baseport = None
-        if isinstance(port, str):
+        if is_str(port):
             if port.isdigit():
                 port = int(port)
             else:
@@ -739,7 +739,7 @@ class H2OLocalServer(object):
                     "`port` should be of the form 'DDDD+', where D is a digit. Got: %s" % port
                 baseport = int(port[:-1])
                 port = 0
-        assert isinstance(port, int), "`port` should be integer (or string). Got: %s" % type(port)
+        assert is_int(port), "`port` should be integer (or string). Got: %s" % type(port)
 
         hs = H2OLocalServer()
         hs._verbose = bool(verbose)
@@ -1106,7 +1106,7 @@ class H2OResponse(dict):
             if k == "__meta" and isinstance(v, dict):
                 schema = v["schema_name"]
                 break
-            if k == "__schema" and isinstance(v, str):
+            if k == "__schema" and is_str(v):
                 schema = v
                 break
         if schema == "CloudV3": return CloudV3(keyvals)

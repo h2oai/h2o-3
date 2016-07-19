@@ -15,7 +15,6 @@ from .compatibility import *
 from __future__ import division, print_function, absolute_import, unicode_literals
 # noinspection PyUnresolvedReferences
 from future.utils import PY2, PY3, with_metaclass
-from functools import wraps
 
 # Store original type declarations, in case we need them later
 native_bytes = bytes
@@ -25,21 +24,70 @@ native_list = list
 native_object = object
 native_str = str
 if PY2:
-    # "unicode" symbol doesn't exist in PY3
+    # "unicode" and "long" symbols don't exist in PY3, so
     native_unicode = unicode
+    native_long = long
 
 #
 # Types
 #
 if PY2:
     # noinspection PyUnresolvedReferences, PyShadowingBuiltins
-    from future.types import (newbytes as bytes,
-                              newdict as dict,
-                              newint as int,
-                              newlist as list,
-                              newobject as object,
-                              newrange as range,
-                              newstr as str)
+    from future.types import newrange as range
+    # from future.types import (newbytes as bytes,
+    #                           newdict as dict,
+    #                           newint as int,
+    #                           newlist as list,
+    #                           newobject as object,
+    #                           newstr as str)
+
+
+
+def is_str(s):
+    """Test whether the provided argument is a string."""
+    if PY2:
+        return isinstance(s, (str, native_unicode))
+    else:
+        return isinstance(s, str)
+
+
+def is_int(i):
+    """Test whether the provided argument is an integer."""
+    if PY2:
+        return isinstance(i, (int, native_long))
+    else:
+        return isinstance(i, int)
+
+
+def is_numeric(x):
+    """Test whether the provided argument is either an integer or a float."""
+    if PY2:
+        return isinstance(x, (int, native_long, float))
+    else:
+        return isinstance(x, (int, float))
+
+def to_bytes(s):
+    """Convert string s into bytes (assuming utf-8 encoding)."""
+    if PY3 or isinstance(s, native_unicode):
+        return s.encode("utf-8")
+    else:
+        return native_unicode(s).encode("utf-8")
+
+
+def bytes_iterator(s):
+    """Given a string, return an iterator over this string's bytes (as ints)."""
+    if s is None: return
+    if PY2 or PY3 and isinstance(s, str):
+        for ch in s:
+            yield ord(ch)
+    elif PY3 and isinstance(s, bytes):
+        for ch in s.encode("utf-8"):
+            yield ch
+    else:
+        raise TypeError("String argument expected, got %s" % type(s))
+
+
+
 #
 # Iterators
 #
@@ -91,6 +139,7 @@ def translate_args(fun):
 
     :param fun: Function target of the decorator
     """
+    from functools import wraps
     if PY3: return fun
     strings = (native_str, native_bytes, native_unicode)
     lists = (native_list, list)
