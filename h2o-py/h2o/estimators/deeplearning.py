@@ -365,11 +365,11 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     Examples
     --------
-      >>> import h2o as ml
+      >>> import h2o
       >>> from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-      >>> ml.init()
+      >>> h2o.connect()
       >>> rows = [[1,2,3,4,0], [2,1,2,4,1], [2,1,4,2,1], [0,1,2,34,1], [2,3,4,1,0]] * 50
-      >>> fr = ml.H2OFrame(rows)
+      >>> fr = h2o.H2OFrame(rows)
       >>> fr[4] = fr[4].asfactor()
       >>> model = H2ODeepLearningEstimator()
       >>> model.train(x=range(4), y=4, training_frame=fr)

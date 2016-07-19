@@ -48,7 +48,7 @@ def demo(func=None, interactive=True, echo=True, test=False):
     :return:
 
     Example:
-    >>> h2o.demo("gbm")
+    >> h2o.demo("gbm")
     """
     if   func == "gbm":          gbm_demo(         interactive, echo, test)
     elif func == "deeplearning": deeplearning_demo(interactive, echo, test)

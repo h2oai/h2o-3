@@ -1,12 +1,15 @@
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import, unicode_literals
+# noinspection PyUnresolvedReferences
+from .compatibility import *
+
 from collections import namedtuple
 import uuid
 from .utils.shared_utils import urlopen
-from .h2o import H2OConnection, _quoted, H2OFrame
+import h2o
+from .h2o import quoted, H2OFrame
 
 
-class H2OAssembly:
+class H2OAssembly(object):
   """Extension class of Pipeline implementing additional methods:
 
     * to_pojo: Exports the assembly to a self-contained Java POJO used in a per-row, high-throughput environment.
@@ -48,15 +51,16 @@ class H2OAssembly:
     return list(zip(*self.steps))[0][:-1]
 
   def to_pojo(self, pojo_name="", path="", get_jar=True):
-    if pojo_name=="": pojo_name = unicode("AssemblyPOJO_" + str(uuid.uuid4()))
-    java = H2OConnection.get("Assembly.java/" + self.id + "/" + pojo_name, _rest_version=99)
+    if pojo_name=="": pojo_name = "AssemblyPOJO_" + str(uuid.uuid4())
+    java = h2o.connection().request("GET /99/Assembly.java/%s/%s" % (self.id, pojo_name))
     file_path = path + "/" + pojo_name + ".java"
-    if path == "": print(java.text)
+    if path == "":
+      print(java)
     else:
-      with open(file_path, 'wb') as f:
-        f.write(java.text.encode("utf-8"))   # this had better be utf-8 ?
+      with open(file_path, 'w', encoding="utf-8") as f:
+        f.write(java)   # this had better be utf-8 ?
     if get_jar and path!="":
-      url = H2OConnection.make_url("h2o-genmodel.jar")
+      url = h2o.connection().make_url("h2o-genmodel.jar")
       filename = path + "/" + "h2o-genmodel.jar"
       response = urlopen()(url)
       with open(filename, "wb") as f:
@@ -77,13 +81,13 @@ class H2OAssembly:
     res = []
     for step in self.steps:
       res.append(step[1].to_rest(step[0]))
-    res = "[" + ",".join([_quoted(r.replace('"',"'")) for r in res]) + "]"
-    j = H2OConnection.post_json(url_suffix="Assembly", steps=res, frame=fr.frame_id, _rest_version=99)
+    res = "[" + ",".join([quoted(r.replace('"',"'")) for r in res]) + "]"
+    j = h2o.connection().post_json(url_suffix="Assembly", steps=res, frame=fr.frame_id, _rest_version=99)
     self.id = j["assembly"]["name"]
     return H2OFrame.get_frame(j["result"]["name"])
 
 
-class H2OCol:
+class H2OCol(object):
   """Wrapper class for H2OBinaryOp step's left/right args.
 
   Use if you want to signal that a column actually comes from the train to be fitted on.

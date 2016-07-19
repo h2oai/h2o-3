@@ -8,29 +8,35 @@ import water.rapids.transforms.Transform;
 
 /**
  * Assemblies are essentially Pipelines.
+ * TODO: add in/out col names, in/out col types
  */
-
-// TODO: add in/out col names, in/out col types
 public class Assembly extends Keyed<Assembly> {
   private Transform[] _steps;
-  public Assembly(Key key, Transform[] steps) { super(key); _steps = steps; }
 
-  String[] names() {
+  public Assembly(Key key, Transform[] steps) {
+    super(key);
+    _steps = steps;
+  }
+
+  public String[] names() {
     String[] names = new String[_steps.length];
-    for(int i=0;i<names.length;++i) names[i] = _steps[i].name();
+    for (int i = 0; i < names.length; ++i)
+      names[i] = _steps[i].name();
     return names;
   }
 
-  Transform[] steps() { return _steps; }
+  public Transform[] steps() {
+    return _steps;
+  }
 
   public Frame fit(Frame f) {
-    for(Transform step: _steps)
+    for (Transform step: _steps)
       f = step.fitTransform(f);
     return f;
   }
 
   public String toJava(String pojoName) {
-    if( pojoName==null ) pojoName = "GeneratedMungingPojo";
+    if (pojoName == null) pojoName = "GeneratedMungingPojo";
     StringBuilder sb = new StringBuilder(
             "import hex.genmodel.GenMunger;\n"+
             "import hex.genmodel.easy.RowData;\n\n" +
@@ -39,10 +45,10 @@ public class Assembly extends Keyed<Assembly> {
             "    _steps = new Step[" + _steps.length + "];\n"
     );
     int i=0;
-    for(Transform step: _steps)
-      sb.append("    _steps["+(i++)+"] = new "+step.name()+"();\n");
+    for (Transform step: _steps)
+      sb.append("    _steps[").append(i++).append("] = new ").append(step.name()).append("();\n");
     sb.append("  }\n");
-    for(Transform step: _steps)
+    for (Transform step: _steps)
       sb.append(step.genClass());
     sb.append("}\n");
     return sb.toString();

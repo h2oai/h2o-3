@@ -4,7 +4,7 @@ Security
 H2O contains security features intended for deployment inside a secure
 data center.
 
-Security model
+Security Model
 --------------
 
 Below is a discussion of what the security assumptions are, and what the
@@ -152,7 +152,7 @@ What is specifically not being secured today
 
 -  Internal H2O node-to-H2O node communication.
 
-File security in H2O
+File Security in H2O
 --------------------
 
 H2O is a normal user program. Nothing specifically needs to be done by
@@ -181,7 +181,7 @@ Sparkling Water on YARN
 Similar to H2O on Hadoop, this configuration is H2O on Spark on YARN.
 The YARN job inherits the HDFS permissions of the user.
 
-Embedded web port (by default port 54321) security
+Embedded Web Port (by default port 54321) Security
 --------------------------------------------------
 
 For the client side, connection options exist.
@@ -582,3 +582,4 @@ Example:
 ::
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.hash.login=true --conf spark.ext.h2o.login.conf=/path/to/realm.properties sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
+

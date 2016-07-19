@@ -212,7 +212,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Number of columns
    *  @return Number of columns */
-  public int  numCols() { return _keys.length; }
+  public int  numCols() { return _keys == null? 0 : _keys.length; }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }

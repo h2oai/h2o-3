@@ -929,7 +929,7 @@ final public class H2O {
    * H2O.fail is intended to be used in code where something should never happen, and if
    * it does it's a coding error that needs to be addressed immediately.  Examples are:
    * AutoBuffer serialization for an object you're trying to serialize isn't available;
-   * there's a typing error on your schema; your switch statement didn't cover all the AST
+   * there's a typing error on your schema; your switch statement didn't cover all the AstRoot
    * subclasses available in Rapids.
    * <p>
    * It should *not* be used when only the single request should fail, it should *only* be

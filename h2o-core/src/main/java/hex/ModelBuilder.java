@@ -4,7 +4,7 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.rapids.ASTKFold;
+import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.*;
 
 import java.lang.reflect.Method;
@@ -304,9 +304,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
     switch( _parms._fold_assignment ) {
     case AUTO:
-    case Random:     return ASTKFold.          kfoldColumn(train().anyVec().makeZero(),N,seed);
-    case Modulo:     return ASTKFold.    moduloKfoldColumn(train().anyVec().makeZero(),N     );
-    case Stratified: return ASTKFold.stratifiedKFoldColumn(response(),N,seed);
+    case Random:     return AstKFold.          kfoldColumn(train().anyVec().makeZero(),N,seed);
+    case Modulo:     return AstKFold.    moduloKfoldColumn(train().anyVec().makeZero(),N     );
+    case Stratified: return AstKFold.stratifiedKFoldColumn(response(),N,seed);
     default:         throw H2O.unimpl();
     }
   }

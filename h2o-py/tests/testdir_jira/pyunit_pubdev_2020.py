@@ -7,9 +7,14 @@ from tests import pyunit_utils
 def test1():
     df = h2o.upload_file(pyunit_utils.locate("smalldata/jira/pubdev_2020.csv"))
     splits = df.split_frame(ratios=[0.75])
-    assert df.nrow == (splits[0].nrow + splits[1].nrow)
 
     part0 = splits[0]
+    part1 = splits[1]
+    assert part0.nrow > 0, "First part of the split has no rows"
+    assert part1.nrow > 0, "Second part of the split has no rows"
+    assert df.nrow == (part0.nrow + part1.nrow), \
+        "Original frame has %d rows, after splitting it has %d + %d rows" % (df.nrow, part0.nrow, part1.nrow)
+
     split_was_sequential = True
     i = 0
     while i < part0.nrow:
@@ -19,12 +24,8 @@ def test1():
             split_was_sequential = False
         i += 1
 
-    assert False == split_was_sequential
+    assert not split_was_sequential, "Split should be random, not sequential"
 
-    part1 = splits[1]
-
-    assert part0.nrow > 0
-    assert part1.nrow > 1
 
 
 def test2():

@@ -1,15 +1,21 @@
 package water.util;
 
 import water.H2O;
+import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
 import java.util.HashMap;
 
-/** Utilities to deal with Java enums. */
+/**
+ * Utilities to deal with Java enums.
+ */
 public class EnumUtils {
 
-  // Helper for .valueOf()
-  private static HashMap<Class<? extends Enum>, HashMap<String, Enum>> enumMappings = new HashMap<>();
+  /**
+   * Memoizer for {@link #valueOf(Class, String)}
+   */
+  private static NonBlockingHashMap<Class<? extends Enum>, NonBlockingHashMap<String, Enum>>
+      enumMappings = new NonBlockingHashMap<>(150);
 
   /**
    * Return an array of Strings of all the enum levels.
@@ -26,17 +32,17 @@ public class EnumUtils {
    * following would also match to this constant:
    *     log_normal, logNormal, LogNormal, __LoGnOrmaL___, "LogNormal", $Log.Normal, ツlognormal, etc.
    *
-   * @param <T> The enum type whose constant is to be returned
-   * @param clz the {@code Class} object of the enum type from which to return a constant
+   * @param <T>  The enum type whose constant is to be returned
+   * @param clz  the {@code Class} object of the enum type from which to return a constant
    * @param name the name of the constant to return
    * @return the enum constant of the specified enum type with the specified name
    */
   public static <T extends Enum<T>> T valueOf(Class<T> clz, String name) {
-    HashMap<String, Enum> map = enumMappings.get(clz);
+    NonBlockingHashMap<String, Enum> map = enumMappings.get(clz);
     if (map == null) {
-      map = new HashMap<>();
-      enumMappings.put(clz, map);
-      for (Enum item : clz.getEnumConstants()) {
+      T[] enumValues = clz.getEnumConstants();
+      map = new NonBlockingHashMap<>(enumValues.length * 2);
+      for (Enum item : enumValues) {
         String origName = item.name();
         String unifName = origName.toUpperCase().replaceAll("[^0-9A-Z]", "");
         if (map.containsKey(origName)) throw H2O.fail("Unexpected key " + origName + " in enum " + clz);
@@ -44,11 +50,22 @@ public class EnumUtils {
         map.put(origName, item);
         map.put(unifName, item);
       }
+      // Put the map into {enumMappings} no sooner than it is fully constructed. If there are multiple threads
+      // accessing the same enum mapping, then it is possible they'll begin constructing the map simultaneously and
+      // then overwrite each other's results. This is harmless.
+      // However it would be an error to put the {map} into {enumMappings} before it is filled, because then the
+      // other thread would think that the map is complete, and may not find some of the legitimate keys.
+      enumMappings.put(clz, map);
     }
 
     Enum value = map.get(name);
-    if (value == null && name != null)
-      value = map.get(name.toUpperCase().replaceAll("[^0-9A-Z]", ""));
+    if (value == null && name != null) {
+      String unifName = name.toUpperCase().replaceAll("[^0-9A-Z]", "");
+      value = map.get(unifName);
+      // Save the mapping name -> value, so that subsequent requests with the same name will be faster.
+      if (value != null)
+        map.put(name, value);
+    }
 
     if (value == null)
       throw new IllegalArgumentException("No enum constant " + clz.getCanonicalName() + "." + name);

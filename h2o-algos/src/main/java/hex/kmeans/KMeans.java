@@ -52,16 +52,20 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    *  Validate K, max_iterations and the number of rows. */
   @Override public void init(boolean expensive) {
     super.init(expensive);
-    if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6) error("_max_iterations", " max_iterations must be between 0 and 1e6");
-    if( _train == null ) return;
-    if( _parms._init == Initialization.User && _parms._user_points == null )
+    if( _parms._max_iterations < 0 || _parms._max_iterations > 1e6)
+      error("_max_iterations", " max_iterations must be between 0 and 1e6");
+    if (_train == null) return;
+    if (_parms._init == Initialization.User && _parms._user_points == null)
       error("_user_y","Must specify initial cluster centers");
-    if( null != _parms._user_points ){ // Check dimensions of user-specified centers
+    if (_parms._user_points != null) { // Check dimensions of user-specified centers
       Frame user_points = _parms._user_points.get();
-      if( user_points.numCols() != _train.numCols() - numSpecialCols()) {
-        error("_user_y","The user-specified points must have the same number of columns (" + (_train.numCols() - numSpecialCols()) + ") as the training observations");
-      } else if( user_points.numRows() != _parms._k)
-        error("_user_y","The number of rows in the user-specified points is not equal to k = " + _parms._k);
+      if (user_points == null)
+        error("_user_y", "User-specified points do not refer to a valid frame");
+      else if (user_points.numCols() != _train.numCols() - numSpecialCols())
+        error("_user_y", "The user-specified points must have the same number of columns (" + (_train.numCols() -
+            numSpecialCols()) + ") as the training observations");
+      else if( user_points.numRows() != _parms._k)
+        error("_user_y", "The number of rows in the user-specified points is not equal to k = " + _parms._k);
     }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }

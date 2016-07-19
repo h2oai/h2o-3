@@ -7,6 +7,7 @@ import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.vals.ValFrame;
 
 public class TableTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -60,8 +61,8 @@ public class TableTest extends TestUtil {
       Val val = Rapids.exec(tree);
       Assert.assertFalse(expectThrow);
       System.out.println(val.toString());
-      if( val instanceof ValFrame )
-        return ((ValFrame)val)._fr;
+      if (val instanceof ValFrame)
+        return val.getFrame();
       throw new IllegalArgumentException("exepcted a frame return");
     } catch( IllegalArgumentException iae ) {
       if( !expectThrow ) throw iae; // If not expecting a throw, then throw which fails the junit

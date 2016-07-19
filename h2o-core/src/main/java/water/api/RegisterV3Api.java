@@ -358,7 +358,7 @@ public class RegisterV3Api extends AbstractRegister {
 
     RequestServer.registerEndpoint("rapidsExec",
         "POST /99/Rapids", RapidsHandler.class, "exec",
-        "Execute an Rapids AST.");
+        "Execute an Rapids AstRoot.");
 
     RequestServer.registerEndpoint("_assembly_toJava",
         "GET /99/Assembly.java/{assembly_id}/{pojo_name}", AssemblyHandler.class, "toJava",
@@ -389,11 +389,11 @@ public class RegisterV3Api extends AbstractRegister {
         "Save a message to the H2O logfile.");
 
     RequestServer.registerEndpoint("newSession",
-        "GET /3/InitID", InitIDHandler.class, "issue",
+        "GET /3/InitID", RapidsHandler.class, "startSession",
         "Issue a new session ID.");
 
     RequestServer.registerEndpoint("endSession",
-        "DELETE /3/InitID", InitIDHandler.class, "endSession",
+        "DELETE /3/InitID", RapidsHandler.class, "endSession",
         "End a session.");
 
     RequestServer.registerEndpoint("garbageCollect",
@@ -407,6 +407,6 @@ public class RegisterV3Api extends AbstractRegister {
 
     RequestServer.registerEndpoint("rapids_help",
         "GET /99/Rapids/help", RapidsHandler.class, "genHelp",
-        "Produce help for Rapids AST language.");
+        "Produce help for Rapids AstRoot language.");
   }
 }

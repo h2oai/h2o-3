@@ -8,14 +8,13 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import junit.framework.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.ASTKFold;
+import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
@@ -39,7 +38,7 @@ public class XValPredictionsCheck extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{ASTKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
+      Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
       tfr.add(foldId);
       DKV.put(tfr);
 
