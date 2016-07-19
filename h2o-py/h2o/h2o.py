@@ -58,15 +58,15 @@ h2oconn = None
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
             proxy=None, cluster_name=None, verbose=True):
     """
-    Connect to an existing H₂O server, remote or local.
+    Connect to an existing H2O server, remote or local.
 
     There are two ways to connect to a server: either pass a `server` parameter containing an instance of
     an H2OLocalServer, or specify `ip` and `port` of the server that you want to connect to.
 
     :param server: An H2OLocalServer instance to connect to (optional).
     :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
-    :param ip: The ip address (or host name) of the server where H₂O is running.
-    :param port: Port number that H₂O service is listening to.
+    :param ip: The ip address (or host name) of the server where H2O is running.
+    :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
     :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
     :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
@@ -92,7 +92,7 @@ def api(endpoint, data=None, json=None, filename=None):
 def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
           port="54321+", verbose=True):
     """
-    Start a new local H₂O server.
+    Start a new local H2O server.
 
     This server object can then be passed to `h2o.connect()` to connect to that server; or you can launch multiple
     local servers and connect to only one of them. The servers will connect into a cloud.
@@ -101,7 +101,7 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
     :param enable_assertions: If True, then the server will start with the -ea JVM option (enabling code assertions).
     :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
     :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
-    :param ice_root: A temporary directory where H₂O log files will be placed. If not specified, then the folder will
+    :param ice_root: A temporary directory where H2O log files will be placed. If not specified, then the folder will
         be chosen by `tempfile.mkdtemp()`.
     :param port: Port that the server should start listening to.
     :param verbose: Whether to print connection progress messages to the stdout or not.
