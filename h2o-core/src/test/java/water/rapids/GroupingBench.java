@@ -252,11 +252,11 @@ public class GroupingBench extends TestUtil {
         frame.delete();
     }
 
-  @Test @Ignore public void runBench2() {
+  @Test public void runBench2() {
     Frame f1=null, f2=null, fx=null;
     try { 
       // build a hi count cardinality frame
-      final long card = (long)1e8;
+      final long card = (long)1e4;
       f1 = buildFrame(card,-1);
       System.out.println(f1.toString(0,100));
       Vec seq = Vec.makeSeq(card,false);

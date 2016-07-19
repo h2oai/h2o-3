@@ -5,6 +5,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
+import water.rapids.vals.ValFrame;
 
 import java.util.Random;
 
@@ -27,12 +28,10 @@ public class SortTest extends TestUtil {
       fr.insertVec(0,"row",fr.remove(2));
       // 
       Val val = Rapids.exec(tree);
-      assertTrue( val instanceof ValFrame );
-      res = ((ValFrame)val)._fr;
+      assertTrue( val instanceof ValFrame);
+      res = val.getFrame();
       res.add("row",res.remove(0));
-
       new CheckSort().doAll(res);
-
     } finally {
       if( fr  != null ) fr .delete();
       if( res != null ) res.delete();
