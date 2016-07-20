@@ -119,7 +119,7 @@ public class DeepWaterTest extends TestUtil {
                   names[i] = "c" + i;
                   double[] vals=new double[batch_size];
                   for (int j = 0; j < batch_size; ++j) {
-                      int idx=i*batch_size+j; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
+                      int idx=j*classes+i; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
                       vals[j] = pred[idx];
                   }
                   classprobs[i] = Vec.makeVec(vals,Vec.newKey());
