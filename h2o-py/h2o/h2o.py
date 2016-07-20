@@ -205,18 +205,20 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
 
 
 def lazy_import(path):
-    """Import a single file or collection of files.
-
-    Parameters
-    ----------
-      path : str
-        A path to a data file (remote or local).
     """
-    return [_import(p)[0] for p in path] if isinstance(path, (list, tuple)) else _import(path)
+    Import a single file or collection of files.
+
+    :param path: A path to a data file (remote or local).
+    """
+    if is_listlike(path):
+        return [_import(p)[0] for p in path]
+    else:
+        assert_is_str(path, "path")
+        return _import(path)
 
 
 def _import(path):
-    j = h2oconn.get_json(url_suffix="ImportFiles", path=path)
+    j = api("GET /3/ImportFiles", data={"path": path})
     if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
     return j['destination_frames']
 

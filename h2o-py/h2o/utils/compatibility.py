@@ -63,7 +63,7 @@ from h2o.utils.compatibility import *  # NOQA
 from __future__ import absolute_import, division, print_function, unicode_literals
 from future.utils import PY2, PY3, with_metaclass
 
-__all__ = ("PY2", "PY3", "with_metaclass", "is_str", "is_int", "is_numeric", "bytes_iterator",
+__all__ = ("PY2", "PY3", "with_metaclass", "is_str", "is_int", "is_numeric", "is_listlike", "bytes_iterator",
            "assert_is_type", "assert_is_bool", "assert_is_int", "assert_is_numeric", "assert_is_str",
            "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric", "assert_maybe_str",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
@@ -99,6 +99,11 @@ def is_int(i):
 def is_numeric(x):
     """Test whether the provided argument is either an integer or a float."""
     return isinstance(x, _num_type)
+
+
+def is_listlike(s):
+    """Return True if s is either a list or a tuple."""
+    return isinstance(s, (list, tuple))
 
 
 def bytes_iterator(s):
