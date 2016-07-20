@@ -460,7 +460,7 @@ If the search space is too large (i.e., you don't want to restrict the parameter
 
 
 \newpage
-\subsection{Model Parameters}
+\section{Model Parameters}
 \label{ssec:Model Parameters}
 This section describes the functions of the parameters for GBM. 
 \begin{itemize}
@@ -478,7 +478,6 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
 \item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
 \item {\texttt{seed}}: Seed containing random numbers that affects sampling.
-\item {\texttt{mtries}}: Number of variables randomly sampled as candidates at each split. If {\texttt{-1}}, the square root of $p$ is used for classification,or $p/3$ for regression (where $p$ is the number of predictors). 
 \item {\texttt{sample\_rate}}: Row sample rate (from 0.0 to 1.0). 
 \item {\texttt{sample\_rate\_per\_class}}: Specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with {\texttt{sample\_rate}}. (from 0.0 to 1.0). 
 \item {\texttt{col\_sample\_rate}}: Column sample rate (per split) (from 0.0 to 1.0). 
