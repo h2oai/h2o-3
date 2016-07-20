@@ -180,10 +180,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   }
 
 
-  static class OXbatch extends Iced {
+  private static class OXbatch extends Iced {
     OXbatch(long[] o, byte[] x) { _o = o; _x = x; }
-    long[/*batchSize or lastSize*/] _o;
-    byte[/*batchSize or lastSize*/] _x;
+    final long[/*batchSize or lastSize*/] _o;
+    final byte[/*batchSize or lastSize*/] _x;
   }
 
   static Key getMSBNodeHeaderKey(boolean isLeft, int MSBvalue, int node) {
@@ -191,13 +191,13 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
             (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
-  static class MSBNodeHeader extends Iced {
+  private static class MSBNodeHeader extends Iced {
     MSBNodeHeader(int MSBnodeChunkCounts[/*chunks*/]) { _MSBnodeChunkCounts = MSBnodeChunkCounts;}
     int _MSBnodeChunkCounts[];   // a vector of the number of contributions from each chunk.  Since each chunk is length int, this must less than that, so int
   }
 
   // Push o/x in chunks to owning nodes
-  void SendSplitMSB() {
+  void sendSplitMSB() {
     // The map() above ran above for each chunk on this node.  Although this
     // data was written to _o and _x in the order of chunk number (because we
     // calculated those offsets in order in the prior step), the chunk numbers
@@ -230,15 +230,15 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     System.out.println(" ]) ...");
 
     long t0 = System.nanoTime();
-    Futures fs = new Futures();
+    Futures myfs = new Futures(); // Private Futures instead of _fs, so can block early and get timing results
     for (int msb =0; msb <_o.length /*256*/; ++msb) {   // TODO this can be done in parallel, surely
       // "I found my A's (msb=0) and now I'll send them to the node doing all the A's"
       // "I'll send you a long vector of _o and _x (batched if very long) along with where the boundaries are."
       // "You don't need to know the chunk numbers of these boundaries, because you know the node of each chunk from your local Vec header"
       if(_o[msb] == null) continue;
-      fs.add(H2O.submitTask(new SendOne(msb)));
+      myfs.add(H2O.submitTask(new SendOne(msb,myfs)));
     }
-    fs.blockForPending();
+    myfs.blockForPending();
     double timeTaken = (System.nanoTime() - t0) / 1e9;
     long bytes = _numRowsOnThisNode*( 8/*_o*/ + _keySize) + 64;
     System.out.println("took : " + timeTaken);
@@ -248,8 +248,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
 
   class SendOne extends H2O.H2OCountedCompleter<SendOne> {
     // Nothing on remote node here, just a local parallel loop
-    final int _msb;
-    SendOne(int msb) { _msb = msb; }
+    private final int _msb;
+    private final Futures _myfs;
+    SendOne(int msb, Futures myfs) { _msb = msb; _myfs = myfs; }
 
     @Override public void compute2() {
       int numChunks = 0;  // how many of the chunks are on this node
@@ -260,30 +261,29 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           numChunks++;
       // make dense.  And by construction (i.e. cumulative counts) these chunks
       // contributed in order
-      int MSBnodeChunkCounts[] = new int[numChunks];
+      int msbNodeChunkCounts[] = new int[numChunks];
       int j=0;
       long lastCount = 0; // _counts are cumulative at this stage so need to diff
       for( long[] cnts : _counts ) {
         if (cnts != null) {
           if (cnts[_msb] == 0) {  // robust in case we skipped zeros when accumulating
-            MSBnodeChunkCounts[j] = 0;
+            msbNodeChunkCounts[j] = 0;
           } else {
             // _counts is long so it can be accumulated in-place iirc.  
             // TODO: check
-            MSBnodeChunkCounts[j] = (int)(cnts[_msb] - lastCount);
+            msbNodeChunkCounts[j] = (int)(cnts[_msb] - lastCount);
             lastCount = cnts[_msb];
           }
           j++;
         }
       }
-      MSBNodeHeader msbh = new MSBNodeHeader(MSBnodeChunkCounts);
-      // TODO - check with Tomas but I don't think the _fs here matters
-      // because we're already in a counted completer, but we need the _fs so
-      // we can get to noLocalCache=true which does matter
-      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index()), msbh, _fs, true);
+      MSBNodeHeader msbh = new MSBNodeHeader(msbNodeChunkCounts);
+      // Need dontCache==true, so data does not remain both locally and on remote.
+      // Use private Futures so can block independent of MRTask Futures.
+      DKV.put(getMSBNodeHeaderKey(_isLeft, _msb, H2O.SELF.index()), msbh, _myfs, true);
       for (int b=0;b<_o[_msb].length; b++) {
         OXbatch ox = new OXbatch(_o[_msb][b], _x[_msb][b]);   // this does not copy in Java, just references
-        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b), ox, _fs, true);
+        DKV.put(getNodeOXbatchKey(_isLeft, _msb, H2O.SELF.index(), b), ox, _myfs, true);
       }
       tryComplete();
     }

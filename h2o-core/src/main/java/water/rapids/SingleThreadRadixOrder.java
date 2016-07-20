@@ -18,12 +18,13 @@ package water.rapids;
 
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
 class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
-  final Frame _fr;
+  private final Frame _fr;
   private final int _MSBvalue;  // only needed to be able to return the number of groups back to the caller RadixOrder
   private final int _keySize, _batchSize;
   private final boolean _isLeft;
@@ -101,9 +102,10 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     int oxChunkIdx[] = new int[H2O.CLOUD.size()];  // that node has n chunks and which of those are we currently on?
 
     int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
-
-    for (int c=0; c<_fr.anyVec().nChunks(); c++) {
-      int fromNode = _fr.anyVec().chunkKey(c).home_node().index();  // each chunk in the column may be on different nodes
+    final Vec vec = _fr.anyVec();
+    assert vec != null;
+    for (int c=0; c<vec.nChunks(); c++) {
+      int fromNode = vec.chunkKey(c).home_node().index();  // each chunk in the column may be on different nodes
       // See long comment at the top of SendSplitMSB. One line from there repeated here :
       // " When the helper node (i.e. this one, now) (i.e the node doing all
       // the A's) gets the A's from that node, it must stack all the nodes' A's
@@ -199,7 +201,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
   }
 
-  static class OXHeader extends Iced<OXHeader> {
+  private static class OXHeader extends Iced<OXHeader> {
     OXHeader(int batches, long numRows, int batchSize) { _nBatch = batches; _numRows = numRows; _batchSize = batchSize; }
     final int _nBatch;
     final long _numRows;
@@ -266,7 +268,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
   }
 
-  public void run(long start, long len, int Byte) {
+  public void run(final long start, final long len, final int Byte) {
     if (len < 200) { // N_SMALL=200 is guess based on limited testing. Needs calibrate().
       // Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset +
       // allowance since reverse order is unlikely.
@@ -279,15 +281,15 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // length string keys?
       return;
     }
-    int batch0 = (int) (start / _batchSize);
-    int batch1 = (int) ((start+len-1) / _batchSize);
+    final int batch0 = (int) (start / _batchSize);
+    final int batch1 = (int) ((start+len-1) / _batchSize);
     // could well span more than one boundary when very large number of rows.
-    long thisHist[] = counts[Byte];
+    final long thisHist[] = counts[Byte];
     // thisHist reused and carefully set back to 0 below so we don't need to clear it now
     int idx = (int)(start%_batchSize)*_keySize + _keySize-Byte-1;
     int bin=-1;  // the last bin incremented. Just to see if there is only one bin with a count.
-    int nbatch = batch1-batch0+1;  // number of batches this span of len covers.  Usually 1.  Minimum 1.
     int thisLen = (int)Math.min(len, _batchSize - start%_batchSize);
+    final int nbatch = batch1-batch0+1;  // number of batches this span of len covers.  Usually 1.  Minimum 1.
     for (int b=0; b<nbatch; b++) {
       // taking this outside the loop below does indeed make quite a big different (hotspot isn't catching this, then)
       byte _xbatch[] = _x[batch0+b];
@@ -312,7 +314,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
     long rollSum = 0;
     for (int c = 0; c < 256; c++) {
-      long tmp = thisHist[c];
+      final long tmp = thisHist[c];
       // important to skip zeros for logic below to undo cumulate.  Worth the
       // branch to save a deeply iterative memset back to zero
       if (tmp == 0) continue;  
@@ -327,8 +329,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     for (int b=0; b<nbatch; b++) {
       // taking these outside the loop below does indeed make quite a big
       // different (hotspot isn't catching this, then)
-      long _obatch[] = _o[batch0+b];
-      byte _xbatch[] = _x[batch0+b];
+      final long _obatch[] = _o[batch0+b];
+      final byte _xbatch[] = _x[batch0+b];
       for (int i = 0; i < thisLen; i++) {
         long target = thisHist[0xff & _xbatch[xidx]]++;
         // now always write to the beginning of _otmp and _xtmp just to reuse the first hot pages
@@ -345,35 +347,42 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
     // now copy _otmp and _xtmp back over _o and _x from the start position, allowing for boundaries
     // _o, _x, _otmp and _xtmp all have the same _batchsize
-    // Would be really nice if Java had 64bit indexing to save programmer time.
-    long numRowsToCopy = len;
-    int sourceBatch = 0, sourceOffset = 0;
-    int targetBatch = (int)(start / _batchSize), targetOffset = (int)(start % _batchSize);
-    int targetBatchRemaining = _batchSize - targetOffset;  // 'remaining' means of the the full batch, not of the numRowsToCopy
-    int sourceBatchRemaining = _batchSize - sourceOffset;  // at most batchSize remaining.  No need to actually put the number of rows left in here
-    int thisCopy;
-    while (numRowsToCopy > 0) {   // TO DO: put this into class as well, to ArrayCopy into batched
-      thisCopy = (int)Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
-      System.arraycopy(_otmp[sourceBatch], sourceOffset,          _o[targetBatch], targetOffset,          thisCopy);
-      System.arraycopy(_xtmp[sourceBatch], sourceOffset*_keySize, _x[targetBatch], targetOffset*_keySize, thisCopy*_keySize);
-      numRowsToCopy -= thisCopy;
-      // sourceBatch no change
-      sourceOffset += thisCopy; sourceBatchRemaining -= thisCopy;
-      targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
-      if (sourceBatchRemaining == 0) { sourceBatch++; sourceOffset = 0; sourceBatchRemaining = _batchSize; }
-      if (targetBatchRemaining == 0) { targetBatch++; targetOffset = 0; targetBatchRemaining = _batchSize; }
-      // 'source' and 'target' deliberately the same length variable names and long lines deliberately used so we
-      // can easy match them up vertically to ensure they are the same
-    }
+    runCopy(start,len,_keySize,_batchSize,_otmp,_xtmp,_o,_x);
 
     long itmp = 0;
     for (int i=0; i<256; i++) {
       if (thisHist[i]==0) continue;
-      long thisgrpn = thisHist[i] - itmp;
+      final long thisgrpn = thisHist[i] - itmp;
       if( !(thisgrpn == 1 || Byte == 0) )
         run(start+itmp, thisgrpn, Byte-1);
       itmp = thisHist[i];
       thisHist[i] = 0;  // important, to save clearing counts on next iteration
     }
   }
+
+  // Hot loop, pulled out from the main run code
+  private static void runCopy(final long start, final long len, final int keySize, final int batchSize, final long otmp[][], final byte xtmp[][], final long o[][], final byte x[][]) {
+    // now copy _otmp and _xtmp back over _o and _x from the start position, allowing for boundaries
+    // _o, _x, _otmp and _xtmp all have the same _batchsize
+    // Would be really nice if Java had 64bit indexing to save programmer time.
+    long numRowsToCopy = len;
+    int sourceBatch = 0, sourceOffset = 0;
+    int targetBatch = (int)(start / batchSize), targetOffset = (int)(start % batchSize);
+    int targetBatchRemaining = batchSize - targetOffset;  // 'remaining' means of the the full batch, not of the numRowsToCopy
+    int sourceBatchRemaining = batchSize - sourceOffset;  // at most batchSize remaining.  No need to actually put the number of rows left in here
+    while (numRowsToCopy > 0) {   // TO DO: put this into class as well, to ArrayCopy into batched
+      final int thisCopy = (int)Math.min(numRowsToCopy, Math.min(sourceBatchRemaining, targetBatchRemaining));
+      System.arraycopy(otmp[sourceBatch], sourceOffset,         o[targetBatch], targetOffset,         thisCopy);
+      System.arraycopy(xtmp[sourceBatch], sourceOffset*keySize, x[targetBatch], targetOffset*keySize, thisCopy*keySize);
+      numRowsToCopy -= thisCopy;
+      // sourceBatch no change
+      sourceOffset += thisCopy; sourceBatchRemaining -= thisCopy;
+      targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
+      if (sourceBatchRemaining == 0) { sourceBatch++; sourceOffset = 0; sourceBatchRemaining = batchSize; }
+      if (targetBatchRemaining == 0) { targetBatch++; targetOffset = 0; targetBatchRemaining = batchSize; }
+      // 'source' and 'target' deliberately the same length variable names and long lines deliberately used so we
+      // can easy match them up vertically to ensure they are the same
+    }
+  }
+
 }

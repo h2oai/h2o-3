@@ -28,7 +28,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
 
   @Override
   public void compute2() {
-    long t0 = System.nanoTime(), t1=0;
+    long t0 = System.nanoTime(), t1;
     initBaseShift();
 
     // The MSB is stored (seemingly wastefully on first glance) because we need
@@ -70,7 +70,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     System.out.println("took : " + ((t1=System.nanoTime()) - t0) / 1e9); t0=t1;
 
     System.out.print("Waiting for RPC SingleThreadRadixOrder to finish ... ");
-    for( RPC rpc : radixOrders ) //TODO: Use a queue to make this fully async
+    for( RPC rpc : radixOrders )
       rpc.get();
     System.out.println("took " + (System.nanoTime() - t0) / 1e9);
 
@@ -157,7 +157,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     final Key _linkTwoMRTask;
     SendSplitMSB(Key linkTwoMRTask) { _linkTwoMRTask = linkTwoMRTask; }
     @Override public void setupLocal() {
-      SplitByMSBLocal.MOVESHASH.get(_linkTwoMRTask).SendSplitMSB();
+      SplitByMSBLocal.MOVESHASH.get(_linkTwoMRTask).sendSplitMSB();
       SplitByMSBLocal.MOVESHASH.remove(_linkTwoMRTask);
     }
   }
