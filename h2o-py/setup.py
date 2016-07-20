@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 from setuptools import setup, find_packages
-import setuptools
 from codecs import open
 from os import path
 import h2o
@@ -67,7 +66,9 @@ setup(
     # run-time dependencies
     install_requires=['requests', 'tabulate', 'future', 'six'],
 
-
-    data_files=[('h2o_jar', ['../build/h2o.jar']), ('h2o_data', ['../h2o-r/h2o-package/inst/extdata/iris.csv',
-                                                                 '../h2o-r/h2o-package/inst/extdata/prostate.csv'])],
+    # Additional data files to include into the distribution
+    data_files=[
+        ("h2o_jar", ["../build/h2o.jar"]),
+        ("h2o_data", ["h2o/h2o_data/iris.csv", "h2o/h2o_data/prostate.csv"]),
+    ],
 )
