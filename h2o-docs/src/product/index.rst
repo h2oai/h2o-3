@@ -15,11 +15,11 @@ We're glad you're interested in learning more about H2O.  If you have
 questions or ideas to share, please post them to the open source community
 forum, `h2ostream <https://groups.google.com/forum/#!forum/h2ostream>`__.
 
-[ **Note**: To join our Google group on h2ostream, you need a Google
+**Note**: To join our Google group on h2ostream, you need a Google
 account (such as Gmail or Google+). On the h2ostream page, click the
 **Join group** button, then click the **New Topic** button to post a new
 message. You don't need to request or leave a message to join - you
-should be added to the group automatically. ]
+should be added to the group automatically.
 
 .. toctree::
    :maxdepth: 3

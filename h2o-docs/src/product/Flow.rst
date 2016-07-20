@@ -617,7 +617,7 @@ After you have imported your data, parse the data.
    :alt: Flow - Parse options
 
 
-The read-only **Sources** field shows the file path for the imported data selected for parsing. The **ID** contains the auto-generated name for the parsed data (by default, the file name of the imported file with ``.hex`` as the file extension). Use the default name or enter a custom name in this field.
+The read-only **Sources** field shows the file path for the imported data selected for parsing. The **ID** contains the auto-generated name for the parsed data (by default, the file name of the imported file uses ``.hex`` as the file extension). Use the default name or enter a custom name in this field.
 
 1. Select the parser type (if necessary) from the drop-down **Parser** list. For most data parsing, H2O automatically recognizes the data type, so the default settings typically do not need to be changed. The following options are available:
 
@@ -1639,27 +1639,35 @@ Plotting Frames
 ^^^^^^^^^^^^^^^
 
 To create a plot from a frame, click the **Inspect** button, then click
-the **Plot** button.
+the **Plot** button for columns or factors. Note that from this section, you can also inspect the **Chunk compression summary** and the **Frame distribution summary**.  
 
-Select the type of plot (point, path, or rect) from the drop-down
-**Type** menu, then select the x-axis and y-axis from the following
-options:
+.. figure:: images/Flow_plottingFrames.png
+	:alt: Frames > Data
 
--  label
--  type
--  missing
--  zeros
--  +Inf
--  -Inf
--  min
--  max
--  mean
--  sigma
--  cardinality
+1. Select the type of plot from the **Type** menu
 
-Select one of the above options from the drop-down **Color** menu to
-display the specified data in color, then click the **Plot** button to
-plot the data.
+	- plot: Creates a graph with a series of plot points.
+	- path: Creates a line graph connecting plot points.
+	- rect: Creates a bar graph. Note that with rect graphs, you cannot specify values of the same type. You will receive an error if you attempt to specify, for example, two String columns or two Number columns.  
+
+2. Specify the information that you want to view on the X axis and on the Y axis. Select from the following options below. These options correspond to the parsed data file. 
+
+	-  label: Plots the column headings
+	-  type: Plots real vs. enum values
+	-  Missing: Plots missing values
+	-  Zeros: Plots ``0`` values
+	-  +Inf: Plots positiive ``inf`` values
+	-  -Inf: Plots negative ``inf`` values
+	-  min: Plots the min value
+	-  max: Plots the max value
+	-  mean: Plots the mean value
+	-  sigma: Plots the sigma value
+	-  cardinality: Plots the cardinality. Used with enum values.
+	-  Actions: Plots actions (for example, "convert to numeric".)
+
+3. Select one of the above options from the drop-down **Color** menu to display the specified data in color. 
+
+4. click the **Plot** button to plot the data.
 
 .. figure:: images/Flow_plot.png
    :alt: Flow - Plotting Frames
