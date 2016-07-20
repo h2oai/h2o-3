@@ -510,7 +510,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
     kwargs["source_frames"] = [quoted(id) for id in raw_frames]
     j = api("POST /3/ParseSetup", data=kwargs)
-    if j['warnings']:
+    if "warnings" in j and j["warnings"]:
         for w in j['warnings']:
             warnings.warn(w)
     # TODO: really should be url encoding...
@@ -1215,16 +1215,36 @@ def list_timezones():
     return H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
 
 
+def demo(funcname, interactive=True, echo=True, test=False):
+    """
+    H2O built-in demo facility.
+
+    :param funcname: A string that identifies the h2o python function to demonstrate.
+    :param interactive: If True, the user will be prompted to continue the demonstration after every segment.
+    :param echo: If True, the python commands that are executed will be displayed.
+    :param test: If True, `h2o.init()` will not be called (used for pyunit testing).
+
+    Example:
+    >>> import h2o
+    >>> h2o.demo("gbm")
+    """
+    import h2o.demo
+    demo_function = getattr(h2o.demo, funcname, None)
+    if demo_function and type(demo_function) is type(demo):
+        demo_function(interactive, echo, test)
+    else:
+        print("Demo for %s is not available." % funcname)
+
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW
 #-----------------------------------------------------------------------------------------------------------------------
 
-# the @h2o_deprecated decorator
 def h2o_deprecated(newfun=None):
-    def o(fun):
-        def i(*args, **kwargs):
+    """The @h2o_deprecated decorator."""
+    def _o(fun):
+        def _i(*args, **kwargs):
             print("\n")
             if newfun is None:
                 raise DeprecationWarning("%s is deprecated." % fun.__name__)
@@ -1232,8 +1252,8 @@ def h2o_deprecated(newfun=None):
                 warnings.warn("%s is deprecated. Use %s instead." % (fun.__name__, newfun.__name__),
                               category=DeprecationWarning, stacklevel=2)
                 return newfun(*args, **kwargs)
-        return i
-    return o
+        return _i
+    return _o
 
 @h2o_deprecated(import_file)
 def import_frame():

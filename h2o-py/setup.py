@@ -64,7 +64,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate', 'future', 'six'],
+    install_requires=['requests', 'tabulate', 'future', 'six', "colorama"],
 
     # Additional data files to include into the distribution
     data_files=[

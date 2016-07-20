@@ -97,7 +97,7 @@ class H2OEstimator(ModelBase):
       x : list
         A list of column names or indices indicating the predictor columns.
 
-      y : str
+      y : str | unicode
         An index or a column name indicating the response column.
 
       training_frame : H2OFrame

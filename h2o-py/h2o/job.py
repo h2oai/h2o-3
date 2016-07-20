@@ -54,7 +54,6 @@ class H2OJob(object):
 
         Poll timing is the following: first we wait 0.2s, then query the server,
         """
-        if self.__PROGRESS_BAR__: print()  # create a new line for distinguished progress bar
         self._polling = True
         poll_interval = 0.2
         start_time = time.time()
@@ -146,7 +145,7 @@ class H2OJob(object):
         self.status = self.job["status"]
         self.progress = min(self.job["progress"], 1)
         self.exception = self.job["exception"]
-        self.warnings = self.job["warnings"]
+        self.warnings = self.job["warnings"] if "warnings" in self.job else None
 
     def _is_running(self):
         return self.status == "RUNNING" or self.status == "CREATED"

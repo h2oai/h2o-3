@@ -22,7 +22,7 @@ _id_ctr = 0
 
 def _py_tmp_key(append=""):
     global _id_ctr
-    _id_ctr = _id_ctr + 1
+    _id_ctr += 1
     return "py_" + str(_id_ctr) + append
 
 
