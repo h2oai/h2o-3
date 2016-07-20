@@ -201,7 +201,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     return Key.make("__radix_order__SortedOXHeader_MSB" + MSBvalue + (isLeft ? "_LEFT" : "_RIGHT"));  // If we don't say this it's random ... (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.SELF);
   }
 
-  private static class OXHeader extends Iced<OXHeader> {
+  static class OXHeader extends Iced<OXHeader> {
     OXHeader(int batches, long numRows, int batchSize) { _nBatch = batches; _numRows = numRows; _batchSize = batchSize; }
     final int _nBatch;
     final long _numRows;

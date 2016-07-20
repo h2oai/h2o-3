@@ -22,7 +22,7 @@ public class Merge {
     // All identity ID maps
     int id_maps[][] = new int[cols.length][];
     for( int i=0; i<cols.length; i++ ) {
-      Vec vec = fr.vec(i);
+      Vec vec = fr.vec(cols[i]);
       if( vec.isCategorical() ) {
         String[] domain = vec.domain();
         id_maps[i] = new int[domain.length];
