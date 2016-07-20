@@ -1007,7 +1007,7 @@ def shutdown(prompt=True):
 
     :param prompt: (bool) A logical value indicating whether to prompt the user before shutting down the H2O server.
     """
-    h2oconn.shutdown(prompt)
+    h2oconn.shutdown_server(prompt)
 
 
 def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_range=100,
