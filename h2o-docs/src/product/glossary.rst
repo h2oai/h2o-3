@@ -24,6 +24,11 @@ Glossary
 **Balance classes**
 	A parameter that oversamples the minority classes to balance the distribution. 
 
+.. _Batch size:
+
+**Batch size** 
+	The number of training examples in one forward/backward pass. The higher the batch size, the more memory space you'll need. (See also `epoch`_ and `iteration`_.)
+
 **Beta constraints**
 	A data.frame or H2OParsedData object with the columns [“names”, “lower_bounds”,”upper_bounds”, “beta_given”], where each row corresponds to a predictor in the GLM. “names” contains the predictor names, “lower_bounds” and “upper_bounds” are the lower and upper bounds of beta, and “beta_given” is some supplied starting values for beta.
 
@@ -112,7 +117,7 @@ Glossary
 .. _epoch:
 
 **Epoch**
-	A round or iteration of model training or testing. Refer also to `iteration`_. 
+	A measure of the number of times all of the training vectors are passed forward and backward once to update the weights. For batch training all of the training samples pass through the learning algorithm simultaneously in one epoch before weights are updated. For sequential training all of the weights are updated after each training vector is sequentially passed through the training algorithm. (See also `Batch size`_ and `iteration`_.)
 
 .. _factor:
 
@@ -157,7 +162,7 @@ Glossary
 .. _iteration:
 
 **Iteration**
-	A round or instance of model testing or training. Also known as an `epoch`_.
+	Number of passes during training or testing, with each pass using [batch size] number of examples. (Note that a pass includes a forward pass and a backward pass. The forward pass and backward pass do not count as two different passes.) For example, if you have 1000 training examples, and your batch size is 500, then it will take 2 iterations to complete 1 epoch. (See also `Batch size`_ and `epoch`_.)
 
 **Job**
 	A task performed by H2O. For example, reading a data file, parsing a data file, or building a model. In the browser-based GUI of H2O, each job is listed in the **Admin** menu under **Jobs**.
