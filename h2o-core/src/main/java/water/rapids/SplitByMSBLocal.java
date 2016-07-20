@@ -180,7 +180,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   }
 
 
-  private static class OXbatch extends Iced {
+  static class OXbatch extends Iced {
     OXbatch(long[] o, byte[] x) { _o = o; _x = x; }
     final long[/*batchSize or lastSize*/] _o;
     final byte[/*batchSize or lastSize*/] _x;
@@ -191,7 +191,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
             (byte) 1, Key.HIDDEN_USER_KEY, false, SplitByMSBLocal.ownerOfMSB(MSBvalue));
   }
 
-  private static class MSBNodeHeader extends Iced {
+  static class MSBNodeHeader extends Iced {
     MSBNodeHeader(int MSBnodeChunkCounts[/*chunks*/]) { _MSBnodeChunkCounts = MSBnodeChunkCounts;}
     int _MSBnodeChunkCounts[];   // a vector of the number of contributions from each chunk.  Since each chunk is length int, this must less than that, so int
   }
