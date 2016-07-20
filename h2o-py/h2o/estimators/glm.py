@@ -600,7 +600,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Extract full regularization path explored during lambda search from glm model.
         @param model - source lambda search model
         """
-        x = h2o.connection().get_json("GetGLMRegPath", model=model._model_json["model_id"]["name"])
+        x = h2o.api("GET /3/GetGLMRegPath", data={"model": model._model_json["model_id"]["name"]})
         ns = x.pop("coefficient_names")
         res = {
             "lambdas": x["lambdas"],
@@ -621,8 +621,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
           @param coefs - dictionary containing model coefficients
           @param threshold - (optional, only for binomial) decision threshold used for classification
         """
-        model_json = h2o.connection().post_json("MakeGLMModel", model=model._model_json["model_id"]["name"],
-            names=list(coefs.keys()), beta=list(coefs.values()), threshold=threshold)
+        model_json = h2o.api("POST /3/MakeGLMModel", data={"model": model._model_json["model_id"]["name"],
+            "names": list(coefs.keys()), "beta": list(coefs.values()), "threshold": threshold})
         m = H2OGeneralizedLinearEstimator()
         m._resolve_model(model_json["model_id"]["name"], model_json)
         return m

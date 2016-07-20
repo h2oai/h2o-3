@@ -14,7 +14,7 @@ from .clustering import H2OClusteringModel
 def build_model(algo_params):
   if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
   x = algo_params.pop("X")
-  y = algo_params.pop("y",None)
+  y = algo_params.pop("y", None)
   training_frame = algo_params.pop("training_frame")
   validation_frame = algo_params.pop("validation_frame",None)
   algo  = algo_params.pop("algo")
@@ -30,16 +30,15 @@ def _model_build(x, y, tframe, vframe, algo, kwargs):
   if vframe is not None: kwargs["validation_frame"] = vframe
   if y is not None:  kwargs['response_column'] = tframe[y].names[0]
   kwargs = dict([(k, (kwargs[k]._frame()).frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
-  future_model = H2OModelFuture(H2OJob(h2o.connection().post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build")), x)
-  return _resolve_model(future_model, **kwargs)
+  rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
+  future_model = H2OModelFuture(H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, algo), data=kwargs), job_type=(algo+" Model Build")), x)
+  return _resolve_model(future_model, _rest_version=rest_ver, **kwargs)
 
 
 def _resolve_model(future_model, **kwargs):
   future_model.poll()
-  if '_rest_version' in list(kwargs.keys()):
-    model_json = h2o.connection().get_json("Models/"+future_model.job.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
-  else:
-    model_json = h2o.connection().get_json("Models/"+future_model.job.dest_key)["models"][0]
+  rest_ver = kwargs["_rest_version"] if "_rest_version" in kwargs else 3
+  model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, future_model.job.dest_key))["models"][0]
 
   model_type = model_json["output"]["model_category"]
   if   model_type=="Binomial":     model = H2OBinomialModel(    future_model.job.dest_key,model_json)

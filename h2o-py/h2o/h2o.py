@@ -387,8 +387,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         columns = ', '.join(columns)
     p = {}
     p.update({k: v for k, v in locals().items() if k is not "p"})
-    p["_rest_version"] = 99
-    j = H2OJob(h2oconn.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+    j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
@@ -434,8 +433,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     """
     p = {}
     p.update({k: v for k, v in locals().items() if k is not "p"})
-    p["_rest_version"] = 99
-    j = H2OJob(h2oconn.post_json(url_suffix="ImportSQLTable", **p), "Import SQL Table").poll()
+    j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
@@ -510,7 +508,8 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
             raise ValueError("separator should be a single character string; got %r" % separator)
         kwargs["separator"] = ord(separator)
 
-    j = h2oconn.post_json(url_suffix="ParseSetup", source_frames=[quoted(id) for id in raw_frames], **kwargs)
+    kwargs["source_frames"] = [quoted(id) for id in raw_frames]
+    j = api("POST /3/ParseSetup", data=kwargs)
     if j['warnings']:
         for w in j['warnings']:
             warnings.warn(w)
@@ -655,17 +654,17 @@ def get_grid(grid_id):
     -------
       H2OGridSearch instance
     """
-    grid_json = h2oconn.get_json("Grids/" + grid_id, _rest_version=99)
+    grid_json = h2o.api("GET /99/Grids/%s" % grid_id)
     models = [get_model(key['name']) for key in grid_json['model_ids']]
     # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-    first_model_json = h2oconn.get_json("Models/" + grid_json['model_ids'][0]['name'])['models'][0]
+    first_model_json = h2o.api("GET /3/Models/%s" % grid_json['model_ids'][0]['name'])['models'][0]
     gs = H2OGridSearch(None, {}, grid_id)
     gs._resolve_grid(grid_id, grid_json, first_model_json)
     gs.models = models
     hyper_params = {param: set() for param in gs.hyper_names}
     for param in gs.hyper_names:
         for model in models:
-            hyper_params[param].add(model.full_parameters[param][u'actual_value'][0])
+            hyper_params[param].add(model.full_parameters[param]['actual_value'][0])
     hyper_params = {str(param): list(vals) for param, vals in hyper_params.items()}
     gs.hyper_params = hyper_params
     gs.model = model.__class__()
@@ -718,7 +717,7 @@ def log_and_echo(message):
     :return None
     """
     if message is None: message = ""
-    h2oconn.post_json("LogAndEcho", message=str(message))
+    api("POST /3/LogAndEcho", data={"message": str(message)})
 
 
 def remove(x):
@@ -739,21 +738,21 @@ def remove(x):
             rapids("(rm {})".format(xi_id))
             xi._ex = None
         elif isinstance(xi, H2OEstimator):
-            h2oconn.delete("DKV/" + xi.model_id)
+            api("DELETE /3/DKV/%s" % xi.model_id)
             xi._id = None
         elif is_str(xi):
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
-                h2oconn.delete("DKV/" + xi)
+                api("DELETE /3/DKV/%s" % xi)
         else:
             raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or string')
 
 
 def remove_all():
     """Remove all objects from H2O."""
-    h2oconn.request("DELETE /3/DKV")
+    api("DELETE /3/DKV")
 
 
 def rapids(expr):
@@ -793,7 +792,7 @@ def frame(frame_id, exclude=""):
     -------
       Python dict containing the frame meta-information
     """
-    return h2oconn.get_json("Frames/" + frame_id + exclude)
+    return api("GET /3/Frames/%s" % (frame_id + exclude))
 
 
 def frames():
@@ -921,7 +920,7 @@ def save_model(model, path="", force=False):
       The path of the saved model (string)
     """
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return h2oconn.get_json("Models.bin/" + model.model_id, dir=path, force=force, _rest_version=99)["dir"]
+    return api("GET /99/Models.bin/%s" % model.model_id, data={"dir": path, "force": force})["dir"]
 
 
 def load_model(path):
@@ -942,7 +941,7 @@ def load_model(path):
       >> path = h2o.save_mode(my_model,dir=my_path)
       >> h2o.load_model(path)
     """
-    res = h2oconn.post_json("Models.bin/", dir=path, _rest_version=99)
+    res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
     return get_model(res['models'][0]['model_id']['name'])
 
 
@@ -951,7 +950,7 @@ def cluster_status():
     but if a user tries to do any remoteSend, they will get a "cloud sick warning"
     Retrieve information on the status of the cluster running H2O.
     """
-    cluster = h2oconn.request("GET /3/Cloud?skip_ticks=true")
+    cluster = api("GET /3/Cloud?skip_ticks=true")
 
     print("Version: %s" % cluster.version)
     print("Cloud name: %s" % cluster.cloud_name)
@@ -989,9 +988,8 @@ def export_file(frame, path, force=False):
     force : bool
       Overwrite any preexisting file with the same path
     """
-    H2OJob(h2oconn.get_json(
-        "Frames/" + frame.frame_id + "/export/" + path + "/overwrite/" + ("true" if force else "false")),
-        "Export File").poll()
+    H2OJob(api("GET /3/Frames/%s/export/%s/overwrite/%s" % (frame.frame_id, path, str(force).lower())),
+           "Export File").poll()
 
 
 def cluster_info():
@@ -1089,7 +1087,7 @@ def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_ran
     -------
       H2OFrame
     """
-    parms = {"dest": py_tmp_key(append=h2oconn.session_id()) if id is None else id,
+    parms = {"dest": py_tmp_key(append=h2oconn.session_id) if id is None else id,
              "rows": rows,
              "cols": cols,
              "randomize": randomize,
@@ -1109,7 +1107,7 @@ def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_ran
              "seed": -1 if seed is None else seed,
              "seed_for_column_types": -1 if seed_for_column_types is None else seed_for_column_types,
              }
-    H2OJob(h2oconn.post_json("CreateFrame", **parms), "Create Frame").poll()
+    H2OJob(api("POST /3/CreateFrame", data=parms), "Create Frame").poll()
     return get_frame(parms["dest"])
 
 
@@ -1146,14 +1144,14 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
       H2OFrame
     """
     factors = [data.names[n] if is_int(n) else n for n in factors]
-    parms = {"dest": py_tmp_key(append=h2oconn.session_id()) if destination_frame is None else destination_frame,
+    parms = {"dest": py_tmp_key(append=h2oconn.session_id) if destination_frame is None else destination_frame,
              "source_frame": data.frame_id,
              "factor_columns": [quoted(f) for f in factors],
              "pairwise": pairwise,
              "max_factors": max_factors,
              "min_occurrence": min_occurrence,
              }
-    H2OJob(h2oconn.post_json("Interaction", **parms), "Interactions").poll()
+    H2OJob(api("POST /3/Interaction", data=parms), "Interactions").poll()
     return get_frame(parms["dest"])
 
 
@@ -1182,7 +1180,7 @@ def as_list(data, use_pandas=True):
 
 
 def network_test():
-    res = h2oconn.request("GET /3/NetworkTest")
+    res = api("GET /3/NetworkTest")
     res.table.show()
 
 

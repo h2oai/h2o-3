@@ -196,19 +196,19 @@ class H2OGridSearch(object):
     ignored_columns = list(set(tframe.names) - set(x + [y,offset,folds,weights]))
     kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
     kwargs = dict([(k, kwargs[k].frame_id if isinstance(kwargs[k], H2OFrame) else kwargs[k]) for k in kwargs if kwargs[k] is not None])  # gruesome one-liner
-    algo = self.model._compute_algo()  #unique to grid search
-    kwargs["_rest_version"] = 99  #unique to grid search
+    algo = self.model._compute_algo()  # unique to grid search
     if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
+    rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else None
 
-    grid = H2OJob(h2o.connection().post_json("Grid/"+algo, **kwargs), job_type=(algo+" Grid Build"))
+    grid = H2OJob(h2o.api("POST /99/Grid/%s" % algo, data=kwargs), job_type=(algo+" Grid Build"))
 
     if self._future:
       self._job = grid
       return
 
     grid.poll()
-    if '_rest_version' in list(kwargs.keys()):
-      grid_json = h2o.connection().get_json("Grids/"+grid.dest_key, _rest_version=kwargs['_rest_version'])
+    if rest_ver is not None:
+      grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
 
       error_index = 0
       if len(grid_json["failure_details"]) > 0:
@@ -224,15 +224,15 @@ class H2OGridSearch(object):
                   "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
           error_index += 1
     else:
-      grid_json = h2o.connection().get_json("Grids/"+grid.dest_key)
+      grid_json = h2o.api("GET /99/Grids/%s" % grid.dest_key)
 
     self.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]
 
     #get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
     # sometimes no model is returned due to bad parameter values provided by the user.
     if len(grid_json['model_ids']) > 0:
-      first_model_json = h2o.connection().get_json("Models/"+grid_json['model_ids'][0]['name'],
-                                                _rest_version=kwargs['_rest_version'])['models'][0]
+      first_model_json = h2o.api("GET /%d/Models/%s" %
+                                 (rest_ver or 3, grid_json['model_ids'][0]['name']))['models'][0]
       self._resolve_grid(grid.dest_key, grid_json, first_model_json)
     else:
       raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
@@ -747,7 +747,8 @@ class H2OGridSearch(object):
     Parameters
     ----------
     sort_by : str, optional
-      A metric by which to sort the models in the grid space. Choices are "logloss", "residual_deviance", "mse", "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
+      A metric by which to sort the models in the grid space. Choices are "logloss", "residual_deviance", "mse",
+      "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
     decreasing : bool, optional
       Sort the models in decreasing order of metric if true, otherwise sort in increasing order (default).
     Returns
@@ -757,16 +758,16 @@ class H2OGridSearch(object):
     """
     if sort_by is None and decreasing is None: return self
 
-    grid_json = h2o.connection().get_json("Grids/"+self._id, sort_by=sort_by, decreasing=decreasing, _rest_version=99)
+    grid_json = h2o.api("GET /99/Grids/%s" % self._id, data={"sort_by": sort_by, "decreasing": decreasing})
     grid = H2OGridSearch(self.model, self.hyper_params, self._id)
-    grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']] #reordered
-    first_model_json = h2o.connection().get_json("Models/"+grid_json['model_ids'][0]['name'], _rest_version=99)['models'][0]
+    grid.models = [h2o.get_model(key['name']) for key in grid_json['model_ids']]  # reordered
+    first_model_json = h2o.api("GET /99/Models/%s" % grid_json['model_ids'][0]['name'])['models'][0]
     model_class = H2OGridSearch._metrics_class(first_model_json)
     m = model_class()
     m._id = self._id
     m._grid_json = grid_json
     # m._metrics_class = metrics_class
     m._parms = grid._parms
-    H2OEstimator.mixin(grid,model_class)
+    H2OEstimator.mixin(grid, model_class)
     grid.__dict__.update(m.__dict__.copy())
     return grid

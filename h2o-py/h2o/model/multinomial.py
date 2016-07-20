@@ -1,6 +1,7 @@
 from builtins import zip
 from ..frame import H2OFrame
 import h2o
+from h2o.utils.compatibility import assert_is_type
 from .model_base import ModelBase
 
 class H2OMultinomialModel(ModelBase):
@@ -12,9 +13,8 @@ class H2OMultinomialModel(ModelBase):
     """
     Returns a confusion matrix based of H2O's default prediction threshold for a dataset
     """
-    if not isinstance(data, H2OFrame): raise ValueError("data argument must be of type H2OFrame, but got {0}"
-                                                        .format(type(data)))
-    j = h2o.connection().post_json("Predictions/models/" + self._id + "/frames/" + data.frame_id)
+    assert_is_type(data, "data", H2OFrame)
+    j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self._id, data.frame_id))
     return j["model_metrics"][0]["cm"]["table"]
 
   def hit_ratio_table(self, train=False, valid=False, xval=False):

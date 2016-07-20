@@ -163,20 +163,19 @@ class H2OEstimator(ModelBase):
     kwargs["ignored_columns"] = None if ignored_columns==[] else [quoted(col) for col in ignored_columns]
     kwargs["interactions"] = None if ("interactions" not in kwargs or kwargs["interactions"] is None) else [quoted(col) for col in kwargs["interactions"]]
     kwargs = dict([(k, H2OEstimator._keyify_if_H2OFrame(kwargs[k])) for k in kwargs])  # gruesome one-liner
+    rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
     algo = self._compute_algo()
 
-    model = H2OJob(h2o.connection().post_json("ModelBuilders/"+algo, **kwargs), job_type=(algo+" Model Build"))
+    model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, algo), data=kwargs),
+                   job_type=(algo + " Model Build"))
 
     if self._future:
       self._job = model
       return
 
     model.poll()
-    if '_rest_version' in list(kwargs.keys()):
-      model_json = h2o.connection().get_json("Models/"+model.dest_key, _rest_version=kwargs['_rest_version'])["models"][0]
-    else:
-      model_json = h2o.connection().get_json("Models/"+model.dest_key)["models"][0]
-    self._resolve_model(model.dest_key,model_json)
+    model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
+    self._resolve_model(model.dest_key, model_json)
 
   @staticmethod
   def _keyify_if_H2OFrame(item):

@@ -70,8 +70,8 @@ class H2ODimReductionModel(ModelBase):
           Return the approximate reconstruction of the training data.
         """
         if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
-        j = h2o.connection().post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id,
-                        reconstruct_train=True, reverse_transform=reverse_transform)
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"reconstruct_train": True, "reverse_transform": reverse_transform})
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
 
     def proj_archetypes(self,test_data,reverse_transform=False):
@@ -92,8 +92,8 @@ class H2ODimReductionModel(ModelBase):
           feature space.
         """
         if test_data is None or test_data.nrow == 0: raise ValueError("Must specify test data")
-        j = h2o.connection().post_json("Predictions/models/" + self.model_id + "/frames/" + test_data.frame_id,
-                        project_archetypes=True, reverse_transform=reverse_transform)
+        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                    data={"project_archetypes": True, "reverse_transform": reverse_transform})
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
 
     def screeplot(self, type="barplot", **kwargs):

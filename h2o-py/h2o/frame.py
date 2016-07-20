@@ -200,10 +200,9 @@ class H2OFrame(object):
     return self
 
   def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings):
-    fui = {"file": os.path.abspath(path)}
-    ret = h2o.connection().post_json(url_suffix="PostFile", file_upload_info=fui)
+    ret = h2o.api("POST /3/PostFile", filename=path)
     rawkey = ret["destination_frame"]
-    self._parse(rawkey,destination_frame, header, sep, column_names, column_types, na_strings)
+    self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings)
     return self
 
   def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
@@ -331,7 +330,7 @@ class H2OFrame(object):
     # Extract only 'name' from each src in the array of srcs
     p['source_frames'] = [_quoted(src['name']) for src in setup['source_frames']]
 
-    H2OJob(h2o.connection().post_json(url_suffix="Parse", **p), "Parse").poll()
+    H2OJob(h2o.api("POST /3/Parse", data=p), "Parse").poll()
     # Need to return a Frame here for nearly all callers
     # ... but job stats returns only a dest_key, requiring another REST call to get nrow/ncol
     self._ex._cache._id = p["destination_frame"]
@@ -410,7 +409,7 @@ class H2OFrame(object):
       import IPython.display
       IPython.display.display_html(self._ex._cache._tabulate("html",True),raw=True)
     else:
-      print(self._ex._cache._tabulate("simple",True))
+      print(self._ex._cache._tabulate("simple", True))
 
   def describe(self):
     """Generate an in-depth description of this H2OFrame. Everything in summary(), plus
@@ -420,7 +419,7 @@ class H2OFrame(object):
     # cached, so must be pulled.  While we're at it, go ahead and fill in
     # the default caches if they are not already filled in
 
-    res = h2o.connection().get_json("Frames/"+self.frame_id+"?row_count="+str(10))["frames"][0]
+    res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
     self._ex._cache._fill_data(res)
     print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
     res["chunk_summary"].show()
@@ -1544,7 +1543,7 @@ class H2OFrame(object):
     kwargs['fraction'] = fraction
     if seed is not None: kwargs['seed'] = seed
     job = {}
-    job['job'] = h2o.connection().post_json("MissingInserter", **kwargs)
+    job['job'] = h2o.api("POST /3/MissingInserter", data=kwargs)
     H2OJob(job, job_type=("Insert Missing Values")).poll()
     self._ex._cache.flush()
     return self
