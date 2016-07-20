@@ -654,10 +654,10 @@ def get_grid(grid_id):
     -------
       H2OGridSearch instance
     """
-    grid_json = h2o.api("GET /99/Grids/%s" % grid_id)
+    grid_json = api("GET /99/Grids/%s" % grid_id)
     models = [get_model(key['name']) for key in grid_json['model_ids']]
     # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-    first_model_json = h2o.api("GET /3/Models/%s" % grid_json['model_ids'][0]['name'])['models'][0]
+    first_model_json = api("GET /3/Models/%s" % grid_json['model_ids'][0]['name'])['models'][0]
     gs = H2OGridSearch(None, {}, grid_id)
     gs._resolve_grid(grid_id, grid_json, first_model_json)
     gs.models = models
