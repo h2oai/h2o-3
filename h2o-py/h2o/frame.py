@@ -3,9 +3,6 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
-from .utils.compatibility import viewitems, viewvalues, csv_dict_writer
-# noinspection PyUnresolvedReferences
-from future.builtins import *
 
 import requests
 import collections
@@ -17,15 +14,16 @@ import tempfile
 import sys
 import traceback
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list,\
-  _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
+    _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
 from .display import H2ODisplay
 from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
 import h2o
-from past.builtins import basestring
+from h2o.utils.compatibility import *  # NOQA
 from functools import reduce
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 
@@ -207,7 +205,7 @@ class H2OFrame(object):
 
   def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None, column_types=None, na_strings=None):
     # [] and () cases -- folded together since H2OFrame is mutable
-    if isinstance(python_obj, (list, tuple)): col_header, data_to_write = _handle_python_lists(python_obj, header)
+    if is_listlike(python_obj): col_header, data_to_write = _handle_python_lists(python_obj, header)
 
     # {} and collections.OrderedDict cases
     elif isinstance(python_obj, (dict, collections.OrderedDict)): col_header, data_to_write = _handle_python_dicts(python_obj)
@@ -697,8 +695,8 @@ class H2OFrame(object):
     -------
       Returns self.
     """
-    if isinstance(col, basestring): col = self.names.index(col)  # lookup the name
-    if not isinstance(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
+    if is_str(col): col = self.names.index(col)  # lookup the name
+    if not is_int(col) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
     if self.ncol == 1: col = 0
     old_cache = self._ex._cache
     self._ex = ExprNode("colnames=",self,col,name)  # Update-in-place, but still lazy
@@ -979,7 +977,7 @@ class H2OFrame(object):
     new_types=None
     fr=None
     flatten=False
-    if isinstance(item, (basestring,list,int,slice)):
+    if is_str(item) or is_int(item) or isinstance(item, (list, slice)):
       new_ncols,new_names,new_types,item = self._compute_ncol_update(item)
       new_nrows = self.nrow
       fr = H2OFrame._expr(expr=ExprNode("cols_py",self,item))
@@ -1012,7 +1010,7 @@ class H2OFrame(object):
         new_nrows,rows = self._compute_nrow_update(rows)
         fr = H2OFrame._expr(expr=ExprNode("rows", ExprNode("cols_py",self,cols),rows))
 
-      flatten = isinstance(rows, int) and isinstance(cols, (basestring,int))
+      flatten = is_int(rows) and (is_str(cols) or is_int(cols))
     else:
       raise ValueError("Unexpected __getitem__ selector: "+str(type(item))+" "+str(item.__class__))
 
@@ -1051,9 +1049,9 @@ class H2OFrame(object):
         new_names = [self.names[i] for i in range_list]
         new_types = {name:self.types[name] for name in new_names}
         item = slice(start,end)
-      elif isinstance(item, (basestring,int)):
+      elif is_str(item) or is_int(item):
         new_ncols = 1
-        if isinstance(item, basestring):
+        if is_str(item):
           new_names = [item]
           new_types = None if item not in self.types else {item:self.types[item]}
         else:
@@ -1105,17 +1103,17 @@ class H2OFrame(object):
     row_expr=None
     colname=None  # When set, we are doing an append
 
-    if isinstance(b, basestring):  # String column name, could be new or old
+    if is_str(b):  # String column name, could be new or old
       if b in self.names:
         col_expr = self.names.index(b)  # Old, update
       else:
         col_expr = self.ncol
         colname = b  # New, append
-    elif isinstance(b, int):    col_expr = b  # Column by number
+    elif is_int(b):    col_expr = b  # Column by number
     elif isinstance(b, tuple):     # Both row and col specifiers
       row_expr = b[0]
       col_expr = b[1]
-      if isinstance(col_expr, basestring):    # Col by name
+      if is_str(col_expr):    # Col by name
         if col_expr not in self.names:  # Append
           colname = col_expr
           col_expr = self.ncol
@@ -1188,7 +1186,7 @@ class H2OFrame(object):
     -------
       H2OFrame with the column at index i dropped. Returns a new H2OFrame.
     """
-    if isinstance(i, basestring): i = self.names.index(i)
+    if is_str(i): i = self.names.index(i)
     fr = H2OFrame._expr(expr=ExprNode("cols", self,-(i+1)), cache=self._ex._cache)
     fr._ex._cache.ncols -= 1
     fr._ex._cache.names = self.names[:i] + self.names[i+1:]
@@ -1207,7 +1205,7 @@ class H2OFrame(object):
     -------
       The column dropped from the frame; the frame is side-effected to lose the column.
     """
-    if isinstance(i, basestring): i=self.names.index(i)
+    if is_str(i): i=self.names.index(i)
     col = H2OFrame._expr(expr=ExprNode("cols",self,i))
     old_cache = self._ex._cache
     self._ex = ExprNode("cols", self,-(i+1))
@@ -1242,9 +1240,8 @@ class H2OFrame(object):
     if prob is None: prob=[0.01,0.1,0.25,0.333,0.5,0.667,0.75,0.9,0.99]
     if weights_column is None: weights_column="_"
     else:
-      if not (isinstance(weights_column, basestring) or (isinstance(weights_column, H2OFrame)
-                                                        and weights_column.ncol == 1
-                                                        and weights_column.nrow == self.nrow)):
+      if not (is_str(weights_column) or (isinstance(weights_column, H2OFrame)
+                                         and weights_column.ncol == 1 and weights_column.nrow == self.nrow)):
         raise ValueError("`weights_column` must be a column name in x or an H2OFrame object with 1 column and same row count as x")
       if isinstance(weights_column, H2OFrame):
         merged = self.cbind(weights_column)
@@ -1449,8 +1446,8 @@ class H2OFrame(object):
     -------
       A list of values used in the imputation or the group by result used in imputation.
     """
-    if isinstance(column, basestring): column = self.names.index(column)
-    if isinstance(by, basestring):     by     = self.names.index(by)
+    if is_str(column): column = self.names.index(column)
+    if is_str(by):     by     = self.names.index(by)
 
     if values is None: values = "_"
     if group_by_frame is None: group_by_frame = "_"

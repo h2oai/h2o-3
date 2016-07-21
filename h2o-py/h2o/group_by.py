@@ -1,8 +1,15 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from past.builtins import basestring
+# -*- encoding: utf-8 -*-
+"""
+Group-by operations on an H2OFrame.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from .expr import ExprNode
 import h2o
+from h2o.utils.compatibility import *  # NOQA
 
 
 class GroupBy:
@@ -34,8 +41,8 @@ class GroupBy:
     self._aggs={}               # IN
     self._res=None              # OUT
 
-    if isinstance(by,basestring):     self._by = [self._fr.names.index(by)]
-    elif isinstance(by,(tuple,list)): self._by = [self._fr.names.index(b) if isinstance(b, basestring) else b for b in by]
+    if is_str(by):     self._by = [self._fr.names.index(by)]
+    elif is_listlike(by): self._by = [self._fr.names.index(b) if is_str(b) else b for b in by]
     else: self._by = [self._by]
 
   def min(  self,col=None,na="all"): return self._add_agg("min",col,na)
@@ -74,13 +81,14 @@ class GroupBy:
       for i in range(self._fr.ncol):
         if i not in self._by: self._add_agg(op,i,na)
       return self
-    elif isinstance(col, basestring):  cidx=self._fr.names.index(col)
-    elif isinstance(col, int):         cidx=col
-    elif isinstance(col, (tuple,list)):
+    elif is_str(col):  cidx=self._fr.names.index(col)
+    elif is_int(col):         cidx=col
+    elif is_listlike(col):
       for i in col:
         self._add_agg(op,i,na)
       return self
-    else:                              raise ValueError("col must be a column name or index.")
+    else:
+      raise ValueError("col must be a column name or index.")
     name = "{}_{}".format(op,self._fr.names[cidx])
     self._aggs[name]=[op,cidx,na]
     return self

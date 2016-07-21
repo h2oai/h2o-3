@@ -5,7 +5,7 @@ h2o -- module for using H2O services.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 import os
 import re
 import warnings
@@ -1015,7 +1015,9 @@ def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_ran
                  categorical_fraction=0.2, factors=100, integer_fraction=0.2, integer_range=100,
                  binary_fraction=0.1, binary_ones_fraction=0.02, time_fraction=0, string_fraction=0,
                  missing_fraction=0.01, response_factors=2, has_response=False, seed=None, seed_for_column_types=None):
-    """Data Frame Creation in H2O.
+    """
+    Data Frame Creation in H2O.
+
     Creates a data frame in H2O with real-valued, categorical, integer,
     and binary columns specified by the user.
 

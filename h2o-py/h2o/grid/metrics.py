@@ -1,6 +1,13 @@
-from builtins import object
+# -*- encoding: utf-8 -*-
+"""
+Classes for grid search.
 
-#classes for grid search
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+
 
 class H2OAutoEncoderGridSearch(object):
 

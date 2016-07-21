@@ -1,7 +1,16 @@
-from __future__ import absolute_import
+# -*- encoding: utf-8 -*-
+"""
+Model builder.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import h2o
-from ..frame      import H2OFrame
-from ..job        import H2OJob
+from h2o.utils.compatibility import *  # NOQA
+from ..frame import H2OFrame
+from ..job import H2OJob
 from .model_future import H2OModelFuture
 from .dim_reduction import H2ODimReductionModel
 from .autoencoder import H2OAutoEncoderModel
@@ -9,6 +18,7 @@ from .multinomial import H2OMultinomialModel
 from .regression import H2ORegressionModel
 from .binomial import H2OBinomialModel
 from .clustering import H2OClusteringModel
+
 
 
 def build_model(algo_params):

@@ -1,13 +1,16 @@
-from future import standard_library
-import os, sys
-try:
-  standard_library.install_aliases()
-except AttributeError:
-  if os.path.exists(os.path.join(sys.path[0], "test.py")):
-    print("File named `test` is conflicting with python module `test` used by the future library.")
-from builtins import object
+# -*- encoding: utf-8 -*-
+"""
+Multinomial model.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from ..frame import H2OFrame
 from h2o import expr
+from h2o.utils.compatibility import *  # NOQA
+
 
 class TransformAttributeError(AttributeError):
   def __init__(self,obj,method):
@@ -61,4 +64,4 @@ class H2OTransformer(object):
     return fr
 
   def to_rest(self, args):
-    return "{}__{}__{}__{}__{}".format(*args)
+    return "__".join(str(a) for a in args)

@@ -1,6 +1,13 @@
-from __future__ import print_function
-from builtins import str
-from builtins import object
+# -*- encoding: utf-8 -*-
+"""
+Regression model.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+from h2o.utils.compatibility import *  # NOQA
 from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
 
@@ -59,29 +66,29 @@ class MetricsBase(object):
     else:
       print(reported_on.format("test"))
     print()
-    print("MSE: "                                           + str(self.mse()))
-    print("RMSE: "                                           + str(self.rmse()))
+    print("MSE: " + str(self.mse()))
+    print("RMSE: " + str(self.rmse()))
     if metric_type in types_w_mean_absolute_error:
-      print("MAE: "                                           + str(self.mae()))
+      print("MAE: " + str(self.mae()))
     if metric_type in types_w_r2:
-      print("R^2: "                                           + str(self.r2()))
+      print("R^2: " + str(self.r2()))
     if metric_type in types_w_mean_residual_deviance:
-      print("Mean Residual Deviance: "                        + str(self.mean_residual_deviance()))
+      print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
     if metric_type in types_w_logloss:
-      print("LogLoss: "                                       + str(self.logloss()))
+      print("LogLoss: " + str(self.logloss()))
     if metric_type == 'ModelMetricsBinomial':
-      print("Mean Per-Class Error: "                          + str(self.mean_per_class_error()[0][1])) ## second element for first threshold is the actual mean per class error
+      print("Mean Per-Class Error: " + str(self.mean_per_class_error()[0][1])) ## second element for first threshold is the actual mean per class error
     if metric_type == 'ModelMetricsMultinomial':
-      print("Mean Per-Class Error: "                          + str(self.mean_per_class_error()))
+      print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
     if metric_type in types_w_glm:
-      print("Null degrees of freedom: "                       + str(self.null_degrees_of_freedom()))
-      print("Residual degrees of freedom: "                   + str(self.residual_degrees_of_freedom()))
-      print("Null deviance: "                                 + str(self.null_deviance()))
-      print("Residual deviance: "                             + str(self.residual_deviance()))
-      print("AIC: "                                           + str(self.aic()))
+      print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
+      print("Residual degrees of freedom: " + str(self.residual_degrees_of_freedom()))
+      print("Null deviance: " + str(self.null_deviance()))
+      print("Residual deviance: " + str(self.residual_deviance()))
+      print("AIC: " + str(self.aic()))
     if metric_type in types_w_bin:
-      print("AUC: "                                           + str(self.auc()))
-      print("Gini: "                                          + str(self.giniCoef()))
+      print("AUC: " + str(self.auc()))
+      print("Gini: " + str(self.giniCoef()))
       self.confusion_matrix().show()
       self._metric_json["max_criteria_and_metric_scores"].show()
       if self.gains_lift():
@@ -488,7 +495,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     else: thresholds_list = [thresholds]
 
     # error check the metrics_list and thresholds_list
-    if not all(isinstance(t, (int, float, int)) for t in thresholds_list) or \
+    if not all(is_numeric(t) for t in thresholds_list) or \
             not all(t >= 0 or t <= 1 for t in thresholds_list):
       raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
 
@@ -543,8 +550,7 @@ class H2OBinomialModelMetrics(MetricsBase):
     :param threshold: Find the index of this input threshold.
     :return: Return the index or throw a ValueError if no such index can be found.
     """
-    if not isinstance(threshold,float):
-      raise ValueError("Expected a float but got a "+type(threshold))
+    assert_is_numeric(threshold, "threshold")
     thresh2d = self._metric_json['thresholds_and_metric_scores']
     for i,e in enumerate(thresh2d.cell_values):
       t = float(e[0])

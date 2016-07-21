@@ -1,12 +1,12 @@
+# -*- encoding: utf-8 -*-
 """
 A confusion matrix from H2O.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division
-from builtins import zip
-from builtins import str
-from builtins import range
-from builtins import object
-from past.utils import old_div
+from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 from ..two_dim_table import H2OTwoDimTable
 
@@ -32,7 +32,7 @@ class ConfusionMatrix(object):
       class_sums[i] = sum([v[i] for v in cm])  # row sums
       class_err_strings[i] = \
           " (" + str(class_errs[i]) + "/" + str(class_sums[i]) + ")"
-      class_errs[i] = float("nan") if class_sums[i] == 0 else round(old_div(float(class_errs[i]), float(class_sums[i])), self.ROUND)
+      class_errs[i] = float("nan") if class_sums[i] == 0 else round(class_errs[i]/class_sums[i], self.ROUND)
       # and the cell_values are
       cell_values[i] = [v[i] for v in cm] + [str(class_errs[i])] + [class_err_strings[i]]
 
@@ -41,7 +41,7 @@ class ConfusionMatrix(object):
     totals += [sum(class_sums)]
     class_err_strings += [" (" + str(total_errs) + "/" + str(totals[-1]) + ")"]
 
-    class_errs[-1] = float("nan") if totals[-1] == 0 else round(old_div(float(total_errs), float(totals[-1])), self.ROUND)
+    class_errs[-1] = float("nan") if totals[-1] == 0 else round(total_errs/totals[-1], self.ROUND)
 
     # do the last row of cell_values ... the "totals" row
     cell_values[-1] = totals[0:-1] + [str(class_errs[-1])] + [class_err_strings[-1]]
@@ -80,6 +80,6 @@ class ConfusionMatrix(object):
   def read_cms(cms=None, domains=None):
     if cms is None:  raise ValueError("Missing data, no `cms`.")
     if not isinstance(cms, list):  raise ValueError("`cms` must be a list of lists")
-    lol_all = all(isinstance(l, (tuple, list)) for l in cms)
+    lol_all = all(is_listlike(l) for l in cms)
     if not lol_all: raise ValueError("`cms` must be a list of lists")
     return [ConfusionMatrix(cm, domains) for cm in cms]

@@ -339,10 +339,10 @@ class H2OConnection(backwards_compatible()):
         assert_is_bool(prompt, "prompt")
         if prompt:
             question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " % self._base_url
-            response = input(question)  # works in Py2 & Py3 because it's future.builtins.input
+            response = input(question)  # works in Py2 & Py3 because redefined in h2o.utils.compatibility module
         else:
             response = "Y"
-        if response == "Y" or response == "y":
+        if response.lower() in {"y", "yes"}:
             self.request("POST /3/Shutdown")
             self.close()
 
@@ -388,18 +388,18 @@ class H2OConnection(backwards_compatible()):
     #-------------------------------------------------------------------------------------------------------------------
 
     def __init__(self):
-        """[Internal] Please use H2OConnection.connect() or H2OConnection.start() to create H2OConnection objects."""
+        """[Private] Please use H2OConnection.connect() to create H2OConnection objects."""
         super(H2OConnection, self).__init__()
-        globals()["__H2OCONN__"] = self  # for backward-compatibility
+        globals()["__H2OCONN__"] = self  # for backward-compatibility: __H2OCONN__ is the latest instantiated object
         self._stage = 0             # 0 = not connected, 1 = connected, -1 = disconnected
-        self._session_id = None     # Rapids session id. Connection is considered established when this is not null
+        self._session_id = None     # Rapids session id; issued upon request only
         self._base_url = None       # "{scheme}://{ip}:{port}"
         self._verify_ssl_cert = None
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
         self._cluster_name = None
         self._cluster_info = None   # Latest result of "GET /3/Cloud" request
-        self._verbose = None
+        self._verbose = None        # Print detailed information about connection status
         self._requests_counter = 0  # how many API requests were made
         self._timeout = None        # timeout for a single request (in seconds)
         self._is_logging = False    # when True, log every request

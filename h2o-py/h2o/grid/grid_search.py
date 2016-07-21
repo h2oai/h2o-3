@@ -1,23 +1,26 @@
+# -*- encoding: utf-8 -*-
 """
 This module implements grid search class. All grid search things inherit from this class.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import zip
-from builtins import range
+from __future__ import division, print_function, absolute_import, unicode_literals
+
+import itertools
+
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
-import itertools
 from .metrics import *
 from h2o.utils.shared_utils import quoted
+from h2o.utils.compatibility import *  # NOQA
 
 
 class H2OGridSearch(object):
-
 
   def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
     """
@@ -163,7 +166,7 @@ class H2OGridSearch(object):
     tframe = algo_params["training_frame"]
     if tframe is None: raise ValueError("Missing training_frame")
     if y is not None:
-      if isinstance(y, (list, tuple)):
+      if is_listlike(y):
         if len(y) == 1: parms["y"] = y[0]
         else: raise ValueError('y must be a single column reference')
       self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
@@ -176,7 +179,7 @@ class H2OGridSearch(object):
     training_frame = algo_params.pop("training_frame")
     validation_frame = algo_params.pop("validation_frame",None)
     is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
-    algo = self.model._compute_algo() #unique to grid search
+    algo = self.model._compute_algo()  # unique to grid search
     is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
     if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
     if not is_unsupervised and y is None: raise ValueError("Missing response")
@@ -185,10 +188,10 @@ class H2OGridSearch(object):
   def _model_build(self, x, y, tframe, vframe, kwargs):
     kwargs['training_frame'] = tframe
     if vframe is not None: kwargs["validation_frame"] = vframe
-    if isinstance(y, int): y = tframe.names[y]
+    if is_int(y): y = tframe.names[y]
     if y is not None: kwargs['response_column'] = y
-    if not isinstance(x, (list,tuple)): x=[x]
-    if isinstance(x[0], int):
+    if not is_listlike(x): x=[x]
+    if is_int(x[0]):
       x = [tframe.names[i] for i in x]
     offset = kwargs["offset_column"]
     folds  = kwargs["fold_column"]
@@ -670,7 +673,7 @@ class H2OGridSearch(object):
     -------
       A list of the hyperparameters for the specified model.
     """
-    idx = id if isinstance(id, int) else self.model_ids.index(id)
+    idx = id if is_int(id) else self.model_ids.index(id)
     model = self[idx]
 
     # if cross-validation is turned on, parameters in one of the fold model actuall contains the max_runtime_secs
@@ -699,7 +702,7 @@ class H2OGridSearch(object):
     -------
       A dict of model pararmeters derived from the hyper-parameters used to train this particular model.
     """
-    idx = id if isinstance(id, int) else self.model_ids.index(id)
+    idx = id if is_int(id) else self.model_ids.index(id)
     model = self[idx]
 
     model_params = dict()

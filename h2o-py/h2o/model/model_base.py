@@ -1,14 +1,18 @@
+# -*- encoding: utf-8 -*-
 """
 This module implements the base model class.  All model things inherit from this class.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import print_function
-from builtins import zip
-from builtins import str
-from builtins import range
-from builtins import object
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import h2o
-import imp, traceback, warnings
+from h2o.utils.compatibility import *  # NOQA
+
+import imp
+import traceback
+import warnings
 from ..utils.shared_utils import can_use_pandas
 from h2o.job import H2OJob
 
@@ -448,7 +452,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.r2()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.r2()
     return list(m.values())[0] if len(m) == 1 else m
 
   def mse(self, train=False, valid=False, xval=False):
@@ -473,7 +477,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.mse()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.mse()
     return list(m.values())[0] if len(m) == 1 else m
 
   def rmse(self, train=False, valid=False, xval=False):
@@ -498,7 +502,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.rmse()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.rmse()
     return list(m.values())[0] if len(m) == 1 else m
 
   def mae(self, train=False, valid=False, xval=False):
@@ -523,7 +527,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.mae()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.mae()
     return list(m.values())[0] if len(m) == 1 else m
 
   def logloss(self, train=False, valid=False, xval=False):
@@ -540,7 +544,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.logloss()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.logloss()
     return list(m.values())[0] if len(m) == 1 else m
 
   def mean_residual_deviance(self, train=False, valid=False, xval=False):
@@ -557,7 +561,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.mean_residual_deviance()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.mean_residual_deviance()
     return list(m.values())[0] if len(m) == 1 else m
 
   def auc(self, train=False, valid=False, xval=False):
@@ -574,7 +578,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.auc()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.auc()
     return list(m.values())[0] if len(m) == 1 else m
 
   def aic(self, train=False, valid=False, xval=False):
@@ -591,7 +595,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.aic()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.aic()
     return list(m.values())[0] if len(m) == 1 else m
 
   def giniCoef(self, train=False, valid=False, xval=False):
@@ -608,7 +612,7 @@ class ModelBase(object):
     """
     tm = ModelBase._get_metrics(self, train, valid, xval)
     m = {}
-    for k,v in zip(list(tm.keys()),list(tm.values())): m[k] = None if v is None else v.giniCoef()
+    for k,v in viewitems(tm): m[k] = None if v is None else v.giniCoef()
     return list(m.values())[0] if len(m) == 1 else m
 
   def download_pojo(self,path=""):
@@ -640,7 +644,7 @@ class ModelBase(object):
     try:
       imp.find_module('matplotlib')
       import matplotlib
-      if 'server' in list(kwargs.keys()) and kwargs['server']: matplotlib.use('Agg', warn=False)
+      if 'server' in kwargs and kwargs['server']: matplotlib.use('Agg', warn=False)
       import matplotlib.pyplot as plt
     except ImportError:
       print("matplotlib is required for this function!")

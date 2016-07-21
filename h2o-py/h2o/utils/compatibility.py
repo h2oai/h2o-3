@@ -57,8 +57,8 @@ from h2o.utils.compatibility import *  # NOQA
     All these functions are redefined here to have Py3's behavior on Py2.
 
 ------------------------------------------------------------------------------------------------------------------------
-  :copyright: (c) 2016 H2O.ai
-  :license:   Apache License Version 2.0 (see LICENSE for details)
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from future.utils import PY2, PY3, with_metaclass
@@ -68,7 +68,7 @@ __all__ = ("PY2", "PY3", "with_metaclass", "is_str", "is_int", "is_numeric", "is
            "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric", "assert_maybe_str",
            "range", "filter", "map", "zip", "viewitems", "viewkeys", "viewvalues",
            "apply", "cmp", "coerce", "execfile", "file", "long", "raw_input", "reduce", "reload", "unicode", "xrange",
-           "StandardError", "chr", "input", "open", "next", "round", "super")
+           "StandardError", "chr", "input", "open", "next", "round", "super", "csv_dict_writer")
 
 
 
