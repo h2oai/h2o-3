@@ -2,9 +2,10 @@
 # module h2o
 # from (h2o)
 from __future__ import absolute_import
-__version__ = "SUBST_PROJECT_VERSION"
 
 from .h2o import *
+
+__version__ = "SUBST_PROJECT_VERSION"
 
 __all__ = ['assembly', 'astfun', 'connection', 'cross_validation', 'display',
            'expr', 'frame', 'group_by', 'h2o',
