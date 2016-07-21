@@ -19,5 +19,5 @@ mysqlclient
 recommonmark
 sphinx_rtd_theme
 sphinxcontrib-osexample
-colorama
-builtins
+#colorama
+#builtins
