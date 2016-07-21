@@ -232,12 +232,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final DHistogram hcs[][] = _hcs;
     if( hcs.length==0 ) return; // Unlikely fast cutout
     // Local temp arrays, no atomic updates.
-    double bins[] = new double[Math.max(_nbins, _nbins_cats)];
-    double sums[] = new double[Math.max(_nbins, _nbins_cats)];
-    double ssqs[] = new double[Math.max(_nbins, _nbins_cats)];
-    int cols = _ncols;
-    int hcslen = hcs.length;
-
+    LocalHisto lh = new LocalHisto(Math.max(_nbins,_nbins_cats));
+    final int cols = _ncols;
+    final int hcslen = hcs.length;
+    // these arrays will be re-used for all cols and nodes
     double[] ws = new double[chks[0]._len];
     double[] cs = new double[chks[0]._len];
     double[] ys = new double[chks[0]._len];
@@ -252,21 +250,47 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
             chks[c].getDoubles(cs, 0, cs.length);
             extracted = true;
           }
-          overAllRows(cs, ys, ws, rows, hcs[n][c], n == 0 ? 0 : nh[n - 1], nh[n], bins, sums, ssqs);
+          DHistogram h = hcs[n][c];
+          if( h==null ) continue; // Ignore untracked columns in this split
+          lh.resizeIfNeeded(h._w.length);
+          h.updateSharedHistosAndReset(lh, ws, cs, ys, rows, nh[n], n == 0 ? 0 : nh[n - 1]);
         }
       }
     }
   }
 
-  private static void overAllRows(double [] cs, double [] ys, double [] ws, int[] rows, final DHistogram rh, int lo, int hi, double[] bins, double[] sums, double[] ssqs) {
-    if( rh==null ) return; // Ignore untracked columns in this split
-    int rhbinslen = rh._w.length;
-    if( rhbinslen > bins.length) { // Grow bins if needed, otherwise re-use exiting arrays for speed
-      bins = new double[rhbinslen];
-      sums = new double[rhbinslen];
-      ssqs = new double[rhbinslen];
+
+  /**
+   * Helper class to store the thread-local histograms
+   * Can now change the internal memory layout without affecting the calling code
+   */
+  static class LocalHisto {
+    public void wAdd(int b, double val) { bins[b]+=val; }
+    public void wYAdd(int b, double val) { sums[b]+=val; }
+    public void wYYAdd(int b, double val) { ssqs[b]+=val; }
+    public void wClear(int b) { bins[b]=0; }
+    public void wYClear(int b) { sums[b]=0; }
+    public void wYYClear(int b) { ssqs[b]=0; }
+    public double w(int b) { return bins[b]; }
+    public double wY(int b) { return sums[b]; }
+    public double wYY(int b) { return ssqs[b]; }
+
+    private double bins[];
+    private double sums[];
+    private double ssqs[];
+
+    LocalHisto(int len) {
+      bins = new double[len];
+      sums = new double[len];
+      ssqs = new double[len];
     }
-    rh.updateSharedHistosAndReset(bins, sums, ssqs, ws, cs, ys, rows, hi, lo);
+    void resizeIfNeeded(int len) {
+      if( len > bins.length) {
+        bins = new double[len];
+        sums = new double[len];
+        ssqs = new double[len];
+      }
+    }
   }
 
 }
