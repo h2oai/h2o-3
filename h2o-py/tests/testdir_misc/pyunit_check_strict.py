@@ -1,15 +1,13 @@
-from builtins import zip
 import sys
-sys.path.insert(1,"../../")
-import h2o, inspect
-from tests import pyunit_utils
+sys.path.insert(1, "../../")
+import h2o
 
 
 def check_strict():
     # We may be either connected to an existing h2o server, or not. If we are, then discover the connection settings
     # so that we don't have to start a new server (starting a new server may be not possible if h2o.jar is located in
     # some unknown to us place in the system).
-    hc = h2o.connection()
+    hc = h2o.conn()
     url = None
     if hc is not None:
         url = hc.base_url
@@ -30,6 +28,7 @@ def check_strict():
 
 
 if __name__ == "__main__":
+    from tests import pyunit_utils
     pyunit_utils.standalone_test(check_strict)
 else:
     check_strict()
