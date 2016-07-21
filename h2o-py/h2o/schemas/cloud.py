@@ -10,7 +10,7 @@ from ..utils.shared_utils import get_human_readable_bytes, get_human_readable_ti
 from ..display import H2ODisplay
 
 
-class CloudV3(object):
+class H2OCluster(object):
 
     def __init__(self, keyvals):
         self._props = {}
@@ -20,7 +20,7 @@ class CloudV3(object):
             if k in _cloud_v3_valid_keys:
                 self._props[k] = v
             else:
-                raise AttributeError("Attribute %s cannot be set on CloudV3 (= %r)" % (k, v))
+                raise AttributeError("Attribute %s cannot be set on H2OCluster (= %r)" % (k, v))
 
     @property
     def skip_ticks(self):

@@ -32,7 +32,7 @@ from warnings import warn
 import requests
 from requests.auth import AuthBase
 
-from .schemas.cloud import CloudV3
+from .schemas.cloud import H2OCluster
 from .schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from .two_dim_table import H2OTwoDimTable
 from .utils.backward_compatibility import backwards_compatible, CallableString
@@ -253,7 +253,7 @@ class H2OConnection(backwards_compatible()):
         :param refresh: If False, then retrieve the latest known info; if True then fetch the newest info from the
             server. Usually you want `refresh` to be True, except right after establishing a connection when it is
             still fresh.
-        :return: CloudV3 object.
+        :return: H2OCluster object.
         """
         if self._stage == 0: return None
         if refresh:
@@ -413,7 +413,7 @@ class H2OConnection(backwards_compatible()):
         Test that the H2O cluster can be reached, and retrieve basic cloud status info.
 
         :param max_retries: Number of times to try to connect to the cloud (with 0.2s intervals)
-        :return Cloud information (a CloudV3 object)
+        :return Cloud information (an H2OCluster object)
         :raise H2OConnectionError, H2OServerError
         """
         self._print("Connecting to H2O server at " + self._base_url, end="..")
@@ -1098,7 +1098,7 @@ class H2OResponse(dict):
             if k == "__schema" and is_str(v):
                 schema = v
                 break
-        if schema == "CloudV3": return CloudV3(keyvals)
+        if schema == "CloudV3": return H2OCluster(keyvals)
         if schema == "H2OErrorV3": return H2OErrorV3(keyvals)
         if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3(keyvals)
         if schema == "TwoDimTableV3": return H2OTwoDimTable.make(keyvals)
