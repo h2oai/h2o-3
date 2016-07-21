@@ -20,3 +20,4 @@ recommonmark
 sphinx_rtd_theme
 sphinxcontrib-osexample
 colorama
+builtins
