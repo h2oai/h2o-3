@@ -26,30 +26,13 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .grid.grid_search import H2OGridSearch
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
-from .utils.debugging import *
-from .utils.compatibility import *
-from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen
+from .utils.debugging import *  # NOQA
+from .utils.compatibility import *  # NOQA
+from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
 
 
 warnings.simplefilter('always', DeprecationWarning)
 
-
-# the @deprecated decorator
-def deprecated(message):
-    from traceback import extract_stack
-    assert message, "`message` argument in @deprecated is required."
-
-    def deprecated_decorator(fun):
-        def decorator_invisible(*args, **kwargs):
-            stack = extract_stack()
-            assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack
-            print("[WARNING] in %s line %d:" % (stack[-2][0], stack[-2][1]))
-            print("    >>> %s" % stack[-2][3])
-            print("        ^^^^ %s" % message)
-            return fun(*args, **kwargs)
-        return decorator_invisible
-
-    return deprecated_decorator
 
 
 h2oconn = None
@@ -1239,24 +1222,16 @@ def demo(funcname, interactive=True, echo=True, test=False):
         print("Demo for %s is not available." % funcname)
 
 
+def data_file(relative_path):
+    """Return absolute path to a file within the 'h2o' folder."""
+    h2o_dir = os.path.split(__file__)[0]
+    return os.path.join(h2o_dir, relative_path)
+
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW
 #-----------------------------------------------------------------------------------------------------------------------
-
-def h2o_deprecated(newfun=None):
-    """The @h2o_deprecated decorator."""
-    def _o(fun):
-        def _i(*args, **kwargs):
-            print("\n")
-            if newfun is None:
-                raise DeprecationWarning("%s is deprecated." % fun.__name__)
-            else:
-                warnings.warn("%s is deprecated. Use %s instead." % (fun.__name__, newfun.__name__),
-                              category=DeprecationWarning, stacklevel=2)
-                return newfun(*args, **kwargs)
-        return _i
-    return _o
 
 @h2o_deprecated(import_file)
 def import_frame():
