@@ -2,14 +2,14 @@
 """
 Collection of methods for communication with H2O servers.
 
-`H2OConnection` is the main class of this module, and it handles the connection itself. Public interface:
+`H2OConnection` is the main class of this module, and it handles the connection itself:
     hc = H2OConnection.open() : open a new connection
     hc.request(endpoint, [data|json|filename]) : make a REST API request to the server
     hc.info() : return information about the current connection
     hc.close() : close the connection
-    hc.session_id() : return the current session id
+    hc.session_id : current session id
 
-`H2OLocalServer`
+`H2OLocalServer` allows to start H2O servers on your local machine:
     hs = H2OLocalServer.start() : start a new local server
     hs.is_running() : check if the server is running
     hs.shutdown() : shut down the server
@@ -53,36 +53,31 @@ class H2OConnection(backwards_compatible()):
     Single connection to an H2O server.
 
     Instances of this class are created through a static method `.open()`:
-        conn = H2OConnection.open(...)    connect to an existing H2O server;
-    We will autom
+        conn = H2OConnection.open(...)
+
     You can also use this class as a context manager:
-        with H2OConnection.connect() as conn:
+        with H2OConnection.open() as conn:
             conn.info().pprint()
     The connection will be automatically closed at the end of the `with ...` block.
 
     This class contains methods for performing the common REST methods GET, POST, and DELETE.
-
-    TODO: Maybe move start() and 4 private methods _jar_paths, _launch_server, _find_java, _tmp_file into a separate
-    class H2OLocalServer. Better communicate with the subprocess. Right now if the server dies, no exception is
-    raised anywhere. Also if the server decides to start listening to a port other than 54321, we have no way of
-    knowing this.
     """
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=True, auth=None,
              proxy=None, cluster_name=None, verbose=True):
         """
-        Establish connection to an existing H2O server at address ip:port.
+        Establish connection to an existing H2O server.
 
         The connection is not kept alive, so what this method actually does is it attempts to connect to the
         specified server, and checks that the server is healthy and responds to REST API requests. If the H2O server
         cannot be reached, an `H2OConnectionError` will be raised. On success this method returns a new
         `H2OConnection` object, and it is the only "official" way to create instances of this class.
 
-        There are 3 ways to specify which server to connect to (each of these settings are exclusive):
-            * Either passing a `server` option,
-            * Or passing the full `url` for the connection,
-            * Or providing a triple of parameters `ip`, `port`, `https`.
+        There are 3 ways to specify which server to connect to (these settings are mutually exclusive):
+            * Pass a `server` option,
+            * Pass the full `url` for the connection,
+            * Provide a triple of parameters `ip`, `port`, `https`.
 
         :param server: (H2OLocalServer) connect to the specified local server instance. There is a slight difference
             between connecting to a local server by specifying its ip and address, and connecting through

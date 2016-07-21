@@ -1,6 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-Demos for the h2o-py library.
+Interactive demos for the h2o-py library.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -75,7 +78,7 @@ def gbm(interactive=True, echo=True, testing=False):
 
 
 def deeplearning(interactive=True, echo=True, testing=False):
-    """DeepLearning model demo."""
+    """Deep Learning model demo."""
     def demo_body(go):
         """
         Demo of H2O's Deep Learning model.
@@ -210,7 +213,6 @@ def _run_demo(body_fn, interactive, echo, testing):
 
     class StopExecution(Exception):
         """Helper class for cancelling the demo."""
-        pass
 
     assert_is_type(body_fn, "body_fn", type(_run_demo))
     # Reformat description by removing extra spaces; then print it.
