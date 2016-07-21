@@ -110,7 +110,8 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
     return H2OLocalServer.start(**locals())
 
 
-def connection():
+def conn():
+    """Return current H2OConnection handler."""
     return h2oconn
 
 
@@ -1228,8 +1229,8 @@ def demo(funcname, interactive=True, echo=True, test=False):
     >>> import h2o
     >>> h2o.demo("gbm")
     """
-    import h2o.demo
-    demo_function = getattr(h2o.demo, funcname, None)
+    import h2o.demos as h2odemo
+    demo_function = getattr(h2odemo, funcname, None)
     if demo_function and type(demo_function) is type(demo):
         demo_function(interactive, echo, test)
     else:

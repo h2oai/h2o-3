@@ -60,7 +60,7 @@ class H2OAssembly(object):
       with open(file_path, 'w', encoding="utf-8") as f:
         f.write(java)   # this had better be utf-8 ?
     if get_jar and path!="":
-      url = h2o.connection().make_url("h2o-genmodel.jar")
+      url = h2o.conn().make_url("h2o-genmodel.jar")
       filename = path + "/" + "h2o-genmodel.jar"
       response = urlopen()(url)
       with open(filename, "wb") as f:

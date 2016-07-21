@@ -936,11 +936,11 @@ class H2OFrame(object):
       A local python string, each line is a row and each element separated by commas,
       containing this H2OFrame instance's data.
     """
-    url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+    url = h2o.conn().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
     # TODO: this should be moved into H2OConnection class
     return requests.get(url, headers = {'User-Agent': 'H2O Python client/'+sys.version.replace('\n','')},
-                        auth = h2o.connection()._auth,
-                        verify = h2o.connection()._verify_ssl_cert, stream = True).text
+                        auth = h2o.conn()._auth,
+                        verify = h2o.conn()._verify_ssl_cert, stream = True).text
 
   def __getitem__(self, item):
     """Frame slicing. Supports R-like row and column slicing.
