@@ -35,7 +35,22 @@ class H2OLocalServer(object):
     Handle to an H2O server launched locally.
 
     Public interface:
-        hs = H2OLocalServer.start(...)   launch a new local H2O server
+        hs = H2OLocalServer.start(...)  # launch a new local H2O server
+        hs.is_running()                 # check if the server is running
+        hs.shutdown()                   # shut down the server
+        hs.scheme                       # either "http" or "https"
+        hs.ip                           # ip address of the server, typically "127.0.0.1"
+        hs.port                         # port on which the server is listening
+
+    Once started, the server will run until the script terminates, or until you call `.shutdown()` on it. Moreover,
+    if the server terminates with an exception, then the server will not stop and will continue to run even after
+    Python process exits. This runaway process may end up being in a bad shape (e.g. frozen), then the only way to
+    terminate it is to kill the java process from the terminal.
+
+    Alternatively, it is possible to start the server as a context manager, in which case it will be automatically
+    shut down even if an exception occurs in Python (but not if the Python process is killed):
+        with H2OLocalServer.start() as hs:
+            # do something with the server -- probably connect to it
     """
 
     _TIME_TO_START = 10  # Maximum time we wait for the server to start up (in seconds)
