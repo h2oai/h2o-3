@@ -19,6 +19,7 @@ import h2o
 from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
+from h2o.utils.typechecks import is_numeric, is_str
 
 
 class ExprNode(object):

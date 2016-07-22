@@ -12,8 +12,9 @@ import os
 import sys
 
 import h2o
+# noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
-
+from h2o.utils.typechecks import assert_is_type
 
 
 def gbm(interactive=True, echo=True, testing=False):

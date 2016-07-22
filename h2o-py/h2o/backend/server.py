@@ -22,7 +22,9 @@ from random import choice
 from sysconfig import get_config_var
 from warnings import warn
 
+from h2o.backend.exceptions import H2OServerError
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import is_int, is_str
 
 __all__ = ("H2OLocalServer", "H2OStartupError")
 
@@ -393,8 +395,3 @@ class H2OLocalServer(object):
     #     for _ in range(5):
     #         h2o.H2OConnection.start()
     # will launch 5 servers, and they will not be closed down immediately (only when the program exits).
-
-
-
-class H2OStartupError(Exception):
-    """Raised by H2OLocalServer when the class fails to launch a server."""

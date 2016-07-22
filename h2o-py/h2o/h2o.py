@@ -10,8 +10,9 @@ import os
 import re
 import warnings
 
-from h2o.backend.connection import H2OConnection, H2OConnectionError, H2OServerError
-from h2o.backend.server import H2OLocalServer, H2OStartupError
+from h2o.backend.connection import H2OConnection
+from h2o.backend.server import H2OLocalServer
+from h2o.backend.exceptions import H2OConnectionError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
@@ -29,6 +30,7 @@ from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_str, is_str, is_int, is_listlike
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
 
 warnings.simplefilter("always", DeprecationWarning)

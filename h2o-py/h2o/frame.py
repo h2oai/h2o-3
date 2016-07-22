@@ -29,6 +29,7 @@ from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import is_str, is_int, is_listlike
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 

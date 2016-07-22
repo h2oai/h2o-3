@@ -86,7 +86,7 @@ class H2OCluster(object):
     @property
     def connection(self):
         if self._connection is None:
-            from ..connection import H2OConnection
+            from h2o.backend.connection import H2OConnection
             self._connection = H2OConnection()
         return self._connection
 

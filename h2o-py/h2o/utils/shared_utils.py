@@ -13,8 +13,10 @@ import imp
 import itertools
 import os
 import re
+import warnings
 
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_int, is_str, is_numeric
 
 # private static methods
 _id_ctr = 0

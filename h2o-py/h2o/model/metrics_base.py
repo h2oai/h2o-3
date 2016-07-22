@@ -7,9 +7,11 @@ Regression model.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from h2o.utils.compatibility import *  # NOQA
-from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
+
+from h2o.model.confusion_matrix import ConfusionMatrix
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_numeric, is_numeric
 
 
 class MetricsBase(object):

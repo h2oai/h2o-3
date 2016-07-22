@@ -25,14 +25,17 @@ import requests
 from requests.auth import AuthBase
 
 from h2o.backend.server import H2OLocalServer
-from ..schemas.cloud import H2OCluster
-from ..schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
-from ..two_dim_table import H2OTwoDimTable
-from ..utils.backward_compatibility import backwards_compatible, CallableString
-from ..utils.compatibility import *  # NOQA
-from ..utils.shared_utils import stringify_list
+from h2o.backend.exceptions import H2OConnectionError, H2OServerError, H2OResponseError
+from h2o.schemas.cloud import H2OCluster
+from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
+from h2o.two_dim_table import H2OTwoDimTable
+from h2o.utils.backward_compatibility import backwards_compatible, CallableString
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import stringify_list
+from h2o.utils.typechecks import (assert_is_bool, assert_is_int, assert_is_str, assert_is_type, assert_maybe_numeric,
+                                  assert_maybe_str, is_str)
 
-__all__ = ("H2OConnection", "H2OConnectionError", "H2OServerError", "H2OResponseError")
+__all__ = ("H2OConnection", )
 
 
 
@@ -650,47 +653,6 @@ class H2OConnection(backwards_compatible()):
         "get_json": lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
         "post_json": lambda *args, **kwargs: _deprecated_post(*args, **kwargs),
     }
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-#   Exceptions
-#-----------------------------------------------------------------------------------------------------------------------
-
-class H2OConnectionError(Exception):
-    """
-    Raised when connection to an H2O server cannot be established.
-
-    This can be raised if the connection was not initialized; or the server cannot be reached at the specified address;
-    or there is an authentication error; or the request times out; etc.
-    """
-
-
-# This should have been extending from Exception as well; however in old code version all exceptions were
-# EnvironmentError's, so for old code to work we extend H2OResponseError from EnvironmentError.
-class H2OResponseError(EnvironmentError):
-    """Raised when the server encounters a user error and sends back an H2OErrorV3 response."""
-
-
-class H2OServerError(Exception):
-    """
-    Raised when any kind of server error is encountered.
-
-    This includes: server returning HTTP status 500; or server sending malformed JSON; or server returning an
-    unexpected response (e.g. lacking a "__schema" field); or server indicating that it is in an unhealthy state; etc.
-    """
-
-    def __init__(self, message, stacktrace=None):
-        """
-        Instantiate a new H2OServerError exception.
-
-        :param message: error message describing the exception.
-        :param stacktrace: (optional, list(str)) server-side stacktrace, if available. This will be printed out by
-            our custom except hook (see debugging.py).
-        """
-        super(H2OServerError, self).__init__(message)
-        self.stacktrace = stacktrace
-
 
 
 

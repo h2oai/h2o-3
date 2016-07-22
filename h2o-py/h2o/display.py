@@ -67,6 +67,7 @@ class H2ODisplay(object):
     @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
         try:
+            # noinspection PyUnresolvedReferences,PyStatementEffect
             __IPYTHON__
             return True
         except NameError:
@@ -75,7 +76,8 @@ class H2ODisplay(object):
     # some html table builder helper things
     @staticmethod
     def _html_table(rows, header=None):
-        table = "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
+        # keep table in a div for scrollability
+        table = "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"
         table_rows = []
         if header is not None:
             table_rows.append(H2ODisplay._html_row(header, bold=True))

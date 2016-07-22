@@ -11,6 +11,8 @@ from h2o.utils.compatibility import *  # NOQA
 from ..frame import H2OFrame
 import h2o
 from .model_base import ModelBase
+from h2o.utils.typechecks import assert_is_type
+
 
 
 class H2OMultinomialModel(ModelBase):

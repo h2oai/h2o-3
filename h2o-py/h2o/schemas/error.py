@@ -3,6 +3,8 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import division, print_function, absolute_import, unicode_literals
+
+# noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 
 
@@ -20,10 +22,6 @@ class H2OErrorV3(object):
                 self._props[k] = v
             else:
                 raise AttributeError("Attribute %s cannot be set on H2OErrorV3 (= %r)" % (k, v))
-
-    def __getitem__(self, key):
-        if key in self._props:
-            return self._props[key]
 
     @property
     def stacktrace(self):
