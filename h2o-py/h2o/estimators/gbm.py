@@ -13,7 +13,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     ------------------------
     Builds gradient boosted trees on a parsed data set, for regression or classification.
     The default distribution function will guess the model type based on the response column type.
-    Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric 
+    Otherwise, the response column must be an enum for "bernoulli" or "multinomial", and numeric
     for all other distributions.
 
     Parameters (optional, unless specified otherwise)

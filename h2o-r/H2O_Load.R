@@ -1,7 +1,8 @@
 # Change this global variable to match your own system's path
 SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 LUDI.ROOT.PATH <- "/Users/ludirehak/"
-ROOT.PATH <- LUDI.ROOT.PATH
+ARNO.ROOT.PATH <- "/home/arno/"
+ROOT.PATH <- ARNO.ROOT.PATH
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 

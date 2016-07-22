@@ -557,6 +557,59 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   }
 }
 
+#' Create Model Metrics from predicted and actual values in H2O
+#'
+#' Given predicted values (target for regression, class-1 probabilities or binomial
+#' or per-class probabilities for multinomial), compute a model metrics object
+#'
+#' @param predicted An H2OFrame containing predictions
+#' @param actuals An H2OFrame containing actual values
+#' @param domain Vector with response factors for classification.
+#' @param distribution Distribution for regression.
+#' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
+#' pred <- h2o.predict(prostate.gbm, prostate.hex)[,3] ## class-1 probability
+#' h2o.make_metrics(pred,prostate.hex$CAPSULE)
+#' }
+#' @export
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL) {
+  params <- list()
+  pred <- h2o.getId(predicted)
+  act <- h2o.getId(actuals)
+  params[["predictions_frame"]] <- pred
+  params[["actuals_frame"]] <- act
+  params[["domain"]] <- domain
+  params[["distribution"]] <- distribution
+
+  if (is.null(domain) && !is.null(h2o.levels(actuals)))
+    domain = h2o.levels(actuals)
+
+  ## pythonify the domain
+  if (!is.null(domain)) {
+    out <- paste0('["',domain[1],'"')
+    for (d in 2:length(domain)) {
+      out <- paste0(out,',"',domain[d],'"')
+    }
+    out <- paste0(out, "]")
+    params[["domain"]] <- out
+  }
+  url <- paste0("ModelMetrics/predictions_frame/",pred,"/actuals_frame/",act)
+  res <- .h2o.__remoteSend(method = "POST", url, .params = params)
+  model_metrics <- res$model_metrics
+  metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]
+  name <- "H2ORegressionMetrics"
+  if (!is.null(metrics$AUC)) name <- "H2OBinomialMetrics"
+  else if (!is.null(metrics$hit_ratio_table)) name <- "H2OMultinomialMetrics"
+  new(Class = name, metrics = metrics)
+}
+
 #' Retrieve the AUC
 #'
 #' Retrieves the AUC value from an \linkS4class{H2OBinomialMetrics}.

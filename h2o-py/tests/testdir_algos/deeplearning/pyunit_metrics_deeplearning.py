@@ -36,7 +36,8 @@ def deep_learning_metrics_test():
   print("Binomial Model Metrics: ")
   print()
   dl.show()
-  dl.model_performance(test).show()
+  p=dl.model_performance(test)
+  p.show()
 
 
 if __name__ == "__main__":

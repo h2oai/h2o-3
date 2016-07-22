@@ -285,6 +285,10 @@ public class RegisterV3Api extends AbstractRegister {
         "Score (generate predictions) for the specified Frame with the specified Model.  Both the Frame of " +
         "predictions and the metrics will be returned.");
 
+    RequestServer.registerEndpoint("makeMetrics",
+        "POST /3/ModelMetrics/predictions_frame/{predictions_frame}/actuals_frame/{actuals_frame}", ModelMetricsHandler.class, "make",
+        "Create a ModelMetrics object from the predicted and actual values, and a domain for classification problems or a distribution family for regression problems.");
+
     RequestServer.registerEndpoint("waterMeterCpuTicks",
         "GET /3/WaterMeterCpuTicks/{nodeidx}", WaterMeterCpuTicksHandler.class, "fetch",
         "Return a CPU usage snapshot of all cores of all nodes in the H2O cluster.");

@@ -192,17 +192,20 @@ setMethod("summary", "H2OModel", function(object, ...) {
 
 .showMultiMetrics <- function(o, which="Training") {
   arg <- "train"
-  if( which == "Validation" ) { arg <- "valid"
-  } else if ( which == "Cross-Validation" ) { arg <- "xval"
-  } else if ( which == "Test" ) { arg <- "test" }
+  haveModel <- !is.null(which)
+  if (haveModel) {
+    if( which == "Validation" ) { arg <- "valid" }
+    else if ( which == "Cross-Validation" ) { arg <- "xval" }
+    else if ( which == "Test" ) { arg <- "test" }
+  }
   tm <- o@metrics
-  cat(which, "Set Metrics: \n")
-  cat("=====================\n")
-  if( !is.null(tm$description)     )  cat(tm$description, "\n")
+  if (haveModel) {
+    cat(which, "Set Metrics: \n")
+    cat("=====================\n")
+  }
   if (arg != "test") {
     if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
   }
-  #if( !is.null(tm[["frame"]]) && !is.null(tm[["frame"]][["name"]]) )  cat("\nExtract", tolower(which),"frame with", paste0("`h2o.getFrame(\"",tm$frame$name, "\")`"))
   if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
   if( !is.null(tm$RMSE)                                             )  cat("\nRMSE: (Extract with `h2o.rmse`)", tm$RMSE)
   if( !is.null(tm$mae)                                             )  cat("\nMAE: (Extract with `h2o.mae`)", tm$mae)
@@ -357,7 +360,7 @@ setMethod("show", "H2OModelMetrics", function(object) {
     if( object@on_train ) cat("** Reported on training data. **\n")
     if( object@on_valid ) cat("** Reported on validation data. **\n")
     if( object@on_xval ) cat("** Reported on cross-validation data. **\n")
-    if( !is.null(object@metrics$description) ) cat("Description: ", object@metrics$description, "\n\n", sep="")
+    if( !is.null(object@metrics$description) ) cat("** ", object@metrics$description, " **\n\n", sep="")
     else                                       cat("\n")
 })
 
@@ -379,7 +382,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("Mean Per-Class Error:  ", object@metrics$mean_per_class_error, "\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
-    if(object@algorithm == "glm") {
+    if(exists(object@algorithm) && object@algorithm == "glm") {
       cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
       cat("Residual Deviance:  ", object@metrics$residual_deviance,"\n", sep="")
       cat("AIC:  ", object@metrics$AIC,"\n", sep="")
@@ -394,10 +397,16 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     }
     print(object@metrics$max_criteria_and_metric_scores)
 
-    cat("\nGains/Lift Table: Extract with `h2o.gainsLift(<model>, <data>)` or `h2o.gainsLift(<model>, valid=<T/F>, xval=<T/F>)`")
-    #if (!is.null(object@metrics$gains_lift_table)) {
-    #  print(object@metrics$gains_lift_table)
-    #}
+    desc <- object@metrics$description
+    ## for user-given actual/predicted, show the gains/lift table, and don't show the 'Extract' message
+    if (!is.null(desc) && regexpr('user-given', desc)!=-1) {
+      cat("\n")
+      if (!is.null(object@metrics$gains_lift_table)) {
+        print(object@metrics$gains_lift_table)
+      }
+    } else {
+      cat("\nGains/Lift Table: Extract with `h2o.gainsLift(<model>, <data>)` or `h2o.gainsLift(<model>, valid=<T/F>, xval=<T/F>)`")
+    }
 })
 
 #' @rdname H2OModelMetrics-class
@@ -412,6 +421,7 @@ setMethod("show", "H2OMultinomialMetrics", function(object) {
     else if( object@on_valid ) .showMultiMetrics(object, "Validation")
     else if( object@on_xval ) .showMultiMetrics(object, "Cross-Validation")
     else if( !is.null(object@metrics$frame$name) ) .showMultiMetrics(object, "Test")
+    else .showMultiMetrics(object, NULL)
   } else print(NULL)
 })
 #' @rdname H2OModelMetrics-class
@@ -424,7 +434,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("MSE:  ", object@metrics$MSE, "\n", sep="")
   cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
-  cat("R2 :  ", h2o.r2(object), "\n", sep="")
+  cat("R^2 :  ", h2o.r2(object), "\n", sep="")
   cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
   null_dev <- h2o.null_deviance(object)
   res_dev  <- h2o.residual_deviance(object)

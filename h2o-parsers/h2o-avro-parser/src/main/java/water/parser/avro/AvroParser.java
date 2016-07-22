@@ -341,7 +341,7 @@ public class AvroParser extends Parser {
         throw new RuntimeException("Empty Avro file - cannot run preview! ");
       }
     } finally {
-      try { dataFileReader.close(); } catch (IOException safeToIgnore) {}
+      try { if (dataFileReader!=null) dataFileReader.close(); } catch (IOException safeToIgnore) {}
     }
   }
 

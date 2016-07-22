@@ -66,7 +66,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels) {
-    return make(targetClassProbs,actualLabels,new String[]{"0","1"});
+    return make(targetClassProbs,actualLabels,actualLabels.domain());
   }
 
   /**
@@ -79,28 +79,31 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
     Vec _labels = actualLabels.toCategoricalVec();
     if (_labels == null || targetClassProbs == null)
-      throw new IllegalArgumentException("Missing actualLabels or predictedProbs!");
+      throw new IllegalArgumentException("Missing actualLabels or predictedProbs for binomial metrics!");
     if (!targetClassProbs.isNumeric())
-      throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities.");
+      throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities for binomial metrics.");
     if (targetClassProbs.min() < 0 || targetClassProbs.max() > 1)
-      throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1.");
+      throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1 for binomial metrics.");
     if (domain.length!=2)
-      throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain));
+      throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain) + " for binomial metrics.");
     _labels = _labels.adaptTo(domain);
+    if (_labels.cardinality()!=2)
+      throw new IllegalArgumentException("Adapted domain must have 2 class labels, but is " + Arrays.toString(_labels.domain()) + " for binomial metrics.");
     Frame predsLabel = new Frame(targetClassProbs);
     predsLabel.add("labels", _labels);
-    ModelMetricsBinomial mm = new BinomialMetrics(_labels.domain()).doAll(predsLabel)._mm;
-    mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold();
+    MetricBuilderBinomial mb = new BinomialMetrics(_labels.domain()).doAll(predsLabel)._mb;
     _labels.remove();
+    Frame preds = new Frame(targetClassProbs);
+    ModelMetricsBinomial mm = (ModelMetricsBinomial)mb.makeModelMetrics(null, predsLabel, null, preds);
+    mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
     return mm;
   }
 
   // helper to build a ModelMetricsBinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
   private static class BinomialMetrics extends MRTask<BinomialMetrics> {
-    public ModelMetricsBinomial _mm; //OUTPUT
     public BinomialMetrics(String[] domain) { this.domain = domain; }
     String[] domain;
-    private MetricBuilderBinomial _mb;
+    public MetricBuilderBinomial _mb;
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderBinomial(domain);
       Chunk actuals = chks[1];
@@ -113,7 +116,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       }
     }
     @Override public void reduce(BinomialMetrics mrt) { _mb.reduce(mrt._mb); }
-    @Override protected void postGlobal() { _mm = (ModelMetricsBinomial)_mb.makeModelMetrics(null, _fr, null, null); }
   }
 
   public static class MetricBuilderBinomial<T extends MetricBuilderBinomial<T>> extends MetricBuilderSupervised<T> {
@@ -181,13 +183,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
                   : f.vec(m._parms._response_column);
           Vec weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
           if (resp != null) {
-            gl = new GainsLift(preds.lastVec(), resp, weight);
-            gl.exec(m._output._job);
+            try {
+              gl = new GainsLift(preds.lastVec(), resp, weight);
+              gl.exec(m != null ? m._output._job : null);
+            } catch(Throwable t) {}
           }
         }
       }
-      return m==null ? new ModelMetricsBinomial(null, f, _count, mse, _domain, sigma, auc,  logloss, gl)
-              : m._output.addModelMetrics(new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl));
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl);
+      if (m!=null) m._output.addModelMetrics(mm);
+      return mm;
     }
     public String toString(){
       if(_wcount == 0) return "empty, no rows";

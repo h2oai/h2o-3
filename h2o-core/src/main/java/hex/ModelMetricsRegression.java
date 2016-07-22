@@ -41,36 +41,37 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
    * @param actual A Vec containing the actual target values
    * @return ModelMetrics object
    */
-  static public ModelMetricsRegression make(Vec predicted, Vec actual, Distribution.Family family) {
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, Distribution.Family distribution) {
     if (predicted == null || actual == null)
-      throw new IllegalArgumentException("Missing actual or predicted targets!");
+      throw new IllegalArgumentException("Missing actual or predicted targets for regression metrics!");
     if (!predicted.isNumeric())
-      throw new IllegalArgumentException("Predicted values must be numeric.");
-    if (family == Distribution.Family.quantile || family == Distribution.Family.tweedie || family == Distribution.Family.huber)
+      throw new IllegalArgumentException("Predicted values must be numeric for regression metrics.");
+    if (!actual.isNumeric())
+      throw new IllegalArgumentException("Actual values must be numeric for regression metrics.");
+    if (distribution == Distribution.Family.quantile || distribution == Distribution.Family.tweedie || distribution == Distribution.Family.huber)
       throw new IllegalArgumentException("Unsupported distribution family, requires additional parameters which cannot be specified right now.");
     Frame predsActual = new Frame(predicted);
     predsActual.add("actual", actual);
-    MetricBuilderRegression mb = new RegressionMetrics(family).doAll(predsActual)._mb;
-
+    MetricBuilderRegression mb = new RegressionMetrics(distribution).doAll(predsActual)._mb;
     ModelMetricsRegression mm = (ModelMetricsRegression)mb.makeModelMetrics(null, predsActual, null, null);
-    mm._description = "Computed on user-given predictions and targets, distribution: " + family.toString();
+    mm._description = "Computed on user-given predictions and targets, distribution: " + (distribution ==null?Distribution.Family.gaussian.toString(): distribution.toString()) + ".";
     return mm;
   }
 
   // helper to build a ModelMetricsRegression for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
   private static class RegressionMetrics extends MRTask<RegressionMetrics> {
     public MetricBuilderRegression _mb;
-    final Distribution _family;
-    RegressionMetrics(Distribution.Family family) {
-      _family = family ==null ? new Distribution(Distribution.Family.gaussian) : new Distribution(family);
+    final Distribution _distribution;
+    RegressionMetrics(Distribution.Family distribution) {
+      _distribution = distribution ==null ? new Distribution(Distribution.Family.gaussian) : new Distribution(distribution);
     }
     @Override public void map(Chunk[] chks) {
-      _mb = new MetricBuilderRegression(_family);
+      _mb = new MetricBuilderRegression(_distribution);
       Chunk preds = chks[0];
       Chunk actuals = chks[1];
       double [] ds = new double[1];
       for (int i=0;i<chks[0]._len;++i) {
-        ds[0] = preds.atd(i);  //
+        ds[0] = preds.atd(i);
         _mb.perRow(ds, new float[]{(float)actuals.atd(i)}, null);
       }
     }
@@ -144,8 +145,9 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       } else {
           meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
-      return m==null? new ModelMetricsRegression( null, f, _count, mse, weightedSigma(), mae, meanResDeviance) :
-              m._output.addModelMetrics(new ModelMetricsRegression( m, f, _count, mse, weightedSigma(), mae, meanResDeviance));
+      ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, meanResDeviance);
+      if (m!=null) m._output.addModelMetrics(mm);
+      return mm;
     }
   }
 }

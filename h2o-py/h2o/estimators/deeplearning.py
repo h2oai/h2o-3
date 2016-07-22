@@ -340,7 +340,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Default: False
 
       export_weights_and_biases : bool
-        Whether to export Neural Network weights and biases to H2O Frames.
+        Whether to export Neural Network weights and biases to H₂O Frames.
         Default: False
 
       mini_batch_size : int

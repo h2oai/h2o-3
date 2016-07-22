@@ -588,12 +588,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def Lambda(self):
         """[DEPRECATED] Use self.lambda_ instead"""
         return self._parms["lambda"] if "lambda" in self._parms else None
-
+    
     @Lambda.setter
     def lambda_(self, value):
         """[DEPRECATED] Use self.lambda_ instead"""
         self._parms["lambda"] = value
-
+    
     @staticmethod
     def getGLMRegularizationPath(model):
         """
@@ -611,7 +611,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         if "coefficients_std" in x:
             res["coefficients_std"] = [dict(zip(ns,y)) for y in x["coefficients_std"]]
         return res
-
+    
     @staticmethod
     def makeGLMModel(model, coefs, threshold=.5):
         """

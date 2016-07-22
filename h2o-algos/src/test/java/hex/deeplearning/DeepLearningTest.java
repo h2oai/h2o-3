@@ -2178,8 +2178,19 @@ public class DeepLearningTest extends TestUtil {
       ModelMetricsBinomial mm = ModelMetricsBinomial.make(preds.vec(2), labels, fullDomain);
       Log.info(mm.toString());
 
-      mm = ModelMetricsBinomial.make(preds.vec(2), labels, new String[]{"NO","1"});
+      mm = ModelMetricsBinomial.make(preds.vec(2), labels, new String[]{"0","1"});
       Log.info(mm.toString());
+
+      mm = ModelMetricsBinomial.make(preds.vec(2), labels);
+      Log.info(mm.toString());
+
+      try {
+        mm = ModelMetricsBinomial.make(preds.vec(2), labels, new String[]{"a", "b"});
+        Log.info(mm.toString());
+        Assert.assertFalse(true);
+      } catch (IllegalArgumentException ex) {
+        ex.printStackTrace();
+      }
 
     } catch(Throwable t) {
       t.printStackTrace();

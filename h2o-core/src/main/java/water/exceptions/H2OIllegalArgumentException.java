@@ -7,12 +7,12 @@ public class H2OIllegalArgumentException extends H2OAbstractRuntimeException {
   protected int HTTP_RESPONSE_CODE() { return HttpResponseStatus.PRECONDITION_FAILED.getCode(); }
 
   public H2OIllegalArgumentException(String argument, String function, Object value) {
-    super("Illegal argument: " + argument + " of function: " + function + ": " + value.toString(),
-          "Illegal argument: " + argument + " of function: " + function + ": " + value.toString() + " of class: " + value.getClass());
+    super("Illegal argument: " + argument + " of function: " + function + ": " + (value == null ? "null":value.toString()),
+          "Illegal argument: " + argument + " of function: " + function + ": " + (value == null ? "null":value.toString()) + " of class: " + (value == null ? "null":value.getClass()));
     this.values = new IcedHashMap.IcedHashMapStringObject();
     this.values.put("function", function);
     this.values.put("argument", argument);
-    this.values.put("value", value);
+    if (value!=null) this.values.put("value", value);
   }
 
   /** Raw-message constructor for use by subclasses. */
