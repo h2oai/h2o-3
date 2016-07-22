@@ -25,15 +25,18 @@ public class DeepWaterTest extends TestUtil {
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); }
 
+  final String myhome = "/home/arno/";
+  final boolean GPU = true;
+
   @Test
   public void inceptionPrediction() throws IOException {
 
     // load the cuda lib in CUDA_PATH, optional. theoretically we can find them if they are in LD_LIBRARY_PATH
-//    util.loadCudaLib();
+    if (GPU) util.loadCudaLib();
     util.loadNativeLib("mxnet");
     util.loadNativeLib("Native");
 
-    BufferedImage img = ImageIO.read(new File("/users/arno/deepwater/test/test2.jpg"));
+    BufferedImage img = ImageIO.read(new File(myhome + "/deepwater/test/test2.jpg"));
 
     int w = 224, h = 224;
 
@@ -64,7 +67,7 @@ public class DeepWaterTest extends TestUtil {
     ImagePred m = new ImagePred();
 
     // the path to Inception model
-    m.setModelPath("/users/arno/deepwater/Inception");
+    m.setModelPath(myhome + "/deepwater/Inception");
 
     m.loadInception();
 
@@ -73,11 +76,11 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void inceptionFineTuning() throws IOException {
-//      util.loadCudaLib();
+      if (GPU) util.loadCudaLib();
       util.loadNativeLib("mxnet");
       util.loadNativeLib("Native");
 
-      String path = "/users/arno/kaggle/statefarm/input/";
+      String path = myhome + "/kaggle/statefarm/input/";
       BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
 
       ArrayList<Float> train_labels = new ArrayList<>();
@@ -98,7 +101,8 @@ public class DeepWaterTest extends TestUtil {
       ImageTrain m = new ImageTrain();
       m.buildNet(classes, batch_size, "inception_bn");
 
-      int max_iter = 1; //epochs
+      int max_iter = 10; //epochs
+      int count = 0;
       for (int iter = 0; iter < max_iter; iter++) {
           //each iteration does a different random shuffle
           Random rng = RandomUtils.getRNG(0);
@@ -112,6 +116,7 @@ public class DeepWaterTest extends TestUtil {
               float[] data = img_iter.getData();
               float[] labels = img_iter.getLabel();
               float[] pred = m.train(data, labels);
+              if (count++ % 10 != 0) continue;
 
               Vec[] classprobs = new Vec[classes];
               String[] names = new String[classes];
