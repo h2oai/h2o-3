@@ -422,11 +422,6 @@ Distributions: Setting the Scene.” Ecological modeling 157.2 (2002):
 Journal of the Royal Statistical Society. Series A (General) (1972):
 370-384. <http://biecek.pl/MIMUW/uploads/Nelder_GLM.pdf>`__
 
-`Niu, Feng, et al. “Hogwild!: A lock-free approach to parallelizing
-stochastic gradient descent.” Advances in Neural Information Processing
-Systems 24 (2011): 693-701.\*implemented algorithm on
-p.5 <http://www.eecs.berkeley.edu/~brecht/papers/hogwildTR.pdf>`__
-
 `Pearce, Jennie, and Simon Ferrier. “Evaluating the Predictive
 Performance of Habitat Models Developed Using Logistic Regression.”
 Ecological modeling 133.3 (2000):

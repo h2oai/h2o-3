@@ -2179,5 +2179,5 @@ address 192.168.1.xxx) at port number 55599.
 
 To see this in action note that the web UI is pointed at
 localhost:55577, but that the cluster status shows the cluster running
-on 192.168.1.173:55599
+on 192.168.1.173:55599.
 

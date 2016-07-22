@@ -25,7 +25,7 @@ learn more:
    v.3.1.1 or later; Hortonworks HDP 2.1 or later (Hadoop is not
    required to run H2O unless you want to deploy H2O on a Hadoop
    cluster)
--  **Spark**: v 1.3 or later (Spark is only required if you want to run
+-  **Spark**: v 1.4 or later (Spark is only required if you want to run
    `Sparkling Water <https://github.com/h2oai/sparkling-water>`__)
 
 -  `Downloads page <http://www.h2o.ai/download/>`_: First things first - download a copy of H2O here by
