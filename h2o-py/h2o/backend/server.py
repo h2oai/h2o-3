@@ -22,7 +22,7 @@ from random import choice
 from sysconfig import get_config_var
 from warnings import warn
 
-from h2o.backend.exceptions import H2OServerError
+from h2o.backend.exceptions import H2OServerError, H2OStartupError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import is_int, is_str
 
