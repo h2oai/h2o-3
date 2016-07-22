@@ -97,14 +97,14 @@ class H2OConnection(backwards_compatible()):
             client itself should decide whether it wants to retry or not).
         """
         if server is not None:
-            assert_is_type(server, "server", H2OLocalServer)
+            assert_is_type(server, H2OLocalServer)
             assert ip is None and port is None and https is None and url is None, \
                 "`url`, `ip`, `port` and `https` parameters cannot be used together with `server`"
             ip = server.ip
             port = server.port
             scheme = server.scheme
         elif url is not None:
-            assert_is_str(url, "url")
+            assert_is_str(url)
             assert ip is None and port is None and https is None and server is None, \
                 "`server`, `ip`, `port` and `https` parameters cannot be used together with `url`"
             parts = url.rstrip("/").split(":")
@@ -118,18 +118,18 @@ class H2OConnection(backwards_compatible()):
             if port is None: port = 54321
             if https is None: https = False
             if is_str(port) and port.isdigit(): port = int(port)
-            assert_is_str(ip, "ip")
-            assert_is_int(port, "port")
-            assert_is_bool(https, "https")
+            assert_is_str(ip)
+            assert_is_int(port)
+            assert_is_bool(https)
             assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
             scheme = "https" if https else "http"
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
-        assert_is_bool(verify_ssl_certificates, "verify_ssl_certificates")
-        assert_maybe_str(proxy, "proxy")
+        assert_is_bool(verify_ssl_certificates)
+        assert_maybe_str(proxy)
         assert auth is None or isinstance(auth, tuple) and len(auth) == 2 or isinstance(auth, AuthBase), \
             "Invalid authentication token of type %s" % type(auth)
-        assert_maybe_str(cluster_name, "cluster_name")
+        assert_maybe_str(cluster_name)
 
         conn = H2OConnection()
         conn._verbose = bool(verbose)
@@ -185,7 +185,7 @@ class H2OConnection(backwards_compatible()):
         if self._stage == -1: raise H2OConnectionError("Connection was closed, and can no longer be used.")
 
         # Prepare URL
-        assert_is_str(endpoint, "endpoint")
+        assert_is_str(endpoint)
         if endpoint.count(" ") != 1:
             raise ValueError("Incorrect endpoint '%s': must be of the form 'METHOD URL'." % endpoint)
         method, urltail = str(endpoint).split(" ", 2)
@@ -307,7 +307,7 @@ class H2OConnection(backwards_compatible()):
 
     @timeout_interval.setter
     def timeout_interval(self, v):
-        assert_maybe_numeric(v, "timeout_interval")
+        assert_maybe_numeric(v)
         self._timeout = v
 
 
@@ -327,7 +327,7 @@ class H2OConnection(backwards_compatible()):
         except:
             # H2O is already shutdown on the java side
             raise ValueError("The H2O instance running at %s has already been shutdown." % self._base_url)
-        assert_is_bool(prompt, "prompt")
+        assert_is_bool(prompt)
         if prompt:
             question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " % self._base_url
             response = input(question)  # works in Py2 & Py3 because redefined in h2o.utils.compatibility module
@@ -487,7 +487,7 @@ class H2OConnection(backwards_compatible()):
         for passing to requests.request().
         """
         if not filename: return None
-        assert_is_str(filename, "filename")
+        assert_is_str(filename)
         absfilename = os.path.abspath(filename)
         if not os.path.exists(absfilename):
             raise ValueError("File %s does not exist" % filename)

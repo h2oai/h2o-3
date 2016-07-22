@@ -574,7 +574,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param threshold: Find the index of this input threshold.
         :return: Return the index or throw a ValueError if no such index can be found.
         """
-        assert_is_numeric(threshold, "threshold")
+        assert_is_numeric(threshold)
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])

@@ -215,7 +215,7 @@ def _run_demo(body_fn, interactive, echo, testing):
     class StopExecution(Exception):
         """Helper class for cancelling the demo."""
 
-    assert_is_type(body_fn, "body_fn", type(_run_demo))
+    assert_is_type(body_fn, type(_run_demo))
     # Reformat description by removing extra spaces; then print it.
     if body_fn.__doc__:
         desc_lines = body_fn.__doc__.split("\n")

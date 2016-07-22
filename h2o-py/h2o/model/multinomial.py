@@ -23,7 +23,7 @@ class H2OMultinomialModel(ModelBase):
         """
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset
         """
-        assert_is_type(data, "data", H2OFrame)
+        assert_is_type(data, H2OFrame)
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self._id, data.frame_id))
         return j["model_metrics"][0]["cm"]["table"]
 

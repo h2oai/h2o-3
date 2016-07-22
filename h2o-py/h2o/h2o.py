@@ -199,7 +199,7 @@ def lazy_import(path):
     if is_listlike(path):
         return [_import(p)[0] for p in path]
     else:
-        assert_is_str(path, "path")
+        assert_is_str(path)
         return _import(path)
 
 

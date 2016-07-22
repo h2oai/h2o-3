@@ -48,5 +48,3 @@ class H2OServerError(Exception):
         """
         super(H2OServerError, self).__init__(message)
         self.stacktrace = stacktrace
-
-

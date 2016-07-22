@@ -7,7 +7,10 @@ Utilities for checking types of variables.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import sys
+
 from h2o.utils.compatibility import *  # NOQA
+# noinspection PyProtectedMember
 from h2o.utils.compatibility import _native_unicode, _native_long
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
@@ -48,55 +51,120 @@ def is_listlike(s):
 
 
 
-def assert_is_type(s, name, stype, typename=None):
+def assert_is_type(s, stype, typename=None):
     """
     Assert that the argument has the specified type.
 
-    This function is used to check that the type of the argument is correct, or otherwise raise an error. Usage:
-        assert_is_str(url, "url")
+    This function is used to check that the type of the argument is correct, or otherwise raise an error.
+    For example:
+        assert_is_type(fr, H2OFrame)
+
     :param s: variable to check
-    :param name: name of the variable to report in the error message (optional)
     :param stype: expected type
     :param typename: name of the type (if not given, will be extracted from `stype`)
-    :raise ValueError if the argument is not of the desired type.
+    :raise TypeError if the argument is not of the desired type.
     """
     if not isinstance(s, stype):
-        nn = "`%s`" % name if name else "Argument"
-        tn = typename or type(stype).__name__
-        raise ValueError("%s should have been a %s, got %s" % (nn, tn, type(s)))
+        nn = _get_variable_name()
+        tn = typename or _get_type_name(stype)
+        sn = _get_type_name(type(s))
+        raise TypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
 
-def assert_maybe_type(s, name, stype, typename=None):
+
+def assert_maybe_type(s, stype, typename=None):
     """Assert that the argument is either of the specified type or None."""
     if not (s is None or isinstance(s, stype)):
-        nn = "`%s`" % name if name else "Argument"
-        tn = typename or type(stype).__name__
-        raise ValueError("%s should have been a %s, got %s" % (nn, tn, type(s)))
+        nn = _get_variable_name()
+        tn = typename or _get_type_name(stype)
+        sn = _get_type_name(type(s))
+        raise TypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
 
 
-def assert_is_str(s, name=None):
+def assert_is_str(s):
     """Assert that the argument is a string."""
-    assert_is_type(s, name, _str_type, "string")
+    assert_is_type(s, _str_type, "string")
 
-def assert_maybe_str(s, name=None):
+def assert_maybe_str(s):
     """Assert that the argument is a string or None."""
-    assert_maybe_type(s, name, _str_type, "string")
+    assert_maybe_type(s, _str_type, "string")
 
-def assert_is_int(x, name=None):
+def assert_is_int(x):
     """Assert that the argument is integer."""
-    assert_is_type(x, name, _int_type, "integer")
+    assert_is_type(x, _int_type, "integer")
 
-def assert_maybe_int(x, name=None):
+def assert_maybe_int(x):
     """Assert that the argument is integer or None."""
-    assert_maybe_type(x, name, _int_type, "integer")
+    assert_maybe_type(x, _int_type, "integer")
 
-def assert_is_bool(b, name=None):
+def assert_is_bool(b):
     """Assert that the argument is boolean."""
-    assert_is_type(b, name, bool, "boolean")
+    assert_is_type(b, bool, "boolean")
 
-def assert_is_numeric(x, name=None):
+def assert_is_numeric(x):
     """Assert that the argument is numeric (integer or float)."""
-    assert_is_type(x, name, _num_type, "numeric")
+    assert_is_type(x, _num_type, "numeric")
 
-def assert_maybe_numeric(x, name=None):
+def assert_maybe_numeric(x):
     """Assert that the argument is either numeric or None."""
-    assert_maybe_type(x, name, _num_type, "numeric")
+    assert_maybe_type(x, _num_type, "numeric")
+
+
+def _get_variable_name():
+    """
+    Magic variable name retrieval.
+
+    This function is designed as a helper for assert_*() functions. Typically such assertion is used like this:
+        assert_is_int(num_threads)
+    If the variable `num_threads` turns out to be non-integer, we would like to raise an exception such as
+        TypeError("`num_threads` is expected to be integer, but got <str>")
+    and in order to compose an error message like that, we need to know that the variables that was passed to
+    assert_is_int() carries a name "num_threads". Naturally, the variable itself knows nothing about that.
+
+    This is where this function comes in: we walk up the stack trace until the first frame outside of this
+    file, find the original line that called the assert_is_int() function, and extract the variable name from
+    that line. This is slightly fragile, in particular we assume that only one assert_* statement can be per line,
+    or that this statement does not spill over multiple lines, or that the argument is not a complicated
+    expression like `assert_is_int(foo(x))` or `assert_is_str(x[1,2])`. I do not foresee such complexities in the
+    code, but if they arise this function can be amended to parse those cases properly.
+    """
+    try:
+        raise RuntimeError("Catch me!")
+    except RuntimeError:
+        import linecache
+        import re
+
+        # Walk up the stacktrace until we are outside of this file
+        tb = sys.exc_info()[2]
+        assert tb.tb_frame.f_code.co_name == "_get_variable_name"
+        this_filename = tb.tb_frame.f_code.co_filename
+        fr = tb.tb_frame
+        while fr is not None and fr.f_code.co_filename == this_filename:
+            fr = fr.f_back
+
+        # Retrieve the line of code where assert* statement is expected be
+        linecache.checkcache(fr.f_code.co_filename)
+        line = linecache.getline(fr.f_code.co_filename, fr.f_lineno)
+
+        # Find the variable of interest and return it
+        variables = re.findall(r"assert_(?:is|maybe)_\w+\(([^,)]*)", line)
+        if len(variables) == 0: return "<arg>"
+        if len(variables) == 1: return variables[0]
+        raise RuntimeError("More than one assert_*() statement on the line!")
+
+
+def _get_type_name(stype):
+    """
+    Return name of the provided type.
+
+    Examples:
+    >>> _get_type_name(int) == "int"
+    >>> _get_type_name(tuple) == "tuple"
+    >>> _get_type_name(Exception) == "Exception"
+    >>> _get_type_name((int, long, float)) == "int | long | float"
+    """
+    if type(stype) is type:
+        return stype.__name__
+    elif type(stype) is tuple and all(type(t) is type for t in stype):
+        return " | ".join(t.__name__ for t in stype)
+    else:
+        raise RuntimeError("Unexpected `stype`: %r" % stype)
