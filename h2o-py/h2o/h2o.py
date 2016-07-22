@@ -10,7 +10,7 @@ import os
 import re
 import warnings
 
-from .connection import H2OConnection, H2OLocalServer, H2OConnectionError, H2OServerError
+from h2o.backend.connection import H2OConnection, H2OLocalServer, H2OConnectionError, H2OServerError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
@@ -93,7 +93,7 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
     return H2OLocalServer.start(**locals())
 
 
-def conn():
+def connection():
     """Return current H2OConnection handler."""
     return h2oconn
 

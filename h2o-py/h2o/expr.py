@@ -12,7 +12,7 @@ import sys
 import tabulate
 
 import h2o
-from h2o.connection import H2OConnectionError
+from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 
