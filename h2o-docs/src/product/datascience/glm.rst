@@ -298,6 +298,27 @@ FAQ
 -  **How is variable importance calculated for GLM?**
 
   For GLM, the variable importance represents the coefficient magnitudes.
+  
+-  **How does GLM define and check for convergence during logistic regression?**
+
+  GLM includes three convergence criteria outside of max iterations:
+  	
+  	- beta epsilon: beta stops changing. This is used mostly with IRLSM. 
+  	- gradient epsilon: gradient is too small. Thi sis used mostly with L-BFGS.
+  	- objective epsilon: relative objective improvement is too small. This is used by all solvers.
+
+  The default values below are based on a heuristic:
+
+   - The default for beta epsilon is 1e-4.  
+   - The default for gradient epsilon is 1e-6 if there is no regularization (lambda = 0) or you are running with lambda search; 1e-4 otherwise.
+   - The default for objective epsilon is 1e-6 if lambda = 0; 1e-4 otherwise.
+
+  The default for max iterations depends on the solver type and whether you run with lambda search:
+ 
+   - for IRLSM, the default  is 50 if no lambda search; 10* number of lambdas otherwise 
+   - for LBFGS, the default is number of classes (1 if not classification) * max(20, number of predictors /4 ) if no lambda search; it is number of classes * 100 * n-lambdas with lambda search.
+   
+  You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
 
 GLM Algorithm
 ~~~~~~~~~~~~~
