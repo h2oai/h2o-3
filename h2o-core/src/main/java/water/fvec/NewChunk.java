@@ -269,23 +269,14 @@ public class NewChunk extends Chunk {
   private int _sparseRatio = MIN_SPARSE_RATIO;
   public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
-  public NewChunk( Vec vec, int cidx ) {
+  public NewChunk( AVec vec, int cidx ) {
     _vec = vec; _cidx = cidx;
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
   }
 
 
-  public NewChunk(ChunkBlock cb, int vecId, boolean sparse) {
-    _cb = cb;
-    _cbId = vecId;
-    _ms = new Mantissas(4);
-    _xs = new Exponents(4);
-    if(sparse) _id = new int[4];
-    _cidx = -1;
-  }
-
-  public NewChunk( Vec vec, int cidx, boolean sparse ) {
+  public NewChunk( AVec vec, int cidx, boolean sparse ) {
     _vec = vec; _cidx = cidx;
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
@@ -298,7 +289,7 @@ public class NewChunk extends Chunk {
     _vec = null;
     setDoubles(ds);
   }
-  public NewChunk( Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
+  public NewChunk( AVec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
     _vec = vec; _cidx = cidx;
     _ms = new Mantissas(mantissa.length);
     _xs = new Exponents(exponent.length);
@@ -312,13 +303,10 @@ public class NewChunk extends Chunk {
     if (_ds != null && _sparseLen==0) set_sparseLen(set_len(_ds.length));
     if (_id != null && _sparseLen==0) set_sparseLen(_id.length);
   }
-
   // Constructor used when inflating a Chunk.
   public NewChunk( Chunk c ) {
     this(c._vec, c.cidx());
     _start = c._start;
-    _cb = c._cb;
-    if(_cb != null) _cb._modified = true;
   }
 
   // Constructor used when inflating a Chunk.
@@ -885,17 +873,6 @@ public class NewChunk extends Chunk {
     assert _sparseLen <= _len;
   }
 
-  // Do any final actions on a completed NewVector.  Mostly: compress it, and
-  // do a DKV put on an appropriate Key.  The original NewVector goes dead
-  // (does not live on inside the K/V store).
-  public Chunk new_close() {
-    Chunk chk = compress();
-    if(_vec instanceof AppendableVec)
-      ((AppendableVec)_vec).closeChunk(_cidx,chk._len);
-    return chk;
-  }
-  public void close(Futures fs) { close(_cidx,fs); }
-
   private void switch_to_doubles(){
     assert _ds == null;
     double [] ds = MemoryManager.malloc8d(_sparseLen);
@@ -1024,17 +1001,6 @@ public class NewChunk extends Chunk {
   public Chunk compress() {
     Chunk res = compress2();
     byte type = type();
-    assert _vec == null ||  // Various testing scenarios do not set a Vec
-      type == _vec._type || // Equal types
-      // Allow all-bad Chunks in any type of Vec
-      type == Vec.T_BAD ||
-      // Specifically allow the NewChunk to be a numeric type (better be all
-      // ints) and the selected Vec type an categorical - whose String mapping
-      // may not be set yet.
-      (type==Vec.T_NUM && _vec._type==Vec.T_CAT) ||
-      // Another one: numeric Chunk and Time Vec (which will turn into all longs/zeros/nans Chunks)
-      (type==Vec.T_NUM && _vec._type == Vec.T_TIME && !res.hasFloat())
-      : "NewChunk has type "+Vec.TYPE_STR[type]+", but the Vec is of type "+_vec.get_type_str();
     assert _len == res._len : "NewChunk has length "+_len+", compressed Chunk has "+res._len;
     // Force everything to null after compress to free up the memory.  Seems
     // like a non-issue in the land of GC, but the NewChunk *should* be dead
@@ -1630,6 +1596,16 @@ public class NewChunk extends Chunk {
   public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
   @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
+
+  @Override
+  public void add2NewChunk_impl(NewChunk nc, int from, int to) {
+    throw H2O.unimpl(); // TODO
+  }
+
+  @Override
+  public void add2NewChunk_impl(NewChunk nc, int[] lines) {
+    throw H2O.unimpl(); // TODO
+  }
 
   // We have to explicitly override cidx implementation since we hide _cidx field with new version
   @Override

@@ -116,7 +116,7 @@ class ASTDdply extends ASTPrim {
       Futures fs = new Futures();
       Vec[] vgrps = new Vec[_gss.size()];
       for( int i = 0; i < vgrps.length; i++ )
-        vgrps[i] = _appendables[i].close(_appendables[i].compute_rowLayout(),fs);
+        vgrps[i] = _appendables[i].closeVecs(_appendables[i].compute_rowLayout(),fs);
       fs.blockForPending();
       return vgrps;
     }

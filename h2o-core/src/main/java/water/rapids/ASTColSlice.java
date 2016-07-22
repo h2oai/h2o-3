@@ -353,7 +353,7 @@ class ASTRBind extends ASTPrim {
     // Now make Keys for the new Vecs
     Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
     Vec[] vecs = new Vec[fr.numCols()];
-    int rowLayout = Vec.ESPC.rowLayout(keys[0],espc);
+    int rowLayout = AVec.ESPC.rowLayout(keys[0],espc);
     for( int i=0; i<vecs.length; i++ )
       vecs[i] = new Vec( keys[i], rowLayout, domains[i], types[i]);
 

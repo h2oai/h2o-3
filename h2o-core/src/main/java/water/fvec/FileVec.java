@@ -69,7 +69,10 @@ public abstract class FileVec extends ByteVec {
   @Override public boolean writable() { return false; }
 
   /** Size of vector data. */
-  @Override public long byteSize(){return length(); }
+  @Override public long byteSize(int colId){
+    if(colId != 0) throw new ArrayIndexOutOfBoundsException();
+    return length();
+  }
 
   // Convert a row# to a chunk#.  For constant-sized chunks this is a little
   // shift-and-add math.  For variable-sized chunks this is a binary search,
@@ -87,7 +90,8 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk-index into a starting row #. Constant sized chunks
   // (except for the last, which might be a little larger), and size-1 rows so
   // this is a little shift-n-add math.
-  @Override long chunk2StartElem( int cidx ) { return (long)cidx*_chunkSize; }
+  @Override
+  public long chunk2StartElem(int cidx) { return (long)cidx*_chunkSize; }
 
   /** Convert a chunk-key to a file offset. Size 1-byte "rows", so this is a
    *  direct conversion.

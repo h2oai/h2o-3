@@ -2,12 +2,10 @@ package water.api.schemas3;
 
 import water.Futures;
 import water.Key;
-import water.MemoryManager;
+import water.fvec.VecAry;
 import water.api.*;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.fvec.*;
-import water.fvec.Frame.VecSpecifier;
-import water.parser.BufferedString;
 import water.util.*;
 
 /**
@@ -132,57 +130,27 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     @API(help="Percentile values, matching the default percentiles", direction=API.Direction.OUTPUT)
     public double[] percentiles;
 
-    transient Vec _vec;
-
-    ColV3(String name, Vec vec, long off, int len) {
+    ColV3(String name, RollupStats rs, double [] dvals, String [] sdata, String [] domain, long off, int len) {
       label=name;
-
-      missing_count = vec.naCnt();
-      zero_count = vec.length() - vec.nzCnt() - missing_count;
-      positive_infinity_count = vec.pinfs();
-      negative_infinity_count = vec.ninfs();
-      mins = vec.mins();
-      maxs = vec.maxs();
-      mean = vec.mean();
-      sigma = vec.sigma();
-      
+      missing_count = rs.naCnt();
+      zero_count = rs.rowCnt() - rs.nzCnt();
+      positive_infinity_count = rs.posInfCnt();
+      negative_infinity_count = rs.negInfCnt();
+      mins = rs.mins();
+      maxs = rs.maxs();
+      mean = rs.mean();
+      sigma = rs.sigma();
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
-      histogram_bins  = vec.lazy_bins();
-      histogram_base  = histogram_bins ==null ? 0 : vec.base();
-      histogram_stride= histogram_bins ==null ? 0 : vec.stride();
-      percentiles     = histogram_bins ==null ? null : vec.pctiles();
-
-      type  = vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
-      domain = vec.domain();
-      if (vec.isCategorical()) {
-        domain_cardinality = domain.length;
-      } else {
-        domain_cardinality = 0;
-      }
-
-      len = (int)Math.min(len,vec.length()-off);
-      if( vec.isUUID() ) {
-        string_data = new String[len];
-        for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
-        data = null;
-      } else if ( vec.isString() ) {
-        string_data = new String[len];
-        BufferedString tmpStr = new BufferedString();
-        for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : vec.atStr(tmpStr,off + i).toString();
-        data = null;
-      } else {
-        data = MemoryManager.malloc8d(len);
-        for( int i=0; i<len; i++ )
-          data[i] = vec.at(off+i);
-        string_data = null;
-      }
-      _vec = vec;               // Better HTML display, not in the JSON
-      if (len > 0)  // len == 0 is presumed to be a header file
-        precision = vec.chunkForRow(0).precision();
-
+      histogram_bins  = rs.lazy_bins();
+      histogram_base  = histogram_bins ==null ? 0 : rs.base();
+      histogram_stride= histogram_bins ==null ? 0 : rs.stride();
+      percentiles     = histogram_bins ==null ? null : rs.pctiles();
+      type  = rs.typeStr(); // vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
+      this.domain = domain;
+      domain_cardinality = domain == null?0:domain.length;
+      data = dvals;
+      string_data = sdata;
     }
 
     public void clearBinsField() {
@@ -220,7 +188,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     this.frame_id = new FrameKeyV3(f._key);
     this.checksum = f.checksum();
-    this.byte_size = f.byteSize();
+    this.byte_size = f.vecs().byteSize();
 
     this.row_offset = row_offset;
     this.rows = f.numRows();
@@ -232,51 +200,29 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     this.column_count = column_count;
 
     this.columns = new ColV3[column_count];
-    Vec[] vecs = f.vecs();
+    VecAry vecs = f.vecs();
+    VecAry.VecAryReader vReader = vecs.vecReader(true);
     Futures fs = new Futures();
-    // Compute rollups in parallel as needed, by starting all of them and using
-    // them when filling in the ColV3 Schemas
-    for( int i = 0; i < column_count; i++ )
-      vecs[column_offset + i].startRollupStats(fs);
-    for( int i = 0; i < column_count; i++ )
-      columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+    for( int i = 0; i < column_count; i++ ) {
+      double [] dvals = new double[row_count];
+      String [] svals = new String[row_count];
+      vReader.getDoubles(row_offset,i,dvals);
+      vReader.getStrings(row_offset,i,svals);
+      columns[i] = new ColV3(f.name(column_offset + i), vecs.getRollups(i), dvals,svals, vecs.domain(i), this.row_offset, this.row_count);
+    }
     fs.blockForPending();
-    this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
+    this.is_text = vecs.isRawBytes();
     this.default_percentiles = Vec.PERCENTILES;
-
     ChunkSummary cs = FrameUtils.chunkSummary(f);
-
     this.chunk_summary = new TwoDimTableV3(cs.toTwoDimTableChunkTypes());
     this.distribution_summary = new TwoDimTableV3(cs.toTwoDimTableDistribution());
-
     this._fr = f;
 
     return this;
   }
 
-
-
   public void clearBinsField() {
     for (ColV3 col: columns)
       col.clearBinsField();
-  }
-
-  private abstract static class ColOp { abstract String op(ColV3 v); }
-  private String rollUpStr(ColV3 c, double d) {
-    return formatCell(c.domain!=null || "uuid".equals(c.type) || "string".equals(c.type) ? Double.NaN : d,null,c,4);
-  }
-
-
-  private String formatCell( double d, String str, ColV3 c, int precision ) {
-    if (Double.isNaN(d)) return "-";
-    if (c.domain != null) return c.domain[(int) d];
-    if ("uuid".equals(c.type) || "string".equals(c.type)) {
-      // UUID and String handling
-      if (str == null) return "-";
-      return "<b style=\"font-family:monospace;\">" + str + "</b>";
-    } else {
-      Chunk chk = c._vec.chunkForRow(row_offset);
-      return PrettyPrint.number(chk, d, precision);
-    }
   }
 }

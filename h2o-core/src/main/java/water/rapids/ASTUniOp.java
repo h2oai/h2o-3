@@ -266,7 +266,7 @@ class ASTLevels extends ASTPrim {
       if( f.vec(i).isCategorical() )
         if( max < f.vec(i).domain().length ) max = f.vec(i).domain().length;
 
-    final int rowLayout = Vec.ESPC.rowLayout(keys[0],new long[]{0,max});
+    final int rowLayout = AVec.ESPC.rowLayout(keys[0],new long[]{0,max});
     for( int i=0;i<f.numCols();++i ) {
       AppendableVec v = new AppendableVec(keys[i],Vec.T_NUM);
       NewChunk nc = new NewChunk(v,0);
@@ -276,7 +276,7 @@ class ASTLevels extends ASTPrim {
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
       nc.close(0,fs);
-      vecs[i] = v.close(rowLayout,fs);
+      vecs[i] = v.closeVecs(rowLayout,fs);
       vecs[i].setDomain(dom);
     }
     fs.blockForPending();

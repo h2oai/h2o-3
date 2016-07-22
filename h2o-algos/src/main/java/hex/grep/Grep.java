@@ -6,6 +6,7 @@ import water.*;
 import water.fvec.ByteVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -38,10 +39,10 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
       catch( PatternSyntaxException pse ) { error("regex", pse.getMessage()); }
     }
     if( _parms._train == null ) return;
-    Vec[] vecs = _parms.train().vecs();
-    if( vecs.length != 1 )
+    VecAry vecs = _parms.train().vecs();
+    if( vecs.len() != 1 )
       error("_train","Frame must contain exactly 1 Vec (of raw text)");
-    if( !(vecs[0] instanceof ByteVec) )
+    if(!vecs.isRawBytes())
       error("_train","Frame must contain exactly 1 Vec (of raw text)");
   }
 
@@ -59,7 +60,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
         // ---
         // Run the main Grep Loop
-        GrepGrep gg = new GrepGrep(_parms._regex).doAll(train().vecs()[0]);
+        GrepGrep gg = new GrepGrep(_parms._regex).doAll(train().vecs());
 
         // Fill in the model
         model._output._matches = Arrays.copyOf(gg._matches,gg._cnt);

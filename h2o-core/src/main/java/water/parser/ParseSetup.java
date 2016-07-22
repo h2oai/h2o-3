@@ -43,6 +43,7 @@ public class ParseSetup extends Iced {
   public ParseWriter.ParseErr[] _errs;
   public int _chunk_size = FileVec.DFLT_CHUNK_SIZE;  // Optimal chunk size to be used store values
   PreviewParseWriter _column_previews = null;
+  public int[] _blocks;
 
   public ParseSetup(ParseSetup ps) {
     this(ps._parse_type,
@@ -257,7 +258,7 @@ public class ParseSetup extends Iced {
     //Calc chunk-size
     // FIXME: should be a parser specific - or at least parser should be able to override defaults
     Iced ice = DKV.getGet(fkeys[0]);
-    if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof UploadFileVec) {
+    if (ice instanceof Frame && ((Frame) ice).vecs().getVecRaw(0) instanceof UploadFileVec) {
       t._gblSetup._chunk_size = FileVec.DFLT_CHUNK_SIZE;
     } else {
       t._gblSetup._chunk_size = FileVec.calcOptimalChunkSize(t._totalParseSize, t._gblSetup._number_columns, t._maxLineLength,
@@ -313,7 +314,7 @@ public class ParseSetup extends Iced {
       _file = key.toString();
       Iced ice = DKV.getGet(key);
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
-      ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
+      ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getVecRaw(0));
       byte [] bits = ZipUtil.getFirstUnzippedBytes(bv);
       if(bits.length > 0) {
         _empty = false;

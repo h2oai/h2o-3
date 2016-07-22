@@ -37,13 +37,13 @@ import water.parser.BufferedString;
  *  completed there.  Later the NewChunk will be compressed (probably into a
  *  different underlying Chunk subclass) and put back in the K/V store under
  *  the same Key - effectively replacing the original Chunk; this is done when
- *  {@link #close} is called, and is taken care of by the standard {@link
+ *  {@link AVec#closeChunk} is called, and is taken care of by the standard {@link
  *  MRTask} calls.
  *
  *  <p>Chunk updates are not multi-thread safe; the caller must do correct
  *  synchronization.  This is already handled by the Map/Reduce {MRTask)
- *  framework.  Chunk updates are not visible cross-cluster until the {@link
- *  #close} is made; again this is handled by MRTask directly.
+ *  framework.  Chunk updates are not visible cross-cluster until the
+ *  {@link AVec#closeChunk} is made; again this is handled by MRTask directly.
  *
  *  <p>In addition to normal load and store operations, Chunks support the
  *  notion a missing element via the {@code isNA_abs()} calls, and a "next
@@ -108,18 +108,16 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> {
-  protected transient ChunkBlock _cb;
-  protected transient int _cbId;
-
-  Chunk setCB(ChunkBlock cb) {
-    _cb = cb;
-    return this;
-  }
+public abstract class Chunk extends AVec.AChunk<Chunk> {
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
+  public final Chunk getChunk(int i) {
+    if(i != 0) throw new ArrayIndexOutOfBoundsException(i);
+    return this;
+  }
+  public final Chunk[] getChunks(){return new Chunk[]{this};}
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
    * @param vals holds extracted values, length must be >= this.sparseLen()
@@ -203,15 +201,15 @@ public abstract class Chunk extends Iced<Chunk> {
   public int len() { return _len; }
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
-  private transient Chunk _chk2;
+  transient Chunk _chk2;
   /** Exposed for internal testing only.  Not a publically visible API. */
   public Chunk chk2() { return _chk2; }
 
   /** Owning Vec; a read-only field */
-  transient Vec _vec;
+  transient AVec _vec;
 
   /** Owning Vec */
-  public Vec vec() { return _vec; }
+  public AVec vec() { return _vec; }
 
   /** Set the owning Vec */
   public void setVec(Vec vec) { _vec = vec; }
@@ -362,6 +360,10 @@ public abstract class Chunk extends Iced<Chunk> {
    *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
   public final long at16h(int i) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
 
+
+  public final int rowInChunk(long l) {
+    return (int)(l - _start);
+  }
   /** String value using chunk-relative row numbers, or null if missing.
    *
    *  @return String value or null if missing. */
@@ -377,7 +379,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -385,7 +387,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  final void set_abs(long i, long l) { long x = i-_start; if (0 <= x && x < _len) set((int) x, l); else _vec.set(i,l); }
+//  final void set_abs(long i, long l) { long x = i-_start; if (0 <= x && x < _len) set((int) x, l); else _vec.set(i,l); }
 
   /** Write a {@code double} using absolute row numbers; NaN will be treated as
    *  a missing value.
@@ -393,7 +395,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -401,7 +403,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  final void set_abs(long i, double d) { long x = i-_start; if (0 <= x && x < _len) set((int) x, d); else _vec.set(i,d); }
+//  final void set_abs(long i, double d) { long x = i-_start; if (0 <= x && x < _len) set((int) x, d); else _vec.set(i,d); }
 
   /** Write a {@code float} using absolute row numbers; NaN will be treated as
    *  a missing value.
@@ -409,7 +411,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -417,14 +419,14 @@ public abstract class Chunk extends Iced<Chunk> {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
+//  final void set_abs( long i, float  f) { long x = i-_start; if (0 <= x && x < _len) set((int) x, f); else _vec.set(i,f); }
 
   /** Set the element as missing, using absolute row numbers.
    *
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -432,14 +434,14 @@ public abstract class Chunk extends Iced<Chunk> {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  final void setNA_abs(long i) { long x = i-_start; if (0 <= x && x < _len) setNA((int) x); else _vec.setNA(i); }
+//  final void setNA_abs(long i) { long x = i-_start; if (0 <= x && x < _len) setNA((int) x); else _vec.setNA(i); }
 
   /** Set a {@code String}, using absolute row numbers.
    *
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -447,7 +449,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
-  public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
+//  public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
   public boolean hasFloat(){return true;}
   public boolean hasNA(){return true;}
@@ -486,7 +488,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -509,7 +511,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -527,7 +529,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -544,7 +546,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -562,7 +564,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
+   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -574,23 +576,7 @@ public abstract class Chunk extends Iced<Chunk> {
     return str;
   }
 
-  /** After writing we must call close() to register the bulk changes.  If a
-   *  NewChunk was needed, it will be compressed into some other kind of Chunk.
-   *  The resulting Chunk (either a modified self, or a compressed NewChunk)
-   *  will be written to the DKV.  Only after that {@code DKV.put} completes
-   *  will all readers of this Chunk witness the changes.
-   *  @return the passed-in {@link Futures}, for flow-coding.
-   */
-  public Futures close( int cidx, Futures fs ) {
-    if( this  instanceof NewChunk ) _chk2 = this;
-    if( _chk2 == null ) return fs;          // No change?
-    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
-    if(_cb != null)
-      _cb.updateChunk(_cbId,_chk2);
-    else
-      DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
-    return fs;
-  }
+
 
   /** @return Chunk index */
   public int cidx() {
@@ -681,10 +667,6 @@ public abstract class Chunk extends Iced<Chunk> {
    *  Bulk copy from the compressed form into the nc._ls8 array.   */
   public abstract NewChunk inflate_impl(NewChunk nc);
 
-  /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
-   *  optimized stencil calculations that want to "roll off the end" of a
-   *  Chunk, but in a highly optimized way. */
-  public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }

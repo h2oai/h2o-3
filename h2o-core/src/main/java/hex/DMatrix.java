@@ -4,11 +4,8 @@ import water.*;
 import water.H2O.FJWThr;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
+import water.fvec.*;
 import water.fvec.NewChunk.Value;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -48,7 +45,7 @@ public class DMatrix  {
       sum += s;
     }
     Key key = Vec.newKey();
-    int rowLayout = Vec.ESPC.rowLayout(key,espc);
+    int rowLayout = AVec.ESPC.rowLayout(key,espc);
     return transpose(src, new Frame(new Vec(key,rowLayout).makeZeros((int)src.numRows())));
   }
 

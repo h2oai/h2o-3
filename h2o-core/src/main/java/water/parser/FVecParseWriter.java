@@ -13,8 +13,8 @@ import java.util.Arrays;
 /** Parsed data output specialized for fluid vecs.
  * @author tomasnykodym
  */
-public class FVecParseWriter extends Iced implements StreamParseWriter {
-  protected AppendableVec[] _vecs;
+public class FVecParseWriter extends Iced implements StreamParseWriter<FVecParseWriter> {
+  protected AppendableVec _vec;
   protected transient NewChunk[] _nvs;
   protected transient final Categorical [] _categoricals;
   protected transient final byte[] _ctypes;
@@ -22,42 +22,34 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   int _nCols;
   int _col = -1;
   final int _cidx;
-  final int _chunkSize;
   ParseErr [] _errs = new ParseErr[0];
   private final Vec.VectorGroup _vg;
   private long _errCnt;
 
-  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
+  public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, AppendableVec av){
     _ctypes = ctypes;           // Required not-null
-    _vecs = avs;
-    _nvs = new NewChunk[avs.length];
-    for(int i = 0; i < avs.length; ++i)
-      _nvs[i] = _vecs[i].chunkForChunkIdx(cidx);
+    _vec = av;
+    _nvs = new NewChunk[ctypes.length];
+    for(int i = 0; i < _nvs.length; ++i)
+      _nvs[i] = new NewChunk(_vec,cidx);
     _categoricals = categoricals;
-    _nCols = avs.length;
+    _nCols = _nvs.length;
     _cidx = cidx;
     _vg = vg;
-    _chunkSize = chunkSize;
   }
 
-  @Override public FVecParseWriter reduce(StreamParseWriter sdout){
+  @Override public FVecParseWriter reduce(FVecParseWriter sdout){
     FVecParseWriter dout = (FVecParseWriter)sdout;
     _nCols = Math.max(_nCols,dout._nCols); // SVMLight: max of columns
-    if( _vecs != dout._vecs ) {
-      if( dout._vecs.length > _vecs.length ) { // Swap longer one over the returned value
-        AppendableVec[] tmpv = _vecs;  _vecs = dout._vecs;  dout._vecs = tmpv;
-      }
-      for(int i = 0; i < dout._vecs.length; ++i)
-        _vecs[i].reduce(dout._vecs[i]);
-    }
-    _errCnt += ((FVecParseWriter) sdout)._errCnt;
-    if(_errs.length < 20 && ((FVecParseWriter) sdout)._errs.length > 0) {
-      _errs = ArrayUtils.append(_errs, ((FVecParseWriter) sdout)._errs);
-      if(_errs.length > 20)
-        _errs = Arrays.copyOf(_errs,20);
+    _vec.reduce(sdout._vec);
+    _errCnt += sdout._errCnt;
+    if(_errs.length < 20 && sdout._errs.length > 0) {
+      _errs = ArrayUtils.append(_errs, sdout._errs);
+      if(_errs.length > 20)_errs = Arrays.copyOf(_errs,20);
     }
     return this;
   }
+
   @Override public FVecParseWriter close(){
     Futures fs = new Futures();
     close(fs);
@@ -66,15 +58,13 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   }
   @Override public FVecParseWriter close(Futures fs){
     if( _nvs == null ) return this; // Might call close twice
-    for(int i=0; i < _nvs.length; i++) {
-      _nvs[i].close(_cidx, fs);
-      _nvs[i] = null; // free immediately, don't wait for all columns to close
-    }
+    _vec.closeChunks(_nvs,_cidx,fs);
     _nvs = null;  // Free for GC
     return this;
   }
+
   @Override public FVecParseWriter nextChunk(){
-    return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs);
+    return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _vec);
   }
 
   @Override public void newLine() {

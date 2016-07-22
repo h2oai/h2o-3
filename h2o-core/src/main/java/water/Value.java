@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import jsr166y.ForkJoinPool;
+import water.fvec.AVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -274,8 +275,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Check if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link water.fvec.Vec.VectorGroup} subtype. */
   public boolean isVecGroup() { return _type == TypeMap.VECGROUP; }
-  /** Check if the Value's POJO is a {@link water.fvec.Vec.ESPC} subtype.  Does not require the POJO.
-   *  @return True if the Value's POJO is a {@link water.fvec.Vec.ESPC} subtype. */
+  /** Check if the Value's POJO is a {@link AVec.ESPC} subtype.  Does not require the POJO.
+   *  @return True if the Value's POJO is a {@link AVec.ESPC} subtype. */
   public boolean isESPCGroup() { return _type == TypeMap.ESPCGROUP; }
   /** Check if the Value's POJO is a {@link Lockable} subtype.  Does not require the POJO.
    *  @return True if the Value's POJO is a {@link Lockable} subtype. */

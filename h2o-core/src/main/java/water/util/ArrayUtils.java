@@ -177,6 +177,12 @@ public class ArrayUtils {
       res[i] = ary[i].clone();
     return res;
   }
+  public static String[][] deepClone(String [][] ary){
+    String [][] res = ary.clone();
+    for(int i = 0 ; i < res.length; ++i)
+      res[i] = ary[i].clone();
+    return res;
+  }
 
   public static double[] add(double[] a, double[] b) {
     if( a==null ) return b;
@@ -1284,7 +1290,7 @@ public class ArrayUtils {
       for (double[] row : rows) chunk.addNum(row[c]);
       chunk.close(0, fs);
       if( rowLayout== -1) rowLayout = vec.compute_rowLayout();
-      vecs[c] = vec.close(rowLayout,fs);
+      vecs[c] = vec.closeVecs(rowLayout,fs);
     }
     fs.blockForPending();
     Frame fr = new Frame(key, names, vecs);

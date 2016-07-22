@@ -1,20 +1,14 @@
 package water.rapids;
 
 import water.*;
+import water.fvec.AVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MRUtils;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
@@ -372,7 +366,7 @@ public class Merge {
       names[numLeftCols + j] = rightFrame.names()[j+numJoinCols];
     }
     Key key = Vec.newKey();
-    Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
+    Vec[] vecs = new Vec(key, AVec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
     // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 

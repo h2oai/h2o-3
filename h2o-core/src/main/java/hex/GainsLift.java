@@ -3,10 +3,7 @@ package hex;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.*;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
@@ -20,9 +17,9 @@ public class GainsLift extends Iced {
 
   //INPUT
   public int _groups = -1;
-  public Vec _labels;
-  public Vec _preds; //of length N, n_i = N/GROUPS
-  public Vec _weights;
+  public VecAry _labels;
+  public VecAry _preds; //of length N, n_i = N/GROUPS
+  public VecAry _weights;
 
   //OUTPUT
   public double[] response_rates; // p_i = e_i/n_i
@@ -31,10 +28,10 @@ public class GainsLift extends Iced {
   public long[] observations; // n_i
   TwoDimTable table;
 
-  public GainsLift(Vec preds, Vec labels) {
+  public GainsLift(VecAry preds, VecAry labels) {
     this(preds, labels, null);
   }
-  public GainsLift(Vec preds, Vec labels, Vec weights) {
+  public GainsLift(VecAry preds, VecAry labels, VecAry weights) {
     _preds = preds;
     _labels = labels;
     _weights = weights;
@@ -44,23 +41,23 @@ public class GainsLift extends Iced {
     _labels = _labels.toCategoricalVec();
     if( _labels ==null || _preds ==null )
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs!");
-    if (_labels.length() != _preds.length())
-      throw new IllegalArgumentException("Both arguments must have the same length ("+ _labels.length()+"!="+ _preds.length()+")!");
-    if (!_labels.isInt())
+    if (_labels.numRows() != _preds.numRows())
+      throw new IllegalArgumentException("Both arguments must have the same length ("+ _labels.numRows()+"!="+ _preds.numRows()+")!");
+    if (!_labels.isInt(0))
       throw new IllegalArgumentException("Actual column must be integer class labels!");
-    if (_labels.cardinality() != -1 && _labels.cardinality() != 2)
-      throw new IllegalArgumentException("Actual column must contain binary class labels, but found cardinality " + _labels.cardinality() + "!");
-    if (_preds.isCategorical())
+    if (_labels.cardinality(0) != -1 && _labels.cardinality(0) != 2)
+      throw new IllegalArgumentException("Actual column must contain binary class labels, but found cardinality " + _labels.cardinality(0) + "!");
+    if (_preds.isCategorical(0))
       throw new IllegalArgumentException("Predicted probabilities cannot be class labels, expect probabilities.");
-    if (_weights != null && !_weights.isNumeric())
+    if (_weights != null && !_weights.isNumeric(0))
       throw new IllegalArgumentException("Observation weights must be numeric.");
 
     // The vectors are from different groups => align them, but properly delete it after computation
     if (!_labels.group().equals(_preds.group())) {
-      _preds = _labels.align(_preds);
+      _preds = _labels.makeCompatible(_preds,true);
       Scope.track(_preds);
       if (_weights !=null) {
-        _weights = _labels.align(_weights);
+        _weights = _labels.makeCompatible(_weights,true);
         Scope.track(_weights);
       }
     }
@@ -73,7 +70,7 @@ public class GainsLift extends Iced {
               //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
               new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
       //HACK: hardcoded quantiles for simplicity (0.9,0.8,...,0.1,0)
-      double[] rq = _preds.pctiles(); //might do a full pass over the Vec
+      double[] rq = _preds.pctiles(0); //might do a full pass over the Vec
       _quantiles = new double[]{
               rq[14], rq[13], rq[11], rq[9], rq[8], rq[7], rq[5], rq[3], rq[2], 0 /*ignored*/
       };
@@ -84,9 +81,9 @@ public class GainsLift extends Iced {
       try {
         QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
         if (_weights==null) {
-          fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
+          fr = new Frame(Key.make(), new String[]{"predictions"}, _preds);
         } else {
-          fr = new Frame(Key.make(), new String[]{"predictions", "weights"}, new Vec[]{_preds, _weights});
+          fr = new Frame(Key.make(), new String[]{"predictions", "weights"}, new VecAry(_preds, _weights));
           qp._weights_column = "weights";
         }
         DKV.put(fr);
@@ -123,7 +120,7 @@ public class GainsLift extends Iced {
     init(job); //check parameters and obtain _quantiles from _preds
     try {
       GainsLiftBuilder gt = new GainsLiftBuilder(_quantiles);
-      gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights) : gt.doAll(_labels, _preds);
+      gt = (_weights != null) ? gt.doAll(new VecAry(_labels, _preds, _weights)) : gt.doAll(new VecAry(_labels, _preds));
       response_rates = gt.response_rates();
       avg_response_rate = gt.avg_response_rate();
       events = gt.events();

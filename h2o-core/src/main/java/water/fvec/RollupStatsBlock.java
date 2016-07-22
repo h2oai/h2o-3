@@ -2,7 +2,6 @@ package water.fvec;
 
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
-import sun.util.resources.cldr.nb.CurrencyNames_nb;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
@@ -14,18 +13,19 @@ import java.util.Arrays;
  * Created by tomas on 7/12/16.
  */
 public class RollupStatsBlock extends Iced {
+
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
   private static final int MAX_SIZE = 1000; // Standard bin count; categoricals can have more bins
 
-  RollupStats[] _rsAry;
+  RollupStats[] _rs;
 
   public RollupStatsBlock(){}
 
   public RollupStatsBlock(VecAry vecs){
-    _rsAry = new RollupStats[vecs.len()];
-    for(int i = 0; i < _rsAry.length; ++i)
-      _rsAry[i] = new RollupStats(0);
+    _rs = new RollupStats[vecs.len()];
+    for(int i = 0; i < _rs.length; ++i)
+      _rs[i] = new RollupStats(0);
   }
 
 
@@ -34,33 +34,33 @@ public class RollupStatsBlock extends Iced {
   volatile boolean _isComputing;
 
   public boolean isReady() {
-    if (_rsAry == null) return false;
-    for (int i = 0; i < _rsAry.length; ++i)
-      if (!_rsAry[i].isReady())
+    if (_rs == null) return false;
+    for (int i = 0; i < _rs.length; ++i)
+      if (!_rs[i].isReady())
         return false;
     return true;
   }
 
   private boolean isReady(int i) {
-    RollupStats [] ary = _rsAry;
+    RollupStats [] ary = _rs;
     return ary != null && ary[i].isReady();
   }
 
   public boolean hasHisto() {
-    if (_rsAry == null) return false;
-    for (int i = 0; i < _rsAry.length; ++i)
-      if (_rsAry[i]._type != Vec.T_STR && !_rsAry[i].hasHisto())
+    if (_rs == null) return false;
+    for (int i = 0; i < _rs.length; ++i)
+      if (_rs[i]._type != Vec.T_STR && !_rs[i].hasHisto())
         return false;
     return true;
   }
 
   private boolean hasHisto(int i) {
-    RollupStats [] ary = _rsAry;
+    RollupStats [] ary = _rs;
     return ary != null && ary[i].hasHisto();
   }
 
   private boolean isMutating(int i) {
-    RollupStats [] ary = _rsAry;
+    RollupStats [] ary = _rs;
     return ary != null && ary[i].isMutating();
   }
 
@@ -94,31 +94,28 @@ public class RollupStatsBlock extends Iced {
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
       rs = DKV.getGet(rskey);
     }
-    return rs._rsAry[i];
+    return rs._rs[i];
   }
 
-  public static class RollMRBlock extends MRTask2<RollMRBlock> {
-    RollupStatsBlock _rs;
+  public static class RollMRBlock extends MRTask<RollMRBlock> {
+    RollupStats[] _rs;
+
     @Override public void map(Chunk [] chks) {
-      _rs = new RollupStatsBlock(_vecs);
+      _rs = new RollupStats[_vecs.len()];
       for(int i = 0; i < chks.length; ++i)
-        _rs._rsAry[i].map(chks[i]);
+        _rs[i] = RollupStats.computeRollups(chks[i]);
     }
     @Override public void reduce(RollMRBlock r) {
       for(int i = 0; i < _vecs.len(); ++i)
-        _rs._rsAry[i].reduce(r._rs._rsAry[i]);
+        _rs[i].reduce(r._rs[i]);
     }
-
     @Override public void postGlobal(){
       for(int i = 0; i < _vecs.len(); ++i)
-        _rs._rsAry[i].postGlobal();
+        _rs[i].postGlobal();
     }
-
   }
 
-
-
-  public static class HistoMRBlock extends MRTask2<HistoMRBlock> {
+  public static class HistoMRBlock extends MRTask<HistoMRBlock> {
     // inputs
     double [] _base;
     double [] _stride;
@@ -132,8 +129,8 @@ public class RollupStatsBlock extends Iced {
       _stride = new double[toCompute.length];
       _nbins = new int[toCompute.length];
       for (int i = 0; i < toCompute.length; ++i) {
-        _base[i] = rs._rsAry[i].h_base();
-        _stride[i] = 1.0/rs._rsAry[i].h_stride(nbins[i]);
+        _base[i] = rs._rs[i].h_base();
+        _stride[i] = 1.0/rs._rs[i].h_stride(nbins[i]);
       }
     }
 
@@ -171,7 +168,7 @@ public class RollupStatsBlock extends Iced {
   // Only comutes the rollups if needed (i.e. are null or do not have histo and histo is required)
   // If rs computation is already in progress, it will wait for it to finish.
   // Throws IAE if the Vec is being modified (or removed) while this task is in progress.
-  private static final class ComputeRollupsBlockTask extends DTask<RollupStats.ComputeRollupsTask> {
+  private static final class ComputeRollupsBlockTask extends DTask<ComputeRollupsBlockTask> {
     final Key _vecKey;
     final Key _rsKey;
     final boolean _computeHisto;
@@ -250,7 +247,7 @@ public class RollupStatsBlock extends Iced {
           if(oldv == v){ // got the lock, compute the rollups
             RollMRBlock r = new RollMRBlock().doAll(new VecAry(vb,toCompute));
             for(int i = 0; i < toCompute.length; ++i)
-              rs._rsAry[toCompute[i]] = r._rs._rsAry[i];
+              rs._rs[toCompute[i]] = r._rs[i];
             // computed the stats, now compute histo if needed and install the response and quit
             if(_computeHisto)
               computeHisto(rs, vb, nnn);
@@ -269,13 +266,13 @@ public class RollupStatsBlock extends Iced {
       int [] toCompute = rs.toComputeHisto();
 
       for(int i = 0; i < toCompute.length; ++i) {
-        RollupStats r = rs._rsAry[toCompute[i]];
+        RollupStats r = rs._rs[toCompute[i]];
         if (r._naCnt == r._rows || r._type == Vec.T_UUID || r._type == Vec.T_STR) {
           r._bins = new long[0];
-          rs._rsAry[toCompute[i]] = r;
+          rs._rs[toCompute[i]] = r;
         } else if(r._mins[0] == r._maxs[0]) {
           r._bins = new long[]{r._rows};
-          rs._rsAry[toCompute[i]] = r;
+          rs._rs[toCompute[i]] = r;
         }
       }
       if(rs.hasHisto()) {
@@ -286,7 +283,7 @@ public class RollupStatsBlock extends Iced {
       int [] nbins = new int[toCompute.length];
       // Constant: use a single bin
       for(int i = 0; i < nbins.length; ++i) {
-        RollupStats r = rs._rsAry[i];
+        RollupStats r = rs._rs[i];
         double span = r._maxs[0] - r._mins[0];
         final long rows = r._rows;
         assert rows > 0;
@@ -299,8 +296,8 @@ public class RollupStatsBlock extends Iced {
       HistoMRBlock histo = new HistoMRBlock(rs,toCompute,nbins).doAll(new VecAry(vb,toCompute));
       for(int i = 0; i < toCompute.length; ++i) {
         int j = toCompute[i];
-        rs._rsAry[j]._bins = histo._bins[i];
-        rs._rsAry[j].computePercentiles();
+        rs._rs[j]._bins = histo._bins[i];
+        rs._rs[j].computePercentiles();
       }
       installResponse(nnn, rs);
     }
@@ -308,10 +305,10 @@ public class RollupStatsBlock extends Iced {
 
   private int[] toComputeRollups() {
     if(isReady()) return new int[0];
-    int [] res = new int[_rsAry.length];
+    int [] res = new int[_rs.length];
     int k = 0;
-    for(int i = 0; i < _rsAry.length; ++i) {
-      RollupStats rs = _rsAry[i];
+    for(int i = 0; i < _rs.length; ++i) {
+      RollupStats rs = _rs[i];
       if (rs == null || ((!rs.isReady()) && !rs.isMutating()))
         res[k++] = i;
     }
@@ -320,10 +317,10 @@ public class RollupStatsBlock extends Iced {
 
   private int[] toComputeHisto() {
     if(hasHisto()) return new int[0];
-    int [] res = new int[_rsAry.length];
+    int [] res = new int[_rs.length];
     int k = 0;
-    for(int i = 0; i < _rsAry.length; ++i) {
-      RollupStats rs = _rsAry[i];
+    for(int i = 0; i < _rs.length; ++i) {
+      RollupStats rs = _rs[i];
       if (rs != null && rs._type != Vec.T_STR && !rs.isMutating() && !rs.hasHisto())
         res[k++] = i;
     }

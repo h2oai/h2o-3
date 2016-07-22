@@ -2,9 +2,9 @@ package water.parser;
 
 import water.Futures;
 
-interface StreamParseWriter extends ParseWriter {
+interface StreamParseWriter<T extends StreamParseWriter> extends ParseWriter {
   StreamParseWriter nextChunk();
-  StreamParseWriter reduce(StreamParseWriter dout);
+  StreamParseWriter reduce(T dout);
   StreamParseWriter close();
   StreamParseWriter close(Futures fs);
 }

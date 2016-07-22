@@ -22,7 +22,7 @@ public class FVecTest extends TestUtil {
     }
     Futures fs = new Futures();
     Key key = Vec.newKey();
-    ByteVec bv = new ByteVec(key,Vec.ESPC.rowLayout(key,espc));
+    ByteVec bv = new ByteVec(key, AVec.ESPC.rowLayout(key,espc));
     for(int i = 0; i < chunks.length; ++i){
       Key chunkKey = bv.chunkKey(i);
       DKV.put(chunkKey, new Value(chunkKey,chunks[i].length,chunks[i],TypeMap.C1NCHUNK,Value.ICE),fs);

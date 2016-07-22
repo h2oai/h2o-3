@@ -28,16 +28,16 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
    *
    * To be used to make frame compatible with other frame (i.e. make all vecs compatible with other vector group and rows-per-chunk).
    */
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey) {
-    this(modelFrame,srcFrame,dstKey,null,null);
+  public RebalanceDataSet(VecAry modelAry, VecAry srcAry, Key dstKey) {
+    this(modelAry,srcAry,dstKey,null,null);
   }
-  public RebalanceDataSet(Frame modelFrame, Frame srcFrame, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
+  public RebalanceDataSet(VecAry modelAry, VecAry srcAry, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
     super(cmp);
-    _src = srcFrame.vecs();
+    _src = srcAry;
     _jobKey = jobKey;
-    _espc = modelFrame.vecs().espc(); // Get prior layout
-    _vg = modelFrame.vecs().group();
-    _nchunks = modelFrame.vecs().nChunks();
+    _espc = modelAry.espc(); // Get prior layout
+    _vg = modelAry.group();
+    _nchunks = modelAry.nChunks();
   }
 
   public RebalanceDataSet(VecAry src, int nchunks) { this(src, nchunks,null,null);}
@@ -73,7 +73,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       }
       assert espc[espc.length - 1] == _src.numRows() : "unexpected number of rows, expected " + _src.numRows() + ", got " + espc[espc.length - 1];
     }
-    final int rowLayout = Vec.ESPC.rowLayout(_vg._key,espc);
+    final int rowLayout = AVec.ESPC.rowLayout(_vg._key,espc);
     _dst = _vg.makeCons(rowLayout,_src.len(),0L);
     new RebalanceTask(this,_src).dfork(_dst);
   }
@@ -85,7 +85,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     return true;
   }
 
-  public static class RebalanceTask extends MRTask2<RebalanceTask> {
+  public static class RebalanceTask extends MRTask<RebalanceTask> {
     final VecAry _src;
     public RebalanceTask(H2O.H2OCountedCompleter cmp, VecAry srcVecs){super(cmp);
       _src = srcVecs;}

@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.AutoBuffer;
+import water.H2O;
 import water.Key;
 import water.DKV;
 import water.util.ArrayUtils;
@@ -29,15 +30,15 @@ public class CategoricalWrappedVec extends WrappedVec {
   int _p=0;
 
   /** Main constructor: convert from one categorical to another */
-  public CategoricalWrappedVec(Key key, int rowLayout, String[] toDomain, Key masterVecKey) {
-    super(key, rowLayout, masterVecKey);
-    computeMap(masterVec().domain(),toDomain,masterVec().isBad());
+  public CategoricalWrappedVec(Key key, int rowLayout, String[] toDomain, VecAry masterVec) {
+    super(key, rowLayout, masterVec);
+    computeMap(masterVec().domain(0),toDomain,masterVec().isBad(0));
     DKV.put(this);
   }
 
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
-  private CategoricalWrappedVec(Key key) { super(key, ESPC.rowLayout(key, new long[]{0}), null, null); }
+  private CategoricalWrappedVec(Key key) { super(key, AVec.ESPC.rowLayout(key, new long[]{0}), null, null); }
   public static int[] computeMap(String[] from, String[] to) {
     Key key = Vec.newKey();
     CategoricalWrappedVec tmp = new CategoricalWrappedVec(key);
@@ -46,7 +47,7 @@ public class CategoricalWrappedVec extends WrappedVec {
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
-    return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
+    return new CategoricalWrappedChunk(_masterVec.getChunk(cidx,0), this);
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -71,7 +72,7 @@ public class CategoricalWrappedVec extends WrappedVec {
     // Identity? Build the cheapo non-map
     if( from==to || Arrays.equals(from,to) ) {
       _map = ArrayUtils.seq(0,to.length);
-      setDomain(to);
+      setDomain(0,to);
       return;
     }
 
@@ -79,12 +80,11 @@ public class CategoricalWrappedVec extends WrappedVec {
     // to[] mapping has the set of unique numbers, we need to map from those
     // numbers to the index to the numbers.
     if( from==null ) {
-      setDomain(to);
+      setDomain(0,to);
       if( fromIsBad ) { _map = new int[0]; return; }
       int min = Integer.valueOf(to[0]);
       int max = Integer.valueOf(to[to.length-1]);
-      Vec mvec = masterVec();
-      if( !(mvec.isInt() && mvec.min() >= min && mvec.max() <= max) )
+      if( !(_masterVec.isInt(0) && _masterVec.min(0) >= min && _masterVec.max(0) <= max) )
         throw new NumberFormatException(); // Unable to figure out a valid mapping
 
       // FIXME this is a bit of a hack to allow adapTo calls to play nice with negative ints in the domain...
@@ -133,12 +133,12 @@ public class CategoricalWrappedVec extends WrappedVec {
         actualLen = extra;
       }
     }
-    setDomain(Arrays.copyOf(ss, actualLen));
+    setDomain(0,Arrays.copyOf(ss, actualLen));
   }
 
   @Override
   public Vec doCopy() {
-    return new CategoricalWrappedVec(group().addVec(),_rowLayout, domain(), _masterVecKey);
+    return new CategoricalWrappedVec(group().addVec(),_rowLayout, domain(0), _masterVec);
   }
 
   public static class CategoricalWrappedChunk extends Chunk {
@@ -181,6 +181,17 @@ public class CategoricalWrappedVec extends WrappedVec {
     }
     public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+
+    @Override
+    public void add2NewChunk_impl(NewChunk nc, int from, int to) {
+      throw H2O.unimpl();
+    }
+
+    @Override
+    public void add2NewChunk_impl(NewChunk nc, int[] lines) {
+      throw H2O.unimpl();
+    }
+
     @Override public boolean hasNA() { return false; }
   }
 }

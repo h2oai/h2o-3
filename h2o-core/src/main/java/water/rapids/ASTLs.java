@@ -3,10 +3,7 @@ package water.rapids;
 import water.Futures;
 import water.Key;
 import water.KeySnapshot;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.ArrayList;
 
@@ -32,11 +29,10 @@ class ASTLs extends ASTPrim {
       domain.add(key.toString());
     }
     String[] key_domain = domain.toArray(new String[domain.size()]);
-    av.setDomain(key_domain);
-    keys.close(fs);
-    Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
+    av.closeChunk(0,keys,fs);
+    VecAry c0 = av.layout_and_close(fs, key_domain);   // c0 is the row index vec
     fs.blockForPending();
-    return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
+    return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, c0));
   }
 }
 

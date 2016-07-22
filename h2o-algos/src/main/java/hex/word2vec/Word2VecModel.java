@@ -200,7 +200,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     for (int i = 0; i < vecs.length; i++) {
       colNames[i] = new String("V"+i);
       cs[i].close(0, fs);
-      vecs[i] = avs[i].close(rowLayout,fs);
+      vecs[i] = avs[i].closeVecs(rowLayout,fs);
     }
 
     fs.blockForPending();

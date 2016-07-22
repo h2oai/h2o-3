@@ -12,19 +12,19 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   protected final Vec.VectorGroup _vg;
   int _vecIdStart;
 
-  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec[] avs){
-    super(vg, cidx, null, null, chunkSize, avs);
+  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, AppendableVec av){
+    super(vg, cidx, null, null, av);
     _vg = vg;
     _vecIdStart = vecIdStart;
-    _nvs = new NewChunk[avs.length];
+    _nvs = new NewChunk[av.numCols()];
     for(int i = 0; i < _nvs.length; ++i)
-      _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
+      _nvs[i] = new NewChunk(_vec, _cidx, true);
     _col = 0;
   }
 
   @Override public void addNumCol(int colIdx, long number, int exp) {
     assert colIdx >= _col;
-    if(colIdx >= _vecs.length) addColumns(colIdx+1);
+    if(colIdx >= _vec.numCols()) addColumns(colIdx+1);
     _nvs[colIdx].addZeros((int)_nLines - _nvs[colIdx]._len);
     _nvs[colIdx].addNum(number, exp);
     _col = colIdx+1;
@@ -45,14 +45,13 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
     return super.close(fs);
   }
   private void addColumns(int newColCnt){
-    int oldColCnt = _vecs.length;
+    int oldColCnt = _vec.numCols();
     if(newColCnt > oldColCnt){
       _nvs   = Arrays.copyOf(_nvs, newColCnt);
-      _vecs  = Arrays.copyOf(_vecs  , newColCnt);
-      for(int i = oldColCnt; i < newColCnt; ++i) {
-        _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._tmp_espc,Vec.T_NUM,_vecs[0]._chunkOff);
-        _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
-      }
+      _vec.setNCols(newColCnt);
+      for(int i = oldColCnt; i < newColCnt; ++i)
+        _nvs[i] = new NewChunk(_vec, _cidx, true);
+
       _nCols = newColCnt;
     }
   }

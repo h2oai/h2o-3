@@ -146,9 +146,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static final Map<String, Class<? extends Model>> _algo_to_model_class = new HashMap<>();
 
   /** Train response vector. */
-  public Vec response(){return _response;}
+  public VecAry response(){return _response;}
   /** Validation response vector. */
-  public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
+  public VecAry vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
     protected Driver(){ super(); }
@@ -219,18 +219,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected int nModelsInParallel() {
     if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    if (_train.vecs().byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1; //safe fallback
   }
 
   // Work for each requested fold
   protected int nFoldWork() {
     if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec f = _parms._train.get().vec(_parms._fold_column);
-    Vec fc = VecUtils.toCategoricalVec(f);
-    int N = fc.domain().length;
-    fc.remove();
-    return N;
+    return (int) _parms._train.get().vecs(_parms._fold_column).max(0);
   }
 
   /**
@@ -247,10 +243,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Scope.enter();
 
       // Step 1: Assign each row to a fold
-      final Vec foldAssignment = cv_AssignFold(N);
+      final VecAry foldAssignment = cv_AssignFold(N);
 
       // Step 2: Make 2*N binary weight vectors
-      final Vec[] weights = cv_makeWeights(N,foldAssignment);
+      final VecAry weights = cv_makeWeights(N,foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
@@ -278,13 +274,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Step 1: Assign each row to a fold
   // TODO: Implement better splitting algo (with Strata if response is
   // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-  public Vec cv_AssignFold(int N) {
+  public VecAry cv_AssignFold(int N) {
     assert(N>=2);
-    Vec fold = train().vec(_parms._fold_column);
+    VecAry fold = train().vecs(_parms._fold_column);
     if( fold != null ) {
-      if( !fold.isInt() ||
-          (!(fold.min() == 0 && fold.max() == N-1) &&
-           !(fold.min() == 1 && fold.max() == N  ) )) // Allow 0 to N-1, or 1 to N
+      if( !fold.isInt(0) ||
+          (!(fold.min(0) == 0 && fold.max(0) == N-1) &&
+           !(fold.min(0) == 1 && fold.max(0) == N  ) )) // Allow 0 to N-1, or 1 to N
         throw new H2OIllegalArgumentException("Fold column must be either categorical or contiguous integers from 0..N-1 or 1..N");
       return fold;
     }
@@ -292,19 +288,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
     switch( _parms._fold_assignment ) {
     case AUTO:
-    case Random:     return ASTKFold.          kfoldColumn(train().anyVec().makeZero(),N,seed);
-    case Modulo:     return ASTKFold.    moduloKfoldColumn(train().anyVec().makeZero(),N     );
+    case Random:     return ASTKFold.          kfoldColumn(train().vecs().makeZero(),N,seed);
+    case Modulo:     return ASTKFold.    moduloKfoldColumn(train().vecs().makeZero(),N     );
     case Stratified: return ASTKFold.stratifiedKFoldColumn(response(),N,seed);
     default:         throw H2O.unimpl();
     }
   }
 
   // Step 2: Make 2*N binary weight vectors
-  public Vec[] cv_makeWeights( final int N, Vec foldAssignment ) {
+  public VecAry cv_makeWeights( final int N, VecAry foldAssignment ) {
     String origWeightsName = _parms._weights_column;
-    Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
-    Frame folds_and_weights = new Frame(new Vec[]{foldAssignment, origWeight});
-    Vec[] weights = new MRTask() {
+    VecAry origWeight  = origWeightsName != null ? train().vecs(origWeightsName) : train().vecs().makeCon(1);
+    VecAry folds_and_weights = new VecAry().addVecs(foldAssignment).addVecs(origWeight);
+    VecAry weights = new MRTask() {
         @Override public void map(Chunk chks[], NewChunk nchks[]) {
           Chunk fold = chks[0], orig = chks[1];
           for( int row=0; row< orig._len; row++ ) {
@@ -319,36 +315,36 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+      DKV.put(new Frame(Key.make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new VecAry(foldAssignment)));
     if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
-    for( Vec weight : weights )
-      if( weight.isConst() )
+    for( int i = 0; i < weights.len(); ++i)
+      if( weights.isConst(i) )
         throw new H2OIllegalArgumentException("Not enough data to create " + N + " random cross-validation splits. Either reduce nfolds, specify a larger dataset (or specify another random number seed, if applicable).");
     return weights;
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
+  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, VecAry weights ) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
     final String weightName = "__internal_cv_weights__";
     if (train().find(weightName) != -1) throw new H2OIllegalArgumentException("Frame cannot contain a Vec called '" + weightName + "'.");
 
-    Frame cv_fr = new Frame(train().names(),train().vecs());
+    Frame cv_fr = new Frame(train());
     if( _parms._weights_column!=null ) cv_fr.remove( _parms._weights_column ); // The CV frames will have their own private weight column
 
     ModelBuilder<M, P, O>[] cvModelBuilders = new ModelBuilder[N];
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
-      cvTrain.add(weightName, weights[2*i]);
+      Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr);
+      cvTrain.add(weightName, weights.getVecs(2*i));
       DKV.put(cvTrain);
-      Frame cvValid = new Frame(Key.make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
-      cvValid.add(weightName, weights[2*i+1]);
+      Frame cvValid = new Frame(Key.make(identifier+"_valid"),cv_fr);
+      cvValid.add(weightName, weights.getVecs(2*i+1));
       DKV.put(cvValid);
 
       // Shallow clone - not everything is a private copy!!!
@@ -401,7 +397,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 5: Score the CV models
-  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
+  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, VecAry weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if( _job.stop_requested() ) return null;
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
     Futures fs = new Futures();
@@ -423,9 +419,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
-      weights[2*i  ].remove(fs);
-      weights[2*i+1].remove(fs);
     }
+    weights.remove(fs);
     fs.blockForPending();
     return mbs;
   }
@@ -458,19 +453,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     if (_parms._keep_cross_validation_fold_assignment) {
       mainModel._output._cross_validation_fold_assignment_frame_id = Key.make("cv_fold_assignment_" + _result.toString());
-      Scope.untrack(((Frame)(mainModel._output._cross_validation_fold_assignment_frame_id.get())).keys());
+      Scope.untrack(((Frame)(mainModel._output._cross_validation_fold_assignment_frame_id.get())).vecs().keys());
     }
     // Keep or toss predictions
     for (Key<Frame> k : predKeys) {
       Frame fr = DKV.getGet(k);
       if( fr != null ) {
-        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keys());
+        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.vecs().keys());
         else fr.remove();
       }
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
-      if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keys());
+      if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.vecs().keys());
       else holdoutPreds.remove();
     }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
@@ -512,11 +507,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public boolean isSupervised(){return false;}
 
-  protected transient Vec _response; // Handy response column
-  protected transient Vec _vresponse; // Handy response column
-  protected transient Vec _offset; // Handy offset column
-  protected transient Vec _weights; // observation weight column
-  protected transient Vec _fold; // fold id column
+  protected transient VecAry _response; // Handy response column
+  protected transient VecAry _vresponse; // Handy response column
+  protected transient VecAry _offset; // Handy offset column
+  protected transient VecAry _weights; // observation weight column
+  protected transient VecAry _fold; // fold id column
 
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
@@ -537,18 +532,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected int separateFeatureVecs() {
     int res = 0;
     if(_parms._weights_column != null) {
-      Vec w = _train.remove(_parms._weights_column);
+      VecAry w = _train.remove(_parms._weights_column);
       if(w == null)
         error("_weights_column","Weights column '" + _parms._weights_column  + "' not found in the training frame");
       else {
-        if(!w.isNumeric())
+        if(!w.isNumeric(0))
           error("_weights_column","Invalid weights column '" + _parms._weights_column  + "', weights must be numeric");
         _weights = w;
-        if(w.naCnt() > 0)
+        if(w.naCnt(0) > 0)
           error("_weights_columns","Weights cannot have missing values.");
-        if(w.min() < 0)
+        if(w.min(0) < 0)
           error("_weights_columns","Weights must be >= 0");
-        if(w.max() == 0)
+        if(w.max(0) == 0)
           error("_weights_columns","Max. weight must be > 0");
         _train.add(_parms._weights_column, w);
         ++res;
@@ -558,14 +553,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!hasWeightCol());
     }
     if(_parms._offset_column != null) {
-      Vec o = _train.remove(_parms._offset_column);
+      VecAry o = _train.remove(_parms._offset_column);
       if(o == null)
         error("_offset_column","Offset column '" + _parms._offset_column  + "' not found in the training frame");
       else {
-        if(!o.isNumeric())
+        if(!o.isNumeric(0))
           error("_offset_column","Invalid offset column '" + _parms._offset_column  + "', offset must be numeric");
         _offset = o;
-        if(o.naCnt() > 0)
+        if(o.naCnt(0) > 0)
           error("_offset_column","Offset cannot have missing values.");
         if(_weights == _offset)
           error("_offset_column", "Offset must be different from weights");
@@ -577,18 +572,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       assert(!hasOffsetCol());
     }
     if(_parms._fold_column != null) {
-      Vec f = _train.remove(_parms._fold_column);
+      VecAry f = _train.remove(_parms._fold_column);
       if(f == null)
         error("_fold_column","Fold column '" + _parms._fold_column  + "' not found in the training frame");
       else {
-        if(!f.isInt() && !f.isCategorical())
+        if(!f.isInt(0) && !f.isCategorical(0))
           error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be integer or categorical");
-        if(f.min() < 0)
+        if(f.min(0) < 0)
           error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold must be non-negative");
-        if(f.isConst())
+        if(f.isConst(0))
           error("_fold_column","Invalid fold column '" + _parms._fold_column  + "', fold cannot be constant");
         _fold = f;
-        if(f.naCnt() > 0)
+        if(f.naCnt(0) > 0)
           error("_fold_column","Fold cannot have missing values.");
         if(_fold == _weights)
           error("_fold_column", "Fold must be different from weights");
@@ -634,8 +629,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Drop all-constant and all-bad columns.
     if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) {
-          return (ignoreConstColumns() && v.isConst()) || v.isBad() || (ignoreStringColumns() && v.isString()); }
+        @Override protected boolean filter(VecAry v, int i) {
+          return (ignoreConstColumns() && v.isConst(i)) || v.isBad(i) || (ignoreStringColumns() && v.isString(i)); }
       }.doIt(_train,"Dropping constant columns: ",expensive);
   }
   /**
@@ -728,7 +723,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame tr = _parms.train();
     if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
-    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    _train = new Frame(null /* not putting this into KV */, tr);
     if( expensive) {
       _parms.getOrMakeRealSeed();
     }
@@ -797,13 +792,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
         }
         if (expensive) checkDistributions();
-        _nclass = _response.isCategorical() ? _response.cardinality() : 1;
-        if (_response.isConst())
+        _nclass = _response.isCategorical(0) ? _response.domain(0).length : 1;
+        if (_response.isConst(0))
           error("_response","Response cannot be constant.");
       }
       if (! _parms._balance_classes)
         hide("_max_after_balance_size", "Balance classes is false, hide max_after_balance_size");
-      else if (_parms._weights_column != null && _weights != null && !_weights.isBinary())
+      else if (_parms._weights_column != null && _weights != null && !_weights.isBinary(0))
         error("_balance_classes", "Balance classes and observation weights are not currently supported together.");
       if( _parms._max_after_balance_size <= 0.0 )
         error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
@@ -818,11 +813,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
             MRUtils.ClassDist cdmt =
-                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(_response, _weights) : new MRUtils.ClassDist(nclasses()).doAll(_response);
+                _weights != null ? new MRUtils.ClassDist(nclasses()).doAll(new VecAry(_response,_weights)) : new MRUtils.ClassDist(nclasses()).doAll(_response);
             _distribution = cdmt.dist();
             _priorClassDist = cdmt.rel_dist();
           } else {                    // Regression; only 1 "class"
-            _distribution = new double[]{ (_weights != null ? _weights.mean() : 1.0) * train().numRows() };
+            _distribution = new double[]{ (_weights != null ? _weights.mean(0) : 1.0) * train().numRows() };
             _priorClassDist = new double[]{1.0f};
           }
         }
@@ -863,10 +858,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
-      _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
+      _valid = new Frame(null /* not putting this into KV */, va);
       try {
-        String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.domains(), _valid, _parms.missingColumnsType(), expensive, true, null);
-        _vresponse = _valid.vec(_parms._response_column);
+        String[] msgs = Model.adaptTestForTrain(_train._names, _parms._weights_column, _parms._offset_column, _parms._fold_column, null, _train.vecs().domains(), _valid, _parms.missingColumnsType(), expensive, true, null);
+        _vresponse = _valid.vecs(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");
         if (expensive) {
@@ -875,7 +870,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             warn("_valid", s);
           }
         }
-        assert !expensive || (_valid == null || Arrays.equals(_train._names, _valid._names));
+        assert !expensive || (_valid == null || _train._names.equals(_valid._names));
       } catch (IllegalArgumentException iae) {
         error("_valid", iae.getMessage());
       }
@@ -934,15 +929,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
-    if (original_fr.anyVec().nChunks() >= chunks) {
+    if (original_fr.vecs().nChunks() >= chunks) {
       if (chunks>1)
-        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.anyVec().nChunks() +
+        Log.info(name.substring(name.length()-5)+ " dataset already contains " + original_fr.vecs().nChunks() +
               " chunks. No need to rebalance.");
       return original_fr;
     }
     Log.info("Rebalancing " + name.substring(name.length()-5)  + " dataset into " + chunks + " chunks.");
     Key newKey = Key.makeUserHidden(name + ".chunks" + chunks);
-    RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
+    RebalanceDataSet rb = new RebalanceDataSet(original_fr.vecs(), chunks);
     H2O.submitTask(rb).join();
     Frame rebalanced_fr = DKV.get(newKey).get();
     Scope.track(rebalanced_fr);
@@ -959,15 +954,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public void checkDistributions() {
     if (_parms._distribution == Distribution.Family.poisson) {
-      if (_response.min() < 0)
+      if (_response.min(0) < 0)
         error("_response", "Response must be non-negative for Poisson distribution.");
     } else if (_parms._distribution == Distribution.Family.gamma) {
-      if (_response.min() < 0)
+      if (_response.min(0) < 0)
         error("_response", "Response must be non-negative for Gamma distribution.");
     } else if (_parms._distribution == Distribution.Family.tweedie) {
       if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
-      if (_response.min() < 0)
+      if (_response.min(0) < 0)
         error("_response", "Response must be non-negative for Tweedie distribution.");
     } else if (_parms._distribution == Distribution.Family.quantile) {
       if (_parms._quantile_alpha > 1 || _parms._quantile_alpha < 0)
@@ -980,18 +975,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
-    abstract protected boolean filter(Vec v);
+    abstract protected boolean filter(VecAry v, int id);
 
     void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
-      for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vecs()[i]) ) rmcolsList.add(i);
+      VecAry vecs = f.vecs();
+      for( int i = 0; i < f.vecs().len() - _specialVecs; i++ )
+        if( filter(vecs,i) ) rmcolsList.add(i);
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
         for (int i=0;i<rmcols.length;++i) {
           rmcols[i]=rmcolsList.get(i);
-          _removedCols.add(f._names[rmcols[i]]);
+          _removedCols.add(f.name(rmcols[i]));
         }
         f.remove(rmcols); //bulk-remove
         msg += _removedCols.toString();
@@ -1005,12 +1001,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key key) {
     int N = predKeys.length;
     Frame template = predKeys[0].get();
-    Vec[] vecs = new Vec[N*template.numCols()];
-    int idx=0;
+    VecAry vecs = new VecAry();
     for (int i=0;i<N;++i)
       for (int j=0;j<predKeys[i].get().numCols();++j)
-        vecs[idx++]=predKeys[i].get().vec(j);
-    return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.types(),new Frame(vecs)).outputFrame(key, template.names(),template.domains());
+        vecs.addVecs(predKeys[i].get().vecs(j));
+    return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.vecs().types(),vecs).outputFrame(key, template._names,template.vecs().domains());
   }
 
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec

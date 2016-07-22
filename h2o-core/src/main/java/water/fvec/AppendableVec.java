@@ -14,50 +14,81 @@ import java.util.Arrays;
  * vector which may do compression; the final 'close' will return some other
  * Vec type.  NEW Vectors do NOT support reads!
  */
-public class AppendableVec extends Vec {
+public class AppendableVec extends AVec {
   // Temporary ESPC, for uses which do not know the number of Chunks up front.
   public long _tmp_espc[];
   // Allow Chunks to have their final Chunk index (set at closing) offset by
   // this much.  Used by the Parser to fold together multi-file AppendableVecs.
   public final int _chunkOff;
 
+  final byte [] _types;
+  final int [] _blocks;
 
-  public AppendableVec( Key<Vec> key, byte type ) { this(key, new long[4], type, 0); }
 
-  public AppendableVec( Key<Vec> key, long[] tmp_espc, byte type, int chunkOff) {
-    super( key, -1/*no rowLayout yet*/, null, type ); 
+  public AppendableVec( Key<AVec> key, byte... type ) { this(key, new int[]{type.length}, new long[4], type, 0);}
+  public AppendableVec( Key<AVec> key, int [] blocks, byte... type ) { this(key, blocks, new long[4], type, 0); }
+
+  public AppendableVec( Key<AVec> key, int [] blocks, long[] tmp_espc, byte [] type, int chunkOff) {
+    super( key, -1/*no rowLayout yet*/);
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
+    _types = type;
+    _blocks = blocks == null?new int[_types.length]:blocks;
   }
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
-  synchronized void closeChunk( int cidx, int len ) {
+  public synchronized void closeChunks( NewChunk [] ncs, int cidx, Futures fs) {
+    if(ncs.length != numCols())
+      throw new IllegalArgumentException("number of columns must match. expected " + numCols() + " got " + ncs.length);
+    int len = ncs[0].len();
     // The Parser will pre-allocate the _tmp_espc large enough (the Parser
     // knows how many final Chunks there will be up front).  Other users are
     // encouraged to set a "large enough" espc - and a shared one at that - to
     // avoid these copies.
-
     // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
     cidx -= _chunkOff;
     while( cidx >= _tmp_espc.length ) // should not happen if espcs are preallocated and shared!
       _tmp_espc = Arrays.copyOf(_tmp_espc, _tmp_espc.length<<1);
     _tmp_espc[cidx] = len;
+    int k = 0;
+    for(int i = 0; i < _blocks.length;++i) {
+      if(_blocks[i] == 1)
+        DKV.put(chunkKey(_key,cidx,i), ncs[k].compress(), fs);
+      else {
+        Chunk[] chks = new Chunk[_blocks[i]];
+        for (int j = 0; j < chks.length; ++j)
+          chks[i] = ncs[i].compress();
+        DKV.put(chunkKey(_key,cidx, i), new ChunkBlock(chks), fs);
+      }
+    }
   }
 
-  public static Vec[] closeAll(AppendableVec [] avs) {
-    Futures fs = new Futures();
-    Vec [] res = closeAll(avs,fs);
-    fs.blockForPending();
-    return res;
-  }
 
-  public static Vec[] closeAll(AppendableVec [] avs, Futures fs) {
-    Vec [] res = new Vec[avs.length];
-    final int rowLayout = avs[0].compute_rowLayout();
-    for(int i = 0; i < avs.length; ++i)
-      res[i] = avs[i].close(rowLayout,fs);
-    return res;
+
+  // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
+  // reads, plus computes rows-per-chunk, min/max/mean, etc.
+  public VecAry closeVecs(String[][] domains, int rowLayout, Futures fs) {
+    // Compute #chunks
+    AVec [] vecs = new AVec[_blocks.length];
+    int nchunk = _tmp_espc.length;
+    int off = 0;
+    VectorGroup vg = group();
+    int vecStart = VectorGroup.getVecId(_key._kb);
+    for(int i = 0; i < _blocks.length; ++i) {
+      Key<AVec> k = vg.vecKey(vecStart+i);
+      vecs[i] = (_blocks[i] == 1)
+          ?new Vec(k, rowLayout, domains[off], _types[off])
+          :new VecBlock(k, rowLayout, _blocks[i],Arrays.copyOfRange(domains,off,off+_blocks[i]), Arrays.copyOfRange(_types,off,off+_blocks[i]));
+      DKV.put(vecs[i]._key,vecs[i],fs);       // Inject the header into the K/V store
+      off += _blocks[i];
+      DKV.remove(vecs[i].chunkKey(_key,nchunk,i),fs); // remove potential trailing key
+      while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
+        nchunk--;
+        DKV.remove(vecs[i].chunkKey(_key,nchunk,i),fs); // remove potential trailing key
+      }
+    }
+    return new VecAry(vecs);
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.
@@ -77,11 +108,16 @@ public class AppendableVec extends Vec {
   }
 
 
-  public Vec layout_and_close(Futures fs) { return close(compute_rowLayout(),fs); }
+  public VecAry layout_and_close(Futures fs, String [] domain) {
+    assert _types.length==1;
+    return layout_and_close(fs, new String[][]{domain});
+  }
+  public VecAry layout_and_close(Futures fs, String [][] domains) { return closeVecs(domains, compute_rowLayout(_key,_tmp_espc),fs); }
 
-  public int compute_rowLayout() {
-    int nchunk = _tmp_espc.length;
-    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 )
+
+  public static int compute_rowLayout(Key<AVec> k, long [] tmp_espc) {
+    int nchunk = tmp_espc.length;
+    while( nchunk > 1 && tmp_espc[nchunk-1] == 0 )
       nchunk--;
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
@@ -89,40 +125,78 @@ public class AppendableVec extends Vec {
     long x=0;                   // Total row count so far
     for( int i=0; i<nchunk; i++ ) {
       espc[i] = x;              // Start elem# for chunk i
-      x += _tmp_espc[i];        // Raise total elem count
+      x += tmp_espc[i];        // Raise total elem count
     }
     espc[nchunk]=x;             // Total element count in last
-    return ESPC.rowLayout(_key,espc);
+    return AVec.ESPC.rowLayout(k,espc);
   }
 
 
-  // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
-  // reads, plus computes rows-per-chunk, min/max/mean, etc.
-  public Vec close(int rowLayout, Futures fs) {
-    // Compute #chunks
-    int nchunk = _tmp_espc.length;
-    DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
-    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
-      nchunk--;
-      DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
-    }
 
-    // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, rowLayout, domain(), _type);
-    DKV.put(_key,vec,fs);       // Inject the header into the K/V store
-    return vec;
-  }
 
   // Default read/write behavior for AppendableVecs
   @Override protected boolean readable() { return false; }
   @Override protected boolean writable() { return true ; }
-  @Override public NewChunk chunkForChunkIdx(int cidx) { return new NewChunk(this,cidx); }
+
+  @Override
+  public String[] domain(int i) {
+    return new String[0];
+  }
+
+  @Override
+  public byte type(int colId) {
+    return 0;
+  }
+
+  @Override public AChunk chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
+
+  @Override
+  public Futures closeChunk(int cidx, AChunk c, Futures fs) {
+    throw new UnsupportedOperationException("should use closeChunks(NewChunk [] chks)");
+  }
+
+  @Override
+  public AVec doCopy() {
+    throw new UnsupportedOperationException("AppendableVec does not support copy.");
+  }
+
   // None of these are supposed to be called while building the new vector
   @Override public Value chunkIdx( int cidx ) { throw H2O.fail(); }
+
+  @Override
+  public boolean hasCol(int id) {
+    return false;
+  }
+
+  @Override
+  public RollupStats getRollups(int colId, boolean histo) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void setBad(int colId) {
+
+  }
+
   @Override public long length() { throw H2O.fail(); }
   @Override public int nChunks() { throw H2O.fail(); }
   @Override public int elem2ChunkIdx( long i ) { throw H2O.fail(); }
-  @Override protected long chunk2StartElem( int cidx ) { throw H2O.fail(); }
-  @Override public long byteSize() { return 0; }
+  @Override public long chunk2StartElem( int cidx ) { throw H2O.fail(); }
+  @Override public long byteSize(int colId) {
+    if(colId != 0) throw new ArrayIndexOutOfBoundsException();
+    return 0;
+  }
+
+  @Override
+  public void preWriting(int... colIds) {}
+
+  @Override
+  public Futures postWrite(Futures fs) {return fs;}
+
+
   @Override public String toString() { return "[AppendableVec, unknown size]"; }
+
+  public void setNCols(int newColCnt) {
+    throw H2O.unimpl();
+  }
 }

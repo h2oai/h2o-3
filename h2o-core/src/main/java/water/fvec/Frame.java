@@ -7,10 +7,10 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.util.*;
+import water.util.ArrayUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -60,14 +60,49 @@ import java.util.HashMap;
  *
  */
 public class Frame extends Lockable<Frame> {
-  static final class Names extends Iced {
+  public void reloadVecs() {
+    _vecs.reload();
+  }
+
+  public void setVec(String name, VecAry vec) {
+    _vecs.setVec(_names.getId(name),vec);
+  }
+
+  public void restructure(Names names, VecAry vvecs) {
+    _names = names;
+    _vecs = vvecs;
+  }
+
+  public static final class Names extends Iced {
     private String [] _names;
     private transient HashMap<String,Integer> _map;
-    boolean _defaultNames;
     int _n;
 
-    String getName(int i) {return _names == null?defaultColName(i):_names[i];}
-    int getId(String name) {
+    public Names(){this(0);}
+    public Names(int n) {_n = n;}
+    public Names(String [] names) {
+      _n = names.length;
+      _names = names;
+    }
+    public Names(int n, String [] names) {
+      _n = n;
+      _names = names;
+    }
+    public Names(Names ns) {
+      _names = ns._names;
+      _n = ns._n;
+    }
+
+    public int maxNameLen() {
+      if(_names == null) return getName(_n-1).length();
+      int len = 0;
+      for(String s:_names)
+        len = Math.max(len,s.length());
+      return len;
+    }
+
+    public String getName(int i) {return _names == null?defaultColName(i):_names[i];}
+    public int getId(String name) {
       if(_names == null)
         return defaultColId(name);
       if(_map == null) {
@@ -77,6 +112,10 @@ public class Frame extends Lockable<Frame> {
       }
       Integer res = _map.get(name);
       return res == null?-1:res.intValue();
+    }
+
+    public int hashCode(){
+      return _names == null?_n:Arrays.deepHashCode(_names);
     }
 
     public boolean defaultNames(){
@@ -168,21 +207,31 @@ public class Frame extends Lockable<Frame> {
 
     public String[] getNames(int[] c2) {return ArrayUtils.select(getNames(),c2);}
 
+    public int len() {return _n;}
+
+    public Names intersect(Names names) {
+      throw H2O.unimpl();
+    }
   }
   /** Vec names */
-  private Names _names;
+  public Names _names;
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
   private VecAry _vecs;
 
   public VecAry vecs(){return _vecs;}
 
-  public VecAry vecs(String[] names) {
+
+  public VecAry vecs(int... ids) {return _vecs.getVecs(ids);}
+  public VecAry vecs(String... names) {
     int [] ids = new int[names.length];
     for(int i = 0; i < names.length; ++i)
       ids[i] = _names.getId(names[i]);
     return _vecs.getVecs(ids);
   }
 
+  public VecAry vecs(Names names) {
+    throw H2O.unimpl();
+  }
   /**
    * Constructor for data with unnamed (default names) columns.
    * @param key
@@ -194,6 +243,11 @@ public class Frame extends Lockable<Frame> {
     _names = new Names();
   }
 
+  public Frame( Key key, Names names, VecAry vecs) {
+    super(key);
+    _vecs = vecs;
+    _names = new Names(names);
+  }
   /** Creates a frame with given key, names and vectors. */
   public Frame( Key key, String names[], VecAry vecs) {
     super(key);
@@ -219,10 +273,12 @@ public class Frame extends Lockable<Frame> {
   /** Deep copy of Vecs and Keys and Names (but not data!) to a new random Key.
    *  The resulting Frame does not share with the original, so the set of Vecs
    *  can be freely hacked without disturbing the original Frame. */
-  public Frame( Frame fr ) {
-    super( Key.<Frame>make() );
-    _names= (Names) fr._names.clone();
-    _vecs = (VecAry) fr.vecs().clone();
+  public Frame( Frame fr ) {this(Key.make(),fr);}
+
+  public Frame(Key k, Frame fr ) {
+    super( k );
+    _names=  new Names(fr._names);
+    _vecs = new VecAry(fr.vecs());
     _lastNameBig = fr._lastNameBig;
   }
 
@@ -263,8 +319,14 @@ public class Frame extends Lockable<Frame> {
   /** A single column name.
    *  @return the column name */
   public String name(int i) { return _names.getName(i); }
+  public int find(String s) { return _names.getId(s); }
 
 
+  // Add a bunch of vecs
+  public void add( String name, VecAry vecs) {
+    assert vecs.len() == 1;
+    add(new String[]{name},vecs);
+  }
   // Add a bunch of vecs
   public void add( String[] names, VecAry vecs) {
     _names.add(names);
@@ -292,7 +354,14 @@ public class Frame extends Lockable<Frame> {
    *  @return a new frame which collects vectors from this frame with desired names.
    *  @throws IllegalArgumentException if there is no vector with desired name in this frame.
    */
-  public Frame subframe(String[] names) { return new Frame(null, names,vecs(names)); }
+  public Frame subframe(String[] names) {
+    return new Frame(null, names,vecs(names));
+  }
+
+  public Frame subframe(Names names) {
+    names = names.intersect(_names);
+    return new Frame(null, names ,vecs(names));
+  }
 
 
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
@@ -352,11 +421,11 @@ public class Frame extends Lockable<Frame> {
     int [] cols;
     long [] lcols;
     if (ocols instanceof Frame) {
-      VecAry.VecReader v = ((Frame) ocols).vecs().vecReader(0);
+      VecAry.VecAryReader v = ((Frame) ocols).vecs().vecReader(true);
       int n = (int) v.length();
       lcols = new long[n];
       for (int i = 0; i < n; i++)
-        lcols[i] = v.at8(i);
+        lcols[i] = v.at8(i,0);
     }
     else if (ocols instanceof long[])
       lcols = (long[]) ocols;
@@ -401,32 +470,40 @@ public class Frame extends Lockable<Frame> {
     if (orows instanceof long[]) {
       final long [] lrows = (long[])orows;
       if(lrows[0] >=  0) {
-        ArrayList<Integer> lists [] = new ArrayList[_vecs.nChunks()];
-        final int [][]                      irows = new int[_vecs.nChunks()][];
-        long [] espc = _vecs.espc();
-        for(long l:lrows) {
-          int chunkId = _vecs.elem2ChunkId(l);
-          if(lists[chunkId] == null)
-            lists[chunkId] = new ArrayList<>();
-          lists[chunkId].add((int)(l-espc[chunkId]));
-        }
-        for(int i = 0; i < irows.length; ++i)
-          if(lists[i] != null) {
-            irows[i] = new int[lists[i].size()];
-            int k = 0;
-            for(int j:lists[i])
-              irows[i][k++] = j;
-          }
-        return new MRTask2() {
-          @Override
-          public void map(Chunk[] chks, NewChunkBlock nbc) {
-            int [] rows = irows[chks[0].cidx()];
-            if(rows != null) {
+        throw H2O.unimpl(); // TODO
+      } else {
+        for(int i = 0; i < lrows.length; ++i)
+          lrows[i] *=-1;
+        Arrays.sort(lrows);
+        return new MRTask(){
+          @Override public void map(Chunk [] chks, NewChunk [] ncs) {
+            int len = chks[0]._len;
+            long start = chks[0].start();
+            int j = Arrays.binarySearch(lrows,chks[0].start());
+            if(j < 0) j = -j -1;
+            int head = (int)(j - start); // 0:head are all in
+            // add head
+            for(int i = 0; i < chks.length; ++i)
+              chks[i].add2NewChunk(ncs[i],0,head);
+            int k = Arrays.binarySearch(lrows,chks[0].start()+len);
+            if(k < 0) k = -k -1;
+            int tail = (int)(k - start); // tail:len are all in
+            // head:tail some are out
+            if(head < tail) {
+              int [] rowIds = new int[tail-head];
+              int y = 0;
+              for(int x = head; x < tail; ++x) {
+                if(x + start == lrows[j]) j++;
+                else rowIds[y++] = x;
+              }
+              rowIds = Arrays.copyOf(rowIds,y);
               for(int i = 0; i < chks.length; ++i)
-                chks[i].add2NewChunk(nbc.getChunk(i),rows);
+                chks[i].add2NewChunk(ncs[i],rowIds);
             }
+            for(int i = 0; i < chks.length; ++i)
+              chks[i].add2NewChunk(ncs[i],tail,len);
           }
-        }.doAll(ArrayUtils.select(_vecs.types(), cols), _vecs).outputFrame(_names.getNames(cols), ArrayUtils.select(_vecs.domains(), cols));
+        }.doAll(ArrayUtils.select(_vecs.types(),cols),_vecs).outputFrame(new Names(_names.getNames(cols)),ArrayUtils.select(_vecs.domains(),cols));
       }
     }
     Frame frows = (Frame)orows;
@@ -434,7 +511,7 @@ public class Frame extends Lockable<Frame> {
     // Build column names for the result.
     VecAry vecs = (VecAry) _vecs.clone();
     vecs.addVecs(frows.vecs());
-    return new DeepSelect().doAll(ArrayUtils.select(_vecs.types(),cols),vecs).outputFrame(_names.getNames(cols),ArrayUtils.select(_vecs.domains(),cols));
+    return new DeepSelect().doAll(ArrayUtils.select(_vecs.types(),cols),vecs).outputFrame(new Names(_names.getNames(cols)),ArrayUtils.select(_vecs.domains(),cols));
   }
 
 
@@ -462,128 +539,64 @@ public class Frame extends Lockable<Frame> {
     }
 
     final int ncols = numCols();
-    final Vec[] vecs = vecs();
+    final VecAry vecs = _vecs;
     String[] coltypes = new String[ncols];
     String[][] strCells = new String[len+H][ncols];
     double[][] dblCells = new double[len+H][ncols];
     final BufferedString tmpStr = new BufferedString();
+
+    RollupStats [] rs = rollups?vecs.getRollups():null;
+    VecAry.VecAryReader vReader = _vecs.vecReader(true);
     for( int i=0; i<ncols; i++ ) {
-      if( DKV.get(_keys[i]) == null ) { // deleted Vec in Frame
-        coltypes[i] = "string";
-        for( int j=0; j<len+H; j++ ) dblCells[j][i] = TwoDimTable.emptyDouble;
-        for( int j=0; j<len; j++ ) strCells[j+H][i] = "NO_VEC";
-        continue;
-      }
-      Vec vec = vecs[i];
       if( rollups ) {
-        dblCells[0][i] = vec.min();
-        dblCells[1][i] = vec.mean();
-        dblCells[2][i] = vec.sigma();
-        dblCells[3][i] = vec.max();
-        dblCells[4][i] = vec.naCnt();
+        dblCells[0][i] = rs[i].min();
+        dblCells[1][i] = rs[i].mean();
+        dblCells[2][i] = rs[i].sigma();
+        dblCells[3][i] = rs[i].max();
+        dblCells[4][i] = rs[i].naCnt();
       }
-      switch( vec.get_type() ) {
+      switch( vecs.types()[i]) {
       case Vec.T_BAD:
         coltypes[i] = "string";
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = null; dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_STR :
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vReader.isNA(off+j,i) ? "" : vReader.atStr(tmpStr,off+j,i).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
         coltypes[i] = "string"; 
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vReader.isNA(off+j,i) ? "" : vReader.factor(off+j,i);  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vReader.isNA(off+j,i) ? "" : fmt.print(vReader.at8(off+j,i)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
-        coltypes[i] = vec.isInt() ? "long" : "double"; 
-        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+H][i] = null; }
+        coltypes[i] = _vecs.isInt(i) ? "long" : "double";
+        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = vReader.isNA(off+j,i) ? TwoDimTable.emptyDouble : vReader.at(off + j,i); strCells[j+H][i] = null; }
         break;
       case Vec.T_UUID:
         throw H2O.unimpl();
       default:
-        System.err.println("bad vector type during debug print: "+vec.get_type());
+        System.err.println("bad vector type during debug print: "+_vecs.types()[i]);
         throw H2O.fail();
       }
     }
-    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.clone(),coltypes,null, "", strCells, dblCells);
-  }
-
-
-  // Bulk (expensive) copy from 2nd cols into 1st cols.
-  // Sliced by the given cols & rows
-  private static class DeepSlice extends MRTask2<DeepSlice> {
-    final int  _cols[];
-    final long _rows[];
-    final boolean _isInt[];
-    DeepSlice( long rows[], int cols[], VecAry vecs) {
-      _cols=cols;
-      _rows=rows;
-      _isInt = new boolean[cols.length];
-      for( int i=0; i<cols.length; i++ )
-        _isInt[i] = vecs.isInt(cols[i]);
-    }
-
-    @Override public boolean logVerbose() { return false; }
-
-    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      long rstart = chks[0]._start;
-      int rlen = chks[0]._len;  // Total row count
-      int rx = 0;               // Which row to in/ex-clude
-      int rlo = 0;              // Lo/Hi for this block of rows
-      int rhi = rlen;
-      while (true) {           // Still got rows to include?
-        if (_rows != null) {   // Got a row selector?
-          if (rx >= _rows.length) break; // All done with row selections
-          long r = _rows[rx++];// Next row selector
-          if (r < rstart) continue;
-          rlo = (int) (r - rstart);
-          rhi = rlo + 1;        // Stop at the next row
-          while (rx < _rows.length && (_rows[rx] - rstart) == rhi && rhi < rlen) {
-            rx++;
-            rhi++;      // Grab sequential rows
-          }
-        }
-        // Process this next set of rows
-        // For all cols in the new set;
-        BufferedString tmpStr = new BufferedString();
-        for (int i = 0; i < _cols.length; i++) {
-          Chunk oc = chks[_cols[i]];
-          NewChunk nc = nchks[i];
-          if (_isInt[i] == 1) { // Slice on integer columns
-            for (int j = rlo; j < rhi; j++)
-              if (oc._vec.isUUID()) nc.addUUID(oc, j);
-              else if (oc.isNA(j)) nc.addNA();
-              else nc.addNum(oc.at8(j), 0);
-          } else if (oc._vec.isString()) {
-            for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(tmpStr, j));
-          } else {// Slice on double columns
-            for (int j = rlo; j < rhi; j++)
-              nc.addNum(oc.atd(j));
-          }
-        }
-        rlo = rhi;
-        if (_rows == null) break;
-      }
-    }
+    return new TwoDimTable("Frame "+_key,numRows()+" rows and "+numCols()+" cols",rowHeaders,/* clone the names, the TwoDimTable will replace nulls with ""*/_names.getNames().clone(),coltypes,null, "", strCells, dblCells);
   }
   /**
    *  Last column is a bit vec indicating whether or not to take the row.
    */
-  public static class DeepSelect extends MRTask2<DeepSelect> {
-    @Override public void map( Chunk chks[], NewChunkBlock nchks) {
+  public static class DeepSelect extends MRTask<DeepSelect> {
+    @Override public void map( Chunk chks[], NewChunk [] ncs) {
       Chunk pred = chks[chks.length - 1];
       int[] ids = new int[pred._len];
       int selected = pred.nonzeros(ids);
       ids = Arrays.copyOf(ids,selected);
       for(int i = 0; i < chks.length; ++i)
-        chks[i].add2NewChunk(nchks.getChunk(i),ids);
+        chks[i].add2NewChunk(ncs[i],ids);
     }
   }
 
@@ -619,11 +632,11 @@ public class Frame extends Lockable<Frame> {
       _curChkIdx=0;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
-      Vec vs[] = vecs();
+
       if( headers ) {
-        sb.append('"').append(_names[0]).append('"');
-        for(int i = 1; i < vs.length; i++)
-          sb.append(',').append('"').append(_names[i]).append('"');
+        sb.append('"').append(_names.getName(0)).append('"');
+        for(int i = 1; i < numCols(); i++)
+          sb.append(',').append('"').append(_names.getName(i)).append('"');
         sb.append('\n');
       }
       _line = sb.toString().getBytes();
@@ -631,17 +644,18 @@ public class Frame extends Lockable<Frame> {
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
-      Vec vs[] = vecs();
+      VecAry vecs = _vecs;
       BufferedString tmpStr = new BufferedString();
-      for( int i = 0; i < vs.length; i++ ) {
+      VecAry.VecAryReader vReader = vecs.vecReader(false);
+      for( int i = 0; i < vecs.len(); i++ ) {
         if(i > 0) sb.append(',');
-        if(!vs[i].isNA(_row)) {
-          if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
-          else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
-          else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(tmpStr, _row)).append('"');
+        if(!vReader.isNA(_row,i)) {
+          if( vecs.isCategorical(i) ) sb.append('"').append(vReader.factor(_row,i)).append('"');
+          else if( vecs.isUUID(i) ) sb.append(PrettyPrint.UUID(vReader.at16l(_row,i), vReader.at16h(_row,i)));
+          else if( vecs.isInt(i) ) sb.append(vReader.at8(_row,i));
+          else if (vecs.isString(i)) sb.append('"').append(vReader.atStr(tmpStr, _row,i)).append('"');
           else {
-            double d = vs[i].at(_row);
+            double d = vReader.at(_row,i);
             // R 3.1 unfortunately changed the behavior of read.csv().
             // (Really type.convert()).
             //
@@ -676,16 +690,6 @@ public class Frame extends Lockable<Frame> {
       _curChkIdx = vecs().elem2ChunkId(_row);
       _line = getBytesForRow();
       _position = 0;
-
-      // Flush non-empty remote chunk if we're done with it.
-      if (isLastRowOfCurrentNonEmptyChunk(_curChkIdx, _row)) {
-        for (Vec v : vecs()) {
-          Key k = v.chunkKey(_curChkIdx);
-          if( !k.home() )
-            H2O.raw_remove(k);
-        }
-      }
-
       _row++;
 
       return _line.length;

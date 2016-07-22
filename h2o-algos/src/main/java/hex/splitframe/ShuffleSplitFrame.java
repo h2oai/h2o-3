@@ -70,7 +70,7 @@ public class ShuffleSplitFrame {
       for( int c=0; c<ncols; c++ ) {
         AppendableVec av = mr.appendables()[i*ncols + c];
         av.setDomain(vecs[c].domain());
-        nvecs[c] = av.close(rowLayout,fs);
+        nvecs[c] = av.closeVecs(rowLayout,fs);
       }
       frames[i] = new Frame(keys[i],fr.names(),nvecs);
       DKV.put(frames[i],fs);
