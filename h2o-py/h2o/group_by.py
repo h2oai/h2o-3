@@ -7,8 +7,8 @@ Group-by operations on an H2OFrame.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .expr import ExprNode
 import h2o
+from h2o.expr import ExprNode
 from h2o.utils.compatibility import *  # NOQA
 
 

@@ -1,7 +1,10 @@
-urllib3
+colorama
+future
 requests
-grip
 tabulate
+
+urllib3
+grip
 wheel
 numpy
 scipy
@@ -11,7 +14,6 @@ patsy
 sklearn
 six
 seaborn
-future
 matplotlib
 sphinx
 numpydoc
@@ -19,4 +21,3 @@ mysqlclient
 recommonmark
 sphinx_rtd_theme
 sphinxcontrib-osexample
-colorama

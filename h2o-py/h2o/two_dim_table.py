@@ -1,9 +1,17 @@
-"""A two dimensional table having row and column headers."""
-from __future__ import print_function
-from __future__ import absolute_import
+# -*- encoding: utf-8 -*-
+"""
+A two dimensional table having row and column headers.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import copy
-from .display import H2ODisplay
-from .utils.shared_utils import _is_list_of_lists, can_use_pandas
+
+from h2o.display import H2ODisplay
+from h2o.utils.shared_utils import _is_list_of_lists, can_use_pandas
+from h2o.utils.compatibility import *  # NOQA
 
 
 class H2OTwoDimTable(object):

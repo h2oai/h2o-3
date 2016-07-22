@@ -1,8 +1,16 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from opcode import *
-from six import PY2
+# -*- encoding: utf-8 -*-
+"""
+Disassembly support.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+from opcode import *  # an undocumented builtin module
 import inspect
+
+from h2o.utils.compatibility import *
 from .expr import ExprNode, ASTId
 from . import h2o
 
@@ -26,31 +34,32 @@ BYTECODE_INSTRS = {
 }
 
 
-def is_bytecode_instruction(instr): return instr in BYTECODE_INSTRS
+def is_bytecode_instruction(instr):
+    return instr in BYTECODE_INSTRS
 
+def is_comp(instr):
+    return "COMPARE" in instr
 
-def is_comp(instr):                 return "COMPARE" in instr
+def is_binary(instr):
+    return "BINARY" in instr
 
+def is_unary(instr):
+    return "UNARY" in instr
 
-def is_binary(instr):               return "BINARY" in instr
+def is_func(instr):
+    return "CALL_FUNCTION" == instr
 
+def is_load_fast(instr):
+    return "LOAD_FAST" == instr
 
-def is_unary(instr):                return "UNARY" in instr
+def is_attr(instr):
+    return "LOAD_ATTR" == instr
 
+def is_load_global(instr):
+    return "LOAD_GLOBAL" == instr
 
-def is_func(instr):                 return "CALL_FUNCTION" == instr
-
-
-def is_load_fast(instr):            return "LOAD_FAST" == instr
-
-
-def is_attr(instr):                 return "LOAD_ATTR" == instr
-
-
-def is_load_global(instr):          return "LOAD_GLOBAL" == instr
-
-
-def is_return(instr):               return "RETURN_VALUE" == instr
+def is_return(instr):
+    return "RETURN_VALUE" == instr
 
 
 def _bytecode_decompile_lambda(co):
@@ -157,8 +166,8 @@ def _func_bc(nargs, idx, ops, keys):
             nargs -= 1
     op = ops[idx][1][0]
     frcls = h2o.H2OFrame
-    if op not in dir(frcls):
-        raise ValueError("Unimplemented: op <{}> not bound in H2OFrame".format(op))
+    if not hasattr(frcls, op):
+        raise ValueError("Unimplemented: op <%s> not bound in H2OFrame" % op)
     if is_attr(ops[idx][0]):
         if PY2:
             argspec = inspect.getargspec(getattr(frcls, op))

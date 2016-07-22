@@ -1,7 +1,10 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
+"""
+Rapids expressions.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
 import collections
@@ -9,6 +12,7 @@ import copy
 import gc
 import math
 import sys
+
 import tabulate
 
 import h2o
@@ -120,7 +124,7 @@ class ExprNode(object):
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         gc_ref_cnt = len(gc.get_referrers(self))
         if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
-            self._cache._id = _py_tmp_key(append=h2o.conn().session_id)
+            self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
         return exec_str
 
@@ -200,7 +204,7 @@ class ExprNode(object):
         -------
           The JSON response (as a python dictionary) of the Rapids execution
         """
-        return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.conn().session_id})
+        return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.connection().session_id})
 
 
 class ASTId:

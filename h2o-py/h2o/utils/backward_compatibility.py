@@ -1,9 +1,9 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
 """
 This module provides helper functions to write code that is backward-compatible.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
 from __future__ import division, print_function, absolute_import

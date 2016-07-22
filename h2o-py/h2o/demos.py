@@ -7,11 +7,11 @@ Interactive demos for the h2o-py library.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import linecache
 import os
 import sys
 
 import h2o
-import linecache
 from h2o.utils.compatibility import *  # NOQA
 
 

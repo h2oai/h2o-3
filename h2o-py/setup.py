@@ -64,11 +64,12 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # run-time dependencies
-    install_requires=['requests', 'tabulate', 'future', 'six', "colorama"],
+    install_requires=["requests", "tabulate", "future", "colorama"],
 
     # Additional data files to include into the distribution
     data_files=[
         ("h2o_jar", ["../build/h2o.jar"]),
         ("h2o_data", ["h2o/h2o_data/iris.csv", "h2o/h2o_data/prostate.csv"]),
+        ("", ["../LICENSE"]),
     ],
 )

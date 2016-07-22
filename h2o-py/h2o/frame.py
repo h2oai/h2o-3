@@ -1,28 +1,34 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
+"""
+H2O data frame.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-import requests
 import collections
-from io import StringIO
 import csv
+import functools
 import imp
 import os
-import tempfile
 import sys
+import tempfile
 import traceback
+import warnings
+from io import StringIO
+
+import requests
+
+
+import h2o
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, \
     _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
 from .display import H2ODisplay
 from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
-import h2o
 from h2o.utils.compatibility import *  # NOQA
-from functools import reduce
-import warnings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -968,7 +974,10 @@ class H2OFrame(object):
         -------
           An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
         """
-        return reduce(H2OFrame.__or__, (self == i for i in item)) if _is_list(item) else self == item
+        if is_listlike(item):
+            return functools.reduce(H2OFrame.__or__, (self == i for i in item))
+        else:
+            return self == item
 
     def kfold_column(self, n_folds=3, seed=-1):
         """Build a fold assignments column for cross-validation. This call will produce a
@@ -1073,11 +1082,11 @@ class H2OFrame(object):
           A local python string, each line is a row and each element separated by commas,
           containing this H2OFrame instance's data.
         """
-        url = h2o.conn().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+        url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
         # TODO: this should be moved into H2OConnection class
         return requests.get(url, headers={'User-Agent': 'H2O Python client/' + sys.version.replace('\n', '')},
-                            auth=h2o.conn()._auth,
-                            verify=h2o.conn()._verify_ssl_cert, stream=True).text
+                            auth=h2o.connection()._auth,
+                            verify=h2o.connection()._verify_ssl_cert, stream=True).text
 
     def __getitem__(self, item):
         """Frame slicing. Supports R-like row and column slicing.
