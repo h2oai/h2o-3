@@ -7,7 +7,7 @@ H2O lazily slices out columns of data and will only materialize a shared copy up
    .. code-block:: r
 	
 	> library(h2o)
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	> path <- "data/iris/iris_wheader.csv"
 	> df <- h2o.importFile(path)
 

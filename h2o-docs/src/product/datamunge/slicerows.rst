@@ -7,9 +7,9 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
    .. code-block:: r
    
 	> library(h2o)
-	> path <- "data/iris/iris_wheader.csv"
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	> df <- h2o.importFile(path)
+	> path <- "data/iris/iris_wheader.csv"
 
 	# Slice 1 row by index. 
 	> c1 <- df[15,]

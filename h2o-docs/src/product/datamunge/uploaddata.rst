@@ -9,7 +9,7 @@ Run the following command to load data that resides on the same machine that is 
    .. code-block:: r
 	
 	> library(h2o)
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	> irisPath = "../../../smalldata/iris/iris_wheader.csv"
 	> iris.hex = h2o.uploadFile(path = irisPath, destination_frame = "iris.hex")
 	  

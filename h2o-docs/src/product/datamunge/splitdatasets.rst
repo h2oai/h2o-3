@@ -9,7 +9,7 @@ Note that when splitting frames, H2O does not give an exact split. It's designed
    .. code-block:: r
    
 	> library(h2o)
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	
 	# Import the prostate dataset
 	> prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", destination_frame = "prostate.hex")

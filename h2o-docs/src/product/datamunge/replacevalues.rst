@@ -8,7 +8,7 @@ This example shows how to replace numeric values in a frame of data. Note that i
    
 	> library(h2o)
 	> path <- "data/iris/iris_wheader.csv"
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	> df <- h2o.importFile(path)
 
 	# Replace a single numerical datum. Note that columns and rows start at 0, so in the example below, the value in the 15th row and 3rd column will be set to 2.0.

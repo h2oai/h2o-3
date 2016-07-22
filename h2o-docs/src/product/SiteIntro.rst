@@ -53,13 +53,139 @@ learn more:
    web interface, Flow. This interface is similar to IPython notebooks,
    and allows you to create a visual workflow to share with others.
 
--  `Launch from the command line <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`_: This document describes some of the additional options that you can configure when launching H2O (for example, to specify a different directory for saved Flow data, allocate more memory, or use a flatfile for quick configuration of a cluster).
+-  `Launch from the command line <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`_: This document describes some of the additional options that you can configure when launching H2O (for example, to specify a different directory for saved Flow data, to allocate more memory, or to use a flatfile for quick configuration of a cluster).
 
 -  `Algorithms <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md>`_: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
+-  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git. 
+
+New User Quick Start
+~~~~~~~~~~~~~~~~~~~~
+
+New users can follow the steps below to quickly get up and running with H2O directly from the **h2o-3** repository. These steps guide you through cloning the repository, starting H2O, and importing a dataset. Once you're up and running, you'll be better able to follow examples included within this user guide.
+
+1. In a terminal window, create a folder for the H2O repository. The example below creates a folder called "repos" on the desktop.
+
+::
+
+   user$ mkdir ~/Desktop/repos
+   
+2. Change directories to that new folder, and then clone the repository. Notice that the prompt changes when you change directories.
+
+::
+
+    user$ cd ~/Desktop/repos
+    repos user$ git clone https://github.com/h2oai/h2o-3.git
+
+3. After the repo is cloned, change directories to the **h2o** folder.
+
+::
+
+    repos user$ cd h2o-3
+    h2o-3 user$
+
+4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide as well as within the `Booklets <http://www.h2o.ai/resources/>`_. 
+
+::
+
+   h2o-3 user$ ./gradlew syncSmalldata
+
+At this point, determine whether you want to complete this quick start in either R or Python, and run the corresponding commands below from either the R or Python tab.
+
+.. example-code::
+   .. code-block:: r
+
+    # Download and install R:
+    # 1. Go to http://cran.r-project.org/mirrors.html.
+    # 2. Select your closest local mirror.
+    # 3. Select your operating system (Linux, OS X, or Windows).
+    # 4. Depending on your OS, download the appropriate file, along with any required packages.
+    # 5. When the download is complete, unzip the file and install.
+
+    # Start R
+    h2o-3 user$ r
+    ...
+    Type 'demo()' for some demos, 'help()' for on-line help, or
+    'help.start()' for an HTML browser interface to help.
+    Type 'q()' to quit R.
+    >
+ 
+    # Copy and paste the following commands in R to download dependency packages.
+    > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+    > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
+ 
+    # Run the following command to load the H2O:
+    > library(h2o)
+
+    # Run the following command to initialize H2O on your local machine (single-node cluster) using all available CPUs.
+    > h2o.init(nthreads=-1)
+ 
+    # Import the Iris (with headers) dataset.
+    > path <- "smalldata/iris/iris_wheader.csv"
+    > iris <- h2o.importFile(path)
+
+    # View a summary of the imported dataset.
+    > print(iris)
+
+      sepal_len    sepal_wid    petal_len    petal_wid        class
+    -----------  -----------  -----------  -----------  -----------
+            5.1          3.5          1.4          0.2  Iris-setosa
+            4.9          3            1.4          0.2  Iris-setosa
+            4.7          3.2          1.3          0.2  Iris-setosa
+            4.6          3.1          1.5          0.2  Iris-setosa
+            5            3.6          1.4          0.2  Iris-setosa
+            5.4          3.9          1.7          0.4  Iris-setosa
+            4.6          3.4          1.4          0.3  Iris-setosa
+            5            3.4          1.5          0.2  Iris-setosa
+            4.4          2.9          1.4          0.2  Iris-setosa
+            4.9          3.1          1.5          0.1  Iris-setosa
+    [150 rows x 5 columns]
+    >
+
+   .. code-block:: python
+
+    # Before starting Python, run the following commands to install dependencies.
+    # Prepend these commands with `sudo` only if necessary.
+    h2o-3 user$ [sudo] pip install -U requests
+    h2o-3 user$ [sudo] pip install -U tabulate
+    h2o-3 user$ [sudo] pip install -U future
+    h2o-3 user$ [sudo] pip install -U six
+
+    # Start python
+    h2o-3 user$ python
+    >>> 
+
+    # Run the following command to import the H2O module:
+    >>> import h2o
+
+    # Run the following command to initialize H2O on your local machine (single-node cluster).
+    >>> h2o.init()
+
+    # Import the Iris (with headers) dataset.
+    >>> path = "smalldata/iris/iris_wheader.csv"
+    >>> iris = h2o.import_file(path=path)
+
+    # View a summary of the imported dataset.
+    >>> iris.summary
+      sepal_len    sepal_wid    petal_len    petal_wid        class
+    -----------  -----------  -----------  -----------  -----------
+            5.1          3.5          1.4          0.2  Iris-setosa
+            4.9          3            1.4          0.2  Iris-setosa
+            4.7          3.2          1.3          0.2  Iris-setosa
+            4.6          3.1          1.5          0.2  Iris-setosa
+            5            3.6          1.4          0.2  Iris-setosa
+            5.4          3.9          1.7          0.4  Iris-setosa
+            4.6          3.4          1.4          0.3  Iris-setosa
+            5            3.4          1.5          0.2  Iris-setosa
+            4.4          2.9          1.4          0.2  Iris-setosa
+            4.9          3.1          1.5          0.1  Iris-setosa
+
+    [150 rows x 5 columns]
+    <bound method H2OFrame.summary of >
+    >>>
+
 Experienced Users
 -----------------
-
 
 If you've used previous versions of H2O, the following links will help
 guide you through the process of upgrading to H2O 3.0.

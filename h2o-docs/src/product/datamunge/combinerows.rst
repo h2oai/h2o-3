@@ -9,7 +9,7 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
    .. code-block:: r
    
 	> library(h2o)
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	
 	# Import exsiting training and testing datasets
 	> ecg1Path = "../../../smalldata/anomaly/ecg_discord_train.csv"

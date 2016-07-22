@@ -8,7 +8,7 @@ The import function is a parallelized reader and pulls information from the serv
 	
 	# To import small iris data file from H2O’s package:
 	> library(h2o)
-	> h2o.init()
+	> h2o.init(nthreads=-1)
 	> irisPath = system.file("extdata", "iris.csv", package="h2o")
 	> iris.hex = h2o.importFile(path = irisPath, destination_frame = "iris.hex")
 	  
