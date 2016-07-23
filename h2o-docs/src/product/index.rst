@@ -49,7 +49,7 @@ should be added to the group automatically.
 
 .. toctree::
 
-   flow-web-ui
+   flow
  
 .. toctree::
 
