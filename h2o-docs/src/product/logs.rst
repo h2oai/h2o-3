@@ -1,4 +1,4 @@
-.. _H2O-DevLogs:
+.. _logs:
 
 Downloading Logs
 ================

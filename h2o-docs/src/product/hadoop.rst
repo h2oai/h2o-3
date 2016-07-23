@@ -378,4 +378,6 @@ YARN to confirm the changes.
 Accessing Logs
 ~~~~~~~~~~~~~~
 
-To learn how to access logs in YARN, refer to :ref:`H2O-DevLogs`.
+Access logs for a YARN job with the ``yarn logs -applicationId <application_id>``
+command from a terminal.  Note that this command must be run by
+the same userid as the job owner, and only after the job has finished.

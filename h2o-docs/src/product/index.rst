@@ -39,9 +39,9 @@ should be added to the group automatically.
    :maxdepth: 3
    
    StartH2O
-   H2O-DevS3Creds
-   H2O-DevHadoop
-   H2O-DevDocker
+   aws
+   hadoop
+   docker
 
 .. toctree::
 
@@ -69,7 +69,7 @@ should be added to the group automatically.
    
 .. toctree::
 
-   H2O-DevLogs
+   logs
 
 .. toctree::
    :maxdepth: 3
