@@ -7,11 +7,12 @@ Utilities for checking types of variables.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import linecache
+import re
 import sys
 
 from h2o.utils.compatibility import *  # NOQA
-# noinspection PyProtectedMember
-from h2o.utils.compatibility import _native_unicode, _native_long
+
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
            "assert_is_numeric", "assert_is_str", "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric",
@@ -19,6 +20,8 @@ __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "a
 
 
 if PY2:
+    # noinspection PyProtectedMember
+    from h2o.utils.compatibility import _native_unicode, _native_long
     _str_type = (str, _native_unicode)
     _int_type = (int, _native_long)
     _num_type = (int, _native_long, float)
@@ -130,9 +133,6 @@ def _get_variable_name():
     try:
         raise RuntimeError("Catch me!")
     except RuntimeError:
-        import linecache
-        import re
-
         # Walk up the stacktrace until we are outside of this file
         tb = sys.exc_info()[2]
         assert tb.tb_frame.f_code.co_name == "_get_variable_name"
