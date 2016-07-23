@@ -45,7 +45,7 @@ should be added to the group automatically.
 
 .. toctree::
 
-   datamunge/top
+   data-munging
 
 .. toctree::
 
@@ -53,7 +53,7 @@ should be added to the group automatically.
  
 .. toctree::
 
-   datascience/top
+   data-science
 
 .. toctree::
 
