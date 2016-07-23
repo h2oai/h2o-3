@@ -65,7 +65,7 @@ should be added to the group automatically.
 
 .. toctree::
 
-   pojo-quickstart
+   pojo-quick-start
    
 .. toctree::
 
