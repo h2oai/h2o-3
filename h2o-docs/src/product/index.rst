@@ -28,13 +28,12 @@ should be added to the group automatically.
    
 .. toctree::
    :maxdepth: 3
-
-   Architecture
-   
-.. toctree::
-   :maxdepth: 3
    
    Download
+   
+.. toctree::
+
+   Videos
    
 .. toctree::
    :maxdepth: 3
@@ -73,8 +72,9 @@ should be added to the group automatically.
    H2O-DevLogs
 
 .. toctree::
+   :maxdepth: 3
 
-   Migration
+   Architecture
    
 .. toctree::
 
@@ -90,7 +90,7 @@ should be added to the group automatically.
 
 .. toctree::
 
-   Videos
+   Migration
    
 .. toctree::
 
