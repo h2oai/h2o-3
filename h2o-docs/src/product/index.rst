@@ -24,21 +24,21 @@ should be added to the group automatically.
 .. toctree::
    :maxdepth: 3
    
-   SiteIntro
+   welcome
    
 .. toctree::
    :maxdepth: 3
    
-   Download
+   downloading
    
 .. toctree::
 
-   Videos
+   quick-start-videos
    
 .. toctree::
    :maxdepth: 3
    
-   StartH2O
+   starting-h2o
    aws
    hadoop
    docker
@@ -49,7 +49,7 @@ should be added to the group automatically.
 
 .. toctree::
 
-   Flow
+   flow-web-ui
  
 .. toctree::
 
@@ -57,15 +57,15 @@ should be added to the group automatically.
 
 .. toctree::
 
-   CrossValidation
+   cross-validation
 
 .. toctree::   
 
-   GridSearch
+   grid-search
 
 .. toctree::
 
-   POJO_QuickStart
+   pojo-quickstart
    
 .. toctree::
 
@@ -74,15 +74,15 @@ should be added to the group automatically.
 .. toctree::
    :maxdepth: 3
 
-   Architecture
+   architecture
    
 .. toctree::
 
-   Security
+   security
    
 .. toctree::
 
-   FAQ
+   faq
    
 .. toctree::
 
@@ -90,9 +90,9 @@ should be added to the group automatically.
 
 .. toctree::
 
-   Migration
+   migrating
    
 .. toctree::
 
-   API-Reference
+   api-reference
 
