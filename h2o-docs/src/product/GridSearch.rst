@@ -1,8 +1,8 @@
-Grid Search (Hyperparameter Search) API
-=======================================
+Grid (Hyperparameter) Search
+============================
 
-REST
-----
+REST API
+--------
 
 The current implementation of the grid search REST API exposes the
 following endpoints:
