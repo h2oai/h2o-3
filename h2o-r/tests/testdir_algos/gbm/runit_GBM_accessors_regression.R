@@ -25,19 +25,6 @@ test.gbm.regr.accessors <- function() {
   expect_true(mse.valid.xval.T["train"]==mse.basic)
   expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
-  Log.info("R^2...")
-  r2.basic <- h2o.r2(cars.gbm)
-  print(r2.basic)
-  expect_warning(h2o.r2(cars.gbm, valid = TRUE))
-  r2.valid.F <- h2o.r2(cars.gbm.valid)
-  r2.valid.T <- h2o.r2(cars.gbm.valid,valid = TRUE)
-  print(r2.valid.T)
-  expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
-  r2.valid.xval.T <- h2o.r2(cars.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-  expect_true(length(r2.valid.xval.T)==3)
-  expect_true(r2.valid.xval.T["train"]==r2.basic)
-  expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
-
   Log.info("Mean Residual Deviance...")
   mean_residual_deviance.basic <- h2o.mean_residual_deviance(cars.gbm)
   print(mean_residual_deviance.basic)

@@ -32,20 +32,6 @@ test.gbm.bin.accessors <- function() {
   expect_true(mse.valid.xval.T["train"]==mse.basic)
   expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
-  Log.info("R^2...")
-  r2.basic <- h2o.r2(pros.gbm)
-  print(r2.basic)
-  expect_warning(h2o.r2(pros.gbm, valid = TRUE))
-  r2.valid.F <- h2o.r2(pros.gbm.valid)
-  r2.valid.T <- h2o.r2(pros.gbm.valid,valid = TRUE)
-  print(r2.valid.T)
-  print( paste0( "Expect Equal: ", r2.basic, " == ", r2.valid.F) )
-  expect_true(r2.basic==r2.valid.F) # basic should equal valid with valid = FALSE
-  r2.valid.xval.T <- h2o.r2(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-  expect_true(length(r2.valid.xval.T)==3)
-  expect_true(r2.valid.xval.T["train"]==r2.basic)
-  expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
-
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(pros.gbm)
   print(ll.basic)

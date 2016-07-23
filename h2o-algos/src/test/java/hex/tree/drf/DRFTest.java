@@ -518,7 +518,6 @@ public class DRFTest extends TestUtil {
     int[] outputdepths = new int[totalLength];
     boolean[] outputrebalanceme = new boolean[totalLength];
     int[] outputntrees = new int[totalLength];
-    double[] R2 = new double[totalLength];
     int c = 0;
     for (int max_depth : max_depths) {
       for (int ntree: ntrees) {
@@ -547,7 +546,6 @@ public class DRFTest extends TestUtil {
             DRFModel drf = job.trainModel().get();
             assertEquals(drf._output._ntrees, parms._ntrees);
             ModelMetricsRegression mm = (ModelMetricsRegression) drf._output._training_metrics;
-            R2[c] = (double) Math.round(mm.r2() * 10000d) / 10000d;
             int actualChunk = job.train().anyVec().nChunks();
             drf.delete();
 
@@ -561,7 +559,7 @@ public class DRFTest extends TestUtil {
             outputrebalanceme[c] = rebalanceMe;
             outputntrees[c] = drf._output._ntrees;
             Log.info("Iteration " + (c + 1) + " out of " + executionTimes.length);
-            Log.info(" DEPTH: " + outputdepths[c] + " NTREES: "+ outputntrees[c] + " CHUNKS: " + outputchunks[c] + " EXECUTION TIME: " + executionTimes[c] + " R2: " + R2[c] + " Rebalanced: " + rebalanceMe + " WarmedUp: " + warmUp);
+            Log.info(" DEPTH: " + outputdepths[c] + " NTREES: "+ outputntrees[c] + " CHUNKS: " + outputchunks[c] + " EXECUTION TIME: " + executionTimes[c] + " Rebalanced: " + rebalanceMe + " WarmedUp: " + warmUp);
             c++;
           }
         }
@@ -575,10 +573,10 @@ public class DRFTest extends TestUtil {
     try {
       FileWriter fileWriter = new FileWriter(fileName);
       BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-      bufferedWriter.write("max_depth,ntrees,nbins,min_rows,chunks,execution_time,r2,rebalanceMe,warmUp");
+      bufferedWriter.write("max_depth,ntrees,nbins,min_rows,chunks,execution_time,rebalanceMe,warmUp");
       bufferedWriter.newLine();
       for (int i = 0; i < executionTimes.length; i++) {
-        bufferedWriter.write(outputdepths[i] +"," + outputntrees[i] + "," + 1000 + ","+ 10 + "," + outputchunks[i] + "," + executionTimes[i] +"," +R2[i] +","+(outputrebalanceme[i]? 1:0)+","+(warmUp?1:0));
+        bufferedWriter.write(outputdepths[i] +"," + outputntrees[i] + "," + 1000 + ","+ 10 + "," + outputchunks[i] + "," + executionTimes[i] +"," +","+(outputrebalanceme[i]? 1:0)+","+(warmUp?1:0));
         bufferedWriter.newLine();
       }
       bufferedWriter.close();
@@ -800,7 +798,6 @@ public class DRFTest extends TestUtil {
 
   static double _AUC = 1.0;
   static double _MSE = 0.041294642857142856;
-  static double _R2 = 0.8313802083333334;
   static double _LogLoss = 0.14472835908293025;
 
   @Test
@@ -819,7 +816,6 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
-      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       drf = new DRF(parms).trainModel().get();
@@ -828,7 +824,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
-      assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
     } finally {
@@ -856,7 +851,6 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
-      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       drf = new DRF(parms).trainModel().get();
@@ -865,7 +859,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
-      assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
     } finally {
@@ -893,7 +886,6 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 2; //in terms of weighted rows
       parms._max_depth = 2;
       parms._ntrees = 3;
-      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       drf = new DRF(parms).trainModel().get();
@@ -902,7 +894,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
-      assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
     } finally {
@@ -938,7 +929,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(_AUC, mm.auc_obj()._auc, 1e-8);
       assertEquals(_MSE, mm.mse(), 1e-8);
-      assertEquals(_R2, mm.r2(), 1e-6);
       assertEquals(_LogLoss, mm.logloss(), 1e-6);
 
     } finally {
@@ -965,7 +955,6 @@ public class DRFTest extends TestUtil {
       parms._min_rows = 1;
       parms._max_depth = 2;
       parms._ntrees = 3;
-      parms._r2_stopping = Double.MAX_VALUE; //don't stop early
 
       // Build a first model; all remaining models should be equal
       drf = new DRF(parms).trainModel().get();
@@ -975,7 +964,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(1.0, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.0290178571428571443, mm.mse(), 1e-8);
-      assertEquals(0.8815104166666666, mm.r2(), 1e-6);
       assertEquals(0.10824081452821664, mm.logloss(), 1e-6);
 
     } finally {
@@ -1012,7 +1000,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._training_metrics;
       assertEquals(1.0, mm.auc_obj()._auc, 1e-8);
       assertEquals(0.05823863636363636, mm.mse(), 1e-8);
-      assertEquals(0.7651041666666667, mm.r2(), 1e-6);
       assertEquals(0.21035264541934587, mm.logloss(), 1e-6);
 
 
@@ -1023,7 +1010,6 @@ public class DRFTest extends TestUtil {
       // Non-OOB
       assertEquals(1, mm2.auc_obj()._auc, 1e-8);
       assertEquals(0.0154320987654321, mm2.mse(), 1e-8);
-      assertEquals(0.93827160493827166, mm2.r2(), 1e-8);
       assertEquals(0.08349430638608361, mm2.logloss(), 1e-8);
 
       pred.remove();
@@ -1068,7 +1054,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm = (ModelMetricsBinomial)drf._output._cross_validation_metrics;
       assertEquals(0.7276154565296726, mm.auc_obj()._auc, 1e-8); // 1 node
       assertEquals(0.21211607823987555, mm.mse(), 1e-8);
-      assertEquals(0.14939930970822446, mm.r2(), 1e-6);
       assertEquals(0.6121968624307211, mm.logloss(), 1e-6);
 
     } finally {
@@ -1152,7 +1137,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
       assertEquals(mm1.auc_obj()._auc, mm2.auc_obj()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
-      assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
       //TODO: add check: the correct number of individual models were built. PUBDEV-1690
@@ -1295,7 +1279,6 @@ public class DRFTest extends TestUtil {
       ModelMetricsBinomial mm2 = (ModelMetricsBinomial)drf2._output._cross_validation_metrics;
       assertEquals(mm1.auc_obj()._auc, mm2.auc_obj()._auc, 1e-12);
       assertEquals(mm1.mse(), mm2.mse(), 1e-12);
-      assertEquals(mm1.r2(), mm2.r2(), 1e-12);
       assertEquals(mm1.logloss(), mm2.logloss(), 1e-12);
 
     } finally {
@@ -1375,7 +1358,6 @@ public class DRFTest extends TestUtil {
       parms._seed = 234;
       parms._min_rows = 2;
       parms._max_depth = 5;
-      parms._r2_stopping = 2;
       parms._ntrees = 5;
       parms._mtries = 3;
       parms._sample_rate = 0.5f;

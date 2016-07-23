@@ -46,7 +46,6 @@ test.pubdev.1829 <- function(conn){
   b <- model3@model$validation_metrics
 
   expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
   expect_equal(a@metrics$logloss, b@metrics$logloss)
 
   

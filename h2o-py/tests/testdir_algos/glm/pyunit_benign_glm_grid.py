@@ -42,7 +42,6 @@ def benign_grid():
 
   assert len(max_models_g.models) == 3, "expected 3 models, got: {}".format(len(max_models_g.models))
   print(max_models_g.sorted_metric_table())
-  print(max_models_g.get_grid("r2"))
 
   # test search_criteria plumbing and asymptotic stopping
   search_criteria = { 'strategy': "RandomDiscrete", 'seed': 42, 'stopping_metric': "AUTO", 'stopping_tolerance': 0.1, 'stopping_rounds': 2 }

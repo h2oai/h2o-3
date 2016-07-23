@@ -32,7 +32,6 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   MetricBuilder _metricBuilder;
   final boolean _intercept;
   private final double [] _ymu;
-
   final boolean _computeMetrics;
   public GLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept){
     super(domain == null?0:domain.length, domain);
@@ -179,13 +178,6 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     }
     _aic += 2*_rank;
   }
-
-//  @Override
-//  public String toString(){
-//    if(_metricBuilder != null)
-//      return _metricBuilder.toString() + ", explained_dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
-//    else return "explained dev = " + MathUtils.roundToNDigits(1 - residual_deviance / null_deviance,5);
-//  }
 
   @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
     GLMModel gm = (GLMModel)m;

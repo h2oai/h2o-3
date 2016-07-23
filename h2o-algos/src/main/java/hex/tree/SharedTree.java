@@ -110,6 +110,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if (_parms._nbins_top_level >= 1<<16) error ("_nbins_top_level", "nbins_top_level must be < " + (1<<16));
     if (_parms._max_depth <= 0) error ("_max_depth", "_max_depth must be > 0.");
     if (_parms._min_rows <=0) error ("_min_rows", "_min_rows must be > 0.");
+    if (_parms._r2_stopping!=Double.MAX_VALUE) warn("_r2_stopping", "_r2_stopping is no longer supported - please use stopping_rounds, stopping_metric and stopping_tolerance instead.");
     if (_parms._score_tree_interval < 0 || _parms._score_tree_interval > _parms._ntrees) error ("_score_tree_interval", "_score_tree_interval must be >= 0 and <= _ntrees.");
     if (_parms._sample_rate_per_class != null) {
       warn("_sample_rate", "_sample_rate is ignored if _sample_rate_per_class is specified.");
@@ -334,11 +335,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-        if( ((ModelMetricsSupervised)_model._output._training_metrics).r2()  >= _parms._r2_stopping ) {
-          doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
-          _job.update(_ntrees-_model._output._ntrees); //finish
-          return;             // Stop when approaching round-off error
-        }
         if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, _nclass > 1, _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
           _job.update(_ntrees-_model._output._ntrees); //finish
@@ -701,7 +697,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (_output.getModelCategory() == ModelCategory.Regression) {
         table.set(row, col++, st._mae);
         table.set(row, col++, st._mean_residual_deviance);
-        table.set(row, col++, st._r2);
       }
       if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -716,7 +711,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         if (_output.getModelCategory() == ModelCategory.Regression) {
           table.set(row, col++, st._mae);
           table.set(row, col++, st._mean_residual_deviance);
-          table.set(row, col++, st._r2);
         }
         if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {

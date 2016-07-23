@@ -304,7 +304,6 @@ public class DRFGridTest extends TestUtil {
       fr.add("economy (mpg)", old); // response to last column
       DKV.put(fr);
 
-      // {"_model_id":null,"_train":{"name":"_83da9e0754c5eb9f6b812fe17e7945e5","type":"Key"},"_valid":null,"_nfolds":0,"_keep_cross_validation_predictions":false,"_fold_assignment":"AUTO","_distribution":"AUTO","_tweedie_power":1.5,"_ignored_columns":null,"_ignore_const_cols":true,"_weights_column":null,"_offset_column":null,"_fold_column":null,"_score_each_iteration":false,"_response_column":"economy (mpg)","_balance_classes":false,"_max_after_balance_size":5.0,"_class_sampling_factors":null,"_max_hit_ratio_k":10,"_max_confusion_matrix_size":20,"_checkpoint":null,"_ntrees":9,"_max_depth":15,"_min_rows":1.0,"_nbins":20,"_nbins_cats":1024,"_r2_stopping":0.999999,"_seed":-4522296119273841674,"_nbins_top_level":1024,"_build_tree_one_node":false,"_initial_score_interval":4000,"_score_interval":4000,"_mtries":3,"_sample_rate":0.6499997,"_binomial_double_trees":false}
       DRFModel.DRFParameters params1 = new DRFModel.DRFParameters();
       params1._train = fr._key;
       params1._response_column = "economy (mpg)";
@@ -314,7 +313,6 @@ public class DRFGridTest extends TestUtil {
       params1._ntrees = 9;
       params1._sample_rate = 0.6499997f;
 
-      // {"_model_id":null,"_train":{"name":"_83da9e0754c5eb9f6b812fe17e7945e5","type":"Key"},"_valid":null,"_nfolds":0,"_keep_cross_validation_predictions":false,"_fold_assignment":"AUTO","_distribution":"AUTO","_tweedie_power":1.5,"_ignored_columns":null,"_ignore_const_cols":true,"_weights_column":null,"_offset_column":null,"_fold_column":null,"_score_each_iteration":false,"_response_column":"economy (mpg)","_balance_classes":false,"_max_after_balance_size":5.0,"_class_sampling_factors":null,"_max_hit_ratio_k":10,"_max_confusion_matrix_size":20,"_checkpoint":null,"_ntrees":13,"_max_depth":1,"_min_rows":1.0,"_nbins":20,"_nbins_cats":1024,"_r2_stopping":0.999999,"_seed":-4522296119273841674,"_nbins_top_level":1024,"_build_tree_one_node":false,"_initial_score_interval":4000,"_score_interval":4000,"_mtries":1,"_sample_rate":0.6499997,"_binomial_double_trees":false}
       DRFModel.DRFParameters params2 = new DRFModel.DRFParameters();
       params2._train = fr._key;
       params2._response_column = "economy (mpg)";

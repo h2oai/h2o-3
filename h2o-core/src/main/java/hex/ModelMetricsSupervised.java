@@ -17,7 +17,6 @@ public class ModelMetricsSupervised extends ModelMetrics {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(super.toString());
-    sb.append(" R^2: " + (float)r2() + "\n");
     return sb.toString();
   }
 

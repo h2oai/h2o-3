@@ -28,16 +28,6 @@ test.glm.bin.accessors <- function() {
   expect_equal(mse.basic, mse.valid.F) # basic should equal valid with valid = FALSE
   expect_true(mse.basic != mse.valid.T)
 
-  Log.info("R^2...")
-  r2.basic <- h2o.r2(pros.glm)
-  print(r2.basic)
-  expect_warning(h2o.r2(pros.glm, valid = TRUE))
-  r2.valid.F <- h2o.r2(pros.glm.valid)
-  r2.valid.T <- h2o.r2(pros.glm.valid,valid = TRUE)
-  print(r2.valid.T)
-  expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
-  expect_true(r2.basic != r2.valid.T)
-
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(pros.glm)
   print(ll.basic)

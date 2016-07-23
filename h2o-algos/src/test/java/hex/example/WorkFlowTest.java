@@ -156,22 +156,7 @@ public class WorkFlowTest extends TestUtil {
       // -------------------------------------------------
       // 4- Score on holdout set & report
       gbm.score(train).remove();
-      double train_r2_gbm = r2(gbm,train);
-      gbm.score(test ).remove();
-      double  test_r2_gbm = r2(gbm,test );
-      gbm.score(hold ).remove();
-      double  hold_r2_gbm = r2(gbm,hold );
-      System.out.println("GBM R2 TRAIN="+train_r2_gbm+", R2 TEST="+test_r2_gbm+", R2 HOLDOUT="+hold_r2_gbm);
-      gbm.remove();
-
       glm.score(train).remove();
-      double train_r2_glm = r2(glm, train);
-      glm.score(test ).remove();
-      double  test_r2_glm = r2(glm, test );
-      glm.score(hold ).remove();
-      double  hold_r2_glm = r2(glm, hold );
-      System.out.println("GLM R2 TRAIN="+train_r2_glm+", R2 TEST="+test_r2_glm+", R2 HOLDOUT="+hold_r2_glm);
-      glm.remove();
 
       // Cleanup
       train.remove();
@@ -183,9 +168,9 @@ public class WorkFlowTest extends TestUtil {
     }
   }
 
-  private double r2( Model model, Frame fr ) {
-    return ((ModelMetricsSupervised)ModelMetrics.getFromDKV(model, fr)).r2();    
-  }
+//  private double r2( Model model, Frame fr ) {
+//    return ((ModelMetricsSupervised)ModelMetrics.getFromDKV(model, fr)).r2();
+//  }
 
   // Load a set of files, then parse them all together
   private Frame load_files(String hex, String[] fnames) {

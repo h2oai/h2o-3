@@ -91,7 +91,6 @@ public class GBMCheckpointTest extends TestUtil {
       gbmParams._max_depth = 5;
       gbmParams._learn_rate_annealing = 0.9;
       gbmParams._score_each_iteration = true;
-      gbmParams._r2_stopping = Double.MAX_VALUE;
       model = new GBM(gbmParams, Key.<GBMModel>make("Initial model") ).trainModel().get();
 
       GBMModel.GBMParameters gbmFromCheckpointParams = new GBMModel.GBMParameters();
@@ -103,7 +102,6 @@ public class GBMCheckpointTest extends TestUtil {
       gbmFromCheckpointParams._score_each_iteration = true;
       gbmFromCheckpointParams._max_depth = 5;
       gbmFromCheckpointParams._learn_rate_annealing = 0.9;
-      gbmFromCheckpointParams._r2_stopping = Double.MAX_VALUE;
       modelFromCheckpoint = new GBM(gbmFromCheckpointParams,Key.<GBMModel>make("Model from checkpoint")).trainModel().get();
 
       // Compute a separated model containing the same numnber of trees as a model built from checkpoint
@@ -115,7 +113,6 @@ public class GBMCheckpointTest extends TestUtil {
       gbmFinalParams._score_each_iteration = true;
       gbmFinalParams._max_depth = 5;
       gbmFinalParams._learn_rate_annealing = 0.9;
-      gbmFinalParams._r2_stopping = Double.MAX_VALUE;
       modelFinal = new GBM(gbmFinalParams,Key.<GBMModel>make("Validation model")).trainModel().get();
 
 //      System.err.println(modelFromCheckpoint.toJava(false,true));

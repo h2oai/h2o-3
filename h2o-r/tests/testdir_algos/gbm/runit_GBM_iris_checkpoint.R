@@ -51,7 +51,6 @@ expect_mm_equal <- function(a, b, msg) {
   expect_equal(cmA, cmB)
   expect_equal(a@metrics$model_category, b@metrics$model_category)
   expect_equal(a@metrics$MSE, b@metrics$MSE)
-  expect_equal(a@metrics$r2, b@metrics$r2)
   expect_equal(a@metrics$hit_ratio_table$hit_ratio, b@metrics$hit_ratio_table$hit_ratio)
   expect_equal(a@metrics$logloss, b@metrics$logloss)
 }

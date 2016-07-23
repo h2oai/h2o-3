@@ -327,7 +327,7 @@ public class TestCase {
     HashMap<String, Double> mmMap = new HashMap<String, Double>();
     // Supervised metrics
     mmMap.put("MSE", mm.mse());
-    mmMap.put("R2", ((ModelMetricsSupervised) mm).r2());
+//    mmMap.put("R2", ((ModelMetricsSupervised) mm).r2());
     // Regression metrics
     if (mm instanceof ModelMetricsRegression) {
       mmMap.put("MeanResidualDeviance", ((ModelMetricsRegression) mm)._mean_residual_deviance);
@@ -617,9 +617,6 @@ public class TestCase {
           break;
         case "_max_confusion_matrix_size":
           gbmParams._max_confusion_matrix_size = Integer.parseInt(parameterValue);
-          break;
-        case "_r2_stopping":
-          gbmParams._r2_stopping = Double.parseDouble(parameterValue);
           break;
         case "_build_tree_one_node":
           gbmParams._build_tree_one_node = true;
@@ -1045,9 +1042,6 @@ public class TestCase {
           break;
         case "_max_confusion_matrix_size":
           drfParams._max_confusion_matrix_size = Integer.parseInt(parameterValue);
-          break;
-        case "_r2_stopping":
-          drfParams._r2_stopping = Double.parseDouble(parameterValue);
           break;
         case "_build_tree_one_node":
           drfParams._build_tree_one_node = true;

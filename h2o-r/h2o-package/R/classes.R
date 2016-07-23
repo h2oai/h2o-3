@@ -209,13 +209,15 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
   if( !is.null(tm$RMSE)                                             )  cat("\nRMSE: (Extract with `h2o.rmse`)", tm$RMSE)
   if( !is.null(tm$mae)                                             )  cat("\nMAE: (Extract with `h2o.mae`)", tm$mae)
-  if( !is.null(tm$r2)                                              )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
   if( !is.null(tm$mean_per_class_error)                            )  cat("\nMean Per-Class Error:", tm$mean_per_class_error)
   if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
+  if(exists(o@algorithm) && o@algorithm == "glm") {
+    if( !is.null(tm$r2) && !is.na(tm$r2)                           )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
+  }
   if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
   if (arg != "test") {
     if( !is.null(tm$cm)                                              )  { if ( arg != "xval" ) { cat(paste0("\nConfusion Matrix: Extract with `h2o.confusionMatrix(<model>,", arg, " = TRUE)`)\n")); } }
@@ -377,12 +379,12 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     callNextMethod(object)  # call to the super
     cat("MSE:  ", object@metrics$MSE, "\n", sep="")
     cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
-    cat("R^2:  ", object@metrics$r2, "\n", sep="")
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     cat("Mean Per-Class Error:  ", object@metrics$mean_per_class_error, "\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
     if(exists(object@algorithm) && object@algorithm == "glm") {
+      if (!is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
       cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
       cat("Residual Deviance:  ", object@metrics$residual_deviance,"\n", sep="")
       cat("AIC:  ", object@metrics$AIC,"\n", sep="")
@@ -434,18 +436,20 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("MSE:  ", object@metrics$MSE, "\n", sep="")
   cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
-  cat("R^2 :  ", h2o.r2(object), "\n", sep="")
   cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
-  null_dev <- h2o.null_deviance(object)
-  res_dev  <- h2o.residual_deviance(object)
-  null_dof <- h2o.null_dof(object)
-  res_dof  <- h2o.residual_dof(object)
-  aic      <- h2o.aic(object)
-  if( !is.null(null_dev) ) cat("Null Deviance :", null_dev, "\n", sep="")
-  if( !is.null(null_dof) ) cat("Null D.o.F. :",   null_dof, "\n", sep="")
-  if( !is.null(res_dev ) ) cat("Residual Deviance :", res_dev, "\n", sep="")
-  if( !is.null(res_dof ) ) cat("Residual D.o.F. :",   res_dof, "\n", sep="")
-  if( !is.null(aic     ) ) cat("AIC :", aic, "\n", sep="")
+  if(exists(object@algorithm) && object@algorithm == "glm") {
+    if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
+    null_dev <- h2o.null_deviance(object)
+    res_dev  <- h2o.residual_deviance(object)
+    null_dof <- h2o.null_dof(object)
+    res_dof  <- h2o.residual_dof(object)
+    aic      <- h2o.aic(object)
+    if( !is.null(null_dev) ) cat("Null Deviance :", null_dev, "\n", sep="")
+    if( !is.null(null_dof) ) cat("Null D.o.F. :",   null_dof, "\n", sep="")
+    if( !is.null(res_dev ) ) cat("Residual Deviance :", res_dev, "\n", sep="")
+    if( !is.null(res_dof ) ) cat("Residual D.o.F. :",   res_dof, "\n", sep="")
+    if( !is.null(aic     ) ) cat("AIC :", aic, "\n", sep="")
+  }
   cat("\n")
 })
 #' @rdname H2OModelMetrics-class

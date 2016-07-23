@@ -126,7 +126,7 @@ h2o.grid <- function(algorithm,
 #' Get a grid object from H2O distributed K/V store.
 #'
 #' @param grid_id  ID of existing grid object to fetch
-#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "r2", "accuracy", "precision", "recall", "f1", etc.
+#' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "accuracy", "precision", "recall", "f1", etc.
 #' @param decreasing Specify whether sort order should be decreasing
 #' @examples
 #' \donttest{

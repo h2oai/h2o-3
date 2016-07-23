@@ -23,17 +23,14 @@ test.one.node.drf <- function() {
     Log.info("Multi Node:")
     print(paste("MSE:", h2o.mse(drf.mult)))
     print(paste("AUC:", h2o.auc(drf.mult)))
-    print(paste("R^2:", h2o.r2(drf.mult)))
     Log.info("Single Node:")
     print(paste("MSE:", h2o.mse(drf.sing)))
     print(paste("AUC:", h2o.auc(drf.sing)))
-    print(paste("R^2:", h2o.r2(drf.sing)))
 
     Log.info("MSE, AUC, and R2 should be the same...")
     print((h2o.mse(drf.sing)-h2o.mse(drf.mult))/h2o.mse(drf.mult))
     expect_equal(h2o.mse(drf.sing), h2o.mse(drf.mult), tolerance = 0.01)
     expect_equal(h2o.auc(drf.sing), h2o.auc(drf.mult), tolerance = 0.01)
-    expect_equal(h2o.r2(drf.sing), h2o.r2(drf.mult), tolerance = 0.01)
   }
 
   

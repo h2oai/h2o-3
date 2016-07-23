@@ -23,16 +23,13 @@ test.one.node.gbm <- function() {
     Log.info("Multi Node:")
     print(paste("MSE:", h2o.mse(gbm.mult)))
     print(paste("AUC:", h2o.auc(gbm.mult)))
-    print(paste("R^2:", h2o.r2(gbm.mult)))
     Log.info("Single Node:")
     print(paste("MSE:", h2o.mse(gbm.sing)))
     print(paste("AUC:", h2o.auc(gbm.sing)))
-    print(paste("R^2:", h2o.r2(gbm.sing)))
 
     Log.info("MSE, AUC, and R2 should be the same...")
     expect_equal(h2o.mse(gbm.sing), h2o.mse(gbm.mult))
     expect_equal(h2o.auc(gbm.sing), h2o.auc(gbm.mult))
-    expect_equal(h2o.r2(gbm.sing), h2o.r2(gbm.mult))
   }
 
   

@@ -41,24 +41,6 @@ def iris_gbm_grid():
     assert combo in total_grid_space, "combo: " + str(combo) + "; total_grid_space=" + str(total_grid_space)
     total_grid_space.remove(combo)
 
-  # test back-end sorting of model metrics:
-  locally_sorted = gs.sort_by("r2")
-  remotely_sorted_desc = gs.get_grid("r2")
-
-  assert len(locally_sorted.cell_values) == len(remotely_sorted_desc.model_ids), "Expected locally sorted and remotely sorted grids to have the same number of models"
-  for i in range(len(remotely_sorted_desc.model_ids)):
-    assert locally_sorted.cell_values[i][0] == remotely_sorted_desc.model_ids[i], "Expected back-end sort by r2 to be the same as locally-sorted: " + str(i)
-
-  remotely_sorted_asc = gs.get_grid("r2",True)
-  for model in remotely_sorted_asc:
-    assert isinstance(model, H2OGradientBoostingEstimator)
-
-  assert len(locally_sorted.cell_values) == len(remotely_sorted_asc.model_ids), "Expected locally sorted and remotely sorted grids to have the same number of models"
-  length = len(remotely_sorted_asc.model_ids)
-  for i in range(length):
-    assert locally_sorted.cell_values[i][0] == remotely_sorted_asc.model_ids[length - i - 1], "Expected back-end sort by r2, ascending, to be the reverse as locally-sorted ascending: " + str(i)
-
-
 if __name__ == "__main__":
   pyunit_utils.standalone_test(iris_gbm_grid)
 else:

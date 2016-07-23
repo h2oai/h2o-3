@@ -25,19 +25,6 @@ test.gbm.mult.accessors <- function() {
   expect_true(mse.valid.xval.T["train"]==mse.basic)
   expect_true(mse.valid.xval.T["valid"]==mse.valid.T)
 
-  Log.info("R^2...")
-  r2.basic <- h2o.r2(iris.gbm)
-  print(r2.basic)
-  expect_warning(h2o.r2(iris.gbm, valid = TRUE))
-  r2.valid.F <- h2o.r2(iris.gbm.valid)
-  r2.valid.T <- h2o.r2(iris.gbm.valid,valid = TRUE)
-  print(r2.valid.T)
-  expect_equal(r2.basic, r2.valid.F) # basic should equal valid with valid = FALSE
-  r2.valid.xval.T <- h2o.r2(iris.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-  expect_true(length(r2.valid.xval.T)==3)
-  expect_true(r2.valid.xval.T["train"]==r2.basic)
-  expect_true(r2.valid.xval.T["valid"]==r2.valid.T)
-
   Log.info("LogLoss...")
   ll.basic <- h2o.logloss(iris.gbm)
   print(ll.basic)

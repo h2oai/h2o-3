@@ -104,7 +104,6 @@ public class DRFCheckpointTest extends TestUtil {
       drfParams._seed = 42;
       drfParams._max_depth = 10;
       drfParams._score_each_iteration = true;
-      drfParams._r2_stopping = Double.MAX_VALUE;
       drfParams._sample_rate = sampleRateInPriorModel;
       model = new DRF(drfParams,Key.<DRFModel>make("Initial model")).trainModel().get();
 
@@ -116,7 +115,6 @@ public class DRFCheckpointTest extends TestUtil {
       drfFromCheckpointParams._checkpoint = model._key;
       drfFromCheckpointParams._score_each_iteration = true;
       drfFromCheckpointParams._max_depth = 10;
-      drfFromCheckpointParams._r2_stopping = Double.MAX_VALUE;
       drfFromCheckpointParams._sample_rate = sampleRateInNewModel;
       modelFromCheckpoint = new DRF(drfFromCheckpointParams,Key.<DRFModel>make("Model from checkpoint")).trainModel().get();
 
@@ -129,7 +127,6 @@ public class DRFCheckpointTest extends TestUtil {
       drfFinalParams._score_each_iteration = true;
       drfFinalParams._max_depth = 10;
       drfFinalParams._sample_rate = sampleRateInPriorModel;
-      drfFinalParams._r2_stopping = Double.MAX_VALUE;
       modelFinal = new DRF(drfFinalParams,Key.<DRFModel>make("Validation model")).trainModel().get();
 
       CompressedTree[][] treesFromCheckpoint = getTrees(modelFromCheckpoint);

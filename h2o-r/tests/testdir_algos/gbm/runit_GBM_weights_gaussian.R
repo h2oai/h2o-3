@@ -60,18 +60,11 @@ test_weights_by_row_duplication <- function() {
   expect_equal(hh1@model$training_metrics@metrics$MSE, 
                hh2@model$training_metrics@metrics$MSE,
                tolerance = 1e-6)
-  expect_equal(hh1@model$training_metrics@metrics$r2, 
-               hh2@model$training_metrics@metrics$r2,
-               tolerance = 1e-6)
 
   expect_equal(hh1@model$validation_metrics@metrics$MSE,
                hh2@model$validation_metrics@metrics$MSE,
                tolerance = 1e-6)
-  expect_equal(hh1@model$validation_metrics@metrics$r2,
-               hh2@model$validation_metrics@metrics$r2,
-               tolerance = 1e-6)
-  
-    
+
   #predictions
   print("compare predictions")
   ph1 <- as.data.frame(h2o.predict(object = hh1, newdata = val1))
