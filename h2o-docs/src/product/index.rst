@@ -72,6 +72,10 @@ should be added to the group automatically.
    logs
 
 .. toctree::
+
+   productionizing
+
+.. toctree::
    :maxdepth: 3
 
    architecture
