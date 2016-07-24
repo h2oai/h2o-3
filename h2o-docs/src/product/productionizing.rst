@@ -1,6 +1,9 @@
 Productionizing H2O
 ===================
 
+(Note:  This section is new and a work in progress...)
+
+
 Example Design Patterns
 -----------------------
 
