@@ -22,21 +22,22 @@ message. You don't need to request or leave a message to join - you
 should be added to the group automatically.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    
    welcome
    
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
    
    downloading
    
 .. toctree::
+   :maxdepth: 2
 
    quick-start-videos
    
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    
    starting-h2o
    aws
@@ -44,59 +45,72 @@ should be added to the group automatically.
    docker
 
 .. toctree::
+   :maxdepth: 2
 
    data-munging
 
 .. toctree::
+   :maxdepth: 2
 
    flow
  
 .. toctree::
+   :maxdepth: 2
 
    data-science
 
 .. toctree::
+   :maxdepth: 2
 
    cross-validation
 
 .. toctree::   
+   :maxdepth: 2
 
    grid-search
 
 .. toctree::
+   :maxdepth: 2
 
    pojo-quick-start
    
 .. toctree::
+   :maxdepth: 2
 
    logs
 
 .. toctree::
+   :maxdepth: 2
 
    productionizing
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    architecture
    
 .. toctree::
+   :maxdepth: 2
 
    security
    
 .. toctree::
+   :maxdepth: 1
 
    faq
    
 .. toctree::
+   :maxdepth: 1
 
    glossary
 
 .. toctree::
+   :maxdepth: 1
 
    migrating
    
 .. toctree::
+   :maxdepth: 2
 
    api-reference
 
