@@ -45,6 +45,7 @@ import water.init.JarHash;
 import water.init.NetworkInit;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
+import water.parser.ParserService;
 import water.persist.PersistManager;
 import water.util.GAUtils;
 import water.util.Log;
@@ -1870,6 +1871,9 @@ final public class H2O {
 
     if (GA != null)
       startGAStartupReport();
+
+    // Log registered parsers
+    Log.info("Registered parsers: " + Arrays.toString(ParserService.INSTANCE.getAllProviderNames(true)));
   }
 
   // Die horribly
