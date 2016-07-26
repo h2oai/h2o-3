@@ -15,10 +15,10 @@ def pyunit_make_metrics():
 
   response = "AGE"
   predictors = range(1,fr.ncol)
-  model = H2OGradientBoostingEstimator()
-  model.train(x=predictors,y=response,training_frame=fr)
+#  model = H2OGradientBoostingEstimator()
+#  model.train(x=predictors,y=response,training_frame=fr)
 
-  p = model.model_performance(train=True)
+#  p = model.model_performance(train=True)
 #  p = make_metrics(predicted,actual,"gaussian")
 
 if __name__ == "__main__":
