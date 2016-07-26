@@ -43,13 +43,16 @@ class H2OConnection(backwards_compatible()):
     """
     Single connection to an H2O server.
 
-    Instances of this class are created through a static method `.open()`:
+    Instances of this class are created through a static method :meth:`open`::
+
         conn = H2OConnection.open(...)
 
-    You can also use this class as a context manager:
+    You can also use this class as a context manager::
+
         with H2OConnection.open() as conn:
             conn.info().pprint()
-    The connection will be automatically closed at the end of the `with ...` block.
+
+    The connection will be automatically closed at the end of the ``with ...`` block.
 
     This class contains methods for performing the common REST methods GET, POST, and DELETE.
     """
@@ -57,20 +60,21 @@ class H2OConnection(backwards_compatible()):
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=True, auth=None,
              proxy=None, cluster_name=None, verbose=True):
-        """
+        r"""
         Establish connection to an existing H2O server.
 
         The connection is not kept alive, so what this method actually does is it attempts to connect to the
         specified server, and checks that the server is healthy and responds to REST API requests. If the H2O server
-        cannot be reached, an `H2OConnectionError` will be raised. On success this method returns a new
-        `H2OConnection` object, and it is the only "official" way to create instances of this class.
+        cannot be reached, an :class:`H2OConnectionError` will be raised. On success this method returns a new
+        :class:`H2OConnection` object, and it is the only "official" way to create instances of this class.
 
         There are 3 ways to specify which server to connect to (these settings are mutually exclusive):
-            * Pass a `server` option,
-            * Pass the full `url` for the connection,
-            * Provide a triple of parameters `ip`, `port`, `https`.
 
-        :param server: (H2OLocalServer) connect to the specified local server instance. There is a slight difference
+            * pass a ``server`` option,
+            * pass the full ``url`` for the connection,
+            * provide a triple of parameters ``ip``, ``port``, ``https``.
+
+        :param H2OLocalServer server: connect to the specified local server instance. There is a slight difference
             between connecting to a local server by specifying its ip and address, and connecting through
             an H2OLocalServer instance: if the server becomes unresponsive, then having access to its process handle
             will allow us to query the server status through OS, and potentially provide snapshot of the server's
@@ -81,19 +85,20 @@ class H2OConnection(backwards_compatible()):
         :param https: If True then connect using https instead of http (default False).
         :param verify_ssl_certificates: If False then SSL certificate checking will be disabled (default True). This
             setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
-            used, it will generate a warning from the requests library. Has no effect when `https` is False.
+            used, it will generate a warning from the requests library. Has no effect when ``https`` is False.
         :param auth: Authentication token for connecting to the remote server. This can be either a
             (username, password) tuple, or an authenticator (AuthBase) object. Please refer to the documentation in
-            the `requests.auth` module.
-        :param proxy: (str) URL address of a proxy server. If you do not specify the proxy, then the requests module
+            the ``requests.auth`` module.
+        :param proxy: URL address of a proxy server. If you do not specify the proxy, then the requests module
             will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
             check for the presence of these variables and issue a warning if they are found. In order to suppress
-            that warning and use proxy from the environment, pass `proxy`="(default)".
+            that warning and use proxy from the environment, pass ``proxy="(default)"``.
         :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
-        :param verbose: If True (default), then connection progress info will be printed to the stdout.
-        :return A new H2OConnection instance.
-        :raise H2OConnectionError if the server cannot be reached.
-        :raise H2OServerError if the server is in an unhealthy state (although this might be a recoverable error, the
+        :param verbose: If True, then connection progress info will be printed to the stdout.
+
+        :returns: A new :class:`H2OConnection` instance.
+        :raises H2OConnectionError: if the server cannot be reached.
+        :raises H2OServerError: if the server is in an unhealthy state (although this might be a recoverable error, the
             client itself should decide whether it wants to retry or not).
         """
         if server is not None:
@@ -175,11 +180,12 @@ class H2OConnection(backwards_compatible()):
             key/value pairs (values can also be arrays), which will be sent over in x-www-form-encoded format.
         :param json: also data payload, but it will be sent as a JSON body. Cannot be used together with `data`.
         :param filename: file to upload to the server. Cannot be used with `data` or `json`.
-        :return: an H2OResponse object representing the server's response
-        :raise ValueError if the endpoint's URL is invalid
-        :raise H2OConnectionError if the H2O server cannot be reached (or connection is not initialized)
-        :raise H2OServerError if there was a server error (http 500), or server returned malformed JSON
-        :raise H2OResponseError if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
+
+        :returns: an H2OResponse object representing the server's response
+        :raises ValueError: if the endpoint's URL is invalid
+        :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized)
+        :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON
+        :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
         """
         if self._stage == 0: raise H2OConnectionError("Connection not initialized; run .connect() first.")
         if self._stage == -1: raise H2OConnectionError("Connection was closed, and can no longer be used.")
@@ -286,7 +292,7 @@ class H2OConnection(backwards_compatible()):
 
     @property
     def base_url(self):
-        """Base URL of the server, without trailing '/'. For example: "https://example.com:54321"."""
+        """Base URL of the server, without trailing ``"/"``. For example: ``"https://example.com:54321"``."""
         return self._base_url
 
     @property
@@ -362,8 +368,7 @@ class H2OConnection(backwards_compatible()):
             dest = os.path.join(tempfile.mkdtemp(), "h2o-connection.log")
         if not (isinstance(dest, type(sys.stdout)) or is_str(dest)):
             raise ValueError("Logging destination should be either a string (filename), or an open file handle")
-        name = dest if is_str(dest) else dest.name
-        self._print("Start logging H2OConnection.request() requests into file %s" % name)
+        self._print("Now logging all API requests to file %r" % dest)
         self._is_logging = True
         self._logging_dest = dest
 

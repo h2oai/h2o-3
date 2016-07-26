@@ -6,8 +6,6 @@
 H2O Documentation
 =================
 
-Contents:
-
 .. toctree::
    :maxdepth: 1
 
@@ -19,7 +17,7 @@ Contents:
    model_categories
    metrics
    assembly
-   other
+   backend
 
 Indices and tables
 ==================

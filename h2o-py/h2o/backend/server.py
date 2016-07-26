@@ -26,7 +26,7 @@ from h2o.backend.exceptions import H2OServerError, H2OStartupError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import is_int, is_str
 
-__all__ = ("H2OLocalServer", "H2OStartupError")
+__all__ = ("H2OLocalServer", )
 
 
 
@@ -34,7 +34,8 @@ class H2OLocalServer(object):
     """
     Handle to an H2O server launched locally.
 
-    Public interface:
+    Public interface::
+
         hs = H2OLocalServer.start(...)  # launch a new local H2O server
         hs.is_running()                 # check if the server is running
         hs.shutdown()                   # shut down the server
@@ -48,7 +49,8 @@ class H2OLocalServer(object):
     terminate it is to kill the java process from the terminal.
 
     Alternatively, it is possible to start the server as a context manager, in which case it will be automatically
-    shut down even if an exception occurs in Python (but not if the Python process is killed):
+    shut down even if an exception occurs in Python (but not if the Python process is killed)::
+
         with H2OLocalServer.start() as hs:
             # do something with the server -- probably connect to it
     """
@@ -75,7 +77,8 @@ class H2OLocalServer(object):
         :param port: Port where to start the new server. This could be either an integer, or a string of the form
             "DDDDD+", indicating that the server should start looking for an open port starting from DDDDD and up.
         :param verbose: If True, then connection info will be printed to the stdout.
-        :return a new H2OLocalServer instance
+
+        :returns: a new H2OLocalServer instance
         """
         assert jar_path is None or is_str(jar_path), "`jar_path` should be string, got %s" % type(jar_path)
         assert jar_path is None or jar_path.endswith("h2o.jar"), \
@@ -190,16 +193,17 @@ class H2OLocalServer(object):
 
         :param path0: Explicitly given h2o.jar path. If provided, then we will simply check whether the file is there,
             otherwise we will search for an executable in locations returned by ._jar_paths().
-        :raise H2OStartupError if no h2o.jar executable can be found.
+
+        :raises H2OStartupError: if no h2o.jar executable can be found.
         """
-        jar_paths = [path0] if path0 else list(self._jar_paths())
+        jar_paths = [path0] if path0 else self._jar_paths()
+        searched_paths = []
         for jp in jar_paths:
+            searched_paths.append(jp)
             if os.path.exists(jp):
                 return jp
-        if self._verbose:
-            print("  No jar file found. Paths searched:")
-            print("  " + "".join("    %s\n" % jar_paths))
-        raise H2OStartupError("Cannot start local server: h2o.jar not found.")
+        raise H2OStartupError("Cannot start local server: h2o.jar not found. Paths searched:\n" +
+                              "".join("    %s\n" % s for s in searched_paths))
 
     @staticmethod
     def _jar_paths():
@@ -208,8 +212,8 @@ class H2OLocalServer(object):
         cwd_chunks = os.path.abspath(".").split(os.path.sep)
         for i in range(len(cwd_chunks), 0, -1):
             if cwd_chunks[i - 1] == "h2o-3":
-                yield os.path.sep.join(cwd_chunks[:i] + ["build", "h2o.jar"])
-        # Finally try several alternative locations where h2o.jar might be installed
+                yield os.path.sep.join(cwd_chunks[:i] + ["build", "_h2o.jar"])
+        # Finally try several alternative locations where _h2o.jar might be installed
         prefix1 = prefix2 = sys.prefix
         # On Unix-like systems Python typically gets installed into /Library/... or /System/Library/... If one of
         # those paths is sys.prefix, then we also build its counterpart.
@@ -217,11 +221,11 @@ class H2OLocalServer(object):
             prefix2 = os.path.join("", "System", prefix1)
         elif prefix1.startswith(os.path.sep + "System"):
             prefix2 = prefix1[len(os.path.join("", "System")):]
-        yield os.path.join(prefix1, "h2o_jar", "h2o.jar")
-        yield os.path.join("", "usr", "local", "h2o_jar", "h2o.jar")
-        yield os.path.join(prefix1, "local", "h2o_jar", "h2o.jar")
-        yield os.path.join(get_config_var("userbase"), "h2o_jar", "h2o.jar")
-        yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
+        yield os.path.join(prefix1, "h2o_jar", "_h2o.jar")
+        yield os.path.join(os.path.abspath(os.sep), "usr", "local", "h2o_jar", "_h2o.jar")
+        yield os.path.join(prefix1, "local", "h2o_jar", "_h2o.jar")
+        yield os.path.join(get_config_var("userbase"), "h2o_jar", "_h2o.jar")
+        yield os.path.join(prefix2, "h2o_jar", "_h2o.jar")
 
 
     def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads):
@@ -315,7 +319,7 @@ class H2OLocalServer(object):
 
         This method is not particularly robust, and may require additional tweaking for different platforms...
         :return: Path to the java executable.
-        :raises H2OStartupError if java cannot be found.
+        :raises H2OStartupError: if java cannot be found.
         """
         # is java in PATH?
         if os.access("java", os.X_OK):

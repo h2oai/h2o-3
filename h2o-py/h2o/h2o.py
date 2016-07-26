@@ -59,7 +59,6 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param proxy: Proxy server address.
     :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param verbose: Set to False to disable printing connection status messages.
-    :return  None
     """
     global h2oconn
     h2oconn = H2OConnection.open(**locals())
@@ -81,6 +80,7 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
 
     This server object can then be passed to `h2o.connect()` to connect to that server; or you can launch multiple
     local servers and connect to only one of them. The servers will connect into a cloud.
+
     :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
     :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
     :param enable_assertions: If True, then the server will start with the -ea JVM option (enabling code assertions).
@@ -90,7 +90,8 @@ def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None,
         be chosen by `tempfile.mkdtemp()`.
     :param port: Port that the server should start listening to.
     :param verbose: Whether to print connection progress messages to the stdout or not.
-    :return:
+
+    :returns: an ``H2OLocalServer`` instance.
     """
     return H2OLocalServer.start(**locals())
 
@@ -327,10 +328,13 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=None):
-    """Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable.
+    """
+    Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable.
     Runs multiple SELECT SQL queries concurrently for parallel ingestion.
-    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
-      `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
+    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath::
+
+        java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
+
     Also see h2o.import_sql_select.
     Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server
     is forthcoming.
@@ -378,14 +382,17 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
 
 
 def import_sql_select(connection_url, select_query, username, password, optimize=None):
-    """Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory.
+    """
+    Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory.
+
     Creates a temporary SQL table from the specified sql_query.
     Runs multiple SELECT SQL queries on the temporary table concurrently for parallel ingestion, then drops the table.
-    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
-      `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
-    Also see h2o.import_sql_table.
-    Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server
-    is forthcoming.
+    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath::
+
+      java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
+
+    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support
+    for Oracle 12g and Microsoft SQL Server is forthcoming.
 
     Parameters
     ----------
@@ -411,11 +418,11 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
     Examples
     --------
-      >> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-      >> select_query = "SELECT bikeid from citibike20k"
-      >> username = "root"
-      >> password = "abc123"
-      >> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
+        >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+        >>> select_query = "SELECT bikeid from citibike20k"
+        >>> username = "root"
+        >>> password = "abc123"
+        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
     """
     p = {}
     p.update({k: v for k, v in locals().items() if k is not "p"})
@@ -757,26 +764,20 @@ def rapids(expr):
 
 
 def ls():
-    """List Keys on an H2O Cluster
-
-    Returns
-    -------
-      A list of keys in the current H2O instance.
-    """
+    """List keys on an H2O Cluster."""
     return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
 def frame(frame_id, exclude=""):
-    """Retrieve metadata for an id that points to a Frame.
+    """
+    Retrieve metadata for an id that points to a Frame.
 
     Parameters
     ----------
     frame_id : str
       A pointer to a Frame in H2O.
 
-    Returns
-    -------
-      Python dict containing the frame meta-information
+    :returns: dict containing the frame meta-information.
     """
     return api("GET /3/Frames/%s" % (frame_id + exclude))
 
@@ -784,9 +785,7 @@ def frame(frame_id, exclude=""):
 def frames():
     """Retrieve all the Frames.
 
-    Returns
-    -------
-      Meta information on the frames
+    :returns: Meta information on the frames
     """
     return api("GET /3/Frames")
 

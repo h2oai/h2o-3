@@ -437,8 +437,8 @@ class H2OFrame(object):
             print(self._ex._cache._tabulate("simple", True))
 
     def describe(self):
-        """Generate an in-depth description of this H2OFrame. Everything in summary(), plus
-        the data layout.
+        """
+        Generate an in-depth description of this H2OFrame. Everything in summary(), plus the data layout.
         """
         # Force a fetch of 10 rows; the chunk & distribution summaries are not
         # cached, so must be pulled.  While we're at it, go ahead and fill in
@@ -1347,16 +1347,12 @@ class H2OFrame(object):
         return fr
 
     def pop(self, i):
-        """Pop a column from the H2OFrame at index i
+        """
+        Pop a column from the H2OFrame at index i.
 
-        Parameters
-        ----------
-        i : int, str
-          The index or name of the column to pop.
+        :param i: The index (int) or name (str) of the column to pop.
 
-        Returns
-        -------
-          The column dropped from the frame; the frame is side-effected to lose the column.
+        :returns: The column dropped from the frame; the frame is side-effected to lose the column.
         """
         if is_str(i): i = self.names.index(i)
         col = H2OFrame._expr(expr=ExprNode("cols", self, i))
@@ -1770,7 +1766,9 @@ class H2OFrame(object):
         return ExprNode("median", self, na_rm)._eager_scalar()
 
     def var(self, y=None, na_rm=False, use=None):
-        """Compute the variance or covariance matrix of one or two H2OFrames.
+        """
+        Compute the variance or covariance matrix of one or two H2OFrames.
+
         Parameters
         ----------
         y : H2OFrame, default=None
@@ -1784,6 +1782,7 @@ class H2OFrame(object):
             "everything"            - outputs NaNs whenever one of its contributing observations is missing
             "all.obs"               - presence of missing observations will throw an error
             "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+
         Returns
         -------
           An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
@@ -1841,11 +1840,7 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
 
     def asfactor(self):
-        """
-        Returns
-        -------
-          H2Oframe of one column converted to a factor.
-        """
+        """Create H2Oframe of one column converted to a factor."""
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {list(fr._ex._cache.types)[0]: "enum"}

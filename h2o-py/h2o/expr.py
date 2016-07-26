@@ -189,8 +189,11 @@ class ExprNode(object):
         return sb
 
     def __repr__(self):
-        return "Expr(op=%r,id=%r,ast=%r,is_scalar=%r)" % (
-        self._op, self._cache._id, self._children, self._cache.is_scalar())
+        return "<Expr(%s)%s%s>" % (
+            " ".join([self._op] + [repr(x) for x in (self._children or [])]),
+            "#%s" % self._cache._id if self._cache._id else "",
+            "; scalar" if self._cache.is_scalar() else "",
+        )
 
     @staticmethod
     def rapids(expr):
@@ -290,12 +293,12 @@ class H2OCache(object):
         return not isinstance(self._data, dict)
 
     def is_valid(self):
-        return self._id is not None and \
-               not self.is_empty() and \
-               self.nrows_valid() and \
-               self.ncols_valid() and \
-               self.names_valid() and \
-               self.types_valid()
+        return (# self._id is not None and
+                not self.is_empty() and \
+                self.nrows_valid() and
+                self.ncols_valid() and
+                self.names_valid() and
+                self.types_valid())
 
     def fill(self, rows=10):
         assert self._id is not None
@@ -327,7 +330,7 @@ class H2OCache(object):
             self._data[c.pop('label')] = c  # Label used as the Key
         return self
 
-    #### pretty printing ####
+    #---- pretty printing ----
 
     def _tabulate(self, tablefmt, rollups):
         """Pretty tabulated string of all the cached data, and column names"""
