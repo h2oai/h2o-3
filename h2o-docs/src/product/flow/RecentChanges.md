@@ -7,6 +7,8 @@
 <h4>        Bug
 </h4>
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3040'>PUBDEV-3040</a>] -         File parse from S3 extremely slow
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3145'>PUBDEV-3145</a>] -         Fix Deep Learning POJO for hidden dropout other than 0.5
 </li>
 </ul>
