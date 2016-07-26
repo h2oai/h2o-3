@@ -855,7 +855,7 @@ There is no involvement from H2O in this case.
 
 To compare multiple models simultaneously, use the POJO to call the
 models using multiple threads. For more information on using POJOs,
-refer to the `POJO Quick Start Guide <POJO_QuickStart.html>`__
+refer to the `POJO Quick Start Guide <pojo-quick-start.html>`__
 and `POJO Java Documentation <../h2o-genmodel/javadoc/index.html>`__
 
 In-H2O scoring is triggered on an existing H2O cluster, typically using
