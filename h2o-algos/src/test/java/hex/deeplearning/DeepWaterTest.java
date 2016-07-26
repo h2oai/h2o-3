@@ -158,7 +158,7 @@ public class DeepWaterTest extends TestUtil {
         br.close();
 
         FileWriter fw = new FileWriter(path+"/submission.csv");
-        int batch_size = 1; //avoid issues with batching at the end of the test set
+        int batch_size = 64; //avoid issues with batching at the end of the test set
         ImageIter img_iter = new ImageIter(test_data, test_labels, batch_size, 224, 224);
         fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
         while(img_iter.Next()) {
