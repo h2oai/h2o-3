@@ -13,11 +13,13 @@ configurations {
 }
 
 dependencies {
-//    compile 'com.google.code.gson:gson:2.6.2'
     compile 'com.squareup.retrofit2:retrofit:2.0.1'
     compile 'com.squareup.retrofit2:converter-gson:2.0.1'  
     compile 'com.squareup.okhttp3:okhttp:3.3.1'
     compile 'com.squareup.okio:okio:1.8.0'
+
+    testCompile project(":h2o-app")
+    testCompile "junit:junit:${junitVersion}"
 
     // Generator dependencies
     srcGenCompile project( path: ":h2o-assembly", configuration: "shadow")
@@ -42,8 +44,13 @@ sourceSets {
 jar {
   manifest {
     attributes 'Main-Class': 'water.bindings.examples.retrofit.GBM_Example'
-//    attributes 'Main-Class': 'water.bindings.examples.retrofit.Merge_Example'
   }
+}
+
+test {
+    maxParallelForks = 1
+    maxHeapSize = "4g"
+    forkEvery = 1
 }
 
 task runGenerateRESTAPIBindingsSrc(type: Exec) {
@@ -63,22 +70,8 @@ runGenerateRESTAPIBindingsSrc.dependsOn configurations.srcGenCompile
 compileJava.dependsOn runGenerateRESTAPIBindingsSrc
 clean.dependsOn cleanGenerateRESTAPIBindings
 
-
 //
 // Setup Gradle application runner
 //
 apply plugin: 'application'
- mainClassName = 'water.bindings.examples.retrofit.GBM_Example'
-//mainClassName = 'water.bindings.examples.retrofit.Merge_Example'
-//ignoreExitValue = false
-
-
-
-//task runApp(type: JavaExec) {
-//  classpath = sourceSets.main.runtimeClasspath
-
-//  main = 'water.bindings.examples.retrofit.GBM_Example'
-
-  // arguments to pass to the application
-//  args 'appArg1'
-//}
+mainClassName = 'water.bindings.examples.retrofit.GBM_Example'

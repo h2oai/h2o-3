@@ -327,7 +327,11 @@ import java.lang.reflect.Field;
 
 public class H2oApi {
 
-  public H2oApi() {}
+  public static String DEFAULT_URL = \"http://localhost:54321/\";
+
+  public H2oApi() {
+      this(DEFAULT_URL);
+  }
   public H2oApi(String url) { this.url = url; }
 
   public H2oApi setUrl(String s) {
@@ -461,7 +465,7 @@ public class H2oApi {
   //--------- PRIVATE " + ("-" * 98)
 
   private Retrofit retrofit;
-  private String url = \"http://localhost:54321/\";
+  private String url = DEFAULT_URL;
   private int timeout_s = 60;
   private int pollInterval_ms = 1000;
 
