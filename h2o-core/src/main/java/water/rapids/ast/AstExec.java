@@ -3,7 +3,7 @@ package water.rapids.ast;
 import water.rapids.*;
 import water.rapids.ast.params.AstId;
 import water.rapids.vals.ValFun;
-import water.util.SB;
+import water.codegen.SB;
 
 import java.util.ArrayList;
 

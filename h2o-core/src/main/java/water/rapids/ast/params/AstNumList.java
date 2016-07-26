@@ -6,7 +6,7 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.AstParameter;
 import water.util.ArrayUtils;
-import water.util.SB;
+import water.codegen.SB;
 
 import java.util.ArrayList;
 import java.util.Arrays;
