@@ -100,6 +100,7 @@ public class DeepWaterTest extends TestUtil {
 
       ImageTrain m = new ImageTrain();
       m.buildNet(classes, batch_size, "inception_bn");
+      m.loadParam(myhome + "/deepwater/Inception/model.params");
 
       int max_iter = 6; //epochs
       int count = 0;
@@ -138,6 +139,7 @@ public class DeepWaterTest extends TestUtil {
               ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds,actual);
               System.out.println(mm.toString());
           }
+          m.saveParam(path+"/param."+iter);
       }
       scoreTestSet(path,classes,m);
   }
@@ -163,9 +165,8 @@ public class DeepWaterTest extends TestUtil {
         fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
         while(img_iter.Next()) {
             float[] data = img_iter.getData();
-            float[] labels = img_iter.getLabel();
             String[] files = img_iter.getFiles();
-            float[] pred = m.predict(data, labels);
+            float[] pred = m.predict(data);
             for (int i=0;i<batch_size;++i) {
                 String file = files[i];
                 String[] pcs = file.split("/");
