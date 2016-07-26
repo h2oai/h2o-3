@@ -144,7 +144,7 @@ public class DeepWaterTest extends TestUtil {
 
     public static void scoreTestSet(String path, int classes, ImageTrain m) throws IOException {
         // make test set predictions
-        BufferedReader br = new BufferedReader(new FileReader(new File(path+"test_list.csv"))); //file created with 'cut -d, -f1 sample_submission.csv > test_list.csv'
+        BufferedReader br = new BufferedReader(new FileReader(new File(path+"test_list.csv"))); //file created with 'cut -d, -f1 sample_submission.csv | sed 1d > test_list.csv'
 
         ArrayList<Float> test_labels = new ArrayList<>();
         ArrayList<String> test_data = new ArrayList<>();
