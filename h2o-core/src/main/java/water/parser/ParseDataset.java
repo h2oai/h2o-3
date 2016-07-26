@@ -958,8 +958,10 @@ public final class ParseDataset {
         p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);
         if(_dout.hasErrors())
-          for(ParseWriter.ParseErr err:_dout._errs)
+          for(ParseWriter.ParseErr err:_dout._errs) {
+            assert err != null : "Parse error cannot be null!";
             err._file = _srckey.toString();
+          }
         Job.update(in._len, _jobKey); // Record bytes parsed
         // remove parsed data right away
         freeMem(in);
