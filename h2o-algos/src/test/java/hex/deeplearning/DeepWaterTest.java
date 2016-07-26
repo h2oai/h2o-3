@@ -95,15 +95,16 @@ public class DeepWaterTest extends TestUtil {
       }
       br.close();
 
-      int batch_size = 32;
+      int batch_size = 64;
       int classes = 10;
 
       ImageTrain m = new ImageTrain();
       m.buildNet(classes, batch_size, "inception_bn");
 
-      int max_iter = 10; //epochs
+      int max_iter = 6; //epochs
       int count = 0;
       for (int iter = 0; iter < max_iter; iter++) {
+          m.setLR(3e-3f/(1+iter));
           //each iteration does a different random shuffle
           Random rng = RandomUtils.getRNG(0);
           rng.setSeed(0xDECAF+0xD00D*iter);
