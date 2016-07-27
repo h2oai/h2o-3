@@ -18,6 +18,10 @@ from h2o.h2o import (connect, init, api, connection,
                      interaction, as_list,
                      get_timezone, set_timezone, list_timezones,
                      demo, make_metrics)
+# We have substantial amount of code relying on h2o.H2OFrame to exist. Thus, we make this class available from
+# root h2o module, without exporting it explicitly. In the future this import may be removed entirely, so that
+# one would have to import it from h2o.frames.
+from h2o.frame import H2OFrame  # NOQA
 
 __version__ = "SUBST_PROJECT_VERSION"
 
