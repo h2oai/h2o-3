@@ -200,7 +200,7 @@ class H2OFrame(object):
         return fr
 
     def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
-        if "://" not in path:
+        if is_str(path) and "://" not in path:
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)

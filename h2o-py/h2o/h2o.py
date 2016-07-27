@@ -278,7 +278,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 
     Parameters
     ----------
-      path : str
+      path : str | list(str)
         A path specifying the location of the data to import.
 
       destination_frame : str, optional
@@ -323,7 +323,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     -------
       A new H2OFrame instance.
     """
-    assert_is_str(path)
+    #assert_is_str(path)
     assert_maybe_str(destination_frame)
     if not parse:
         return lazy_import(path)
