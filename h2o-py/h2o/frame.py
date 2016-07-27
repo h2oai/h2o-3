@@ -1835,6 +1835,7 @@ class H2OFrame(object):
             "everything"            - outputs NaNs whenever one of its contributing observations is missing
             "all.obs"               - presence of missing observations will throw an error
             "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+
         Returns
         -------
           An H2OFrame of the correlation matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
