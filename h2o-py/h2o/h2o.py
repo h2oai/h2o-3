@@ -212,8 +212,11 @@ def _import(path):
 
 def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names=None, col_types=None,
                 na_strings=None):
-    """Upload a dataset at the path given from the local machine to the H2O cluster. Does a single-threaded push to H2O.
-    Also see import_file.
+    """
+    Upload a dataset at the path given from the local machine to the H2O cluster.
+
+    Does a single-threaded push to H2O.
+    Also see :meth:`import_file`.
 
     Parameters
     ----------
@@ -320,6 +323,8 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     -------
       A new H2OFrame instance.
     """
+    assert_is_str(path)
+    assert_maybe_str(destination_frame)
     if not parse:
         return lazy_import(path)
 
