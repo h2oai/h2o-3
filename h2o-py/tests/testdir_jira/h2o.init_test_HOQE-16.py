@@ -19,7 +19,7 @@ PORT = 55330
 
 # Check whether there is already an instance running at the specified port, and if so shut it down.
 try:
-    conn = h2o.connect(port=PORT)
+    conn = h2o.connect(ip="localhost", port=PORT)
     conn.shutdown_server(prompt=False)
 except H2OConnectionError:
     pass
