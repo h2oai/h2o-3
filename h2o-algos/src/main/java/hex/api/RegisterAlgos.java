@@ -19,6 +19,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.tree.drf    .DRF         (true),
       new hex.tree.gbm    .GBM         (true),
       new hex.aggregator  .Aggregator  (true),
+      new hex.deepwater   .DeepWater   (true),
     };
     // "Word2Vec", "Example", "Grep"
     for (ModelBuilder algo : algos) {
@@ -28,6 +29,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       int version = 3;
       if( base.equals("SVD") ) version = 99;  // SVD is experimental still
       if( base.equals("Aggregator") ) version = 99;  // Aggregator is experimental still
+//      if( base.equals("DeepWater") ) version = 99;  // DeepWater is experimental still
 
       H2O.register("POST /"+version+"/ModelBuilders/"+lbase, bh_clz, "train",
           "train_" + lbase,
