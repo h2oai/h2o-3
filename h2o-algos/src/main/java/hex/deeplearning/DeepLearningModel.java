@@ -1766,8 +1766,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (_hidden_dropout_ratios.length != _hidden.length) {
           dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
         } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
-          if (!_quiet_mode)
-            dl.hide("_hidden_dropout_ratios", "Ignoring hidden_dropout_ratios because a non-dropout activation function was specified.");
+          dl.error("_hidden_dropout_ratios", "Cannot specify hidden_dropout_ratios with a non-dropout activation function. Use 'RectifierWithDropout', 'TanhWithDropout', etc.");
         } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
           dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");
         }
