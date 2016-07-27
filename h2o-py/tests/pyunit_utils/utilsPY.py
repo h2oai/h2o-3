@@ -472,7 +472,8 @@ def expect_model_param(models, attribute_name, expected_values):
                                                             .format(expected_values[i], actual_values[i])
 
 
-def rest_ctr():  return h2o.H2OConnection.rest_ctr()
+def rest_ctr():
+    return h2o.connection().requests_count
 
 
 def write_syn_floating_point_dataset_glm(csv_training_data_filename, csv_validation_data_filename,
