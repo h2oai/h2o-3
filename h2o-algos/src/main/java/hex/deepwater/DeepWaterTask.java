@@ -2,12 +2,16 @@ package hex.deepwater;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import static water.gpu.util.img2pixels;
+import water.gpu.ImageIter;
 import water.parser.BufferedString;
 import water.util.Log;
+import water.util.RandomUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
 
 public class DeepWaterTask extends MRTask<DeepWaterTask> {
   final private boolean _training;
@@ -16,7 +20,6 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
   int _chunk_node_count = 1;
   float _useFraction;
   boolean _shuffle;
-  int _weightIdx =-1;
 
   /**
    * Accessor to the object containing the (final) state of the Deep Learning model
@@ -49,31 +52,55 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     _localmodel = _sharedmodel;
     _sharedmodel = null;
     _localmodel.set_processed_local(0);
-    _weightIdx=_fr.find(_localmodel.get_params()._weights_column);
-  }
+    final int weightIdx =_fr.find(_localmodel.get_params()._weights_column);
+    final int respIdx =_fr.find(_localmodel.get_params()._response_column);
+    final int batch_size = _localmodel.get_params()._mini_batch_size;
 
-  @Override
-  synchronized
-  public void map(Chunk[] chks) {
+    // single-threaded logic
     BufferedString bs = new BufferedString();
     int width = 224;
     int height = 224;
-    for (int i=0;i<chks[0]._len;++i) {
-      double weight = _weightIdx==-1?1:chks[_weightIdx].atd(i);
-      if (weight==0)
+
+    if (_fr.numRows()>Integer.MAX_VALUE) {
+      throw H2O.unimpl("Need to implement batching into int-sized chunks.");
+    }
+
+    // loop over all images on this node
+    ArrayList<Float> train_labels = new ArrayList<>();
+    ArrayList<String> train_data = new ArrayList<>();
+    for (int i=0; i<_fr.vec(0).length(); ++i) {
+      double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
+      if (weight == 0)
         continue;
-      String file = chks[0].atStr(bs, i).toString();
-      Log.info("Training on image: " + file);
-      float[] raw;
-      float[] label = new float[1];
-      try {
-        raw = img2pixels(file, width, height);
-        label[0] = (float)chks[chks.length-1].atd(i); //FIXME: mini-batch and use synchronized for each minibatch only
-        _localmodel._imageTrain.train(raw, label);
-        _localmodel.add_processed_local(_localmodel.get_params()._mini_batch_size);
-      } catch (IOException e) {
-        e.printStackTrace();
+      String file = _fr.vec(0).atStr(bs, i).toString();
+      float response = (float) _fr.vec(respIdx).at(i);
+      train_data.add(file);
+      train_labels.add(response);
+    }
+    long seed = 0xDECAF + 0xD00D * _localmodel.get_processed_global();
+    Random rng = RandomUtils.getRNG(seed);
+    if (_localmodel.get_params()._shuffle_training_data) {
+      Collections.shuffle(train_labels, rng);
+      rng.setSeed(seed);
+      Collections.shuffle(train_data, rng);
+    }
+    // randomly add more rows to fill up to a multiple of batch_size
+    while (train_data.size()%batch_size!=0) {
+      int pick = rng.nextInt(train_data.size());
+      train_data.add(train_data.get(pick));
+      train_labels.add(train_labels.get(pick));
+    }
+    try {
+      ImageIter img_iter = new ImageIter(train_data, train_labels, batch_size, width, height);
+      while(img_iter.Next() && !isCancelled()) {
+        float[] data = img_iter.getData();
+        float[] labels = img_iter.getLabel();
+//        Log.info("Training on " + Arrays.toString(img_iter.getFiles()));
+        _localmodel._imageTrain.train(data, labels); //ignore predictions
+        _localmodel.add_processed_local(batch_size);
       }
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 

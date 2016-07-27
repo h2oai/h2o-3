@@ -1067,18 +1067,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  private class BigScore extends MRTask<BigScore> {
-    final String[] _domain; // Prediction domain; union of test and train classes
-    final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
-    ModelMetrics.MetricBuilder _mb;
+  protected class BigScore extends MRTask<BigScore> {
+    final protected String[] _domain; // Prediction domain; union of test and train classes
+    final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
+    public ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
-    final boolean _computeMetrics;  // Column means of test frame
-    final boolean _hasWeights;
-    final boolean _makePreds;
-    final Job _j;
-
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      _j = j;
+    final protected boolean _computeMetrics;  // Column means of test frame
+    final protected boolean _hasWeights;
+    final protected boolean _makePreds;
+    final protected Job _j;
+    
+    protected BigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+      _j = j;  
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
