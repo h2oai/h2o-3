@@ -24,6 +24,7 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+import hex.genmodel.GenModel;
 import water.H2O;
 import water.codegen.java.JCodeGenUtil;
 
@@ -395,8 +396,13 @@ public class JCodeGen {
   // Compiler loaded???
   public static boolean canCompile() { return COMPILER!=null; }
 
-  public static Class compile(String class_name, String java_text) throws Exception {
-    return compile(class_name, java_text, false);
+  public static Class compile(String className, String javaText) throws Exception {
+    return compile(className, javaText, false);
+  }
+
+  public static GenModel instantiate(String className, String javaText) throws Exception {
+    Class clz = JCodeGen.compile(className, javaText);
+    return (GenModel) clz.newInstance();
   }
 
   public static Class compile(String class_name, String java_text, boolean debug) throws Exception {

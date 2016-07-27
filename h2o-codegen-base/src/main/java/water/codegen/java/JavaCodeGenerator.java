@@ -13,4 +13,9 @@ public abstract class JavaCodeGenerator<S extends JavaCodeGenerator<S, I>, I>
     extends CodeGeneratorPipeline<S, CompilationUnitGenerator>
     implements ClassGenContainer {
 
+  public abstract static class GeneratorProvider<S extends JavaCodeGenerator<S, I>, I> {
+    public abstract boolean supports(Class klazz);
+    public abstract JavaCodeGenerator<S, I> createGenerator(I o);
+  }
+
 }

@@ -6,6 +6,7 @@ import hex.genmodel.easy.prediction.DimReductionModelPrediction;
 import water.*;
 import water.api.StreamWriter;
 import water.api.schemas3.KeyV3;
+import water.codegen.CodeGenerationService;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.*;
@@ -1353,17 +1354,28 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
     String modelName = JCodeGen.toJavaId(_key.toString());
-    boolean preview = false;
-    String java_text = toJava(preview, true);
     GenModel genmodel;
     try {
-      Class clz = JCodeGen.compile(modelName,java_text);
-      genmodel = (GenModel) clz.newInstance();
+      String modelJavaCode = toJava(false /* preview */, true /* verbose code */);
+      genmodel = JCodeGen.instantiate(modelName, modelJavaCode);
     } catch (Exception e) {
       throw H2O.fail("Internal POJO compilation failed",e);
     }
 
-    return testJavaScoring(genmodel, data, model_predictions, rel_epsilon);
+    boolean result1 = testJavaScoring(genmodel, data, model_predictions, rel_epsilon);
+    boolean result2 = true;
+    if (CodeGenerationService.INSTANCE.hasCodeGenerator(this)) {
+      try {
+        String modelJavaCode = CodeGenerationService.INSTANCE.generate(this);
+        genmodel = JCodeGen.instantiate(modelName, modelJavaCode);
+      } catch (Exception e) {
+        throw H2O.fail("Internal POJO compilation failed",e);
+      }
+      result2 = testJavaScoring(genmodel, data, model_predictions, rel_epsilon);
+    } else {
+      Log.warn("Cannot find code generator for " + this.getClass());
+    }
+    return result1 && result2;
   }
 
   public boolean testJavaScoring(GenModel genModel, Frame data, Frame model_predictions, double rel_epsilon) {

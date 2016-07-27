@@ -3,6 +3,7 @@ package water.codegen.java;
 import hex.Distribution;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
+import water.codegen.CodeGenerationService;
 import water.codegen.java.mixins.GBMMixin;
 
 import static water.codegen.java.JCodeGenUtil.*;
@@ -11,10 +12,6 @@ import static water.codegen.java.JCodeGenUtil.*;
  * FIXME:
  */
 public class GBMModelPOJOCodeGen extends POJOModelCodeGenerator<GBMModelPOJOCodeGen, GBMModel> {
-
-  public static GBMModelPOJOCodeGen codegen(GBMModel model) {
-    return new GBMModelPOJOCodeGen(model);
-  }
 
   protected GBMModelPOJOCodeGen(GBMModel model) {
     super(model);
@@ -37,4 +34,16 @@ public class GBMModelPOJOCodeGen extends POJOModelCodeGenerator<GBMModelPOJOCode
     return self();
   }
 
+  public static class GBMGeneratorProvider extends GeneratorProvider<GBMModelPOJOCodeGen, GBMModel> {
+
+    @Override
+    public boolean supports(Class klazz) {
+      return klazz.isAssignableFrom(GBMModel.class);
+    }
+
+    @Override
+    public JavaCodeGenerator<GBMModelPOJOCodeGen, GBMModel> createGenerator(GBMModel model) {
+      return new GBMModelPOJOCodeGen(model);
+    }
+  }
 }

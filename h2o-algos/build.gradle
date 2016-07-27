@@ -3,10 +3,15 @@
 //
 description = "H2O Algorithms"
 
+apply from: "$rootDir/gradle/mixins.gradle"
+
 dependencies {
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+
+  // Javacode loader
+  compile "com.google.code.javaparser:javaparser:1.0.11"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

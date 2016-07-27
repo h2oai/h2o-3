@@ -136,4 +136,5 @@ task deleteGenModelJarFromWebRoot(type: Delete) {
 processResources.dependsOn copyGenModelJarToWebRoot
 clean.dependsOn cleanBuildVersionJava, deleteGenModelJarFromWebRoot
 
-apply from: '../gradle/javaIgnoreSymbolFile.gradle'
+apply from: "$rootDir/gradle/javaIgnoreSymbolFile.gradle"
+apply from: "$rootDir/gradle/mixins.gradle"

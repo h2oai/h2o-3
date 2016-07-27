@@ -10,6 +10,7 @@ import java.util.zip.ZipOutputStream;
 import water.H2O;
 import water.codegen.SBPrintStream;
 import water.codegen.java.CompilationUnitGenerator;
+import water.codegen.java.JavaCodeGenerator;
 import water.codegen.java.POJOModelCodeGenerator;
 import water.util.FileUtils;
 import water.util.Log;
@@ -23,7 +24,7 @@ import water.util.Log;
 //  - zipping
 //  - sending all CU into stream as it is
 //  - opening/closing OoutputStream for each CU
-public class ZipOutputDriver extends CodeGenDriver {
+public class ZipOutputDriver extends CodeGenOutputDriver {
 
   // FIXME: allow for renaming top-level project directory "model-pojo"
   public static void append(ZipInputStream zis, ZipOutputStream zos) throws IOException {
@@ -39,7 +40,7 @@ public class ZipOutputDriver extends CodeGenDriver {
     }
   }
 
-  public static void codegen(POJOModelCodeGenerator<?, ?> mcg, OutputStream os, ZipInputStream zis, boolean appendGenModelLib) throws IOException {
+  public static void codegen(JavaCodeGenerator<?, ?> mcg, OutputStream os, ZipInputStream zis, boolean appendGenModelLib) throws IOException {
     // Append content of existing zip file
     ZipOutputStream zos = new ZipOutputStream(os);
     if (zis != null) {
@@ -106,7 +107,7 @@ public class ZipOutputDriver extends CodeGenDriver {
   }
 
   @Override
-  public void codegen(POJOModelCodeGenerator<?, ?> mcg, OutputStream os) throws IOException {
+  public void codegen(JavaCodeGenerator<?, ?> mcg, OutputStream os) throws IOException {
     codegen(mcg,
             os,
             new ZipInputStream(this.getClass().getResourceAsStream("/model-pojo/model-pojo.zip")),

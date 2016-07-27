@@ -9,7 +9,7 @@ import java.io.IOException;
 import hex.genmodel.GenModel;
 import water.H2O;
 import water.codegen.JCodeGen;
-import water.codegen.driver.CodeGenDriver;
+import water.codegen.driver.CodeGenOutputDriver;
 import water.codegen.driver.DirectOutputDriver;
 
 /**
@@ -21,8 +21,8 @@ public class CodeGenTestUtil {
     return getPojoModel(modelCodeGen, new DirectOutputDriver());
   }
 
-  static GenModel getPojoModel(POJOModelCodeGenerator modelCodeGen, CodeGenDriver cgd) {
-    CodeGenDriver driver = new DirectOutputDriver();
+  static GenModel getPojoModel(POJOModelCodeGenerator modelCodeGen, CodeGenOutputDriver cgd) {
+    CodeGenOutputDriver driver = new DirectOutputDriver();
     //FileOutputStream fos = new FileOutputStream(new File("/tmp/testmodel.java"));
     ByteArrayOutputStream fos = new ByteArrayOutputStream(1 << 16);
     GenModel genModel = null;
