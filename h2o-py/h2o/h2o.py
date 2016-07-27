@@ -30,7 +30,7 @@ from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_str, is_str, is_int, is_listlike
+from h2o.utils.typechecks import assert_is_type, assert_is_str, assert_maybe_str, is_str, is_int, is_listlike
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
 
 warnings.simplefilter("always", DeprecationWarning)
@@ -1228,6 +1228,26 @@ def data_file(relative_path):
     h2o_dir = os.path.split(__file__)[0]
     return os.path.join(h2o_dir, relative_path)
 
+
+def make_metrics(predicted, actual, domain=None, distribution=None):
+    """
+    Create Model Metrics from predicted and actual values in H2O.
+
+    :params H2OFrame predicted: an H2OFrame containing predictions.
+    :params H2OFrame actuals: an H2OFrame containing actual values.
+    :params domain: list of response factors for classification.
+    :params distribution: distribution for regression.
+    """
+    assert_is_type(predicted, H2OFrame)
+    assert_is_type(actual, H2OFrame)
+    # assert predicted.ncol == 1, "`predicted` frame should have exactly 1 column"
+    assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
+    assert_maybe_str(distribution)
+    if domain is None and any(actual.isfactor()):
+        domain = actual.levels()[0]
+    res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
+              data={"domain": domain, "distribution": distribution})
+    return res["model_metrics"]
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -13,7 +13,6 @@ import sys
 
 from h2o.utils.compatibility import *  # NOQA
 
-
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
            "assert_is_numeric", "assert_is_str", "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric",
            "assert_maybe_str")
@@ -81,7 +80,6 @@ def assert_maybe_type(s, stype, typename=None):
         tn = typename or _get_type_name(stype)
         sn = _get_type_name(type(s))
         raise TypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
-
 
 def assert_is_str(s):
     """Assert that the argument is a string."""

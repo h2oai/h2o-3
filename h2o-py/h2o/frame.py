@@ -200,7 +200,7 @@ class H2OFrame(object):
         return fr
 
     def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
-        rawkey = h2o.lazy_import(path)
+        rawkey = h2o.lazy_import(os.path.abspath(path))
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
         return self
 
@@ -1175,6 +1175,11 @@ class H2OFrame(object):
         fr._ex._cache.names = new_names
         fr._ex._cache.types = new_types
         return fr
+
+    # def __getattr__(self, key):
+    #     if key in self.names:
+    #         return self[key]
+    #     raise AttributeError(".%s column not found in H2OFrame" % key)
 
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
         try:

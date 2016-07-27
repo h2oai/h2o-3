@@ -22,6 +22,8 @@ class MetricsBase(object):
     """
 
     def __init__(self, metric_json, on=None, algo=""):
+        # Yep, it's messed up...
+        if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
         self._on_train = False  # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
         self._on_valid = False
@@ -38,7 +40,13 @@ class MetricsBase(object):
         else:
             raise ValueError("on expected to be train,valid,or xval. Got: " + str(on))
 
+    @classmethod
+    def make(cls, kvs):
+        """Factory method to instantiate a MetricsBase object from the list of key-value pairs."""
+        return cls(metric_json=dict(kvs))
+
     def __repr__(self):
+        # FIXME !!!  __repr__ should never print anything, but return a string
         self.show()
         return ""
 
@@ -85,8 +93,8 @@ class MetricsBase(object):
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
         if metric_type == 'ModelMetricsBinomial':
-            print("Mean Per-Class Error: " + str(self.mean_per_class_error()[0][
-                                                     1]))  ## second element for first threshold is the actual mean per class error
+            # second element for first threshold is the actual mean per class error
+            print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
         if metric_type == 'ModelMetricsMultinomial':
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
