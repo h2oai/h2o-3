@@ -13,6 +13,7 @@ import imp
 import itertools
 import os
 import re
+import sys
 import warnings
 
 from h2o.utils.compatibility import *  # NOQA
@@ -273,6 +274,16 @@ def get_human_readable_time(time_ms):
         res = " %d ms" % millis
 
     return res.strip()
+
+
+def print2(msg, flush=False, end="\n"):
+    """
+    This function exists here ONLY because Sphinx.ext.autodoc gets into a bad state when seeing the print()
+    function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
+    ignores the "bysource" member-order option.
+    """
+    print(msg, end=end)
+    if flush: sys.stdout.flush()
 
 
 gen_header = _gen_header

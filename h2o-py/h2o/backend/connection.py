@@ -31,7 +31,7 @@ from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.shared_utils import stringify_list
+from h2o.utils.shared_utils import stringify_list, print2
 from h2o.utils.typechecks import (assert_is_bool, assert_is_int, assert_is_str, assert_is_type, assert_maybe_numeric,
                                   assert_maybe_str, is_str)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
@@ -586,13 +586,10 @@ class H2OConnection(backwards_compatible()):
 
 
 
-    def _print(self, *args, **kwargs):
-        """Helper function to print connection status messages when in "verbose" mode."""
-        if self._verbose:
-            flush = False
-            if "flush" in kwargs: flush = kwargs.pop("flush")
-            print(*args, **kwargs)
-            if flush: sys.stdout.flush()
+    def _print(self, msg, flush=False, end="\n"):
+        """Helper function to print connection status messages when in verbose mode."""
+        if not self._verbose: return
+        print2(msg, end=end, flush=flush)
 
 
     def __repr__(self):

@@ -12,6 +12,7 @@ from __future__ import print_function
 import sys
 sys.path.insert(0, "../..")
 import h2o
+from h2o.exceptions import H2OConnectionError
 
 PORT = 55330
 
@@ -19,7 +20,7 @@ PORT = 55330
 try:
     conn = h2o.connect(port=PORT)
     conn.shutdown(prompt=False)
-except h2o.H2OConnectionError:
+except H2OConnectionError:
     pass
 
 
