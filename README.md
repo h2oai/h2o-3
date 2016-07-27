@@ -60,7 +60,7 @@ You can browse and create new issues in our open source **JIRA**:  <http://jira.
     * Web: <https://groups.google.com/d/forum/h2ostream>
     * Mail to: [h2ostream@googlegroups.com](mailto:h2ostream@googlegroups.com)
 *  Documentation
-    * Bleeding edge nightly build page: <http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html>
+    * Bleeding edge nightly build page: <https://s3.amazonaws.com/h2o-release/h2o/master/latest.html>
     * FAQ: <http://h2o.ai/product/faq/>
 *  Download (pre-built packages)
     * <http://h2o.ai/download>
