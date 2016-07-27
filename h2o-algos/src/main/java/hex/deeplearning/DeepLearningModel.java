@@ -72,7 +72,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     @Override public boolean isSupervised() {
       return !autoencoder;
     }
-  } // DeepLearningModelOutput
+  } // DeepWaterModelOutput
 
   // Default publicly visible Schema is V2
   public ModelSchemaV3 schema() { return new DeepLearningModelV3(); }

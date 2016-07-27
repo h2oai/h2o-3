@@ -25,8 +25,8 @@ public class DeepWaterTest extends TestUtil {
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); }
 
-  final String myhome = "/home/arno/";
-  final boolean GPU = true;
+  final String myhome = "/users/arno/";
+  final boolean GPU = false;
 
   @Test
   public void inceptionPrediction() throws IOException {
