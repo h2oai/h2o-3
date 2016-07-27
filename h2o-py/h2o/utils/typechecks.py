@@ -12,6 +12,7 @@ import re
 import sys
 
 from h2o.utils.compatibility import *  # NOQA
+from h2o.exceptions import H2OTypeError, H2OValueError
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
            "assert_is_numeric", "assert_is_str", "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric",
@@ -58,19 +59,20 @@ def assert_is_type(s, stype, typename=None):
     Assert that the argument has the specified type.
 
     This function is used to check that the type of the argument is correct, or otherwise raise an error.
-    For example:
+    For example::
+
         assert_is_type(fr, H2OFrame)
 
     :param s: variable to check
     :param stype: expected type
     :param typename: name of the type (if not given, will be extracted from `stype`)
-    :raise TypeError if the argument is not of the desired type.
+    :raises H2OTypeError: if the argument is not of the desired type.
     """
     if not isinstance(s, stype):
         nn = _get_variable_name()
         tn = typename or _get_type_name(stype)
         sn = _get_type_name(type(s))
-        raise TypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
+        raise H2OTypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
 
 
 def assert_maybe_type(s, stype, typename=None):
@@ -79,7 +81,12 @@ def assert_maybe_type(s, stype, typename=None):
         nn = _get_variable_name()
         tn = typename or _get_type_name(stype)
         sn = _get_type_name(type(s))
-        raise TypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
+        raise H2OTypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
+
+def assert_is_none(s, reason=None):
+    """Assert that the argument is None."""
+    if s is not None:
+        raise H2OValueError("`%s` should be None %s" % (_get_variable_name(), reason or ""))
 
 def assert_is_str(s):
     """Assert that the argument is a string."""
@@ -114,10 +121,14 @@ def _get_variable_name():
     """
     Magic variable name retrieval.
 
-    This function is designed as a helper for assert_*() functions. Typically such assertion is used like this:
+    This function is designed as a helper for assert_*() functions. Typically such assertion is used like this::
+
         assert_is_int(num_threads)
+
     If the variable `num_threads` turns out to be non-integer, we would like to raise an exception such as
-        TypeError("`num_threads` is expected to be integer, but got <str>")
+
+        H2OTypeError("`num_threads` is expected to be integer, but got <str>")
+
     and in order to compose an error message like that, we need to know that the variables that was passed to
     assert_is_int() carries a name "num_threads". Naturally, the variable itself knows nothing about that.
 

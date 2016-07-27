@@ -25,15 +25,15 @@ import requests
 from requests.auth import AuthBase
 
 from h2o.backend.server import H2OLocalServer
-from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError
+from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
 from h2o.schemas.cloud import H2OCluster
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import stringify_list, print2
-from h2o.utils.typechecks import (assert_is_bool, assert_is_int, assert_is_str, assert_is_type, assert_maybe_numeric,
-                                  assert_maybe_str, is_str)
+from h2o.utils.typechecks import (assert_is_bool, assert_is_int, assert_is_str, assert_is_type, assert_is_none,
+                                  assert_maybe_numeric, assert_maybe_str, is_str)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
 
@@ -43,20 +43,27 @@ __all__ = ("H2OConnection", )
 
 class H2OConnection(backwards_compatible()):
     """
-    Single connection to an H2O server.
+    Connection handle to an H2O cluster.
 
-    Instances of this class are created through a static method :meth:`open`::
+    In a typical scenario you don't need to access this class directly. Instead use :func:`h2o.connect` to
+    establish a connection, and :func:`h2o.api` to make requests to the backend H2O server. However if your
+    use-case is not typical, then read on.
 
-        conn = H2OConnection.open(...)
+    Instances of this class may only be created through a static method :meth:`open`::
 
-    You can also use this class as a context manager::
+        hc = H2OConnection.open(...)
 
-        with H2OConnection.open() as conn:
-            conn.info().pprint()
+    Once opened, the connection remains active until the script exits (or until you explicitly :meth:`close` it).
+    If the script exits with an exception, then the connection will fail to close, and the backend server will
+    keep all the temporary frames and the open session.
 
-    The connection will be automatically closed at the end of the ``with ...`` block.
+    Alternatively you can use this class as a context manager, which will ensure that the connection gets closed
+    at the end of the ``with ...`` block even if an exception occurs::
 
-    This class contains methods for performing the common REST methods GET, POST, and DELETE.
+        with H2OConnection.open() as hc:
+            hc.info().pprint()
+
+    Once the connection is established, you can send REST API requests to the server using :meth:`request`.
     """
 
     @staticmethod
@@ -70,7 +77,7 @@ class H2OConnection(backwards_compatible()):
         cannot be reached, an :class:`H2OConnectionError` will be raised. On success this method returns a new
         :class:`H2OConnection` object, and it is the only "official" way to create instances of this class.
 
-        There are 3 ways to specify which server to connect to (these settings are mutually exclusive):
+        There are 3 ways to specify the target to connect to (these settings are mutually exclusive):
 
             * pass a ``server`` option,
             * pass the full ``url`` for the connection,
@@ -81,39 +88,40 @@ class H2OConnection(backwards_compatible()):
             an H2OLocalServer instance: if the server becomes unresponsive, then having access to its process handle
             will allow us to query the server status through OS, and potentially provide snapshot of the server's
             error log in the exception information.
-        :param url: Full URL of the server to connect to.
-        :param ip: Target server's IP address or hostname (default "localhost").
+        :param url: full url of the server to connect to.
+        :param ip: target server's IP address or hostname (default "localhost").
         :param port: H2O server's port (default 54321).
-        :param https: If True then connect using https instead of http (default False).
-        :param verify_ssl_certificates: If False then SSL certificate checking will be disabled (default True). This
+        :param https: if True then connect using https instead of http (default False).
+        :param verify_ssl_certificates: if False then SSL certificate checking will be disabled (default True). This
             setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
             used, it will generate a warning from the requests library. Has no effect when ``https`` is False.
-        :param auth: Authentication token for connecting to the remote server. This can be either a
+        :param auth: authentication token for connecting to the remote server. This can be either a
             (username, password) tuple, or an authenticator (AuthBase) object. Please refer to the documentation in
             the ``requests.auth`` module.
-        :param proxy: URL address of a proxy server. If you do not specify the proxy, then the requests module
+        :param proxy: url address of a proxy server. If you do not specify the proxy, then the requests module
             will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
-        :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
-        :param verbose: If True, then connection progress info will be printed to the stdout.
+        :param cluster_name: name of the H2O cluster to connect to. This option is used from Steam only.
+        :param verbose: if True, then connection progress info will be printed to the stdout.
 
         :returns: A new :class:`H2OConnection` instance.
         :raises H2OConnectionError: if the server cannot be reached.
         :raises H2OServerError: if the server is in an unhealthy state (although this might be a recoverable error, the
             client itself should decide whether it wants to retry or not).
         """
+        if server is None and url is None and ip is None:
+            raise H2OValueError("At least one of the parameters `server`, `url`, `ip` must be specified.")
         if server is not None:
             assert_is_type(server, H2OLocalServer)
-            assert ip is None and port is None and https is None and url is None, \
-                "`url`, `ip`, `port` and `https` parameters cannot be used together with `server`"
+            assert_is_none(ip, "when `server` parameter is given")
+            assert_is_none(url, "when `server` parameter is given")
             ip = server.ip
             port = server.port
             scheme = server.scheme
         elif url is not None:
             assert_is_str(url)
-            assert ip is None and port is None and https is None and server is None, \
-                "`server`, `ip`, `port` and `https` parameters cannot be used together with `url`"
+            assert_is_none(ip, "when `url` parameter is given")
             parts = url.rstrip("/").split(":")
             assert len(parts) == 3 and (parts[0] in {"http", "https"}) and parts[2].isdigit(), \
                 "Invalid URL parameter '%s'" % url
