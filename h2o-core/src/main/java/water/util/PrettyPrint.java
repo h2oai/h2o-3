@@ -1,11 +1,18 @@
 package water.util;
 
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.PeriodFormat;
+import org.joda.time.format.PeriodFormatter;
+
 import water.fvec.C1SChunk;
 import water.fvec.C2SChunk;
 import water.fvec.C4SChunk;
 import water.fvec.Chunk;
 
 import static java.lang.Double.isNaN;
+
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 public class PrettyPrint {
@@ -29,6 +36,13 @@ public class PrettyPrint {
     if( sec != 0 ) return String.format("%2d.%03d sec", sec, ms);
     if( ms != 0 ) return String.format("%3d.%03d msec", ms, usecs);
     return String.format("%3d usec", usecs);
+  }
+
+  public static String toAge(Date from, Date to) {
+    if (from == null || to == null) return "N/A";
+    Period period = new Period(from.getTime(), to.getTime());
+    PeriodFormatter pf = PeriodFormat.getDefault();
+    return pf.print(period);
   }
 
   // Return X such that (bytes < 1L<<(X*10))

@@ -9,6 +9,7 @@ import jsr166y.ForkJoinWorkerThread;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
+import org.joda.time.PeriodType;
 import org.reflections.Reflections;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -1351,14 +1353,20 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   static void printAndLogVersion(String[] arguments) {
+    String latestVersion = ABV.getLatestH2OVersion();
     Log.init(ARGS.log_level, ARGS.quiet);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
     Log.info("Build git describe: " + ABV.describe());
-    Log.info("Build project version: " + ABV.projectVersion());
+    Log.info("Build project version: " + ABV.projectVersion() + " (latest version: " + latestVersion + ")");
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
+    Log.info("Version age: " + PrettyPrint.toAge(ABV.compiledOnDate(), new Date()));
+    if (ABV.isTooOld()) {
+      Log.warn("\n*** Your H2O version is too old! Please download the latest H2O " + latestVersion + " version from http://h2o.ai/download/ ***");
+      Log.warn("");
+    }
 
     for (AbstractH2OExtension e : H2O.getExtensions()) {
       String n = e.getExtensionName() + " ";
