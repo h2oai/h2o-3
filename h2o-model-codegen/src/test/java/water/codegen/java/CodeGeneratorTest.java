@@ -35,68 +35,9 @@ public class CodeGeneratorTest {
 
     final CompilationUnitGenerator cu = CompilationUnitGenerator.codegen("water.ai.h2o", "KlazzAhoj").withClassGenerator(c);
 
-    BlahModelCodeGenerator model = new BlahModelCodeGenerator(
-        new BlahModel(Key.make("BlahModel#43"), new Model.Parameters() {
-          @Override
-          public String algoName() {
-            return "Blah";
-          }
-
-          @Override
-          public String fullName() {
-            return "BlahALgo";
-          }
-
-          @Override
-          public String javaName() {
-            return "java.Blah";
-          }
-
-          @Override
-          protected long nFoldSeed() {
-            return 3;
-          }
-
-          @Override
-          public long progressUnits() {
-            return 0;
-          }
-        }, new Model.Output() {{
-          int len = 40;
-          String[] sa = new String[len];
-          for (int i = 0; i< len; i++) {
-            sa[i] = "F" + i;
-          }
-          _names = sa;
-
-          int domainLen = 40;
-          String dom[][] = new String[len][domainLen];
-          for (int i = 0; i < len; i++) {
-            for (int j = 0; j < domainLen; j++) {
-              dom[i][j] = "DOMAIN_" + i + "_" + j;
-            }
-          }
-          _domains = dom;
-        }
-          @Override
-          public boolean isSupervised() {
-            return true;
-          }
-
-          @Override
-          public String[] classNames() {
-            int len = 40;
-            String[] sa = new String[len];
-            for (int i = 0; i< len; i++) {
-              sa[i] = "S" + i;
-            }
-            return sa;
-          }
-        })).withPackage("ai.h2o.codegen").build();
-
     // Stdout
     try {
-      new DirectOutputDriver().codegen(model, System.out);
+//      new DirectOutputDriver().codegen(model, System.out);
     } finally {
       // Nothing
     }

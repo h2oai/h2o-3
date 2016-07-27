@@ -7,8 +7,10 @@ import water.codegen.JCodeSB;
 import static water.codegen.util.ArrayUtils.append;
 
 /**
- * FIXME: this is generator for top-level compilation unit:
+ * Top-level compilation unit generator.
  *
+ * It corresponds to a single file in Java world.
+ * It can contain multiple Java classes.
  */
 public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationUnitGenerator, ClassCodeGenerator> {
 
@@ -21,8 +23,10 @@ public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationU
   /* Name of compilation unit - should be derived from top-level class. */
   public final String name;
 
+  /** Top-leve comment generator */
   private CodeGenerator comment;
 
+  /** Model code generator. */
   private JavaCodeGenerator<?, ?> mcg;
 
   public static CompilationUnitGenerator codegen(String packageName, String name) {
@@ -74,6 +78,7 @@ public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationU
 
     // Generate defined types
     super.generate(out);
+
     // Put endline at the end of file
     out.nl();
   }
@@ -90,5 +95,4 @@ public class CompilationUnitGenerator extends CodeGeneratorPipeline<CompilationU
   void setMcg(JavaCodeGenerator<?, ?> mcg) {
     this.mcg = mcg;
   }
-
 }

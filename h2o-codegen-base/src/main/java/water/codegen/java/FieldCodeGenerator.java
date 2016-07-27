@@ -97,7 +97,7 @@ public class FieldCodeGenerator extends SimpleCodeGenerator<FieldCodeGenerator> 
 
   @Override
   public FieldCodeGenerator build() {
-    initCode.build();
+    if (initCode != null) initCode.build();
     return super.build();
   }
 }

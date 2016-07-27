@@ -33,6 +33,7 @@ import static water.codegen.java.JCodeGenUtil.toJavaId;
  *  FIXME: all methods field/method/class should be generalized and definable (POJOModelCodeGenerator
  *  shoudl accept their implementation)
  *  FIXME: why model container is not CodeGeneratorPipeline
+ *  FIXME: build should be protected against multiple build
  */
 abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S, M>, M extends Model<M, ?, ?>>
     extends JavaCodeGenerator<S, M> {
@@ -109,13 +110,11 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
     // FIXME: reverse initialization order with setup link: cug->mcg a pak cg->cug
     this.withCompilationUnit(cug.withClassGenerator(cg));
 
-    // Reimplement in model-specifc subclasss
+    // Reimplement in model-specific subclasss
     buildImpl(cug, cg);
 
     // At the end call all defined generators build method
     return super.build();
-    dfajsdlfjsalfjasl
-        lock it to disallow multiple builds
   }
 
   /**
@@ -166,47 +165,6 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
     return JCodeGenUtil.field(int[].class, fieldName)
         .withModifiers(PUBLIC | STATIC | FINAL)
         .withValue(VALUE(fieldValue));
-
-
-
-  }
-}
-
-
-class BlahModelCodeGenerator
-    extends POJOModelCodeGenerator<BlahModelCodeGenerator, BlahModel> {
-
-  BlahModelCodeGenerator(BlahModel model) {
-    super(model);
-  }
-
-  @Override
-  protected BlahModelCodeGenerator buildImpl(CompilationUnitGenerator cucg,
-                                                 ClassCodeGenerator ccg) {
-    return self();
-  }
-}
-
-//
-// Foo model
-//
-class BlahModel extends Model<BlahModel, Model.Parameters, Model.Output> {
-
-  /**
-   * Full constructor
-   */
-  public BlahModel(Key selfKey, Parameters parms, Output output) {
-    super(selfKey, parms, output);
-  }
-
-  @Override
-  public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return null;
-  }
-
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-    return new double[0];
   }
 }
 

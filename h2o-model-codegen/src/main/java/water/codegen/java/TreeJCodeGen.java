@@ -3,6 +3,7 @@ package water.codegen.java;
 import java.util.Stack;
 
 import hex.tree.CompressedTree;
+import hex.tree.DHistogram;
 import hex.tree.TreeVisitor;
 import water.codegen.JCodeSB;
 import water.codegen.SB;
@@ -75,7 +76,7 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
     return _stack.isEmpty() ? null : _stack.pop();
   }
 
-  @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal) {
+  @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {
     // Check for method size and number of constants generated in constant pool
     if (_state.isBigEnough()) {
       // Offload computation to newly generated class
@@ -96,7 +97,7 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
       _state.body.p("data[").p(col);
       // Generate column names only if necessary
       _state.body.p(" /* ").p(_columnNames[col]).p(" */");
-      _state.body.p("] ").p(equal == 1 ? "!= " : "<").pj(fcmp); // then left and then right (left is !=)
+      _state.body.p("] ").p(equal == 1 ? "!= " : "< ").pj(fcmp); // then left and then right (left is !=)
       _state.javaConstantPoolSize += 2; // * bytes for generated float which is represented as double because of cast (Double occupies 2 slots in constant pool)
     } else { // It is group split
       String groupSplitFieldName = "GRPSPLIT" + _state.grpSplitCnt++;
