@@ -93,6 +93,11 @@
     "user_documents" : [
         {
             "name" : "H2O Documentation",
+            "id"   : "doc-front",
+            "path" : "docs-website/index.html"
+        },
+        {
+            "name" : "H2O User Guide",
             "id"   : "doc-flow",
             "path" : "docs-website/h2o-docs/index.html"
         },
