@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(1, "../../")
 import h2o
+from h2o.exceptions import H2OConnectionError
 
 
 def check_strict():
@@ -20,7 +21,7 @@ def check_strict():
     sys.settrace(tracefunc)
     try:
         h2o.init(url=url)
-    except h2o.H2OConnectionError:
+    except H2OConnectionError:
         pass
 
     assert out["version_check_called"], \

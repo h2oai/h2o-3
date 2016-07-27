@@ -11,7 +11,7 @@ code {
     display: block;
 }
 
-.rst-content dt a.reference.internal {
+.rst-content dt a.reference.internal .viewcode-link {
     float: right;
 }
 

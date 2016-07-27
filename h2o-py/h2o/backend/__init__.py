@@ -38,7 +38,5 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from .connection import H2OConnection
 from .server import H2OLocalServer
-from .exceptions import H2OStartupError, H2OConnectionError, H2OServerError, H2OResponseError
 
-__all__ = ("H2OConnection", "H2OLocalServer", "H2OStartupError", "H2OConnectionError", "H2OServerError",
-           "H2OResponseError")
+__all__ = ("H2OConnection", "H2OLocalServer")

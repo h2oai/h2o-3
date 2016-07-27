@@ -12,7 +12,7 @@ import warnings
 
 from h2o.backend.connection import H2OConnection
 from h2o.backend.server import H2OLocalServer
-from h2o.backend.exceptions import H2OConnectionError
+from h2o.exceptions import H2OConnectionError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
