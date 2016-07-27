@@ -1930,6 +1930,7 @@ summary.H2OFrame <- h2o.summary
 #' @param ... Further arguments to be passed from or to other methods.
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
+#' @return Returns a list containing the mean for each column (NaN for non-numeric columns).
 #' @examples
 #' \donttest{
 #' h2o.init()
