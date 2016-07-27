@@ -50,6 +50,10 @@ class MetricsBase(object):
         self.show()
         return ""
 
+    # TODO: convert to actual fields list
+    def __getitem__(self, key):
+        return self._metric_json.get(key)
+
     @staticmethod
     def _has(dictionary, key):
         return key in dictionary and dictionary[key] is not None
