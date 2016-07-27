@@ -1,12 +1,13 @@
 # -*- encoding: utf-8 -*-
 """
-Debugging utilities.
+Collection of utilities for debugging.
 
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 
+import inspect
 import sys
 from types import ModuleType
 
@@ -181,3 +182,27 @@ def _except_hook(exc_type, exc_value, exc_tb):
 # The original exception hook is stored at sys.__excepthook__, and it will get called if our custom exception
 # handling function itself raises an exception.
 sys.excepthook = _except_hook
+
+
+def get_method_full_name(method):
+    """
+    Return full qualified method name.
+
+    This method will attempt to find the
+
+    :param method: a function object.
+
+    :returns: string of the form "<class name>.<method name>" if the method belongs to a class, or
+        "<module name>.<method name>" otherwise.
+    """
+    module = inspect.getmodule(method)
+    for cls_name in dir(module):
+        cls = getattr(module, cls_name)
+        if not inspect.isclass(cls): continue
+        for method_name in dir(cls):
+            cls_method = getattr(cls, method_name)
+            if cls_method == method:
+                return "%s.%s" % (cls_name, method_name)
+    if hasattr(method, "__name__"):
+        return "%s.%s" % (module.__name__, method.__name__)
+    return "<unknown>"
