@@ -73,28 +73,6 @@ def api(endpoint, data=None, json=None, filename=None):
     return h2oconn.request(endpoint, data=data, json=json, filename=filename)
 
 
-def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
-          port="54321+", verbose=True):
-    """
-    Start a new local H2O server.
-
-    This server object can then be passed to `h2o.connect()` to connect to that server; or you can launch multiple
-    local servers and connect to only one of them. The servers will connect into a cloud.
-
-    :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
-    :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
-    :param enable_assertions: If True, then the server will start with the -ea JVM option (enabling code assertions).
-    :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
-    :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
-    :param ice_root: A temporary directory where H2O log files will be placed. If not specified, then the folder will
-        be chosen by `tempfile.mkdtemp()`.
-    :param port: Port that the server should start listening to.
-    :param verbose: Whether to print connection progress messages to the stdout or not.
-
-    :returns: an ``H2OLocalServer`` instance.
-    """
-    return H2OLocalServer.start(**locals())
-
 
 def connection():
     """Return current H2OConnection handler."""
@@ -139,9 +117,6 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
-
-    The use of this method is discouraged, and it may be removed in the future. Prefer `h2o.connect()` and
-    `h2o.start()`.
 
     :param url:
     :param ip:

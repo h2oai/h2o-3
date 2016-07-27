@@ -588,8 +588,8 @@ class H2OConnection(backwards_compatible()):
 
     def _print(self, msg, flush=False, end="\n"):
         """Helper function to print connection status messages when in verbose mode."""
-        if not self._verbose: return
-        print2(msg, end=end, flush=flush)
+        if self._verbose:
+            print2(msg, end=end, flush=flush)
 
 
     def __repr__(self):
@@ -602,17 +602,15 @@ class H2OConnection(backwards_compatible()):
             return "<H2OConnection closed>"
 
     def __enter__(self):
-        # Called when an H2OConnection object is created within the `with ...` statement.
+        """Called when an H2OConnection object is created within the ``with ...`` statement."""
         return self
 
     def __exit__(self, *args):
+        """Called at the end of the ``with ...`` statement."""
         self.close()
         assert len(args) == 3  # Avoid warning about unused args...
         return False  # ensure that any exception will be re-raised
 
-    def __del__(self):
-        # Called when the object is being garbage-collected, but not always...
-        self.close()
 
 
     #-------------------------------------------------------------------------------------------------------------------
