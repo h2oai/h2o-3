@@ -7,8 +7,6 @@ import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
-/**
- */
 public class AstModuloKFold extends AstPrimitive {
   @Override
   public String[] args() {

@@ -7,8 +7,6 @@ import water.rapids.vals.ValNums;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
-/**
- */
 public class AstMean extends AstPrimitive {
   @Override
   public String[] args() {

@@ -14,9 +14,6 @@ import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
 
-/**
- *
- */
 public class AstKFold extends AstPrimitive {
   @Override
   public String[] args() {

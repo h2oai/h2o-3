@@ -13,10 +13,6 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.util.IcedHashMap;
 
-
-/**
- *
- */
 public class AstUnique extends AstPrimitive {
   @Override
   public String[] args() {
