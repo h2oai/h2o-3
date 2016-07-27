@@ -1944,6 +1944,30 @@ h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("mean",x,na.rm))
 #' @export
 mean.H2OFrame <- h2o.mean
 
+#'
+#' Skewness of a column
+#'
+#' Obtain the skewness of a column of a parsed H2O data object.
+#'
+#' @name h2o.skewness
+#' @param x An H2OFrame object.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @return Returns a list containing the skewness for each column (NaN for non-numeric columns).
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.skewness(prostate.hex$AGE)
+#' }
+#' @export
+h2o.skewness <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("skewness",x,na.rm))
+
+#' @rdname h2o.mean
+#' @export
+skewness.H2OFrame <- h2o.skewness
+
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.

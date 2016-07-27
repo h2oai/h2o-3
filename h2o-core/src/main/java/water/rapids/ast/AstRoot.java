@@ -200,6 +200,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
     init(new AstImpute());
     init(new AstKFold());
     init(new AstMode());
+    init(new AstSkewness());
     init(new AstModuloKFold());
     init(new AstQtile());
     init(new AstRunif());

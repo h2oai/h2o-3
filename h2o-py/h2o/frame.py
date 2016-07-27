@@ -1749,6 +1749,20 @@ class H2OFrame(object):
         """
         return ExprNode("mean", self, na_rm)._eager_scalar()
 
+    def skewness(self, na_rm=False):
+        """Compute the skewness.
+
+        Parameters
+        ----------
+          na_rm: bool, default=False
+            If True, then remove NAs from the computation.
+
+        Returns
+        -------
+          A list containing the skewness for each column (NaN for non-numeric columns).
+        """
+        return ExprNode("skewness", self, na_rm)._eager_scalar()
+
     def nacnt(self):
         """Count of NAs for each column in this H2OFrame.
 
