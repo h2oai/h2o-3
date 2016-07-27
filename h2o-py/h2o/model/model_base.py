@@ -444,6 +444,8 @@ class ModelBase(object):
         """
         Return the R^2 for this regression model.
 
+        Will return R^2 for GLM Models and will return NaN otherwise.
+
         The R^2 value is defined to be 1 - MSE/var,
         where var is computed as sigma*sigma.
 

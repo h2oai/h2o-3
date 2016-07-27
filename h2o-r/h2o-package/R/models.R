@@ -794,6 +794,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' Retrieve the R2 value
 #'
 #' Retrieves the R2 value from an H2O model.
+#' Will return R^2 for GLM Models and will return NaN otherwise.
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training R2 value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of R2s are returned, where the names are "train", "valid"
 #' or "xval".
@@ -809,7 +810,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#' m <- h2o.glm(x=2:5,y=1,training_frame=fr)
 #'
 #' h2o.r2(m)
 #' }
