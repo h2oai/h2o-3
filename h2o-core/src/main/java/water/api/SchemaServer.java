@@ -212,8 +212,9 @@ public class SchemaServer {
       register(clz);
     }
     for (Reflections refl : reflList)
-      for (Class<? extends Schema> schema_class : refl.getSubTypesOf(clz))
+      for (Class<? extends Schema> schema_class : refl.getSubTypesOf(clz)) {
         registerSchemasOfClass(schema_class, reflList);
+      }
   }
 
   /**

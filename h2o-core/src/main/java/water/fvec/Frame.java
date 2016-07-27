@@ -356,7 +356,8 @@ public class Frame extends Lockable<Frame> {
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
-    String _column_name;
+    public String _column_name;
+
 
     public Vec vec() {
       Value v = DKV.get(_frame);
