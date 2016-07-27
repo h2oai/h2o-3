@@ -70,7 +70,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     @Override public boolean isSupervised() {
       return !autoencoder;
     }
-  } // DeepLearningModelOutput
+  } // DeepWaterModelOutput
 
   void set_model_info(DeepLearningModelInfo mi) {
     assert(mi != null);
