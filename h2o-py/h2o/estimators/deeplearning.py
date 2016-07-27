@@ -10,11 +10,11 @@ from .estimator_base import H2OEstimator
 class H2ODeepLearningEstimator(H2OEstimator):
     """
     Deep Learning
-    -------------
+
     Build a supervised Deep Neural Network model
     Builds a feed-forward multilayer artificial neural network on an H2OFrame
 
-    Parameters (optional, unless specified otherwise)
+    Parameters
     ----------
       model_id : str
         Destination id for this model; auto-generated if not specified.

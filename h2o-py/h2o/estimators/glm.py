@@ -11,11 +11,11 @@ import h2o
 class H2OGeneralizedLinearEstimator(H2OEstimator):
     """
     Generalized Linear Modeling
-    ---------------------------
+
     Fits a generalized linear model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
 
-    Parameters (optional, unless specified otherwise)
+    Parameters
     ----------
       model_id : str
         Destination id for this model; auto-generated if not specified.
