@@ -12,4 +12,4 @@ h2o.skewness(prostate.hex$AGE)
 
 }
 
-doTest("R Doc Mean", test.rdocskewness.golden)
+doTest("R Doc Skewness", test.rdocskewness.golden)
