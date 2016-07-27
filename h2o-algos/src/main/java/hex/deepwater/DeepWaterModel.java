@@ -7,17 +7,19 @@ import hex.schemas.DeepWaterModelV3;
 import water.*;
 import static water.H2O.technote;
 import water.api.schemas3.ModelSchemaV3;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.gpu.ImageTrain;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.gpu.ImageIter;
 import water.gpu.util;
-import static water.gpu.util.img2pixels;
 import water.parser.BufferedString;
 import water.util.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * The Deep Learning model
@@ -395,38 +397,156 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
   synchronized
   public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
-    BufferedString bs = new BufferedString();
-    String file = chks[0].atStr(bs, row_in_chunk).toString();
+    throw H2O.unimpl();
 
-    Log.info("Predicting for image: " + file);
-
-    int width=224;
-    int height=224;
-
-    float[] raw = null;
-    try {
-      raw = img2pixels(file, width, height); //FIXME: add #channels
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    float[] predsFloat = model_info()._imageTrain.predict(raw); //FIXME: Fill larger minibatch sizes than 1
-    if( _output.isClassifier()) {
-      for (int i=0;i<predsFloat.length;++i)
-        preds[i+1] = predsFloat[i];
-      if (_parms._balance_classes)
-        GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
-      //assign label at the very end (after potentially correcting probabilities)
-      preds[0] = hex.genmodel.GenModel.getPrediction(preds, _output._priorClassDist, tmp, defaultThreshold());
-    } else {
-      preds[0] = predsFloat[0];
-    }
-    return preds;
   }
+
 
   @Override protected long checksum_impl() {
-//    return super.checksum_impl() * model_info.checksum_impl();
-    return 0;
+    return super.checksum_impl() * _output._run_time + model_info()._imageTrain.toString().hashCode();
   }
 
+  class DeepWaterBigScore extends BigScore {
+    Frame _predFrame; //OUTPUT
+    @Override public Frame outputFrame(Key key, String [] names, String [][] domains){
+      _predFrame._names = names;
+      _predFrame.vec(0).setDomain(domains[0]);
+      _predFrame._key = key;
+      DKV.put(_predFrame);
+      return _predFrame;
+    }
+    @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
+    @Override protected void setupLocal() {
+      final int weightIdx =_fr.find(get_params()._weights_column);
+      final int respIdx =_fr.find(get_params()._response_column);
+      final int batch_size = get_params()._mini_batch_size;
+      final int classes = _output.nclasses();
+
+      BufferedString bs = new BufferedString();
+      int width = 224;
+      int height = 224;
+
+      ArrayList<Float> train_labels = new ArrayList<>();
+      ArrayList<String> train_data = new ArrayList<>();
+
+      //make predictions for all rows - even those with weights 0 for now (easier to deal with minibatch, since we need to scoring)
+      for (int i=0; i<_fr.vec(0).length(); ++i) {
+        if (isCancelled() || _j != null && _j.stop_requested()) return;
+//        double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
+//        if (weight == 0)
+//          continue;
+        String file = _fr.vec(0).atStr(bs, i).toString();
+        train_data.add(file);
+        train_labels.add(new Float(-999)); //dummy
+      }
+      final int orig_length = train_data.size();
+      assert(orig_length==_fr.numRows());
+
+      // randomly add more rows to fill up to a multiple of batch_size
+      long seed = 0xDECAF + 0xD00D * model_info().get_processed_global();
+      Random rng = RandomUtils.getRNG(seed);
+      while (train_data.size()%batch_size!=0) {
+        int pick = rng.nextInt(train_data.size());
+        train_data.add(train_data.get(pick));
+        train_labels.add(train_labels.get(pick));
+      }
+
+      double [] tmp = new double[_output.nfeatures()];
+      _mb = makeMetricBuilder(_domain);
+
+      assert(isSupervised()); //not yet implemented for autoencoder
+      int cols = _output.nclasses() + (_output.isClassifier()?1:0);
+      if (_makePreds) {
+        Vec[] predVecs = new Vec[cols];
+        for (int i = 0; i < cols; ++i)
+          predVecs[i] = Vec.makeZero(_fr.numRows());
+        _predFrame = new Frame(predVecs);
+      }
+
+      ImageIter img_iter;
+      try {
+        Vec.Writer[] vw = new Vec.Writer[cols];
+        if (_makePreds) {
+          // prep predictions vec for writing
+          for (int i = 0; i < vw.length; ++i)
+            vw[i] = _predFrame.vec(i).open();
+        }
+
+        int obs=0;
+        img_iter = new ImageIter(train_data, train_labels, batch_size, width, height);
+        while(img_iter.Next()) {
+          if (isCancelled() || _j != null && _j.stop_requested()) return;
+          float[] data = img_iter.getData();
+          float[] predFloats = model_info()._imageTrain.predict(data);
+//          Log.info("Scoring on " + Arrays.toString(img_iter.getFiles()));
+
+          // fill the pre-created output Frame
+          for (int j = 0; j < batch_size; ++j) {
+            long row=obs+j;
+            if (row >= orig_length) break;
+            double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(row);
+            if (weight == 0)
+              continue;
+            float [] actual = null;
+            if (_computeMetrics)
+              actual = new float[]{(float)_fr.vec(respIdx).at(row)};
+            if(_output.isClassifier()) {
+              double[] classprobs=new double[classes];
+              for (int i=0;i<classes;++i) {
+                int idx=j*classes+i; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
+                classprobs[i] = predFloats[idx];
+              }
+              if (_parms._balance_classes)
+                GenModel.correctProbabilities(classprobs, _output._priorClassDist, _output._modelClassDist);
+              int label = hex.genmodel.GenModel.getPrediction(classprobs, _output._priorClassDist, tmp, defaultThreshold());
+              if (_makePreds) {
+                vw[0].set(row, label);
+                for (int i = 0; i < classes; ++i)
+                  vw[1 + i].set(row, classprobs[i]);
+              }
+              if (_computeMetrics)
+                _mb.perRow(classprobs, actual, weight, 0 /*offset*/, DeepWaterModel.this);
+            }
+            else {
+              vw[0].set(row, predFloats[j]);
+              if (_computeMetrics)
+                _mb.perRow(new double[]{predFloats[j]}, actual, weight, 0 /*offset*/, DeepWaterModel.this);
+            }
+          }
+
+          obs+=batch_size;
+        }
+        if ( _j != null) _j.update(_fr.anyVec().nChunks());
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    DeepWaterBigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j);
+    }
+  }
+
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
+    // Build up the names & domains.
+    String[] names = makeScoringNames();
+    String[][] domains = new String[names.length][];
+    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    // Score the dataset, building the class distribution & predictions
+    BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    if (computeMetrics)
+      bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
+    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
+    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
+    // Build up the names & domains.
+    String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    // Score the dataset, building the class distribution & predictions
+    BigScore bs = new DeepWaterBigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    return bs._mb;
+  }
 }
 
