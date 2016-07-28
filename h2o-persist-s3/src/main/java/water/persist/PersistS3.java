@@ -13,6 +13,7 @@ import water.util.Log;
 import water.util.RIStream;
 import com.amazonaws.*;
 import com.amazonaws.auth.*;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
@@ -58,7 +59,8 @@ public final class PersistS3 extends Persist {
       super(new H2OArgCredentialsProvider(),
           new InstanceProfileCredentialsProvider(),
           new EnvironmentVariableCredentialsProvider(),
-          new SystemPropertiesCredentialsProvider());
+          new SystemPropertiesCredentialsProvider(),
+          new ProfileCredentialsProvider());
     }
   }
 
