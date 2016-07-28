@@ -12,7 +12,7 @@ import re
 import sys
 
 from h2o.utils.compatibility import *  # NOQA
-from h2o.exceptions import H2OTypeError, H2OValueError
+from h2o.exceptions import H2OTypeError
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
            "assert_is_numeric", "assert_is_str", "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric",
@@ -74,16 +74,7 @@ def assert_is_type(var, expected_type, message=None, skip_frames=1):
     :raises H2OTypeError: if the argument is not of the desired type.
     """
     if _check_type(var, expected_type): return
-
-    # Type check failed -- raise an exception (and format it nicely)
-    nn = _get_variable_name()
-    tn = _get_type_name(expected_type)
-    if tn[0] in "aioe" or tn.startswith("H2"):
-        tn = "an " + tn
-    else:
-        tn = "a " + tn
-    sn = _get_type_name(type(var))
-    raise H2OTypeError("`%s` should be %s, got %r (type <%s>)" % (nn, tn, var, sn),
+    raise H2OTypeError(var_name=_get_variable_name(), var_value=var, exp_type=expected_type, message=message,
                        skip_frames=skip_frames)
 
 
@@ -97,38 +88,38 @@ def assert_maybe_type(s, stype, typename=None, skip_frames=1):
         raise H2OTypeError("`%s` should be a %s, got %r (type <%s>)" % (nn, tn, s, sn),
                            skip_frames=skip_frames)
 
-def assert_is_none(s, reason=None):
+def assert_is_none(s):
     """Assert that the argument is None."""
-    if s is not None:
-        raise H2OValueError("`%s` should be None %s" % (_get_variable_name(), reason or ""))
+    assert_is_type(s, None, skip_frames=2)
 
 def assert_is_str(s):
     """Assert that the argument is a string."""
-    assert_is_type(s, _str_type, "string", skip_frames=2)
+    assert_is_type(s, str, skip_frames=2)
 
 def assert_maybe_str(s):
     """Assert that the argument is a string or None."""
-    assert_maybe_type(s, _str_type, "string", skip_frames=2)
+    assert_is_type(s, (str, None), skip_frames=2)
 
 def assert_is_int(x):
     """Assert that the argument is integer."""
-    assert_is_type(x, _int_type, "integer", skip_frames=2)
+    assert_is_type(x, int, skip_frames=2)
 
 def assert_maybe_int(x):
     """Assert that the argument is integer or None."""
-    assert_maybe_type(x, _int_type, "integer", skip_frames=2)
+    assert_maybe_type(x, (int, None), skip_frames=2)
 
 def assert_is_bool(b):
     """Assert that the argument is boolean."""
-    assert_is_type(b, bool, "boolean", skip_frames=2)
+    assert_is_type(b, bool, skip_frames=2)
 
 def assert_is_numeric(x):
     """Assert that the argument is numeric (integer or float)."""
-    assert_is_type(x, _num_type, "numeric", skip_frames=2)
+    assert_is_type(x, _num_type, skip_frames=2)
 
 def assert_maybe_numeric(x):
     """Assert that the argument is either numeric or None."""
-    assert_maybe_type(x, _num_type, "numeric", skip_frames=2)
+    assert_maybe_type(x, _num_type, skip_frames=2)
+
 
 
 def _get_variable_name():
@@ -194,46 +185,3 @@ def _check_type(s, stype, _nested=False):
         return any(_check_type(s, tt, _nested=True) for tt in stype)
     else:
         raise RuntimeError("Ivalid argument %r to _check_type()" % stype)
-
-
-def _get_type_name(stype, _nested=False):
-    """
-    Return the name of the provided type.
-
-    Examples:
-    >>> _get_type_name(int) == "integer"
-    >>> _get_type_name(str) == "string"
-    >>> _get_type_name(tuple) == "tuple"
-    >>> _get_type_name(Exception) == "Exception object"
-    >>> _get_type_name((int, float, bool)) == "integer|float|bool"
-    >>> _get_type_name((H2OFrame, None)) == "?H2OFrame"
-    """
-    if stype is None or isinstance(None, stype):
-        return "None"
-    elif stype is str:
-        return "string"
-    elif stype is int:
-        return "integer"
-    elif isinstance(stype, type):
-        n = stype.__name__
-        if n[0].isupper() and not _nested:
-            return n + " object"
-        else:
-            return n
-    elif isinstance(stype, tuple):
-        maybe_type = False
-        res = []
-        for tt in stype:
-            nn = _get_type_name(tt, _nested=True)
-            if nn == "None":
-                maybe_type = True
-            else:
-                res.append(nn)
-        if maybe_type:
-            if res:
-                res[0] = "?" + res[0]
-            else:
-                res.append("None")
-        return "|".join(res)
-    else:
-        raise RuntimeError("Unexpected `stype`: %r" % stype)

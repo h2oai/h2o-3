@@ -205,17 +205,17 @@ def _handle_soft_error(exc_type, exc_value, exc_tb):
         tb = tb.tb_next
 
     i0 = len(frames) - 1 - getattr(exc_value, "skip_frames", 0)
-    indent = " " * len(exc_type.__name__)
+    indent = " " * (len(exc_type.__name__) + 2)
     for i in range(i0, 0, -1):
         co = frames[i].f_code
         func = _find_function_from_code(frames[i - 1], co)
         fullname = _get_method_full_name(func) if func else "???." + co.co_name
-        line = indent + "  "
-        line += "in " if i == i0 else "   "
-        line += fullname + "("
-        line += _wrap(_get_args_str(func) + ") line %d" % frames[i].f_lineno, indent=len(line))
-        # Add colors in the end, or otherwise wrapping will be off
-        line = (Fore.CYAN if i == i0 else Fore.LIGHTBLACK_EX) + line + Style.RESET_ALL
+        args_str = _get_args_str(func, highlight=(exc_value.var_name if i == i0 else None))
+        indent_len = len(exc_type.__name__) + len(fullname) + 6
+        line = Fore.LIGHTBLACK_EX + indent + ("in " if i == i0 else "   ")
+        line += (Fore.CYAN + fullname + Fore.LIGHTBLACK_EX if i == i0 else fullname) + "("
+        line += _wrap(args_str + ") line %d" % frames[i].f_lineno, indent=indent_len)
+        line += Style.RESET_ALL
         err(line)
 
     colorama.deinit()
@@ -281,7 +281,7 @@ def _find_function_from_code(frame, code):
     return find_code(frame.f_locals.values()) or find_code(frame.f_globals.values())
 
 
-def _get_args_str(func):
+def _get_args_str(func, highlight=None):
     """
     Return function's declared arguments as a string.
 
@@ -294,10 +294,13 @@ def _get_args_str(func):
         defaults = args_spec.defaults or []
         i0 = len(args_spec.args) - len(defaults)
         for i in range(len(args_spec.args)):
+            var = args_spec.args[i]
+            if var == highlight:
+                var = Style.BRIGHT + Fore.WHITE + var + Fore.LIGHTBLACK_EX + Style.NORMAL
             if i < i0:
-                yield args_spec.args[i]
+                yield var
             else:
-                yield "%s=%r" % (args_spec.args[i], defaults[i - i0])
+                yield "%s=%r" % (var, defaults[i - i0])
         if args_spec.varargs: yield "*" + args_spec.varargs
         if args_spec.keywords: yield "**" + args_spec.keywords
     return ", ".join(gen_args())
