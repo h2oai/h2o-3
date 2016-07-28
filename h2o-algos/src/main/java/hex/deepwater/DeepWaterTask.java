@@ -95,7 +95,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
     try {
       long start = System.currentTimeMillis();
-      DeepWaterImageIterator.DeepWaterImageIteartor img_iter = new DeepWaterImageIterator.DeepWaterImageIteartor(train_data, train_labels, batch_size, width, height);
+      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height);
       long end = System.currentTimeMillis();
       Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
 
