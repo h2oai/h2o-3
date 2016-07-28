@@ -3,12 +3,12 @@ package hex.deeplearning;
 import javax.imageio.ImageIO;
 
 import hex.ModelMetricsMultinomial;
+import hex.deepwater.DeepWaterImageIterator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.*;
 import water.fvec.Frame;
-import water.gpu.ImageIter;
 import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
 import water.gpu.util;
@@ -116,7 +116,7 @@ public class DeepWaterTest extends TestUtil {
           rng.setSeed(0xDECAF+0xD00D*iter);
           Collections.shuffle(train_data,rng);
 
-          ImageIter img_iter = new ImageIter(train_data, train_labels, batch_size, 224, 224);
+          DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, 224, 224);
           while(img_iter.Next()){
               float[] data = img_iter.getData();
               float[] labels = img_iter.getLabel();
@@ -164,7 +164,7 @@ public class DeepWaterTest extends TestUtil {
 
         FileWriter fw = new FileWriter(path+"/submission.csv");
         int batch_size = 64; //avoid issues with batching at the end of the test set
-        ImageIter img_iter = new ImageIter(test_data, test_labels, batch_size, 224, 224);
+        DeepWaterImageIterator img_iter = new DeepWaterImageIterator(test_data, test_labels, batch_size, 224, 224);
         fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
         while(img_iter.Next()) {
             float[] data = img_iter.getData();
