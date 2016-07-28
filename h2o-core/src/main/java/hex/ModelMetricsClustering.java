@@ -126,6 +126,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     @Override
     public void reduce(MetricBuilder mb) {
+      if (this==mb) return;
       MetricBuilderClustering mm = (MetricBuilderClustering) mb;
       super.reduce(mm);
       ArrayUtils.add(_size, mm._size);

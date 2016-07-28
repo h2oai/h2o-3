@@ -70,6 +70,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
 
     @Override
     public void reduce(MetricBuilder mb) {
+      if (this==mb) return;
       GLRMModelMetrics mm = (GLRMModelMetrics) mb;
       super.reduce(mm);
       _miscls += mm._miscls;

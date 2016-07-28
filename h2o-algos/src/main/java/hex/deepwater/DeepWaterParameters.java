@@ -30,6 +30,17 @@ public class DeepWaterParameters extends Model.Parameters {
       if (train()==null) return 1;
       return (long)Math.ceil(_epochs*train().numRows());
     }
+    public float rate(double n) { return (float)(_rate / (1 + _rate_annealing * n)); }
+    final public float momentum(double n) {
+        double m = _momentum_start;
+        if( _momentum_ramp > 0 ) {
+            if( n >= _momentum_ramp)
+                m = _momentum_stable;
+            else
+                m += (_momentum_stable - _momentum_start) * n / _momentum_ramp;
+        }
+        return (float)m;
+    }
 
     /**
      * If enabled, store the best model under the destination key of this model at the end of training.

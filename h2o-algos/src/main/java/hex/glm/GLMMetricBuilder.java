@@ -142,6 +142,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
   }
 
   public void reduce(GLMMetricBuilder v){
+    if (this==v) return;
     if(_computeMetrics)
       _metricBuilder.reduce(v._metricBuilder);
     residual_deviance  += v.residual_deviance;
