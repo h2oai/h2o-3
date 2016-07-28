@@ -2459,20 +2459,17 @@ h2o.rbind <- function(...) {
 
 #' Merge Two H2O Data Frames
 #'
-#' Merges two H2OFrame objects by shared column names. Unlike the
-#' base R implementation, \code{h2o.merge} only supports merging through shared
-#' column names.
-#'
-#' In order for \code{h2o.merge} to work in multinode clusters, one of the
-#' datasets must be small enough to exist in every node. Currently, this
-#' function only supports \code{all.x = TRUE}. All other permutations will fail.
+#' Merges two H2OFrame objects with the same arguments and meanings
+#' as merge() in base R.
 #'
 #' @param x,y H2OFrame objects
+#' @param by columns used for merging by default the common names
+#' @param by.x x columns used for merging by name or number
+#' @param by.y y columns used for merging by name or number
+#' @param all TRUE includes all rows in x and all rows in y even if there is no match to the other
 #' @param all.x If all.x is true, all rows in the x will be included, even if there is no matching
 #'        row in y, and vice-versa for all.y.
 #' @param all.y see all.x
-#' @param by.x x columns used for merging.
-#' @param by.y y columns used for merging.
 #' @param method auto, radix, or hash (default)
 #' @examples
 #' \donttest{
@@ -2486,12 +2483,22 @@ h2o.rbind <- function(...) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=NULL, by.y=NULL, method="hash") {
-  common.names = intersect(names(x), names(y))
-  if (length(common.names) == 0) stop("No columns in common to merge on!")
-  if (is.null(by.x)) by.x = match(common.names, names(x))
-  if (is.null(by.y)) by.y = match(common.names, names(y))
-  .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
+h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="hash") {
+  if (length(by.x) != length(by.y)) stop("`by.x` and `by.y` must be the same length.")
+  if (!length(by.x)) stop("`by` or `by.x` must specify at least one column") 
+  checkMatch = function(x,y) {
+    tt = match(x,y,nomatch=NA)
+    if (anyNA(tt)) stop("Column '", x[is.na(tt)[1]], "' in ", substitute(x), " not found")
+    tt
+  }
+  if (!is.numeric(by.x)) by.x = checkMatch(by.x, names(x))
+  else if (any(is.na(by.x) | by.x<1 | by.x>ncol(x))) stop("by.x contains NA or an item outside range [1,ncol(x)]")
+  if (!is.numeric(by.y)) by.y = checkMatch(by.y, names(y))
+  else if (any(is.na(by.y) | by.y<1 | by.y>ncol(y))) stop("by.y contains NA or an item outside range [1,ncol(y)]")
+  if (anyDuplicated(by.x)) stop("by.x contains duplicates")
+  if (anyDuplicated(by.y)) stop("by.y contains duplicates")
+  # -1L to be clear rapids in 0-based
+  .newExpr("merge", x, y, all.x, all.y, by.x-1L, by.y-1L, .quote(method))
 }
 
 

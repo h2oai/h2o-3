@@ -13,6 +13,7 @@ import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.util.IcedHashMap;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 
@@ -64,20 +65,41 @@ public class AstMerge extends AstPrimitive {
     boolean allLeft = asts[3].exec(env).getNum() == 1;
     boolean allRite = asts[4].exec(env).getNum() == 1;
     int[] byLeft = check(asts[5]);
-    int[] byRight = check(asts[6]);
+    int[] byRite = check(asts[6]);
     String method = asts[7].exec(env).getStr();
 
-    // Look for the set of columns in common; resort left & right to make the
-    // leading prefix of column names match.  Bail out if we find any weird
-    // column types.
-    int ncols = 0;                // Number of columns in common
-    for (int i = 0; i < l._names.length; i++) {
-      int idx = r.find(l._names[i]);
-      if (idx != -1) {
-        l.swap(i, ncols);
-        r.swap(idx, ncols);
-        Vec lv = l.vecs()[ncols];
-        Vec rv = r.vecs()[ncols];
+    // byLeft and byRight contains the columns to match between
+    // check them
+    if (byLeft.length == 0) {
+      assert byRite.length==0;
+      // Now find common column names here on the Java side. As for Python caller currently.
+      ArrayList<Integer> leftTmp = new ArrayList<>();
+      ArrayList<Integer> riteTmp = new ArrayList<>();
+      for (int i=0; i<l._names.length; i++) {
+        int idx = r.find(l._names[i]);
+        if (idx != -1) {
+          leftTmp.add(i);
+          riteTmp.add(idx);
+        }
+      }
+      if (leftTmp.size() == 0) throw new IllegalArgumentException("No join columns specified and there are no common names");
+      byLeft = new int[leftTmp.size()];
+      byRite = new int[riteTmp.size()];
+      for (int i=0; i < byLeft.length; i++)
+      {
+        byLeft[i] = leftTmp.get(i).intValue();
+        byRite[i] = riteTmp.get(i).intValue();
+      }
+    }
+
+    if (byLeft.length != byRite.length)
+      throw new IllegalArgumentException("byLeft and byRight are not the same length");
+    int ncols = byLeft.length;  // Number of join columns dealt with so far
+    l.moveFirst(byLeft);
+    r.moveFirst(byRite);
+    for (int i = 0; i < ncols; i++) {
+        Vec lv = l.vecs()[i];
+        Vec rv = r.vecs()[i];
         if (lv.get_type() != rv.get_type())
           throw new IllegalArgumentException("Merging columns must be the same type, column " + l._names[ncols] +
               " found types " + lv.get_type_str() + " and " + rv.get_type_str());
@@ -85,11 +107,7 @@ public class AstMerge extends AstPrimitive {
           throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
         if (lv.isNumeric() && !lv.isInt())
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
-        ncols++;
-      }
     }
-    if (ncols == 0)
-      throw new IllegalArgumentException("Frames must have at least one column in common to merge them");
 
     // GC now to sync nodes and get them to use young gen for the working memory. This helps get stable
     // repeatable timings.  Otherwise full GCs can cause blocks. Adding System.gc() here suggested by Cliff

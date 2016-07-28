@@ -800,7 +800,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
       if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  // TODO: feed back to R warnings()
       assert biggestBit >= 1;
       _shift[i] = Math.max(8, biggestBit)-8;
-      long MSBwidth = 1<<_shift[i];
+      long MSBwidth = 1L<<_shift[i];
       if (_base[i] % MSBwidth != 0) {
         // choose base lower than minimum so as to align boundaries (unless minimum already on a boundary by chance)
         _base[i] = MSBwidth * (_base[i]/MSBwidth + (_base[i]<0 ? -1 : 0));
@@ -808,7 +808,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
       }
       _bytesUsed[i] = (_shift[i]+15) / 8;
       assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
-      int chk = (int)(max - _base[i] + 1) >> _shift[i];  // relied on in RadixCount.map
+      long chk = (max - _base[i] + 1L) >> _shift[i];  // relied on in RadixCount.map
       assert chk <= 255;
       assert chk >= 0;
     }
