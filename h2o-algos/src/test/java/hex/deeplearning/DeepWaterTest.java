@@ -25,8 +25,11 @@ public class DeepWaterTest extends TestUtil {
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); }
 
-  final String myhome = "/users/arno/";
-  final boolean GPU = false;
+  final boolean GPU = System.getenv("CUDA_PATH")!=null;
+
+  static String expandPath(String path) {
+    return path.replaceFirst("^~", System.getProperty("user.home"));
+  }
 
   @Test
   public void inceptionPrediction() throws IOException {
@@ -36,7 +39,7 @@ public class DeepWaterTest extends TestUtil {
     util.loadNativeLib("mxnet");
     util.loadNativeLib("Native");
 
-    BufferedImage img = ImageIO.read(new File(myhome + "/deepwater/test/test2.jpg"));
+    BufferedImage img = ImageIO.read(new File(expandPath("~/deepwater/test/test2.jpg")));
 
     int w = 224, h = 224;
 
@@ -67,7 +70,7 @@ public class DeepWaterTest extends TestUtil {
     ImagePred m = new ImagePred();
 
     // the path to Inception model
-    m.setModelPath(myhome + "/deepwater/Inception");
+    m.setModelPath(expandPath("~/deepwater/Inception"));
 
     m.loadInception();
 
@@ -80,7 +83,7 @@ public class DeepWaterTest extends TestUtil {
       util.loadNativeLib("mxnet");
       util.loadNativeLib("Native");
 
-      String path = myhome + "/kaggle/statefarm/input/";
+      String path = expandPath("~/kaggle/statefarm/input/");
       BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
 
       ArrayList<Float> train_labels = new ArrayList<>();
@@ -100,7 +103,7 @@ public class DeepWaterTest extends TestUtil {
 
       ImageTrain m = new ImageTrain();
       m.buildNet(classes, batch_size, "inception_bn");
-      m.loadParam(myhome + "/deepwater/Inception/model.params");
+      m.loadParam(expandPath("~/deepwater/Inception/model.params"));
 
       int max_iter = 6; //epochs
       int count = 0;
