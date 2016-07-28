@@ -97,7 +97,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   public DeepWaterModel(final Key destKey, final DeepWaterParameters parms, final DeepWaterModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
     try {
-      if (false) util.loadCudaLib();
+      final boolean GPU = System.getenv("CUDA_PATH")!=null;
+      if (GPU) util.loadCudaLib();
       util.loadNativeLib("mxnet");
       util.loadNativeLib("Native");
     } catch (IOException e) {
