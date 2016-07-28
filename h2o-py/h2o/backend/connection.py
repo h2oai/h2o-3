@@ -110,8 +110,6 @@ class H2OConnection(backwards_compatible()):
         :raises H2OServerError: if the server is in an unhealthy state (although this might be a recoverable error, the
             client itself should decide whether it wants to retry or not).
         """
-        if server is None and url is None and ip is None:
-            raise H2OValueError("At least one of the parameters `server`, `url`, `ip` must be specified.")
         if server is not None:
             assert_is_type(server, H2OLocalServer)
             assert_is_none(ip, "when `server` parameter is given")
