@@ -7,16 +7,17 @@ Utilities for checking types of variables.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import linecache
 import re
 import sys
+import tokenize
 
 from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
 
-__all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
-           "assert_is_numeric", "assert_is_str", "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric",
-           "assert_maybe_str")
+__all__ = ("is_str", "is_int", "is_numeric", "is_listlike",
+           "assert_is_type", "assert_matches", "assert_satisfies",
+           "assert_is_bool", "assert_is_int", "assert_is_numeric", "assert_is_str",
+           "assert_maybe_int", "assert_maybe_numeric", "assert_maybe_str")
 
 
 if PY2:
@@ -80,15 +81,6 @@ def assert_is_type(var, expected_type, message=None, skip_frames=1):
 
 
 
-def assert_maybe_type(s, stype, typename=None, skip_frames=1):
-    """Assert that the argument is either of the specified type or None."""
-    if not (s is None or isinstance(s, stype)):
-        nn = _retrieve_assert_arguments()[0]
-        tn = typename or _get_type_name(stype)
-        sn = _get_type_name(type(s))
-        raise H2OTypeError("`%s` should be a %s, got %r (type <%s>)" % (nn, tn, s, sn),
-                           skip_frames=skip_frames)
-
 def assert_is_none(s):
     """Assert that the argument is None."""
     assert_is_type(s, None, skip_frames=2)
@@ -107,7 +99,7 @@ def assert_is_int(x):
 
 def assert_maybe_int(x):
     """Assert that the argument is integer or None."""
-    assert_maybe_type(x, (int, None), skip_frames=2)
+    assert_is_type(x, (int, None), skip_frames=2)
 
 def assert_is_bool(b):
     """Assert that the argument is boolean."""
@@ -115,11 +107,11 @@ def assert_is_bool(b):
 
 def assert_is_numeric(x):
     """Assert that the argument is numeric (integer or float)."""
-    assert_is_type(x, _num_type, skip_frames=2)
+    assert_is_type(x, (int, float), skip_frames=2)
 
 def assert_maybe_numeric(x):
     """Assert that the argument is either numeric or None."""
-    assert_maybe_type(x, _num_type, skip_frames=2)
+    assert_is_type(x, (int, float, None), skip_frames=2)
 
 
 def assert_true(cond, message):
@@ -129,6 +121,12 @@ def assert_true(cond, message):
 
 
 def assert_matches(v, regex):
+    """
+    Assert that string variable matches the provided regular expression.
+
+    :param v: variable to check.
+    :param regex: regular expression to check against (can be either a string, or compiled regexp).
+    """
     m = re.match(regex, v)
     if m is None:
         vn = _retrieve_assert_arguments()[0]
@@ -141,7 +139,8 @@ def assert_satisfies(v, cond):
     """
     Assert that variable satisfies the provided condition.
 
-    :param v: variable to check. Its value is only used for error reporting
+    :param v: variable to check. Its value is only used for error reporting.
+    :param bool cond: condition that must be satisfied. Should be somehow related to the variable ``v``.
     """
     if not cond:
         vname, vexpr = _retrieve_assert_arguments()
@@ -182,32 +181,37 @@ def _retrieve_assert_arguments():
         while fr is not None and fr.f_code.co_filename == this_filename:
             fr = fr.f_back
 
-        # Retrieve the line of code where assert* statement is expected be
-        linecache.checkcache(fr.f_code.co_filename)
-        line = linecache.getline(fr.f_code.co_filename, fr.f_lineno)
+        # Read the source file and tokenize it, extracting the expressions.
+        with open(fr.f_code.co_filename, "r") as f:
+            # Skip initial lines that are irrelevant
+            for i in range(fr.f_lineno - 1): next(f)
+            # Create tokenizer
+            g = tokenize.generate_tokens(f.readline)
+            step = 0
+            args_tokens = []
+            level = 0
+            for ttt in g:
+                if step == 0:
+                    if ttt[0] != tokenize.NAME: continue
+                    if not ttt[1].startswith("assert_"): continue
+                    step = 1
+                elif step == 1:
+                    assert ttt[0] == tokenize.OP and ttt[1] == "("
+                    args_tokens.append([])
+                    step = 2
+                elif step == 2:
+                    if level == 0 and ttt[0] == tokenize.OP and ttt[1] == ",":
+                        args_tokens.append([])
+                    elif level == 0 and ttt[0] == tokenize.OP and ttt[1] == ")":
+                        break
+                    else:
+                        if ttt[0] == tokenize.OP and ttt[1] in "([{": level += 1
+                        if ttt[0] == tokenize.OP and ttt[1] in ")]}": level -= 1
+                        assert level >= 0, "Parse error: parentheses level became negative"
+                        args_tokens[-1].append(ttt)
+            args = [tokenize.untokenize(at).strip().replace("\n", " ") for at in args_tokens]
+            return args
 
-        # Find the variable of interest and return it
-        variables = re.findall(r"assert_\w+\((.*?)\)", line)
-        if len(variables) == 1:
-            return variables[0].split(",")
-        raise RuntimeError("Unable to parse assert_*() statement properly:\n" + line)
-
-        # If the simple regular-expression approach above stops working, then use the following:
-        # try:
-        #     import tokenize
-        #     with open(fr.f_code.co_filename, "r") as f:
-        #         for i in range(fr.f_lineno - 1):
-        #             next(f)
-        #         g = tokenize.generate_tokens(f.readline)
-        #         parens_level = 0
-        #         for ttt in g:
-        #             print(ttt)
-        #             if ttt[1] == "(": parens_level += 1
-        #             if ttt[1] == ")":
-        #                 parens_level -= 1
-        #                 if parens_level == 0: break
-        # except:
-        #     pass
 
 
 

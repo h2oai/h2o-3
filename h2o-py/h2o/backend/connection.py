@@ -200,13 +200,9 @@ class H2OConnection(backwards_compatible()):
 
         # Prepare URL
         assert_is_type(endpoint, str)
-        if endpoint.count(" ") != 1:
-            raise ValueError("Incorrect endpoint '%s': must be of the form 'METHOD URL'." % endpoint)
-        method, urltail = str(endpoint).split(" ", 2)
-        if method not in {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"}:
-            raise ValueError("Incorrect method in endpoint '%s'" % endpoint)
-        if urltail[0] != "/":
-            raise ValueError("Incorrect url in endpoint '%s': should start with '/'" % endpoint)
+        match = assert_matches(str(endpoint), r"^(GET|POST|PUT|DELETE|PATCH|HEAD) (/.*)$")
+        method = match.group(1)
+        urltail = match.group(2)
         url = self._base_url + urltail
 
         # Prepare data
