@@ -1,5 +1,6 @@
 package hex.deepwater;
 
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Frame;
@@ -47,7 +48,7 @@ public class DeepWaterTask2 extends MRTask<DeepWaterTask2> {
   @Override
   public void setupLocal() {
     super.setupLocal();
-    _res = new DeepWaterTask(_sharedmodel, _sync_fraction);
+    _res = new DeepWaterTask(_sharedmodel, _sync_fraction, (Job)_jobKey.get());
     addToPendingCount(1);
     _res.dfork(null, _fr, true /*run_local*/);
   }
