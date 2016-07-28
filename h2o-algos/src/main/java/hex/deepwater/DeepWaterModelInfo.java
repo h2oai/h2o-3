@@ -67,8 +67,11 @@ final public class DeepWaterModelInfo extends Iced {
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
     _imageTrain = new ImageTrain();
     _imageTrain.buildNet(nClasses, parameters._mini_batch_size, "inception_bn");
+    _imageTrain.loadParam(expandPath("~/deepwater/Inception/model.params"));
   }
-
+  static String expandPath(String path) {
+    return path.replaceFirst("^~", System.getProperty("user.home"));
+  }
   DeepWaterModelInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
     this.write(ab);

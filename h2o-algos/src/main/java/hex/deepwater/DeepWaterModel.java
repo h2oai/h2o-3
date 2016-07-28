@@ -479,7 +479,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = img_iter.getData();
           float[] predFloats = model_info()._imageTrain.predict(data);
-//          Log.info("Scoring on " + Arrays.toString(img_iter.getFiles()));
+          Log.info("Scoring on " + Arrays.toString(img_iter.getFiles()));
 
           // fill the pre-created output Frame
           for (int j = 0; j < batch_size; ++j) {

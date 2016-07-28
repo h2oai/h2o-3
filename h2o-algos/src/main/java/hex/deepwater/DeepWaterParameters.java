@@ -164,9 +164,9 @@ public class DeepWaterParameters extends Model.Parameters {
      * the data. It is automatically enabled if the number of training samples per iteration is set to -1 (or to N
      * times the dataset size or larger).
      */
-    public boolean _shuffle_training_data = false;
+    public boolean _shuffle_training_data = true;
 
-    public int _mini_batch_size = 1;
+    public int _mini_batch_size = 32;
 
     /**
      * Validate model parameters
