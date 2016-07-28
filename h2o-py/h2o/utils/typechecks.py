@@ -54,32 +54,38 @@ def is_listlike(s):
 
 
 
-def assert_is_type(s, stype, typename=None, skip_frames=1):
+def assert_is_type(var, expected_type, message=None, skip_frames=1):
     """
     Assert that the argument has the specified type.
 
-    This function is used to check that the type of the argument is correct, or otherwise raise an error.
-    For example::
+    This function is used to check that the type of the argument is correct, otherwises it raises an error.
+    Use it like following::
 
         assert_is_type(fr, H2OFrame)
+        assert_is_type(port, (int, str))
 
-    :param s: variable to check
-    :param stype: expected type
-    :param typename: name of the type (if not given, will be extracted from `stype`)
+    :param var: variable to check.
+    :param expected_type: the expected type. This could be either a raw type (such as ``bool``), a ``None`` literal,
+        a class name, or a tuple of those. If ``str`` or ``int`` are passed, then on Py2 we will also attempt to
+        match ``unicode`` and ``long`` respectively (so that the check is Py2/Py3 compatible).
+    :param message: override the error message.
     :param skip_frames: how many local frames to skip when printing out the error.
 
     :raises H2OTypeError: if the argument is not of the desired type.
     """
-    if not isinstance(s, stype):
-        nn = _get_variable_name()
-        tn = typename or _get_type_name(stype)
-        if tn[0] in "aioe" or tn.startswith("H2"):
-            tn = "an " + tn
-        else:
-            tn = "a " + tn
-        sn = _get_type_name(type(s))
-        raise H2OTypeError("`%s` should be %s, got %r (type <%s>)" % (nn, tn, s, sn),
-                           skip_frames=skip_frames)
+    if _check_type(var, expected_type): return
+
+    # Type check failed -- raise an exception (and format it nicely)
+    nn = _get_variable_name()
+    tn = _get_type_name(expected_type)
+    if tn[0] in "aioe" or tn.startswith("H2"):
+        tn = "an " + tn
+    else:
+        tn = "a " + tn
+    sn = _get_type_name(type(var))
+    raise H2OTypeError("`%s` should be %s, got %r (type <%s>)" % (nn, tn, var, sn),
+                       skip_frames=skip_frames)
+
 
 
 def assert_maybe_type(s, stype, typename=None, skip_frames=1):
@@ -169,19 +175,65 @@ def _get_variable_name():
         raise RuntimeError("More than one assert_*() statement on the line!")
 
 
-def _get_type_name(stype):
+def _check_type(s, stype, _nested=False):
     """
-    Return name of the provided type.
+    Return True if the variable has the specified type, and False otherwise.
+
+    :param s: variable to check.
+    :param stype: expected type (should be either a type, a tuple of types, or None).
+    """
+    if stype is None:
+        return s is None
+    elif stype is str:
+        return isinstance(s, _str_type)
+    elif stype is int:
+        return isinstance(s, _int_type)
+    elif isinstance(stype, type):
+        return isinstance(s, stype)
+    elif isinstance(stype, tuple) and not _nested:
+        return any(_check_type(s, tt, _nested=True) for tt in stype)
+    else:
+        raise RuntimeError("Ivalid argument %r to _check_type()" % stype)
+
+
+def _get_type_name(stype, _nested=False):
+    """
+    Return the name of the provided type.
 
     Examples:
-    >>> _get_type_name(int) == "int"
+    >>> _get_type_name(int) == "integer"
+    >>> _get_type_name(str) == "string"
     >>> _get_type_name(tuple) == "tuple"
-    >>> _get_type_name(Exception) == "Exception"
-    >>> _get_type_name((int, long, float)) == "int | long | float"
+    >>> _get_type_name(Exception) == "Exception object"
+    >>> _get_type_name((int, float, bool)) == "integer|float|bool"
+    >>> _get_type_name((H2OFrame, None)) == "?H2OFrame"
     """
-    if type(stype) is type:
-        return stype.__name__
-    elif type(stype) is tuple and all(type(t) is type for t in stype):
-        return " | ".join(t.__name__ for t in stype)
+    if stype is None or isinstance(None, stype):
+        return "None"
+    elif stype is str:
+        return "string"
+    elif stype is int:
+        return "integer"
+    elif isinstance(stype, type):
+        n = stype.__name__
+        if n[0].isupper() and not _nested:
+            return n + " object"
+        else:
+            return n
+    elif isinstance(stype, tuple):
+        maybe_type = False
+        res = []
+        for tt in stype:
+            nn = _get_type_name(tt, _nested=True)
+            if nn == "None":
+                maybe_type = True
+            else:
+                res.append(nn)
+        if maybe_type:
+            if res:
+                res[0] = "?" + res[0]
+            else:
+                res.append("None")
+        return "|".join(res)
     else:
         raise RuntimeError("Unexpected `stype`: %r" % stype)

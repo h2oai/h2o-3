@@ -25,7 +25,7 @@ import requests
 from requests.auth import AuthBase
 
 from h2o.backend.server import H2OLocalServer
-from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
+from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError
 from h2o.schemas.cloud import H2OCluster
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
