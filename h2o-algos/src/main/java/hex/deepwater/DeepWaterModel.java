@@ -464,7 +464,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         _predFrame = new Frame(predVecs);
       }
 
-      DeepWaterImageIterator.DeepWaterImageIteartor img_iter;
+      DeepWaterImageIterator img_iter;
       try {
         Vec.Writer[] vw = new Vec.Writer[cols];
         if (_makePreds) {
@@ -474,7 +474,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
 
         int obs=0;
-        img_iter = new DeepWaterImageIterator.DeepWaterImageIteartor(train_data, train_labels, batch_size, width, height);
+        img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height);
         while(img_iter.Next()) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = img_iter.getData();
