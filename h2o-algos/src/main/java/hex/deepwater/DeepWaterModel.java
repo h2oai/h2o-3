@@ -514,6 +514,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                 _mb.perRow(new double[]{predFloats[j]}, actual, weight, 0 /*offset*/, DeepWaterModel.this);
             }
           }
+          if (_makePreds) {
+            Futures fs = new Futures();
+            for (int i = 0; i < vw.length; ++i)
+              vw[i].close(fs);
+            fs.blockForPending();
+          }
 
           obs+=batch_size;
         }
