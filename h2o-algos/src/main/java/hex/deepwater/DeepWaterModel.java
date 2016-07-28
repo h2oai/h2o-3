@@ -11,7 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.gpu.ImageIter;
 import water.gpu.util;
 import water.parser.BufferedString;
 import water.util.*;
@@ -465,7 +464,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         _predFrame = new Frame(predVecs);
       }
 
-      ImageIter img_iter;
+      DeepWaterImageIterator.DeepWaterImageIteartor img_iter;
       try {
         Vec.Writer[] vw = new Vec.Writer[cols];
         if (_makePreds) {
@@ -475,7 +474,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
 
         int obs=0;
-        img_iter = new ImageIter(train_data, train_labels, batch_size, width, height);
+        img_iter = new DeepWaterImageIterator.DeepWaterImageIteartor(train_data, train_labels, batch_size, width, height);
         while(img_iter.Next()) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = img_iter.getData();

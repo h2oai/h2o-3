@@ -3,7 +3,6 @@ package hex.deepwater;
 import water.H2O;
 import water.Job;
 import water.MRTask;
-import water.gpu.ImageIter;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -96,7 +95,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
     try {
       long start = System.currentTimeMillis();
-      ImageIter img_iter = new ImageIter(train_data, train_labels, batch_size, width, height);
+      DeepWaterImageIterator.DeepWaterImageIteartor img_iter = new DeepWaterImageIterator.DeepWaterImageIteartor(train_data, train_labels, batch_size, width, height);
       long end = System.currentTimeMillis();
       Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
 
