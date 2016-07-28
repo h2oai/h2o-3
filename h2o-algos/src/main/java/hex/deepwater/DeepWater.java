@@ -167,7 +167,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepWaterTask (model.model_info(), 1/*FIXME*/).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+                  new DeepWaterTask (model.model_info(), 1/*FIXME*/, _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
           if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
           if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
           if (timeout()) { //stop after scoring
