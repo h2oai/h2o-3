@@ -410,10 +410,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   class DeepWaterBigScore extends BigScore {
     Frame _predFrame; //OUTPUT
     @Override public Frame outputFrame(Key key, String [] names, String [][] domains){
-      _predFrame._names = names;
-      _predFrame.vec(0).setDomain(domains[0]);
-      _predFrame._key = key;
-      DKV.put(_predFrame);
+      _predFrame = new Frame(key, names, _predFrame.vecs());
+      if (domains!=null)
+        _predFrame.vec(0).setDomain(domains[0]); //only the label is ever categorical
+      if (_predFrame._key!=null)
+        DKV.put(_predFrame);
       return _predFrame;
     }
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
@@ -460,7 +461,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       if (_makePreds) {
         Vec[] predVecs = new Vec[cols];
         for (int i = 0; i < cols; ++i)
-          predVecs[i] = Vec.makeZero(_fr.numRows());
+          predVecs[i] = _fr.anyVec().makeZero(_fr.numRows());
         _predFrame = new Frame(predVecs);
       }
 
