@@ -5,6 +5,7 @@ import water.MRTask;
 import water.gpu.ImageIter;
 import water.parser.BufferedString;
 import water.util.Log;
+import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
 import java.io.IOException;
@@ -91,7 +92,13 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       train_labels.add(train_labels.get(pick));
     }
     try {
+      long start = System.currentTimeMillis();
       ImageIter img_iter = new ImageIter(train_data, train_labels, batch_size, width, height);
+      long end = System.currentTimeMillis();
+      Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
+
+      start = System.currentTimeMillis();
+      long gputime=0;
       while(img_iter.Next() && !isCancelled()) {
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
@@ -99,9 +106,18 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
         _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
         _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
+        long gpustart = System.currentTimeMillis();
         _localmodel._imageTrain.train(data, labels); //ignore predictions
+        long gpuend = System.currentTimeMillis();
+        gputime+=gpuend-gpustart;
         _localmodel.add_processed_local(batch_size);
       }
+      end = System.currentTimeMillis();
+      long cputime=end-start-gputime;
+      Log.info("Time for one epoch: " + PrettyPrint.msecs(end-start, true));
+      Log.info("Time for CPU: " + PrettyPrint.msecs(cputime, true));
+      Log.info("Time for GPU: " + PrettyPrint.msecs(gputime, true));
+
     } catch (IOException e) {
       e.printStackTrace();
     }
