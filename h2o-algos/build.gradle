@@ -7,6 +7,7 @@ dependencies {
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  compile files('water.gpu.jar')
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
