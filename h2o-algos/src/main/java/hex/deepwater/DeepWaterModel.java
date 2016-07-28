@@ -492,21 +492,20 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
             if (_computeMetrics)
               actual = new float[]{(float)_fr.vec(respIdx).at(row)};
             if(_output.isClassifier()) {
-              double[] classprobs=new double[classes];
+              double[] preds =new double[classes+1];
               for (int i=0;i<classes;++i) {
                 int idx=j*classes+i; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
-                classprobs[i] = predFloats[idx];
+                preds[1+i] = predFloats[idx];
               }
               if (_parms._balance_classes)
-                GenModel.correctProbabilities(classprobs, _output._priorClassDist, _output._modelClassDist);
-              int label = hex.genmodel.GenModel.getPrediction(classprobs, _output._priorClassDist, tmp, defaultThreshold());
+                GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
+              preds[0] = hex.genmodel.GenModel.getPrediction(preds, _output._priorClassDist, null, defaultThreshold());
               if (_makePreds) {
-                vw[0].set(row, label);
-                for (int i = 0; i < classes; ++i)
-                  vw[1 + i].set(row, classprobs[i]);
+                for (int i = 0; i <= classes; ++i)
+                  vw[i].set(row, preds[i]);
               }
               if (_computeMetrics)
-                _mb.perRow(classprobs, actual, weight, 0 /*offset*/, DeepWaterModel.this);
+                _mb.perRow(preds, actual, weight, 0 /*offset*/, DeepWaterModel.this);
             }
             else {
               vw[0].set(row, predFloats[j]);
