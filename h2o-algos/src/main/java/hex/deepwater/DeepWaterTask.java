@@ -118,8 +118,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       end = System.currentTimeMillis();
       long cputime=end-start-gputime;
       Log.info("Time for one epoch: " + PrettyPrint.msecs(end-start, true));
-      Log.info("Time for CPU: " + PrettyPrint.msecs(cputime, true));
-      Log.info("Time for GPU: " + PrettyPrint.msecs(gputime, true));
+      Log.info("Time for data preparation: " + PrettyPrint.msecs(cputime, true));
+      Log.info("Time for Native training : " + PrettyPrint.msecs(gputime, true));
 
     } catch (IOException e) {
       e.printStackTrace();
