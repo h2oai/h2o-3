@@ -12,7 +12,7 @@ import re
 import sys
 
 from h2o.utils.compatibility import *  # NOQA
-from h2o.exceptions import H2OTypeError
+from h2o.exceptions import H2OTypeError, H2OValueError
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike", "assert_is_type", "assert_is_bool", "assert_is_int",
            "assert_is_numeric", "assert_is_str", "assert_maybe_type", "assert_maybe_int", "assert_maybe_numeric",
@@ -121,6 +121,20 @@ def assert_maybe_numeric(x):
     assert_maybe_type(x, _num_type, skip_frames=2)
 
 
+def assert_true(cond, message):
+    """Same as traditional assert, only raises H2OValueError instead."""
+    if not cond:
+        raise H2OValueError(message)
+
+
+def assert_matches(v, regex):
+    m = re.match(regex, v)
+    if m is None:
+        vn = _get_variable_name()
+        message = "Argument `{var}` (= \"{val}\") did not match /{regex}/".format(var=vn, regex=regex, val=v)
+        raise H2OValueError(message, var_name=vn, skip_frames=1)
+    return m
+
 
 def _get_variable_name():
     """
@@ -160,7 +174,7 @@ def _get_variable_name():
         line = linecache.getline(fr.f_code.co_filename, fr.f_lineno)
 
         # Find the variable of interest and return it
-        variables = re.findall(r"assert_(?:is|maybe)_\w+\(([^,)]*)", line)
+        variables = re.findall(r"assert_\w+\(([^,)]*)", line)
         if len(variables) == 0: return "<arg>"
         if len(variables) == 1: return variables[0]
         raise RuntimeError("More than one assert_*() statement on the line!")

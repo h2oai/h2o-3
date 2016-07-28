@@ -32,7 +32,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import stringify_list, print2
-from h2o.utils.typechecks import (assert_is_type, assert_maybe_numeric, is_str)
+from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_maybe_numeric, is_str)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
 
@@ -114,19 +114,18 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(ip, None, "`ip` should be None when `server` parameter is supplied")
             assert_is_type(url, None, "`ip` should be None when `server` parameter is supplied")
             if not server.is_running():
-                raise H2OConnectionError("Unable to connect to server which is not running")
+                raise H2OConnectionError("Unable to connect to server because it is not running")
             ip = server.ip
             port = server.port
             scheme = server.scheme
         elif url is not None:
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
-            parts = url.rstrip("/").split(":")
-            assert len(parts) == 3 and (parts[0] in {"http", "https"}) and parts[2].isdigit(), \
-                "Invalid URL parameter '%s'" % url
-            scheme = parts[0]
-            ip = parts[1][2:]
-            port = int(parts[2])
+            # We don't allow any Unicode characters in the URL. Maybe some day we will...
+            match = assert_matches(url, r"^(https?)://([\w.-]+):(\d+)/?$")
+            scheme = match.group(1)
+            ip = match.group(2)
+            port = int(match.group(3))
         else:
             if ip is None: ip = str("localhost")
             if port is None: port = 54321

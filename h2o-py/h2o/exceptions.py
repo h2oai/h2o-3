@@ -18,8 +18,19 @@ class H2OError(Exception):
 class H2OSoftError(H2OError):
     """Base class for exceptions that trigger "soft" exception handling hook."""
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+# H2OValueError
+#-----------------------------------------------------------------------------------------------------------------------
+
 class H2OValueError(H2OSoftError):
     """Error indicating that wrong parameter value was passed to a function."""
+
+    def __init__(self, message, var_name=None, skip_frames=0):
+        """Create an H2OValueError exception object."""
+        super(H2OValueError, self).__init__(message)
+        self.var_name = var_name
+        self.skip_frames = skip_frames
 
 
 
