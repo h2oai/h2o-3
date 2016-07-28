@@ -1,6 +1,7 @@
 package hex.deepwater;
 
 import water.H2O;
+import water.Job;
 import water.MRTask;
 import water.gpu.ImageIter;
 import water.parser.BufferedString;
@@ -21,6 +22,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
   int _chunk_node_count = 1;
   float _useFraction;
   boolean _shuffle;
+  final Job _job;
 
   /**
    * Accessor to the object containing the (final) state of the Deep Learning model
@@ -37,11 +39,12 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
    * @param inputModel Initial model state
    * @param fraction Fraction of rows of the training to train with
    */
-  public DeepWaterTask(DeepWaterModelInfo inputModel, float fraction) {
+  public DeepWaterTask(DeepWaterModelInfo inputModel, float fraction, Job job) {
     _training=true;
     _sharedmodel = inputModel;
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
+    _job = job;
   }
 
   /**
@@ -99,7 +102,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
 
       start = System.currentTimeMillis();
       long gputime=0;
-      while(img_iter.Next() && !isCancelled()) {
+      while(img_iter.Next() && !_job.isStopping()) {
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
         long n = _localmodel.get_processed_total();
