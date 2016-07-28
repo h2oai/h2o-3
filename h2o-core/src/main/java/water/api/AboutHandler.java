@@ -17,16 +17,16 @@ public class AboutHandler extends Handler {
     entries.add(new AboutEntryV3("Build git hash",        H2O.ABV.lastCommitHash()));
     entries.add(new AboutEntryV3("Build git describe",    H2O.ABV.describe()));
     entries.add(new AboutEntryV3("Build project version", H2O.ABV.projectVersion()));
+    entries.add(new AboutEntryV3("Build age",             PrettyPrint.toAge(H2O.ABV.compiledOnDate(), new Date())));
     entries.add(new AboutEntryV3("Built by",              H2O.ABV.compiledBy()));
     entries.add(new AboutEntryV3("Built on",              H2O.ABV.compiledOn()));
-    entries.add(new AboutEntryV3("Version age",           PrettyPrint.toAge(H2O.ABV.compiledOnDate(), new Date())));
+
     if (H2O.ABV.isTooOld()) {
       String latestH2OVersion = H2O.ABV.getLatestH2OVersion();
       entries.add(new AboutEntryV3("Version warning",
-                                   "Your H2O version is too old! Please download the latest H2O "
+                                   "Your H2O version is too old! Please download the latest version "
                                    + latestH2OVersion
-                                   + " version from http://h2o.ai/download/"));
-
+                                   + " from http://h2o.ai/download/"));
     }
 
     for (H2O.AboutEntry ae : H2O.getAboutEntries()) {

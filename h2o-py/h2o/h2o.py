@@ -165,6 +165,9 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     if strict_version_check:
         version_check()
 
+    if h2oconn.info().build_too_old:
+        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest version from http://h2o.ai/download/".format(h2oconn.info().build_age))
+
 
 def lazy_import(path):
     """

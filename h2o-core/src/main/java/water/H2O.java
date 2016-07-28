@@ -1360,11 +1360,12 @@ final public class H2O {
     Log.info("Build git hash: " + ABV.lastCommitHash());
     Log.info("Build git describe: " + ABV.describe());
     Log.info("Build project version: " + ABV.projectVersion() + " (latest version: " + latestVersion + ")");
+    Log.info("Build age: " + PrettyPrint.toAge(ABV.compiledOnDate(), new Date()));
     Log.info("Built by: '" + ABV.compiledBy() + "'");
     Log.info("Built on: '" + ABV.compiledOn() + "'");
-    Log.info("Version age: " + PrettyPrint.toAge(ABV.compiledOnDate(), new Date()));
+
     if (ABV.isTooOld()) {
-      Log.warn("\n*** Your H2O version is too old! Please download the latest H2O " + latestVersion + " version from http://h2o.ai/download/ ***");
+      Log.warn("\n*** Your H2O version is too old! Please download the latest version " + latestVersion + " from http://h2o.ai/download/ ***");
       Log.warn("");
     }
 

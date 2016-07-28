@@ -1,9 +1,12 @@
 package water.api;
 
+import java.util.Date;
+
 import water.H2O;
 import water.H2ONode;
 import water.Paxos;
 import water.api.schemas3.CloudV3;
+import water.util.PrettyPrint;
 
 class CloudHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
@@ -17,6 +20,8 @@ class CloudHandler extends Handler {
     cloud.version = H2O.ABV.projectVersion();
     cloud.branch_name = H2O.ABV.branchName();
     cloud.build_number = H2O.ABV.buildNumber();
+    cloud.build_age = PrettyPrint.toAge(H2O.ABV.compiledOnDate(), new Date());
+    cloud.build_too_old = H2O.ABV.isTooOld();
 
     cloud.node_idx = H2O.SELF.index();
     cloud.cloud_name = H2O.ARGS.name;

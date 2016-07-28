@@ -1,5 +1,6 @@
 package water.util;
 
+import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 import org.joda.time.format.PeriodFormat;
@@ -12,6 +13,7 @@ import water.fvec.Chunk;
 
 import static java.lang.Double.isNaN;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -40,9 +42,19 @@ public class PrettyPrint {
 
   public static String toAge(Date from, Date to) {
     if (from == null || to == null) return "N/A";
-    Period period = new Period(from.getTime(), to.getTime());
+    final Period period = new Period(from.getTime(), to.getTime());
+    DurationFieldType[] dtf = new ArrayList<DurationFieldType>() {{
+      add(DurationFieldType.years()); add(DurationFieldType.months());
+      add(DurationFieldType.days());
+      if (period.getYears() == 0 && period.getMonths() == 0 && period.getDays() == 0) {
+        add(DurationFieldType.hours());
+        add(DurationFieldType.minutes());
+      }
+
+    }}.toArray(new DurationFieldType[0]);
+
     PeriodFormatter pf = PeriodFormat.getDefault();
-    return pf.print(period);
+    return pf.print(period.normalizedStandard(PeriodType.forFields(dtf)));
   }
 
   // Return X such that (bytes < 1L<<(X*10))

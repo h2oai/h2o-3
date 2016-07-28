@@ -50,6 +50,12 @@ public class CloudV3 extends SchemaV3<Iced, CloudV3> {
   @API(help="build_number", direction=API.Direction.OUTPUT)
   public String build_number;
 
+  @API(help="build_age", direction=API.Direction.OUTPUT)
+  public String build_age;
+
+  @API(help="build_too_old", direction=API.Direction.OUTPUT)
+  public boolean build_too_old;
+
   @API(help="Node index number cloud status is collected from (zero-based)", direction=API.Direction.OUTPUT)
   public int node_idx;
 
