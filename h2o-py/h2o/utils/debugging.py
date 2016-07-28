@@ -13,7 +13,7 @@ import sys
 from colorama import Style, Fore
 from types import ModuleType
 
-from h2o.exceptions import H2OValueError, H2OTypeError
+from h2o.exceptions import H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
@@ -90,7 +90,7 @@ def _except_hook(exc_type, exc_value, exc_tb):
         return
     get_tb.tb = exc_tb
 
-    if isinstance(exc_value, (H2OValueError, H2OTypeError)):
+    if isinstance(exc_value, H2OSoftError):
         _handle_soft_error(exc_type, exc_value, exc_tb)
         return
 
@@ -210,7 +210,8 @@ def _handle_soft_error(exc_type, exc_value, exc_tb):
         co = frames[i].f_code
         func = _find_function_from_code(frames[i - 1], co)
         fullname = _get_method_full_name(func) if func else "???." + co.co_name
-        args_str = _get_args_str(func, highlight=(exc_value.var_name if i == i0 else None))
+        highlight = getattr(exc_value, "var_name", None) if i == i0 else None
+        args_str = _get_args_str(func, highlight=highlight)
         indent_len = len(exc_type.__name__) + len(fullname) + 6
         line = Fore.LIGHTBLACK_EX + indent + ("in " if i == i0 else "   ")
         line += (Fore.CYAN + fullname + Fore.LIGHTBLACK_EX if i == i0 else fullname) + "("

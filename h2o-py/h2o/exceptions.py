@@ -15,7 +15,10 @@ __all__ = ("H2OStartupError", "H2OConnectionError", "H2OServerError", "H2ORespon
 class H2OError(Exception):
     """Base class for all H2O exceptions."""
 
-class H2OValueError(H2OError):
+class H2OSoftError(H2OError):
+    """Base class for exceptions that trigger "soft" exception handling hook."""
+
+class H2OValueError(H2OSoftError):
     """Error indicating that wrong parameter value was passed to a function."""
 
 
@@ -24,7 +27,7 @@ class H2OValueError(H2OError):
 # H2OTypeError
 #-----------------------------------------------------------------------------------------------------------------------
 
-class H2OTypeError(H2OError):
+class H2OTypeError(H2OSoftError):
     """
     Error indicating that the user passed a parameter of wrong type.
 
@@ -124,11 +127,11 @@ class H2OTypeError(H2OError):
 # Backend exceptions
 #-----------------------------------------------------------------------------------------------------------------------
 
-class H2OStartupError(H2OError):
+class H2OStartupError(H2OSoftError):
     """Raised by H2OLocalServer when the class fails to launch a server."""
 
 
-class H2OConnectionError(H2OError):
+class H2OConnectionError(H2OSoftError):
     """
     Raised when connection to an H2O server cannot be established.
 
