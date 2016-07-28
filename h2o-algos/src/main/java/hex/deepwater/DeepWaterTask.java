@@ -95,7 +95,10 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       while(img_iter.Next() && !isCancelled()) {
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
-        Log.info("Training on " + Arrays.toString(img_iter.getFiles()));
+        long n = _localmodel.get_processed_total();
+        Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
+        _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
+        _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
         _localmodel._imageTrain.train(data, labels); //ignore predictions
         _localmodel.add_processed_local(batch_size);
       }
