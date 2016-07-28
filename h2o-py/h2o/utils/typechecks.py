@@ -54,7 +54,7 @@ def is_listlike(s):
 
 
 
-def assert_is_type(s, stype, typename=None):
+def assert_is_type(s, stype, typename=None, skip_frames=1):
     """
     Assert that the argument has the specified type.
 
@@ -66,22 +66,30 @@ def assert_is_type(s, stype, typename=None):
     :param s: variable to check
     :param stype: expected type
     :param typename: name of the type (if not given, will be extracted from `stype`)
+    :param skip_frames: how many local frames to skip when printing out the error.
+
     :raises H2OTypeError: if the argument is not of the desired type.
     """
     if not isinstance(s, stype):
         nn = _get_variable_name()
         tn = typename or _get_type_name(stype)
+        if tn[0] in "aioe" or tn.startswith("H2"):
+            tn = "an " + tn
+        else:
+            tn = "a " + tn
         sn = _get_type_name(type(s))
-        raise H2OTypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
+        raise H2OTypeError("`%s` should be %s, got %r (type <%s>)" % (nn, tn, s, sn),
+                           skip_frames=skip_frames)
 
 
-def assert_maybe_type(s, stype, typename=None):
+def assert_maybe_type(s, stype, typename=None, skip_frames=1):
     """Assert that the argument is either of the specified type or None."""
     if not (s is None or isinstance(s, stype)):
         nn = _get_variable_name()
         tn = typename or _get_type_name(stype)
         sn = _get_type_name(type(s))
-        raise H2OTypeError("`%s` should have been a %s, got <%s>" % (nn, tn, sn))
+        raise H2OTypeError("`%s` should be a %s, got %r (type <%s>)" % (nn, tn, s, sn),
+                           skip_frames=skip_frames)
 
 def assert_is_none(s, reason=None):
     """Assert that the argument is None."""
@@ -90,31 +98,31 @@ def assert_is_none(s, reason=None):
 
 def assert_is_str(s):
     """Assert that the argument is a string."""
-    assert_is_type(s, _str_type, "string")
+    assert_is_type(s, _str_type, "string", skip_frames=2)
 
 def assert_maybe_str(s):
     """Assert that the argument is a string or None."""
-    assert_maybe_type(s, _str_type, "string")
+    assert_maybe_type(s, _str_type, "string", skip_frames=2)
 
 def assert_is_int(x):
     """Assert that the argument is integer."""
-    assert_is_type(x, _int_type, "integer")
+    assert_is_type(x, _int_type, "integer", skip_frames=2)
 
 def assert_maybe_int(x):
     """Assert that the argument is integer or None."""
-    assert_maybe_type(x, _int_type, "integer")
+    assert_maybe_type(x, _int_type, "integer", skip_frames=2)
 
 def assert_is_bool(b):
     """Assert that the argument is boolean."""
-    assert_is_type(b, bool, "boolean")
+    assert_is_type(b, bool, "boolean", skip_frames=2)
 
 def assert_is_numeric(x):
     """Assert that the argument is numeric (integer or float)."""
-    assert_is_type(x, _num_type, "numeric")
+    assert_is_type(x, _num_type, "numeric", skip_frames=2)
 
 def assert_maybe_numeric(x):
     """Assert that the argument is either numeric or None."""
-    assert_maybe_type(x, _num_type, "numeric")
+    assert_maybe_type(x, _num_type, "numeric", skip_frames=2)
 
 
 def _get_variable_name():

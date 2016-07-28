@@ -19,9 +19,13 @@ class H2OError(Exception):
 class H2OValueError(H2OError):
     """Error indicating that wrong parameter value was passed to a function."""
 
+
 class H2OTypeError(H2OError):
     """Error indicating that the user passed a parameter of wrong type."""
 
+    def __init__(self, message, skip_frames=0):
+        super(H2OTypeError, self).__init__(message)
+        self.skip_frames = skip_frames
 
 
 #-----------------------------------------------------------------------------------------------------------------------
