@@ -209,6 +209,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     }
 
     @Override public void reduce( T mb ) {
+      if (this==mb) return;
       super.reduce(mb);
       assert mb._K == _K;
       ArrayUtils.add(_cm, mb._cm);
