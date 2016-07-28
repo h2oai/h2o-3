@@ -74,7 +74,8 @@ def assert_is_type(var, expected_type, message=None, skip_frames=1):
     :raises H2OTypeError: if the argument is not of the desired type.
     """
     if _check_type(var, expected_type): return
-    raise H2OTypeError(var_name=_get_variable_name(), var_value=var, exp_type=expected_type, message=message,
+    vname = _retrieve_assert_arguments()[0]
+    raise H2OTypeError(var_name=vname, var_value=var, exp_type=expected_type, message=message,
                        skip_frames=skip_frames)
 
 
@@ -82,7 +83,7 @@ def assert_is_type(var, expected_type, message=None, skip_frames=1):
 def assert_maybe_type(s, stype, typename=None, skip_frames=1):
     """Assert that the argument is either of the specified type or None."""
     if not (s is None or isinstance(s, stype)):
-        nn = _get_variable_name()
+        nn = _retrieve_assert_arguments()[0]
         tn = typename or _get_type_name(stype)
         sn = _get_type_name(type(s))
         raise H2OTypeError("`%s` should be a %s, got %r (type <%s>)" % (nn, tn, s, sn),
@@ -130,26 +131,38 @@ def assert_true(cond, message):
 def assert_matches(v, regex):
     m = re.match(regex, v)
     if m is None:
-        vn = _get_variable_name()
-        message = "Argument `{var}` (= \"{val}\") did not match /{regex}/".format(var=vn, regex=regex, val=v)
+        vn = _retrieve_assert_arguments()[0]
+        message = "Argument `{var}` (= {val!r}) did not match /{regex}/".format(var=vn, regex=regex, val=v)
         raise H2OValueError(message, var_name=vn, skip_frames=1)
     return m
 
 
-def _get_variable_name():
+def assert_satisfies(v, cond):
+    """
+    Assert that variable satisfies the provided condition.
+
+    :param v: variable to check. Its value is only used for error reporting
+    """
+    if not cond:
+        vname, vexpr = _retrieve_assert_arguments()
+        raise H2OValueError("Argument `{var}` (= {val!r}) does not satisfy the condition {expr}"
+                            .format(var=vname, val=v, expr=vexpr), var_name=vname, skip_frames=1)
+
+
+def _retrieve_assert_arguments():
     """
     Magic variable name retrieval.
 
     This function is designed as a helper for assert_*() functions. Typically such assertion is used like this::
 
-        assert_is_int(num_threads)
+        assert_is_type(num_threads, int)
 
     If the variable `num_threads` turns out to be non-integer, we would like to raise an exception such as
 
         H2OTypeError("`num_threads` is expected to be integer, but got <str>")
 
     and in order to compose an error message like that, we need to know that the variables that was passed to
-    assert_is_int() carries a name "num_threads". Naturally, the variable itself knows nothing about that.
+    assert_is_type() carries a name "num_threads". Naturally, the variable itself knows nothing about that.
 
     This is where this function comes in: we walk up the stack trace until the first frame outside of this
     file, find the original line that called the assert_is_int() function, and extract the variable name from
@@ -163,7 +176,7 @@ def _get_variable_name():
     except RuntimeError:
         # Walk up the stacktrace until we are outside of this file
         tb = sys.exc_info()[2]
-        assert tb.tb_frame.f_code.co_name == "_get_variable_name"
+        assert tb.tb_frame.f_code.co_name == "_retrieve_assert_arguments"
         this_filename = tb.tb_frame.f_code.co_filename
         fr = tb.tb_frame
         while fr is not None and fr.f_code.co_filename == this_filename:
@@ -174,10 +187,28 @@ def _get_variable_name():
         line = linecache.getline(fr.f_code.co_filename, fr.f_lineno)
 
         # Find the variable of interest and return it
-        variables = re.findall(r"assert_\w+\(([^,)]*)", line)
-        if len(variables) == 0: return "<arg>"
-        if len(variables) == 1: return variables[0]
-        raise RuntimeError("More than one assert_*() statement on the line!")
+        variables = re.findall(r"assert_\w+\((.*?)\)", line)
+        if len(variables) == 1:
+            return variables[0].split(",")
+        raise RuntimeError("Unable to parse assert_*() statement properly:\n" + line)
+
+        # If the simple regular-expression approach above stops working, then use the following:
+        # try:
+        #     import tokenize
+        #     with open(fr.f_code.co_filename, "r") as f:
+        #         for i in range(fr.f_lineno - 1):
+        #             next(f)
+        #         g = tokenize.generate_tokens(f.readline)
+        #         parens_level = 0
+        #         for ttt in g:
+        #             print(ttt)
+        #             if ttt[1] == "(": parens_level += 1
+        #             if ttt[1] == ")":
+        #                 parens_level -= 1
+        #                 if parens_level == 0: break
+        # except:
+        #     pass
+
 
 
 def _check_type(s, stype, _nested=False):

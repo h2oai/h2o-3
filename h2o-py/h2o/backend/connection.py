@@ -32,7 +32,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import stringify_list, print2
-from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_maybe_numeric, is_str)
+from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, assert_maybe_numeric, is_str)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
 
@@ -122,7 +122,7 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
-            match = assert_matches(url, r"^(https?)://([\w.-]+):(\d+)/?$")
+            match = assert_matches(url, r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$")
             scheme = match.group(1)
             ip = match.group(2)
             port = int(match.group(3))
@@ -134,14 +134,14 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(ip, str)
             assert_is_type(port, int)
             assert_is_type(https, bool)
-            assert 1 <= port <= 65535, "Invalid `port` number: %d" % port
+            assert_matches(ip, r"(?:[\w-]+\.)*[\w-]+")
+            assert_satisfies(port, 1 <= port <= 65535)
             scheme = "https" if https else "http"
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert_is_type(verify_ssl_certificates, bool)
         assert_is_type(proxy, (str, None))
-        assert auth is None or isinstance(auth, tuple) and len(auth) == 2 or isinstance(auth, AuthBase), \
-            "Invalid authentication token of type %s" % type(auth)
+        assert_is_type(auth, (AuthBase, tuple, None))
         assert_is_type(cluster_name, (str, None))
 
         conn = H2OConnection()
