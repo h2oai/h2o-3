@@ -4,9 +4,13 @@ import hex.*;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import static water.gpu.util.img2pixels;
 import water.util.Log;
 import static water.util.MRUtils.sampleFrame;
 import water.util.PrettyPrint;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Deep Learning Neural Net implementation based on MRTask
@@ -215,4 +219,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
       return model;
     }
   }
+
+
 }
