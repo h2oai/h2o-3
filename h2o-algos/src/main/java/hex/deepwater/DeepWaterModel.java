@@ -429,19 +429,19 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       int height = 224;
 
       ArrayList<String> train_data = new ArrayList<>();
+      ArrayList<Integer> skipped = new ArrayList<>();
 
       //make predictions for all rows - even those with weights 0 for now (easier to deal with minibatch)
       for (int i=0; i<_fr.vec(0).length(); ++i) {
         if (isCancelled() || _j != null && _j.stop_requested()) return;
-//        double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
-//        if (weight == 0)
-//          continue;
+        double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
+        if (weight == 0) { //don't send observations with weight 0 to the GPU
+          skipped.add(i);
+          continue;
+        }
         String file = _fr.vec(0).atStr(bs, i).toString();
         train_data.add(file);
       }
-      final int orig_length = train_data.size();
-      assert(orig_length==_fr.numRows());
-
       // randomly add more rows to fill up to a multiple of batch_size
       long seed = 0xDECAF + 0xD00D * model_info().get_processed_global();
       Random rng = RandomUtils.getRNG(seed);
@@ -469,22 +469,27 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
             vw[i] = _predFrame.vec(i).open();
         }
 
-        int obs=0;
+        long row=0;
+        int skippedIdx=0;
+        int skippedRow=skipped.isEmpty()?-1:skipped.get(skippedIdx);
         img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, batch_size, width, height);
         Futures fs=new Futures();
         while(img_iter.Next(fs)) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = img_iter.getData();
           float[] predFloats = model_info()._imageTrain.predict(data);
-          Log.info("Scoring on rows " + (obs+1) + "..." + (Math.min(obs+batch_size+1,orig_length)) + ": " + Arrays.toString(img_iter.getFiles()));
+          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(img_iter.getFiles()));
 
           // fill the pre-created output Frame
           for (int j = 0; j < batch_size; ++j) {
-            long row=obs+j;
-            if (row >= orig_length) break;
-            double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(row);
-            if (weight == 0)
-              continue;
+            while (row==skippedRow) {
+              assert(weightIdx == -1 ||_fr.vec(weightIdx).at(row)==0);
+              if (skipped.size()>skippedIdx+1) {
+                skippedRow = skipped.get(++skippedIdx);
+              }
+              row++;
+            }
+            if (row >= _fr.numRows()) break;
             float [] actual = null;
             if (_computeMetrics)
               actual = new float[]{(float)_fr.vec(respIdx).at(row)};
@@ -503,21 +508,20 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                   vw[i].set(row, preds[i]);
               }
               if (_computeMetrics)
-                _mb.perRow(preds, actual, weight, 0 /*offset*/, DeepWaterModel.this);
+                _mb.perRow(preds, actual, DeepWaterModel.this);
             }
             else {
               vw[0].set(row, predFloats[j]);
               if (_computeMetrics)
-                _mb.perRow(new double[]{predFloats[j]}, actual, weight, 0 /*offset*/, DeepWaterModel.this);
+                _mb.perRow(new double[]{predFloats[j]}, actual, DeepWaterModel.this);
             }
+            row++;
           }
           if (_makePreds) {
             for (int i = 0; i < vw.length; ++i)
               vw[i].close(fs);
             fs.blockForPending();
           }
-
-          obs+=batch_size;
         }
         if ( _j != null) _j.update(_fr.anyVec().nChunks());
       } catch (IOException e) {
