@@ -46,13 +46,13 @@ class H2OTypeError(H2OSoftError):
     than usual.
     """
 
-    def __init__(self, var_name=None, exp_type=None, var_value=None, message=None, skip_frames=0):
+    def __init__(self, var_name=None, exp_types=None, var_value=None, message=None, skip_frames=0):
         """
         Create an H2OTypeError exception object.
 
         :param message: error message that will be shown to the user. If not given, this message will be constructed
-            from ``var_name``, ``var_value`` and ``exp_type``.
-        :param exp_type: expected variable's type.
+            from ``var_name``, ``var_value`` and ``exp_types``.
+        :param exp_types: expected variable's type.
         :param var_name: name of the variable whose type is wrong (can be used for highlighting etc).
         :param skip_frames: how many auxiliary function calls have been made since the moment of the exception. This
             many local frames will be skipped in the output of the exception message. For example if you want to check
@@ -60,8 +60,9 @@ class H2OTypeError(H2OSoftError):
             ``skip_frames`` should be 1 (thus making the call to ``assert_is_type`` invisible).
         """
         super(H2OTypeError, self).__init__(message)
+        assert isinstance(exp_types, (list, tuple)), "Bad `exp_types` argument: %r" % exp_types
         self._var_name = var_name
-        self._exp_type = exp_type
+        self._exp_types = exp_types
         self._var_value = var_value
         self._message = message
         self._skip_frames = skip_frames
@@ -73,7 +74,7 @@ class H2OTypeError(H2OSoftError):
         # Otherwise construct the message
         var = self._var_name
         val = self._var_value
-        etn = self._get_type_name(self._exp_type)
+        etn = self._get_type_name(self._exp_types)
         article = "an" if etn.lstrip("?")[0] in "aioeH" else "a"
         atn = self._get_type_name([type(val)])
         return "Argument `{var}` should be {an} {expected_type}, got {actual_type} (value: {value})".\

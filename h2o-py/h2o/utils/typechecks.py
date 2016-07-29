@@ -111,7 +111,7 @@ def assert_is_type(var, *types, **kwargs):
     vname = _retrieve_assert_arguments()[0]
     message = kwargs.get("message", None)
     skip_frames = kwargs.get("skip_frames", 1)
-    raise H2OTypeError(var_name=vname, var_value=var, exp_type=types, message=message, skip_frames=skip_frames)
+    raise H2OTypeError(var_name=vname, var_value=var, exp_types=types, message=message, skip_frames=skip_frames)
 
 
 
