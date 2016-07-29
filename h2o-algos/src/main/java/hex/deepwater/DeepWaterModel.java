@@ -425,8 +425,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       final int classes = _output.nclasses();
 
       BufferedString bs = new BufferedString();
-      int width = 224;
-      int height = 224;
+      int width = model_info()._width;
+      int height = model_info()._height;
 
       ArrayList<String> train_data = new ArrayList<>();
       ArrayList<Integer> skipped = new ArrayList<>();

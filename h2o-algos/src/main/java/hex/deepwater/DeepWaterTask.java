@@ -63,8 +63,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
 
     // single-threaded logic
     BufferedString bs = new BufferedString();
-    int width = 224;
-    int height = 224;
+    int width = _localmodel._height;
+    int height = _localmodel._width;
 
     if (_fr.numRows()>Integer.MAX_VALUE) {
       throw H2O.unimpl("Need to implement batching into int-sized chunks.");
