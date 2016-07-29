@@ -1,5 +1,6 @@
 package hex.deepwater;
 
+import water.Futures;
 import water.H2O;
 import water.Job;
 import water.MRTask;
@@ -101,7 +102,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
 
       start = System.currentTimeMillis();
       long gputime=0;
-      while(img_iter.Next() && !_job.isStopping()) {
+      Futures fs = new Futures();
+      while(img_iter.Next(fs) && !_job.isStopping()) {
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
         long n = _localmodel.get_processed_total();
@@ -109,7 +111,17 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
         _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
         long gpustart = System.currentTimeMillis();
-        _localmodel._imageTrain.train(data, labels); //ignore predictions
+        //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
+        final float[] mydata=data;
+        final float[] mylabels=labels;
+        fs.add(H2O.submitTask(new H2O.H2OCountedCompleter() {
+          @Override
+          public void compute2() {
+            _localmodel._imageTrain.train(mydata,mylabels); //ignore predictions
+            tryComplete();
+          }
+        }
+        ));
         long gpuend = System.currentTimeMillis();
         gputime+=gpuend-gpustart;
         _localmodel.add_processed_local(batch_size);
