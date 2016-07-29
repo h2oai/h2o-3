@@ -15,7 +15,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike",
-           "assert_is_type", "assert_matches", "assert_satisfies",
+           "U", "assert_is_type", "assert_matches", "assert_satisfies",
            "assert_is_int", "assert_is_numeric", "assert_is_str",
            "assert_maybe_int", "assert_maybe_numeric", "assert_maybe_str")
 
@@ -55,6 +55,18 @@ def is_listlike(s):
 
 
 
+class U(object):
+    """Helper class to create unions of types (in situations where such unions won't be otherwise possible."""
+
+    def __init__(self, *types):
+        """Create a union of types."""
+        self._types = types
+
+    def __iter__(self):
+        for t in self._types:
+            yield t
+
+
 def assert_is_type(var, *types, **kwargs):
     """
     Assert that the argument has the specified type.
@@ -77,6 +89,9 @@ def assert_is_type(var, *types, **kwargs):
         # check for a variable that may have multiple different types
         assert_is_type(ip, None, str)
         assert_is_type(x, int, float, str, None)
+        assert_is_type(x, U(int, float, str, None))
+        assert_is_type(scheme, "http", "https", "ftp")
+        assert_is_type(dir, -1, 0, 1)
 
         # check for a list or set of ints
         assert_is_type(arr, [int], {int})
@@ -88,12 +103,10 @@ def assert_is_type(var, *types, **kwargs):
         assert_is_type(cols, {str: H2OFrame})
 
         # check for a dictionary<str, int|float>
-        # (note that it is not possible to ask for a dict which has, say str:int and int:bool key/values only.
-        # Although it is technically possible to implement such check, it has no foreseeable utility).
-        assert_is_type(vals, {str: int, str: float})
+        assert_is_type(vals, {str: U(int, float)})
+        assert_is_type({"foo": 1, "bar": 2}, {"foo": int, "bar": U(int, float, None)})
 
         # check for a tuple with the specific type signature
-        # (we do not have a way for specifying type unions for individual elements of the tuple).
         assert_is_type(t, (int, int, int, [str]))
 
     Note that in Python everything is an ``object``, so you can use "object" to mean "any".
@@ -259,6 +272,11 @@ def _check_type(var, types):
             if isinstance(var, _str_type): return True
         elif tt is int:
             if isinstance(var, _int_type): return True
+        elif isinstance(tt, _str_type) or isinstance(tt, _int_type):
+            if var == tt: return True
+        elif isinstance(tt, U):
+            # this check should come before checking for ``tuple``
+            if _check_type(var, tt): return True
         elif isinstance(tt, type):
             if isinstance(var, tt): return True
         elif isinstance(tt, list):
@@ -269,10 +287,8 @@ def _check_type(var, types):
             if isinstance(var, tuple) and len(tt) == len(var) and \
                all(_check_type(var[i], [tt[i]]) for i in range(len(tt))): return True
         elif isinstance(tt, dict):
-            ttkeys = set(viewkeys(tt))
-            ttvals = set(viewvalues(tt))
-            if isinstance(var, dict) and all(_check_type(k, ttkeys) and _check_type(v, ttvals)
-                                             for k, v in viewitems(var)): return True
+            ttkv = viewitems(tt)
+            if isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in viewitems(var)): return True
         else:
             raise RuntimeError("Ivalid type %r in _check_type()" % tt)
     return False

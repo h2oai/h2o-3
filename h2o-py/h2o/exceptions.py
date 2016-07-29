@@ -103,6 +103,7 @@ class H2OTypeError(H2OSoftError):
             >>> _get_type_name((int, float, bool)) == "integer|float|bool"
             >>> _get_type_name((H2OFrame, None)) == "?H2OFrame"
         """
+        from h2o.utils.typechecks import is_str, is_int, U
         maybe_type = False
         res = []
         for tt in types:
@@ -112,6 +113,10 @@ class H2OTypeError(H2OSoftError):
                 res.append("string")
             elif tt is int:
                 res.append("integer")
+            elif is_str(tt) or is_int(tt):
+                res.append(repr(tt))
+            elif isinstance(tt, U):
+                res.append(H2OTypeError._get_type_name(tt))
             elif isinstance(tt, type):
                 res.append(tt.__name__)
             elif isinstance(tt, list):
@@ -121,8 +126,10 @@ class H2OTypeError(H2OSoftError):
             elif isinstance(tt, tuple):
                 res.append("(%s)" % ", ".join(H2OTypeError._get_type_name([item]) for item in tt))
             elif isinstance(tt, dict):
-                res.append("dict(%s: %s)" % (H2OTypeError._get_type_name(set(tt.keys())),
-                                             H2OTypeError._get_type_name(set(tt.values()))))
+                res.append("dict(%s)" % ", ".join(
+                    "%s: %s" % (H2OTypeError._get_type_name(tk), H2OTypeError._get_type_name(tv))
+                    for tk, tv in tt.items()
+                ))
             else:
                 raise RuntimeError("Unexpected `tt`: %r" % tt)
         if maybe_type:
