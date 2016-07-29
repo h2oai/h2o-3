@@ -21,11 +21,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   public GenModel( String[] names, String[][] domains ) { _names = names; _domains = domains; }
 
-  // --- CAN BE GENERATED --
+  // --- CAN BE GENERATED -- FIXME: remove dead code
 
-  @Override public int nfeatures() {
-    return _names.length;
-  }
+  //@Override public int nfeatures() {
+    //return _names.length;
+  //}
 
   // --- END --
 

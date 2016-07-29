@@ -1,1 +1,3 @@
 water.codegen.java.GBMModelPOJOCodeGen$GBMGeneratorProvider
+water.codegen.java.DRFModelPOJOCodeGen$DRFGeneratorProvider
+water.codegen.java.DeepLearningModelPOJOCodeGen$DeepLearningGeneratorProvider

@@ -10,7 +10,7 @@ import hex.genmodel.annotations.CG;
  */
 public class ModelMixin {
 
-  @CG.Delegate(target = "._output#nclasses", comment = "Number of output classes included in training data response column.")
+  @CG.Delegate(target = "._output#nclasses", comment = "Number of output classes included in training data response column.", when = "._output#isSupervised")
   public static final int NCLASSES = -1;
 
   @CG.Manual(comment = "Names of features used by model training")
@@ -35,6 +35,6 @@ public class ModelMixin {
   @CG.Delegate(target = "._parms._balance_classes")
   public static final boolean GEN_BALANCE_CLASSES = false;
 
-  @CG.Delegate(target = "#defaultThreshold")
+  @CG.Delegate(target = "#defaultThreshold", comment = "Default threshold", when = "._output#isSupervised")
   public static final double DEFAULT_THRESHOLD = 0.0;
 }

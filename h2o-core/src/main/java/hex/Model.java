@@ -1,5 +1,6 @@
 package hex;
 
+import org.apache.commons.io.*;
 import org.joda.time.DateTime;
 
 import hex.genmodel.easy.prediction.DimReductionModelPrediction;
@@ -13,6 +14,7 @@ import water.fvec.*;
 import water.util.*;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -1352,27 +1354,30 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // the built-in (interpreted) scoring on this dataset.  Returns true if all
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
-  public boolean testJavaScoring( Frame data, Frame model_predictions, double rel_epsilon) {
+  public boolean testJavaScoring(Frame data, Frame modelPredictions, double relEpsilon) {
     String modelName = JCodeGen.toJavaId(_key.toString());
     GenModel genmodel;
     try {
       String modelJavaCode = toJava(false /* preview */, true /* verbose code */);
+      org.apache.commons.io.FileUtils.writeStringToFile(new File("/tmp/" + modelName + ".java.A"), modelJavaCode);
       genmodel = JCodeGen.instantiate(modelName, modelJavaCode);
     } catch (Exception e) {
       throw H2O.fail("Internal POJO compilation failed",e);
     }
 
-    boolean result1 = testJavaScoring(genmodel, data, model_predictions, rel_epsilon);
+    boolean result1 = testJavaScoring(genmodel, data, modelPredictions, relEpsilon);
     boolean result2 = true;
     if (CodeGenerationService.INSTANCE.hasCodeGenerator(this)) {
       try {
         String modelJavaCode = CodeGenerationService.INSTANCE.generate(this);
+        org.apache.commons.io.FileUtils.writeStringToFile(new File("/tmp/" + modelName + ".java.B"), modelJavaCode);
         genmodel = JCodeGen.instantiate(modelName, modelJavaCode);
       } catch (Exception e) {
-        throw H2O.fail("Internal POJO compilation failed",e);
+        throw H2O.fail("Internal POJO compilation failed", e);
       }
-      result2 = testJavaScoring(genmodel, data, model_predictions, rel_epsilon);
+      result2 = testJavaScoring(genmodel, data, modelPredictions, relEpsilon);
     } else {
+      assert false : "The code generator is missing!";
       Log.warn("Cannot find code generator for " + this.getClass());
     }
     return result1 && result2;

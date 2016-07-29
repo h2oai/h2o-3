@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Created by michal on 5/17/16.
+ * Reflection utilities for code generator.
  */
 public class ReflectionUtils {
 
@@ -31,22 +31,6 @@ public class ReflectionUtils {
     // Note: toArray(new Field[0]) is faster than toArray(new Field[size])
     //       based on http://shipilev.net/blog/2016/arrays-wisdom-ancients/
     return methods.toArray(new Method[0]);
-  }
-
-  /**
-   * Note: consider hidden allocation overhead inside call getMethods and reconsider
-   * using findAllMethods and searching for a specific method manually.
-   *
-   * @param clz
-   * @param name
-   * @param includeParent
-   * @return
-   */
-  public static Method findMethod(Class clz, String name, boolean includeParent) {
-    for (Method m : clz.getMethods()) {
-
-    }
-    return null;
   }
 
   /**
@@ -90,7 +74,10 @@ public class ReflectionUtils {
     } else if (q.startsWith(".")) {
       startChar = '.';
     } else {
-      throw new RuntimeException("Wrong query: " + q);
+      throw new RuntimeException("Wrong query: `" + q + "`. "
+                                 + " - The query has to start with . or # !!!"
+                                 + "\n Queried object: " + o.getClass()
+                                 + "\n Return type of queried field: " + klazz);
     }
     int nextHash = q.indexOf('#', 1);
     int nextDot = q.indexOf('.', 1);
@@ -110,7 +97,9 @@ public class ReflectionUtils {
         result = f.get(o);
       }
     } catch (Exception e) {
-      throw new RuntimeException("Wrong syntax in reflective query: " + q + ", source: " + o);
+      throw new RuntimeException("Wrong syntax in reflective query: " + q + ""
+                                 + "\n Queried object: " + o.getClass()
+                                 + "\n Return type of queried field: " + klazz);
     }
 
     return next < 0 ? (T) result : getValue(result, tail, klazz);

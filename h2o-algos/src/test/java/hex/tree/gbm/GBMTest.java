@@ -318,6 +318,9 @@ public class GBMTest extends TestUtil {
 
       res.remove();
 
+    } catch (Throwable t) {
+      t.printStackTrace();
+      throw t;
     } finally {
       parms._train.remove();
       parms._valid.remove();

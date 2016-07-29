@@ -8,11 +8,14 @@ import hex.deeplearning.Neurons;
 import water.codegen.java.mixins.DeepLearningModelMixin;
 
 import static water.codegen.java.JCodeGenUtil.VALUE;
-import static water.codegen.java.JCodeGenUtil.field;
 import static water.codegen.java.JCodeGenUtil.s;
 
 /**
- * Created by michal on 3/22/16.
+ * Code generation for Deep Learning models.
+ *
+ * It is using {@link DeepLearningModelMixin} as a template.
+ *
+ * @see DeepLearningModelMixin
  */
 public class DeepLearningModelPOJOCodeGen
     extends POJOModelCodeGenerator<DeepLearningModelPOJOCodeGen, DeepLearningModel> {
@@ -37,6 +40,8 @@ public class DeepLearningModelPOJOCodeGen
 
     // 1. redefine body of nclasses - since it is different in generated code and runtime model
     ccg.method("nclasses").withBody(s("return ").p((modelInfo.get_params()._autoencoder ? neurons[neurons.length-1].units() : model._output.nclasses())).p(';'));
+    // Append helper field
+    ccg.field("GEN_IS_MODIFIED_HUBER").withValue(VALUE(model._parms._distribution == Distribution.Family.modified_huber));
 
     // Generate values for given fields
     // NEURONS field
@@ -89,5 +94,18 @@ public class DeepLearningModelPOJOCodeGen
     }
 
     return self();
+  }
+
+  public static class DeepLearningGeneratorProvider extends GeneratorProvider<DeepLearningModelPOJOCodeGen, DeepLearningModel> {
+
+    @Override
+    public boolean supports(Class klazz) {
+      return klazz.isAssignableFrom(DeepLearningModel.class);
+    }
+
+    @Override
+    public JavaCodeGenerator<DeepLearningModelPOJOCodeGen, DeepLearningModel> createGenerator(DeepLearningModel model) {
+      return new DeepLearningModelPOJOCodeGen(model);
+    }
   }
 }

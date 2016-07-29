@@ -7,6 +7,8 @@ import hex.tree.gbm.GBMModel;
 
 /**
  * Created by michal on 5/18/16.
+ *
+ * FIXME: remove
  */
 public class POJOCodeGenFactory {
 

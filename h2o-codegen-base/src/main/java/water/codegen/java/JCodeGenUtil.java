@@ -16,7 +16,7 @@ import water.codegen.SB;
 import water.codegen.util.ReflectionUtils;
 
 /**
- * Created by michal on 12/11/15.
+ * Java code generation utilities.
  */
 public class JCodeGenUtil {
 
@@ -41,11 +41,16 @@ public class JCodeGenUtil {
       CG.Delegate cg = m.getAnnotation(CG.Delegate.class);
       MethodCodeGenerator mcg = method(m);
       if (cg != null) { // Attach body
-        Class returnType = m.getReturnType();
-        // Read value from object
-        Object value = ReflectionUtils.getValue(source, cg.target(), returnType);
-        // Generate body
-        mcg.withBody(s("return ").pj(value, returnType).p(";").nl());
+        boolean skip = !cg.when().equals(CG.NA) && !ReflectionUtils.getValue(source, cg.when(), Boolean.class);
+        if (!skip) {
+          Class returnType = m.getReturnType();
+          // Read value from object
+          Object value = ReflectionUtils.getValue(source, cg.target(), returnType);
+          // Generate body
+          mcg.withBody(s("return ").pj(value, returnType).p(";"));
+        } else {
+          mcg.withBody(s("throw new UnsupportedOperationException();"));
+        }
       } // else leave body for corresponding model code generator
       ccg.withMethod(mcg);
     }

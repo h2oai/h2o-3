@@ -1,7 +1,9 @@
 package water.codegen.java;
 
 import hex.tree.CompressedTree;
+import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBMModel;
 import water.codegen.JCodeSB;
 import water.codegen.java.mixins.DRFMixin;
 import water.codegen.java.mixins.ForestMixin;
@@ -10,7 +12,11 @@ import water.codegen.java.mixins.SharedTreeModelMixin;
 import static water.codegen.java.JCodeGenUtil.s;
 
 /**
- * FIXME:
+ * Code generator for DFR models.
+ *
+ * For code generation it is using {@link DRFMixin} which represents the code.
+ *
+ * @see DRFMixin
  */
 public class DRFModelPOJOCodeGen extends POJOModelCodeGenerator<DRFModelPOJOCodeGen, DRFModel> {
 
@@ -28,7 +34,30 @@ public class DRFModelPOJOCodeGen extends POJOModelCodeGenerator<DRFModelPOJOCode
     ccg.withMixin(model, DRFMixin.class);
 
     // Implements scoreImpl method
-    ccg.method("scoreImpl").withBody(new CodeGeneratorB() {
+    ccg.method("scoreImpl").withBody(treeScoreCodeGenerator(model, ccg)).withParentheses(true);
+
+    return self();
+  }
+
+  public static class DRFGeneratorProvider extends GeneratorProvider<DRFModelPOJOCodeGen, DRFModel> {
+
+    @Override
+    public boolean supports(Class klazz) {
+      return klazz.isAssignableFrom(DRFModel.class);
+    }
+
+    @Override
+    public JavaCodeGenerator<DRFModelPOJOCodeGen, DRFModel> createGenerator(DRFModel model) {
+      return new DRFModelPOJOCodeGen(model);
+    }
+  }
+
+  // Shared method to provide tree generator
+  static <T extends SharedTreeModel<T, ? extends SharedTreeModel.SharedTreeParameters, ? extends SharedTreeModel.SharedTreeOutput>>
+  CodeGeneratorB treeScoreCodeGenerator(
+      final T model,
+      final ClassCodeGenerator ccg) {
+    return new CodeGeneratorB() {
       @Override
       public CodeGeneratorB build() {
         for (int t = 0; t < model._output._treeKeys.length; t++) {
@@ -85,9 +114,6 @@ public class DRFModelPOJOCodeGen extends POJOModelCodeGenerator<DRFModelPOJOCode
       private String treeName(int treeIdx, int classIdx) {
         return "Tree_" + treeIdx + "_class_" + classIdx;
       }
-    }).withParentheses(true);
-
-    return self();
+    };
   }
-
 }

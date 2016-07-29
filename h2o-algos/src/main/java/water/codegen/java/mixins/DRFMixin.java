@@ -1,14 +1,14 @@
 package water.codegen.java.mixins;
 
-import hex.genmodel.annotations.CG;
-
 /**
- * Created by michal on 5/12/16.
+ * DRF model mixin - this class is used for code generation.
+ *
+ * @see water.codegen.java.DRFModelPOJOCodeGen
  */
 public class DRFMixin extends SharedTreeModelMixin {
 
   public static double[] unifyPreds(double[] preds) {
-    if (!GEN_IS_CLASSIFIER) {
+    if (!GEN_IS_CLASSIFIER) { // Regression model
       preds[0] /= GEN_NTREES;
     } else {
       if (NCLASSES == 2 && GEN_BINOMIAL_DOUBLE_TREES) {

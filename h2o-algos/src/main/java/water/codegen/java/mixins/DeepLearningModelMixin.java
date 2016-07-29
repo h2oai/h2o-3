@@ -7,7 +7,12 @@ import hex.genmodel.annotations.CG;
 /**
  * DeepLearning model mixin.
  *
- * Note: before running make sure to call Gradle target :h2o-model-codegen:copyMixinsToResources
+ * Note: before running make sure to call Gradle target `copyMixinsToResources`
+ *
+ * Note: DeepLearning POJO instance is not thread safe since it is using
+ * instance-specific working space!
+ *
+ * @see water.codegen.java.DeepLearningModelPOJOCodeGen
  */
 public class DeepLearningModelMixin extends ModelMixin {
 
@@ -79,6 +84,9 @@ public class DeepLearningModelMixin extends ModelMixin {
   @CG.Delegate(target = "#model_info#data_info#fullN")
   private static final int GEN_FULLN = -1;
 
+  @CG.Manual(comment = "Distribution family is Bernoulli")
+  private static final boolean GEN_IS_MODIFIED_HUBER = false;
+
   // --- The following code will be copied into resulting POJO --
 
   // Static initialization
@@ -88,6 +96,7 @@ public class DeepLearningModelMixin extends ModelMixin {
 
   // Instance initialization
   {
+    // Allocate workspace per POJO instance
     NUMS = GEN_NUMS > 0 ? new double[GEN_NUMS] : null;
     ACTIVATION = new double[NEURONS.length][];
     for (int i = 0; i < NEURONS.length; i++) ACTIVATION[i] = new double[NEURONS[i]];
@@ -155,10 +164,10 @@ public class DeepLearningModelMixin extends ModelMixin {
           }
         }
         if (i == activation.length-1) {
-          pureMatVec(activation, i); // Should be inlined
+          pureMatVec(activation, i); // Should be inlined by compiler
         }
       } else { // else is not maxout
-        pureMatVec(activation, i); // Should be inlined
+        pureMatVec(activation, i); // Should be inlined by compiler
         if (i < stopping) {
           for (int r=0; r<activation[i].length; ++r) {
             if (GEN_IS_TANH) {
@@ -168,13 +177,13 @@ public class DeepLearningModelMixin extends ModelMixin {
             }
             if (HIDDEN_DROPOUT_RATIOS != null) {
               if (i < activation.length-1) {
-                activation[i][r] *= HIDDEN_DROPOUT_RATIOS[i-1];
+                activation[i][r] *= 1 - HIDDEN_DROPOUT_RATIOS[i-1];
               }
             }
           } // 2
         }  //1
       }
-      if (GEN_IS_CLASSIFIER) {
+      if (GEN_IS_CLASSIFIER && !GEN_IS_MODIFIED_HUBER) {
         if (i == activation.length-1) {
           double max = activation[i][0];
           for (int r=1; r<activation[i].length; r++) {
@@ -191,7 +200,7 @@ public class DeepLearningModelMixin extends ModelMixin {
             preds[r+1] = activation[i][r];
           }
         }
-      } else if (!GEN_IS_AUTOENCODER) { // Regression
+      } else if (!GEN_IS_AUTOENCODER) { // Regression or modified huber
         if (i == activation.length-1) {
           if (NORMRESPMUL != null) {
             preds[1] = (activation[i][0] / NORMRESPMUL[0] + NORMRESPSUB[0]);
@@ -199,6 +208,10 @@ public class DeepLearningModelMixin extends ModelMixin {
             preds[1] = activation[i][0];
           }
           preds[1] = linkInv(preds[1]);
+          if (GEN_IS_MODIFIED_HUBER) {
+            preds[2] = preds[1];
+            preds[1] = 1 - preds[2];
+          }
           if (Double.isNaN(preds[1])) throw new RuntimeException("Predicted regression target NaN!");
         }
       } else { // Autoencoder
@@ -229,7 +242,7 @@ public class DeepLearningModelMixin extends ModelMixin {
     return preds;
   }
 
-  final static void pureMatVec(double[][] activation, int i) {
+  final private static void pureMatVec(double[][] activation, int i) {
     int cols = activation[i-1].length;
     int rows = activation[i].length;
     int extra=cols-cols%8;

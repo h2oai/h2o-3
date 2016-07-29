@@ -21,7 +21,8 @@ public class CG {
 
     String comment() default NA;
 
-    /** Skip value generation when query is true: ".output#isSupervised" */
+    /** Generate value generation when query is true: ".output#isSupervised".
+     * By default it is always true. */
     String when() default NA;
   }
 

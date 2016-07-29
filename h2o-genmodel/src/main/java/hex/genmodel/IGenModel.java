@@ -14,7 +14,7 @@ public interface IGenModel {
    * Returns true for supervised models.
    * @return true if this class represents supervised model.
    */
-  @CG.Delegate(target ="#isSupervised")
+  @CG.Delegate(target ="._output#isSupervised")
   boolean isSupervised();
 
   /**
@@ -28,7 +28,7 @@ public interface IGenModel {
    * Returns number of output classes for classifiers or 1 for regression models.
    * @return returns number of output classes or 1 for regression models.
    */
-  @CG.Delegate(target ="._output#nclasses")
+  @CG.Delegate(target ="._output#nclasses", when = "._output#isSupervised")
   int nclasses();
 
 
