@@ -1,3 +1,5 @@
+.. _productionizing-h2o:
+
 Productionizing H2O
 ===================
 
@@ -9,6 +11,8 @@ Example Design Patterns
 
 Here is a collection of example design patterns for how to productionize H2O.
 
+
+.. _app-consumer-loan:
 
 Consumer loan application
 ~~~~~~~~~~~~~~~~~~~~~~~~~
