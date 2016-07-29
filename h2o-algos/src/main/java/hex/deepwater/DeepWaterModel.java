@@ -427,6 +427,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       BufferedString bs = new BufferedString();
       int width = model_info()._width;
       int height = model_info()._height;
+      int channels = model_info()._channels;
 
       ArrayList<String> train_data = new ArrayList<>();
       ArrayList<Integer> skipped = new ArrayList<>();
@@ -472,7 +473,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         long row=0;
         int skippedIdx=0;
         int skippedRow=skipped.isEmpty()?-1:skipped.get(skippedIdx);
-        img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, batch_size, width, height);
+        img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, batch_size, width, height, channels);
         Futures fs=new Futures();
         while(img_iter.Next(fs)) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
