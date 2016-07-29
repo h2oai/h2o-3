@@ -9,7 +9,7 @@ import java.util.ArrayList;
 
 public class DeepWaterImageIterator {
 
-  public DeepWaterImageIterator(ArrayList<String> img_lst, ArrayList<Float> lable_lst, int batch_size, int width, int height) throws IOException {
+  public DeepWaterImageIterator(ArrayList<String> img_lst, ArrayList<Float> lable_lst, int batch_size, int width, int height, int channels) throws IOException {
     assert label_lst==null || img_lst.size() == lable_lst.size();
     this.img_lst = img_lst;
     this.label_lst = lable_lst;
@@ -18,9 +18,10 @@ public class DeepWaterImageIterator {
     start_index = 0;
     this.width = width;
     this.height = height;
+    this.channels = channels;
     data = new float[2][];
-    data[0] = new float[batch_size * width * height * 3];
-    data[1] = new float[batch_size * width * height * 3];
+    data[0] = new float[batch_size * width * height * channels];
+    data[1] = new float[batch_size * width * height * channels];
     label = new float[2][];
     label[0] = new float[batch_size];
     label[1] = new float[batch_size];
@@ -62,7 +63,7 @@ public class DeepWaterImageIterator {
       try {
         final int len = _conv.width*_conv.height*_conv.channels;
         final int start=_index*len;
-        img2pixels(_file, _conv.width, _conv.height, _destData, start);
+        img2pixels(_file, _conv.width, _conv.height, _conv.channels, _destData, start);
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -78,7 +79,7 @@ public class DeepWaterImageIterator {
       Conversion conv = new Conversion();
       conv.height=this.height;
       conv.width=this.width;
-      conv.channels=3;
+      conv.channels=this.channels;
       for (int i = 0; i < batch_size; i++)
         fs.add(H2O.submitTask(new ImageConverter(i,img_lst.get(start_index+i), label_lst==null?Float.NaN:label_lst.get(start_index+i),conv, data[which],label[which],file[which])));
       fs.blockForPending();
@@ -99,7 +100,7 @@ public class DeepWaterImageIterator {
   private int val_num;
   private int start_index;
   private int batch_size;
-  private int width, height;
+  private int width, height, channels;
   private float[][] data;
   private float[][] label;
   private String[][] file;
