@@ -11,6 +11,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.gpu.ImageTrain;
 import water.gpu.util;
 import water.parser.BufferedString;
 import water.util.*;
@@ -452,9 +453,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         train_labels.add(train_labels.get(pick));
       }
 
-      double [] tmp = new double[_output.nfeatures()];
       _mb = makeMetricBuilder(_domain);
-
       assert(isSupervised()); //not yet implemented for autoencoder
       int cols = _output.nclasses() + (_output.isClassifier()?1:0);
       if (_makePreds) {
@@ -475,7 +474,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
         int obs=0;
         img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height);
-        while(img_iter.Next()) {
+        Futures fs=new Futures();
+        while(img_iter.Next(fs)) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = img_iter.getData();
           float[] predFloats = model_info()._imageTrain.predict(data);
@@ -514,7 +514,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
             }
           }
           if (_makePreds) {
-            Futures fs = new Futures();
             for (int i = 0; i < vw.length; ++i)
               vw[i].close(fs);
             fs.blockForPending();
