@@ -230,12 +230,15 @@ def _get_method_full_name(func):
 
     This method will attempt to find "full name" of the given function object. This full name is either of
     the form "<class name>.<method name>" if the function is a class method, or "<module name>.<func name>"
-    if it's a regular function.
+    if it's a regular function. Thus, this is an attempt to back-port func.__qualname__ to Python 2.
 
     :param func: a function object.
 
     :returns: string with the function's full name as explained above.
     """
+    # Python 3.3 already has this information available...
+    if hasattr(func, "__qualname__"): return func.__qualname__
+
     module = inspect.getmodule(func)
     for cls_name in dir(module):
         cls = getattr(module, cls_name)

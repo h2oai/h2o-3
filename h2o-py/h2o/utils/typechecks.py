@@ -278,7 +278,6 @@ def _check_type(var, types):
         elif isinstance(tt, _str_type) or isinstance(tt, _int_type):
             if var == tt: return True
         elif isinstance(tt, U):
-            # this check should come before checking for ``tuple``
             if _check_type(var, tt): return True
         elif isinstance(tt, type):
             if isinstance(var, tt): return True
