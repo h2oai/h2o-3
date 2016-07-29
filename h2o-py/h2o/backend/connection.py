@@ -25,7 +25,7 @@ import requests
 from requests.auth import AuthBase
 
 from h2o.backend.server import H2OLocalServer
-from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError
+from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
 from h2o.schemas.cloud import H2OCluster
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
@@ -206,10 +206,18 @@ class H2OConnection(backwards_compatible()):
         url = self._base_url + urltail
 
         # Prepare data
-        if bool(data) + bool(json) + bool(filename) > 1:
-            raise ValueError("Only one of parameters `json`, `data`, `file` can be supplied.")
-        if filename is not None and method != "POST":
-            raise ValueError("File uploads can only be done via POST method, got %s" % endpoint)
+        if filename is not None:
+            assert_is_type(filename, str)
+            assert_is_type(json, None, "Argument `json` should be None when `filename` is used.")
+            assert_is_type(data, None, "Argument `data` should be None when `filename` is used.")
+            assert_satisfies(method, method == "POST",
+                             "File uploads can only be done via POST method, got %s" % method)
+        elif data is not None:
+            assert_is_type(data, dict)
+            assert_is_type(json, None, "Argument `json` should be None when `data` is used.")
+        elif json is not None:
+            assert_is_type(json, dict)
+
         data = self._prepare_data_payload(data)
         files = self._prepare_file_payload(filename)
         params = None
@@ -368,10 +376,9 @@ class H2OConnection(backwards_compatible()):
         :param dest: Where to write the log: either a filename (str), or an open file handle (file). If not given,
             then a new temporary file will be created.
         """
+        assert_is_type(dest, (None, str, type(sys.stdout)))
         if dest is None:
             dest = os.path.join(tempfile.mkdtemp(), "h2o-connection.log")
-        if not (isinstance(dest, type(sys.stdout)) or is_str(dest)):
-            raise ValueError("Logging destination should be either a string (filename), or an open file handle")
         self._print("Now logging all API requests to file %r" % dest)
         self._is_logging = True
         self._logging_dest = dest
@@ -464,7 +471,6 @@ class H2OConnection(backwards_compatible()):
         plain lists of key/value pairs, so this method converts the data into such format.
         """
         if not data: return None
-        if not isinstance(data, dict): raise ValueError("Invalid `data` argument, should be a dict: %r" % data)
         res = {}
         for key, value in viewitems(data):
             if value is None: continue  # don't send args set to None so backend defaults take precedence
@@ -496,10 +502,9 @@ class H2OConnection(backwards_compatible()):
         for passing to requests.request().
         """
         if not filename: return None
-        assert_is_type(filename, str)
         absfilename = os.path.abspath(filename)
         if not os.path.exists(absfilename):
-            raise ValueError("File %s does not exist" % filename)
+            raise H2OValueError("File %s does not exist" % filename, skip_frames=1)
         return {os.path.basename(absfilename): open(absfilename, "rb")}
 
 

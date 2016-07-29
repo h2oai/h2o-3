@@ -135,17 +135,20 @@ def assert_matches(v, regex):
     return m
 
 
-def assert_satisfies(v, cond):
+def assert_satisfies(v, cond, message=None):
     """
     Assert that variable satisfies the provided condition.
 
     :param v: variable to check. Its value is only used for error reporting.
     :param bool cond: condition that must be satisfied. Should be somehow related to the variable ``v``.
+    :param message: message string to use instead of the default.
     """
     if not cond:
         vname, vexpr = _retrieve_assert_arguments()
-        raise H2OValueError("Argument `{var}` (= {val!r}) does not satisfy the condition {expr}"
-                            .format(var=vname, val=v, expr=vexpr), var_name=vname, skip_frames=1)
+        if not message:
+            message = "Argument `{var}` (= {val!r}) does not satisfy the condition {expr}" \
+                      .format(var=vname, val=v, expr=vexpr)
+        raise H2OValueError(message=message, var_name=vname, skip_frames=1)
 
 
 def _retrieve_assert_arguments():
