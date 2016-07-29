@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-from setuptools import setup, find_packages
+from setuptools import setup
 from codecs import open
 from os import path
 import h2o
@@ -57,11 +57,16 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
-        ],
+    ],
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
 
-    packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
+    packages=["h2o"],
+    package_dir={"h2o": "h2o"},
+    package_data={"h2o": [
+        "LICENSE",
+        "h2o_data/*.*",
+    ]},
 
     # run-time dependencies
     install_requires=["requests", "tabulate", "future", "colorama"],
@@ -69,7 +74,5 @@ setup(
     # Additional data files to include into the distribution
     data_files=[
         ("h2o_jar", ["../build/h2o.jar"]),
-        ("h2o_data", ["h2o/h2o_data/iris.csv", "h2o/h2o_data/prostate.csv"]),
-        ("", ["../LICENSE"]),
     ],
 )
