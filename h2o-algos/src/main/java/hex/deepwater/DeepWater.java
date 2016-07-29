@@ -172,6 +172,8 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
                   new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepWaterTask (model.model_info(), 1/*FIXME*/, _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+          Log.info("Saving model state.");
+          model.model_info()._imageTrain.saveParam(model._key.toString() + "."+model.iterations+".params");
           if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
           if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
           if (timeout()) { //stop after scoring
