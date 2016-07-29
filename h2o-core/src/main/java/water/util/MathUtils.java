@@ -8,10 +8,7 @@ import water.Iced;
 import water.MRTask;
 import water.MemoryManager;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.Arrays;
 
@@ -494,10 +491,11 @@ public class MathUtils {
         throw new H2OIllegalArgumentException("dimensions must be >= 1");
       if (width*height*depth != input.numCols())
         throw new H2OIllegalArgumentException("dimensions HxWxD must match the # columns of the frame");
-      for (Vec v : input.vecs()) {
-        if (v.naCnt() > 0)
+      VecAry vecs = input.vecs();
+      for (int i = 0; i < vecs.len(); ++i) {
+        if (vecs.naCnt(i) > 0)
           throw new H2OIllegalArgumentException("DCT can not be computed on rows with missing values");
-        if (!v.isNumeric())
+        if (!vecs.isNumeric(i))
           throw new H2OIllegalArgumentException("DCT can only be computed on numeric columns");
       }
     }
@@ -532,7 +530,7 @@ public class MathUtils {
               ncs[i].addNum(a[i]);
           }
         }
-      }.doAll(input.numCols(), Vec.T_NUM, input).outputFrame();
+      }.doAll(input.numCols(), Vec.T_NUM, input.vecs()).outputFrame();
     }
 
     /**
@@ -569,7 +567,7 @@ public class MathUtils {
 
           }
         }
-      }.doAll(height * width, Vec.T_NUM, input).outputFrame();
+      }.doAll(height * width, Vec.T_NUM, input.vecs()).outputFrame();
     }
 
     /**
@@ -609,7 +607,7 @@ public class MathUtils {
                   ncs[i*(width*depth) + j*depth + k].addNum(a[i][j][k]);
           }
         }
-      }.doAll(height*width*depth, Vec.T_NUM, input).outputFrame();
+      }.doAll(height*width*depth, Vec.T_NUM, input.vecs()).outputFrame();
     }
   }
 

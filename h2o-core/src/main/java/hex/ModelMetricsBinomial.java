@@ -3,6 +3,7 @@ package hex;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
@@ -116,10 +117,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         AUC2 auc = new AUC2(_auc);
         GainsLift gl = null;
         if (preds!=null) {
-          Vec resp = f.vec(m._parms._response_column);
-          Vec weight = frameWithWeights.vec(m._parms._weights_column);
+          VecAry resp = f.vecs().getVecs(f._names.getId(m._parms._response_column));
+          VecAry weight = frameWithWeights.vecs().getVecs(f._names.getId(m._parms._weights_column));
           if (resp != null) {
-            gl = new GainsLift(preds.lastVec(), resp, weight);
+            gl = new GainsLift(preds.vecs().getVecs(preds.numCols()-1), resp, weight);
             gl.exec(m._output._job);
           }
         }

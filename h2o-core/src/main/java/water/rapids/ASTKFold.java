@@ -106,7 +106,7 @@ public class ASTKFold extends ASTPrim {
     VecAry foldVec = stk.track(asts[1].exec(env)).getFrame().vecs().makeZero();
     int nfolds = (int)asts[2].exec(env).getNum();
     long seed  = (long)asts[3].exec(env).getNum();
-    return new ValFrame(new Frame(null,kfoldColumn(foldVec,nfolds,seed==-1?new Random().nextLong():seed)));
+    return new ValFrame(new Frame(kfoldColumn(foldVec,nfolds,seed==-1?new Random().nextLong():seed)));
   }
 }
 
@@ -120,7 +120,7 @@ class ASTModuloKFold extends ASTPrim {
   public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     VecAry foldVec = stk.track(asts[1].exec(env)).getFrame().vecs().makeZero();
     int nfolds = (int)asts[2].exec(env).getNum();
-    return new ValFrame(new Frame(null,ASTKFold.moduloKfoldColumn(foldVec,nfolds)));
+    return new ValFrame(new Frame(ASTKFold.moduloKfoldColumn(foldVec,nfolds)));
   }
 }
 
@@ -135,6 +135,6 @@ class ASTStratifiedKFold extends ASTPrim {
     VecAry foldVec = stk.track(asts[1].exec(env)).getFrame().vecs().makeZero();
     int nfolds = (int)asts[2].exec(env).getNum();
     long seed  = (long)asts[3].exec(env).getNum();
-    return new ValFrame(new Frame(null,ASTKFold.stratifiedKFoldColumn(foldVec,nfolds,seed==-1?new Random().nextLong():seed)));
+    return new ValFrame(new Frame(ASTKFold.stratifiedKFoldColumn(foldVec,nfolds,seed==-1?new Random().nextLong():seed)));
   }
 }

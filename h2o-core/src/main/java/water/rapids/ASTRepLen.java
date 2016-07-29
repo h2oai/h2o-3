@@ -24,16 +24,17 @@ class ASTRepLen extends ASTPrim {
       new MRTask() {
         @Override
         public void map(Chunk c) {
+          VecAry.VecAryReader reader = fr.vecs().vecReader(false);
           for (int i = 0; i < c._len; ++i)
-            c.set(i, fr.anyVec().at((long) c.atd(i)));
+            c.set(i, reader.at((long) c.atd(i),0));
         }
       }.doAll(vec);
-      vec.setDomain(fr.anyVec().domain());
+      vec.setDomain(0,fr.vecs().domain(0));
       return new ValFrame(new Frame(vec));
     } else {
       Frame f = new Frame();
       for (int i = 0; i < length; ++i)
-        f.add(Frame.defaultColName(f.numCols()), fr.vec(i % fr.numCols()));
+        f.add(Frame.defaultColName(i), fr.vecs().getVecs(i % fr.numCols()));
       return new ValFrame(f);
     }
   }
@@ -63,8 +64,8 @@ class ASTSeq extends ASTPrim {
       int len = (int)n + 1;
       for (int r = 0; r < len; r++) nc.addNum(from + r*by);
       // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
-      nc.close(0, fs);
-      Vec vec = av.layout_and_close(fs);
+      av.closeChunk(0,nc,fs);
+      VecAry vec = av.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }

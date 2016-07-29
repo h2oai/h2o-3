@@ -10,6 +10,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 
@@ -20,30 +21,30 @@ class FindHandler extends Handler {
     Frame frame = find.key._fr;
     // Peel out an optional column; restrict to this column
     if( find.column != null ) {
-      Vec vec = frame.vec(find.column);
+      VecAry vec = frame.vecs().getVecs(frame.find(find.column));
       if( vec==null ) throw new H2OColumnNotFoundArgumentException("column", frame, find.column);
-      find.key = new FrameV3(new Frame(new String[]{find.column}, new Vec[]{vec}));
+      find.key = new FrameV3(new Frame(new String[]{find.column},vec));
     }
 
     // Convert the search string into a column-specific flavor
-    Vec[] vecs = frame.vecs();
-    double ds[] = new double[vecs.length];
-    for( int i=0; i<vecs.length; i++ ) {
-      if( vecs[i].isCategorical() ) {
-        int idx = ArrayUtils.find(vecs[i].domain(),find.match);
-        if( idx==-1 && vecs.length==1 ) throw new H2OCategoricalLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
+    VecAry vecs = frame.vecs();
+    double ds[] = new double[vecs.len()];
+    for( int i=0; i<vecs.len(); i++ ) {
+      if( vecs.isCategorical(i) ) {
+        int idx = ArrayUtils.find(vecs.domain(i),find.match);
+        if( idx==-1 && vecs.len()==1 ) throw new H2OCategoricalLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
         ds[i] = idx;
-      } else if( vecs[i].isUUID() ) {
+      } else if( vecs.isUUID(i) ) {
         throw H2O.unimpl();
-      } else if( vecs[i].isString() ) {
+      } else if( vecs.isString(i) ) {
         throw H2O.unimpl();
-      } else if( vecs[i].isTime() ) {
+      } else if( vecs.isTime(i) ) {
         throw H2O.unimpl();
       } else {
         try {
           ds[i] = find.match==null ? Double.NaN : Double.parseDouble(find.match);
         } catch( NumberFormatException e ) {
-          if( vecs.length==1 ) {
+          if( vecs.len()==1 ) {
             // There's only one Vec and it's a numeric Vec and our search string isn't a number
             IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
             String msg = "Frame: " + frame._key.toString() + " as only one column, it is numeric, and the find pattern is not numeric: " + find.match;
@@ -57,7 +58,7 @@ class FindHandler extends Handler {
       }
     }
 
-    Find f = new Find(find.row,ds).doAll(frame);
+    Find f = new Find(find.row,ds).doAll(frame.vecs());
     find.prev = f._prev;
     find.next = f._next==Long.MAX_VALUE ? -1 : f._next;
     return find;

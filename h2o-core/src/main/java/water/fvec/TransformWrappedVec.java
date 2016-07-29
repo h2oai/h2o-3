@@ -35,28 +35,25 @@ import static water.rapids.ASTParameter.makeNum;
  */
 public class TransformWrappedVec extends WrappedVec {
 
-  private final Key<Vec>[] _masterVecKeys;
-  private transient Vec[] _masterVecs;
   private final AST _fun;
 
-  public TransformWrappedVec(Key key, int rowLayout, AST fun, Key<Vec>... masterVecKeys) {
-    super(key, rowLayout, null);
+  public TransformWrappedVec(Key key, int rowLayout, AST fun, VecAry mastreVecs) {
+    super(key, rowLayout, mastreVecs);
     _fun=fun;
-    _masterVecKeys = masterVecKeys;
     DKV.put(this);
   }
 
   public TransformWrappedVec(Vec v, AST fun) {
-    this(v.group().addVec(), v._rowLayout, fun, v._key);
+    this(v.group().addVec(), v._rowLayout, fun, new VecAry(v));
   }
 
   public Vec makeVec() {
-    Vec v  = new MRTask() {
+    Vec v  = (Vec) new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
         for(int i=0;i<c._len;++i)
           nc.addNum(c.atd(i));
       }
-    }.doAll(Vec.T_NUM,this).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM,new VecAry(this)).outputVecs(null).getAVecRaw(0);
     remove();
     return v;
   }
@@ -64,18 +61,12 @@ public class TransformWrappedVec extends WrappedVec {
 
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
-    Chunk[] cs = new Chunk[_masterVecKeys.length];
-    if( _masterVecs==null )
-      _masterVecs = new Vec[_masterVecKeys.length];
-    for(int i=0; i<cs.length;++i)
-      cs[i] = (_masterVecs[i]!=null?_masterVecs[i]:(_masterVecs[i] = _masterVecKeys[i].get())).chunkForChunkIdx(cidx);
+    Chunk[] cs = _masterVec.getChunks(cidx);
     return new TransformWrappedChunk(_fun, this, cs);
   }
 
   @Override public Vec doCopy() {
-    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
-    v.setDomain(domain()==null?null:domain().clone());
-    return v;
+    throw H2O.unimpl();
   }
 
   public static class TransformWrappedChunk extends Chunk {
@@ -100,6 +91,16 @@ public class TransformWrappedVec extends WrappedVec {
     }
 
 
+    @Override
+    public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+      throw H2O.unimpl();
+    }
+
+    @Override
+    public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+      throw H2O.unimpl();
+    }
+
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
       if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
@@ -115,13 +116,6 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      for( int i=0; i< _len; i++ )
-        if( isNA(i) ) nc.addNA();
-        else          nc.addNum(atd(i));
-      return nc;
-    }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

@@ -294,12 +294,12 @@ public class InteractionWrappedVec extends WrappedVec {
     }
 
     @Override
-    public void add2NewChunk_impl(NewChunk nc, int from, int to) {
+    public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
       throw H2O.unimpl();
     }
 
     @Override
-    public void add2NewChunk_impl(NewChunk nc, int[] lines) {
+    public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
       throw H2O.unimpl();
     }
 
@@ -316,18 +316,7 @@ public class InteractionWrappedVec extends WrappedVec {
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      if( _vec.isCategorical(0) )
-        for(int i=0;i<_len;++i)
-          if( isNA(i) ) nc.addNA();
-          else          nc.addNum(at8(i),0);
-      else
-        for( int i=0; i< _len; i++ )
-          if( isNA(i) ) nc.addNA();
-          else          nc.addNum(atd(i));
-      return nc;
-    }
+
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

@@ -32,8 +32,8 @@ import static hex.ModelMetricsMultinomial.getHitRatioTable;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
 
   // ---
-  /** Write this Keyed object, and all nested Keys. */
-  public AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
+
+
 
   /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
    *  overwriting what was there before.  */
@@ -784,7 +784,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if( expensive && vec.domain(0) != domains[i] && !Arrays.equals(vec.domain(0),domains[i]) ) { // Result needs to be the same categorical
             VecAry evec;
             try {
-              evec = vec.adaptTo(0,domains[i]); // Convert to categorical or throw IAE
+              evec = vec.adaptTo(domains[i]); // Convert to categorical or throw IAE
             } catch( NumberFormatException nfe ) {
               throw new IllegalArgumentException("Test/Validation dataset has a non-categorical column '"+name+"' which is categorical in the training data");
             }
@@ -874,7 +874,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(0); // Scored/test domain; can be null
         if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.vecs().adaptTo(0,sdomain);
+          output.vecs().adaptTo(sdomain);
       }
     }
     cleanup_adapt(adaptFr, fr);
@@ -1057,13 +1057,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return super.remove_impl(fs);
   }
 
+
   /** Write out K/V pairs, in this case model metrics. */
+  @Override
   protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+    super.writeAll(ab);
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         ab.putKey(k);
     return ab;
   }
+  @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )

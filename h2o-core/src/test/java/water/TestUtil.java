@@ -213,20 +213,20 @@ public class TestUtil extends Iced {
   /** A Numeric Vec from an array of ints
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec vec(int...rows) { return vec(null, rows); }
+  public static VecAry vec(int...rows) { return vec(null, rows); }
   /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec vec(String[] domain, int ...rows) { 
+  public static VecAry vec(String[] domain, int ...rows) {
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
-    avec.setDomain(domain);
+
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
+    avec.closeChunk(0, chunk, fs);
+    VecAry vec = avec.layout_and_close(fs,domain);
     fs.blockForPending();
     return vec;
   }
@@ -260,18 +260,17 @@ public class TestUtil extends Iced {
     if( fr1.numCols() != fr2.numCols() ) return false;
     if( fr1.numRows() != fr2.numRows() ) return false;
     if( fr1.isCompatible(fr2) )
-      return !(new Cmp1().doAll(new Frame(fr1).add(fr2))._unequal);
+      return !(new Cmp1().doAll(new VecAry(fr1.vecs(),fr2.vecs()))._unequal);
     // Else do it the slow hard way
-    return !(new Cmp2(fr2).doAll(fr1)._unequal);
+    return !(new Cmp2(fr2).doAll(fr1.vecs())._unequal);
   }
 
-  public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
-    assertEquals(expecteds.length(), actuals.length());
-    for(int i = 0; i < expecteds.length(); i++) {
-      if(expecteds.at(i) != actuals.at(i))
-        System.out.println(i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start()));
-      assertEquals(expecteds.at(i), actuals.at(i), delta);
-    }
+  public static void assertVecEquals(VecAry expecteds, VecAry actuals, double delta) {
+    assertEquals(expecteds.numRows(), actuals.numRows());
+    assertEquals(expecteds.len(), actuals.len());
+    for(int i = 0; i < expecteds.numRows(); i++)
+      for(int j = 0; j < expecteds.len(); ++j)
+        assertEquals(expecteds.at(i, j), actuals.at(i, j), delta);
   }
 
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
@@ -314,12 +313,12 @@ public class TestUtil extends Iced {
     int nfeat = (int) expected.numRows();
     int ncomp = expected.numCols();
 
+    VecAry.VecAryReader rexp = expected.vecs().vecReader(false);
+    VecAry.VecAryReader ract = actual.vecs().vecReader(false);
+    Assert.assertEquals(expected.numCols(), actual.numRows());
     for(int j = 0; j < ncomp; j++) {
-      Vec.Reader vexp = expected.vec(j).new Reader();
-      Vec.Reader vact = actual.vec(j).new Reader();
-      Assert.assertEquals(vexp.length(), vact.length());
       for (int i = 0; i < nfeat; i++) {
-        Assert.assertEquals(vexp.at8(i), flipped[j] ? -vact.at8(i) : vact.at8(i), threshold);
+        Assert.assertEquals(rexp.at8(i,j), flipped[j] ? -ract.at8(i,j) : ract.at8(i,j), threshold);
       }
     }
     return flipped;
@@ -372,9 +371,9 @@ public class TestUtil extends Iced {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         if( _unequal ) return;
         Chunk c0 = chks[cols];
-        Vec v1 = _fr.vecs()[cols];
+        VecAry.VecAryReader r = _fr.vecs().vecReader(false);
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          double d0 = c0.atd(rows), d1 = v1.at(c0.start() + rows);
+          double d0 = c0.atd(rows), d1 = r.at(c0.start() + rows,cols);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
             _unequal = true; return;
           }

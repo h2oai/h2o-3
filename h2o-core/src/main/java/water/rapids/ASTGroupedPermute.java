@@ -38,13 +38,13 @@ public class ASTGroupedPermute extends ASTPrim {
     String[][] domains = new String[names.length][];
     int d = 0;
     for (; d < gbCols.length; d++)
-      domains[d] = fr.domains()[gbCols[d]];
-    domains[d++] = fr.domains()[permCol];
-    domains[d++] = fr.domains()[permCol];
-    domains[d++] = fr.domains()[keepCol];
-    domains[d] = fr.domains()[keepCol];
+      domains[d] = fr.vecs().domain(gbCols[d]);
+    domains[d++] = fr.vecs().domain(permCol);
+    domains[d++] = fr.vecs().domain(permCol);
+    domains[d++] = fr.vecs().domain(keepCol);
+    domains[d] = fr.vecs().domain(keepCol);
     long s = System.currentTimeMillis();
-    BuildGroups t = new BuildGroups(gbCols, permuteBy, permCol, keepCol).doAll(fr);
+    BuildGroups t = new BuildGroups(gbCols, permuteBy, permCol, keepCol).doAll(fr.vecs());
     Log.info("Elapsed time: " + (System.currentTimeMillis() - s) / 1000. + "s");
     s = System.currentTimeMillis();
     SmashGroups sg;
@@ -63,7 +63,7 @@ public class ASTGroupedPermute extends ASTPrim {
             for (int k = 0; k < anAa.length; ++k)
               ncs[k].addNum(anAa[k]);
       }
-    }.doAll(5, Vec.T_NUM, dVec).outputFrame(null, names, domains);
+    }.doAll(5, Vec.T_NUM, dVec.vecs()).outputFrame(null, names, domains);
     Log.info("Elapsed time: " + (System.currentTimeMillis() - s) / 1000. + "s");
     dVec.delete();
     return res;
@@ -86,7 +86,7 @@ public class ASTGroupedPermute extends ASTPrim {
 
     @Override public void setupLocal() { _grps = new IcedHashMap<>(); }
     @Override public void map(Chunk[] chks) {
-      String[] dom = chks[_permuteBy].vec().domain();
+      String[] dom = _vecs.domain(_permuteBy);
       IcedHashMap<Long, IcedHashMap<Long, double[]>[]> grps = new IcedHashMap<>();
       for (int row = 0; row < chks[0]._len; ++row) {
         long jid = chks[_gbCols[0]].at8(row);

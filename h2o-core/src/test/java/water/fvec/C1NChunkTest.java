@@ -25,8 +25,7 @@ public class C1NChunkTest extends TestUtil {
       if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
       else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
     }
-
-    nc = cc.inflate_impl(new NewChunk(null, 0));
+    nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);

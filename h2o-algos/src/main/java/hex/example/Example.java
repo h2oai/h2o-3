@@ -51,7 +51,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
         for( ; model._output._iterations < _parms._max_iterations; model._output._iterations++ ) {
           if( stop_requested() ) break; // Stopped/cancelled
 
-          double[] maxs = new Max().doAll(_parms.train())._maxs;
+          double[] maxs = new Max().doAll(_parms.train().vecs())._maxs;
 
           // Fill in the model
           model._output._maxs = maxs;

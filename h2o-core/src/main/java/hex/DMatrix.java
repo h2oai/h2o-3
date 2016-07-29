@@ -46,7 +46,7 @@ public class DMatrix  {
     }
     Key key = Vec.newKey();
     int rowLayout = AVec.ESPC.rowLayout(key,espc);
-    return transpose(src, new Frame(new Vec(key,rowLayout).makeZeros((int)src.numRows())));
+    return transpose(src, new Frame(new VecAry(new Vec(key,rowLayout)).makeZeros((int)src.numRows())));
   }
 
   /**
@@ -61,13 +61,12 @@ public class DMatrix  {
   public static Frame transpose(Frame src, Frame tgt){
     if(src.numRows() != tgt.numCols() || src.numCols() != tgt.numRows())
       throw new IllegalArgumentException("dimension do not match!");
-    for(Vec v:src.vecs()) {
-      if (v.isCategorical())
-        throw new IllegalArgumentException("transpose can only be applied to all-numeric frames (representing a matrix)");
-      if(v.length() > 1000000)
+    VecAry vecs = src.vecs();
+    if(vecs.categoricals().length > 0)
+      throw new IllegalArgumentException("transpose can only be applied to all-numeric frames (representing a matrix)");
+    if(vecs.numRows() > 1000000)
         throw new IllegalArgumentException("too many rows, transpose only works for frames with < 1M rows.");
-    }
-    new TransposeTsk(tgt).doAll(src);
+    new TransposeTsk(tgt).doAll(vecs);
     return tgt;
   }
 
@@ -85,17 +84,14 @@ public class DMatrix  {
     public TransposeTsk(Frame tgt){ _tgt = tgt;}
     public void map(final Chunk[] chks) {
       final Frame tgt = _tgt;
-      final long [] espc = tgt.anyVec().espc();
+      final long [] espc = tgt.vecs().espc();
       final int colStart = (int)chks[0].start();
-//      addToPendingCount(espc.length - 2);
       for (int i = 0; i < espc.length - 1; ++i) {
         final int fi = i;
-//        new CountedCompleter(this) {
-//          @Override
-//          public void compute() {
+
         final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
         for (int j = 0; j < tgtChunks.length; ++j)
-          tgtChunks[j] = new NewChunk(tgt.vec(j + colStart), fi);
+          tgtChunks[j] = new NewChunk(tgt.vecs().getAVecForCol(j + colStart), fi);
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
           NewChunk nc = chks[c].inflate();
           if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
@@ -107,21 +103,13 @@ public class DMatrix  {
             v.add2Chunk(t);
           }
         }
-//            addToPendingCount(tgtChunks.length - 1);
         for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
           final int fj = j;
-//              new CountedCompleter(this) {
-//                @Override
-//                public void compute() {
           tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
-          tgtChunks[fj].close(_fs);
+          tgt.vecs().getAVecForCol(j + colStart).closeChunk(fi,tgtChunks[fj],_fs);
           tgtChunks[fj] = null;
-//                  tryComplete();
         }
-//              }.fork();
-//            }
-//          }
-//        }.fork();
+
       }
     }
   }
@@ -174,9 +162,9 @@ public class DMatrix  {
 
     @Override
     public void compute2() {
-      _z = new Frame(_x.anyVec().makeZeros(_y.numCols()));
+      _z = new Frame(_x.vecs().makeZeros(_y.numCols()));
       int total_cores = H2O.CLOUD.size()*H2O.NUMCPUS;
-      int chunksPerCol = _y.anyVec().nChunks();
+      int chunksPerCol = _y.vecs().nChunks();
       int maxP = 256*total_cores/chunksPerCol;
       Log.info("maxP = " + maxP);
       _cntr = new AtomicInteger(maxP-1);
@@ -189,9 +177,9 @@ public class DMatrix  {
       new GetNonZerosTsk(new H2OCallback<GetNonZerosTsk>(this) {
         @Override
         public void callback(GetNonZerosTsk gnz) {
-          new VecTsk(new Callback(), _progressKey, gnz._vals).dfork(ArrayUtils.append(_x.vecs(gnz._idxs), _z.vec(i)));
+          new VecTsk(new Callback(), _progressKey, gnz._vals).dfork(new VecAry(_x.vecs().getVecs(gnz._idxs), _z.vecs().getVecs(i)));
         }
-      }).dfork(_y.vec(i));
+      }).dfork(_y.vecs().getVecs(i));
     }
     private class Callback extends H2OCallback{
       public Callback(){super(MatrixMulTsk.this);}
@@ -251,7 +239,7 @@ public class DMatrix  {
       _y = y;
     }
 
-    @Override public void setupLocal(){_fr.lastVec().preWriting();}
+//    @Override public void setupLocal(){_fr.lastVec().preWriting();}
     @Override public void map(Chunk [] chks) {
       Chunk zChunk = chks[chks.length-1];
       double [] res = MemoryManager.malloc8d(chks[0]._len);

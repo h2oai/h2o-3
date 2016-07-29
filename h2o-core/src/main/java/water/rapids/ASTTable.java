@@ -3,10 +3,7 @@ package water.rapids;
 import water.AutoBuffer;
 import water.DKV;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
@@ -31,34 +28,33 @@ class ASTTable extends ASTPrim {
     final boolean dense = asts[asts.length-1].exec(env).getNum()==1;
     Frame fr2 = asts.length==4 ? stk.track(asts[2].exec(env)).getFrame() : null;
     int ncols = fr1.numCols() + (fr2==null ? 0 : fr2.numCols());
-    Vec vec1 = fr1.vec(0);
+    VecAry vec1 = fr1.vecs(0);
 
-    Val res = fast_table(vec1,ncols,fr1._names[0]);
+    Val res = fast_table(vec1,ncols,fr1._names.getName(0));
     if( res != null ) return res;
 
     if( !(asts.length == 3 || asts.length == 4) || ncols > 2 )
       throw new IllegalArgumentException("table expects one or two columns");
 
-    Vec vec2 = fr1.numCols()==2 ? fr1.vec(1) : fr2 != null ? fr2.vec(0) : null;
-    int sz = fr1._names.length + (fr2 != null ? fr2._names.length : 0);
+    VecAry vec2 = fr1.numCols()==2 ? fr1.vecs(1) : fr2 != null ? fr2.vecs(0) : null;
+    int sz = fr1.numCols() + (fr2 != null ? fr2.numCols() : 0);
     String[] colnames = new String[sz];
     int i = 0;
-    for( String name : fr1._names ) colnames[i++] = name;
-    if( fr2 != null ) for( String name : fr2._names ) colnames[i++] = name;
-    
-    
+    for( String name : fr1._names.getNames() ) colnames[i++] = name;
+    if( fr2 != null ) for( String name : fr2._names.getNames() ) colnames[i++] = name;
+
     return slow_table(vec1,vec2,colnames,dense);
   }
 
   // -------------------------------------------------------------------------
   // Fast-path for 1 integer column
-  private ValFrame fast_table( Vec v1, int ncols, String colname ) {
-    if( ncols != 1 || !v1.isInt() ) return null;
-    long spanl = (long)v1.max()-(long)v1.min()+1;
+  private ValFrame fast_table( VecAry v1, int ncols, String colname ) {
+    if( ncols != 1 || !v1.isInt(0) ) return null;
+    long spanl = (long)v1.max(0)-(long)v1.min(0)+1;
     if( spanl > 1000000 ) return null; // Cap at decent array size, for performance
 
     // First fast-pass counting
-    FastCnt fastCnt = new FastCnt((long)v1.min(),(int)spanl).doAll(v1);
+    FastCnt fastCnt = new FastCnt((long)v1.min(0),(int)spanl).doAll(v1);
     final long cnts[] = fastCnt._cnts;
     final long minVal = fastCnt._min; 
     
@@ -75,8 +71,8 @@ class ASTTable extends ASTPrim {
             }
           }
         }
-      }.doAll(new byte[]{Vec.T_NUM,Vec.T_NUM}, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
-                                            new String[][]{v1.domain(),null});
+      }.doAll(new byte[]{Vec.T_NUM,Vec.T_NUM}, new VecAry(dataLayoutVec)).outputFrame(new Frame.Names(new String[]{colname, "Count"}),
+                                            new String[][]{v1.domain(0),null});
     dataLayoutVec.remove();
     return new ValFrame(fr);
   }
@@ -98,7 +94,7 @@ class ASTTable extends ASTPrim {
   // -------------------------------------------------------------------------
   // Count unique combos in 1 or 2 columns, where the values are not integers,
   // or cover a very large span.
-  private ValFrame slow_table( Vec v1, Vec v2, String[] colnames, boolean dense ) {
+  private ValFrame slow_table( VecAry v1, VecAry v2, String[] colnames, boolean dense ) {
 
 
     // For simplicity, repeat v1 if v2 is missing; this will end up filling in
@@ -114,15 +110,13 @@ class ASTTable extends ASTPrim {
       // Slow-pass group counting, very sparse hashtables.  Note that Vec v2 is
       // used as the left-most arg, or OUTER dimension - which will be columns in
       // the final result.
-      SlowCnt sc = new SlowCnt().doAll(v1,v1);
-
+      SlowCnt sc = new SlowCnt().doAll(new VecAry(v1,v1));
       // Get the column headers as sorted doubles
       double dcols[] = collectDomain(sc._col0s);
-      
       Frame res = new Frame();
       Vec rowlabel = Vec.makeVec(dcols,Vec.VectorGroup.VG_LEN1.addVec());
-      rowlabel.setDomain(v1.domain());
-      res.add(colnames[0],rowlabel);
+      rowlabel.setDomain(0,v1.domain(0));
+      res.add(colnames[0],new VecAry(rowlabel));
       long cnts[] = new long[dcols.length];
       for( int col=0; col<dcols.length; col++ ) {
         long lkey = Double.doubleToRawLongBits(dcols[col]);
@@ -131,7 +125,7 @@ class ASTTable extends ASTPrim {
         cnts[col] = al.get();
       }
       Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
-      res.add("Counts",vec);
+      res.add("Counts",new VecAry(vec));
       return new ValFrame(res);
     }
 
@@ -142,7 +136,7 @@ class ASTTable extends ASTPrim {
       // Slow-pass group counting, very sparse hashtables.  Note that Vec v2 is
       // used as the left-most arg, or OUTER dimension - which will be columns in
       // the final result.
-      SlowCnt sc = new SlowCnt().doAll(v2,v1);
+      SlowCnt sc = new SlowCnt().doAll(new VecAry(v2,v1));
 
       // Get the column headers as sorted doubles
       double dcols[] = collectDomain(sc._col0s);
@@ -158,8 +152,8 @@ class ASTTable extends ASTPrim {
       // Frame result.  Rowlabel for first column.
       
       Vec rowlabel = Vec.makeVec(drows,Vec.VectorGroup.VG_LEN1.addVec());
-      rowlabel.setDomain(v1.domain());
-      res.add(colnames[0],rowlabel);
+      rowlabel.setDomain(0,v1.domain(0));
+      res.add(colnames[0],new VecAry(rowlabel));
       long cnts[] = new long[drows.length];
       for (int col = 0; col < dcols.length; col++) {
         NonBlockingHashMapLong<AtomicLong> colx = sc._col0s.get(Double.doubleToRawLongBits(dcols[col]));
@@ -168,12 +162,10 @@ class ASTTable extends ASTPrim {
           cnts[row] = al == null ? 0 : al.get();
         }
         Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
-        res.add(v2.isCategorical() ? v2.domain()[col] : Double.toString(dcols[col]), vec);
+        res.add(v2.isCategorical(0) ? v2.domain(0)[col] : Double.toString(dcols[col]), new VecAry(vec));
       }
     } else {
-      
-      SlowCnt sc = new SlowCnt().doAll(v1,v2);
-
+      SlowCnt sc = new SlowCnt().doAll(new VecAry(v1,v2));
       double dcols[] = collectDomain(sc._col0s);
       
       NonBlockingHashMapLong<AtomicLong> rows = new NonBlockingHashMapLong<>();
@@ -204,13 +196,13 @@ class ASTTable extends ASTPrim {
       }
       
       Vec vec = Vec.makeVec(left_categ, Vec.VectorGroup.VG_LEN1.addVec());
-      if( v1.isCategorical() ) vec.setDomain(v1.domain());
-      res.add(colnames[0], vec);
+      if( v1.isCategorical(0) ) vec.setDomain(0,v1.domain(0));
+      res.add(colnames[0], new VecAry(vec));
       vec = Vec.makeVec(right_categ, Vec.VectorGroup.VG_LEN1.addVec());
-      if( v2.isCategorical() ) vec.setDomain(v2.domain());
-      res.add(colnames[1], vec);
+      if( v2.isCategorical(0) ) vec.setDomain(0,v2.domain(0));
+      res.add(colnames[1], new VecAry(vec));
       vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
-      res.add("Counts", vec);
+      res.add("Counts", new VecAry(vec));
     }
     return new ValFrame(res);
   }
@@ -338,12 +330,12 @@ class ASTUnique extends ASTPrim {
     Vec v;
     if( fr.numCols()!=1 )
       throw new IllegalArgumentException("Unique applies to a single column only.");
-    if( fr.anyVec().isCategorical() ) {
-      v = Vec.makeSeq(0, (long)fr.anyVec().domain().length, true);
-      v.setDomain(fr.anyVec().domain());
+    if( fr.vecs().isCategorical(0) ) {
+      v = Vec.makeSeq(0, (long)fr.vecs().domain(0).length, true);
+      v.setDomain(0,fr.vecs().domain(0));
       DKV.put(v);
     } else {
-      UniqTask t = new UniqTask().doAll(fr);
+      UniqTask t = new UniqTask().doAll(fr.vecs());
       int nUniq = t._uniq.size();
       final ASTGroup.G[] uniq = t._uniq.keySet().toArray(new ASTGroup.G[nUniq]);
       v = Vec.makeZero(nUniq);

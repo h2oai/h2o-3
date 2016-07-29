@@ -181,6 +181,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** Used to invoke profiling.  Call as: <code>new MRTask().profile().doAll();*/
   public T profile() { _profile = new MRProfile(this); return (T)this; }
 
+  public VecAry outputVecs(String[][] domains) {
+    throw H2O.unimpl();
+  }
+
   /** Get the resulting Frame from this invoked MRTask.  <b>This Frame is not
    *  in the DKV.</b> AppendableVec instances are closed into Vec instances,
    *  which then appear in the DKV.
@@ -200,9 +204,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    */
   public Frame outputFrame(Frame.Names names, String [][] domains){
     assert _output_types.length == 1;
-
     return outputFrame(null,names,new String[][][]{domains});
   }
+  public Frame outputFrame(Key k, String [] names, String [][] domains){
+    return outputFrame(k,new Frame.Names(names),domains);
+  }
+
   public Frame outputFrame(Frame.Names names, String [][][] domains){ return outputFrame(null,names,domains); }
 
   /**
@@ -298,6 +305,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private int addShift( int x ) { x += _nlo; int sz = H2O.CLOUD.size(); return x < sz ? x : x-sz; }
   private int subShift( int x ) { x -= _nlo; int sz = H2O.CLOUD.size(); return x <  0 ? x+sz : x; }
   private short selfidx() { int idx = H2O.SELF.index(); if( idx>= 0 ) return (short)idx; assert H2O.SELF._heartbeat._client; return 0; }
+
+  public Frame outputFrame(Key make) {
+    return outputFrame(make,(Frame.Names)null,(String[][])null);
+  }
+
 
   // Profiling support.  Time for each subpart of a single M/R task, plus any
   // nested MRTasks.  All numbers are CTM stamps or millisecond times.

@@ -45,12 +45,12 @@ public class TableTest extends TestUtil {
   }
   private void chkFr( Frame fr, int col, int row, double exp ) { chkFr(fr,col,row,exp,Math.ulp(1)); }
   private void chkFr( Frame fr, int col, int row, double exp, double tol ) {
-    if( Double.isNaN(exp) ) Assert.assertTrue(fr.vec(col).isNA(row));
-    else                    Assert.assertEquals(exp, fr.vec(col).at(row),tol);
+    if( Double.isNaN(exp) ) Assert.assertTrue(fr.vecs().isNA(row,col));
+    else                    Assert.assertEquals(exp, fr.vecs().at(row,col),tol);
   }
   private void chkFr( Frame fr, int col, int row, String exp ) {
-    String[] dom = fr.vec(col).domain();
-    Assert.assertEquals(exp, dom[(int)fr.vec(col).at8(row)]);
+    String[] dom = fr.vecs().domain(col);
+    Assert.assertEquals(exp, dom[(int)fr.vecs().at8(row,col)]);
   }
 
   private Frame chkTree(String tree, String fname) { return chkTree(tree,fname,false); }

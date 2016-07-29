@@ -6,10 +6,12 @@ import org.junit.Test;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.FrameTestUtil;
+import water.fvec.Vec;
+import water.fvec.VecAry;
 
 import java.util.Arrays;
 
-import static water.fvec.FrameTestUtil.createFrame;
 import static water.fvec.FrameTestUtil.collectS;
 import static water.util.ArrayUtils.flat;
 import static water.util.ArrayUtils.append;
@@ -26,12 +28,14 @@ public class ShuffleSplitFrameTest extends TestUtil {
   public void testShuffleSplitOnStringColumn() {
     long[] chunkLayout = ar(2L, 2L, 3L);
     String[][] data = ar(ar("A", "B"), ar(null, "C"), ar("D", "E", "F"));
-    Frame f = createFrame("test1.hex", chunkLayout, data);
+    Vec v = FrameTestUtil.makeStringVec(data);
+    Frame f = new Frame(Key.make("test1.hex"), new Frame.Names("data"), new VecAry(v));
     testScenario(f, flat(data));
 
     chunkLayout = ar(3L, 3L);
     data = ar(ar("A", null, "B"), ar("C", "D", "E"));
-    f = createFrame("test2.hex", chunkLayout, data);
+    v = FrameTestUtil.makeStringVec(data);
+    f = new Frame(Key.make("test2.hex"), new Frame.Names("data"), new VecAry(v));
     testScenario(f, flat(data));
   }
 
@@ -45,8 +49,8 @@ public class ShuffleSplitFrameTest extends TestUtil {
       Assert.assertEquals("Expecting 2 splits", 2, splits.length);
       // Collect values from both splits
       String[] values = append(
-              collectS(splits[0].vec(0)),
-              collectS(splits[1].vec(0)));
+              collectS(splits[0].vecs()),
+              collectS(splits[1].vecs()));
       // Sort values, but first replace all nulls by unique value
       Arrays.sort(replaceNulls(expValues));
       Arrays.sort(replaceNulls(values));

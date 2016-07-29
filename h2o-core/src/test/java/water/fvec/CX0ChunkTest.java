@@ -24,8 +24,7 @@ public class CX0ChunkTest extends TestUtil {
     Assert.assertTrue(cc instanceof CX0Chunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
 
-    nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length , nc._len);
     Assert.assertEquals(2, nc._sparseLen);

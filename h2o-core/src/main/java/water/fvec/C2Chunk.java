@@ -32,17 +32,6 @@ public class C2Chunk extends Chunk {
   }
   @Override boolean set_impl(int i, float f ) { return set_impl(i,(double)f); }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set2(_mem,(idx<<1)+_OFF,(short)_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
-    return nc;
-  }
   @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     set_len(_mem.length>>1);
@@ -78,6 +67,26 @@ public class C2Chunk extends Chunk {
       vals[j++] = res != _NA?res:Double.NaN;
     }
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) {
+      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+      if( res == _NA ) nc.addNA();
+      else             nc.addNum(res,0);
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for( int i:lines) {
+      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+      if( res == _NA ) nc.addNA();
+      else             nc.addNum(res,0);
+    }
+    return nc;
   }
 
   @Override

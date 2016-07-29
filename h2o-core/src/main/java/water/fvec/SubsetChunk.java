@@ -13,7 +13,17 @@ public class SubsetChunk extends Chunk {
     _start = rows._start; _vec = subset_vec; _cidx = rows._cidx;
     _mem = new byte[0];
   }
-  
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    throw H2O.unimpl();
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    throw H2O.unimpl();
+  }
+
   @Override protected double atd_impl(int idx) { return _data.atd_impl((int)_rows.at8_impl(idx)); }
   @Override protected long   at8_impl(int idx) { return _data.at8_impl((int)_rows.at8_impl(idx)); }
 
@@ -23,7 +33,7 @@ public class SubsetChunk extends Chunk {
   @Override boolean set_impl(int idx, double d) { return false; }
   @Override boolean set_impl(int idx, float f)  { return false; }
   @Override boolean setNA_impl(int idx)         { return false; }
-  @Override public NewChunk inflate_impl(NewChunk  nc ) { throw water.H2O.fail(); }
+
   public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw water.H2O.fail(); }
   @Override protected final void initFromBytes () { throw water.H2O.fail(); }
 }

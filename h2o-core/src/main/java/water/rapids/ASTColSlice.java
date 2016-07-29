@@ -7,6 +7,7 @@ import water.parser.BufferedString;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.jar.Attributes;
 
 /** Column slice; allows R-like syntax.
  *  Numbers past the largest column are an error.
@@ -23,11 +24,10 @@ class ASTColSlice extends ASTPrim {
       return vv.slice(asts[2].columns(vv._names));
     }
     Frame src = v.getFrame();
-    int[] cols = col_select(src.names(),asts[2]);
-    Frame dst = new Frame();
-    Vec[] vecs = src.vecs();
-    for( int col : cols )  dst.add(src._names[col],vecs[col]);
-    return new ValFrame(dst);
+    int[] cols = col_select(src._names.getNames(),asts[2]);
+    VecAry vecs = src.vecs(cols);
+    String[] names = src._names.getNames(cols);
+    return new ValFrame(new Frame(null,names,vecs));
   }
 
   // Complex column selector; by list of names or list of numbers or single
@@ -70,21 +70,24 @@ class ASTColPySlice extends ASTPrim {
       return vv.slice(asts[2].columns(vv._names));
     }
     Frame fr = v.getFrame();
-    int[] cols = asts[2].columns(fr.names());
+    int[] cols = asts[2].columns(fr._names.getNames());
 
-    Frame fr2 = new Frame();
     if( cols.length==0 )        // Empty inclusion list?
-      return new ValFrame(fr2);
+      return new ValFrame(new Frame());
+    int [] cols2 = new int[cols.length];
     if( cols[0] < 0 )           // Negative cols have number of cols added
       for( int i=0; i<cols.length; i++ )
         cols[i] += fr.numCols();
     if( asts[2] instanceof ASTNum && // Singletons must be in-range
         (cols[0] < 0 || cols[0] >= fr.numCols()) )
       throw new IllegalArgumentException("Column must be an integer from 0 to "+(fr.numCols()-1));
-    for( int col : cols )       // For all included columns
-      if( col >= 0 && col < fr.numCols() ) // Ignoring out-of-range ones
-        fr2.add(fr.names()[col],fr.vecs()[col]);
-    return new ValFrame(fr2);
+    int j = 0;
+    int n = fr.numCols();
+    for( int i=0; i<cols.length; i++ )
+      if(0 <= cols[i] && cols[i] < n)
+        cols2[j++] = cols[i];
+    if(j < cols2.length) cols2 = Arrays.copyOf(cols2,j);
+    return new ValFrame(new Frame(fr._names.getNames(cols2),fr.vecs(cols2)));
   }
 }
 
@@ -154,7 +157,7 @@ class ASTRowSlice extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.types(), fr).outputFrame(fr.names(),fr.domains());
+      }.doAll(fr.vecs().types(), fr.vecs()).outputFrame(fr._names,fr.vecs().domains());
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
@@ -176,14 +179,15 @@ class ASTFlatten extends ASTPrim {
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if( fr.numCols()!=1 || fr.numRows()!=1 ) return new ValFrame(fr); // did not flatten
-    Vec vec = fr.anyVec();
-    switch (vec.get_type()) {
+    VecAry vec = fr.vecs();
+    Chunk c = vec.getChunk(0,0);
+    switch (vec.type(0)) {
       case Vec.T_BAD:
-      case Vec.T_NUM:  return new ValNum(vec.at(0));
-      case Vec.T_TIME: return new ValNum(vec.at8(0));
-      case Vec.T_STR:  return new ValStr(vec.atStr(new BufferedString(),0).toString());
-      case Vec.T_CAT:  return new ValStr(vec.factor(vec.at8(0)));
-      default: throw H2O.unimpl("The type of vector: " + vec.get_type_str() + " is not supported by " + str());
+      case Vec.T_NUM:  return new ValNum(c.atd(0));
+      case Vec.T_TIME: return new ValNum(c.at8(0));
+      case Vec.T_STR:  return new ValStr(c.atStr(new BufferedString(),0).toString());
+      case Vec.T_CAT:  return new ValStr(vec.domain(0)[c.at4(0)]);
+      default: throw H2O.unimpl("The type of vector: " + vec.typesStr()[0] + " is not supported by " + str());
     }
   }
 }
@@ -199,10 +203,10 @@ class ASTFilterNACols extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double frac = asts[2].exec(env).getNum();
     double nrow = fr.numRows()*frac;
-    Vec vecs[] = fr.vecs();
+    VecAry vecs = fr.vecs();
     ArrayList<Double> idxs = new ArrayList<>();
     for( double i=0; i<fr.numCols(); i++ )
-      if( vecs[(int)i].naCnt() < nrow )
+      if( vecs.naCnt((int)i) < nrow )
         idxs.add(i);
     double[] include_cols = new double[idxs.size()];
     int i=0;
@@ -224,39 +228,38 @@ class ASTCBind extends ASTPrim {
 
     // Compute the variable args.  Find the common row count
     Val vals[] = new Val[asts.length];
-    Vec vec = null;
+    Frame fr = null;
     for( int i=1; i<asts.length; i++ ) {
       vals[i] = stk.track(asts[i].exec(env));
       if( vals[i].isFrame() ) {
-        Vec anyvec = vals[i].getFrame().anyVec();
-        if( anyvec == null ) continue; // Ignore the empty frame
-        if( vec == null ) vec = anyvec;
-        else if( vec.length() != anyvec.length() ) 
-          throw new IllegalArgumentException("cbind frames must have all the same rows, found "+vec.length()+" and "+anyvec.length()+" rows.");
+        VecAry anyvec = vals[i].getFrame().vecs();
+        if( anyvec == null || anyvec.len() == 0) continue; // Ignore the empty frame
+        if( fr == null ) fr = new Frame(vals[i].getFrame());
+        else if( fr.vecs().numRows() != anyvec.numRows() )
+          throw new IllegalArgumentException("cbind frames must have all the same rows, found "+fr.vecs().numRows()+" and "+anyvec.numRows()+" rows.");
       }
     }
     boolean clean = false;
-    if( vec == null ) { vec = Vec.makeZero(1); clean = true; } // Default to length 1
+    if( fr == null ) { fr = new Frame(); clean = true; } // Default to length 1
+    // Populate the new Framer
 
-    // Populate the new Frame
-    Frame fr = new Frame();
     for( int i=1; i<asts.length; i++ ) {
       switch( vals[i].type() ) {
-      case Val.FRM:  
-        fr.add(vals[i].getFrame().names(),fr.makeCompatible(vals[i].getFrame()));
+      case Val.FRM:
+        Frame fr2 = vals[i].getFrame();
+        if(fr2 != fr)
+          fr.add(fr2._names.getNames(),fr.vecs().makeCompatible(fr2.vecs(),false));
         break;
       case Val.FUN:  throw H2O.unimpl();
       case Val.STR:  throw H2O.unimpl();
       case Val.NUM:  
         // Auto-expand scalars to fill every row
         double d = vals[i].getNum();
-        fr.add(Double.toString(d),vec.makeCon(d));
+        fr.add(Double.toString(d),fr.vecs().makeCon(d));
         break;
       default: throw H2O.unimpl();
       }
     }
-    if( clean ) vec.remove();
-
     return new ValFrame(fr);
   }
 }
@@ -281,42 +284,40 @@ class ASTRBind extends ASTPrim {
       vals[i] = stk.track(asts[i].exec(env));
       if( vals[i].isFrame() ) {
         fr = vals[i].getFrame();
-        nchks += fr.anyVec().nChunks(); // Total chunks
+        nchks += fr.vecs().nChunks(); // Total chunks
       } else nchks++;  // One chunk per scalar
     }
     // No Frame, just a pile-o-scalars?
     Vec zz = null;              // The zero-length vec for the zero-frame frame
     if( fr==null ) {            // Zero-length, 1-column, default name
-      fr = new Frame(new String[]{Frame.defaultColName(0)}, new Vec[]{zz=Vec.makeZero(0)});
+      fr = new Frame(zz=Vec.makeZero(0));
       if( asts.length == 1 ) return new ValFrame(fr);
     }
 
     // Verify all Frames are the same columns, names, and types.  Domains can vary, and will be the union
     final Frame frs[] = new Frame[asts.length]; // Input frame
-    final byte[] types = fr.types();  // Column types
+    final byte[] types = fr.vecs().types();  // Column types
     final long[] espc = new long[nchks+1]; // Compute a new layout!
     int coffset = 0;
+
 
     Frame[] tmp_frs = new Frame[asts.length];
     for( int i=1; i<asts.length; i++ ) {
       Val val = vals[i];        // Save values computed for pass 2
-      Frame fr0 = val.isFrame() ? val.getFrame() 
+      Frame fr0 = val.isFrame() ? val.getFrame()
         // Scalar: auto-expand into a 1-row frame
-        : (tmp_frs[i] = new Frame(fr._names,Vec.makeCons(val.getNum(),1L,fr.numCols())));
-
+        : (tmp_frs[i] = new Frame(null,fr._names, new VecAry(Vec.makeCons(val.getNum(),1L,fr.numCols()))));
       // Check that all frames are compatible
       if( fr.numCols() != fr0.numCols() ) 
         throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
-      if( !Arrays.deepEquals(fr._names,fr0._names) )
-        throw new IllegalArgumentException("rbind frames must have all the same column names, found "+Arrays.toString(fr._names)+" and "+Arrays.toString(fr0._names));
-      if( !Arrays.equals(types,fr0.types()) )
-        throw new IllegalArgumentException("rbind frames must have all the same column types, found "+Arrays.toString(types)+" and "+Arrays.toString(fr0.types()));
-
+      if( !fr._names.equals(fr0._names) )
+        throw new IllegalArgumentException("rbind frames must have all the same column names, found "+ fr._names + " and "+ fr0._names);
+      if( !Arrays.equals(types,fr0.vecs().types()) )
+        throw new IllegalArgumentException("rbind frames must have all the same column types, found "+fr.vecs().typesStr() + " and "+ fr0.vecs().typesStr());
       frs[i] = fr0;     // Save frame
-
       // Roll up the ESPC row counts
       long roffset = espc[coffset];
-      long[] espc2 = fr0.anyVec().espc();
+      long[] espc2 = fr0.vecs().espc();
       for( int j=1; j < espc2.length; j++ ) // Roll up the row counts
         espc[coffset + j] = (roffset+espc2[j]);
       coffset += espc2.length-1; // Chunk offset
@@ -326,7 +327,7 @@ class ASTRBind extends ASTPrim {
     // build up the new domains for each vec
     HashMap<String, Integer>[] dmap = new HashMap[types.length];
     String[][] domains = new String[types.length][];
-    int[][][] cmaps = new int[types.length][][];
+    final int[][][] cmaps = new int[types.length][][];
     for(int k=0;k<types.length;++k) {
       dmap[k] = new HashMap<>();
       int c = 0;
@@ -334,121 +335,68 @@ class ASTRBind extends ASTPrim {
       if( t == Vec.T_CAT ) {
         int[][] maps = new int[frs.length][];
         for(int i=1; i < frs.length; i++) {
-          maps[i] = new int[frs[i].vec(k).domain().length];
+          String [] dom = frs[i].vecs().domain(k);
+          maps[i] = new int[dom.length];
           for(int j=0; j < maps[i].length; j++ ) {
-            String s = frs[i].vec(k).domain()[j];
+            String s = dom[j];
             if( !dmap[k].containsKey(s)) dmap[k].put(s, maps[i][j]=c++);
             else                         maps[i][j] = dmap[k].get(s);
           }
         }
         cmaps[k] = maps;
       } else {
-        cmaps[k] = new int[frs.length][];
+        cmaps[k] = null;
       }
       domains[k] = c==0?null:new String[c];
       for( Map.Entry<String, Integer> e : dmap[k].entrySet())
         domains[k][e.getValue()] = e.getKey();
     }
 
-    // Now make Keys for the new Vecs
-    Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
-    Vec[] vecs = new Vec[fr.numCols()];
-    int rowLayout = AVec.ESPC.rowLayout(keys[0],espc);
-    for( int i=0; i<vecs.length; i++ )
-      vecs[i] = new Vec( keys[i], rowLayout, domains[i], types[i]);
-
-
-    // Do the row-binds column-by-column.
-    // Switch to F/J thread for continuations
-    ParallelRbinds t;
-    H2O.submitTask(t =new ParallelRbinds(frs,espc,vecs,cmaps)).join();
-    for( Frame tfr : tmp_frs ) if( tfr != null ) tfr.delete();
-    return new ValFrame(new Frame(fr.names(), t._vecs));
-  }
-
-
-  // Helper class to allow parallel column binds, up to MAXP in parallel at any
-  // point in time.  TODO: Not sure why this is here, should just spam F/J with
-  // all columns, even up to 100,000's should be fine.
-  private static class ParallelRbinds extends H2O.H2OCountedCompleter{
-    private final AtomicInteger _ctr; // Concurrency control
-    private static int MAXP = 100;    // Max number of concurrent columns
-    private Frame[] _frs;             // All frame args
-    private int[][][] _cmaps;         // Individual cmaps per each set of vecs to rbind
-    private long[] _espc;             // Rolled-up final ESPC
-
-    private Vec[] _vecs;        // Output
-    ParallelRbinds( Frame[] frs, long[] espc, Vec[] vecs, int[][][] cmaps) { _frs = frs; _espc = espc; _vecs = vecs; _cmaps=cmaps;_ctr = new AtomicInteger(MAXP-1); }
-
-    @Override
-    public void compute2() {
-      final int ncols = _frs[1].numCols();
-      addToPendingCount(ncols-1);
-      for (int i=0; i < Math.min(MAXP, ncols); ++i) forkVecTask(i);
-    }
-
-    // An RBindTask for each column
-    private void forkVecTask(final int colnum) {
-      Vec[] vecs = new Vec[_frs.length]; // Source Vecs
-      for( int i = 1; i < _frs.length; i++ )
-        vecs[i] = _frs[i].vec(colnum);
-      new RbindTask(new Callback(), vecs, _vecs[colnum], _espc, _cmaps[colnum]).fork();
-    }
-
-    private class Callback extends H2O.H2OCallback {
-      public Callback(){super(ParallelRbinds.this);}
-      @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
-        int i = _ctr.incrementAndGet();
-        if(i < _vecs.length)
-          forkVecTask(i);
-      }
-    }
-  }
-
-  // RBind a single column across all vals
-  private static class RbindTask extends H2O.H2OCountedCompleter<RbindTask> {
-    final Vec[] _vecs;          // Input vecs to be row-bound
-    final Vec _v;               // Result vec
-    final long[] _espc;         // Result layout
-    int[][] _cmaps;             // categorical mapping array
-
-    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] cmaps) { super(cc); _vecs = vecs; _v = v; _espc = espc; _cmaps=cmaps; }
-    @Override
-    public void compute2() {
-      addToPendingCount(_vecs.length-1-1);
-      int offset=0;
-      for( int i=1; i<_vecs.length; i++ ) {
-        new RbindMRTask(this, _cmaps[i], _v, offset).dfork(_vecs[i]);
-        offset += _vecs[i].nChunks();
-      }
-    }
-    @Override public void onCompletion(CountedCompleter cc) {
-      DKV.put(_v);
-    }
-  }
-
-  private static class RbindMRTask extends MRTask<RbindMRTask> {
-    private final int[] _cmap;
-    private final int _chunkOffset;
-    private final Vec _v;
-    RbindMRTask(H2O.H2OCountedCompleter hc, int[] cmap, Vec v, int offset) { super(hc); _cmap = cmap; _v = v; _chunkOffset = offset;}
-
-    @Override public void map(Chunk cs) {
-      int idx = _chunkOffset+cs.cidx();
-      Key ckey = Vec.chunkKey(_v._key, idx);
-      if (_cmap != null) {
-        assert !cs.hasFloat(): "Input chunk ("+cs.getClass()+") has float, but is expected to be categorical";
-        NewChunk nc = new NewChunk(_v, idx);
-        // loop over rows and update ints for new domain mapping according to vecs[c].domain()
-        for (int r=0;r < cs._len;++r) {
-          if (cs.isNA(r)) nc.addNA();
-          else nc.addNum(_cmap[(int)cs.at8(r)], 0);
+    Key<AVec> key = fr.vecs().group().addVec();
+    int rowLayout = AVec.ESPC.rowLayout(key,espc);
+    // TODO: make result one block?
+    final VecBlock vb = new VecBlock(key,rowLayout,fr.numCols(),fr.vecs().domains(),fr.vecs().types());
+    Futures fs = new Futures();
+    int coff = 0;
+    final int [] coffs = new int[tmp_frs.length+1];
+    // Actual Rbind
+    // do it in two steps (easier)
+    // 1) rbind the data as is, basically just re-insert cloned chunks under different keys
+    for(int i = 1; i < frs.length; ++i) {
+      final int off = coff;
+      fs.add(new MRTask() {
+        @Override
+        public void map(Chunk[] chks) {
+          chks = chks.clone();
+          for(int i = 0; i < chks.length; ++i)
+            chks[i] = chks[i].clone();
+          DKV.put(vb.chunkKey(off+chks[0].cidx()), new ChunkBlock(chks), _fs, true);
         }
-        nc.close(_fs);
-      } else {
-        DKV.put(ckey, cs.deepCopy(), _fs, true);
-      }
+      }.dfork(frs[i].vecs()));
+      coffs[i+1] = (coff += tmp_frs[i].vecs().nChunks());
     }
+    fs.blockForPending();
+    DKV.put(vb._key,vb);
+    // 2) the data is in the DKV, now fix the categoricals
+    new MRTask(){
+      @Override
+      public void map(Chunk [] chks) {
+        int cidx = chks[0].cidx();
+        int mapId = 0;
+        while(cidx < coffs[mapId+1]) mapId++;
+        int [][] map = cmaps[mapId];
+        for(int i = 0; i < chks.length; ++i) {
+          if(map[i] != null) {
+            Chunk c = chks[i];
+            for(int j = 0; j < c.len(); ++j)
+              c.set(j,map[i][c.at4(j)]);
+          }
+        }
+      }
+    }.doAll(fr.vecs());
+    for(int i = 0; i < tmp_frs.length; ++i)
+      if(tmp_frs[i] != null) tmp_frs[i].delete();
+    return new ValFrame(new Frame(null,fr._names,new VecAry(vb)));
   }
 
 }

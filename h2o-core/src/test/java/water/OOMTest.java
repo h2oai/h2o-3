@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -17,17 +18,17 @@ public class OOMTest extends TestUtil {
   @Test public void testClean() throws InterruptedException {
     final int log_rows_per_chk = 6;
     final int nchks = 1024/(1<<log_rows_per_chk); // 1024/(1<<4) = 64 chunks
-    Vec vcon = Vec.makeCon(0,1024,log_rows_per_chk); // New vector,
-    Vec vrnd1 = vcon.makeRand(0x123456L); // Same shape as above, but rand fill
-    Vec vrnd2 = vcon.makeRand(0x123456L); // Same shape as above, but rand fill
+    VecAry vcon = new VecAry(Vec.makeCon(0,1024,log_rows_per_chk)); // New vector,
+    VecAry vrnd1 = vcon.makeRand(0x123456L); // Same shape as above, but rand fill
+    VecAry vrnd2 = vcon.makeRand(0x123456L); // Same shape as above, but rand fill
     vcon.remove();
 
     // Fast access to all Values, outside of the DKV
     Value val1s[] = new Value[nchks];
     Value val2s[] = new Value[nchks];
     for( int i=0; i<nchks; i++ ) {
-      val1s[i] = vrnd1.chunkIdx(i);
-      val2s[i] = vrnd2.chunkIdx(i);
+      val1s[i] = vrnd1.getAVecRaw(0).chunkIdx(i);
+      val2s[i] = vrnd2.getAVecRaw(0).chunkIdx(i);
     }
 
     // Flag val1s as "last touched a long time ago"
@@ -67,15 +68,14 @@ public class OOMTest extends TestUtil {
         Assert.assertTrue(val2s[i].rawMem()==null);// Chunks all hit disk
       }
     }
-
     // Now touch all the data, forcing a reload.  Confirm all reads the same.
-    boolean id = isBitIdentical(new Frame(new String[]{"C1"}, new Vec[]{vrnd1}),
-                                new Frame(new String[]{"C1"}, new Vec[]{vrnd2}));
+    boolean id = isBitIdentical(new Frame(new String[]{"C1"}, vrnd1),
+                                new Frame(new String[]{"C1"}, vrnd2));
     Assert.assertTrue("Frames loaded from disk are equal", id);
     // All Chunks are recorded as being back-in-memory
     for( int i=0; i<nchks; i++ ) {
-      Value v1 = vrnd1.chunkIdx(i);
-      Value v2 = vrnd2.chunkIdx(i);
+      Value v1 = vrnd1.getAVecRaw(0).chunkIdx(i);
+      Value v2 = vrnd2.getAVecRaw(0).chunkIdx(i);
       Assert.assertTrue(v1.isPersisted());
       Assert.assertTrue(v2.isPersisted());
       Assert.assertTrue(v1.rawMem() != null || !v1._key.home());

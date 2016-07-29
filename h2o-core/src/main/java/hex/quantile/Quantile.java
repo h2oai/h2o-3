@@ -70,23 +70,20 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
         model._output._parameters = _parms;
         model._output._quantiles = new double[_ncols][_parms._probs.length];
         model.delete_and_lock(_job);
-
-
         // ---
         // Run the main Quantile Loop
-        Vec vecs[] = train().vecs();
+        VecAry vecs = train().vecs();
         for( int n=0; n<_ncols; n++ ) {
           if( stop_requested() ) return; // Stopped/cancelled
-          Vec vec = vecs[n];
-          if (vec.isBad() || vec.isCategorical() || vec.isString() || vec.isTime() || vec.isUUID()) {
+          if (vecs.isBad(n) || vecs.isCategorical(n) || vecs.isString(n) || vecs.isTime(n) || vecs.isUUID(n)) {
             model._output._quantiles[n] = new double[_parms._probs.length];
             Arrays.fill(model._output._quantiles[n], Double.NaN);
             continue;
           }
-          double sumRows=_weights == null ? vec.length()-vec.naCnt() : new SumWeights().doAll(vec, _weights).sum;
+          double sumRows=_weights == null ? vecs.numRows()-vecs.naCnt(n) : new SumWeights().doAll(new VecAry(vecs.getVecs(n), _weights)).sum;
           // Compute top-level histogram
-          Histo h1 = new Histo(vec.min(),vec.max(),0,sumRows,vec.isInt());
-          h1 = _weights==null ? h1.doAll(vec) : h1.doAll(vec, _weights);
+          Histo h1 = new Histo(vecs.min(n),vecs.max(n),0,sumRows,vecs.isInt(n));
+          h1 = _weights==null ? h1.doAll(vecs.getVecs(n)) : h1.doAll(new VecAry(vecs.getVecs(n), _weights));
 
           // For each probability, see if we have it exactly - or else run
           // passes until we do.
@@ -96,7 +93,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
             model._output._iterations++; // At least one iter per-prob-per-column
             while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) ) {
-              h = _weights == null ? h.refinePass(prob).doAll(vec) : h.refinePass(prob).doAll(vec, _weights); // Full pass at higher resolution
+              h = _weights == null ? h.refinePass(prob).doAll(vecs.getVecs(n)) : h.refinePass(prob).doAll(new VecAry(vecs.getVecs(n), _weights)); // Full pass at higher resolution
               model._output._iterations++; // also count refinement iterations
             }
 
@@ -136,8 +133,8 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
     @Override public void compute2() {
-      final int strataMin = (int)_strata.min();
-      final int strataMax = (int)_strata.max();
+      final int strataMin = (int)_strata.min(0);
+      final int strataMax = (int)_strata.max(0);
       if (strataMin < 0 || strataMax < 0) {
         Log.warn("No quantiles can be computed since there are no non-OOB rows.");
         return;
@@ -160,14 +157,14 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
           _quantiles[i] = Double.NaN;
 //          Log.warn("No observations in leaf " + _nids[i] + " - all weights are 0.");
         } else {
-          Histo h = new Histo(_response.min(), _response.max(), 0, sumRows, _response.isInt());
+          Histo h = new Histo(_response.min(0), _response.max(0), 0, sumRows, _response.isInt(0));
           h.doAll(_response, newWeights);
           while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
             h = h.refinePass(_prob).doAll(_response, newWeights);
           newWeights.remove();
           //sanity check quantiles
-          assert (_quantiles[i] <= _response.max() + 1e-6);
-          assert (_quantiles[i] >= _response.min() - 1e-6);
+          assert (_quantiles[i] <= _response.max(0) + 1e-6);
+          assert (_quantiles[i] >= _response.min(0) - 1e-6);
         }
       }
       if (_weights != weights) weights.remove();

@@ -122,6 +122,7 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
    *  VectorGroup.  This field is dead/ignored in subclasses that are
    *  guaranteed to have fixed-sized chunks such as file-backed Vecs. */
   protected int _rowLayout;
+  public int rowLayout(){return _rowLayout;}
   // Carefully set in the constructor and read_impl to be pointer-equals to a
   // common copy one-per-node.  These arrays can get both *very* common
   // (one-per-Vec at least, sometimes one-per-Chunk), and very large (one per
@@ -831,7 +832,7 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
    * @return a copy of vec which shared the same {@link VectorGroup} with this vector
    */
   public final AVec align(final AVec vec) {
-    return new VecAry(this).makeCompatible(new VecAry(vec),true).getVecRaw(0);
+    return new VecAry(this).makeCompatible(new VecAry(vec),true).getAVecRaw(0);
   }
 
 

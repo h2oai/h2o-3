@@ -25,11 +25,11 @@ public class ASTCut extends ASTPrim {
     final boolean rite   = asts[5].exec(env).getNum()==1;
     final int     digits = Math.min((int) asts[6].exec(env).getNum(), 12); // cap at 12
 
-    if(fr.vecs().length != 1 || fr.vecs()[0].isCategorical())
+    if(fr.vecs().len() != 1 || fr.vecs().isCategorical(0))
       throw new IllegalArgumentException("First argument must be a numeric column vector");
 
-    double fmin = fr.anyVec().min();
-    double fmax = fr.anyVec().max();
+    double fmin = fr.vecs().min(0);
+    double fmax = fr.vecs().max(0);
 
     int nbins = cuts.length - 1;  // c(0,10,100) -> 2 bins (0,10] U (10, 100]
     double width;
@@ -79,7 +79,7 @@ public class ASTCut extends ASTPrim {
           }
         }
       }
-    }.doAll(1, Vec.T_NUM, fr).outputFrame(fr.names(), domains);
+    }.doAll(1, Vec.T_NUM, fr.vecs()).outputFrame(fr._names, domains);
     return new ValFrame(fr2);
   }
 

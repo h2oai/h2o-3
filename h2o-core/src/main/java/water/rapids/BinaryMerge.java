@@ -4,10 +4,8 @@ package water.rapids;
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
+
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 
@@ -44,7 +42,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
   boolean _allLeft, _allRight;
 
-  Vec _leftVec, _rightVec;
+  VecAry _leftVec, _rightVec;
 
   transient int _leftChunkNode[], _rightChunkNode[];  // fast lookups to save repeated calls to node.index() which calls binarysearch within it.
 
@@ -130,17 +128,17 @@ public class BinaryMerge extends DTask<BinaryMerge> {
 
     // Create fast lookups to go from chunk index to node index of that chunk
     // TODO: must these be created for each and every instance?  Only needed once per node.
-    _leftChunkNode = new int[_leftFrame.anyVec().nChunks()];
-    _rightChunkNode = new int[_rightFrame.anyVec().nChunks()];
-    for (int i=0; i<_leftFrame.anyVec().nChunks(); i++) {
-      _leftChunkNode[i] = _leftFrame.anyVec().chunkKey(i).home_node().index();
+    _leftChunkNode = new int[_leftFrame.vecs().nChunks()];
+    _rightChunkNode = new int[_rightFrame.vecs().nChunks()];
+    for (int i=0; i<_leftFrame.vecs().nChunks(); i++) {
+      _leftChunkNode[i] = _leftFrame.vecs().homeNode(i);
     }
-    for (int i=0; i<_rightFrame.anyVec().nChunks(); i++) {
-      _rightChunkNode[i] = _rightFrame.anyVec().chunkKey(i).home_node().index();
+    for (int i=0; i<_rightFrame.vecs().nChunks(); i++) {
+      _rightChunkNode[i] = _rightFrame.vecs().homeNode(i);
     }
 
-    _leftVec = _leftFrame.anyVec();
-    _rightVec = _rightFrame.anyVec();
+    _leftVec = _leftFrame.vecs();
+    _rightVec = _rightFrame.vecs();
 
     _timings[0] += (System.nanoTime() - t0) / 1e9;
 
@@ -688,15 +686,16 @@ public class BinaryMerge extends DTask<BinaryMerge> {
       // System.out.println("done");
       int cidx[] = MemoryManager.malloc4(_rows.length);
       int offset[] = MemoryManager.malloc4(_rows.length);
-      Vec anyVec = _fr.anyVec();
+      VecAry vecs = _fr.vecs();
       for (int row=0; row<_rows.length; row++) {
-        cidx[row] = anyVec.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TODO: sort input row numbers to avoid
-        offset[row] = (int)(_rows[row] - anyVec.espc()[cidx[row]]);
+        cidx[row] = vecs.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TODO: sort input row numbers to avoid
+        offset[row] = (int)(_rows[row] - vecs.espc()[cidx[row]]);
       }
-      Chunk c[] = new Chunk[anyVec.nChunks()];
+      Chunk c[] = new Chunk[vecs.nChunks()];
+      VecAry frVecs = _fr.vecs();
       for (int col=0; col<_fr.numCols(); col++) {
-        Vec v = _fr.vec(col);
-        for (int i=0; i<c.length; i++) c[i] = v.chunkKey(i).home() ? v.chunkForChunkIdx(i) : null;
+
+        for (int i=0; i<c.length; i++) c[i] = frVecs.isHomedLocally(i) ? frVecs.getChunk(i,col) : null;
         for (int row=0; row<_rows.length; row++) {
           _chk[col][row] = c[cidx[row]].atd(offset[row]);
         }

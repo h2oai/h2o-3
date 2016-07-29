@@ -72,12 +72,13 @@ public class MakeGLMModelHandler extends Handler {
       int idx=0;
       String[] coefNames = dinfo.coefNames();
       for(int i : dinfo._interactionVecs)
-        noutputs+= ( offsetIds[idx++] = ((InteractionWrappedVec)dinfo._adaptedFrame.vec(i)).expandedLength());
+        noutputs+= ( offsetIds[idx++] = ((InteractionWrappedVec)dinfo._adaptedFrame.vecs().getAVecForCol(i)).expandedLength());
       String[] names = new String[noutputs];
       int offset=idx=0;
       int namesIdx=0;
+      VecAry vecs = dinfo._adaptedFrame.vecs();
       for(int i=0;i<dinfo._adaptedFrame.numCols();++i) {
-        Vec v = dinfo._adaptedFrame.vec(i);
+        AVec v = dinfo._adaptedFrame.vecs().getAVecForCol(i);
         if( v instanceof InteractionWrappedVec ) { // ding! start copying coefNames into names while offset < colIds[idx+1]
           colIds[idx] = offset;
           for(int nid=0;nid<offsetIds[idx];++nid)
@@ -85,7 +86,7 @@ public class MakeGLMModelHandler extends Handler {
           idx++;
           if( idx > dinfo._interactionVecs.length ) break; // no more interaciton vecs left
         } else {
-          if( v.isCategorical() ) offset+= v.domain().length - (useAll?0:1);
+          if( vecs.isCategorical(i) ) offset+= vecs.domain(i).length - (useAll?0:1);
           else                    offset++;
         }
       }
@@ -103,7 +104,7 @@ public class MakeGLMModelHandler extends Handler {
             }
           }
         }
-      }.doAll(noutputs,Vec.T_NUM,dinfo._adaptedFrame).outputFrame(Key.make(),names,null);
+      }.doAll(noutputs,Vec.T_NUM,dinfo._adaptedFrame.vecs()).outputFrame(Key.make(),names,null);
     } else {
       byte[] types = new byte[dinfo.fullN()];
       Arrays.fill(types, Vec.T_NUM);

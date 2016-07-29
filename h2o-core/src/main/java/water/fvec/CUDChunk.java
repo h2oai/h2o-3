@@ -62,6 +62,20 @@ public class CUDChunk extends Chunk {
     return vals;
   }
 
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for( int i=from; i< to; i++ )
+      nc.addNum(atd_impl(i));
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for( int i:lines )
+      nc.addNum(atd_impl(i));
+    return nc;
+  }
+
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(atd_impl(i)); }
   @Override boolean set_impl(int idx, long l) { return false; }
   @Override boolean set_impl(int i, double d) {
@@ -78,13 +92,6 @@ public class CUDChunk extends Chunk {
   }
   @Override boolean setNA_impl(int idx) {
     return set_impl(idx, Double.NaN);
-  }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = atd_impl(i);
-    nc.set_sparseLen(nc.set_len(_len));
-    return nc;
   }
   @Override protected final void initFromBytes () {
     _start = -1;  _cidx = -1;

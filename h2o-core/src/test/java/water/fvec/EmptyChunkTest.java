@@ -3,9 +3,10 @@ package water.fvec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.TestUtil;
+import water.parser.ParserTest;
 
-import static water.fvec.FrameTestUtil.createFrame;
 
 /**
  * Testing empty chunks.
@@ -51,17 +52,16 @@ public class EmptyChunkTest extends TestUtil {
   private void testScenario(String fname, long[] chunkLayout) {
     int numberOfChunks = chunkLayout.length;
     // Frame for testing
-    Frame f = createFrame(fname, chunkLayout);
-
+    Vec v = FrameTestUtil.makeStringVec(new String[][]{{""}});
     try {
-      Vec vec = f.vec(0);
       long[] chunkLens = chunkLayout;
-      assertChunkInvariants(vec, numberOfChunks, chunkLens);
+      assertChunkInvariants(v, numberOfChunks, chunkLens);
     } finally {
       // Cleanup
-      f.delete();
+      v.remove();
     }
   }
+
 
   private void assertChunkInvariants(Vec vec, int numOfChunks, long[] chunkLens) {
     assert numOfChunks == chunkLens.length : "ups wrong test setup";

@@ -73,9 +73,9 @@ public class AUCTest extends TestUtil {
     //  Assert.assertEquals(fr.numRows(), auc._p+auc._n);
     //}
 
-    double aucp = AUC2.perfectAUC(fr.vec("V1"), fr.vec("V2"));
+    double aucp = AUC2.perfectAUC(fr.vecs("V1"), fr.vecs("V2"));
     Assert.assertEquals(ROCR_auc, aucp, 1e-4);
-    AUC2 auc = new AUC2(fr.vec("V1"), fr.vec("V2"));
+    AUC2 auc = new AUC2(fr.vecs("V1","V2"));
     Assert.assertEquals(ROCR_auc, auc._auc, 1e-4);
 
     Assert.assertEquals(1.0, AUC2.ThresholdCriterion.precision.max_criterion(auc), 1e-4);
@@ -94,7 +94,7 @@ public class AUCTest extends TestUtil {
     for( int i=0; i<probs.length; i++ )
       rows[i] = new double[]{probs[i],actls[i]};
     Frame fr = ArrayUtils.frame(new String[]{"probs", "actls"}, rows);
-    AUC2 auc = new AUC2(fr.vec("probs"),fr.vec("actls"));
+    AUC2 auc = new AUC2(fr.vecs("probs","actls"));
     fr.remove();
     for( int i=0; i<auc._nBins; i++ ) System.out.print("{"+((double)auc._tps[i]/auc._p)+","+((double)auc._fps[i]/auc._n)+"} ");
     System.out.println();

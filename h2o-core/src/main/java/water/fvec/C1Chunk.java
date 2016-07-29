@@ -28,17 +28,7 @@ public class C1Chunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)_NA; return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = 0xFF&_mem[i+_OFF];
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
-    return nc;
-  }
+
   @Override public void initFromBytes(){
     _start = -1;  _cidx = -1;
     set_len(_mem.length);
@@ -74,6 +64,26 @@ public class C1Chunk extends Chunk {
       vals[j++] = res != _NA?res:Double.NaN;
     }
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) {
+      int res = 0xFF&_mem[i+_OFF];
+      if( res == _NA ) nc.addNA();
+      else             nc.addNum(res,0);
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for( int i:lines ) {
+      int res = 0xFF&_mem[i+_OFF];
+      if( res == _NA ) nc.addNA();
+      else             nc.addNum(res,0);
+    }
+    return nc;
   }
 
   @Override

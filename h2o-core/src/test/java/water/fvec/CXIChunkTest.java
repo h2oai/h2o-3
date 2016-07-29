@@ -55,9 +55,7 @@ public class CXIChunkTest extends TestUtil {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
       }
-
-      nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
+      nc = cc.inflate();
       Assert.assertEquals(maxLen, nc._len);
       Assert.assertEquals(2+2+1+l, nc._sparseLen);
       Iterator<NewChunk.Value> it = nc.values(0, vals.length+1+l);

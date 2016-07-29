@@ -6,6 +6,7 @@ import water.DKV;
 import water.Job;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  * Quantiles: 
@@ -47,18 +48,17 @@ class ASTQtile extends ASTPrim {
     if (parms._weights_column != null) ncols--;
     Vec[] vecs = new Vec[1 /*1 more for the probs themselves*/ + ncols];
     String[] names = new String[vecs.length];
-    vecs [0] = Vec.makeCon(null,parms._probs);
+    vecs [0] = (Vec) Vec.makeCon(null,parms._probs).getAVecRaw(0);
     names[0] = "Probs";
     int w=0;
     for( int i=0; i<vecs.length-1; ++i ) {
-      if (fr._names[i].equals(parms._weights_column)) w=1;
+      if (fr._names.getName(i).equals(parms._weights_column)) w=1;
       assert(w==0 || w==1);
-      vecs [i+1] = Vec.makeCon(null,q._output._quantiles[i]);
-      names[i+1] = fr._names[w+i]+"Quantiles";
+      vecs [i+1] = (Vec) Vec.makeCon(null,q._output._quantiles[i]).getAVecRaw(0);
+      names[i+1] = fr._names.getName(w+i)+"Quantiles";
     }
     q.delete();
-
-    return new ValFrame(new Frame(names,vecs));
+    return new ValFrame(new Frame(names,new VecAry(vecs)));
   }
 }
 

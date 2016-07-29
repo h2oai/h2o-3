@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  * Test suite for Avro parser.
@@ -40,9 +41,9 @@ public class ParseTestAvro extends TestUtil {
         // sequence100k.avro
         new FrameAssertion("smalldata/parser/avro/sequence100k.avro", TestUtil.ari(1, 100000)) {
           @Override public void check(Frame f) {
-            Vec values = f.vec(0);
+            VecAry values = f.vecs();
             for (int i = 0; i < f.numRows(); i++) {
-              assertEquals(i, values.at8(i));
+              assertEquals(i, values.at8(i,0));
             }
           }
         },
@@ -63,20 +64,21 @@ public class ParseTestAvro extends TestUtil {
 
           @Override
           void check(Frame f) {
-            assertArrayEquals("Column names need to match!", ar("CString", "CBytes", "CInt", "CLong", "CFloat", "CDouble", "CBoolean", "CNull"), f.names());
-            assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_BAD), f.types());
+            assertArrayEquals("Column names need to match!", ar("CString", "CBytes", "CInt", "CLong", "CFloat", "CDouble", "CBoolean", "CNull"), f._names.getNames());
+            assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_BAD), f.vecs().types());
 
             int nrows = nrows();
             BufferedString bs = new BufferedString();
+            VecAry vecs = f.vecs();
             for (int row = 0; row < nrows; row++) {
-              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CInt", row, f.vec(2).at8(row));
-              assertEquals("Value in column CLong", row, f.vec(3).at8(row));
-              assertEquals("Value in column CFloat", row, f.vec(4).at(row), EPSILON);
-              assertEquals("Value in column CDouble", row, f.vec(5).at(row), EPSILON);
-              assertEquals("Value in column CBoolean", (row & 1) == 1, (((int) f.vec(5).at(row)) & 1) == 1);
-              assertTrue("Value in column CNull", f.vec(7).isNA(row));
+              assertEquals("Value in column CString", String.valueOf(row), vecs.atStr(bs, row, 0).bytesToString());
+              assertEquals("Value in column CBytes", String.valueOf(row), vecs.atStr(bs, row, 1).bytesToString());
+              assertEquals("Value in column CInt", row, vecs.at8(row,2));
+              assertEquals("Value in column CLong", row, vecs.at8(row,3));
+              assertEquals("Value in column CFloat", row, vecs.at(row,4), EPSILON);
+              assertEquals("Value in column CDouble", row, vecs.at(row,5), EPSILON);
+              assertEquals("Value in column CBoolean", (row & 1) == 1, (((int) vecs.at(row,6)) & 1) == 1);
+              assertTrue("Value in column CNull", vecs.isNA(row,7));
             }
           }
         }
@@ -95,22 +97,23 @@ public class ParseTestAvro extends TestUtil {
 
           @Override
           void check(Frame f) {
-            assertArrayEquals("Column names need to match!", ar("CUString", "CUBytes", "CUInt", "CULong", "CUFloat", "CUDouble", "CUBoolean"), f.names());
-            assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM), f.types());
+            assertArrayEquals("Column names need to match!", ar("CUString", "CUBytes", "CUInt", "CULong", "CUFloat", "CUDouble", "CUBoolean"), f._names.getNames());
+            assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM), f.vecs().types());
             int nrows = nrows();
             BufferedString bs = new BufferedString();
             // NA in the first row
             for (int col = 0; col < ncols(); col++) {
-              assertTrue("NA should be in first row and col " + col, f.vec(col).isNA(0));
+              assertTrue("NA should be in first row and col " + col, f.vecs().isNA(0,col));
             }
+            VecAry vecs = f.vecs();
             for (int row = 1; row < nrows; row++) {
-              assertEquals("Value in column CString", String.valueOf(row), f.vec(0).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CBytes", String.valueOf(row), f.vec(1).atStr(bs, row).bytesToString());
-              assertEquals("Value in column CInt", row, f.vec(2).at8(row));
-              assertEquals("Value in column CLong", row, f.vec(3).at8(row));
-              assertEquals("Value in column CFloat", row, f.vec(4).at(row), EPSILON);
-              assertEquals("Value in column CDouble", row, f.vec(5).at(row), EPSILON);
-              assertEquals("Value in column CBoolean", (row & 1) == 1, (((int) f.vec(5).at(row)) & 1) == 1);
+              assertEquals("Value in column CString", String.valueOf(row), vecs.atStr(bs, row, 0).bytesToString());
+              assertEquals("Value in column CBytes", String.valueOf(row), vecs.atStr(bs, row, 1).bytesToString());
+              assertEquals("Value in column CInt", row, vecs.at8(row,2));
+              assertEquals("Value in column CLong", row, vecs.at8(row,3));
+              assertEquals("Value in column CFloat", row, vecs.at(row,4), EPSILON);
+              assertEquals("Value in column CDouble", row, vecs.at(row, 5), EPSILON);
+              assertEquals("Value in column CBoolean", (row & 1) == 1, (((int) vecs.at(row,6)) & 1) == 1);
             }
           }
         }
@@ -131,18 +134,18 @@ public class ParseTestAvro extends TestUtil {
 
           @Override
           void check(Frame f) {
-            assertArrayEquals("Column names need to match!", ar("CEnum", "CUEnum"), f.names());
-            assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_CAT), f.types());
-            assertArrayEquals("Category names need to match in CEnum!", categories[0], f.vec("CEnum").domain());
-            assertArrayEquals("Category names need to match in CUEnum!", categories[1], f.vec("CUEnum").domain());
+            assertArrayEquals("Column names need to match!", ar("CEnum", "CUEnum"), f._names.getNames());
+            assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_CAT), f.vecs().types());
+            assertArrayEquals("Category names need to match in CEnum!", categories[0], f.vecs("CEnum").domain(0));
+            assertArrayEquals("Category names need to match in CUEnum!", categories[1], f.vecs("CUEnum").domain(0));
 
             int numOfCategories1 = categories[0].length;
             int numOfCategories2 = categories[1].length;
             int nrows = nrows();
             for (int row = 0; row < nrows; row++) {
-              assertEquals("Value in column CEnum", row % numOfCategories1, (int) f.vec("CEnum").at(row));
-              if (row % (numOfCategories2+1) == 0) assertTrue("NA should be in row " + row + " and col CUEnum", f.vec("CUEnum").isNA(row));
-              else assertEquals("Value in column CUEnum", row % numOfCategories2, (int) f.vec("CUEnum").at(row));
+              assertEquals("Value in column CEnum", row % numOfCategories1, (int) f.vecs("CEnum").at(row,0));
+              if (row % (numOfCategories2+1) == 0) assertTrue("NA should be in row " + row + " and col CUEnum", f.vecs("CUEnum").isNA(row,0));
+              else assertEquals("Value in column CUEnum", row % numOfCategories2, (int) f.vecs("CUEnum").at(row,0));
             }
           }
         }

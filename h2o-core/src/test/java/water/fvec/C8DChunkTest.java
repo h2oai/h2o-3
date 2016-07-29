@@ -33,7 +33,7 @@ public class C8DChunkTest extends TestUtil {
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length + 1 + l, nc._len);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atd(l + i), Math.ulp(vals[i]));
@@ -72,15 +72,14 @@ public class C8DChunkTest extends TestUtil {
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA_abs(na);
+    for (int na : NAs) vec.setNA(na);
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    NewChunk nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);

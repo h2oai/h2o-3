@@ -18,7 +18,7 @@ abstract class ASTReducerOp extends ASTPrim {
     double d = Double.NaN;
     for( int i=1; i<asts.length; i++ ) {
       Val val = asts[i].exec(env);
-      double d2 = val.isFrame() ? new RedOp().doAll(stk.track(val).getFrame())._d : val.getNum();
+      double d2 = val.isFrame() ? new RedOp().doAll(stk.track(val).getFrame().vecs())._d : val.getNum();
       if( i==1 ) d = d2;
       else d = op(d,d2);
     }
@@ -31,8 +31,9 @@ abstract class ASTReducerOp extends ASTPrim {
     double _d;
     @Override public void map( Chunk chks[] ) {
       int rows = chks[0]._len;
-      for( Chunk C : chks ) {
-        if( !C.vec().isNumeric() ) throw new IllegalArgumentException("Numeric columns only");
+      for( int i = 0; i < chks.length; ++i ) {
+        Chunk C = chks[i];
+        if( _vecs.isNumeric(i) ) throw new IllegalArgumentException("Numeric columns only");
         double sum = _d;
         for( int r = 0; r < rows; r++ )
           sum = op(sum, C.atd(r));
@@ -68,7 +69,7 @@ abstract class ASTReducerOp extends ASTPrim {
 abstract class ASTRollupOp extends ASTReducerOp {
   @Override
   public String[] args() { return new String[]{"ary"}; }
-  abstract double rup( Vec vec );
+  abstract double rup( VecAry vec );
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val arg1 = asts[1].exec(env);
@@ -79,23 +80,22 @@ abstract class ASTRollupOp extends ASTReducerOp {
         d = op(d,ds[i]);
       return new ValRow(new double[]{d}, null);
     }
-
     // Normal column-wise operation
     Frame fr = stk.track(arg1).getFrame();
-    Vec[] vecs = fr.vecs();
-    if( vecs.length==0 || vecs[0].naCnt() > 0 ) return new ValNum(Double.NaN);
-    double d = rup(vecs[0]);
-    for( int i=1; i<vecs.length; i++ ) {
-      if( vecs[i].naCnt() > 0 ) return new ValNum(Double.NaN);
-      d = op(d,rup(vecs[i]));
+    VecAry vecs = fr.vecs();
+    if( vecs.len()==0 || vecs.naCnt(0) > 0 ) return new ValNum(Double.NaN);
+    double d = rup(vecs.getVecs(0));
+    for( int i=1; i<vecs.len(); i++ ) {
+      if( vecs.naCnt(i) > 0 ) return new ValNum(Double.NaN);
+      d = op(d,rup(vecs.getVecs(i)));
     }
     return new ValNum(d);
   }
 }
 
-class ASTSum   extends ASTRollupOp { public String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*vec.length(); } }
-class ASTMin   extends ASTRollupOp { public String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
-class ASTMax   extends ASTRollupOp { public String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+class ASTSum   extends ASTRollupOp { public String str() { return "sum" ; } double op( double l, double r ) { return          l+r ; } double rup( VecAry vec ) { return vec.mean(0)*vec.numRows(); } }
+class ASTMin   extends ASTRollupOp { public String str() { return "min" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( VecAry vec ) { return vec.min(0); } }
+class ASTMax   extends ASTRollupOp { public String str() { return "max" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( VecAry vec ) { return vec.max(0); } }
 
 class ASTNACnt extends ASTPrim {
   @Override public String[] args() { return new String[]{"ary"}; }
@@ -106,7 +106,7 @@ class ASTNACnt extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols();++i )
-      ds[i] = fr.vec(i).naCnt();
+      ds[i] = fr.vecs().naCnt(i);
     return new ValNums(ds);
   }
 }
@@ -119,17 +119,17 @@ class ASTMedian extends ASTPrim {
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum()==1;
-    if( !narm && (fr.anyVec().length()==0 || fr.anyVec().naCnt() > 0) ) return new ValNum(Double.NaN);
+    if( !narm && (fr.vecs().numRows()==0 || fr.vecs().naCnt(0) > 0) ) return new ValNum(Double.NaN);
     // does linear interpolation for even sample sizes by default
     return new ValNum(median(fr,QuantileModel.CombineMethod.INTERPOLATE));
   }
 
   static double median(Frame fr, QuantileModel.CombineMethod combine_method) {
-    if( fr.numCols() !=1 || !fr.anyVec().isNumeric() )
+    if( fr.numCols() !=1 || !fr.vecs().isNumeric(0) )
       throw new IllegalArgumentException("median only works on a single numeric column");
     // Frame needs a Key for Quantile, might not have one from rapids
     Key tk=null;
-    if( fr._key == null ) { DKV.put(tk=Key.make(), fr=new Frame(tk, fr.names(),fr.vecs())); }
+    if( fr._key == null ) { DKV.put(tk=Key.make(), fr=new Frame(tk, fr._names,fr.vecs())); }
     // Quantiles to get the median
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     parms._probs = new double[]{0.5};
@@ -156,9 +156,9 @@ class ASTMad extends ASTPrim {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] vecs = fr.vecs();
-    if( vecs.length==0 || vecs[0].naCnt() > 0 ) return new ValNum(Double.NaN);
-    if( vecs.length > 1 ) throw new IllegalArgumentException("MAD expects a single numeric column");
+    VecAry vecs = fr.vecs();
+    if( vecs.len()==0 || vecs.naCnt(0) > 0 ) return new ValNum(Double.NaN);
+    if( vecs.len() > 1 ) throw new IllegalArgumentException("MAD expects a single numeric column");
     QuantileModel.CombineMethod cm = QuantileModel.CombineMethod.valueOf(asts[2].exec(env).getStr().toUpperCase());
     double constant = asts[3].exec(env).getNum();
     return new ValNum(mad(fr,cm,constant));
@@ -167,15 +167,15 @@ class ASTMad extends ASTPrim {
   static double mad(Frame f, QuantileModel.CombineMethod cm, double constant) {
     // need Frames everywhere because of QuantileModel demanding a Frame...
     Key tk=null;
-    if( f._key == null ) { DKV.put(tk = Key.make(), f = new Frame(tk, f.names(), f.vecs())); }
+    if( f._key == null ) { DKV.put(tk = Key.make(), f = new Frame(tk, f._names, f.vecs())); }
     final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
         for(int i=0;i<c._len;++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
-    }.doAll(1, Vec.T_NUM, f).outputFrame();
-    if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev.names(),abs_dev.vecs())); }
+    }.doAll(1, Vec.T_NUM, f.vecs()).outputFrame();
+    if( abs_dev._key == null ) { DKV.put(tk=Key.make(), abs_dev=new Frame(tk, abs_dev._names,abs_dev.vecs())); }
     double mad = ASTMedian.median(abs_dev,cm);
     DKV.remove(f._key); // drp mapping, keep vec
     DKV.remove(abs_dev._key);
@@ -192,8 +192,9 @@ class ASTAll extends ASTPrim {
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
     if( val.isNum() ) return new ValNum(val.getNum()==0?0:1);
-    for( Vec vec : val.getFrame().vecs() )
-      if( vec.nzCnt()+vec.naCnt() < vec.length() )
+    VecAry vecs = val.getFrame().vecs();
+    for( int i = 0; i < vecs.len(); ++i)
+      if( vecs.nzCnt(i)+vecs.naCnt(i) < vecs.numRows() )
         return new ValNum(0);   // Some zeros in there somewhere
     return new ValNum(1);
   }
@@ -208,8 +209,9 @@ class ASTAny extends ASTPrim {
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Val val = stk.track(asts[1].exec(env));
     if( val.isNum() ) return new ValNum(val.getNum()==0?0:1);
-    for( Vec vec : val.getFrame().vecs() )
-      if( vec.nzCnt()+vec.naCnt() > 0 )
+    VecAry vecs = val.getFrame().vecs();
+    for( int i = 0; i < vecs.len(); ++i)
+      if( vecs.nzCnt(i)+vecs.naCnt(i) > 0 )
         return new ValNum(1);   // Some nonzeros in there somewhere
     return new ValNum(0);
   }
@@ -223,7 +225,9 @@ class ASTAnyNA extends ASTPrim {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for( Vec vec : fr.vecs() ) if( vec.nzCnt() > 0 ) return new ValNum(1);
+    VecAry vecs = fr.vecs();
+    for( int i = 0; i < vecs.len(); ++i)
+      if( vecs.nzCnt(i) > 0 ) return new ValNum(1);
     return new ValNum(0);
   }
 }
@@ -243,18 +247,18 @@ abstract class ASTNARollupOp extends ASTRollupOp {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] vecs = fr.vecs();
-    if( vecs.length==0 ) return new ValNum(Double.NaN);
-    double d = rup(vecs[0]);
-    for( int i=1; i<vecs.length; i++ )
-      d = op(d,rup(vecs[i]));
+    VecAry vecs = fr.vecs();
+    if( vecs.len()==0 ) return new ValNum(Double.NaN);
+    double d = rup(vecs.getVecs(0));
+    for( int i=1; i<vecs.len(); i++ )
+      d = op(d,rup(vecs.getVecs(i)));
     return new ValNum(d);
   }
 }
 
-class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( Vec vec ) { return vec.mean()*(vec.length() - vec.naCnt()); } }
-class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( Vec vec ) { return vec.min(); } }
-class ASTMaxNA extends ASTNARollupOp { public String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( Vec vec ) { return vec.max(); } }
+class ASTSumNA extends ASTNARollupOp { public String str() { return "sumNA" ; } double op( double l, double r ) { return          l+r ; } double rup( VecAry vec ) { return vec.mean(0)*(vec.numRows() - vec.naCnt(0)); } }
+class ASTMinNA extends ASTNARollupOp { public String str() { return "minNA" ; } double op( double l, double r ) { return Math.min(l,r); } double rup( VecAry vec ) { return vec.min(0); } }
+class ASTMaxNA extends ASTNARollupOp { public String str() { return "maxNA" ; } double op( double l, double r ) { return Math.max(l,r); } double rup( VecAry vec ) { return vec.max(0); } }
 
 // ----------------------------------------------------------------------------
 
@@ -267,9 +271,9 @@ class ASTMean extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum()==1;
     double[] ds = new double[fr.numCols()];
-    Vec[] vecs = fr.vecs();
+    VecAry vecs = fr.vecs();
     for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = (!vecs[i].isNumeric() || vecs[i].length()==0 || (!narm && vecs[i].naCnt() >0)) ? Double.NaN : vecs[i].mean();
+      ds[i] = (!vecs.isNumeric(i) || vecs.numRows()==0 || (!narm && vecs.naCnt(i) >0)) ? Double.NaN : vecs.mean(i);
     return new ValNums(ds);
   }
 }
@@ -285,9 +289,9 @@ class ASTSdev extends ASTPrim { // TODO: allow for multiple columns, package res
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum()==1;
     double[] ds = new double[fr.numCols()];
-    Vec[] vecs = fr.vecs();
+    VecAry vecs = fr.vecs();
     for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = (!vecs[i].isNumeric() || vecs[i].length()==0 || (!narm && vecs[i].naCnt() >0)) ? Double.NaN : vecs[i].sigma();
+      ds[i] = (!vecs.isNumeric(i) || vecs.numRows()==0 || (!narm && vecs.naCnt(i) >0)) ? Double.NaN : vecs.sigma(i);
     return new ValNums(ds);
   }
 }
@@ -302,8 +306,10 @@ class ASTProd extends ASTPrim {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for(Vec v : fr.vecs()) if (v.isCategorical() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
-    double prod=new RedProd().doAll(fr)._d;
+    VecAry vecs = fr.vecs();
+    for(int i = 0; i < vecs.len(); ++i)
+      if (vecs.isCategorical(i) || vecs.isUUID(i) || vecs.isString(i)) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    double prod=new RedProd().doAll(fr.vecs())._d;
     return new ValNum(prod);
   }
 
@@ -332,8 +338,11 @@ class ASTProdNA extends ASTPrim {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for(Vec v : fr.vecs()) if (v.isCategorical() || v.isUUID() || v.isString()) throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
-    double prod=new RedProd().doAll(fr)._d;
+    VecAry vecs = fr.vecs();
+    for(int i = 0; i < vecs.len(); ++i)
+      if (vecs.isCategorical(i) || vecs.isUUID(i) || vecs.isString(i))
+        throw new IllegalArgumentException("`"+str()+"`" + " only defined on a data frame with all numeric variables");
+    double prod=new RedProd().doAll(fr.vecs())._d;
     return new ValNum(prod);
   }
 
@@ -368,12 +377,12 @@ abstract class ASTCumu extends ASTPrim {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
 
     if( f.numCols()!=1 ) throw new IllegalArgumentException("Must give a single numeric column.");
-    if( !f.anyVec().isNumeric() ) throw new IllegalArgumentException("Column must be numeric.");
+    if( !f.vecs().isNumeric(0) ) throw new IllegalArgumentException("Column must be numeric.");
 
-    CumuTask t = new CumuTask(f.anyVec().nChunks(),init());
-    t.doAll(new byte[]{Vec.T_NUM},f.anyVec());
+    CumuTask t = new CumuTask(f.vecs().nChunks(),init());
+    t.doAll(new byte[]{Vec.T_NUM},f.vecs());
     final double[] chkCumu = t._chkCumu;
-    Vec cumuVec = t.outputFrame().anyVec();
+    VecAry cumuVec = t.outputFrame().vecs();
     new MRTask() {
       @Override public void map(Chunk c) {
         if( c.cidx()!=0 ) {

@@ -39,8 +39,7 @@ public class C4SChunkTest extends TestUtil {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
-
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       if (l==1) {
@@ -97,7 +96,7 @@ public class C4SChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(man.length + l));
       Assert.assertTrue(cc.isNA_abs(man.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       if (l==1) {

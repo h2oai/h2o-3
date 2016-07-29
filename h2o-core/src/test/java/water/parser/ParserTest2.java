@@ -21,13 +21,14 @@ public class ParserTest2 extends TestUtil {
   private static void testParsed(Frame fr, String[][] expected) {
     Assert.assertEquals(expected   .length,fr.numRows());
     Assert.assertEquals(expected[0].length,fr.numCols());
+    VecAry vecs = fr.vecs();
     for( int j = 0; j < fr.numCols(); ++j ) {
-      Vec vec = fr.vecs()[j];
+
       for( int i = 0; i < expected.length; ++i ) {
         if( expected[i][j]==null )
-          Assert.assertTrue(i+" -- "+j, vec.isNA(i));
+          Assert.assertTrue(i+" -- "+j, vecs.isNA(i,j));
         else {
-          String pval = vec.domain()[(int)vec.at8(i)];
+          String pval = vecs.domain(j)[vecs.at4(i,j)];
           Assert.assertTrue(expected[i][j]+" -- "+pval,expected[i][j].equals(pval));
         }
       }
@@ -57,14 +58,14 @@ public class ParserTest2 extends TestUtil {
     int nlines = (int)fr.numRows();
     Assert.assertEquals(9,nlines);
     Assert.assertEquals(9,fr.numCols());
+    VecAry vecs = fr.vecs();
     for(int i = 0; i < nlines-2; ++i)
-      for( Vec v : fr.vecs() )
-        Assert.assertTrue("error at line "+i+", vec " + v.chunkForChunkIdx(0).getClass().getSimpleName(),
-                   !Double.isNaN(v.at(i)) && !v.isNA(i) );
-    for( int j=0; j<fr.vecs().length; j++ ) {
-      Vec v = fr.vecs()[j];
+      for( int j = 0; j < fr.numCols(); ++j)
+        Assert.assertTrue("error at line "+i+", vec " + vecs.getChunk(0,j).getClass().getSimpleName(),
+                   !Double.isNaN(vecs.at(i,j)) && !vecs.isNA(i,j) );
+    for( int j=0; j<fr.numCols(); j++ ) {
       for( int i = nlines-2; i < nlines; ++i )
-        Assert.assertTrue(i + ", " + j + ":" + v.at(i) + ", " + v.isNA(i), Double.isNaN(v.at(i)) && v.isNA(i) );
+        Assert.assertTrue(i + ", " + j + ":" + vecs.at(i,j) + ", " + vecs.isNA(i,j), Double.isNaN(vecs.at(i,j)) && vecs.isNA(i,j) );
     }
     fr.delete();
   }

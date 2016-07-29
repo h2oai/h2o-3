@@ -2,9 +2,7 @@ package water.rapids;
 
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -40,12 +38,14 @@ class ASTVariance extends ASTPrim {
   private ValNum scalar( Frame frx, Frame fry, Mode mode) {
     if( frx.numCols() != fry.numCols()) 
       throw new IllegalArgumentException("Single rows must have the same number of columns, found "+frx.numCols()+" and "+fry.numCols());
-    Vec vecxs[] = frx.vecs();
-    Vec vecys[] = fry.vecs();
+    VecAry vecxs = frx.vecs();
+    Chunk [] chunksx = vecxs.getChunks(0);
+    VecAry vecys = fry.vecs();
+    Chunk [] chunksy = vecys.getChunks(0);
     double xmean=0, ymean=0, ncols = frx.numCols(), NACount=0, xval, yval, ss=0;
     for( int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = chunksx[r].atd(0);
+      yval = chunksy[r].atd(0);
       if (Double.isNaN(xval) || Double.isNaN(yval))
         NACount++;
       else {
@@ -61,10 +61,10 @@ class ASTVariance extends ASTPrim {
     }
     
     for( int r = 0; r < ncols; r++ ) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = chunksx[r].atd(0);
+      yval = chunksy[r].atd(0);
       if (!(Double.isNaN(xval) || Double.isNaN(yval))) 
-        ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+        ss += (xval - xmean) * (yval - ymean);
     }
     return new ValNum(ss/(ncols-NACount-1));
   }
@@ -73,32 +73,32 @@ class ASTVariance extends ASTPrim {
   // against each other.  Return a matrix of covariances which is frx.numCols
   // wide and fry.numCols tall.
   private Val array( Frame frx, Frame fry, Mode mode, boolean symmetric) {
-    Vec[] vecxs = frx.vecs();
-    int ncolx = vecxs.length;
-    Vec[] vecys = fry.vecs();
-    int ncoly = vecys.length;
+    VecAry vecxs = frx.vecs();
+    int ncolx = vecxs.len();
+    VecAry vecys = fry.vecs();
+    int ncoly = vecys.len();
 
     if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
 
       if (mode.equals(Mode.AllObs)) {
-        for (Vec v : vecxs)
-          if (v.naCnt() != 0)
+        for (int i = 0; i < ncolx; ++i)
+          if (vecxs.naCnt(i) != 0)
             throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
         if (!symmetric)
-          for (Vec v : vecys)
-            if (v.naCnt() != 0)
+          for (int i = 0; i < ncoly; ++i)
+            if (vecys.naCnt(i) != 0)
               throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
       }
       CoVarTaskEverything[] cvs = new CoVarTaskEverything[ncoly];
 
       double[] xmeans = new double[ncolx];
       for (int x = 0; x < ncoly; x++)
-        xmeans[x] = vecxs[x].mean();
+        xmeans[x] = vecxs.mean(x);
 
       if (symmetric) {
         //1-col returns scalar
         if (ncoly == 1)
-          return new ValNum(vecys[0].naCnt() == 0 ? vecys[0].sigma() * vecys[0].sigma() : Double.NaN);
+          return new ValNum(vecys.naCnt(0) == 0 ? vecys.sigma(0) * vecys.sigma(0) : Double.NaN);
 
         int[] idx = new int[ncoly];
         for (int y = 1; y < ncoly; y++) idx[y] = y;
@@ -108,14 +108,12 @@ class ASTVariance extends ASTPrim {
         for (int y = 0; y < ncoly-1; y++) {
           idx = ArrayUtils.removeIds(idx, first_index);
           reduced_fr = new Frame(frx.vecs(idx));
-          cvs[y] = new CoVarTaskEverything(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(reduced_fr));
+          cvs[y] = new CoVarTaskEverything(vecys.mean(y), xmeans).dfork(vecys.getVecs(y).addVecs(reduced_fr.vecs()));
         }
-
         double[][] res_array = new double[ncoly][ncoly];
-
         //fill in the diagonals (variances) using sigma from rollupstats
         for (int y = 0; y < ncoly; y++)
-          res_array[y][y] = vecys[y].naCnt() == 0 ? vecys[y].sigma() * vecys[y].sigma() : Double.NaN;
+          res_array[y][y] = vecys.naCnt(y) == 0 ? vecys.sigma(y) * vecys.sigma(y) : Double.NaN;
         
 
         //arrange the results into the bottom left of res_array. each successive cvs is 1 smaller in length
@@ -130,16 +128,16 @@ class ASTVariance extends ASTPrim {
         }
         //set Frame
         Vec[] res = new Vec[ncoly];
-        Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+        Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
         for (int y = 0; y < ncoly; y++) {
           res[y] = Vec.makeVec(res_array[y], keys[y]);
         }
-        return new ValFrame(new Frame(fry._names, res));
+        return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
       }
 
       // Launch tasks; each does all Xs vs one Y
       for (int y = 0; y < ncoly; y++)
-        cvs[y] = new CoVarTaskEverything(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(frx));
+        cvs[y] = new CoVarTaskEverything(vecys.mean(y), xmeans).dfork(vecys.getVecs(y).addVecs(frx.vecs()));
 
       // 1-col returns scalar 
       if (ncolx == 1 && ncoly == 1) {
@@ -148,11 +146,11 @@ class ASTVariance extends ASTPrim {
 
       // Gather all the Xs-vs-Y covariance arrays; divide by rows
       Vec[] res = new Vec[ncoly];
-      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+      Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
       for (int y = 0; y < ncoly; y++)
         res[y] = Vec.makeVec(ArrayUtils.div(cvs[y].getResult()._covs, (fry.numRows() - 1)), keys[y]);
       
-      return new ValFrame(new Frame(fry._names, res));
+      return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
     }
     
     else { //if (mode.equals(Mode.CompleteObs)) {
@@ -160,14 +158,14 @@ class ASTVariance extends ASTPrim {
       
       if (symmetric) {
         if (ncoly == 1)
-          return new ValNum(vecys[0].sigma() * vecys[0].sigma());
+          return new ValNum(vecys.sigma(0) * vecys.sigma(0));
         
-        CoVarTaskCompleteObsMeanSym taskCompleteObsMeanSym = new CoVarTaskCompleteObsMeanSym().doAll(fry);
+        CoVarTaskCompleteObsMeanSym taskCompleteObsMeanSym = new CoVarTaskCompleteObsMeanSym().doAll(fry.vecs());
         long NACount = taskCompleteObsMeanSym._NACount;
         double[] ymeans = ArrayUtils.div(taskCompleteObsMeanSym._ysum, fry.numRows() - NACount);
 
         // 1 task with all Ys
-        CoVarTaskCompleteObsSym cvs = new CoVarTaskCompleteObsSym(ymeans).doAll(new Frame(fry));
+        CoVarTaskCompleteObsSym cvs = new CoVarTaskCompleteObsSym(ymeans).doAll(fry.vecs());
         double[][] res_array = new double[ncoly][ncoly];
         
         for (int y = 0; y < ncoly; y++) {
@@ -182,21 +180,20 @@ class ASTVariance extends ASTPrim {
         }
         //set Frame
         Vec[] res = new Vec[ncoly];
-        Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+        Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
         for (int y = 0; y < ncoly; y++) {
           res[y] = Vec.makeVec(res_array[y], keys[y]);
         }
-        return new ValFrame(new Frame(fry._names, res));
+        return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
       }
       
-      CoVarTaskCompleteObsMean taskCompleteObsMean = new CoVarTaskCompleteObsMean(ncoly, ncolx).doAll(new Frame(fry).add(frx));
+      CoVarTaskCompleteObsMean taskCompleteObsMean = new CoVarTaskCompleteObsMean(ncoly, ncolx).doAll(new VecAry(fry.vecs(),frx.vecs()));
       long NACount = taskCompleteObsMean._NACount;
       double[] ymeans = ArrayUtils.div(taskCompleteObsMean._ysum, fry.numRows() - NACount);
       double[] xmeans = ArrayUtils.div(taskCompleteObsMean._xsum, fry.numRows() - NACount);
 
       // 1 task with all Xs and Ys
-      CoVarTaskCompleteObs cvs = new CoVarTaskCompleteObs(ymeans, xmeans).doAll(new Frame(fry).add(frx));
-
+      CoVarTaskCompleteObs cvs = new CoVarTaskCompleteObs(ymeans, xmeans).doAll(new VecAry(fry.vecs(),frx.vecs()));
       // 1-col returns scalar 
       if (ncolx == 1 && ncoly == 1) {
         return new ValNum(cvs._covs[0][0] / (fry.numRows() - 1 - NACount));
@@ -204,11 +201,11 @@ class ASTVariance extends ASTPrim {
 
       // Gather all the Xs-vs-Y covariance arrays; divide by rows
       Vec[] res = new Vec[ncoly];
-      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+      Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
       for (int y = 0; y < ncoly; y++)
         res[y] = Vec.makeVec(ArrayUtils.div(cvs._covs[y], (fry.numRows() - 1 - NACount)), keys[y]);
 
-      return new ValFrame(new Frame(fry._names, res));    
+      return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
     }
   }
 
@@ -435,7 +432,7 @@ class ASTVariance extends ASTPrim {
     }
   }
 
-  static double getVar(Vec v) {
-    return v.naCnt() == 0 ? v.sigma() * v.sigma() : Double.NaN;
+  static double getVar(VecAry v) {
+    return v.naCnt(0) == 0 ? v.sigma(0) * v.sigma(0) : Double.NaN;
   }
 }

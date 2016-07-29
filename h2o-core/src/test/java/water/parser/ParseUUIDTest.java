@@ -33,25 +33,25 @@ public class ParseUUIDTest  extends TestUtil {
             l(         9,0xFFFFFFFFFFFFFFFFL,0xFFFFFFFFFFFFFFFFL,1),
     };
     Frame fr = parse_test_file("smalldata/junit/test_uuid.csv");
-    Vec vecs[] = fr.vecs();
+    VecAry vecs = fr.vecs();
     try {
       Assert.assertEquals(exp.length,fr.numRows());
       for( int row = 0; row < exp.length; row++ ) {
         int col2 = 0;
         for( int col = 0; col < fr.numCols(); col++ ) {
-          if( vecs[col].isUUID() ) {
+          if( vecs.isUUID(col) ) {
             if( exp[row][col2]==C16Chunk._LO_NA && exp[row][col2+1]==C16Chunk._HI_NA ) {
               Assert.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=NA",
-                      vecs[col].isNA(row));
+                      vecs.isNA(row,col));
             } else {
-              long lo = vecs[col].at16l(row);
-              long hi = vecs[col].at16h(row);
+              long lo = vecs.at16l(row,col);
+              long hi = vecs.at16h(row,col);
               Assert.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=" + Long.toHexString(exp[row][col2]) + ", found=" + lo,
                       exp[row][col2] == lo && exp[row][col2 + 1] == hi);
             }
             col2 += 2;
           } else {
-            long lo = vecs[col].at8(row);
+            long lo = vecs.at8(row,col);
             Assert.assertTrue( "Frame "+fr._key+", row="+row+", col="+col+", expect="+exp[row][col2]+", found="+lo,
                     exp[row][col2]==lo );
             col2 += 1;

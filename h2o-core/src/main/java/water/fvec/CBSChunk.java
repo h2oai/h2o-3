@@ -62,15 +62,6 @@ public class CBSChunk extends Chunk {
   @Override boolean set_impl(int idx, double d) { return false; }
   @Override boolean set_impl(int idx, float f ) { return false; }
   @Override boolean setNA_impl(int idx) {  return false; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(0));
-    for (int i=0; i< _len; i++) {
-      int res = atb(i);
-      if (res == _NA) nc.addNA();
-      else            nc.addNum(res,0);
-    }
-    return nc;
-  }
 
   /** Writes 1bit from value into b at given offset and return b */
   public static byte write1b(byte b, byte val, int off) {
@@ -135,6 +126,26 @@ public class CBSChunk extends Chunk {
       vals[j++] = b == _NA ? Double.NaN : b;
     }
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for (int i=from; i< to; i++) {
+      int res = atb(i);
+      if (res == _NA) nc.addNA();
+      else            nc.addNum(res,0);
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for (int i:lines) {
+      int res = atb(i);
+      if (res == _NA) nc.addNA();
+      else            nc.addNum(res,0);
+    }
+    return nc;
   }
 
 

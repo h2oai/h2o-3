@@ -39,7 +39,9 @@ public class ASTMerge extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
+    VecAry lvecs = l.vecs();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
+    VecAry rvecs = r.vecs();
     boolean allLeft = asts[3].exec(env).getNum() == 1;
     boolean allRite = asts[4].exec(env).getNum() == 1;
     int[] byLeft = check(asts[5]);
@@ -50,19 +52,17 @@ public class ASTMerge extends ASTPrim {
     // leading prefix of column names match.  Bail out if we find any weird
     // column types.
     int ncols=0;                // Number of columns in common
-    for( int i=0; i<l._names.length; i++ ) {
-      int idx = r.find(l._names[i]);
+    for( int i=0; i<l.numCols(); i++ ) {
+      int idx = r._names.getId(l._names.getName(i));
       if( idx != -1 ) {
         l.swap(i  ,ncols);
         r.swap(idx,ncols);
-        Vec lv = l.vecs()[ncols];
-        Vec rv = r.vecs()[ncols];
-        if( lv.get_type() != rv.get_type() )
-          throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names[ncols]+
-                                             " found types "+lv.get_type_str()+" and "+rv.get_type_str());
-        if( lv.isString() )
+        if( lvecs.type(ncols) != r.vecs().type(ncols) )
+          throw new IllegalArgumentException("Merging columns must be the same type, column "+l._names.getName(ncols)+
+                                             " found types "+lvecs.getVecs(ncols).typesStr()+ " and " +rvecs.getVecs(ncols).typesStr());
+        if( lvecs.isString(ncols) )
           throw new IllegalArgumentException("Cannot merge Strings; flip toCategoricalVec first");
-        if( lv.isNumeric() && !lv.isInt())  
+        if( lvecs.isNumeric(ncols) && !l.vecs().isInt(ncols))
           throw new IllegalArgumentException("Equality tests on doubles rarely work, please round to integers only before merging");
         ncols++;
       }
@@ -85,11 +85,9 @@ public class ASTMerge extends ASTPrim {
         throw new IllegalArgumentException("all.y=TRUE not yet implemented for method='radix'");
       int[][] id_maps = new int[ncols][];
       for( int i=0; i<ncols; i++ ) {
-        Vec lv = l.vec(i);
-        Vec rv = r.vec(i);
-        if( lv.isCategorical() ) {
-          assert rv.isCategorical();  // if not, would have thrown above
-          id_maps[i] = CategoricalWrappedVec.computeMap(lv.domain(),rv.domain());
+        if( lvecs.isCategorical(i) ) {
+          assert rvecs.isCategorical(i);  // if not, would have thrown above
+          id_maps[i] = CategoricalWrappedVec.computeMap(lvecs.domain(i),rvecs.domain(i));
         }
       }
       return sortingMerge(l,r,allLeft,allRite,ncols,id_maps);
@@ -106,16 +104,17 @@ public class ASTMerge extends ASTPrim {
       walkLeft = allLeft;
     }
     Frame walked = walkLeft ? l : r;
+    VecAry walkedVecs = walked.vecs();
     Frame hashed = walkLeft ? r : l;
+    VecAry hashedVecs = hashed.vecs();
     if( !walkLeft ) { boolean tmp = allLeft;  allLeft = allRite;  allRite = tmp; }
 
     // Build categorical mappings, to rapidly convert categoricals from the
     // distributed set to the hashed & replicated set.
     int[][] id_maps = new int[ncols][];
     for( int i=0; i<ncols; i++ ) {
-      Vec lv = walked.vecs()[i];
-      if( lv.isCategorical() )
-        id_maps[i] = CategoricalWrappedVec.computeMap(hashed.vecs()[i].domain(),lv.domain());
+      if( walkedVecs.isCategorical(i) )
+        id_maps[i] = CategoricalWrappedVec.computeMap(hashedVecs.domain(i),walkedVecs.domain(i));
     }
 
     // Build the hashed version of the hashed frame.  Hash and equality are
@@ -124,7 +123,7 @@ public class ASTMerge extends ASTPrim {
     //
     // Count size of this hash table as-we-go.  Bail out if the size exceeds
     // a known threshold, and switch a sorting join instead of a hashed join.
-    final MergeSet ms = new MergeSet(ncols,id_maps,allRite).doAll(hashed);
+    final MergeSet ms = new MergeSet(ncols,id_maps,allRite).doAll(hashedVecs);
     final Key uniq = ms._uniq;
     IcedHashMap<Row,String> rows = MergeSet.MERGE_SETS.get(uniq)._rows;
     new MRTask() { @Override public void setupLocal() { MergeSet.MERGE_SETS.remove(uniq);  } }.doAllNodes();
@@ -138,30 +137,29 @@ public class ASTMerge extends ASTPrim {
       // The lifetime of the distributed dataset is independent of the original
       // dataset, so it needs to be a deep copy.
       // TODO: COW Optimization
-      walked = walked.deepCopy(null);
-
+      walked = walked.deepCopy();
+      walkedVecs = walked.vecs();
       // run a global parallel work: lookup non-hashed rows in hashSet; find
       // matching row; append matching column data
-      String[]   names  = Arrays.copyOfRange(hashed._names,   ncols,hashed._names   .length);
-      String[][] domains= Arrays.copyOfRange(hashed.domains(),ncols,hashed.domains().length);
-      byte[] types = Arrays.copyOfRange(hashed.types(),ncols,hashed.numCols());
-      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walked).outputFrame(names,domains);
+      String[]   names  = Arrays.copyOfRange(hashed._names.getNames(),   ncols,hashed.numCols());
+      String[][] domains= Arrays.copyOfRange(hashedVecs.domains(),ncols,hashedVecs.domains().length);
+      byte[] types = Arrays.copyOfRange(hashedVecs.types(),ncols,hashed.numCols());
+      Frame res = new AllLeftNoDupe(ncols,rows,hashed,allRite).doAll(types,walkedVecs).outputFrame(new Frame.Names(names),domains);
       return new ValFrame(walked.add(res));
     }
 
     // Can be full or partial on the left, but won't nessecarily do all of the
     // right.  Dups on right are OK (left will be replicated or dropped as needed).
     if( !allRite ) {
-      String[] names = Arrays.copyOf(walked.names(),walked.numCols() + hashed.numCols()-ncols);
-      System.arraycopy(hashed.names(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
-      String[][] domains = Arrays.copyOf(walked.domains(),walked.numCols() + hashed.numCols()-ncols);
-      System.arraycopy(hashed.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
-      byte[] types = walked.types();
+      String[] names = Arrays.copyOf(walked._names.getNames(),walked.numCols() + hashed.numCols()-ncols);
+      System.arraycopy(hashed._names.getNames(),ncols,names,walked.numCols(),hashed.numCols()-ncols);
+      String[][] domains = Arrays.copyOf(walkedVecs.domains(),walked.numCols() + hashed.numCols()-ncols);
+      System.arraycopy(hashedVecs.domains(),ncols,domains,walked.numCols(),hashed.numCols()-ncols);
+      byte[] types = walkedVecs.types();
       types = Arrays.copyOf(types,types.length+hashed.numCols()-ncols);
-      System.arraycopy(hashed.types(),ncols,types,walked.numCols(),hashed.numCols()-ncols);
-      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(types,walked).outputFrame(names,domains));
-    } 
-
+      System.arraycopy(hashedVecs.types(),ncols,types,walked.numCols(),hashed.numCols()-ncols);
+      return new ValFrame(new AllRiteWithDupJoin(ncols,rows,hashed,allLeft).doAll(types,walkedVecs).outputFrame(new Frame.Names(names),domains));
+    }
     throw H2O.unimpl();
   }
 
@@ -305,12 +303,12 @@ public class ASTMerge extends ASTPrim {
       else if( c.hasFloat() )           nc.addNum(c.atd(row));
       else                              nc.addNum(c.at8(row),0);
     }
-    protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString bStr) {
-      switch( v.get_type() ) {
-      case Vec.T_NUM : nc.addNum(v.at(absRow)); break;
+    protected static void addElem(NewChunk nc, int id, byte type, VecAry.VecAryReader r, long absRow, BufferedString bStr) {
+      switch( type ) {
+      case Vec.T_NUM : nc.addNum(r.at(absRow,id)); break;
       case Vec.T_CAT :
-      case Vec.T_TIME: if( v.isNA(absRow) ) nc.addNA(); else nc.addNum(v.at8(absRow)); break;
-      case Vec.T_STR : nc.addStr(v.atStr(bStr, absRow)); break;
+      case Vec.T_TIME: if( r.isNA(absRow,id) ) nc.addNA(); else nc.addNum(r.at8(absRow,id)); break;
+      case Vec.T_STR : nc.addStr(r.atStr(bStr, absRow,id)); break;
       default: throw H2O.unimpl();
       }
     }
@@ -327,8 +325,9 @@ public class ASTMerge extends ASTPrim {
     @Override public void map( Chunk chks[], NewChunk nchks[] ) {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
-      Vec[] vecs = _hashed.vecs(); // Data source from hashed set
-      assert vecs.length == _ncols + nchks.length;
+      VecAry hvecs = _hashed.vecs(); // Data source from hashed set
+      VecAry.VecAryReader hreader = hvecs.vecReader(false);
+      assert hvecs.len() == _ncols + nchks.length;
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
       int len = chks[0]._len;
@@ -339,8 +338,9 @@ public class ASTMerge extends ASTPrim {
         } else {
           // Copy fields from matching hashed set into walked set
           final long absrow = hashed._row;
+
           for( int c = 0; c < nchks.length; c++ )
-            addElem(nchks[c], vecs[_ncols+c],absrow,bStr);
+            addElem(nchks[c], _ncols + c, hvecs.type(_ncols + c), hreader,absrow,bStr);
         }
       }
     }
@@ -368,7 +368,8 @@ public class ASTMerge extends ASTPrim {
     @Override public void map(Chunk[] chks, NewChunk[] nchks) {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
-      Vec[] vecs = _hashed.vecs(); // Data source from hashed set
+      VecAry hvecs = _hashed.vecs(); // Data source from hashed set
+      VecAry.VecAryReader hvecsReader = hvecs.vecReader(false);
 //      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
@@ -382,15 +383,15 @@ public class ASTMerge extends ASTPrim {
             for(; c<nchks.length;++c) nchks[c].addNA();
           } // else no hashed and no _allLeft... skip (row is dropped)
         } else {
-          if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,vecs,i,  absrow   ,bStr);
-          else                                                      addRow(nchks,chks,vecs,i,hashed._row,bStr);
+          if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,hvecs,i,  absrow   ,bStr, hvecsReader);
+          else                                                      addRow(nchks,chks,hvecs,i,hashed._row,bStr, hvecsReader);
         }
       }
     }
-    void addRow(NewChunk[] nchks, Chunk[] chks, Vec[] vecs, int relRow, long absRow, BufferedString bStr) {
+    void addRow(NewChunk[] nchks, Chunk[] chks, VecAry vecs, int relRow, long absRow, BufferedString bStr, VecAry.VecAryReader reader) {
       int c=0;
       for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
-      for( ;c<nchks.length;++c) addElem(nchks[c],vecs[c - chks.length + _ncols],absRow,bStr);
+      for( ;c<nchks.length;++c) addElem(nchks[c],c - chks.length + _ncols,vecs.type(c - chks.length + _ncols),reader,absRow,bStr);
     }
   }
 }

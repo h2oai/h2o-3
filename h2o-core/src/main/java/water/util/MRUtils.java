@@ -1,17 +1,10 @@
 package water.util;
 
 import water.*;
-import water.H2O.H2OCallback;
-import water.H2O.H2OCountedCompleter;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
-import water.nbhm.NonBlockingHashMap;
+import water.fvec.*;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -21,18 +14,16 @@ public class MRUtils {
   /**
    * Sample rows from a frame.
    * Can be unlucky for small sampling fractions - will continue calling itself until at least 1 row is returned.
-   * @param fr Input frame
+   * @param vecs Input vecs
    * @param rows Approximate number of rows to sample (across all chunks)
    * @param seed Seed for RNG
    * @return Sampled frame
    */
-  public static Frame sampleFrame(Frame fr, final long rows, final long seed) {
-    if (fr == null) return null;
-    final float fraction = rows > 0 ? (float)rows / fr.numRows() : 1.f;
-    if (fraction >= 1.f) return fr;
-    Key newKey = fr._key != null ? Key.make(fr._key.toString() + (fr._key.toString().contains("temporary") ? ".sample." : ".temporary.sample.") + PrettyPrint.formatPct(fraction).replace(" ","")) : null;
-
-    Frame r = new MRTask() {
+  public static VecAry sampleVecs(VecAry vecs, final long rows, final long seed) {
+    if (vecs == null) return null;
+    final float fraction = rows > 0 ? (float)rows / vecs.numRows() : 1.f;
+    if (fraction >= 1.f) return vecs;
+    VecAry r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
         final Random rng = getRNG(0);
@@ -47,21 +38,21 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.types(), fr).outputFrame(newKey, fr.names(), fr.domains());
+    }.doAll(vecs.types(), vecs).outputVecs(vecs.domains());
     if (r.numRows() == 0) {
-      Log.warn("You asked for " + rows + " rows (out of " + fr.numRows() + "), but you got none (seed=" + seed + ").");
+      Log.warn("You asked for " + rows + " rows (out of " + vecs.numRows() + "), but you got none (seed=" + seed + ").");
       Log.warn("Let's try again. You've gotta ask yourself a question: \"Do I feel lucky?\"");
-      return sampleFrame(fr, rows, seed+1);
+      return sampleVecs(vecs, rows, seed+1);
     }
     return r;
   }
 
   /**
    * Row-wise shuffle of a frame (only shuffles rows inside of each chunk)
-   * @param fr Input frame
-   * @return Shuffled frame
+   * @param vecs Input vecs
+   * @return Shuffled vecs
    */
-  public static Frame shuffleFramePerChunk(Frame fr, final long seed) {
+  public static VecAry shuffleVecsPerChunk(VecAry vecs, final long seed) {
     return new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -74,7 +65,7 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(vecs.len(), Vec.T_NUM, vecs).outputVecs(vecs.domains());
   }
 
   /**
@@ -98,7 +89,7 @@ public class MRUtils {
   public static class ClassDist extends MRTask<ClassDist> {
     final int _nclass;
     protected double[] _ys;
-    public ClassDist(final Vec label) { _nclass = label.domain().length; }
+    public ClassDist(final VecAry label) { _nclass = label.domain(0).length; }
     public ClassDist(int n) { _nclass = n; }
 
     public final double[] dist() { return _ys; }
@@ -163,9 +154,9 @@ public class MRUtils {
 
   /**
    * Stratified sampling for classifiers - FIXME: For weights, this is not accurate, as the sampling is done with uniform weights
-   * @param fr Input frame
-   * @param label Label vector (must be categorical)
-   * @param weights Weights vector, can be null
+   * @param vecs Input vecs
+   * @param labelId Label vector id (must be categorical)
+   * @param weightsId Weights vector id or -1
    * @param sampling_ratios Optional: array containing the requested sampling ratios per class (in order of domains), will be overwritten if it contains all 0s
    * @param maxrows Maximum number of rows in the returned frame
    * @param seed RNG seed for sampling
@@ -173,21 +164,21 @@ public class MRUtils {
    * @param verbose Whether to print verbose info
    * @return Sampled frame, with approximately the same number of samples from each class (or given by the requested sampling ratios)
    */
-  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
-    if (fr == null) return null;
-    assert(label.isCategorical());
-    if (maxrows < label.domain().length) {
-      Log.warn("Attempting to do stratified sampling to fewer samples than there are class labels - automatically increasing to #rows == #labels (" + label.domain().length + ").");
-      maxrows = label.domain().length;
+  public static VecAry sampleFrameStratified(final VecAry vecs, int labelId, int weightsId, float[] sampling_ratios, long maxrows, final long seed, final boolean allowOversampling, final boolean verbose) {
+    if (vecs == null) return null;
+    assert(vecs.isCategorical(labelId));
+    String [] ldom = vecs.domain(labelId);
+    if (maxrows < ldom.length) {
+      Log.warn("Attempting to do stratified sampling to fewer samples than there are class labels - automatically increasing to #rows == #labels (" + ldom.length + ").");
+      maxrows = ldom.length;
     }
-
-    ClassDist cd = new ClassDist(label);
-    double[] dist = weights != null ? cd.doAll(label, weights).dist() : cd.doAll(label).dist();
+    ClassDist cd = new ClassDist(vecs.getVecs(labelId));
+    double[] dist = weightsId != -1 ? cd.doAll(vecs.getVecs(labelId,weightsId)).dist() : cd.doAll(vecs.getVecs(labelId)).dist();
     assert(dist.length > 0);
-    Log.info("Doing stratified sampling for data set containing " + fr.numRows() + " rows from " + dist.length + " classes. Oversampling: " + (allowOversampling ? "on" : "off"));
+    Log.info("Doing stratified sampling for data set containing " + vecs.numRows() + " rows from " + dist.length + " classes. Oversampling: " + (allowOversampling ? "on" : "off"));
     if (verbose)
       for (int i=0; i<dist.length;++i)
-        Log.info("Class " + label.factor(i) + ": count: " + dist[i] + " prior: " + (float)dist[i]/fr.numRows());
+        Log.info("Class " + ldom[i] + ": count: " + dist[i] + " prior: " + (float)dist[i]/vecs.numRows());
 
     // create sampling_ratios for class balance with max. maxrows rows (fill
     // existing array if not null).  Make a defensive copy.
@@ -196,7 +187,7 @@ public class MRUtils {
     if( ArrayUtils.minValue(sampling_ratios) == 0 && ArrayUtils.maxValue(sampling_ratios) == 0 ) {
       // compute sampling ratios to achieve class balance
       for (int i=0; i<dist.length;++i)
-        sampling_ratios[i] = ((float)fr.numRows() / label.domain().length) / (float)dist[i]; // prior^-1 / num_classes
+        sampling_ratios[i] = ((float)vecs.numRows() / ldom.length) / (float)dist[i]; // prior^-1 / num_classes
       final float inv_scale = ArrayUtils.minValue(sampling_ratios); //majority class has lowest required oversampling factor to achieve balance
       if (!Float.isNaN(inv_scale) && !Float.isInfinite(inv_scale))
         ArrayUtils.div(sampling_ratios, inv_scale); //want sampling_ratio 1.0 for majority class (no downsampling)
@@ -225,48 +216,49 @@ public class MRUtils {
         Log.info("Downsampling majority class by " + (float)actualnumrows/numrows
                 + " to limit number of rows to " + String.format("%,d", maxrows));
     }
-    for (int i=0;i<label.domain().length;++i) {
-      Log.info("Class '" + label.domain()[i] + "' sampling ratio: " + sampling_ratios[i]);
+    for (int i=0;i<ldom.length;++i) {
+      Log.info("Class '" + ldom[i] + "' sampling ratio: " + sampling_ratios[i]);
     }
 
-    return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, verbose);
+    return sampleFrameStratified(vecs, labelId, weightsId, sampling_ratios, seed, verbose);
   }
 
   /**
    * Stratified sampling
-   * @param fr Input frame
-   * @param label Label vector (from the input frame)
-   * @param weights Weight vector (from the input frame), can be null
+   * @param vecs Input vecs
+   * @param labelId Label vector id (from the input frame)
+   * @param weightsId Weight vector id (from the input frame) or -1 if has no weights
    * @param sampling_ratios Given sampling ratios for each class, in order of domains
    * @param seed RNG seed
    * @param debug Whether to print debug info
    * @return Stratified frame
    */
-  public static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug) {
-    return sampleFrameStratified(fr, label, weights, sampling_ratios, seed, debug, 0);
+  public static VecAry sampleFrameStratified(final VecAry vecs, int labelId, int weightsId, final float[] sampling_ratios, final long seed, final boolean debug) {
+    return sampleFrameStratified(vecs, labelId, weightsId, sampling_ratios, seed, debug, 0);
   }
 
   // internal version with repeat counter
   // currently hardcoded to do up to 10 tries to get a row from each class, which can be impossible for certain wrong sampling ratios
-  private static Frame sampleFrameStratified(final Frame fr, Vec label, Vec weights, final float[] sampling_ratios, final long seed, final boolean debug, int count) {
-    if (fr == null) return null;
-    assert(label.isCategorical());
-    assert(sampling_ratios != null && sampling_ratios.length == label.domain().length);
-    final int labelidx = fr.find(label); //which column is the label?
-    assert(labelidx >= 0);
-    final int weightsidx = fr.find(weights); //which column is the weight?
+  private static VecAry sampleFrameStratified(final VecAry vecs, final int labelId, final int weightsId, final float[] sampling_ratios, final long seed, final boolean debug, int count) {
+    if (vecs == null) return null;
+    String [] ldom = vecs.domain(labelId);
+    assert(vecs.isCategorical(labelId));
+    assert(sampling_ratios != null && sampling_ratios.length == ldom.length);
+//    final int labelidx = fr.find(label); //which column is the label?
+//    assert(labelidx >= 0);
+//    final int weightsidx = fr.find(weights); //which column is the weight?
 
     final boolean poisson = false; //beta feature
 
     //FIXME - this is doing uniform sampling, even if the weights are given
-    Frame r = new MRTask() {
+    VecAry r = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
         final Random rng = getRNG(seed);
         for (int r = 0; r < cs[0]._len; r++) {
-          if (cs[labelidx].isNA(r)) continue; //skip missing labels
+          if (cs[labelId].isNA(r)) continue; //skip missing labels
           rng.setSeed(cs[0].start()+r+seed);
-          final int label = (int)cs[labelidx].at8(r);
+          final int label = (int)cs[labelId].at8(r);
           assert(sampling_ratios.length > label && label >= 0);
           int sampling_reps;
           if (poisson) {
@@ -283,21 +275,20 @@ public class MRUtils {
           }
         }
       }
-    }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(vecs.types(), vecs).outputVecs(vecs.domains());
 
     // Confirm the validity of the distribution
-    Vec lab = r.vecs()[labelidx];
-    Vec wei = weightsidx != -1 ? r.vecs()[weightsidx] : null;
-    double[] dist = wei != null ? new ClassDist(lab).doAll(lab, wei).dist() : new ClassDist(lab).doAll(lab).dist();
+    VecAry vs = weightsId != -1 ?vecs.getVecs(labelId,weightsId):vecs.getVecs(labelId);
+    double[] dist = new ClassDist(vs).doAll(vs).dist();
 
     // if there are no training labels in the test set, then there is no point in sampling the test set
-    if (dist == null) return fr;
+    if (dist == null) return vecs;
 
     if (debug) {
       double sumdist = ArrayUtils.sum(dist);
       Log.info("After stratified sampling: " + sumdist + " rows.");
       for (int i=0; i<dist.length;++i) {
-        Log.info("Class " + r.vecs()[labelidx].factor(i) + ": count: " + dist[i]
+        Log.info("Class " + ldom[i] + ": count: " + dist[i]
                 + " sampling ratio: " + sampling_ratios[i] + " actual relative frequency: " + (float)dist[i] / sumdist * dist.length);
       }
     }
@@ -305,14 +296,25 @@ public class MRUtils {
     // Re-try if we didn't get at least one example from each class
     if (ArrayUtils.minValue(dist) == 0 && count < 10) {
       Log.info("Re-doing stratified sampling because not all classes were represented (unlucky draw).");
-      r.delete();
-      return sampleFrameStratified(fr, label, weights, sampling_ratios, seed+1, debug, ++count);
+      r.remove();
+      return sampleFrameStratified(vecs, labelId, weightsId, sampling_ratios, seed+1, debug, ++count);
     }
-
     // shuffle intra-chunk
-    Frame shuffled = shuffleFramePerChunk(r, seed+0x580FF13);
-    r.delete();
-
+    VecAry shuffled = shuffleVecsPerChunk(r, seed+0x580FF13);
+    r.remove();
     return shuffled;
+  }
+
+  public static class ReplaceWithCon extends MRTask {
+    private final double _conn;
+
+    public ReplaceWithCon(double c) {_conn = c;}
+
+    public void setupLocal(){_vecs.preWriting(null);}
+    @Override public void map(Chunk [] chks) {
+      int len = chks[0]._len;
+      for(int i = 0;  i < chks.length; ++i)
+        chks[i].replaceWith(new C0DChunk(_conn,len));
+    }
   }
 }

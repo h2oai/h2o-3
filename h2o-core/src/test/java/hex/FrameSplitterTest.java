@@ -7,11 +7,12 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.TestUtil;
+import water.fvec.*;
 import water.fvec.Frame;
+import water.fvec.FrameTestUtil;
 import water.util.ArrayUtils;
 
 import static water.fvec.FrameTestUtil.assertValues;
-import static water.fvec.FrameTestUtil.createFrame;
 import static water.util.FrameUtils.generateNumKeys;
 
 public class FrameSplitterTest extends TestUtil {
@@ -70,10 +71,12 @@ public class FrameSplitterTest extends TestUtil {
 
   /** Test scenario for splitting 1-vec frame of strings. */
   static void testScenario(String fname, long[] chunkLayout, String[][] data) {
-    Frame f = createFrame(fname, chunkLayout, data);
+    Vec v = FrameTestUtil.makeStringVec(data);
     double[] ratios  = ard(0.5f);
     Frame[] splits  = null;
     long len = ArrayUtils.sum(chunkLayout);
+    Frame f = new Frame(Key.make(fname),new VecAry(v));
+    DKV.put(f._key,f);
     Assert.assertEquals("Number of rows should match to chunk layout.", len, f.numRows());
     // Compute expected splits
     String[] split0 = new String[(int) len / 2];

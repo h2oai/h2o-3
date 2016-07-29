@@ -7,6 +7,7 @@ import water.api.ImportFilesHandler;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
+import water.fvec.VecAry;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,7 +40,7 @@ public class PersistS3Test extends TestUtil {
     try {
       Key k = H2O.getPM().anyURIToKey(new URI("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
       Frame fr = DKV.getGet(k);
-      FileVec v = (FileVec) fr.anyVec();
+      FileVec v = (FileVec) fr.vecs().getAVecRaw(0);
       // make sure we have some chunks
       int chunkSize = (int) (v.length() / 3);
       v.setChunkSize(fr, chunkSize);
@@ -47,7 +48,7 @@ public class PersistS3Test extends TestUtil {
       Key k2 = H2O.getPM().anyURIToKey(new URI(find_test_file("smalldata/airlines/AirlinesTrain.csv.zip").getAbsolutePath()));
       FileVec v2 = DKV.getGet(k2);
       assertEquals(v2.length(), v.length());
-      assertVecEquals(v, v2, 0);
+      assertVecEquals(new VecAry(v), new VecAry(v2), 0);
       // make sure we have some chunks
       v2.setChunkSize(chunkSize);
       long xor2 = new XORTask().doAll(v2)._res;

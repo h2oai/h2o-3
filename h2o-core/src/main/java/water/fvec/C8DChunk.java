@@ -36,16 +36,8 @@ public class C8DChunk extends Chunk {
     return true;
   }
 
-
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    //nothing to inflate - just copy
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = UnsafeUtils.get8d(_mem,(i<<3));
-    nc.set_sparseLen(nc.set_len(_len));
-    return nc;
-  }
+
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }
@@ -86,6 +78,21 @@ public class C8DChunk extends Chunk {
     int j = 0;
     for(int i:ids) vals[j++] = UnsafeUtils.get8d(_mem,i<<3);
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for( int i=from; i< to; i++ )
+      nc.addNum(UnsafeUtils.get8d(_mem,(i<<3)));
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    nc.alloc_doubles(_len);
+    for( int i:lines)
+      nc.addNum(UnsafeUtils.get8d(_mem,(i<<3)));
+    return nc;
   }
 
 }

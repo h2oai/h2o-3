@@ -16,14 +16,7 @@ public class C1NChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return false; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_exponent(_len);
-    nc.alloc_mantissa(_len);
-    for( int i=0; i< _len; i++ )
-      nc.addNum(0xFF&_mem[i+_OFF],0);
-    nc.set_sparseLen(nc.set_len(_len));
-    return nc;
-  }
+
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
@@ -57,6 +50,20 @@ public class C1NChunk extends Chunk {
     int j = 0;
     for(int i:ids) vals[j++] = 0xFF&_mem[i];
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for( int i=from; i< to; i++ )
+      nc.addNum(0xFF&_mem[i+_OFF],0);
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for( int i:lines)
+      nc.addNum(0xFF&_mem[i+_OFF],0);
+    return nc;
   }
 
   @Override

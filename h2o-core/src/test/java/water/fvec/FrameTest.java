@@ -32,7 +32,7 @@ public class FrameTest extends TestUtil {
     Frame x = null;
     Frame y = null;
     try {
-      x = testData.deepSlice(new Frame(rnd.vec(1)), null);
+      x = testData.deepSlice(new Frame(rnd.vecs(1)), null);
 //      y = testData.deepSlice(new Frame(rnd.vec(2)),null);
       assertTrue(isBitIdentical(subset1, x));
 //      assertTrue(isBitIdentical(subset2,y));

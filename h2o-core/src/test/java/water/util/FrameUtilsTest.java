@@ -55,7 +55,7 @@ public class FrameUtilsTest extends TestUtil {
         ccf.string_fraction = 0;
         ccf.factors = catSizes[i];
         auxFrames[i] = ccf.execImpl().get();
-        auxFrames[i]._names[0] = catNames[i];
+        auxFrames[i].setNames(new String[]{catNames[i]});
         mainFrame.add(auxFrames[i]);
       }
       FrameUtils.CategoricalBinaryEncoder cbed = new FrameUtils.CategoricalBinaryEncoder(frameKey);
@@ -66,13 +66,13 @@ public class FrameUtilsTest extends TestUtil {
           totalExpectedColumns, transformedFrame.numCols());
       for (int i = 0; i < numNoncatColumns; ++i) {
         Assert.assertEquals(mainFrame.name(i), transformedFrame.name(i));
-        Assert.assertEquals(mainFrame.types()[i], transformedFrame.types()[i]);
+        Assert.assertEquals(mainFrame.vecs().type(i), transformedFrame.vecs().type(i));
       }
       for (int i = 0, colOffset = numNoncatColumns; i < catSizes.length; colOffset += expBinarySizes[i++]) {
         for (int j = 0; j < expBinarySizes[i]; ++j) {
           int jj = colOffset + j;
           Assert.assertTrue("A categorical column should be transformed into several binary ones (col "+jj+")",
-              transformedFrame.vec(jj).isBinary());
+              transformedFrame.vecs().isBinary(jj));
           Assert.assertThat("Transformed categorical column should carry the name of the original column",
               transformedFrame.name(jj), CoreMatchers.startsWith(mainFrame.name(numNoncatColumns+i) + ":"));
         }

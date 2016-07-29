@@ -4,6 +4,7 @@ import org.apache.commons.lang.ArrayUtils;
 import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.rapids.*;
 
 public class H2OColOp extends Transform<H2OColOp> {
@@ -38,17 +39,17 @@ public class H2OColOp extends Transform<H2OColOp> {
     Session ses = new Session();
     Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;
-    _newColTypes = toJavaPrimitive(fr.anyVec().get_type_str());
+    _newColTypes = toJavaPrimitive(Vec.TYPE_STR[fr.vecs().type(0)]);
     if( (_multiColReturn=fr.numCols() > 1) ) {
       for(int i=0;i<_newCol.length;i++) {
-        if(_newNames==null) _newCol[i] = f.uniquify(i > 0 ? _newCol[i - 1] : _oldCol);
-        f.add(_newCol[i], fr.vec(i));
+        if(_newNames==null) _newCol[i] = (i > 0 ? _newCol[i - 1] : _oldCol);
+        f.add(_newCol[i], fr.vecs().getVecs(i));
       }
       if( _inplace ) f.remove(f.find(_oldCol)).remove();
     } else {
-      _newCol = _newNames==null?new String[]{_inplace ? _oldCol : f.uniquify(_oldCol)}:_newCol;
-      if( _inplace ) f.replace(f.find(_oldCol), fr.anyVec()).remove();
-      else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.anyVec());
+      _newCol = _newNames==null?new String[]{_inplace ? _oldCol : (_oldCol)}:_newCol;
+      if( _inplace ) f.vecs().replaceVecs(fr.vecs(),f.find(_oldCol)).remove();
+      else          f.add(_newNames == null ? _newCol[0] : _newNames[0], fr.vecs());
     }
     DKV.put(f);
     return f;

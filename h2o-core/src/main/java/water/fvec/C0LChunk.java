@@ -28,19 +28,7 @@ public class C0LChunk extends Chunk {
   @Override boolean set_impl (int idx, String str) { return false; }
   @Override double min() { return _con; }
   @Override double max() { return _con; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    if(_con == 0) {
-      nc.set_len(nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
-      nc.set_sparse(0, NewChunk.Compress.ZERO);//so that sparse() is true in addZeros()
-      nc.addZeros(_len);
-    } else {
-      nc.alloc_mantissa(_len);
-      nc.alloc_exponent(_len);
-      for(int i = 0; i < _len; ++i)
-        nc.addNum(_con,0);
-    }
-    return nc;
-  }
+
   @Override public final void initFromBytes () {
     _start = -1;  _cidx = -1;
     _con = UnsafeUtils.get8(_mem,0);
@@ -86,5 +74,21 @@ public class C0LChunk extends Chunk {
     int j = 0;
     for(int i:ids) vals[j++] = _con;
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    int len  = to - from;
+    if(_con == 0) {
+      nc.addZeros(len);
+    } else
+      for(int i = 0; i < len; ++i)
+        nc.addNum(_con,0);
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    return add2NewChunk(nc,0,lines.length);
   }
 }

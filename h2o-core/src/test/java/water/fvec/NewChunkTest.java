@@ -31,12 +31,12 @@ public class NewChunkTest extends TestUtil {
     cc._start = 0; //HACK
     cc._cidx = 0; // HACK as well
     Futures fs = new Futures();
-    vec = cc._vec = av.layout_and_close(fs);
+    vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
     fs.blockForPending();
     assert(DKV.get(vec._key)!=null); //only the vec header is in DKV, the chunk is not
   }
   private void post_write() {
-    cc.close(0, new Futures()).blockForPending();
+    vec.closeChunk(0,cc,new Futures()).blockForPending();
   }
   void remove() {if(vec != null)vec.remove();}
 
@@ -500,7 +500,7 @@ public class NewChunkTest extends TestUtil {
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0, cc.atd(K - 3), Math.ulp(0));
-      assertTrue(cc.chk2() instanceof CNAXDChunk);
+      assertTrue(cc.chk2().isSparseNA());
 
       for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, cc.atd(i), Math.ulp(0));
       assertEquals(extra, cc.atd(K - 5), Math.ulp(extra));

@@ -123,9 +123,9 @@ class WriteOrder extends MRTask<WriteOrder> {
     WriteOrder(long[][] counts, int[][] order, long min, long max) { _counts = counts; _order = order; _min = min; _max = max; }
     @Override public void map( Chunk chk ) {
         long nanos[] = new long[5];
-        Vec vec = chk.vec();
+
         int range = (int)(_max-_min+1);
-        long[] espc = vec.espc();
+        long[] espc = _vecs.espc();
 
         long myCounts[] = _counts[chk.cidx()];
 
@@ -134,7 +134,7 @@ class WriteOrder extends MRTask<WriteOrder> {
         // for (int i=0; i<_max-_min+1; i++) myCounts[i] = _counts[chk._cidx][i];
 
         int myTargetChunks[] = new int[range];
-        for (int i=0; i<_max-_min+1; i++) myTargetChunks[i] = vec.elem2ChunkIdx(myCounts[i]);  // elem2ChunkIdx is a binary search due to chunks not being equal size. Try to avoid.
+        for (int i=0; i<_max-_min+1; i++) myTargetChunks[i] = _vecs.elem2ChunkIdx(myCounts[i]);  // elem2ChunkIdx is a binary search due to chunks not being equal size. Try to avoid.
         for (int r=0; r<chk._len; r++) {
             //long t0 = System.nanoTime();
             int group = (int)(chk.at8(r)-_min);
@@ -168,7 +168,7 @@ public class GroupingBench extends TestUtil {
         //new MySeq((int)100).doAll(vec);
         //new MySample((int)10).doAll(vec);
         new MySample((int)10).doAll(vec);
-        vec.max(); // to cache rollups,  so timing below excludes it
+        vec.max(0); // to cache rollups,  so timing below excludes it
 
         System.out.println("\nFirst 30 of vec ...");
         System.out.println("There are "+vec.nChunks()+" chunks");
@@ -211,7 +211,7 @@ public class GroupingBench extends TestUtil {
             // TO DO:  search for utils.Timer,  prettyPrint
 
             long nanos = System.nanoTime();
-            long ans2[][] = new MyCountRange((long) vec.max(), (long) vec.min(), vec.nChunks()).doAll(vec)._counts;
+            long ans2[][] = new MyCountRange((long) vec.max(0), (long) vec.min(0), vec.nChunks()).doAll(vec)._counts;
             long nanos1 = System.nanoTime() - nanos;
             System.out.println("Counts per chunk (first 5 chunks) ...");
             for (int c = 0; c < 5; c++) System.out.println(Arrays.toString(ans2[c]));

@@ -154,10 +154,8 @@ public class CreateFrameTest extends TestUtil {
     Frame frame2 = cf.execImpl().get();
     frame1.toString();
     frame2.toString();
-    for (int i=0;i<frame1.numCols();++i) {
-      Assert.assertTrue(frame1.vec(i).get_type()==frame2.vec(i).get_type());
-    }
-
+    for (int i=0;i<frame1.numCols();++i)
+      Assert.assertTrue(frame1.vecs().type(i)==frame2.vecs().type(i));
     frame1.delete();
     frame2.delete();
   }

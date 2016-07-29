@@ -2,9 +2,7 @@ package water.rapids;
 
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -44,12 +42,14 @@ class ASTCorrelation extends ASTPrim {
     private ValNum scalar( Frame frx, Frame fry, Mode mode) {
         if( frx.numCols() != fry.numCols())
             throw new IllegalArgumentException("Single rows must have the same number of columns, found "+frx.numCols()+" and "+fry.numCols());
-        Vec vecxs[] = frx.vecs();
-        Vec vecys[] = fry.vecs();
+        VecAry vecxs = frx.vecs();
+        VecAry vecys = fry.vecs();
         double xmean=0, ymean=0, xvar=0, yvar=0,xsd=0,ysd=0, ncols = frx.numCols(), NACount=0, xval, yval, ss=0;
+        Chunk [] chunkx = vecxs.getChunks(0,false);
+        Chunk [] chunky = vecxs.getChunks(0,false);
         for( int r = 0; r < ncols; r++) {
-            xval = vecxs[r].at(0);
-            yval = vecys[r].at(0);
+            xval = chunkx[r].atd(0);
+            yval = chunky[r].atd(0);
             if (Double.isNaN(xval) || Double.isNaN(yval))
                 NACount++;
             else {
@@ -60,14 +60,14 @@ class ASTCorrelation extends ASTPrim {
         xmean /= (ncols - NACount); ymean /= (ncols - NACount);
 
         for( int r = 0; r < ncols; r++ ) {
-            xval = vecxs[r].at(0);
-            yval = vecys[r].at(0);
+            xval = chunkx[r].atd(0);
+            yval = chunky[r].atd(0);
             if (!(Double.isNaN(xval) || Double.isNaN(yval)))
                 //Compute variance of x and y vars
-                xvar += Math.pow((vecxs[r].at(0) - xmean), 2);
-                yvar += Math.pow((vecys[r].at(0) - ymean), 2);
+                xvar += Math.pow(xval - xmean, 2);
+                yvar += Math.pow(yval - ymean, 2);
                 //Compute sum of squares of x and y
-                ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+                ss += (xval - xmean) * (yval - ymean);
             }
         xsd = Math.sqrt(xvar/(frx.numRows())); //Sample Standard Deviation
         ysd = Math.sqrt(yvar/(fry.numRows())); //Sample Standard Deviation
@@ -79,12 +79,11 @@ class ASTCorrelation extends ASTPrim {
         }
 
         for( int r = 0; r < ncols; r++ ) {
-            xval = vecxs[r].at(0);
-            yval = vecys[r].at(0);
+            xval = chunkx[r].atd(0);
+            yval = chunky[r].atd(0);
             if (!(Double.isNaN(xval) || Double.isNaN(yval)))
-                ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+                ss += (xval - xmean) * (yval - ymean);
         }
-
         return new ValNum(ss/cor_denom); //Pearson's Correlation Coefficient
     }
 
@@ -92,27 +91,24 @@ class ASTCorrelation extends ASTPrim {
     // Compute correlation between all columns from each Frame against each other.
     // Return a matrix of correlations which is frx.numCols wide and fry.numCols tall.
     private Val array( Frame frx, Frame fry, Mode mode) {
-        Vec[] vecxs = frx.vecs();
-        int ncolx = vecxs.length;
-        Vec[] vecys = fry.vecs();
-        int ncoly = vecys.length;
+        VecAry vecxs = frx.vecs();
+        int ncolx = vecxs.len();
+        VecAry vecys = fry.vecs();
+        int ncoly = vecys.len();
 
         if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
             if (mode.equals(Mode.AllObs)) {
-                for (Vec v : vecxs)
-                    if (v.naCnt() != 0)
+                for (int i  = 0; i < ncolx; ++i)
+                    if (vecxs.naCnt(i) != 0)
                         throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
             }
             CorTaskEverything[] cvs = new CorTaskEverything[ncoly];
 
-            double[] xmeans = new double[ncolx];
-            for (int x = 0; x < ncolx; x++) {
-                xmeans[x] = vecxs[x].mean();
-            }
+            double[] xmeans = vecxs.means();
 
             // Start up tasks. Does all Xs vs one Y.
             for (int y = 0; y < ncoly; y++)
-                cvs[y] = new CorTaskEverything(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(frx));
+                cvs[y] = new CorTaskEverything(vecys.mean(y), xmeans).dfork(new VecAry(vecys.getVecs(y),vecxs));
 
             // One col will return a scalar.
             if (ncolx == 1 && ncoly == 1) {
@@ -121,22 +117,22 @@ class ASTCorrelation extends ASTPrim {
 
             // Gather all the Xs-vs-Y correlation arrays and build out final Frame of correlations.
             Vec[] res = new Vec[ncoly];
-            Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+            Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
             for (int y = 0; y < ncoly; y++)
                 res[y] = Vec.makeVec(cvs[y].getResult()._cors, keys[y]);
 
-            return new ValFrame(new Frame(fry._names, res));
+            return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
 
         }
         else {
 
-            CorTaskCompleteObsMean taskCompleteObsMean = new CorTaskCompleteObsMean(ncoly, ncolx).doAll(new Frame(fry).add(frx));
+            CorTaskCompleteObsMean taskCompleteObsMean = new CorTaskCompleteObsMean(ncoly, ncolx).doAll(new VecAry(fry.vecs(),frx.vecs()));
             long NACount = taskCompleteObsMean._NACount;
             double[] ymeans = ArrayUtils.div(taskCompleteObsMean._ysum, fry.numRows() - NACount);
             double[] xmeans = ArrayUtils.div(taskCompleteObsMean._xsum, fry.numRows() - NACount);
 
             // Start up tasks. Does all Xs vs one Y.
-            CorTaskCompleteObs cvs = new CorTaskCompleteObs(ymeans, xmeans).doAll(new Frame(fry).add(frx));
+            CorTaskCompleteObs cvs = new CorTaskCompleteObs(ymeans, xmeans).doAll(new VecAry(fry.vecs(),frx.vecs()));
 
             // One col will return a scalar.
             if (ncolx == 1 && ncoly == 1) {
@@ -145,11 +141,10 @@ class ASTCorrelation extends ASTPrim {
 
             // Gather all the Xs-vs-Y covariance arrays; divide by rows
             Vec[] res = new Vec[ncoly];
-            Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+            Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
             for (int y = 0; y < ncoly; y++)
                 res[y] = Vec.makeVec(ArrayUtils.div(cvs._cors[y], (fry.numRows() - 1 - NACount)), keys[y]);
-
-            return new ValFrame(new Frame(fry._names, res));
+            return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
         }
     }
 

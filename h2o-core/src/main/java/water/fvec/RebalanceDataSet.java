@@ -28,10 +28,10 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
    *
    * To be used to make frame compatible with other frame (i.e. make all vecs compatible with other vector group and rows-per-chunk).
    */
-  public RebalanceDataSet(VecAry modelAry, VecAry srcAry, Key dstKey) {
-    this(modelAry,srcAry,dstKey,null,null);
+  public RebalanceDataSet(VecAry modelAry, VecAry srcAry) {
+    this(modelAry,srcAry,null,null);
   }
-  public RebalanceDataSet(VecAry modelAry, VecAry srcAry, Key dstKey, H2O.H2OCountedCompleter cmp, Key jobKey) {
+  public RebalanceDataSet(VecAry modelAry, VecAry srcAry, H2O.H2OCountedCompleter cmp, Key jobKey) {
     super(cmp);
     _src = srcAry;
     _jobKey = jobKey;
@@ -99,7 +99,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         chks[i] = new NewChunk(chks[i]);
       int k = 0;
       while(k < n){
-        Chunk [] srcChks = _src.getChunks(_src.elem2ChunkId(start + k),false);
+        Chunk [] srcChks = _src.getChunks(_src.elem2ChunkIdx(start + k),false);
         long srcChunkStart = srcChks[0]._start;
         int srcFrom = (int)(start+ k - srcChunkStart);
         final int srcTo = Math.min(srcChks[0]._len,srcFrom + n - k);

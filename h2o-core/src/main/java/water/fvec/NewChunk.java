@@ -245,7 +245,8 @@ public class NewChunk extends Chunk {
 
   @Override public boolean isSparseZero() { return sparseZero(); }
   public boolean _sparseNA = false;
-  @Override public boolean isSparseNA() {return sparseNA();}
+
+
   void setSparseNA() {_sparseNA = true;}
 
   public int _sslen;                   // Next offset into _ss for placing next String
@@ -255,7 +256,6 @@ public class NewChunk extends Chunk {
     return this._sparseLen = l;
   }
   @Override public int sparseLenZero() { return _sparseNA ? _len : _sparseLen;}
-  @Override public int sparseLenNA() { return _sparseNA ? _sparseLen : _len; }
 
   private int _naCnt=-1;                // Count of NA's   appended
   protected int naCnt() { return _naCnt; }               // Count of NA's   appended
@@ -1087,8 +1087,8 @@ public class NewChunk extends Chunk {
       if(isConstant)
         return isInteger? new C0LChunk((long)constVal, _len): new C0DChunk(constVal,_len);
       if(!isInteger) {
-        if (sparse) return new CXDChunk(_len, 8, bufD(8));
-        else if (na_sparse) return new CNAXDChunk(_len, 8, bufD(8));
+        if (sparse) return new CXDChunk(_len, 8, bufD(8),false);
+        else if (na_sparse) return new CXDChunk(_len, 8, bufD(8),true);
         else return chunkD();
       }
       // Else flip to longs
@@ -1179,10 +1179,10 @@ public class NewChunk extends Chunk {
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
       if(sparse) { // Very sparse?
         return  _naCnt==0
-          ? new CX0Chunk(_len, bufS(0))// No NAs, can store as sparse bitvector
-          : new CXIChunk(_len, 1,bufS(1)); // have NAs, store as sparse 1byte values
+          ? new CX0Chunk(_len, bufS(0),false)// No NAs, can store as sparse bitvector
+          : new CXIChunk(_len, 1,bufS(1),false); // have NAs, store as sparse 1byte values
       }
-      if(na_sparse) return new CNAXIChunk(_len, 1, bufS(1));
+      if(na_sparse) return new CXIChunk(_len, 1, bufS(1),true);
       int bpv = _catCnt +_naCnt > 0 ? 2 : 1;   // Bit-vector
       byte[] cbuf = bufB(bpv);
       return new CBSChunk(cbuf, cbuf[0], cbuf[1]);
@@ -1191,18 +1191,18 @@ public class NewChunk extends Chunk {
     final boolean fpoint = xmin < 0 || min < Long.MIN_VALUE || max > Long.MAX_VALUE;
 
     if( sparse ) {
-      if(fpoint) return new CXDChunk(_len,8,bufD(8));
+      if(fpoint) return new CXDChunk(_len,8,bufD(8),false);
       int sz = 8;
       if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
       else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CXIChunk(_len,sz,bufS(sz));
+      return new CXIChunk(_len,sz,bufS(sz),false);
     }
     if( na_sparse ) {
-      if(fpoint) return new CNAXDChunk(_len,8,bufD(8));
+      if(fpoint) return new CXDChunk(_len,8,bufD(8),true);
       int sz = 8;
       if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
       else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CNAXIChunk(_len,sz,bufS(sz));      
+      return new CXIChunk(_len,sz,bufS(sz),true);
     }
     // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
     // byte and we scale the column by 0.1.  A set of numbers like
@@ -1594,17 +1594,17 @@ public class NewChunk extends Chunk {
   }
   @Override protected final void initFromBytes () {throw H2O.fail();}
   public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
-  @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
+
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
 
   @Override
-  public void add2NewChunk_impl(NewChunk nc, int from, int to) {
-    throw H2O.unimpl(); // TODO
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    throw H2O.unimpl();
   }
 
   @Override
-  public void add2NewChunk_impl(NewChunk nc, int[] lines) {
-    throw H2O.unimpl(); // TODO
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    throw H2O.unimpl();
   }
 
   // We have to explicitly override cidx implementation since we hide _cidx field with new version

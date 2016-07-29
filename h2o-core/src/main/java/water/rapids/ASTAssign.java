@@ -2,10 +2,7 @@ package water.rapids;
 
 import hex.Model;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 /** Assign a whole frame over a global.  Copy-On-Write optimizations make this cheap. */
 class ASTAssign extends ASTPrim {
@@ -33,17 +30,17 @@ class ASTRectangleAssign extends ASTPrim {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc  = stk.track(asts[2].exec(env));
     // Column selection
-    ASTNumList cols_numlist = new ASTNumList(asts[3].columns(dst.names()));
+    ASTNumList cols_numlist = new ASTNumList(asts[3].columns(dst._names.getNames()));
     // Special for ASTAssign: "empty" really means "all"
     if( cols_numlist.isEmpty() ) cols_numlist = new ASTNumList(0,dst.numCols());
     // Allow R-like number list expansion: negative column numbers mean exclusion
-    int[] cols = ASTColSlice.col_select(dst.names(),cols_numlist);
+    int[] cols = ASTColSlice.col_select(dst._names.getNames(),cols_numlist);
 
     // Any COW optimized path changes Vecs in dst._vecs, and so needs a
     // defensive copy.  Any update-in-place path updates Chunks instead of
     // dst._vecs, and does not need a defensive copy.  To make life easier,
     // just make the copy now.
-    dst = new Frame(dst._names,dst.vecs().clone());
+    dst = new Frame(null,dst._names,(VecAry)dst.vecs().clone());
 
     // Assign over the column slice
     if( asts[4] instanceof ASTNum || asts[4] instanceof ASTNumList ) { // Explictly named row assignment
@@ -79,19 +76,18 @@ class ASTRectangleAssign extends ASTPrim {
     // Whole-column assignment?  Directly reuse columns: Copy-On-Write
     // optimization happens here on the apply() exit.
     if( dst.numRows() == nrows && rows.isDense() ) {
-      for( int i=0; i<cols.length; i++ )
-        dst.replace(cols[i],src.vecs()[i]);
+      dst.vecs().replaceVecs(src.vecs(cols),cols);
       if( dst._key != null ) DKV.put(dst);
       return;
     }
 
     // Partial update; needs to preserve type, and may need to copy to support
     // copy-on-write
-    Vec[] dvecs = dst.vecs();
-    Vec[] svecs = src.vecs();
+    VecAry dvecs = dst.vecs();
+    VecAry svecs = src.vecs();
     for( int col=0; col<cols.length; col++ )
-      if( dvecs[cols[col]].get_type() != svecs[col].get_type() )
-        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names[cols[col]]+"\', is of type "+dvecs[cols[col]].get_type_str()+" and the source is "+svecs[col].get_type_str());
+      if( dvecs.type(cols[col]) != svecs.type(col) )
+        throw new IllegalArgumentException("Columns must be the same type; column "+col+", \'"+dst._names.getName(cols[col])+"\', is of type "+dvecs.getVecs(cols[col]).typesStr()+" and the source is "+svecs.getVecs(col).typesStr());
 
     // Frame fill
     // Handle fast small case
@@ -99,9 +95,12 @@ class ASTRectangleAssign extends ASTPrim {
       // Copy dst columns as-needed to allow update-in-place
       dvecs = ses.copyOnWrite(dst,cols); // Update dst columns
       long[] rownums = rows.expand8();   // Just these rows
-      for( int col=0; col<svecs.length; col++ )
+      VecAry.VecAryWriter w = dvecs.vecWriter();
+      VecAry.VecAryReader r = dvecs.vecReader(false);
+      for( int col=0; col<svecs.len(); col++ )
         for( int ridx=0; ridx<rownums.length; ridx++ )
-          dvecs[cols[col]].set(rownums[ridx], svecs[col].at(ridx));
+          w.set(rownums[ridx], cols[col], r.at(ridx,col));
+      w.close();
       return;
     }
     // Handle large case
@@ -114,27 +113,27 @@ class ASTRectangleAssign extends ASTPrim {
     // Handle fast small case
     long nrows = rows.cnt();
     if( nrows==1 ) {
-      Vec[] vecs = ses.copyOnWrite(dst,cols);
+      VecAry vecs = ses.copyOnWrite(dst,cols);
       long drow = (long)rows._bases[0];
+      VecAry.VecAryWriter w = vecs.vecWriter();
       for( int i=0; i<cols.length; i++ )
-        vecs[cols[i]].set(drow, src);
+        w.set(drow, cols[i],src);
+      w.close();
       return;
     }
     
     // Bulk assign constant (probably zero) over a frame.  Directly set
     // columns: Copy-On-Write optimization happens here on the apply() exit.
     if( dst.numRows() == nrows && rows.isDense() ) {
-      Vec vsrc = dst.anyVec().makeCon(src);
-      for( int i=0; i<cols.length; i++ )
-        dst.replace(cols[i],vsrc);
+      VecAry vsrc = dst.vecs().makeCon(src);
+      dst.vecs().replaceVecs(vsrc,cols);
       if( dst._key != null ) DKV.put(dst);
       return;
     }
     
     // Handle large case
-    Vec[] vecs = ses.copyOnWrite(dst,cols);
-    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
-    for( int i=0; i<cols.length; i++ ) vecs2[i] = vecs[cols[i]];
+    VecAry vecs = ses.copyOnWrite(dst,cols);
+    VecAry vecs2 = vecs.getVecs(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new MRTask(){
       @Override public void map(Chunk[] cs) {
@@ -219,7 +218,7 @@ class ASTRectangleAssign extends ASTPrim {
             for(int c: cols) ncs[nc++].addNum(cs[c].atd(i));
         }
       }
-    }.doAll(cols.length, Vec.T_NUM, new Frame(dst).add(rows)).outputFrame();
+    }.doAll(cols.length, Vec.T_NUM, new VecAry(dst.vecs(),rows.vecs())).outputFrame();
     assign_frame_frame(dst,cols,new ASTNumList(0,dst.numRows()),src2,ses);
   }
 }
@@ -234,17 +233,17 @@ class ASTAppend extends ASTPrim {
     Val vsrc  = stk.track(asts[2].exec(env));
     String newColName =   asts[3].exec(env).getStr();
     
-    Vec vec = dst.anyVec();
+    VecAry vec = dst.vecs();
     switch( vsrc.type() ) {
     case Val.NUM: vec = vec.makeCon(vsrc.getNum()); break;
     case Val.STR: throw H2O.unimpl();
     case Val.FRM: 
       if( vsrc.getFrame().numCols() != 1 ) throw new IllegalArgumentException("Can only append one column");
-      vec = vsrc.getFrame().anyVec();   
+      vec = vsrc.getFrame().vecs();
       break;
     default:  throw new IllegalArgumentException("Source must be a Frame or Number, but found a "+vsrc.getClass());
     }
-    dst = new Frame(dst._names.clone(),dst.vecs().clone());
+    dst = new Frame(dst);
     dst.add(newColName, vec);
     return new ValFrame(dst);
   }

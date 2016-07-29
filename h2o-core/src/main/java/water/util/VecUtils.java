@@ -90,7 +90,7 @@ public class VecUtils {
     // Invoke tasks - one input vector, one ouput vector
     task.doAll(new byte[] {Vec.T_CAT}, vec);
     // Return result
-    return task.outputFrame(null, null, new String[][] {vecDomain}).vecs();
+    return task.outputFrame(null, (String[])null, new String[][] {vecDomain}).vecs();
   }
 
   /**
@@ -109,7 +109,7 @@ public class VecUtils {
     if (src.isInt(0)) {
       int min = (int) src.min(0), max = (int) src.max(0);
       // try to do the fast domain collection
-      long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast(max).doAll(src).domain() : new CollectDomain().doAll(src).domain();
+      long dom[] = (min >= 0 && max < Integer.MAX_VALUE - 4) ? new CollectDomainFast().doAll(src).domain()[0] : new CollectDomain().doAll(src).domain();
       if (dom.length > Categorical.MAX_CATEGORICAL_COUNT)
         throw new H2OIllegalArgumentException("Column domain is too large to be represented as an categorical: " + dom.length + " > " + Categorical.MAX_CATEGORICAL_COUNT);
       return copyOver(src, Vec.T_CAT, dom);
@@ -270,7 +270,7 @@ public class VecUtils {
       case Vec.T_NUM:
         return numericToStringVec(src);
       default:
-        throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
+        throw new H2OIllegalArgumentException("Unrecognized column type " + src.typesStr()
             + " given to toStringVec().");
     }
   }
@@ -469,7 +469,7 @@ public class VecUtils {
       }
       VecUtils.DomainDedupe domainDedupe = new VecUtils.DomainDedupe(oldToNewDomainIndex);
       String[][] dom2D = {Arrays.copyOf(alphabetizedSubstrings.toArray(), alphabetizedSubstrings.size(), String[].class)};
-      return domainDedupe.doAll(new byte[]{Vec.T_CAT}, vec).outputFrame(null, null, dom2D).vecs();
+      return domainDedupe.doAll(new byte[]{Vec.T_CAT}, vec).outputFrame(null, (String[])null, dom2D).vecs();
     }
   }
 
@@ -479,26 +479,39 @@ public class VecUtils {
    *  and returned as the domain for the {@link Vec}.
    * */
   public static class CollectDomainFast extends MRTask<CollectDomainFast> {
-    private final int _s;
-    private boolean[] _u;
-    private long[] _d;
-    public CollectDomainFast(int s) { _s=s; }
-    @Override protected void setupLocal() { _u= MemoryManager.mallocZ(_s + 1); }
-    @Override public void map(Chunk ys) {
-      for( int row=0; row< ys._len; row++ )
-        if( !ys.isNA(row) )
-          _u[(int)ys.at8(row)]=true;
+    private boolean[][] _u;
+    private long[][] _d;
+
+    @Override protected void setupLocal() {
+      for(int i = 0; i < _vecs.len(); ++i)
+        _u[i] = new boolean[(int)_vecs.max(i)];
     }
-    @Override public void reduce(CollectDomainFast mrt) { if( _u != mrt._u ) ArrayUtils.or(_u, mrt._u);}
+    @Override public void map(Chunk [] chks) {
+      for(int i = 0 ; i < chks.length; ++i) {
+        Chunk ys = chks[i];
+        boolean [] u = _u[i];
+        for (int row = 0; row < ys._len; row++)
+          if (!ys.isNA(row))
+            u[(int) ys.at8(row)] = true;
+      }
+    }
+    @Override public void reduce(CollectDomainFast mrt) {
+      if( _u != mrt._u ) {
+        for(int i = 0; i < _u.length; ++i)
+          ArrayUtils.or(_u[i], mrt._u[i]);
+      }
+    }
     @Override protected void postGlobal() {
-      int c=0;
-      for (boolean b : _u) if(b) c++;
-      _d=MemoryManager.malloc8(c);
-      int id=0;
-      for (int i = 0; i < _u.length;++i)
-        if (_u[i])
-          _d[id++]=i;
-      Arrays.sort(_d); //is this necessary? 
+      for(int i = 0; i < _vecs.len(); ++i) {
+        int c=0;
+        for (boolean b : _u[i]) if (b) c++;
+        _d[i] = MemoryManager.malloc8(c);
+        int id = 0;
+        for (int j = 0; j < _u.length; ++j)
+          if (_u[i][j])
+            _d[i][id++] = j;
+        Arrays.sort(_d[i]); //is this necessary?
+      }
     }
 
     /** Returns exact numeric domain of given {@link Vec} computed by this task.
@@ -506,7 +519,7 @@ public class VecUtils {
      *    domain()[0] - minimal domain value
      *    domain()[domain().length-1] - maximal domain value
      */
-    public long[] domain() { return _d; }
+    public long[][] domain() { return _d; }
   }
 
   public static void deleteVecs(Vec[] vs, int cnt) {

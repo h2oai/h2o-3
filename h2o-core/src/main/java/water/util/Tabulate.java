@@ -3,10 +3,7 @@ package water.util;
 import hex.Interaction;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 
 /**
  * Simple Co-Occurrence based tabulation of X vs Y, where X and Y are two Vecs in a given dataset
@@ -21,7 +18,7 @@ import water.fvec.Vec;
 public class Tabulate extends Keyed<Tabulate> {
   public final Job<Tabulate> _job;
   public Frame _dataset;
-  public Key[] _vecs = new Key[2];
+  public VecAry _vecs = new VecAry();
   public String _predictor;
   public String _response;
   public String _weight;
@@ -36,14 +33,15 @@ public class Tabulate extends Keyed<Tabulate> {
 
   // helper to speed up stuff
   static private class Stats extends Iced {
-    Stats(Vec v) {
-      _min = v.min();
-      _max = v.max();
-      _isCategorical = v.isCategorical();
-      _isInt = v.isInt();
-      _cardinality = v.cardinality();
-      _missing = v.naCnt() > 0 ? 1 : 0;
-      _domain = v.domain();
+    Stats(VecAry v) {
+      if(v.len() != 1) throw new IllegalArgumentException();
+      _min = v.min(0);
+      _max = v.max(0);
+      _isCategorical = v.isCategorical(0);
+      _isInt = v.isInt(0);
+      _cardinality = v.cardinality(0);
+      _missing = v.naCnt(0) > 0 ? 1 : 0;
+      _domain = v.domain(0);
     }
     final double _min;
     final double _max;
@@ -105,44 +103,44 @@ public class Tabulate extends Keyed<Tabulate> {
     if (_dataset == null)     throw new H2OIllegalArgumentException("Dataset not found");
     if (_nbins_predictor < 1) throw new H2OIllegalArgumentException("Number of bins for predictor must be >= 1");
     if (_nbins_response < 1)  throw new H2OIllegalArgumentException("Number of bins for response must be >= 1");
-    Vec x = _dataset.vec(_predictor);
+    VecAry x = _dataset.vecs(_predictor);
     if (x == null)            throw new H2OIllegalArgumentException("Predictor column " + _predictor + " not found");
-    if (x.cardinality() > _nbins_predictor) {
+    if (x.cardinality(0) > _nbins_predictor) {
       Interaction in = new Interaction();
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_predictor};
       in._max_factors = _nbins_predictor -1;
       in.execImpl(null);
-      x = in._job._result.get().anyVec();
-    } else if (x.isInt() && (x.max() - x.min() + 1) <= _nbins_predictor) {
+      x = in._job._result.get().vecs();
+    } else if (x.isInt(0) && (x.max(0) - x.min(0) + 1) <= _nbins_predictor) {
       x = x.toCategoricalVec();
     }
-    Vec y = _dataset.vec(_response);
+    VecAry y = _dataset.vecs(_response);
     if (y == null) throw new H2OIllegalArgumentException("Response column " + _response + " not found");
-    if (y.cardinality() > _nbins_response) {
+    if (y.cardinality(0) > _nbins_response) {
       Interaction in = new Interaction();
       in._source_frame = _dataset._key;
       in._factor_columns = new String[]{_response};
       in._max_factors = _nbins_response -1;
       in.execImpl(null);
-      y = in._job._result.get().anyVec();
-    } else if (y.isInt() && (y.max() - y.min() + 1) <= _nbins_response) {
+      y = in._job._result.get().vecs();
+    } else if (y.isInt(0) && (y.max(0) - y.min(0) + 1) <= _nbins_response) {
       y = y.toCategoricalVec();
     }
-    if (y!=null && y.cardinality() > 2)
+    if (y!=null && y.cardinality(0) > 2)
       Log.warn("Response column has more than two factor levels - mean response depends on lexicographic order of factors!");
-    Vec w = _dataset.vec(_weight); //can be null
-    if (w != null && (!w.isNumeric() && w.min() < 0)) throw new H2OIllegalArgumentException("Observation weights must be numeric with values >= 0");
+    VecAry w = _dataset.vecs(_weight); //can be null
+    if (w != null && (!w.isNumeric(0) && w.min(0) < 0)) throw new H2OIllegalArgumentException("Observation weights must be numeric with values >= 0");
 
     if (x!=null) {
-      _vecs[0] = x._key;
+      _vecs.addVecs(x);
       _stats[0] = new Stats(x);
     }
     if (y!=null) {
-      _vecs[1] = y._key;
+      _vecs.addVecs(y);
       _stats[1] = new Stats(y);
     }
-    Tabulate sp = w != null ? new CoOccurrence(this).doAll(x, y, w)._sp : new CoOccurrence(this).doAll(x, y)._sp;
+    Tabulate sp = w != null ? new CoOccurrence(this).doAll(new VecAry(x, y, w))._sp : new CoOccurrence(this).doAll(new VecAry(x, y))._sp;
     _count_table = sp.tabulationTwoDimTable();
     _response_table = sp.responseCharTwoDimTable();
 

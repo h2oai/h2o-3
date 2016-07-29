@@ -137,7 +137,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   @Override
   protected void postGlobal() {
     if (chunk_counts == null || chunk_byte_sizes == null || byte_size_per_node == null) return;
-    assert(total_row_count == _fr.numRows()): "total_row_count["+total_row_count+"] != _fr.numRows()["+_fr.numRows()+"]. ";
+    assert(total_row_count == _vecs.numRows()): "total_row_count["+total_row_count+"] != _fr.numRows()["+_vecs.numRows()+"]. ";
 
     // compute counts and sizes
     total_chunk_byte_size = 0;
@@ -147,9 +147,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       total_chunk_count += chunk_counts[j];
     }
 
-    long check = 0;
-    for (Vec v : _fr.vecs())
-      check += v.nChunks();
+    long check = _vecs.nChunks()*_vecs.len();
     assert(total_chunk_count == check);
 
     // This doesn't always hold, FileVecs have File-based byte size, while Vecs have Chunk-based byte size.
@@ -226,33 +224,33 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
         table.set(row, 0, display(byte_size_per_node[row]));
         table.set(row, 1, row_count_per_node[row]);
         table.set(row, 2, chunk_count_per_col_per_node[row]);
-        table.set(row, 3, _fr.numCols() * chunk_count_per_col_per_node[row]);
+        table.set(row, 3, _vecs.len() * chunk_count_per_col_per_node[row]);
       }
     }
     table.set(row, 0, display((long)byte_size_per_node_mean));
     table.set(row, 1, row_count_per_node_mean);
     table.set(row, 2, chunk_count_per_col_per_node_mean);
-    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_mean);
+    table.set(row++, 3, _vecs.len()*chunk_count_per_col_per_node_mean);
 
     table.set(row, 0, display((long)byte_size_per_node_min));
     table.set(row, 1, row_count_per_node_min);
     table.set(row, 2, chunk_count_per_col_per_node_min);
-    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_min);
+    table.set(row++, 3, _vecs.len()*chunk_count_per_col_per_node_min);
 
     table.set(row, 0, display((long)byte_size_per_node_max));
     table.set(row, 1, row_count_per_node_max);
     table.set(row, 2, chunk_count_per_col_per_node_max);
-    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_max);
+    table.set(row++, 3, _vecs.len()*chunk_count_per_col_per_node_max);
 
     table.set(row, 0, display((long)byte_size_per_node_stddev));
     table.set(row, 1, row_count_per_node_stddev);
     table.set(row, 2, chunk_count_per_col_per_node_stddev);
-    table.set(row++, 3, _fr.numCols()*chunk_count_per_col_per_node_stddev);
+    table.set(row++, 3, _vecs.len()*chunk_count_per_col_per_node_stddev);
 
     table.set(row, 0, display(total_chunk_byte_size));
     table.set(row, 1, total_row_count);
     table.set(row, 2, total_chunk_count_per_col);
-    table.set(row, 3, _fr.numCols()*total_chunk_count_per_col);
+    table.set(row, 3, _vecs.len()*total_chunk_count_per_col);
 
     return table;
   }

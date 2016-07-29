@@ -29,11 +29,11 @@ public abstract class Transform<T> extends Iced {
   public String name() { return _name; }
   protected abstract Transform<T> fit(Frame f);
   public Frame transform(Frame f) {
-    _inNames = f.names();
-    _inTypes = f.typesStr();
+    _inNames = f._names.getNames();
+    _inTypes = f.vecs().typesStr();
     Frame ff = transformImpl(f);
-    _outTypes= ff.typesStr();
-    _outNames= ff.names();
+    _outTypes= ff.vecs().typesStr();
+    _outNames= ff._names.getNames();
     return ff;
   }
   protected abstract Frame transformImpl(Frame f);

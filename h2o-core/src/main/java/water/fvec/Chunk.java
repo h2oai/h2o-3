@@ -110,8 +110,15 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 
 public abstract class Chunk extends AVec.AChunk<Chunk> {
 
-  public Chunk() {}
-  private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
+  final boolean _sparseZero;
+  final boolean _sparseNA;
+  public Chunk() {_sparseNA = false; _sparseZero = false;}
+  protected Chunk(byte [] bytes, boolean sparseZero, boolean sparseNA) {
+    _sparseZero = sparseZero;
+    _sparseNA = sparseNA;
+    _mem = bytes;initFromBytes();
+  }
+
 
   public final Chunk getChunk(int i) {
     if(i != 0) throw new ArrayIndexOutOfBoundsException(i);
@@ -126,7 +133,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    */
   public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
   public int asSparseDoubles(double [] vals, int [] ids, double NA) {
-    if(vals.length < sparseLenZero())
+    if(vals.length < sparseLen())
       throw new IllegalArgumentException();
     getDoubles(vals,0,_len);
     for(int i = 0; i < _len; ++i) ids[i] = i;
@@ -322,18 +329,37 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  @return long value at the given row, or throw if the value is missing */
   public final long at8(int i) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
 
-  public final void add2NewChunk(NewChunk nc, int from, int to){
-    if(_chk2 != null) _chk2.add2NewChunk(nc,from, to);
-    else add2NewChunk_impl(nc, from,to);
+  public final int at4(int i) {return _chk2 == null ? at4_impl(i) : _chk2. at4_impl(i);}
+
+  protected int at4_impl(int i) {
+    long l = at8_impl(i);
+    int res = (int)l;
+    if(res != l) throw new IllegalArgumentException(l + " does not fit in int");
+    return res;
   }
 
-  public final void add2NewChunk(NewChunk nc, int [] lines){
-    if(_chk2 != null) _chk2.add2NewChunk(nc,lines);
-    else add2NewChunk_impl(nc, lines);
+  public final NewChunk add2NewChunk(NewChunk nc, int from, int to){
+    if(_chk2 != null) return _chk2.add2NewChunk(nc,from, to);
+    else return add2NewChunk_impl(nc, from,to);
   }
-  public abstract void add2NewChunk_impl(NewChunk nc, int from, int to);
-  public abstract void add2NewChunk_impl(NewChunk nc, int [] lines);
 
+  public final NewChunk add2NewChunk(NewChunk nc, int [] lines){
+    if(_chk2 != null) return _chk2.add2NewChunk_impl(nc,lines);
+    else return add2NewChunk_impl(nc, lines);
+  }
+  public abstract NewChunk add2NewChunk_impl(NewChunk nc, int from, int to);
+  public abstract NewChunk add2NewChunk_impl(NewChunk nc, int [] lines);
+
+  public void replaceWith(Chunk c) {
+    setWrite();
+    _chk2 = c;
+  }
+
+  public int sparseLenZero() {return _sparseZero?sparseLen():_len;}
+
+  public double sparseLenNA() {
+    return _sparseNA?sparseLen():_len;
+  }
 
 
   public static final class NumVal {
@@ -496,7 +522,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public final long set(int idx, long l) {
     setWrite();
     if( _chk2.set_impl(idx,l) ) return l;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,l);
+    (_chk2 = inflate()).set_impl(idx,l);
     return l;
   }
 
@@ -519,7 +545,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public final double set(int idx, double d) {
     setWrite();
     if( _chk2.set_impl(idx,d) ) return d;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,d);
+    (_chk2 = inflate()).set_impl(idx,d);
     return d;
   }
 
@@ -537,7 +563,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public final float set(int idx, float f) {
     setWrite();
     if( _chk2.set_impl(idx,f) ) return f;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,f);
+    (_chk2 = inflate()).set_impl(idx,f);
     return f;
   }
 
@@ -554,7 +580,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public final boolean setNA(int idx) {
     setWrite();
     if( _chk2.setNA_impl(idx) ) return true;
-    (_chk2 = inflate_impl(new NewChunk(this))).setNA_impl(idx);
+    (_chk2 = inflate()).setNA_impl(idx);
     return true;
   }
 
@@ -572,11 +598,9 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public final String set(int idx, String str) {
     setWrite();
     if( _chk2.set_impl(idx,str) ) return str;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,str);
+    (_chk2 = inflate()).set_impl(idx,str);
     return str;
   }
-
-
 
   /** @return Chunk index */
   public int cidx() {
@@ -605,12 +629,14 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return true if this Chunk is sparse.  */
-  public boolean isSparseZero() {return false;}
+  public boolean isSparse() {return _sparseZero || _sparseNA;}
+  public boolean isSparseZero() {return _sparseZero;}
+  public final boolean isSparseNA(){return _sparseNA;}
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #_len} */
-  public int sparseLenZero() {return _len;}
+  public int sparseLen() {return _len;}
 
   public int nextNZ(int rid){ return rid + 1;}
 
@@ -627,27 +653,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   
   //NA sparse methods:
   
-  /** Sparse Chunks have a significant number of NAs, and support for
-   *  skipping over large runs of NAs in a row.
-   *  @return true if this Chunk is sparseNA.  */
-  public boolean isSparseNA() {return false;}
 
-  /** Sparse Chunks have a significant number of NAs, and support for
-   *  skipping over large runs of NAs in a row.
-   *  @return At least as large as the count of non-NAs, but may be significantly smaller than the {@link #_len} */
-  public int sparseLenNA() {return _len;}
-
-  // Next non-NA. Analogous to nextNZ()
-  public int nextNNA(int rid){ return rid + 1;}
-  
-  /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
-   *  stored in this chunk.  For dense chunks, this will contain indices of all
-   *  the rows in this chunk.
-   *  @return array of chunk-relative indices of values stored in this chunk. */
-  public int nonnas(int [] res) {
-    for( int i = 0; i < _len; ++i) res[i] = i;
-    return _len;
-  }
   
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for
@@ -659,13 +665,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   double max() { return Double.NaN; }
 
 
-  public NewChunk inflate(){
-    return inflate_impl(new NewChunk(this));
-  }
-  /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
-   *  chunk and written value is out-of-range for an update-in-place operation.
-   *  Bulk copy from the compressed form into the nc._ls8 array.   */
-  public abstract NewChunk inflate_impl(NewChunk nc);
+  public final NewChunk inflate(){return add2NewChunk(new NewChunk(this),0,_len);}
 
 
   /** @return String version of a Chunk, currently just the class name */

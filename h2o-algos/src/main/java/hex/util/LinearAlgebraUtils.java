@@ -8,10 +8,7 @@ import hex.gram.Gram;
 import water.Job;
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 public class LinearAlgebraUtils {
@@ -212,7 +209,7 @@ public class LinearAlgebraUtils {
   public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose) {
     // Calculate Cholesky of Y Gram to get R' = L matrix
     Gram.GramTask gtsk = new Gram.GramTask(jobKey, yinfo);  // Gram is Y'Y/n where n = nrow(Y)
-    gtsk.doAll(yinfo._adaptedFrame);
+    gtsk.doAll(yinfo._adaptedFrame.vecs());
     // Gram.Cholesky chol = gtsk._gram.cholesky(null);   // If Y'Y = LL' Cholesky, then R = L'
     Matrix ygram = new Matrix(gtsk._gram.getXX());
     CholeskyDecomposition chol = new CholeskyDecomposition(ygram);
@@ -232,7 +229,7 @@ public class LinearAlgebraUtils {
   public static double computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm) {
     double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
-    qrtsk.doAll(ywfrm);
+    qrtsk.doAll(ywfrm.vecs());
     return qrtsk._sse;      // \sum (Q_{i,j} - W_{i,j})^2
   }
 
@@ -244,7 +241,7 @@ public class LinearAlgebraUtils {
   public static void computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
     double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolveInPlace qrtsk = new ForwardSolveInPlace(yinfo, cholL);
-    qrtsk.doAll(yinfo._adaptedFrame);
+    qrtsk.doAll(yinfo._adaptedFrame.vecs());
   }
 
   /**
@@ -343,8 +340,9 @@ public class LinearAlgebraUtils {
   public static int numColsExp(Frame fr, boolean useAllFactorLevels) {
     final int uAFL = useAllFactorLevels ? 0 : 1;
     int cols = 0;
-    for( Vec vec : fr.vecs() )
-      cols += (vec.isCategorical() && vec.domain() != null) ? vec.domain().length - uAFL : 1;
+    VecAry vecs = fr.vecs();
+    for( int i = 0; i < fr.numCols(); ++i )
+      cols += (vecs.isCategorical(i) && vecs.domain(i) != null) ? vecs.domain(i).length - uAFL : 1;
     return cols;
   }
 }

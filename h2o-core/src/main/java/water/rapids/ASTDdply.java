@@ -59,7 +59,7 @@ class ASTDdply extends ASTPrim {
     // same Chunk layout, except each Chunk will be the filter rows numbers; a
     // list of the Chunk-relative row-numbers for that group in an original
     // data Chunk.  Each Vec will have a *different* number of rows.
-    Vec[] vgrps = new BuildGroup(gbCols,gss).doAll(gss.size(), Vec.T_NUM, fr).close();
+    Vec[] vgrps = new BuildGroup(gbCols,gss).doAll(gss.size(), Vec.T_NUM, fr.vecs()).close();
 
     // Pass 3: For each group, build a full frame for the group, run the
     // function on it and tear the frame down.
@@ -116,7 +116,7 @@ class ASTDdply extends ASTPrim {
       Futures fs = new Futures();
       Vec[] vgrps = new Vec[_gss.size()];
       for( int i = 0; i < vgrps.length; i++ )
-        vgrps[i] = _appendables[i].closeVecs(_appendables[i].compute_rowLayout(),fs);
+        vgrps[i] = (Vec)_appendables[i].layout_and_close(fs).getAVecRaw(0);
       fs.blockForPending();
       return vgrps;
     }
@@ -125,19 +125,19 @@ class ASTDdply extends ASTPrim {
   // --------------------------------------------------------------------------
   private static class RemoteRapids extends DTask<RemoteRapids> {
     private Frame _data;        // Data frame
-    private Key<Vec> _vKey;     // the group to process...
+    private Key<AVec> _vKey;     // the group to process...
     private AST _fun;           // the ast to execute on the group
     private ASTFun _scope;      // Execution environment
     private double[] _result;   // result is 1 row per group!
 
-    RemoteRapids( Frame data, Key<Vec> vKey, AST fun, ASTFun scope) {
+    RemoteRapids( Frame data, Key<AVec> vKey, AST fun, ASTFun scope) {
       _data = data; _vKey=vKey; _fun=fun; _scope = scope;
     }
 
     @Override public void compute2() {
       assert _vKey.home();
       final Vec gvec = DKV.getGet(_vKey);
-      assert gvec.group().equals(_data.anyVec().group());
+      assert gvec.group().equals(_data.vecs().group());
 
       // Make a group Frame, using wrapped Vecs wrapping the original data
       // frame with the filtered Vec passed in.  Run the function, getting a
@@ -145,25 +145,25 @@ class ASTDdply extends ASTPrim {
       // 1-row Frame as a double[] of results for this group.
 
       // Make the subset Frame Vecs, no chunks yet
-      Key<Vec>[] groupKeys = gvec.group().addVecs(_data.numCols());
+      Key<AVec>[] groupKeys = gvec.group().addVecs(_data.numCols());
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._rowLayout, gvec.domain(), gvec.get_type()), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec.rowLayout(), gvec.domain(0), gvec.type(0)), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {
         @Override public void setupLocal() {
-          Vec[] data_vecs = _data.vecs();
+          VecAry data_vecs = _data.vecs();
           for( int i=0; i<gvec.nChunks(); i++ )
-            if( data_vecs[0].chunkKey(i).home() ) {
+            if( data_vecs.isHomedLocally(i) ) {
               Chunk rowchk = gvec.chunkForChunkIdx(i);
-              for( int col=0; col<data_vecs.length; col++ )
-                DKV.put( Vec.chunkKey(groupVecs[col]._key,i), new SubsetChunk(data_vecs[col].chunkForChunkIdx(i),rowchk,groupVecs[col]), _fs);
+              for( int col=0; col<data_vecs.len(); col++ )
+                DKV.put( Vec.chunkKey(groupVecs[col]._key,i), new SubsetChunk(data_vecs.getChunk(i,col),rowchk,groupVecs[col]), _fs);
             }
         }
       }.doAllNodes();
-      Frame groupFrame = new Frame(_data._names,groupVecs);
+      Frame groupFrame = new Frame(null,_data._names, new VecAry(groupVecs));
 
       // Now run the function on the group frame
       Session ses = new Session();
@@ -177,8 +177,9 @@ class ASTDdply extends ASTPrim {
         if( res.numRows() != 1 )
           throw new IllegalArgumentException("ddply must return a 1-row (many column) frame, found "+res.numRows());
         _result = new double[res.numCols()];
+        VecAry.VecAryReader r = res.vecs().vecReader(false);
         for( int i=0; i<res.numCols(); i++ )
-          _result[i] = res.vec(i).at(0);
+          _result[i] = r.at(0,i);
       } else if( val.isNum() ) {
         _result = new double[]{val.getNum()};
       } else if( val.isNums() ) {

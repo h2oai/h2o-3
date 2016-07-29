@@ -8,6 +8,27 @@ import water.util.UnsafeUtils;
  */
 public class C4FChunk extends Chunk {
   C4FChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) {
+      float res = UnsafeUtils.get4f(_mem,(i<<2));
+      if( Float.isNaN(res) ) nc.addNum(Double.NaN);
+      else nc.addNum(res);
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for( int i:lines ) {
+      float res = UnsafeUtils.get4f(_mem,(i<<2));
+      if( Float.isNaN(res) ) nc.addNum(Double.NaN);
+      else nc.addNum(res);
+    }
+    return nc;
+  }
+
   @Override protected final long at8_impl( int i ) {
     float res = UnsafeUtils.get4f(_mem, i << 2);
     if( Float.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -25,17 +46,6 @@ public class C4FChunk extends Chunk {
     return true;
   }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4f(_mem,(idx<<2),Float.NaN); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      float res = UnsafeUtils.get4f(_mem,(i<<2));
-      if( Float.isNaN(res) ) nc.addNum(Double.NaN);
-      else nc.addNum(res);
-    }
-    return nc;
-  }
   // 3.3333333e33
 //  public int pformat_len0() { return 14; }
 //  public String pformat0() { return "% 13.7e"; }

@@ -11,12 +11,11 @@ import water.util.Log;
  */
 public class ChunkSplitter {
   /** Extract portion of given chunk into given output chunk. */
-  public static void extractChunkPart(Chunk ic, Chunk oc, int startRow, int nrows, Futures fs) {
+  public static Chunk extractChunkPart(Chunk ic, Chunk oc, int startRow, int nrows, Futures fs) {
     try {
       NewChunk dst = new NewChunk(oc);
       dst._len = dst._sparseLen = 0;
-      NewChunk src = new NewChunk(ic);
-      src = ic.inflate_impl(src);
+      NewChunk src = ic.inflate();
       assert src._len == ic._len;
       // Iterate over values skip all 0
       int remain = nrows;
@@ -38,9 +37,8 @@ public class ChunkSplitter {
 
       if(src.isSparseNA()) dst.addNAs(remain);
       else dst.addZeros(remain);
-
       assert dst._len == oc._len : "NewChunk.dst.len = " + dst._len + ", oc._len = " + oc._len;
-      dst.close(dst.cidx(), fs);
+      return dst;
     } catch(RuntimeException t){
       Log.err("gor exception in chunkSplitter, ic = " + ic + ", oc = " + oc + " startRow = " + startRow + " nrows = " + nrows);
       throw t;

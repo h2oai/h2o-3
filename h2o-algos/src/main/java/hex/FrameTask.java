@@ -107,9 +107,9 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     boolean doWork = chunkInit();
     if (!doWork) return;
     final boolean obs_weights = _dinfo._weights
-            && !_fr.vecs()[_dinfo.weightChunkId()].isConst() //if all constant weights (such as 1) -> doesn't count as obs weights
-            && !(_fr.vecs()[_dinfo.weightChunkId()].isBinary()); //special case for cross-val      -> doesn't count as obs weights
-    final double global_weight_sum = obs_weights ? Math.round(_fr.vecs()[_dinfo.weightChunkId()].mean() * _fr.numRows()) : 0;
+            && _vecs.isConst(_dinfo.weightChunkId()) //if all constant weights (such as 1) -> doesn't count as obs weights
+            && !(_vecs.isBinary(_dinfo.weightChunkId())); //special case for cross-val      -> doesn't count as obs weights
+    final double global_weight_sum = obs_weights ? Math.round(_vecs.mean(_dinfo.weightChunkId()) * _vecs.numRows()) : 0;
 
     DataInfo.Row row = null;
     DataInfo.Row[] rows = null;
@@ -131,7 +131,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       }
       if (weight_sum > 0) {
         ArrayUtils.div(weight_map, weight_sum); //normalize to 0...1
-        relative_chunk_weight = global_weight_sum * nrows / _fr.numRows() / weight_sum;
+        relative_chunk_weight = global_weight_sum * nrows / _vecs.numRows() / weight_sum;
       } else return; //nothing to do here - all rows have 0 weight
     }
 

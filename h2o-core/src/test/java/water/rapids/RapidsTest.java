@@ -7,6 +7,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.ArrayUtils;
@@ -236,7 +237,6 @@ public class RapidsTest extends TestUtil {
       System.out.println(val.toString());
       if( val instanceof ValFrame ) {
         Frame fr2= ((ValFrame)val)._fr;
-        System.out.println(fr2.vec(0));
         fr2.remove();
       }
     } catch( IllegalArgumentException iae ) {
@@ -252,7 +252,6 @@ public class RapidsTest extends TestUtil {
       Val val = Rapids.exec("(tmp= py_1 (:= prostate.hex -1 1 (== (cols_py prostate.hex 1) 0)))");
       if( val instanceof ValFrame ) {
         Frame fr2= ((ValFrame)val)._fr;
-        System.out.println(fr2.vec(0));
         fr2.remove();
       }
     } finally {
@@ -267,7 +266,6 @@ public class RapidsTest extends TestUtil {
     Val val = Rapids.exec(tree);
     if( val instanceof ValFrame ) {
       Frame fr2= ((ValFrame)val)._fr;
-      System.out.println(fr2.vec(0));
       fr2.remove();
     }
     fr.delete();
@@ -290,12 +288,11 @@ public class RapidsTest extends TestUtil {
       Val res = Rapids.exec(x);
       f = res.getFrame();
       System.out.println(f);
-      Vec names = f.vec(0);
-      Assert.assertEquals(names.factor(names.at8(0)),"Cliff");
-      Vec ages  = f.vec(1);
-      Assert.assertEquals(ages .factor(ages .at8(0)),">dirt");
-      Vec skilz = f.vec(2);
-      Assert.assertEquals(skilz.factor(skilz.at8(0)),"hacker");
+      VecAry.VecAryReader rdr = f.vecs().vecReader(false);
+      VecAry names = f.vecs().getVecs(0);
+      Assert.assertEquals(f.vecs().domain(0)[(int)rdr.at8(0,0)],"Cliff");
+      Assert.assertEquals(f.vecs().domain(1)[(int)(rdr .at8(0,1))],">dirt");
+      Assert.assertEquals(f.vecs().domain(2)[(int)rdr.at8(0,1)],"hacker");
     } finally {
       if( f != null ) f.delete();
       if( r != null ) r.delete();
@@ -326,8 +323,9 @@ public class RapidsTest extends TestUtil {
       // Expected values computed as golden values from R's quantile call
       double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
               1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
+      VecAry.VecAryReader r = f.vecs().vecReader(false);
       for( int i=0; i<exp.length; i++ )
-        Assert.assertTrue( "expected "+exp[i]+" got "+f.vec(1).at(i), water.util.MathUtils.compare(exp[i],f.vec(1).at(i),1e-6,1e-6) );
+        Assert.assertTrue( "expected "+exp[i]+" got "+r.at(i,1), water.util.MathUtils.compare(exp[i],r.at(i,1),1e-6,1e-6) );
     } finally {
       if( f != null ) f.delete();
     }
@@ -360,11 +358,10 @@ public class RapidsTest extends TestUtil {
       Value val = Value.STORE_get(k);
       if( val != null && val.isFrame() ) {
         Frame fr = val.get();
-        Vec vecs[] = fr.vecs();
-        for( int i=0; i<vecs.length; i++ ) {
-          Vec v = vecs[i];
-          if( DKV.get(v._key) == null ) {
-            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key+", name="+fr._names[i]);
+        VecAry vecs = fr.vecs();
+        for( Key key:vecs.keys() ) {
+          if( DKV.get(key) == null ) {
+            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+key);
             return false;
           }
         }

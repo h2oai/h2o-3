@@ -20,8 +20,8 @@ public class H2OScaler extends Transform<H2OScaler> {
     means = new double[f.numCols()];
     sdevs = new double[f.numCols()];
     for(int i=0;i<f.numCols();++i) {
-      means[i] = f.vec(i).mean();
-      sdevs[i] = f.vec(i).sigma();
+      means[i] = f.vecs().mean(i);
+      sdevs[i] = f.vecs().sigma(i);
     }
     return this;
   }
@@ -41,7 +41,7 @@ public class H2OScaler extends Transform<H2OScaler> {
             ncs[col].addNum(in[col]);
         }
       }
-    }.doAll(f.numCols(), Vec.T_NUM, f).outputFrame(f.names(), f.domains());
+    }.doAll(f.numCols(), Vec.T_NUM, f.vecs()).outputFrame(f._names, f.vecs().domains());
   }
 
   @Override Frame inverseTransform(Frame f) { throw H2O.unimpl(); }

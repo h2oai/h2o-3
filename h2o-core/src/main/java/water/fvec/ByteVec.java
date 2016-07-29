@@ -20,9 +20,8 @@ public class ByteVec extends Vec {
   @Override public C1NChunk chunkForChunkIdx(int cidx) { return (C1NChunk)super.chunkForChunkIdx(cidx); }
 
   /** Return column missing-element-count - ByteVecs do not allow any "missing elements" */
-  @Override public long naCnt() { return 0; }
+  @Override public long naCnt(int colId) { return 0; }
   /** Is all integers?  Yes, it's all bytes */
-  @Override public boolean isInt(){return true; }
 
   /** Get an unspecified amount of initial bytes; typically a whole C1NChunk of
    *  length Vec.DFLT_CHUNK_SIZE but no guarantees.  Useful for previewing the start

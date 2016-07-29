@@ -94,7 +94,7 @@ public class APIThrPriorTest extends TestUtil {
       // Rollup stats behave
       final Key rskey = vec.rollupStatsKey();
       Assert.assertNull(DKV.get(rskey)); // Rollups on my zeros not computed yet
-      vec.sigma();
+      vec.sigma(0);
       Assert.assertNotNull(DKV.get(rskey)); // Rollups on my zeros not computed yet
       serve("/3/Frames/iris.hex", null,200); // Rollups already done at parse, but gets ChunkSummary
 

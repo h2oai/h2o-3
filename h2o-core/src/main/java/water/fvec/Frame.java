@@ -73,6 +73,44 @@ public class Frame extends Lockable<Frame> {
     _vecs = vvecs;
   }
 
+  public Frame deepCopy() {return new Frame(_key,new Names(_names),_vecs.deepCopy());}
+
+  public boolean hasNAs() {
+    for(int i = 0; i < _vecs.len(); ++i)
+      if(_vecs.naCnt(i) > 0)
+        return true;
+    return false;
+  }
+
+  public void insertVec(int i, String name, VecAry vec) {
+    throw H2O.unimpl();
+  }
+
+  public VecAry vecRange(int from, int ncolA) {
+    throw H2O.unimpl();
+  }
+
+  public VecAry lastVec() {return _vecs.getVecs(_vecs.len()-1);}
+
+  public String[][] domains() {return _vecs.domains();}
+
+  public long byteSize() {return _vecs.byteSize();}
+
+  /** Pair of (column name, Frame key). */
+  public static class VecSpecifier extends Iced {
+    public Key<Frame> _frame;
+    String _column_name;
+
+    public VecAry vec() {
+      Value v = DKV.get(_frame);
+      if (null == v) return null;
+      Frame f = v.get();
+      if (null == f) return null;
+      return f.vecs(_column_name);
+    }
+  }
+
+
   public static final class Names extends Iced {
     private String [] _names;
     private transient HashMap<String,Integer> _map;
@@ -80,7 +118,7 @@ public class Frame extends Lockable<Frame> {
 
     public Names(){this(0);}
     public Names(int n) {_n = n;}
-    public Names(String [] names) {
+    public Names(String... names) {
       _n = names.length;
       _names = names;
     }
@@ -170,7 +208,7 @@ public class Frame extends Lockable<Frame> {
       return res;
     }
 
-    public void remove(int[] idxs) {
+    public void remove(int... idxs) {
       _names = getNames();
       int k = 0;
       int l = 0;
@@ -212,9 +250,15 @@ public class Frame extends Lockable<Frame> {
     public Names intersect(Names names) {
       throw H2O.unimpl();
     }
+
+    public void setName(int i, String str) {
+      throw H2O.unimpl();
+    }
   }
   /** Vec names */
   public Names _names;
+  public Names names(){return _names;}
+
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
   private VecAry _vecs;
 
@@ -237,17 +281,20 @@ public class Frame extends Lockable<Frame> {
    * @param key
    * @param vecs
    */
+  public Frame(VecAry vecs) { this((Key)null,vecs);}
   public Frame( Key key, VecAry vecs) {
     super(key);
     _vecs = vecs;
     _names = new Names();
   }
 
+  public Frame( AVec... vecs ){ this((Key)null, new VecAry(vecs));}
   public Frame( Key key, Names names, VecAry vecs) {
     super(key);
     _vecs = vecs;
     _names = new Names(names);
   }
+  public Frame( String names[], VecAry vecs) {this(null,names,vecs);}
   /** Creates a frame with given key, names and vectors. */
   public Frame( Key key, String names[], VecAry vecs) {
     super(key);
@@ -687,7 +734,7 @@ public class Frame extends Lockable<Frame> {
 
       // Case 3:  Return data for the current row.
       //          Note this will fast-forward past empty chunks.
-      _curChkIdx = vecs().elem2ChunkId(_row);
+      _curChkIdx = vecs().elem2ChunkIdx(_row);
       _line = getBytesForRow();
       _position = 0;
       _row++;

@@ -4,6 +4,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Pair;
@@ -43,14 +44,14 @@ class RadixCount extends MRTask<RadixCount> {
   }
 
   @Override protected void setupLocal() {
-    _counts = new Long2DArray(_fr.anyVec().nChunks());
+    _counts = new Long2DArray(_vecs.nChunks());
   }
 
   @Override public void map( Chunk chk ) {
     long tmp[] = _counts._val[chk.cidx()] = new long[256];
     // TO DO: assert chk instanceof integer or enum;  -- but how since many integers (C1,C2 etc)? // alternatively: chk.getClass().equals(C8Chunk.class)
-    if (!(_isLeft && chk.vec().isCategorical())) {
-      if (chk.vec().naCnt() == 0) {
+    if (!(_isLeft && _vecs.isCategorical(0))) {
+      if (_vecs.naCnt(0) == 0) {
         // There are no NA in this join column; hence branch-free loop. Most common case as should never really have NA in join columns.
         for (int r=0; r<chk._len; r++) {
           tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
@@ -71,7 +72,7 @@ class RadixCount extends MRTask<RadixCount> {
       // map left categorical to right levels using _id_maps
       assert _id_maps[0].length > 0;
       assert _base==0;
-      if (chk.vec().naCnt() == 0) {
+      if (_vecs.naCnt(0) == 0) {
         for (int r=0; r<chk._len; r++) {
           tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
         }
@@ -131,7 +132,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // }
     // First cumulate MSB count histograms across the chunks in this node
     long MSBhist[] = new long[256];
-    int nc = _fr.anyVec().nChunks();
+    int nc = _vecs.nChunks();
     assert nc == _counts.length;
     for (int c = 0; c < nc; c++) {
       if (_counts[c]!=null) {
@@ -141,9 +142,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       }
     }
     _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message
-    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
+    if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _vecs.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
       Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
-              + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
+              + (Math.max(1000, _vecs.numRows() / 20 / H2O.CLOUD.size()))
               + " " + Arrays.toString(MSBhist) + ")");
     }
     /*System.out.println("_MSBhist on this node (biggestBit==" + _biggestBit + ") ...");
@@ -291,7 +292,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   void SendSplitMSB() {
     // Futures fs = new Futures();
     // System.out.println(System.currentTimeMillis() + " Starting MoveByFirstByte.PushFirstByteBatches() ... ");
-    int numChunks = _fr.anyVec().nChunks();
+    int numChunks = _vecs.nChunks();
 
     // The map() above ran above for each chunk on this node. Although this data was written to _o and _x in the order of chunk number (because we
     // calculated those offsets in order in the prior step), the chunk numbers will likely have gaps because chunks are distributed across nodes
@@ -397,7 +398,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   int _MSBvalue;  // only needed to be able to return the number of groups back to the caller RadixOrder
   int _keySize, _batchSize;
   long _numRows;
-  Frame _fr;
+  VecAry _vecs;
   boolean _isLeft;
 
   private transient long _o[/*batch*/][];
@@ -422,8 +423,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
   //long _len;
   //int _byte;
 
-  SingleThreadRadixOrder(Frame fr, boolean isLeft, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue) {
-    _fr = fr;
+  SingleThreadRadixOrder(VecAry vecs, boolean isLeft, int batchSize, int keySize, /*long nGroup[],*/ int MSBvalue) {
+    _vecs = vecs;
     _isLeft = isLeft;
     _batchSize = batchSize;
     _keySize = keySize;
@@ -479,8 +480,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
     int targetBatch = 0, targetOffset = 0, targetBatchRemaining = _batchSize;
 
-    for (int c=0; c<_fr.anyVec().nChunks(); c++) {
-      int fromNode = _fr.anyVec().chunkKey(c).home_node().index();  // each chunk in the column may be on different nodes
+    for (int c=0; c< _vecs.nChunks(); c++) {
+      int fromNode =  _vecs.homeNode(c);
       // See long comment at the top of SendSplitMSB. One line from there repeated here :
       // " When the helper node (i.e. this one, now) (i.e the node doing all the A's) gets the A's from that node, it must stack all the nodes' A's
       // with the A's from the other nodes in chunk order in order to maintain the original order of the A's within the global table. "
@@ -758,12 +759,12 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
   long _base[];
   //long[][][] _o;
   //byte[][][] _x;
-  Frame _DF;
+  VecAry _vecs;
   boolean _isLeft;
   int _whichCols[], _id_maps[][];
 
-  RadixOrder(Frame DF, boolean isLeft, int whichCols[], int id_maps[][]) {
-    _DF = DF;
+  RadixOrder(VecAry vecs, boolean isLeft, int whichCols[], int id_maps[][]) {
+    _vecs = vecs;
     _isLeft = isLeft;
     _whichCols = whichCols;
     _id_maps = id_maps;
@@ -778,10 +779,10 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     _bytesUsed = new int[_whichCols.length];
     _base = new long[_whichCols.length];
     for (int i=0; i<_whichCols.length; i++) {
-      Vec col = _DF.vec(_whichCols[i]);
+
       // TODO: strings that aren't already categoricals and fixed precision double.
       long max;
-      if (col.isCategorical()) {
+      if (_vecs.isCategorical(i)) {
         _base[i] = 0;  // simpler and more robust for now for all categorical bases to be 0, even though some subsets may be far above 0; i.e. forgo uncommon efficiency savings for now
         if (_isLeft) {
           assert _id_maps[i] != null;
@@ -789,11 +790,11 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
           //_colMin[i] = ArrayUtils.minValue(_id_maps[i]);  // TODO: what is in _id_maps for no matches (-1?) and exclude those i.e. find the minimum >=0. Then treat -1 in _id_map as an NA when writing key
           max = ArrayUtils.maxValue(_id_maps[i]); // if we join to a small subset of levels starting at 0, we'll benefit from the smaller range here, though
         } else {
-          max = (long)col.max();
+          max = (long)_vecs.max(i);
         }
       } else {
-        _base[i] = (long)col.min();
-        max = (long)col.max();
+        _base[i] = (long)_vecs.min(i);
+        max = (long)_vecs.max(i);
       }
       long range = max - _base[i] + 2;   // +1 for when min==max to include the bound, +1 for the leading NA spot
       int biggestBit = 1 + (int) Math.floor(Math.log(range) / Math.log(2));  // number of bits starting from 1 easier to think about (for me)
@@ -818,7 +819,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     System.out.println("Time to use rollup stats to determine biggestBit: " + (System.nanoTime() - t0) / 1e9);
 
     t0 = System.nanoTime();
-    new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null ).doAll(_DF.vec(_whichCols[0]));
+    new RadixCount(_isLeft, _base[0], _shift[0], _whichCols[0], _isLeft ? _id_maps : null ).doAll(_vecs.getVecs(_whichCols[0]));
     System.out.println("Time of MSB count MRTask left local on each node (no reduce): " + (System.nanoTime() - t0) / 1e9);
 
     // NOT TO DO:  we do need the full allocation of x[] and o[].  We need o[] anyway.  x[] will be compressed and dense.
@@ -832,7 +833,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     // from first on that node to second on that node.  // TODO: fix closeLocal() blocking issue and revert to simpler usage of closeLocal()
     t0 = System.nanoTime();
     Key linkTwoMRTask = Key.make();
-    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_DF.vecs(_whichCols));   // postLocal needs DKV.put()
+    SplitByMSBLocal tmp = new SplitByMSBLocal(_isLeft, _base, _shift[0], keySize, batchSize, _bytesUsed, _whichCols, linkTwoMRTask, _id_maps).doAll(_vecs.getVecs(_whichCols));   // postLocal needs DKV.put()
     System.out.println("SplitByMSBLocal MRTask (all local per node, no network) took : " + (System.nanoTime() - t0) / 1e9);
     System.out.println(tmp.profString());
 
@@ -848,7 +849,7 @@ public class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {  // counte
     t0 = System.nanoTime();
     for (int i = 0; i < 256; i++) {
       //System.out.print(i+" ");
-      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_DF, _isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
+      radixOrders[i] = new RPC<>(SplitByMSBLocal.ownerOfMSB(i), new SingleThreadRadixOrder(_vecs, _isLeft, batchSize, keySize, /*nGroup,*/ i)).call();
     }
     System.out.println("took : " + (System.nanoTime() - t0) / 1e9);
 

@@ -62,7 +62,8 @@ public class WordCountTest extends TestUtil {
       if( 'a'<=b && b<='z' ) return b;
       return -1;
     }
-  
+
+
     @Override public void map( Chunk bv ) {
       _words = WORDS;
       final int len = bv._len;
@@ -77,7 +78,8 @@ public class WordCountTest extends TestUtil {
         vs = doChar(vs,(int)bv.atd(i++)); // Load a char & make words
       // Finish up partial word at Chunk end by flowing into the next Chunk
       i = 0;
-      Chunk nv = bv.nextChunk();
+      int cidx = bv.cidx()+1;
+      Chunk nv = cidx < _vecs.nChunks()?_vecs.getChunk(cidx,0):null;
       if( nv == null ) vs = doChar(vs,' '); // No next Chunk, end partial word
       while( vs._len > 0 )                // Till word breaks
         vs = doChar(vs,(int)nv.atd(i++)); // Load a char & make words

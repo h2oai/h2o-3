@@ -45,19 +45,6 @@ public class C2SChunk extends Chunk {
   }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set2(_mem,(idx<<1)+_OFF,(short)C2Chunk._NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    double dx = Math.log10(_scale);
-    assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      if( res == C2Chunk._NA ) nc.addNA();
-      else nc.addNum((res+_bias),(int)dx);
-    }
-    return nc;
-  }
 
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public final void initFromBytes () {
@@ -94,6 +81,30 @@ public class C2SChunk extends Chunk {
       vals[j++] = res != C2Chunk._NA?(res + _bias)*_scale:Double.NaN;
     }
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    double dx = Math.log10(_scale);
+    assert water.util.PrettyPrint.fitsIntoInt(dx);
+    for( int i=from; i<to; i++ ) {
+      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+      if( res == C2Chunk._NA ) nc.addNA();
+      else nc.addNum((res+_bias),(int)dx);
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    double dx = Math.log10(_scale);
+    assert water.util.PrettyPrint.fitsIntoInt(dx);
+    for( int i:lines) {
+      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+      if( res == C2Chunk._NA ) nc.addNA();
+      else nc.addNum((res+_bias),(int)dx);
+    }
+    return nc;
   }
 
 }

@@ -60,7 +60,7 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(cc.atd(vals.length - 1) == a);
     vals[vals.length-1]=a;
 
-    nc = cc.inflate_impl(new NewChunk(null, 0));
+    nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length + 1, nc._len);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atd(i), Math.ulp(vals[i]));

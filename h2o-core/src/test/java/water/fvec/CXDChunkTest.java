@@ -43,8 +43,7 @@ public class CXDChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
       Assert.assertEquals(cc.at8(pos1),123);
       Assert.assertEquals(cc.at8(maxLen-1),456);
-      nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(maxLen, nc._len);
       Assert.assertEquals(2+2+1+l, nc._sparseLen);

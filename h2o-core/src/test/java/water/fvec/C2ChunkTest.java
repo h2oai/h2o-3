@@ -33,9 +33,7 @@ public class C2ChunkTest extends TestUtil {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
       }
-
-      nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
+      nc = cc.inflate();
       nc.values(0, nc._len);
       if (l==1) Assert.assertTrue(cc.isNA(0));
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
@@ -78,15 +76,14 @@ public class C2ChunkTest extends TestUtil {
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA_abs(na);
+    for (int na : NAs) vec.setNA(na);
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    NewChunk nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);

@@ -28,7 +28,7 @@ public class FVecTest extends TestUtil {
       DKV.put(chunkKey, new Value(chunkKey,chunks[i].length,chunks[i],TypeMap.C1NCHUNK,Value.ICE),fs);
     }
     DKV.put(bv._key,bv,fs);
-    Frame fr = new Frame(k,new String[]{"makeByteVec"},new Vec[]{bv});
+    Frame fr = new Frame(k,new Frame.Names("makeByteVec"),new VecAry(bv));
     DKV.put(k, fr, fs);
     fs.blockForPending();
     return k;
@@ -63,9 +63,9 @@ public class FVecTest extends TestUtil {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       double[] mins =new double[fr.numCols()];
       for (int i=0; i < mins.length; i++)
-        mins[i] = fr.vecs()[i].min();
+        mins[i] = fr.vecs().min(i);
       // Scribble into a freshly parsed frame
-      new SetDoubleInt(mins).doAll(fr);
+      new SetDoubleInt(mins).doAll(fr.vecs());
     } finally {
       if( fr != null ) fr.delete();
     }
@@ -99,7 +99,7 @@ public class FVecTest extends TestUtil {
     // Make and insert a File8Vec to the global store
     File file = find_test_file("./smalldata/junit/cars.csv");
     NFSFileVec nfs = NFSFileVec.make(file);
-    Vec res = new TestNewVec().doAll(new byte[]{Vec.T_NUM},nfs).outputFrame(new String[]{"v"},new String[][]{null}).anyVec();
+    Vec res = (Vec) new TestNewVec().doAll(new byte[]{Vec.T_NUM},new VecAry(nfs)).outputFrame(new Frame.Names("v"),new String[][]{null}).vecs().getAVecRaw(0);
     assertEquals(nfs.at8(0)+1,res.at8(0));
     assertEquals(nfs.at8(1)+1,res.at8(1));
     assertEquals(nfs.at8(2)+1,res.at8(2));
@@ -117,30 +117,28 @@ public class FVecTest extends TestUtil {
   // ==========================================================================
   @Test public void testParse2() {
     Frame fr = null;
-    Vec vz = null;
+    VecAry vz = null;
     try {
       fr = parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
       assertEquals(fr.numCols(),1050); // Count of columns
       assertEquals(fr.numRows(),2659); // Count of rows
 
-      double[] sums = new Sum().doAll(fr)._sums;
+      double[] sums = new Sum().doAll(fr.vecs())._sums;
       assertEquals(3949,sums[0],EPSILON);
       assertEquals(3986,sums[1],EPSILON);
       assertEquals(3993,sums[2],EPSILON);
 
       // Create a temp column of zeros
-      Vec v0 = fr.vecs()[0];
-      Vec v1 = fr.vecs()[1];
-      vz = v0.makeZero();
+      VecAry vecs = fr.vecs();
+      vz = vecs.makeZero();
       // Add column 0 & 1 into the temp column
-      new PairSum().doAll(vz,v0,v1);
+      new PairSum().doAll(new VecAry(vz,vecs));
       // Add the temp to frame
       // Now total the temp col
       fr.delete();              // Remove all other columns
-      fr = new Frame(Key.make(),new String[]{"tmp"},new Vec[]{vz}); // Add just this one
-      sums = new Sum().doAll(fr)._sums;
+      fr = new Frame(Key.make(),new String[]{"tmp"},new VecAry(vz)); // Add just this one
+      sums = new Sum().doAll(fr.vecs())._sums;
       assertEquals(3949+3986,sums[0],EPSILON);
-
     } finally {
       if( vz != null ) vz.remove();
       if( fr != null ) fr.delete();
@@ -177,30 +175,29 @@ public class FVecTest extends TestUtil {
     try {
       v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
       Futures fs = new Futures();
-      assertEquals(0, v.min(), 0);
-      assertEquals(9, v.max(), 0);
-      assertEquals(4.5,v.mean(),1e-8);
-      H2O.submitTask(new RebalanceDataSet(new Frame(v), rebalanced, 10)).join();
-      fr = DKV.get(rebalanced).get();
-      Vec v2 = fr.anyVec();
-      assertEquals(0, v2.min(), 0);
-      assertEquals(9, v2.max(), 0);
-      assertEquals(4.5, v.mean(), 1e-8);
+      assertEquals(0, v.min(0), 0);
+      assertEquals(9, v.max(0), 0);
+      assertEquals(4.5,v.mean(0),1e-8);
+      VecAry vecs2 = H2O.submitTask(new RebalanceDataSet(new VecAry(v), 10)).getResult();
+      assertEquals(0, vecs2.min(0), 0);
+      assertEquals(9, vecs2.max(0), 0);
+      assertEquals(4.5, v.mean(0), 1e-8);
+      Vec v2 = (Vec) vecs2.getAVecRaw(0);
       v2.set(5, -100);
-      assertEquals(-100, v2.min(), 0);
+      assertEquals(-100, v2.min(0), 0);
       v2.set(5, 5);
       // make several rollups requests in parallel with and without histo and then get histo
-      v2.startRollupStats(fs);
-      v2.startRollupStats(fs);
-      v2.startRollupStats(fs,true);
-      assertEquals(0, v2.min(), 0);
-      long [] bins = v2.bins();
+      v2.startRollupStats(fs, false, 0);
+      v2.startRollupStats(fs, false, 0);
+      v2.startRollupStats(fs,true, 0);
+      assertEquals(0, v2.min(0), 0);
+      long [] bins = v2.bins(0);
       assertEquals(10,bins.length);
       // TODO: should test percentiles?
       for(long l:bins) assertEquals(1,l);
       Vec.Writer w = v2.open();
       try {
-        v2.min();
+        v2.min(0);
         assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
       } catch( IllegalArgumentException ie ) {
         // if on local node can get iae directly
@@ -210,7 +207,7 @@ public class FVecTest extends TestUtil {
       }
       w.close(fs);
       fs.blockForPending();
-      assertEquals(0,v2.min(),0);
+      assertEquals(0,v2.min(0),0);
       fr.delete();
       v.remove();
       fr = null;
@@ -226,8 +223,8 @@ public class FVecTest extends TestUtil {
     try {
       double[] d = new double[]{0.812834256224, 1.56386606237, 3.12702210880, 3.68417563302, 5.51277746586};
       vec = Vec.makeVec(d,Vec.newKey());
-      double pct[] = vec.pctiles();
-      double eps = (vec.max()-vec.min())/1e-3;
+      double pct[] = vec.pctiles(0);
+      double eps = (vec.max(0)-vec.min(0))/1e-3;
       Assert.assertEquals(pct[0],d[0],eps); // 0.01
       Assert.assertEquals(pct[1],d[0],eps); // 0.1
       Assert.assertEquals(pct[2],d[0],eps); // 0.25
@@ -238,14 +235,12 @@ public class FVecTest extends TestUtil {
       Assert.assertEquals(pct[7],d[4],eps); // 0.9
       Assert.assertEquals(pct[8],d[4],eps); // 0.99
       vec.remove();
-
       d = new double[]{490,492,494,496,498};
       vec = Vec.makeVec(d,Vec.newKey());
-      pct = vec.pctiles();
-      eps = (vec.max()-vec.min())/1e-3;
+      pct = vec.pctiles(0);
+      eps = (vec.max(0)-vec.min(0))/1e-3;
       System.out.println(java.util.Arrays.toString(pct));
       Assert.assertEquals(pct[0],d[0],eps); // 0.01
-
     } finally {
       if( vec != null ) vec.remove();
     }

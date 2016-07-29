@@ -5,6 +5,7 @@ import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /** One-pass approximate AUC
  *
@@ -117,11 +118,11 @@ public class AUC2 extends Iced {
 
   /** Default bins, good answers on a highly unbalanced sorted (and reverse
    *  sorted) datasets */
-  public AUC2( Vec probs, Vec actls ) { this(NBINS,probs,actls); }
+  public AUC2( VecAry vecs ) { this(NBINS,vecs); }
 
   /** User-specified bin limits.  Time taken is product of nBins and rows;
    *  large nBins can be very slow. */
-  AUC2( int nBins, Vec probs, Vec actls ) { this(new AUC_Impl(nBins).doAll(probs,actls)._bldr); }
+  AUC2( int nBins, VecAry vecs ) { this(new AUC_Impl(nBins).doAll(vecs)._bldr); }
 
   public AUC2( AUCBuilder bldr ) {
     // Copy result arrays into base object, shrinking to match actual bins
@@ -389,17 +390,17 @@ public class AUC2 extends Iced {
   // Given the probabilities of a 1, and the actuals (0/1) report the perfect
   // AUC found by sorting the entire dataset.  Expensive, and only works for
   // small data (probably caps out at about 10M rows).
-  public static double perfectAUC( Vec vprob, Vec vacts ) {
-    if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
+  public static double perfectAUC(VecAry vprob, VecAry vacts ) {
+    if( vacts.min(0) < 0 || vacts.max(0) > 1 || !vacts.isInt(0) )
       throw new IllegalArgumentException("Actuals are either 0 or 1");
-    if( vprob.min() < 0 || vprob.max() > 1 )
+    if( vprob.min(0) < 0 || vprob.max(0) > 1 )
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
     // Horrible data replication into array of structs, to sort.  
-    Pair[] ps = new Pair[(int)vprob.length()];
-    Vec.Reader rprob = vprob.new Reader();
-    Vec.Reader racts = vacts.new Reader();
+    Pair[] ps = new Pair[(int)vprob.numRows()];
+    VecAry.VecAryReader rprob = vprob.vecReader(false);
+    VecAry.VecAryReader racts = vacts.vecReader(false);
     for( int i=0; i<ps.length; i++ )
-      ps[i] = new Pair(rprob.at(i),(byte)racts.at8(i));
+      ps[i] = new Pair(rprob.at(i,0),(byte)racts.at8(i,0));
     return perfectAUC(ps);
   }
   public static double perfectAUC( double ds[], double[] acts ) {

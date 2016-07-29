@@ -103,7 +103,7 @@ public class RollupStatsBlock extends Iced {
     @Override public void map(Chunk [] chks) {
       _rs = new RollupStats[_vecs.len()];
       for(int i = 0; i < chks.length; ++i)
-        _rs[i] = RollupStats.computeRollups(chks[i]);
+        _rs[i] = RollupStats.computeRollups(chks[i],_vecs.isUUID(i),_vecs.isString(i));
     }
     @Override public void reduce(RollMRBlock r) {
       for(int i = 0; i < _vecs.len(); ++i)

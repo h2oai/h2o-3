@@ -1,10 +1,7 @@
 package water.rapids;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 /**
@@ -21,10 +18,10 @@ class ASTDiffLag1 extends ASTPrim {
     Frame fr = stk.track(asts[2].exec(env).getFrame());
     if( fr.numCols() != 1 )
       throw new IllegalArgumentException("Expected a single column for diff. Got: " + fr.numCols() + " columns.");
-    if( !fr.anyVec().isNumeric() )
-      throw new IllegalArgumentException("Expected a numeric column for diff. Got: " + fr.anyVec().get_type_str());
+    if( !fr.vecs().isNumeric(0) )
+      throw new IllegalArgumentException("Expected a numeric column for diff. Got: " + fr.vecs().typesStr());
 
-    final double[] lastElemPerChk = GetLastElemPerChunkTask.get(fr.anyVec());
+    final double[] lastElemPerChk = GetLastElemPerChunkTask.get(fr.vecs());
 
     return new ValFrame(new MRTask() {
       @Override public void map(Chunk c, NewChunk nc) {
@@ -33,13 +30,13 @@ class ASTDiffLag1 extends ASTPrim {
         for(int row=1;row<c._len;++row)
           nc.addNum(c.atd(row) - c.atd(row-1));
       }
-    }.doAll(fr).outputFrame());
+    }.doAll(fr.vecs()).outputFrame());
   }
 
   private static class GetLastElemPerChunkTask extends MRTask<GetLastElemPerChunkTask> {
     double[] _res;
-    GetLastElemPerChunkTask(Vec v) { _res = new double[v.espc().length]; }
-    static double[] get(Vec v) {
+    GetLastElemPerChunkTask(VecAry v) { _res = new double[v.espc().length]; }
+    static double[] get(VecAry v) {
       GetLastElemPerChunkTask t = new GetLastElemPerChunkTask(v);
       t.doAll(v);
       return t._res;

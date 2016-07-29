@@ -132,16 +132,16 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    Assert.assertTrue(fr.vecs().typesStr()[0].equals("Time"));
     long[] exp = new long[] {  // Date
       1390464000000L,
       1390550400000L,
       1390464000000L,
       1390550400000L,
     };
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vecs("Date");
     for (int i=0; i < exp.length; i++ )
-      Assert.assertEquals(exp[i],vec.at8(i));
+      Assert.assertEquals(exp[i],vec.at8(i,0));
     fr.delete();
   }
 
@@ -155,16 +155,16 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    Assert.assertTrue(fr.vecs().typesStr()[0].equals("Time"));
     long[] exp = new long[] {  // Date
             1390464000000L,
             1390550400000L,
             1390464000000L,
             1390550400000L,
     };
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vecs("Date");
     for (int i=0; i < exp.length; i++ )
-      Assert.assertEquals(exp[i],vec.at8(i));
+      Assert.assertEquals(exp[i],vec.at8(i,0));
     fr.delete();
   }
 
@@ -178,16 +178,16 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    Assert.assertTrue(fr.vecs().typesStr()[0].equals("Time"));
     long[] exp = new long[] {  // Date
       1388563200000L,
       1391241600000L,
       1393660800000L,
       1396335600000L,
     };
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vecs("Date");
     for (int i=0; i < exp.length; i++ )
-      Assert.assertEquals(exp[i],vec.at8(i));
+      Assert.assertEquals(exp[i],vec.at8(i,0));
     fr.delete();
   }
 
@@ -204,7 +204,7 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    Assert.assertTrue(fr.vecs().typesStr()[0].equals("Time"));
     long[] exp = new long[] {  // Date
       1388563200000L, 1391241600000L, 1393660800000L, 1396335600000L, // jan, feb, mar, apr 2014
       1398927600000L, 1401606000000L, 1404198000000L, 1406876400000L, // may, jun, jul, aug 2014
@@ -215,9 +215,9 @@ public class ParseTimeTest extends TestUtil {
       1409554800000L, 1412146800000L, 1414825200000L, 1417420800000L, // sep, oct, nov, dec 2014
       1451635200000L, 1488355200000L, 1527836400000L, 1567321200000L, 1606809600000L, // jan 2016, mar 2017, jun 2018, sep 2019, dec 2020
     };
-    Vec vec = fr.vec("Date");
+    VecAry vec = fr.vecs("Date");
     for (int i=0; i < exp.length; i++ )
-      Assert.assertEquals(exp[i],vec.at8(i));
+      Assert.assertEquals(exp[i],vec.at8(i,0));
     fr.delete();
   }
 
@@ -248,7 +248,7 @@ public class ParseTimeTest extends TestUtil {
     Key k1 = ParserTest.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
-    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    Assert.assertTrue(fr.vecs().typesStr()[0].equals("Time"));
     long[] exp = new long[] {  // Time
       0L,                      // Notice: no TZ at all ==> GMT!
       3253000L,
@@ -269,9 +269,9 @@ public class ParseTimeTest extends TestUtil {
       25388000L,
       30008000L,
     };
-    Vec vec = fr.vec("Time");
+    VecAry vec = fr.vecs("Time");
     for (int i=0; i < exp.length; i++ )
-      Assert.assertEquals(exp[i],vec.at8(i));
+      Assert.assertEquals(exp[i],vec.at8(i,0));
     fr.delete();
   }
 }

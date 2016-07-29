@@ -56,7 +56,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 distribution_summary;
 
-  public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> {
+  public static class ColSpecifierV3 extends SchemaV3<Frame.VecSpecifier, ColSpecifierV3> {
     public ColSpecifierV3() { }
     public ColSpecifierV3(String column_name) {
       this.column_name = column_name;
@@ -143,8 +143,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
       histogram_bins  = rs.lazy_bins();
-      histogram_base  = histogram_bins ==null ? 0 : rs.base();
-      histogram_stride= histogram_bins ==null ? 0 : rs.stride();
+      histogram_base  = histogram_bins ==null ? 0 : rs.h_base();
+      histogram_stride= histogram_bins ==null ? 0 : rs.h_stride();
       percentiles     = histogram_bins ==null ? null : rs.pctiles();
       type  = rs.typeStr(); // vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
       this.domain = domain;

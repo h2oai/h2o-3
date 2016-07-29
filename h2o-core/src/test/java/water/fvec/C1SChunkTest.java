@@ -40,8 +40,7 @@ public class C1SChunkTest extends TestUtil {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
-
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
@@ -89,8 +88,7 @@ public class C1SChunkTest extends TestUtil {
       for (int i = 0; i < man.length; ++i)
         Assert.assertEquals((float) (man[i] * Math.pow(10, exp[i])), (float) cc.atd(l + i), 0);
       Assert.assertTrue(cc.isNA(man.length + l));
-
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._len);
       Assert.assertEquals(man.length + 1 + l, nc._sparseLen);
@@ -120,7 +118,7 @@ public class C1SChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    Vec vec = new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
+    Vec vec = new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeCon(0);
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, -128, 0, 12, 0, 126, 0, 0, 19};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
@@ -136,15 +134,13 @@ public class C1SChunkTest extends TestUtil {
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA_abs(na);
+    for (int na : NAs) cc.setNA(na);
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
-
-    NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    NewChunk nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);

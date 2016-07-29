@@ -4,6 +4,7 @@ import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.VecUtils;
 
 import java.util.ArrayList;
@@ -59,12 +60,11 @@ class ASTColNames extends ASTPrim {
       if( d.length != nams._strs.length ) 
         throw new IllegalArgumentException("Must have the same number of column choices as names");
       for( int i=0; i<d.length; i++ )
-        fr._names[d[i]] = nams._strs[i];
-
+        fr._names.setName(d[i],nams._strs[i]);
     } else if( (asts[2] instanceof ASTNum) ) {
       int col = (int)(asts[2].exec(env).getNum());
       String name =   asts[3].exec(env).getStr() ;
-      fr._names[col] = name;
+      fr._names.setName(col,name);
     } else
       throw new IllegalArgumentException("Column naming requires a number-list, but found a "+asts[2].getClass());
     if( fr._key != null ) DKV.put(fr); // Update names in DKV
@@ -82,18 +82,18 @@ class ASTAsCharacter extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] nvecs = new Vec[ary.numCols()];
-    Vec vv;
-    for(int c=0;c<nvecs.length;++c) {
-      vv = ary.vec(c);
+    VecAry nvecs = new VecAry();
+    VecAry vv;
+    for(int c=0;c<ary.numCols();++c) {
+      vv = ary.vecs().getVecs(c);
       try {
-        nvecs[c] = vv.toStringVec();
+        nvecs.addVecs(VecUtils.toStringVec(vv));
       } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
+        nvecs.remove();
         throw e;
       }
     }
-    return new ValFrame(new Frame(ary._names, nvecs));
+    return new ValFrame(new Frame(null,ary._names, nvecs));
   }
 }
 
@@ -105,25 +105,25 @@ class ASTAsFactor extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] nvecs = new Vec[ary.numCols()];
-
+    VecAry nvecs = new VecAry();
+    VecAry vecs = ary.vecs();
     // Type check  - prescreen for correct types
-    for (Vec v : ary.vecs())
-      if (!(v.isCategorical() || v.isString()|| v.isNumeric()))
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)|| vecs.isNumeric(i)))
         throw new IllegalArgumentException("asfactor() requires a string, categorical, or numeric column. "
-            +"Received "+ary.anyVec().get_type_str()
+            +"Received "+ary.vecs().typesStr()
             +". Please convert column to a string or categorical first.");
-    Vec vv;
-    for(int c=0;c<nvecs.length;++c) {
-      vv = ary.vec(c);
+    VecAry vv;
+    for(int c=0;c<vecs.len();++c) {
+      vv = ary.vecs().getVecs(c);
       try {
-        nvecs[c] = vv.toCategoricalVec();
+        nvecs.addVecs(vv.toCategoricalVec());
       } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
+        nvecs.remove();
         throw e;
       }
     }
-    return new ValFrame(new Frame(ary._names, nvecs));
+    return new ValFrame(new Frame(null,ary._names, nvecs));
   }
 }
 
@@ -137,18 +137,19 @@ class ASTAsNumeric extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] nvecs = new Vec[fr.numCols()];
-    Vec vv;
-    for(int c=0;c<nvecs.length;++c) {
-      vv = fr.vec(c);
+    VecAry vecs = fr.vecs();
+    VecAry nvecs = new VecAry();
+    VecAry vv;
+    for(int c=0;c<vecs.len();++c) {
+      vv = vecs.getVecs(c);
       try {
-        nvecs[c] = vv.toNumericVec();
+        nvecs.addVecs(vv.toNumericVec());
       } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
+        nvecs.remove();
         throw e;
       }
     }
-    return new ValFrame(new Frame(fr._names, nvecs));
+    return new ValFrame(new Frame(null,fr._names, nvecs));
   }
 }
 
@@ -160,10 +161,10 @@ class ASTIsCharacter extends ASTPrim {
   @Override
   public ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.anyVec().isString()?1:0});
+    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.vecs().isString(0)?1:0});
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = fr.vec(i).isString() ? 1 : 0;
+      ds[i] = fr.vecs().isString(i) ? 1 : 0;
     return new ValNums(ds);
   }
 }
@@ -176,10 +177,10 @@ class ASTIsFactor extends ASTPrim {
   @Override
   public ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.anyVec().isCategorical()?1:0});
+    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.vecs().isCategorical(0)?1:0});
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = fr.vec(i).isCategorical() ? 1 : 0;
+      ds[i] = fr.vecs().isCategorical(i) ? 1 : 0;
     return new ValNums(ds);
   }
 }
@@ -192,10 +193,10 @@ class ASTIsNumeric extends ASTPrim {
   @Override
   public ValNums apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.anyVec().isNumeric()?1:0});
+    if( fr.numCols() == 1 ) return new ValNums(new double[]{fr.vecs().isNumeric(0)?1:0});
     double ds[] = new double[fr.numCols()];
     for( int i=0; i<fr.numCols(); i++ )
-      ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
+      ds[i] = fr.vecs().isNumeric(i) ? 1 : 0;
     return new ValNums(ds);
   }
 }
@@ -208,7 +209,7 @@ class ASTAnyFactor extends ASTPrim {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for( Vec vec : fr.vecs() )  if( vec.isCategorical()) return new ValNum(1);
+    if( fr.vecs().categoricals().length > 0) return new ValNum(1);
     return new ValNum(0);
   }
 }

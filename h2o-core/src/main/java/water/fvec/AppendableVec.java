@@ -108,6 +108,9 @@ public class AppendableVec extends AVec {
   }
 
 
+  public VecAry layout_and_close(Futures fs) {
+    return layout_and_close(fs, (String[][])null);
+  }
   public VecAry layout_and_close(Futures fs, String [] domain) {
     assert _types.length==1;
     return layout_and_close(fs, new String[][]{domain});

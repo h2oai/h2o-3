@@ -8,6 +8,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.IcedDouble;
 import water.util.IcedHashMap;
@@ -72,7 +73,7 @@ public class ASTImpute extends ASTPrim {
     if( col >= fr.numCols() )
       throw new IllegalArgumentException("Column not -1 or in range 0 to "+fr.numCols());
     final boolean doAllVecs = col==-1;
-    final Vec vec = doAllVecs?null:fr.vec(col);
+//    final Vec vec = doAllVecs?null:fr.vecs().(col);
 
     // Technique used for imputation
     AST method=null;
@@ -139,16 +140,17 @@ public class ASTImpute extends ASTPrim {
       } else {
         final double[] res = values==null?new double[fr.numCols()]:values.expand();
         if( values==null ) { // fill up res if no values supplied user, common case
+          VecAry vecs = fr.vecs();
           if (doAllVecs) {
             for (int i = 0; i < res.length; ++i)
-              if (fr.vec(i).isNumeric() || fr.vec(i).isCategorical())
-                res[i] = fr.vec(i).isNumeric() ? fr.vec(i).mean() : ArrayUtils.maxIndex(fr.vec(i).bins());
+              if (vecs.isNumeric(i) || vecs.isCategorical(i))
+                res[i] = vecs.isNumeric(i) ? vecs.mean(i) : ArrayUtils.maxIndex(vecs.bins(i));
           } else {
             Arrays.fill(res, Double.NaN);
-            if (method instanceof ASTMean) res[col] = vec.mean();
+            if (method instanceof ASTMean) res[col] = vecs.mean(0);
             if (method instanceof ASTMedian)
-              res[col] = ASTMedian.median(new Frame(vec), combine);
-            if (method instanceof ASTMode) res[col] = ASTMode.mode(vec);
+              res[col] = ASTMedian.median(new Frame(vecs), combine);
+            if (method instanceof ASTMode) res[col] = ASTMode.mode(vecs);
           }
         }
         new MRTask() {
@@ -162,7 +164,7 @@ public class ASTImpute extends ASTPrim {
                   if (cs[c].isNA(row))
                     cs[c].set(row, res[c]);
           }
-        }.doAll(fr);
+        }.doAll(fr.vecs());
         return new ValNums(res);
       }
     } else {
@@ -180,9 +182,10 @@ public class ASTImpute extends ASTPrim {
           aggs[1] = new ASTFrame(fr);
           aggs[2] = by2;
           int c=3;
+          VecAry vecs = fr.vecs();
           for(int i=0;i<fr.numCols();++i) {
-            if( !by2.has(i) && (fr.vec(i).isCategorical() || fr.vec(i).isNumeric()) ) {
-              aggs[c] = fr.vec(i).isNumeric() ? new ASTMean() : new ASTMode();
+            if( !by2.has(i) && (vecs.isCategorical(i) || vecs.isNumeric(i)) ) {
+              aggs[c] = vecs.isNumeric(i) ? new ASTMean() : new ASTMode();
               aggs[c+1] = new ASTNumList(i,i+1);
               aggs[c+2] = new ASTStr("rm");
               c+=3;
@@ -196,7 +199,7 @@ public class ASTImpute extends ASTPrim {
         throw new IllegalArgumentException("Ambiguous group-by frame. Supply the `by` columns to proceed.");
 
       final int[] bycols0 = ArrayUtils.seq(0, Math.max((int)by2.cnt(), 1 /* imputes.numCols()-1 */));
-      group_impute_map = new Gather(by2.expand4(),bycols0,fr.numCols(),col).doAll(imputes)._group_impute_map;
+      group_impute_map = new Gather(by2.expand4(),bycols0,fr.numCols(),col).doAll(imputes.vecs())._group_impute_map;
 
       // Now walk over the data, replace NAs with the imputed results
       final IcedHashMap<ASTGroup.G, Freezable[]> final_group_impute_map = group_impute_map;
@@ -218,7 +221,7 @@ public class ASTImpute extends ASTPrim {
                 if( cs[c].isNA(row) )
                   cs[c].set(row, ((IcedDouble)final_group_impute_map.get(g.fill(row, cs, bycols))[c])._val);
         }
-      }.doAll(fr);
+      }.doAll(fr.vecs());
       return new ValFrame(imputes);
     }
   }

@@ -199,8 +199,8 @@ public class ConfusionMatrixTest extends TestUtil {
       Frame v1 = parseFrame(Key.make("v1.hex"), find_test_file(f1));
       Frame v2 = parseFrame(Key.make("v2.hex"), find_test_file(f2));
       if (!v1.isCompatible(v2)) {
-        Frame old = null;
-        v2 = new Frame(v1.makeCompatible(old = v2));
+        Frame old = v2;
+        v2 = new Frame(null,v1._names,v1.vecs().makeCompatible(v2.vecs(),false));
         old.delete();
       }
       simpleCMTest(v1, v2, expectedActualDomain, expectedPredictDomain, expectedDomain, expectedCM, debug);
@@ -213,7 +213,7 @@ public class ConfusionMatrixTest extends TestUtil {
   private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = ConfusionMatrix.buildCM(VecUtils.toCategoricalVec(v1.vecs()[0]), VecUtils.toCategoricalVec(v2.vecs()[0]));
+      ConfusionMatrix cm = ConfusionMatrix.buildCM(VecUtils.toCategoricalVec(v1.vecs(0)), VecUtils.toCategoricalVec(v2.vecs(0)));
 
       // -- DEBUG --
       if (debug) {

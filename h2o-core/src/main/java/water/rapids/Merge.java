@@ -1,10 +1,8 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.AVec;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
+import water.util.ArrayUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -60,8 +58,8 @@ public class Merge {
     // map missing levels to -1 (rather than increasing slots after the end) for now to save a deep branch later
     for (int i=0; i<id_maps.length; i++) {
       if (id_maps[i] == null) continue;
-      assert id_maps[i].length == leftFrame.vec(leftCols[i]).max()+1;
-      int right_max = (int)rightFrame.vec(rightCols[i]).max();
+      assert id_maps[i].length == leftFrame.vecs().max(leftCols[i])+1;
+      int right_max = (int)rightFrame.vecs().max(rightCols[i]);
       for (int j=0; j<id_maps[i].length; j++) {
         assert id_maps[i][j] >= 0;
         if (id_maps[i][j] > right_max) id_maps[i][j] = -1;
@@ -75,7 +73,7 @@ public class Merge {
 
     ///waitForSignalFromMatt();
 
-    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame, /*isLeft=*/true, leftCols, id_maps));
+    H2O.H2OCountedCompleter left = H2O.submitTask(leftIndex = new RadixOrder(leftFrame.vecs(), /*isLeft=*/true, leftCols, id_maps));
     left.join(); // Running 3 consecutive times on an idle cluster showed that running left and right in parallel was
                  // a little slower (97s) than one by one (89s).  TODO: retest in future
     System.out.println("***\n*** Creating left index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
@@ -90,7 +88,7 @@ public class Merge {
     System.out.println("\nCreating right index ...");
     t0 = System.nanoTime();
     RadixOrder rightIndex;
-    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame, /*isLeft=*/false, rightCols, null));
+    H2O.H2OCountedCompleter right = H2O.submitTask(rightIndex = new RadixOrder(rightFrame.vecs(), /*isLeft=*/false, rightCols, null));
     right.join();
     System.out.println("***\n*** Creating right index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
     /*for (int s=0; s<5; s++) {
@@ -352,21 +350,13 @@ public class Merge {
     int numJoinCols = leftIndex._bytesUsed.length;
     int numLeftCols = leftFrame.numCols();
     int numColsInResult = numLeftCols + rightFrame.numCols() - numJoinCols ;
-    final byte[] types = new byte[numColsInResult];
-    final String[][] doms = new String[numColsInResult][];
-    final String[] names = new String[numColsInResult];
-    for (int j=0; j<numLeftCols; j++) {
-      types[j] = leftFrame.vec(j).get_type();
-      doms[j] = leftFrame.domains()[j];
-      names[j] = leftFrame.names()[j];
-    }
-    for (int j=0; j<rightFrame.numCols()-numJoinCols; j++) {
-      types[numLeftCols + j] = rightFrame.vec(j+numJoinCols).get_type();
-      doms[numLeftCols + j] = rightFrame.domains()[j+numJoinCols];
-      names[numLeftCols + j] = rightFrame.names()[j+numJoinCols];
-    }
+    final byte[] types = ArrayUtils.append(leftFrame.vecs().types(),rightFrame.vecs().types());
+    final String[][] doms = ArrayUtils.append(leftFrame.vecs().domains(),rightFrame.vecs().domains());
+    final String[] names = ArrayUtils.append(leftFrame._names.getNames(),rightFrame._names.getNames());
+
+
     Key key = Vec.newKey();
-    Vec[] vecs = new Vec(key, AVec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
+    VecAry vecs = new VecAry(new Vec(key, AVec.ESPC.rowLayout(key, espc))).makeCons(numColsInResult, 0, doms, types);
     // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
@@ -374,7 +364,7 @@ public class Merge {
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
     ChunkStitcher ff = new ChunkStitcher(/*leftFrame, rightFrame,*/ chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
-    ff.doAll(fr);
+    ff.doAll(fr.vecs());
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
     //Merge.cleanUp();

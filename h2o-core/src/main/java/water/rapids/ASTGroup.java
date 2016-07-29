@@ -3,10 +3,7 @@ package water.rapids;
 import water.H2O;
 import water.Iced;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.Log;
@@ -116,10 +113,10 @@ public class ASTGroup extends ASTPrim {
       ASTNumList col = check(ncols,asts[idx+1]);
       if( col.cnt() != 1 ) throw new IllegalArgumentException("Group-By functions take only a single column");
       int agg_col = (int)col.min(); // Aggregate column
-      if( fcn==FCN.mode && !fr.vec(agg_col).isCategorical() )
+      if( fcn==FCN.mode && !fr.vecs().isCategorical(agg_col) )
         throw new IllegalArgumentException("Mode only allowed on categorical columns");
       NAHandling na = NAHandling.valueOf(asts[idx+2].exec(env).getStr().toUpperCase());
-      aggs[(idx-3)/3] = new AGG(fcn,agg_col,na, (int)fr.vec(agg_col).max()+1);
+      aggs[(idx-3)/3] = new AGG(fcn,agg_col,na, (int)fr.vecs().max(agg_col)+1);
     }
 
     // do the group by work now
@@ -187,7 +184,7 @@ public class ASTGroup extends ASTPrim {
   static IcedHashMap<G,String> doGroups(Frame fr, int[] gbCols, AGG[] aggs) {
     // do the group by work now
     long start = System.currentTimeMillis();
-    GBTask p1 = new GBTask(gbCols, aggs).doAll(fr);
+    GBTask p1 = new GBTask(gbCols, aggs).doAll(fr.vecs());
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start)/1000. + " (s)");
     return p1._gss;
   }
@@ -204,14 +201,14 @@ public class ASTGroup extends ASTPrim {
     String[][] domains = new String[nCols][];
     for( int i=0;i<gbCols.length; i++ ) {
       names  [i] = fr.name     (gbCols[i]);
-      domains[i] = fr.domains()[gbCols[i]];
+      domains[i] = fr.vecs().domain(gbCols[i]);
     }
     for( int i=0; i<fcnames.length; i++ )
       names[i+gbCols.length] = fcnames[i];
     Vec v = Vec.makeZero(ngrps); // dummy layout vec
 
     // Convert the output arrays into a Frame, also doing the post-pass work
-    Frame f= mrfill.doAll(nCols, Vec.T_NUM, new Frame(v)).outputFrame(names,domains);
+    Frame f= mrfill.doAll(nCols, Vec.T_NUM, new VecAry(v)).outputFrame(null,names,domains);
     v.remove();
     return f;
   }

@@ -5,7 +5,6 @@ import water.parser.BufferedString;
 import water.util.*;
 
 import java.util.Arrays;
-import java.util.Random;
 import java.util.UUID;
 
 /** A distributed vector/array/column of uniform data.
@@ -443,7 +442,7 @@ public class Vec extends AVec<Chunk> {
     NewChunk chunk = new NewChunk(avec, 0);
     for( double r : rows ) chunk.addNum(r);
     avec.closeChunk(0,chunk, fs);
-    VecAry vec = avec.layout_and_close(fs,(String[])null);
+    VecAry vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
   }
@@ -457,7 +456,7 @@ public class Vec extends AVec<Chunk> {
           for( int r = 0; r < c._len; r++ )
             c.set(r, r + 1 + c._start);
       }
-    }.doAll(makeZero(len, redistribute)).vecs().getVecRaw(0);
+    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -470,7 +469,7 @@ public class Vec extends AVec<Chunk> {
           for (int r = 0; r < c._len; r++)
             c.set(r, r + min + c._start);
       }
-    }.doAll(makeZero(len)).vecs().getVecRaw(0);
+    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -483,7 +482,7 @@ public class Vec extends AVec<Chunk> {
           for (int r = 0; r < c._len; r++)
             c.set(r, r + min + c._start);
       }
-    }.doAll(makeZero(len, redistribute)).vecs().getVecRaw(0);
+    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
   }
 
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
@@ -495,12 +494,10 @@ public class Vec extends AVec<Chunk> {
         for( int r = 0; r < c._len; r++ )
           c.set(r, (r + c._start) % repeat);
       }
-    }.doAll(makeZero(len)).vecs().getVecRaw(0);
+    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
   }
 
-
-
-
+  public Vec makeZero() {return makeCon(0);}
 
 
   private static class SetMutating extends TAtomic<RollupStats> {

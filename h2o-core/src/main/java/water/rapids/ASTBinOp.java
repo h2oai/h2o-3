@@ -2,12 +2,10 @@ package water.rapids;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
+import water.util.MRUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
 import java.util.Arrays;
@@ -99,7 +97,7 @@ abstract class ASTBinOp extends ASTPrim {
         Arrays.fill(right, rite.getNum());
         return row_op_row(dslf,right,((ValRow)left).getNames());
       case Val.ROW:  return row_op_row(dslf,rite.getRow(),((ValRow)rite).getNames());
-      case Val.FRM:  return row_op_row(dslf,rite.getRow(),rite.getFrame().names());
+      case Val.FRM:  return row_op_row(dslf,rite.getRow(),rite.getFrame()._names.getNames());
       default: throw H2O.unimpl();
       }
 
@@ -122,7 +120,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(d,chk.atd(i)));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame(fr._names,(String[][])null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
@@ -137,18 +135,17 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame(fr._names,(String[][])null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
   // Ops do not make sense on categoricals, except EQ/NE; flip such ops to NAs
   private ValFrame cleanCategorical(Frame oldfr, Frame newfr) {
     final boolean categoricalOK = categoricalOK();
-    final Vec oldvecs[] = oldfr.vecs();
-    final Vec newvecs[] = newfr.vecs();
-    for( int i=0; i<oldvecs.length; i++ )
-      if( (oldvecs[i].isCategorical() && !categoricalOK) ) // categorical are OK (op is EQ/NE)
-        newvecs[i] = newvecs[i].makeCon(Double.NaN);
+    if(categoricalOK) return new ValFrame((newfr));
+    final VecAry oldvecs = oldfr.vecs();
+    final VecAry newvecs = newfr.vecs();
+    new MRUtils.ReplaceWithCon(Double.NaN).doAll(newvecs.getVecs(oldvecs.categoricals()));
     return new ValFrame(newfr);
   }
 
@@ -160,13 +157,12 @@ abstract class ASTBinOp extends ASTPrim {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
-            Vec vec = chk.vec();
             // String Vectors: apply str_op as BufferedStrings to all elements
-            if( vec.isString() ) {
+            if( _vecs.isString(c) ) {
               final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(chk.atStr(vstr,i),conStr));
-            } else if( vec.isCategorical() ) {
+            } else if( _vecs.isCategorical(c) ) {
               // categorical Vectors: convert string to domain value; apply op (not
               // str_op).  Not sure what the "right" behavior here is, can
               // easily argue that should instead apply str_op to the categorical
@@ -175,7 +171,7 @@ abstract class ASTBinOp extends ASTPrim {
               // doubles vs comparing strings.  Note that if the string is not
               // part of the categorical domain, the find op returns -1 which is never
               // equal to any categorical dense integer (which are always 0+).
-              final double d = (double)ArrayUtils.find(vec.domain(),str);
+              final double d = (double)ArrayUtils.find(_vecs.domain(c),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
             } else { // mixing string and numeric
@@ -185,7 +181,7 @@ abstract class ASTBinOp extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame(null,fr._names,(String[][])null);
     return new ValFrame(res);
   }
 
@@ -197,20 +193,19 @@ abstract class ASTBinOp extends ASTPrim {
           for( int c=0; c<chks.length; c++ ) {
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
-            Vec vec = chk.vec();
             // String Vectors: apply str_op as BufferedStrings to all elements
-            if( vec.isString() ) {
+            if( _vecs.isString(c) ) {
               final BufferedString conStr = new BufferedString(str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(conStr,chk.atStr(vstr,i)));
-            } else if( vec.isCategorical() ) {
+            } else if( _vecs.isCategorical(c) ) {
               // categorical Vectors: convert string to domain value; apply op (not
               // str_op).  Not sure what the "right" behavior here is, can
               // easily argue that should instead apply str_op to the categorical
               // string domain value - except that this whole operation only
               // makes sense for EQ/NE, and is much faster when just comparing
               // doubles vs comparing strings.
-              final double d = (double)ArrayUtils.find(vec.domain(),str);
+              final double d = (double)ArrayUtils.find(_vecs.domain(c),str);
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(d,chk.atd(i)));
             } else { // mixing string and numeric
@@ -220,7 +215,7 @@ abstract class ASTBinOp extends ASTPrim {
             }
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame(null,fr._names,(String[][])null);
     return new ValFrame(res);
   }
 
@@ -240,8 +235,8 @@ abstract class ASTBinOp extends ASTPrim {
     }
     if( lf.numCols() == 0 ) return new ValFrame(lf);
     if( rt.numCols() == 0 ) return new ValFrame(rt);
-    if( lf.numCols() == 1 && rt.numCols() > 1 ) return vec_op_frame(lf.vecs()[0],rt);
-    if( rt.numCols() == 1 && lf.numCols() > 1 ) return frame_op_vec(lf,rt.vecs()[0]);
+    if( lf.numCols() == 1 && rt.numCols() > 1 ) return vec_op_frame(lf.vecs(),rt);
+    if( rt.numCols() == 1 && lf.numCols() > 1 ) return frame_op_vec(lf,rt.vecs());
     if( lf.numCols() != rt.numCols() )
       throw new IllegalArgumentException("Frames must have same columns, found "+lf.numCols()+" columns and "+rt.numCols()+" columns.");
 
@@ -254,7 +249,7 @@ abstract class ASTBinOp extends ASTPrim {
             Chunk clf = chks[c];
             Chunk crt = chks[c+cress.length];
             NewChunk cres = cress[c];
-            if( clf.vec().isString() )
+            if( _vecs.isString(c) )
               for( int i=0; i<clf._len; i++ )
                 cres.addNum(str_op(clf.atStr(lfstr,i),crt.atStr(rtstr,i)));
             else
@@ -262,28 +257,30 @@ abstract class ASTBinOp extends ASTPrim {
                 cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt)).outputFrame(lf._names,null);
+      }.doAll(lf.numCols(), Vec.T_NUM, new Frame(lf).add(rt).vecs()).outputFrame(lf._names,(String[][])null);
     return cleanCategorical(lf, res); // Cleanup categorical misuse
   }
 
   private ValFrame frame_op_row(Frame lf, Frame row) {
     final double[] rawRow = new double[row.numCols()];
+    VecAry rowVecs = row.vecs();
+    VecAry.VecAryReader r = rowVecs.vecReader(false);
     for(int i=0; i<rawRow.length;++i)
-      rawRow[i] = row.vec(i).isNumeric() ? row.vec(i).at(0) : Double.NaN; // is numeric, if not then NaN
+      rawRow[i] = rowVecs.isNumeric(i) ? r.at(0,i) : Double.NaN; // is numeric, if not then NaN
     Frame res = new MRTask() {
       @Override public void map(Chunk[] chks, NewChunk[] cress) {
         for( int c=0; c<cress.length; c++ ) {
           Chunk clf = chks[c];
           NewChunk cres = cress[c];
           for(int r=0;r<clf._len; ++r) {
-            if (clf.vec().isString())
+            if (_vecs.isString(c))
               cres.addNum(Double.NaN); // TODO: improve
             else
               cres.addNum(op(clf.atd(r), rawRow[c]));
           }
         }
       }
-    }.doAll(lf.numCols(), Vec.T_NUM, lf).outputFrame(lf._names, null);
+    }.doAll(lf.numCols(), Vec.T_NUM, lf.vecs()).outputFrame(lf._names, (String[][])null);
     return cleanCategorical(lf, res);
   }
 
@@ -294,7 +291,7 @@ abstract class ASTBinOp extends ASTPrim {
     return new ValRow(res,names);
   }
 
-  private ValFrame vec_op_frame( Vec vec, Frame fr ) {
+  private ValFrame vec_op_frame( VecAry vec, Frame fr ) {
     // Already checked for same rows, non-zero frame
     Frame rt = new Frame(fr);
     rt.add("",vec);
@@ -309,10 +306,10 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, rt).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, rt.vecs()).outputFrame(fr._names,(String[][])null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
-  private ValFrame frame_op_vec( Frame fr, Vec vec ) {
+  private ValFrame frame_op_vec( Frame fr, VecAry vec ) {
     // Already checked for same rows, non-zero frame
     Frame lf = new Frame(fr);
     lf.add("",vec);
@@ -327,7 +324,7 @@ abstract class ASTBinOp extends ASTPrim {
               cres.addNum(op(clf.atd(i),crt.atd(i)));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, lf).outputFrame(fr._names,null);
+      }.doAll(fr.numCols(), Vec.T_NUM, lf.vecs()).outputFrame(fr._names,(String[][])null);
     return cleanCategorical(fr, res); // Cleanup categorical misuse
   }
 
@@ -394,16 +391,16 @@ class ASTEQ   extends ASTBinOp { public String str() { return "=="; } double op(
             Chunk chk = chks[c];
             NewChunk cres = cress[c];
             BufferedString bStr = new BufferedString();
-            if( chk.vec().isString() )
+            if( _vecs.isString(c) )
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(str_op(chk.atStr(bStr,i), Double.isNaN(d)?null:new BufferedString(String.valueOf(d))));
-            else if( !chk.vec().isNumeric() ) cres.addZeros(chk._len);
+            else if( !_vecs.isNumeric(c) ) cres.addZeros(chk._len);
             else
               for( int i=0; i<chk._len; i++ )
                 cres.addNum(op(chk.atd(i),d));
           }
         }
-      }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
+      }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame());
   }
   @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
@@ -417,16 +414,16 @@ class ASTNE   extends ASTBinOp { public String str() { return "!="; } double op(
           Chunk chk = chks[c];
           NewChunk cres = cress[c];
           BufferedString bStr = new BufferedString();
-          if( chk.vec().isString() )
+          if( _vecs.isString(c) )
             for( int i=0; i<chk._len; i++ )
               cres.addNum(str_op(chk.atStr(bStr,i), Double.isNaN(d)?null:new BufferedString(String.valueOf(d))));
-          else if( !chk.vec().isNumeric() ) cres.addZeros(chk._len);
+          else if( !_vecs.isNumeric(c) ) cres.addZeros(chk._len);
           else
             for( int i=0; i<chk._len; i++ )
               cres.addNum(op(chk.atd(i),d));
         }
       }
-    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
+    }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame());
   }
   @Override boolean categoricalOK() { return true; }  // Make sense to run this OP on an enm?
 }
@@ -502,7 +499,7 @@ class ASTIfElse extends ASTPrim {
       double d = val.getNum();
       if( Double.isNaN(d) ) return new ValNum(Double.NaN);
       Val res = stk.track(asts[d==0 ? 3 : 2].exec(env)); // exec only 1 of false and true
-      return res.isFrame() ? new ValNum(res.getFrame().vec(0).at(0)) : res;
+      return res.isFrame() ? new ValNum(res.getFrame().vecs().getChunk(0,0).atd(0)) : res;
     }
 
     // Frame test.  Frame result.
@@ -513,8 +510,9 @@ class ASTIfElse extends ASTPrim {
     // If all zero's, return false and never execute true.
     Frame fr = new Frame(tst);
     Val tval = null;
-    for( Vec vec : tst.vecs() )
-      if( vec.min()!=0 || vec.max()!= 0 ) {
+    VecAry tvecs = tst.vecs();
+    for(int i = 0; i < tvecs.len(); ++i)
+      if( tvecs.min(i)!=0 || tvecs.max(i)!= 0 ) {
         tval = exec_check(env,stk,tst,asts[2],fr);
         break;
       }
@@ -525,8 +523,8 @@ class ASTIfElse extends ASTPrim {
 
     // If all nonzero's (or NA's), then never execute false.
     Val fval = null;
-    for( Vec vec : tst.vecs() )
-      if( vec.nzCnt()+vec.naCnt() < vec.length() ) {
+    for( int i = 0; i < tvecs.len(); ++i )
+      if( tvecs.nzCnt(i)+tvecs.naCnt(i) < tvecs.numRows() ) {
         fval = exec_check(env,stk,tst,asts[3],fr);
         break;
       }
@@ -546,29 +544,31 @@ class ASTIfElse extends ASTPrim {
           tsIntMap[i]  = 1;
         }
       } else if( ts!=null ) {
+        VecAry vecs = fr.vecs();
         for(int i=0;i<tst.numCols();++i) {
           if( has_ffr ) {
-            Vec v = fr.vec(i+tst.numCols()+(has_tfr ? tst.numCols() : 0));
-            if( !v.isCategorical() )
+            int vecId = i+tst.numCols()+(has_tfr ? tst.numCols() : 0);
+            if( !vecs.isCategorical(vecId) )
               throw H2O.unimpl("Column is not categorical.");
-            String[] dom = Arrays.copyOf(v.domain(),v.domain().length+1);
+            String[] dom = Arrays.copyOf(vecs.domain(vecId),vecs.domain(vecId).length+1);
             dom[dom.length-1] = ts;
             Arrays.sort(dom);
-            maps[i] = computeMap(v.domain(),dom);
+            maps[i] = computeMap(vecs.domain(vecId),dom);
             tsIntMap[i] = ArrayUtils.find(dom,ts);
             domains[i] = dom;
           } else throw H2O.unimpl();
         }
       } else { // fs!=null
+        VecAry vecs = fr.vecs();
         for(int i=0;i<tst.numCols();++i) {
           if( has_tfr ) {
-            Vec v = fr.vec(i+tst.numCols()+(has_ffr ? tst.numCols() : 0));
-            if( !v.isCategorical() )
+            int vecId = i+tst.numCols()+(has_ffr ? tst.numCols() : 0);;
+            if( !vecs.isCategorical(vecId) )
               throw H2O.unimpl("Column is not categorical.");
-            String[] dom = Arrays.copyOf(v.domain(),v.domain().length+1);
+            String[] dom = Arrays.copyOf(vecs.domain(vecId),vecs.domain(vecId).length+1);
             dom[dom.length-1] = fs;
             Arrays.sort(dom);
-            maps[i] = computeMap(v.domain(),dom);
+            maps[i] = computeMap(vecs.domain(vecId),dom);
             fsIntMap[i] = ArrayUtils.find(dom,fs);
             domains[i] = dom;
           } else throw H2O.unimpl();
@@ -596,27 +596,32 @@ class ASTIfElse extends ASTPrim {
             }
           }
         }
-      }.doAll(tst.numCols(), Vec.T_NUM, fr).outputFrame(null,domains);
+      }.doAll(tst.numCols(), Vec.T_NUM, fr.vecs()).outputFrame(null,domains);
 
     // flatten domains since they may be larger than needed
     if( domains!=null ) {
-      for (int i = 0; i < res.numCols(); ++i) {
-        if (res.vec(i).domain() != null) {
-          final long[] dom = new VecUtils.CollectDomainFast((int) res.vec(i).max()).doAll(res.vec(i)).domain();
-          String[] newDomain = new String[dom.length];
-          for (int l = 0; l < dom.length; ++l)
-            newDomain[l] = res.vec(i).domain()[(int) dom[l]];
-          new MRTask() {
-            @Override
-            public void map(Chunk c) {
-              for (int i = 0; i < c._len; ++i) {
-                if( !c.isNA(i) )
-                  c.set(i, ArrayUtils.find(dom, c.at8(i)));
-              }
+      VecAry vecs = res.vecs();
+      int [] cats = vecs.categoricals();
+      VecAry catVecs = vecs.getVecs(cats);
+      final long [][] ldomains = new VecUtils.CollectDomainFast().doAll(catVecs).domain();
+      new MRTask(){
+        @Override public void map(Chunk [] chks) {
+          for(int i = 0; i < chks.length; ++i) {
+            Chunk c = chks[i];
+            long [] dom = ldomains[i];
+            for (int j = 0; j < c._len; ++j) {
+              if( !c.isNA(j) )
+                c.set(j, ArrayUtils.find(dom, c.at8(j)));
             }
-          }.doAll(res.vec(i));
-          res.vec(i).setDomain(newDomain); // needs a DKVput?
+          }
         }
+      }.doAll(catVecs);
+      for(int i = 0; i < ldomains.length; ++i) {
+        long [] dom = ldomains[i];
+        String [] newDomain = new String[dom.length];
+        for (int l = 0; l < dom.length; ++l)
+          newDomain[l] = catVecs.domain(i)[(int) dom[l]];
+        catVecs.setDomain(i,newDomain);
       }
     }
     return new ValFrame(res);
@@ -693,7 +698,7 @@ class ASTScale extends ASTPrim {
     } else {
       double d = asts[2].exec(env).getNum();
       if( d==0 )      means = new double[ncols]; // No change on means, so zero-filled
-      else if( d==1 ) means = fr.means();
+      else if( d==1 ) means = fr.vecs().means();
       else throw new IllegalArgumentException("Only true or false allowed");
     }
 
@@ -706,12 +711,16 @@ class ASTScale extends ASTPrim {
     } else {
       Val v = asts[3].exec(env);
       if( v instanceof ValFrame ) {
-        mults = toArray(v.getFrame().anyVec());
+        mults = toArray(v.getFrame().vecs());
       } else {
         double d = v.getNum();
         if (d == 0)
           Arrays.fill(mults = new double[ncols], 1.0); // No change on mults, so one-filled
-        else if (d == 1) mults = fr.mults();
+        else if (d == 1) {
+          mults = fr.vecs().sigmas();
+          for(int i = 0; i < mults.length; ++i)
+            mults[i] = 1.0/mults[i];
+        }
         else throw new IllegalArgumentException("Only true or false allowed");
       }
     }
@@ -725,14 +734,16 @@ class ASTScale extends ASTPrim {
           for( int row=0; row<cs[i]._len; row++ )
             cs[i].set(row,(cs[i].atd(row)-fmeans[i])*fmults[i]);
       }
-    }.doAll(fr);
+    }.doAll(fr.vecs());
     return new ValFrame(fr);
   }
 
-  private static double[] toArray(Vec v) {
-    double[] res = new double[(int)v.length()];
+  private static double[] toArray(VecAry v) {
+    if(v.len() != 1) throw new IllegalArgumentException("expected exactly one vec here");
+    double[] res = new double[(int)v.numRows()];
+    VecAry.VecAryReader r = v.vecReader(false);
     for(int i=0;i<res.length;++i)
-      res[i] = v.at(i);
+      res[i] = r.at(0,i);
     return res;
   }
 }

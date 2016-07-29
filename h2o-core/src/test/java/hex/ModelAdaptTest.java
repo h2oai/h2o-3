@@ -4,6 +4,7 @@ import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 
 public class ModelAdaptTest extends TestUtil {
@@ -29,8 +30,8 @@ public class ModelAdaptTest extends TestUtil {
     Frame trn = parse_test_file("smalldata/junit/mixcat_train.csv");
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
-    o._names = trn.names();
-    o._domains = trn.domains();
+    o._names = trn._names;
+    o._domains = trn.vecs().domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
     
@@ -42,13 +43,13 @@ public class ModelAdaptTest extends TestUtil {
     Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Useless': substituting in a column of NAs") != -1);
     Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
     // Feature_1: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});
+    Assert.assertArrayEquals(adapt.vecs("Feature_1").domain(0),new String[]{"A","B","C","D"});
     // Const: all NAs
-    Assert.assertTrue(adapt.vec("Const").isBad());
+    Assert.assertTrue(adapt.vecs("Const").isBad(0));
     // Useless: all NAs
-    Assert.assertTrue(adapt.vec("Useless").isBad());
+    Assert.assertTrue(adapt.vecs("Useless").isBad(0));
     // Response: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
+    Assert.assertArrayEquals(adapt.vecs("Response").domain(0),new String[]{"X","Y","Z","W"});
 
     Model.cleanup_adapt( adapt, tst );
     tst.remove();
@@ -61,11 +62,11 @@ public class ModelAdaptTest extends TestUtil {
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
 
-    Vec cat = vec(new String[]{"A","B"},0,1,0,1);
+    VecAry cat = vec(new String[]{"A","B"},0,1,0,1);
     Frame trn = new Frame();
     trn.add("cat",cat);
-    o._names = trn.names();
-    o._domains = trn.domains();
+    o._names = trn._names;
+    o._domains = trn.vecs().domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
     
@@ -87,8 +88,8 @@ public class ModelAdaptTest extends TestUtil {
 
     Frame trn = new Frame();
     trn.add("dog",vec(new String[]{"A","B"},0,1,0,1));
-    o._names = trn.names();
-    o._domains = trn.domains();
+    o._names = trn._names;
+    o._domains = trn.vecs().domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
     

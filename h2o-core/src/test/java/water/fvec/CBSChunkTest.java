@@ -36,7 +36,7 @@ public class CBSChunkTest extends TestUtil {
     Chunk cc = nc.compress();
     assert cc instanceof CBSChunk;
     Futures fs = new Futures();
-    cc._vec = av.layout_and_close(fs);
+    cc._vec = av.layout_and_close(fs).getAVecRaw(0);
     fs.blockForPending();
     Assert.assertTrue("Found chunk class " + cc.getClass() + " but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc));
     assertEquals(nc._len, cc._len);
@@ -49,7 +49,7 @@ public class CBSChunkTest extends TestUtil {
       else assertTrue(cc.isNA(i));
 
     // materialize the vector (prerequisite to free the memory)
-    Vec vv = av.layout_and_close(fs);
+    VecAry vv = av.layout_and_close(fs);
     fs.blockForPending();
     vv.remove();
   }
@@ -108,8 +108,7 @@ public class CBSChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
-      nc = new NewChunk(null, 0);
-      cc.inflate_impl(nc);
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
       Assert.assertEquals(vals.length+l+1, nc._len);
@@ -164,15 +163,14 @@ public class CBSChunkTest extends TestUtil {
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA_abs(na);
+    for (int na : NAs) vec.setNA(na);
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    NewChunk nc = cc.inflate();
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);

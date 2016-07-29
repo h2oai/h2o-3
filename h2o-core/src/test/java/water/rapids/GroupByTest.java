@@ -143,8 +143,8 @@ public class GroupByTest extends TestUtil {
       fr = DKV.getGet("hex");
       chkDim(fr,8,406);
 
-      Assert.assertEquals(0,fr.vec(1).naCnt()); // No NAs anymore
-      Assert.assertEquals(23.51,fr.vec(1).at(26),1e-1); // Row 26 was an NA, now as mean economy
+      Assert.assertEquals(0,fr.vecs().naCnt(1)); // No NAs anymore
+      Assert.assertEquals(23.51,fr.vecs().at(26,1),1e-1); // Row 26 was an NA, now as mean economy
       fr.delete();
 
       // Impute fuel economy via the "mean" method, after grouping by year.  Update in place.
@@ -153,8 +153,8 @@ public class GroupByTest extends TestUtil {
       fr = DKV.getGet("hex");
       chkDim(fr,8,406);
 
-      Assert.assertEquals(0,fr.vec(1).naCnt()); // No NAs anymore
-      Assert.assertEquals(17.69,fr.vec(1).at(26),1e-1); // Row 26 was an NA, now as 1970 mean economy
+      Assert.assertEquals(0,fr.vecs().naCnt(1)); // No NAs anymore
+      Assert.assertEquals(17.69,fr.vecs().at(26,1),1e-1); // Row 26 was an NA, now as 1970 mean economy
 
     } finally {
       if( fr != null ) fr.delete();
@@ -215,7 +215,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testGroupbyTableSpeed() {
     Frame ids = parse_test_file(Key.make("cov"),"smalldata/junit/id_cols.csv");
-    ids.replace(0,ids.anyVec().toCategoricalVec()).remove();
+    ids.vecs().setVec(0,ids.vecs(0).toCategoricalVec()).remove();
     System.out.println(ids.toString(0,10));
 
     long start = System.currentTimeMillis();
@@ -240,12 +240,12 @@ public class GroupByTest extends TestUtil {
   }
   private void chkFr( Frame fr, int col, int row, double exp ) { chkFr(fr,col,row,exp,Math.ulp(1)); }
   private void chkFr( Frame fr, int col, int row, double exp, double tol ) { 
-    if( Double.isNaN(exp) ) Assert.assertTrue(fr.vec(col).isNA(row));
-    else                    Assert.assertEquals(exp, fr.vec(col).at(row),tol); 
+    if( Double.isNaN(exp) ) Assert.assertTrue(fr.vecs().isNA(row,col));
+    else                    Assert.assertEquals(exp, fr.vecs().at(row,col),tol);
   }
   private void chkFr( Frame fr, int col, int row, String exp ) { 
-    String[] dom = fr.vec(col).domain();
-    Assert.assertEquals(exp, dom[(int)fr.vec(col).at8(row)]);
+    String[] dom = fr.vecs().domain(col);
+    Assert.assertEquals(exp, dom[(int)fr.vecs().at8(row,col)]);
   }
 
   private Frame chkTree(String tree, String fname, float d) {

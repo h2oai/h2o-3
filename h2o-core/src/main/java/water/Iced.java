@@ -1,5 +1,7 @@
 package water;
 
+import water.fvec.InteractionWrappedVec;
+
 import java.io.*;
 
 /**
@@ -128,5 +130,6 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     oos.writeInt(buf.length);
     oos.write(buf);
   }
+
 
 }

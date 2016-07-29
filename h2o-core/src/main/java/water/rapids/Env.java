@@ -49,7 +49,7 @@ public class Env extends Iced {
       return v; 
     }
     public Frame track(Frame fr) {
-      _stk.add(sp(),new Frame(fr._names,fr.vecs().clone())); // Push and track a defensive copy
+      _stk.add(sp(),new Frame(null,fr._names,fr.vecs())); // Push and track a defensive copy
       return fr;
     }
 
@@ -125,7 +125,7 @@ public class Env extends Iced {
   // frame - so we can hack it without changing the global frame view.
   ValFrame addGlobals( Frame fr ) {
     _ses.addGlobals(fr);
-    return new ValFrame(new Frame(fr._names.clone(),fr.vecs().clone()));
+    return new ValFrame(new Frame(null,fr));
   }
 
   /*

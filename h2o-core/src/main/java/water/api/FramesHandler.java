@@ -5,8 +5,10 @@ import water.*;
 import water.api.ModelsHandler.Models;
 import water.api.schemas3.*;
 import water.exceptions.*;
+import water.fvec.AVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 
 import java.util.*;
@@ -68,8 +70,8 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
         Frame frame = getFromDKV("(none)", key);
         // Weed out frames with vecs that are no longer in DKV
         boolean skip = false;
-        for( Vec vec : frame.vecs() ) {
-          if (DKV.get(vec._key) == null) {
+        for(Key k:frame.vecs().keys()) {
+          if (DKV.get(k) == null) {
             Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
             skip = true;
             break;
@@ -86,7 +88,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
     static protected Map<Model, Set<String>> fetchModelCols(Model[] all_models) {
       Map<Model, Set<String>> all_models_cols = new HashMap<>();
       for (Model m : all_models)
-        all_models_cols.put(m, new HashSet<>(Arrays.asList(m._output._names)));
+        all_models_cols.put(m, new HashSet<>(Arrays.asList(m._output._names.getNames())));
       return all_models_cols;
     }
 
@@ -101,7 +103,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
       Map<Model, Set<String>> all_models_cols = Frames.fetchModelCols(all_models);
       List<Model> compatible_models = new ArrayList<>();
 
-      HashSet<String> frame_column_names = new HashSet<>(Arrays.asList(frame._names));
+      HashSet<String> frame_column_names = new HashSet<>(Arrays.asList(frame._names.getNames()));
 
       for (Map.Entry<Model, Set<String>> entry : all_models_cols.entrySet()) {
         Model model = entry.getKey();
@@ -158,8 +160,8 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
       throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
     Iced ice = v.get();
-    if( ice instanceof Vec )
-      return new Frame((Vec)ice);
+    if( ice instanceof AVec)
+      return new Frame((Key)null,(Frame.Names)null,new VecAry((AVec)ice));
 
     if (! (ice instanceof Frame))
       throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), Frame.class, ice.getClass());
@@ -173,13 +175,11 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   public FramesV3 column(int version, FramesV3 s) { // TODO: should return a Vec schema
     Frame frame = getFromDKV("key", s.frame_id.key());
 
-    Vec vec = frame.vec(s.column);
+    VecAry vec = frame.vecs(s.column);
     if (null == vec)
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
-
-    Vec[] vecs = { vec };
     String[] names = { s.column };
-    Frame new_frame = new Frame(names, vecs);
+    Frame new_frame = new Frame(null,names, vec);
     s.frames = new FrameV3[1];
     s.frames[0] = new FrameV3().fillFromImpl(new_frame);
     ((FrameV3)s.frames[0]).clearBinsField();
@@ -190,11 +190,11 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnDomain(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key());
-    Vec vec = frame.vec(s.column);
+    VecAry vec = frame.vecs(s.column);
     if (vec == null)
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
     s.domain = new String[1][];
-    s.domain[0] = vec.domain();
+    s.domain[0] = vec.domain(0);
     return s;
   }
 
@@ -202,16 +202,16 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
-    Vec vec = frame.vec(s.column);
+    VecAry vec = frame.vecs(s.column);
     if (null == vec)
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
-    vec.bins();
+    vec.bins(0);
 
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count);
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(null,new String[]{s.column}, vec), s.row_offset, s.row_count, s.column_offset, s.column_count);
     return s;
   }
 
@@ -263,14 +263,10 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   // TODO: return list of FrameSummaryV3 that has histograms et al.
   public FramesV3 summary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
-
     if( null != frame) {
       Futures fs = new Futures();
-      for( Vec v : frame.vecs() )
-        v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
-      fs.blockForPending();
+      frame.vecs().getRollups();
     }
-
     return doFetch(version, s);
   }
 

@@ -36,7 +36,7 @@ public class Interaction extends Iced {
     for (String v: _factor_columns) {
       int idx = source_frame.find(v);
       if (idx >= 0) {
-        if (!source_frame.vecs()[idx].isCategorical()) {
+        if (!source_frame.vecs().isCategorical(idx)) {
           throw new IllegalArgumentException("Column " + v + " is not categorical.");
         }
         _factors[count++] = idx;
@@ -53,11 +53,11 @@ public class Interaction extends Iced {
     if (res == null) return "Output frame not found";
 
     if (!_pairwise)
-      return "Created interaction feature " + res.names()[0]
-              + " (order: " + _factors.length + ") with " + res.lastVec().domain().length + " factor levels"
+      return "Created interaction feature " + res._names.getName(0)
+              + " (order: " + _factors.length + ") with " + res.vecs().domain(res.numCols()-1).length + " factor levels"
         + " in" + PrettyPrint.msecs(_job.msec(), true);
     else
-      return "Created " + res.numCols() + " pair-wise interaction features " + Arrays.deepToString(res.names())
+      return "Created " + res.numCols() + " pair-wise interaction features " + Arrays.deepToString(res._names.getNames())
         + " (order: 2) in" + PrettyPrint.msecs(_job.msec(), true);
   }
 }

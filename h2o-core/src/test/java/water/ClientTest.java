@@ -56,7 +56,7 @@ public class ClientTest extends TestUtil {
       final long start = System.currentTimeMillis();
       CalcSumsTask lr1 = null;
       for( int i=0; i<iters; i++ ) {
-        lr1 = new CalcSumsTask().doAll(fr.vecs()[0],fr.vecs()[1]);
+        lr1 = new CalcSumsTask().doAll(fr.vecs(1,2));
       }
       final long end = System.currentTimeMillis();
       final double meanX = lr1._sumX/lr1._nrows;

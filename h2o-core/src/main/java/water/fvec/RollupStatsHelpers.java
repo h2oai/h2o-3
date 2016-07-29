@@ -46,8 +46,8 @@ public class RollupStatsHelpers {
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
           if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -102,8 +102,8 @@ public class RollupStatsHelpers {
 //        else
         {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);;
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
 //          if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -158,8 +158,8 @@ public class RollupStatsHelpers {
 //        else
         {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
 //          if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -209,8 +209,8 @@ public class RollupStatsHelpers {
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
           if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -265,8 +265,8 @@ public class RollupStatsHelpers {
 //        else
         {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
 //          if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -316,8 +316,8 @@ public class RollupStatsHelpers {
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
           if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -372,8 +372,8 @@ public class RollupStatsHelpers {
 //        else
         {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
 //          if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -423,8 +423,8 @@ public class RollupStatsHelpers {
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
           if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -474,8 +474,8 @@ public class RollupStatsHelpers {
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
           if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -529,8 +529,8 @@ public class RollupStatsHelpers {
 //        else
         {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
 //          if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;
@@ -581,8 +581,8 @@ public class RollupStatsHelpers {
         else if (x == Double.NEGATIVE_INFINITY) ninfs++;
         else {
           if (x != 0) nzCnt++;
-          if (x < dmin) dmin = _rs.min(x);
-          if (x > dmax) dmax = _rs.max(x);
+          if (x < dmin) dmin = RollupStats.min(_rs._mins,x);
+          if (x > dmax) dmax = RollupStats.max(_rs._maxs,x);
           if (isInt) isInt = (long)x == x;
           rows++;
           double delta = x - mean;

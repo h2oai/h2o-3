@@ -34,39 +34,38 @@ class ASTApply extends ASTPrim {
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
-    Vec vecs[] = fr.vecs();
-    Val vals[] = new Val[vecs.length];
+    VecAry vecs = fr.vecs();
+    Val vals[] = new Val[vecs.len()];
     AST[] asts = new AST[]{fun,null};
-    for( int i=0; i<vecs.length; i++ ) {
-      asts[1] = new ASTFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
+    for( int i=0; i<vecs.len(); i++ ) {
+      asts[1] = new ASTFrame(new Frame(null,new Frame.Names(fr._names.getName(i)), vecs.getVecs(i)));
       try (Env.StackHelp stk_inner = env.stk()) {
           vals[i] = fun.apply(env,stk_inner,asts);
         }
     }
-
     // All the resulting Vals must be the same scalar type (and if ValFrames,
     // the columns must be the same count and type).  Build a Frame result with
     // 1 row column per applied function result (per column), and as many rows
     // as there are columns in the returned Frames.
     Val v0 = vals[0];
-    Vec ovecs[] = new Vec[vecs.length];
+    VecAry ovecs = new VecAry();
     switch( v0.type() ) {
     case Val.NUM:
-      for( int i=0; i<vecs.length; i++ )  
-        ovecs[i] = Vec.makeCon(vals[i].getNum(),1L); // Since the zero column is a number, all must be numbers
+      for( int i=0; i<vecs.len(); i++ )
+        ovecs.addVecs(Vec.makeCon(vals[i].getNum(),1L)); // Since the zero column is a number, all must be numbers
       break;
     case Val.FRM:
       long nrows = v0.getFrame().numRows();
-      for( int i=0; i<vecs.length; i++ ) {
+      for( int i=0; i<vecs.len(); i++ ) {
         Frame res = vals[i].getFrame(); // Since the zero column is a frame, all must be frames
         if( res.numCols() != 1 ) throw new IllegalArgumentException("apply result Frames must have one column, found "+res.numCols()+" cols");
         if( res.numRows() != nrows ) throw new IllegalArgumentException("apply result Frames must have all the same rows, found "+nrows+" rows and "+res.numRows());
-        ovecs[i] = res.vec(0);
+        ovecs.addVecs(res.vecs().getVecs(0));
       }
       break;
     case Val.NUMS:
-      for( int i=0; i<vecs.length; i++ )
-        ovecs[i] = Vec.makeCon(vals[i].getNums()[0],1L);
+      for( int i=0; i<vecs.len(); i++ )
+        ovecs.addVecs(Vec.makeCon(vals[i].getNums()[0],1L));
       break;
     case Val.STRS:
       throw H2O.unimpl();
@@ -74,27 +73,28 @@ class ASTApply extends ASTPrim {
     case Val.STR:  throw water.H2O.unimpl();
     default:       throw water.H2O.unimpl();
     }
-    return new ValFrame(new Frame(fr._names,ovecs));
+    return new ValFrame(new Frame(null,fr._names,ovecs));
   }
 
   // --------------------------------------------------------------------------
   // Break each row into it's own Row, then execute the function passing the
   // 1 argument.  All rows are independent, and run in parallel
   private Val rowwise( Env env, Frame fr, final AST fun ) {
-    final String[] names = fr._names;
+    final Frame.Names names = fr._names;
 
     final ASTFun scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // do a single row of the frame to determine the size of the output.
     double[] ds = new double[fr.numCols()];
+    Chunk [] chks = fr.vecs().getChunks(0,false);
     for(int col=0;col<fr.numCols();++col)
-      ds[col] = fr.vec(col).at(0);
-    int noutputs = fun.apply(env,env.stk(),new AST[]{fun,new ASTRow(ds,fr.names())}).getRow().length;
+      ds[col] = chks[col].atd(0);
+    int noutputs = fun.apply(env,env.stk(),new AST[]{fun,new ASTRow(ds,fr._names.getNames())}).getRow().length;
 
     Frame res = new MRTask() {
         @Override public void map( Chunk chks[], NewChunk[] nc ) {
           double ds[] = new double[chks.length]; // Working row
-          AST[] asts = new AST[]{fun,new ASTRow(ds,names)}; // Arguments to be called; they are reused endlessly
+          AST[] asts = new AST[]{fun,new ASTRow(ds,names.getNames())}; // Arguments to be called; they are reused endlessly
           Session ses = new Session();                      // Session, again reused endlessly
           Env env = new Env(ses);
           env._scope = scope;                               // For proper namespace lookup
@@ -109,7 +109,7 @@ class ASTApply extends ASTPrim {
           }
           ses.end(null);        // Mostly for the sanity checks
         }
-      }.doAll(noutputs, Vec.T_NUM, fr).outputFrame();
+      }.doAll(noutputs, Vec.T_NUM, fr.vecs()).outputFrame();
     return new ValFrame(res);
   }
 }

@@ -42,7 +42,7 @@ public class DCTTransformer extends Transformer<Frame> {
                 } else {
                   fft = MathUtils.DCT.transform3D(_dataset, _dimensions[0], _dimensions[1], _dimensions[2], _inverse);
                 }
-                Frame dest = new Frame(_job._result, fft.names(), fft.vecs());
+                Frame dest = new Frame(_job._result, fft._names, fft.vecs());
                 DKV.put(dest);
                 tryComplete();
               }

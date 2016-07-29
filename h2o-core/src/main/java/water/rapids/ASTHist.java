@@ -2,10 +2,7 @@ package water.rapids;
 
 import sun.misc.Unsafe;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
 import water.util.MRUtils;
@@ -23,8 +20,8 @@ class ASTHist extends ASTPrim {
     Frame fr2;
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     if( f.numCols() != 1)  throw new IllegalArgumentException("Hist only applies to single numeric columns.");
-    Vec vec = f.anyVec();
-    if( !vec.isNumeric() ) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
+    VecAry vec = f.vecs();
+    if( !vec.isNumeric(0) ) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
 
     AST a = asts[2];
     String algo=null;
@@ -37,8 +34,8 @@ class ASTHist extends ASTPrim {
 
     HistTask t;
     double h;
-    double x1=vec.max();
-    double x0=vec.min();
+    double x1=vec.max(0);
+    double x0=vec.min(0);
     if( breaks != null ) t = new HistTask(breaks,-1,-1/*ignored if _h==-1*/).doAll(vec);
     else if( algo!=null ) {
       switch (algo) {
@@ -79,26 +76,26 @@ class ASTHist extends ASTPrim {
           }
         }
       }
-    }.doAll(4, Vec.T_NUM, new Frame(layoutVec)).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
+    }.doAll(4, Vec.T_NUM, new VecAry(layoutVec)).outputFrame(null, new String[]{"breaks", "counts", "mids_true", "mids"},null);
     layoutVec.remove();
     return new ValFrame(fr2);
   }
 
-  public static int sturges(Vec v) { return (int)Math.ceil( 1 + log2(v.length()) ); }
-  public static int rice   (Vec v) { return (int)Math.ceil( 2*Math.pow(v.length(),1./3.)); }
-  public static int sqrt   (Vec v) { return (int)Math.sqrt(v.length()); }
-  public static int doane  (Vec v) { return (int)(1 + log2(v.length()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
-  public static int scott  (Vec v, double h) { return (int)Math.ceil((v.max()-v.min()) / h); }
-  public static int fd     (Vec v, double h) { return (int)Math.ceil((v.max() - v.min()) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
-  public static double fds_h(Vec v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.length(),-1./3.); }
-  public static double scotts_h(Vec v) { return 3.5*Math.sqrt(ASTVariance.getVar(v)) / (Math.pow(v.length(),1./3.)); }
+  public static int sturges(VecAry v) { return (int)Math.ceil( 1 + log2(v.numRows()) ); }
+  public static int rice   (VecAry v) { return (int)Math.ceil( 2*Math.pow(v.numRows(),1./3.)); }
+  public static int sqrt   (VecAry v) { return (int)Math.sqrt(v.numRows()); }
+  public static int doane  (VecAry v) { return (int)(1 + log2(v.numRows()) + log2(1+ (Math.abs(third_moment(v)) / sigma_g1(v))) );  }
+  public static int scott  (VecAry v, double h) { return (int)Math.ceil((v.max(0)-v.min(0)) / h); }
+  public static int fd     (VecAry v, double h) { return (int)Math.ceil((v.max(0) - v.min(0)) / h); }   // Freedman-Diaconis slightly modified to use MAD instead of IQR
+  public static double fds_h(VecAry v) { return 2*ASTMad.mad(new Frame(v), null, 1.4826)*Math.pow(v.numRows(),-1./3.); }
+  public static double scotts_h(VecAry v) { return 3.5*Math.sqrt(ASTVariance.getVar(v)) / (Math.pow(v.numRows(),1./3.)); }
   public static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
-  public static double sigma_g1(Vec v) { return Math.sqrt( (6*(v.length()-2)) / ((v.length()+1)*(v.length()+3)) ); }
-  public static double third_moment(Vec v) {
-    final double mean = v.mean();
+  public static double sigma_g1(VecAry v) { return Math.sqrt( (6*(v.numRows()-2)) / ((v.numRows()+1)*(v.numRows()+3)) ); }
+  public static double third_moment(VecAry v) {
+    final double mean = v.mean(0);
     ThirdMomTask t = new ThirdMomTask(mean).doAll(v);
-    double m2 = t._ss / v.length();
-    double m3 = t._sc / v.length();
+    double m2 = t._ss / v.numRows();
+    double m3 = t._sc / v.numRows();
     return m3 / Math.pow(m2, 1.5);
   }
 
@@ -121,11 +118,11 @@ class ASTHist extends ASTPrim {
     @Override public void reduce(ThirdMomTask t) { _ss+=t._ss; _sc+=t._sc; }
   }
 
-  public double[] computeCuts(Vec v, int numBreaks) {
+  public double[] computeCuts(VecAry v, int numBreaks) {
     if( numBreaks <= 0 ) throw new IllegalArgumentException("breaks must be a positive number");
     // just make numBreaks cuts equidistant from each other spanning range of [v.min, v.max]
     double min;
-    double w = ( v.max() - (min=v.min()) ) / numBreaks;
+    double w = ( v.max(0) - (min=v.min(0)) ) / numBreaks;
     double[] res= new double[numBreaks];
     for( int i=0;i<numBreaks;++i ) res[i] = min + w * (i+1);
     return res;
@@ -217,12 +214,12 @@ class ASTMode extends ASTPrim {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if( fr.numCols() != 1 || !fr.anyVec().isCategorical() )
+    if( fr.numCols() != 1 || !fr.vecs().isCategorical(0) )
       throw new IllegalArgumentException("mean only works on a single categorical column");
-    return new ValNum(mode(fr.anyVec()));
+    return new ValNum(mode(fr.vecs()));
   }
-  static int mode(Vec v) {
-    if( v.isNumeric() ) {
+  static int mode(VecAry v) {
+    if( v.isNumeric(0) ) {
       MRUtils.Dist t = new MRUtils.Dist().doAll(v);
       int mode = ArrayUtils.maxIndex(t.dist());
       return (int)t.keys()[mode];

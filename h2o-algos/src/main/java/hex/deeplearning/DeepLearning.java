@@ -10,6 +10,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.init.Linpack;
 import water.init.NetworkTest;
 import water.util.Log;
@@ -18,7 +19,7 @@ import water.util.PrettyPrint;
 
 import java.util.*;
 
-import static water.util.MRUtils.sampleFrame;
+import static water.util.MRUtils.sampleVecs;
 import static water.util.MRUtils.sampleFrameStratified;
 
 /**
@@ -43,7 +44,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override protected int nModelsInParallel() {
     if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    if (_train.vecs().byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1;
   }
 
@@ -79,7 +80,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
             parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
-            !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
+            !parms._standardize || train.vecs().isCategorical(train.numCols()-1) ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
@@ -90,7 +91,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
     // 2) NAs (check that there's enough rows left)
-    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,!parms._autoencoder && nClasses == 1, parms._missing_values_handling == MissingValuesHandling.Skip, !parms._autoencoder).doAll(dinfo._adaptedFrame);
+    GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,!parms._autoencoder && nClasses == 1, parms._missing_values_handling == MissingValuesHandling.Skip, !parms._autoencoder).doAll(dinfo._adaptedFrame.vecs());
     if (ymt.wsum() == 0 && parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip)
       throw new H2OIllegalArgumentException("No rows left in the dataset after filtering out rows with missing values. Ignore columns with many NAs or set missing_values_handling to 'MeanImputation'.");
     if (parms._weights_column != null && parms._offset_column != null) {
@@ -106,8 +107,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
-    String[][] dom = _train.domains();
+    long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.vecs().cardinality(_train.numCols()-1));
+    String[][] dom = _train.vecs().domains();
     // hack: add the factor levels for the NAs
     for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
       if (dom[i] != null) {
@@ -115,7 +116,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       }
     }
 //    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
-    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
+    long output = _parms._autoencoder ? p : Math.abs(_train.vecs().cardinality(_train.numCols()-1));
     // weights
     long model_size = p * _parms._hidden[0];
     int layer=1;
@@ -156,7 +157,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     if (_parms._force_load_balance || _parms._reproducible) { //this is called before the parameters are sanitized, so force_load_balance might be user-disabled -> so must check reproducible flag as well
-      int original_chunks = original_fr.anyVec().nChunks();
+      int original_chunks = original_fr.vecs().nChunks();
       _job.update(0,"Load balancing " + name.substring(name.length() - 5) + " data...");
       int chunks = desiredChunks(original_fr, local);
       if (!_parms._reproducible)  {
@@ -175,9 +176,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       if (!_parms._quiet_mode)
         Log.info("Rebalancing " + name.substring(name.length()-5) + " dataset into " + chunks + " chunks.");
       Key newKey = Key.make(name + ".chks" + chunks);
-      RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, chunks);
-      H2O.submitTask(rb).join();
-      Frame rebalanced_fr = DKV.get(newKey).get();
+      RebalanceDataSet rb = new RebalanceDataSet(original_fr.vecs(), chunks);
+      H2O.submitTask(rb);
+      Frame rebalanced_fr = new Frame(newKey,original_fr._names,rb.getResult());
+      DKV.put(newKey,rebalanced_fr);
       Scope.track(rebalanced_fr);
       return rebalanced_fr;
     }
@@ -246,7 +248,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
           cp.write_lock(_job);
 
-          if (!Arrays.equals(cp._output._names, previous._output._names)) {
+          if (!cp._output._names.equals(previous._output._names)) {
             throw new H2OIllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
           }
           if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
@@ -297,14 +299,14 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if ( _parms._export_weights_and_biases && cp._output.weights != null && cp._output.biases != null) {
           for (Key k : Arrays.asList(cp._output.weights)) {
             keep.add(k);
-            for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
-              keep.add(vk._key);
+            for (Key vk : ((Frame) DKV.getGet(k)).vecs().keys()) {
+              keep.add(vk);
             }
           }
           for (Key k : Arrays.asList(cp._output.biases)) {
             keep.add(k);
-            for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
-              keep.add(vk._key);
+            for (Key vk : ((Frame) DKV.getGet(k)).vecs().keys()) {
+              keep.add(vk);
             }
           }
         }
@@ -336,48 +338,50 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         // temporary frames of the same "name" as the orig _train/_valid (asking the parameter's Key, not the actual frame)
         // Note: don't put into DKV or they would overwrite the _train/_valid frames!
-        Frame tra_fr = new Frame(mp._train, _train.names(), _train.vecs());
-        Frame val_fr = _valid != null ? new Frame(mp._valid,_valid.names(), _valid.vecs()) : null;
+        Frame tra_fr = new Frame(mp._train, _train._names, _train.vecs());
+        Frame val_fr = _valid != null ? new Frame(mp._valid,_valid._names, _valid.vecs()) : null;
 
         train = tra_fr;
         if (model._output.isClassifier() && mp._balance_classes) {
           _job.update(0,"Balancing class distribution of training data...");
-          float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+          float[] trainSamplingFactors = new float[train.vecs().domain(train.numCols()-1).length]; //leave initialized to 0 -> will be filled up below
           if (mp._class_sampling_factors != null) {
-            if (mp._class_sampling_factors.length != train.lastVec().domain().length)
-              throw new IllegalArgumentException("class_sampling_factors must have " + train.lastVec().domain().length + " elements");
+            if (mp._class_sampling_factors.length != train.vecs().domain(train.numCols()-1).length)
+              throw new IllegalArgumentException("class_sampling_factors must have " + train.vecs().domain(train.numCols()-1).length + " elements");
             trainSamplingFactors = mp._class_sampling_factors.clone(); //clone: don't modify the original
           }
-          train = sampleFrameStratified(
-                  train, train.lastVec(), train.vec(model._output.weightsName()), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
-          Vec l = train.lastVec();
-          Vec w = train.vec(model._output.weightsName());
+          VecAry trainVecs = sampleFrameStratified(
+                  train.vecs(), train.numCols()-1, train._names.getId(model._output.weightsName()), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
+          train = new Frame(null,train._names,trainVecs);
+          VecAry l = train.lastVec();
+          VecAry w = train.vecs(model._output.weightsName());
           MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
-          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
+          model._output._modelClassDist = _weights != null ? cd.doAll(new VecAry(l, w)).rel_dist() : cd.doAll(l).rel_dist();
         }
         model.training_rows = train.numRows();
-        if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {
-          model.training_rows = Math.round(train.numRows()*_weights.mean());
+        if (_weights != null && _weights.min(0)==0 && _weights.max(0)==1 && _weights.isInt(0)) {
+          model.training_rows = Math.round(train.numRows()*_weights.mean(0));
           Log.warn("Not counting " + (train.numRows() - model.training_rows) + " rows with weight=0 towards an epoch.");
         }
         Log.info("One epoch corresponds to " + model.training_rows + " training data rows.");
-        trainScoreFrame = sampleFrame(train, mp._score_training_samples, mp._seed); //training scoring dataset is always sampled uniformly from the training dataset
+        trainScoreFrame = new Frame(null,train._names,sampleVecs(train.vecs(), mp._score_training_samples, mp._seed)); //training scoring dataset is always sampled uniformly from the training dataset
         if( trainScoreFrame != train ) Scope.track(trainScoreFrame);
 
-        if (!_parms._quiet_mode) Log.info("Number of chunks of the training data: " + train.anyVec().nChunks());
+        if (!_parms._quiet_mode) Log.info("Number of chunks of the training data: " + train.vecs().nChunks());
         if (val_fr != null) {
           model.validation_rows = val_fr.numRows();
           // validation scoring dataset can be sampled in multiple ways from the given validation dataset
           if (model._output.isClassifier() && mp._balance_classes && mp._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
             _job.update(0,"Sampling validation data (stratified)...");
-            validScoreFrame = sampleFrameStratified(val_fr, val_fr.lastVec(),  val_fr.vec(model._output.weightsName()), null,
-                    mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
+            VecAry validVecs = sampleFrameStratified(val_fr.vecs(), val_fr.vecs().len()-1,  val_fr._names.getId(model._output.weightsName()), null,
+                mp._score_validation_samples > 0 ? mp._score_validation_samples : val_fr.numRows(), mp._seed +1, false /* no oversampling */, false);
+            validScoreFrame = new Frame(null,val_fr._names,validVecs);
           } else {
             _job.update(0,"Sampling validation data...");
-            validScoreFrame = sampleFrame(val_fr, mp._score_validation_samples, mp._seed +1);
+            validScoreFrame = new Frame(null,val_fr._names,sampleVecs(val_fr.vecs(), mp._score_validation_samples, mp._seed +1));
             if( validScoreFrame != val_fr ) Scope.track(validScoreFrame);
           }
-          if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
+          if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.vecs().nChunks());
         }
 
         // Set train_samples_per_iteration size (cannot be done earlier since this depends on whether stratified sampling is done)
@@ -388,7 +392,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
-        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == model.training_rows && train.anyVec().nChunks()==1) {
+        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == model.training_rows && train.vecs().nChunks()==1) {
           if (!mp._quiet_mode)
             Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
           mp._shuffle_training_data = true;
@@ -416,7 +420,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepLearningTask (_job._key,        model.model_info(), rowFraction(train, mp, model), model.iterations).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+                  new DeepLearningTask (_job._key,        model.model_info(), rowFraction(train, mp, model), model.iterations).doAll     (    train.vecs()    ).model_info()); //distributed data (always in multi-node mode)
           if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
           if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
           if (timeout()) { //stop after scoring

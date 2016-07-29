@@ -5,11 +5,7 @@ import java.net.URI;
 import java.util.Random;
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
@@ -126,7 +122,7 @@ public class FrameUtils {
    * @return chunk summary
    */
   public static ChunkSummary chunkSummary(Frame fr) {
-    return new ChunkSummary().doAll(fr);
+    return new ChunkSummary().doAll(fr.vecs());
   }
 
   /** Generate given numbers of keys by suffixing key by given numbered suffix. */
@@ -190,34 +186,34 @@ public class FrameUtils {
       }
 
       @Override public void compute2() {
-        Vec[] frameVecs = _frame.vecs();
-        int numCategoricals = 0;
-        for (Vec v : frameVecs)
-          if (v.isCategorical())
-            numCategoricals++;
-
-        Frame categoricalFrame = new Frame();
-        Frame outputFrame = new Frame(_destKey);
+        VecAry frameVecs = _frame.vecs();
+        int [] cats = frameVecs.categoricals();
+        int numCategoricals = cats.length;
+        Frame categoricalFrame = new Frame(_frame._names.getNames(cats),_frame.vecs().getVecs(cats));
+        Frame outputFrame = new Frame(_destKey, _frame);
+        outputFrame.remove(cats);
+        outputFrame = outputFrame.deepCopy();
         int[] binaryCategorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
-        for (int i = 0, j = 0; i < frameVecs.length; ++i) {
-          int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
+        VecAry cvecs = categoricalFrame.vecs();
+        for (int i = 0, j = 0; i < cvecs.len(); ++i) {
+          int numCategories = cvecs.cardinality(i); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
-            categoricalFrame.add(_frame.name(i), frameVecs[i]);
             binaryCategorySizes[j] = 1 + MathUtils.log2(numCategories - 1 + 1/* for NAs */);
             numOutputColumns += binaryCategorySizes[j];
             ++j;
-          } else
-            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
-        }
-        BinaryConverter mrtask = new BinaryConverter(binaryCategorySizes);
-        Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
-        // change names of binaryCols so that they reflect the original names of the categories
-        for (int i = 0, j = 0; i < binaryCategorySizes.length; j += binaryCategorySizes[i++]) {
-          for (int k = 0; k < binaryCategorySizes[i]; ++k) {
-            binaryCols._names[j + k] = categoricalFrame.name(i) + ":" + k;
           }
         }
+        BinaryConverter mrtask = new BinaryConverter(binaryCategorySizes);
+        Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, cvecs).outputFrame();
+        // change names of binaryCols so that they reflect the original names of the categories
+        String [] names = binaryCols._names.getNames();
+        for (int i = 0, j = 0; i < binaryCategorySizes.length; j += binaryCategorySizes[i++]) {
+          for (int k = 0; k < binaryCategorySizes[i]; ++k) {
+            names[j + k] = categoricalFrame.name(i) + ":" + k;
+          }
+        }
+        binaryCols._names = new Frame.Names(names);
         outputFrame.add(binaryCols);
         DKV.put(outputFrame);
         tryComplete();
@@ -230,7 +226,7 @@ public class FrameUtils {
         throw new IllegalArgumentException("Invalid Frame key " + _frameKey + " (Frame doesn't exist).");
       Key<Frame> destKey = Key.make();
       _job = new Job<>(destKey, Frame.class.getName(), "CategoricalBinaryEncoder");
-      int workAmount = frame.lastVec().nChunks();
+      int workAmount = frame.vecs().nChunks();
       return _job.start(new CategoricalBinaryEncoderDriver(frame, destKey), workAmount);
     }
   }
@@ -267,7 +263,7 @@ public class FrameUtils {
             }
             _job.update(1);
           }
-        }.doAll(_frame);
+        }.doAll(_frame.vecs());
         tryComplete();
       }
     }
@@ -279,7 +275,7 @@ public class FrameUtils {
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
       final Frame frame = DKV.getGet(_dataset);
       MissingInserterDriver mid = new MissingInserterDriver(frame);
-      int work = frame.vecs()[0].nChunks();
+      int work = frame.vecs().nChunks();
       return _job.start(mid, work);
     }
   }
@@ -304,8 +300,9 @@ public class FrameUtils {
   public static double sparseRatio(Frame fr) {
     double reg = 1.0/fr.numCols();
     double res = 0;
-    for(Vec v:fr.vecs())
-      res += v.sparseRatio();
+    VecAry vecs = fr.vecs();
+    for(int i = 0; i < vecs.len(); ++i)
+      res += vecs.sparseRatio(i);
     return res * reg;
   }
 

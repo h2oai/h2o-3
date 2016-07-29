@@ -267,13 +267,13 @@ class ModelMetricsHandler extends Handler {
           parms._model.score(parms._frame, parms._predictions_name, j);
         } else {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
-          predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
+          predictions = new Frame(Key.make(parms._predictions_name), predictions._names, predictions.vecs());
           DKV.put(predictions._key, predictions);
         }
         tryComplete(); 
       }
     };
-    j.start(work, parms._frame.anyVec().nChunks());
+    j.start(work, parms._frame.vecs().nChunks());
     return new JobV3().fillFromImpl(j);
   }
 
@@ -315,7 +315,7 @@ class ModelMetricsHandler extends Handler {
             parms._predictions_name = "deep_features" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
           predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer);
         }
-        predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
+        predictions = new Frame(Key.make(parms._predictions_name), predictions._names, predictions.vecs());
         DKV.put(predictions._key, predictions);
       } else if(Model.GLRMArchetypes.class.isAssignableFrom(parms._model.getClass())) {
         if(s.project_archetypes) {

@@ -29,7 +29,7 @@ public class C16ChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 

@@ -147,36 +147,35 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     for (int l=0; l<al.size(); ++l) {
       int[] factors = al.get(l);
       int idx1 = factors[0];
-      Vec tmp = null;
+      VecAry tmp = null;
       int start = factors.length == 1 ? 0 : 1;
       Frame _out = null;
       for (int i = start; i < factors.length; ++i) {
         String name;
         int idx2 = factors[i];
         if (i > 1) {
-          idx1 = _out.find(tmp);
+          idx1 = _out.numCols()-1;//_out.find(tmp);
           assert idx1 >= 0;
-          name = _out._names[idx1] + "_" + source_frame._names[idx2];
+          name = _out._names.getName(idx1) + "_" + source_frame._names.getName(idx2);
         } else {
-          name = source_frame._names[idx1] + "_" + source_frame._names[idx2];
+          name = source_frame._names.getName(idx1) + "_" + source_frame._names.getName(idx2);
         }
 //      Log.info("Combining columns " + idx1 + " and " + idx2);
-        final Vec A = i > 1 ? _out.vecs()[idx1] : source_frame.vecs()[idx1];
-        final Vec B = source_frame.vecs()[idx2];
+        final VecAry AB = i > 1 ? _out.vecs(idx1) : source_frame.vecs(idx1);
+        AB.addVecs(source_frame.vecs(idx2));
 
         // Pass 1: compute unique domains of all interaction features
-        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(A, B);
+        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(AB);
 
         // Create a new Vec based on the domain
-        final Vec vec = source_frame.anyVec().makeZero(makeDomain(pass1._unsortedMap, A.domain(), B.domain()));
+        final VecAry vec = source_frame.vecs().makeZero(makeDomain(pass1._unsortedMap, AB.domain(0), AB.domain(1)));
         if (i > 1) {
           _out.add(name, vec);
         } else {
           assert(_out == null);
-          _out = new Frame(new String[]{name}, new Vec[]{vec});
+          _out = new Frame(new String[]{name}, vec);
         }
-        final Vec C = _out.lastVec();
-
+        final VecAry C = _out.vecs(_out.numCols()-1);
         // Create array of categorical pairs, in the same (sorted) order as in the _domain map -> for linear lookup
         // Note: "other" is not mapped in keys, so keys.length can be 1 less than domain.length
         long[] keys = new long[_sortedMap.size()];
@@ -184,22 +183,23 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         for (long k : _sortedMap.keySet()) {
           keys[pos++] = k;
         }
-        assert (C.domain().length == keys.length || C.domain().length == keys.length + 1); // domain might contain _other
+        assert (C.domain(0).length == keys.length || C.domain(0).length == keys.length + 1); // domain might contain _other
+
 
         // Pass 2: fill Vec values
-        new fillInteractionCategoricals(idx1 == idx2, keys).doAll(A, B, C);
+        new fillInteractionCategoricals(idx1 == idx2, keys).doAll(AB.addVecs(C));
         tmp = C;
 
         // remove temporary vec
         if (i > 1) {
-          final int idx = _out.vecs().length - 2; //second-last vec
+          final int idx = _out.vecs().len() - 2; //second-last vec
 //        Log.info("Removing column " + _out._names[idx]);
           _out.remove(idx).remove();
         }
         _ci._job.update(1);
       }
       if (_target == null) {
-        _target = new Frame(_ci._job._result, _out.names(), _out.vecs());
+        _target = new Frame(_ci._job._result, _out._names, _out.vecs());
         _target.delete_and_lock(_job);
       } else {
         _target.add(_out);
@@ -344,8 +344,8 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
             for (int i=0; i<_keys.length; ++i) {
               assert (_keys[i] != ab);
             }
-            level = _fr.lastVec().domain().length-1;
-            assert _fr.lastVec().domain()[level].equals(_other);
+            level = _vecs.domain(_vecs.len()-1).length-1;
+            assert _vecs.domain(_vecs.len()-1)[level].equals(_other);
           }
           C.set(r, level);
         }

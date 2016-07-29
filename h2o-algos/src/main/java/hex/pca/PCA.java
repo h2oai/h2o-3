@@ -36,7 +36,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   @Override protected void checkMemoryFootPrint() {
     HeartBeat hb = H2O.SELF._heartbeat;
     double p = hex.util.LinearAlgebraUtils.numColsExp(_train,true);
-    long mem_usage = (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.lastVec().nChunks())/Math.log(2.)); //one gram per core
+    long mem_usage = (long)(hb._cpus_allowed * p*p * 8/*doubles*/ * Math.log((double)_train.vecs().nChunks())/Math.log(2.)); //one gram per core
     long max_mem = hb.get_free_mem();
     if (mem_usage > max_mem) {
       String msg = "Gram matrices (one per thread) won't fit in the driver node's memory ("
@@ -192,7 +192,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
           _job.update(1, "Begin distributed calculation of Gram matrix");
-          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
+          GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame.vecs());
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values
           assert gram.fullN() == _ncolExp;
           model._output._nobs = gtsk._nobs;

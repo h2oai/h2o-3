@@ -182,7 +182,7 @@ public class SQLManager {
       @Override
       public void compute2() {
         Frame fr = new SqlTableToH2OFrame(connection_url, finalTable, needFetchClause, username, password, columns, 
-                numCol, _v.nChunks(), j).doAll(columnH2OTypes, _v)
+                numCol, _v.nChunks(), j).doAll(columnH2OTypes, new VecAry(_v))
                 .outputFrame(destination_key, columnNames, null);
         DKV.put(fr);
         _v.remove();

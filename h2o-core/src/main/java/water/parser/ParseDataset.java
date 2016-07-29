@@ -2,8 +2,6 @@ package water.parser;
 
 import com.google.common.base.Charsets;
 import jsr166y.CountedCompleter;
-import jsr166y.ForkJoinTask;
-import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
@@ -51,7 +49,7 @@ public final class ParseDataset {
     Iced ice = DKV.getGet(key);
     if(ice == null)
       throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
-    return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getVecRaw(0));
+    return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getAVecRaw(0));
   }
   static String [] getColumnNames(int ncols, String[] colNames) {
     if(colNames == null) { // no names, generate

@@ -49,7 +49,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       Frame[] all_frames = Frames.fetchAll();
       Map<Frame, Set<String>> all_frames_cols = new HashMap<>();
       for (Frame f : all_frames)
-        all_frames_cols.put(f, new HashSet<>(Arrays.asList(f._names)));
+        all_frames_cols.put(f, new HashSet<>(Arrays.asList(f._names.getNames())));
       return all_frames_cols;
     }
 
@@ -190,8 +190,10 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       URI targetUri = FileUtils.getURI(mimport.dir);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       InputStream is = p.open(targetUri.toString());
-      Model model = (Model)Keyed.readAll(new AutoBuffer(is));
-      s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, model).fillFromImpl(model)};
+      AutoBuffer ab = new AutoBuffer(is);
+      Model m = ab.get();
+      m.readAll(ab);
+      s.models = new ModelSchemaV3[]{(ModelSchemaV3) SchemaServer.schema(version, m).fillFromImpl(m)};
     } catch (FSIOException e) {
       throw new H2OIllegalArgumentException("dir", "importModel", mimport.dir);
     }

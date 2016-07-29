@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import water.Key;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.*;
@@ -25,31 +26,29 @@ class ASTStrSplit extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String splitRegEx = asts[2].exec(env).getStr();
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
         throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
-            + "Received " + fr.anyVec().get_type_str()
+            + "Received " + fr.vecs().typesStr()
             + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    ArrayList<Vec> vs = new ArrayList<>(fr.numCols());
-    for (Vec v : fr.vecs()) {
-      Vec[] splits;
-      if (v.isCategorical()) {
-        splits = strSplitCategoricalCol(v, splitRegEx);
-        for (Vec split : splits) vs.add(split);
+    VecAry vs = new VecAry();
+    for (int i = 0; i < vecs.len(); ++i) {
+      VecAry splits;
+      if (vecs.isCategorical(i)) {
+        vs.addVecs(strSplitCategoricalCol(vecs.getVecs(i), splitRegEx));
       } else {
-        splits = strSplitStringCol(v, splitRegEx);
-        for (Vec split : splits) vs.add(split);
+        vs.addVecs(strSplitStringCol(vecs.getVecs(i), splitRegEx));
       }
     }
-
-    return new ValFrame(new Frame(vs.toArray(new Vec[vs.size()])));
+    return new ValFrame(new Frame((Key)null,vs));
   }
 
-  private Vec[] strSplitCategoricalCol(Vec vec, String splitRegEx) {
-    final String[]   old_domains = vec.domain();
+  private VecAry strSplitCategoricalCol(VecAry vec, String splitRegEx) {
+    final String[]   old_domains = vec.domain(0);
     final String[][] new_domains = newDomains(old_domains, splitRegEx);
 
     final String regex = splitRegEx;
@@ -72,9 +71,8 @@ class ASTStrSplit extends ASTPrim {
             for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
         }
       }
-    }.doAll(new_domains.length, Vec.T_CAT, new Frame(vec)).outputFrame(null,null,new_domains).vecs();
+    }.doAll(new_domains.length, Vec.T_CAT, vec).outputVecs(new_domains);
   }
-
   // each domain level may split in its own uniq way.
   // hold onto a hashset of domain levels for each "new" column
   private String[][] newDomains(String[] domains, String regex) {
@@ -110,7 +108,7 @@ class ASTStrSplit extends ASTPrim {
     return doms;
   }
 
-  private Vec[] strSplitStringCol(Vec vec, final String splitRegEx) {
+  private VecAry strSplitStringCol(VecAry vec, final String splitRegEx) {
     final int newColCnt = (new CountSplits(splitRegEx)).doAll(vec)._maxSplits;
     return new MRTask() {
       @Override public void map(Chunk[] cs, NewChunk[] ncs) {
@@ -133,7 +131,7 @@ class ASTStrSplit extends ASTPrim {
           }
         }
       }
-    }.doAll(newColCnt, Vec.T_STR, new Frame(vec)).outputFrame().vecs();
+    }.doAll(newColCnt, Vec.T_STR, vec).outputVecs(null);
   }
   /**
    * Run through column to figure out the maximum split that
@@ -180,29 +178,28 @@ class ASTCountMatches extends ASTPrim {
       ? ((ASTStrList)asts[2])._strs 
       : new String[]{asts[2].exec(env).getStr()};
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
+    for (int i =0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
         throw new IllegalArgumentException("countmatches() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
+            +"Received "+fr.vecs().typesStr()
             +". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = countMatchesCategoricalCol(v, pattern);
-      else
-        nvs[i] = countMatchesStringCol(v, pattern);
-      i++;
-    }
+    VecAry nvs = new VecAry();
 
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(countMatchesCategoricalCol(vecs.getVecs(i), pattern));
+      else
+        nvs.addVecs(countMatchesStringCol(vecs.getVecs(i), pattern));
+    }
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec countMatchesCategoricalCol(Vec vec, String[] pattern){
-    final int[] matchCounts = countDomainMatches(vec.domain(), pattern);
+  private VecAry countMatchesCategoricalCol(VecAry vec, String[] pattern){
+    final int[] matchCounts = countDomainMatches(vec.domain(0), pattern);
     return new MRTask() {
       @Override public void map(Chunk[] cs, NewChunk[] ncs) {
         Chunk c = cs[0];
@@ -213,7 +210,7 @@ class ASTCountMatches extends ASTPrim {
           } else ncs[0].addNA();
         }
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
   }
 
   int[] countDomainMatches(String[] domain, String[] pattern) {
@@ -224,7 +221,7 @@ class ASTCountMatches extends ASTPrim {
     return res;
   }
 
-  private Vec countMatchesStringCol(Vec vec, String[] pat){
+  private VecAry countMatchesStringCol(VecAry vec, String[] pat){
     final String[] pattern = pat;
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk) {
@@ -244,7 +241,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll(Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, vec).outputVecs(null);
   }
 }
 
@@ -262,36 +259,35 @@ class ASTToLower extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("tolower() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
-            +". Please convert column to a string or categorical first.");
-
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = toLowerCategoricalCol(v);
+    VecAry nvs = new VecAry();
+
+    for(int i =0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(toLowerCategoricalCol(vecs.getVecs(i)));
       else
-        nvs[i] = toLowerStringCol(v);
+        nvs.addVecs(toLowerStringCol(vecs.getVecs(i)));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec toLowerCategoricalCol(Vec vec) {
-    String[] dom = vec.domain().clone();
+  private VecAry toLowerCategoricalCol(VecAry vec) {
+    String[] dom = vec.domain(0).clone();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
-
     return vec.makeCopy(dom);
   }
 
-  private Vec toLowerStringCol(Vec vec) {
+  private VecAry toLowerStringCol(VecAry vec) {
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
@@ -309,7 +305,7 @@ class ASTToLower extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
 }
 
@@ -327,36 +323,34 @@ class ASTToUpper extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("toupper() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
-            +". Please convert column to a string or categorical first.");
-
-    // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = toUpperCategoricalCol(v);
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");    // Transform each vec
+    VecAry nvs = new VecAry();
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(toUpperCategoricalCol(vecs.getVecs(i)));
       else
-        nvs[i] = toUpperStringCol(v);
+        nvs.addVecs(toUpperStringCol(vecs.getVecs(i)));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec toUpperCategoricalCol(Vec vec) {
-    String[] dom = vec.domain().clone();
+  private VecAry toUpperCategoricalCol(VecAry vec) {
+    String[] dom = vec.domain(0).clone();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
 
     return vec.makeCopy(dom);
   }
 
-  private Vec toUpperStringCol(Vec vec) {
+  private VecAry toUpperStringCol(VecAry vec) {
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
@@ -374,7 +368,7 @@ class ASTToUpper extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
 }
 
@@ -398,38 +392,37 @@ class ASTReplaceFirst extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final boolean ignoreCase = asts[4].exec(env).getNum()==1;
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("replacefirst() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
-            +". Please convert column to a string or categorical first.");
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = replaceFirstCategoricalCol(v, pattern, replacement, ignoreCase);
+    VecAry nvs = new VecAry();
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(replaceFirstCategoricalCol(vecs.getVecs(i), pattern, replacement, ignoreCase));
       else
-        nvs[i] = replaceFirstStringCol(v, pattern, replacement, ignoreCase);
+        nvs.addVecs(replaceFirstStringCol(vecs.getVecs(i), pattern, replacement, ignoreCase));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec replaceFirstCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
-    String[] doms = vec.domain().clone();
+  private VecAry replaceFirstCategoricalCol(VecAry vec, String pattern, String replacement, boolean ignoreCase) {
+    String[] doms = vec.domain(0).clone();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
           : doms[i].replaceFirst(pattern, replacement);
-
     return vec.makeCopy(doms);
   }
 
-  private Vec replaceFirstStringCol(Vec vec, String pat, String rep, boolean ic) {
+  private VecAry replaceFirstStringCol(VecAry vec, String pat, String rep, boolean ic) {
     final String pattern = pat;
     final String replacement = rep;
     final boolean ignoreCase = ic;
@@ -455,7 +448,7 @@ class ASTReplaceFirst extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
 }
 
@@ -480,29 +473,29 @@ class ASTReplaceAll extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final boolean ignoreCase = asts[4].exec(env).getNum()==1;
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("replaceall() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
-            +". Please convert column to a string or categorical first.");
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = replaceAllCategoricalCol(v, pattern, replacement, ignoreCase);
+    VecAry nvs = new VecAry();
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(replaceAllCategoricalCol(vecs.getVecs(i), pattern, replacement, ignoreCase));
       else
-        nvs[i] = replaceAllStringCol(v, pattern, replacement, ignoreCase);
+        nvs.addVecs(replaceAllStringCol(vecs.getVecs(i), pattern, replacement, ignoreCase));
       i++;
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec replaceAllCategoricalCol(Vec vec, String pattern, String replacement, boolean ignoreCase) {
-    String[] doms = vec.domain().clone();
+  private VecAry replaceAllCategoricalCol(VecAry vec, String pattern, String replacement, boolean ignoreCase) {
+    String[] doms = vec.domain(0).clone();
     for (int i = 0; i < doms.length; ++i)
       doms[i] = ignoreCase
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
@@ -511,7 +504,7 @@ class ASTReplaceAll extends ASTPrim {
     return vec.makeCopy(doms);
   }
 
-  private Vec replaceAllStringCol(Vec vec, String pat, String rep, boolean ic) {
+  private VecAry replaceAllStringCol(VecAry vec, String pat, String rep, boolean ic) {
     final String pattern = pat;
     final String replacement = rep;
     final boolean ignoreCase = ic;
@@ -537,7 +530,7 @@ class ASTReplaceAll extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, new VecAry(vec)).outputVecs(null);
   }
 }
 
@@ -554,29 +547,27 @@ class ASTTrim extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("trim() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
-            +". Please convert column to a string or categorical first.");
-
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = trimCategoricalCol(v);
+    VecAry nvs = new VecAry();
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(trimCategoricalCol(vecs.getVecs(i)));
       else
-        nvs[i] = trimStringCol(v);
-      i++;
+        nvs.addVecs(trimStringCol(vecs.getVecs(i)));
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec trimCategoricalCol(Vec vec) {
-    String[] doms = vec.domain().clone();
+  private VecAry trimCategoricalCol(VecAry vec) {
+    String[] doms = vec.domain(0).clone();
     
     HashMap<String, ArrayList<Integer>> trimmedToOldDomainIndices = new HashMap<>();
     String trimmed;
@@ -599,7 +590,7 @@ class ASTTrim extends ASTPrim {
     return vec.makeCopy(doms);
   }
 
-  private Vec trimStringCol(Vec vec) {
+  private VecAry trimStringCol(VecAry vec) {
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if ( chk instanceof C0DChunk ) // all NAs
@@ -609,7 +600,7 @@ class ASTTrim extends ASTPrim {
         // so UTF-8 safe methods are not needed here.
         else ((CStrChunk)chk).asciiTrim(newChk);
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
 }
 
@@ -625,35 +616,33 @@ class ASTStrLength extends ASTPrim {
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("length() requires a string or categorical column. "
-            +"Received "+fr.anyVec().get_type_str()
-            +". Please convert column to a string or categorical first.");
-
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = lengthCategoricalCol(v);
+    VecAry nvs = new VecAry();
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(lengthCategoricalCol(vecs.getVecs(i)));
       else
-        nvs[i] = lengthStringCol(v);
-      i++;
+        nvs.addVecs(lengthStringCol(vecs.getVecs(i)));
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec lengthCategoricalCol(Vec vec) {
+  private VecAry lengthCategoricalCol(VecAry vec) {
     //String[] doms = vec.domain();
     //int[] catLengths = new int[doms.length];
     //for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
-    Vec res = new MRTask() {
+    VecAry res = new MRTask() {
         transient int[] catLengths;
         @Override public void setupLocal() {
-          String[] doms = _fr.anyVec().domain();
+          String[] doms = _vecs.domain(0);
           catLengths = new int[doms.length];
           for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
         }
@@ -666,11 +655,11 @@ class ASTStrLength extends ASTPrim {
             else
               newChk.addNum(catLengths[(int)chk.atd(i)],0);
         }
-      }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+      }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
     return res;
   }
 
-  private Vec lengthStringCol(Vec vec) {
+  private VecAry lengthStringCol(VecAry vec) {
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
         if( chk instanceof C0DChunk ) { // All NAs
@@ -686,7 +675,7 @@ class ASTStrLength extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputVecs(null);
   }
 }
 
@@ -700,34 +689,31 @@ class ASTSubstring extends ASTPrim {
     int startIndex = (int) asts[2].exec(env).getNum();
     if (startIndex < 0) startIndex = 0;
     int endIndex = asts[3] instanceof ASTNumList ? Integer.MAX_VALUE : (int) asts[3].exec(env).getNum();
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("substring() requires a string or categorical column. "
-                +"Received "+fr.anyVec().get_type_str()
-                +". Please convert column to a string or categorical first.");
-    
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for (Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = substringCategoricalCol(v, startIndex, endIndex);
+    VecAry nvs = new VecAry();
+
+    for (int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(substringCategoricalCol(vecs.getVecs(i), startIndex, endIndex));
       else
-        nvs[i] = substringStringCol(v, startIndex, endIndex);
-      i++;
+        nvs.addVecs(substringStringCol(vecs.getVecs(i), startIndex, endIndex));
+
     }
     
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec substringCategoricalCol(Vec vec, int startIndex, int endIndex) {
-    if (startIndex >= endIndex) {
-      Vec v = Vec.makeZero(vec.length());
-      v.setDomain(new String[]{""});
-      return v;
-    }
-    String[] dom = vec.domain().clone();
+  private VecAry substringCategoricalCol(VecAry vec, int startIndex, int endIndex) {
+    if (startIndex >= endIndex)
+      return vec.makeZero(new String[]{""});
+    String[] dom = vec.domain(0).clone();
     
     HashMap<String, ArrayList<Integer>> substringToOldDomainIndices = new HashMap<>();
     String substr;
@@ -751,7 +737,7 @@ class ASTSubstring extends ASTPrim {
     return vec.makeCopy(dom);
   }
   
-  private Vec substringStringCol(Vec vec, final int startIndex, final int endIndex) {
+  private VecAry substringStringCol(VecAry vec, final int startIndex, final int endIndex) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -778,7 +764,7 @@ class ASTSubstring extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
   
 }
@@ -797,29 +783,29 @@ class ASTLStrip extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("trim() requires a string or categorical column. "
-                +"Received "+fr.anyVec().get_type_str()
-                +". Please convert column to a string or categorical first.");
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = lstripCategoricalCol(v, set);
+    VecAry nvs = new VecAry();
+
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(lstripCategoricalCol(vecs.getVecs(i), set));
       else
-        nvs[i] = lstripStringCol(v, set);
-      i++;
+        nvs.addVecs(lstripStringCol(vecs.getVecs(i), set));
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec lstripCategoricalCol(Vec vec, String set) {
-    String[] doms = vec.domain().clone();
+  private VecAry lstripCategoricalCol(VecAry vec, String set) {
+    String[] doms = vec.domain(0).clone();
 
     HashMap<String, ArrayList<Integer>> strippedToOldDomainIndices = new HashMap<>();
     String stripped;
@@ -839,11 +825,10 @@ class ASTLStrip extends ASTPrim {
     //Check for duplicated domains
     if (strippedToOldDomainIndices.size() < doms.length)
       return VecUtils.DomainDedupe.domainDeduper(vec, strippedToOldDomainIndices);
-
     return vec.makeCopy(doms);
   }
 
-  private Vec lstripStringCol(Vec vec, String set) {
+  private VecAry lstripStringCol(VecAry vec, String set) {
     final String charSet = set;
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
@@ -862,7 +847,7 @@ class ASTLStrip extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
 }
 
@@ -880,29 +865,29 @@ class ASTRStrip extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
+    VecAry vecs = fr.vecs();
     // Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("trim() requires a string or categorical column. "
-                +"Received "+fr.anyVec().get_type_str()
-                +". Please convert column to a string or categorical first.");
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
 
     // Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for(Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = rstripCategoricalCol(v, set);
+    VecAry nvs = new VecAry();
+
+    for(int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(rstripCategoricalCol(vecs.getVecs(i), set));
       else
-        nvs[i] = rstripStringCol(v, set);
-      i++;
+        nvs.addVecs(rstripStringCol(vecs.getVecs(i), set));
     }
 
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec rstripCategoricalCol(Vec vec, String set) {
-    String[] doms = vec.domain().clone();
+  private VecAry rstripCategoricalCol(VecAry vec, String set) {
+    String[] doms = vec.domain(0).clone();
 
     HashMap<String, ArrayList<Integer>> strippedToOldDomainIndices = new HashMap<>();
     String stripped;
@@ -926,7 +911,7 @@ class ASTRStrip extends ASTPrim {
     return vec.makeCopy(doms);
   }
 
-  private Vec rstripStringCol(Vec vec, String set) {
+  private VecAry rstripStringCol(VecAry vec, String set) {
     final String charSet = set;
     return new MRTask() {
       @Override public void map(Chunk chk, NewChunk newChk){
@@ -945,7 +930,7 @@ class ASTRStrip extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_STR}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
 }
 
@@ -955,32 +940,30 @@ class ASTEntropy extends ASTPrim {
   @Override public String str() { return "entropy"; }
   @Override public ValFrame apply( Env env, Env.StackHelp stk, AST asts[] ) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    //Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("entropy() requires a string or categorical column. "
-                +"Received "+fr.anyVec().get_type_str()
-                +". Please convert column to a string or categorical first.");
-    
+    VecAry vecs = fr.vecs();
+    // Type check
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
     //Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for (Vec v: fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = entropyCategoricalCol(v);
+    VecAry nvs = new VecAry();
+    for (int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(entropyCategoricalCol(vecs.getVecs(i)));
       else
-        nvs[i] = entropyStringCol(v);
-      i++;
+        nvs.addVecs(entropyStringCol(vecs.getVecs(i)));
     }
     
     return new ValFrame(new Frame(nvs));
   }
   
-  private Vec entropyCategoricalCol(Vec vec) {
-    Vec res = new MRTask() {
+  private VecAry entropyCategoricalCol(VecAry vec) {
+    VecAry res = new MRTask() {
       transient double[] catEntropies;
       @Override public void setupLocal() {
-        String[] doms = _fr.anyVec().domain();
+        String[] doms = _vecs.domain(0);
         catEntropies = new double[doms.length];
         for (int i = 0; i < doms.length; i++) catEntropies[i] = calcEntropy(doms[i]);
       }
@@ -993,11 +976,11 @@ class ASTEntropy extends ASTPrim {
           else 
             newChk.addNum(catEntropies[(int) chk.atd(i)]);
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
     return res;
   }
   
-  private Vec entropyStringCol(Vec vec) {
+  private VecAry entropyStringCol(VecAry vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -1017,7 +1000,7 @@ class ASTEntropy extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputVecs(null);
   }
   
   //Shannon's entropy
@@ -1049,12 +1032,13 @@ class ASTCountSubstringsWords extends ASTPrim {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String wordsPath = asts[2].exec(env).getStr();
 
-    //Type check
-    for (Vec v : fr.vecs())
-      if (!(v.isCategorical() || v.isString()))
-        throw new IllegalArgumentException("num_valid_substrings() requires a string or categorical column. "
-                + "Received " + fr.anyVec().get_type_str()
-                + ". Please convert column to a string or categorical first.");
+    VecAry vecs = fr.vecs();
+    // Type check
+    for (int i = 0; i < vecs.len(); ++i)
+      if (!(vecs.isCategorical(i) || vecs.isString(i)))
+        throw new IllegalArgumentException("strsplit() requires a string or categorical column. "
+            + "Received " + fr.vecs().typesStr()
+            + ". Please convert column to a string or categorical first.");
 
     HashSet<String> words = null;
     try {
@@ -1063,26 +1047,24 @@ class ASTCountSubstringsWords extends ASTPrim {
       e.printStackTrace();
     }
     //Transform each vec
-    Vec nvs[] = new Vec[fr.numCols()];
-    int i = 0;
-    for (Vec v : fr.vecs()) {
-      if (v.isCategorical())
-        nvs[i] = countSubstringsWordsCategoricalCol(v, words);
-      else
-        nvs[i] = countSubstringsWordsStringCol(v, words);
-      i++;
-    }
+    VecAry nvs = new VecAry();
 
+    for (int i = 0; i < vecs.len(); ++i) {
+      if (vecs.isCategorical(i))
+        nvs.addVecs(countSubstringsWordsCategoricalCol(vecs.getVecs(i), words));
+      else
+        nvs.addVecs(countSubstringsWordsStringCol(vecs.getVecs(i), words));
+    }
     return new ValFrame(new Frame(nvs));
   }
 
-  private Vec countSubstringsWordsCategoricalCol(Vec vec, final HashSet<String> words) {
-    Vec res = new MRTask() {
+  private VecAry countSubstringsWordsCategoricalCol(VecAry vec, final HashSet<String> words) {
+    VecAry res = new MRTask() {
       transient double[] catCounts;
 
       @Override
       public void setupLocal() {
-        String[] doms = _fr.anyVec().domain();
+        String[] doms = _vecs.domain(0);
         catCounts = new double[doms.length];
         for (int i = 0; i < doms.length; i++) catCounts[i] = calcCountSubstringsWords(doms[i], words);
       }
@@ -1097,11 +1079,11 @@ class ASTCountSubstringsWords extends ASTPrim {
           else
             newChk.addNum(catCounts[(int) chk.atd(i)]);
       }
-    }.doAll(1, Vec.T_NUM, new Frame(vec)).outputFrame().anyVec();
+    }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
     return res;
   }
 
-  private Vec countSubstringsWordsStringCol(Vec vec, final HashSet<String> words) {
+  private VecAry countSubstringsWordsStringCol(VecAry vec, final HashSet<String> words) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
@@ -1119,7 +1101,7 @@ class ASTCountSubstringsWords extends ASTPrim {
           }
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputFrame().anyVec();
+    }.doAll(new byte[]{Vec.T_NUM}, vec).outputVecs(null);
   }
   
   // count all substrings >= 2 chars that are in words 

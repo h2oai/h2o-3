@@ -172,24 +172,21 @@ public class CategoricalWrappedVec extends WrappedVec {
     @Override boolean set_impl(int idx, double d) { return false; }
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      for( int i=0; i< _len; i++ )
-        if(isNA(i))nc.addNA();
-        else nc.addNum(at8(i),0);
-      return nc;
-    }
+
     public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
 
     @Override
-    public void add2NewChunk_impl(NewChunk nc, int from, int to) {
-      throw H2O.unimpl();
+    public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+      for(int i = from; i < to; ++i)
+        nc.addNum(at4(i));
+      return nc;
     }
 
     @Override
-    public void add2NewChunk_impl(NewChunk nc, int[] lines) {
-      throw H2O.unimpl();
+    public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+      for(int i:lines) nc.addNum(at4(i));
+      return nc;
     }
 
     @Override public boolean hasNA() { return false; }

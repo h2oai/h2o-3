@@ -69,25 +69,14 @@ public final class RollupStats extends Iced {
   }
 
 
-  public static class Histo extends Iced {
-    // Expensive histogram & percentiles
-    // Computed in a 2nd pass, on-demand, by calling computeHisto
-    private static final int MAX_SIZE = 1000; // Standard bin count; categoricals can have more bins
-    // the choice of MAX_SIZE being a power of 10 (rather than 1024) just aligns-to-the-grid of the common input of fixed decimal
-    // precision numbers. It is still an estimate and makes no difference mathematically. It just gives tidier output in some
-    // simple cases without penalty.
-    long[] _bins;
-    // Approximate data value closest to the Xth percentile
-    double[] _pctiles;
-  }
 
   public byte _type;
 
-  private volatile Histo _histo;
 
-  public boolean hasHisto(){return _histo != null;}
+  public boolean hasHisto(){return _bins != null;}
 
-  public Histo getHisto(){return _histo;}
+  public long [] lazy_bins(){return _bins;}
+
 
 
   // Check for: Vector is mutating and rollups cannot be asked for
@@ -297,6 +286,7 @@ public final class RollupStats extends Iced {
 
   double [] _pctiles;
   long [] _bins;
+
   public void computePercentiles() {
     _pctiles = new double[Vec.PERCENTILES.length];
     int j = 0;                 // Histogram bin number
@@ -345,7 +335,11 @@ public final class RollupStats extends Iced {
     return rs.isReady() ? rs : null;
   }
   // Histogram base & stride
-  double h_base() { return _mins[0]; }
-  double h_stride() { return h_stride(_bins.length); }
+  public double h_base() { return _mins[0]; }
+  public double h_stride() { return h_stride(_bins.length); }
   double h_stride(int nbins) { return (_maxs[0]-_mins[0]+(_isInt?1:0))/nbins; }
+
+  public double[] pctiles() {
+    return _pctiles;
+  }
 }

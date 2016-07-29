@@ -5,10 +5,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 import org.joda.time.format.DateTimeFormatter;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseTime;
 import water.parser.BufferedString;
 
@@ -38,8 +35,8 @@ class ASTListTimeZones extends ASTPrim {
     double ds[] = new double[domain.length];
     for( int i=0; i<domain.length; i++ ) ds[i] = i;
     Vec vec = Vec.makeVec(ds,Vec.VectorGroup.VG_LEN1.addVec());
-    vec.setDomain(domain);
-    return new ValFrame(new Frame(new String[]{"Timezones"}, new Vec[]{vec}));
+    vec.setDomain(0,domain);
+    return new ValFrame(new Frame(new String[]{"Timezones"}, new VecAry(vec)));
   }
 }
 
@@ -87,7 +84,7 @@ public abstract class ASTTime extends ASTPrim {
             for( int i=0; i<chk._len; i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
-        }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, factors()));
+        }.doAll(1, Vec.T_NUM, fr.vecs()).outputFrame(fr._names, factors()));
     default: throw water.H2O.fail();
     }
   }
@@ -119,16 +116,16 @@ class ASTasDate extends ASTPrim {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec vec = fr.vecs()[0];
-    if( fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))
+    VecAry vec = fr.vecs();
+    if( vec.len() != 1 || !(vec.isCategorical(0) || vec.isString(0)))
       throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 
     final String format = asts[2].exec(env).getStr();
     if( format.isEmpty() ) throw new IllegalArgumentException("as.Date requires a non-empty format string");
     // check the format string more?
 
-    final String[] dom  = vec.domain();
-    final boolean isStr = dom==null && vec.isString();
+    final String[] dom  = vec.domain(0);
+    final boolean isStr = dom==null && vec.isString(0);
     assert isStr || dom!=null : "as.Date error: domain is null, but vec is not String";
 
     Frame fr2 = new MRTask() {
@@ -146,7 +143,7 @@ class ASTasDate extends ASTPrim {
           } else nc.addNA();
         }
       }
-    }.doAll(1, Vec.T_NUM, fr).outputFrame(fr._names, null);
+    }.doAll(1, Vec.T_NUM, fr.vecs()).outputFrame(fr._names,(String[][])null);
     return new ValFrame(fr2);
   }
 }
@@ -183,13 +180,13 @@ class ASTMktime extends ASTPrim {
     }
 
     // Make constant Vecs for the constant args.  Commonly, they'll all be zero
-    Vec vecs[] = new Vec[7];
+    VecAry vecs = new VecAry();
     for( int i=0; i<7; i++ ) {
       if( fs[i] == null ) {
-        vecs[i] = x.anyVec().makeCon(is[i]);
+        vecs.addVecs(x.vecs().makeCon(is[i]));
       } else {
         if( fs[i].numCols() != 1 ) throw new IllegalArgumentException("Expect single column");
-        vecs[i] = fs[i].anyVec();
+        vecs.addVecs(fs[i].vecs());
       }
     }
 
@@ -211,11 +208,11 @@ class ASTMktime extends ASTPrim {
           n.addNum(dt.getMillis());
         }
       }
-    }.doAll(new byte[]{Vec.T_NUM},vecs).outputFrame(new String[]{"msec"},null);
+    }.doAll(new byte[]{Vec.T_NUM},vecs).outputFrame(new Frame.Names("msec"),(String[][])null);
     // Clean up the constants
     for( int i=0; i<nargs()-1; i++ )
       if( fs[i] == null )
-        vecs[i].remove();
+        vecs.removeVecs(i).remove();
     return new ValFrame(fr2);
   }
 }

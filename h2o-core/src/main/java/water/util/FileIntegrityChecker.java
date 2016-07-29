@@ -81,9 +81,9 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());
         if( DKV.get(k) != null ) dels.add(k.toString());
-        new Frame(k).delete_and_lock((Key)null); // Lock before making the NFS; avoids racing ImportFiles creating same Frame
+        new Frame(k, new VecAry()).delete_and_lock((Key)null); // Lock before making the NFS; avoids racing ImportFiles creating same Frame
         NFSFileVec nfs = NFSFileVec.make(f, fs);
-        new Frame(k,new String[]{"C1"}, new Vec[]{nfs}).update((Key)null).unlock((Key)null);
+        new Frame(k,new String[]{"C1"}, new VecAry(nfs)).update((Key)null).unlock((Key)null);
       }
     }
     fs.blockForPending();

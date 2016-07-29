@@ -37,8 +37,7 @@ public class C0DChunkTest extends TestUtil {
         if (cc.isNA(i)) Assert.assertTrue(Double.isNaN(densevals[i]));
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
-
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);
       Assert.assertEquals(Double.isNaN(d) ? 0: K, nc._sparseLen);

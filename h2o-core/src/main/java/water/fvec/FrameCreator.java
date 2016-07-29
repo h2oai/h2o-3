@@ -93,9 +93,9 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
   @Override public void compute2() {
     int totcols = _createFrame.cols + (_createFrame.has_response ? 1 : 0);
-    Vec[] vecs = new Vec[totcols];
+    VecAry vecs;
     if(_createFrame.randomize) {
-      byte[] types = new byte[vecs.length];
+      byte[] types = new byte[totcols];
       for (int i : _cat_cols) types[i] = Vec.T_CAT;
       for (int i : _bin_cols) types[i] = Vec.T_NUM;
       for (int i : _int_cols) types[i] = Vec.T_NUM;
@@ -105,19 +105,18 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       if (_createFrame.has_response) {
         types[0] = _createFrame.response_factors == 1 ? Vec.T_NUM : Vec.T_CAT;
       }
-      vecs = _v.makeZeros(totcols, _domain, types);
+      vecs = new VecAry(_v).makeZeros(totcols, _domain, types);
     } else {
-      for (int i = 0; i < vecs.length; ++i)
-        vecs[i] = _v.makeCon(_createFrame.value);
+      vecs = new VecAry(_v).makeCons(totcols,_createFrame.value);
     }
     _v.remove();
     _v=null;
-    String[] names = new String[vecs.length];
+    String[] names = new String[totcols];
     if(_createFrame.has_response) {
       names[0] = "response";
-      for (int i = 1; i < vecs.length; i++) names[i] = "C" + i;
+      for (int i = 1; i < vecs.len(); i++) names[i] = "C" + i;
     } else {
-      for (int i = 0; i < vecs.length; i++) names[i] = "C" + (i+1);
+      for (int i = 0; i < vecs.len(); i++) names[i] = "C" + (i+1);
     }
 
     _out = new Frame(_createFrame._job._result, names, vecs);
@@ -126,7 +125,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     _out.delete_and_lock(_createFrame._job._key);
 
     // fill with random values
-    new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols, _time_cols, _string_cols).doAll(_out);
+    new FrameRandomizer(_createFrame, _cat_cols, _int_cols, _real_cols, _bin_cols, _time_cols, _string_cols).doAll(_out.vecs());
 
     //overwrite a fraction with N/A
     FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(_createFrame._job._result, _createFrame.seed, _createFrame.missing_fraction);

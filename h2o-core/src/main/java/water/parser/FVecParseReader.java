@@ -1,5 +1,6 @@
 package water.parser;
 
+import water.fvec.AVec;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 
@@ -8,7 +9,7 @@ import water.fvec.Vec;
  *  @author tomasnykodym
  */
 public class FVecParseReader implements ParseReader {
-  final Vec _vec;
+  final AVec _vec;
   Chunk _chk;
   int _idx;
   final long _firstLine;
@@ -21,7 +22,7 @@ public class FVecParseReader implements ParseReader {
   }
   @Override public byte[] getChunkData(int cidx) {
     if(cidx != _idx)
-      _chk = cidx < _vec.nChunks()?_vec.chunkForChunkIdx(_idx = cidx):null;
+      _chk = cidx < _vec.nChunks()?_vec.chunkForChunkIdx(_idx = cidx).getChunk(0):null;
     if(_chk == null)
       return null;
     _goffset = _chk.start();

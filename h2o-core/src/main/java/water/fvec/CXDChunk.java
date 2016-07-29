@@ -6,7 +6,7 @@ import water.util.UnsafeUtils;
 import java.util.Iterator;
 
 public class CXDChunk extends CXIChunk {
-  protected CXDChunk(int len, int valsz, byte [] buf){super(len,valsz,buf);}
+  protected CXDChunk(int len, int valsz, byte [] buf, boolean sparseNA){super(len,valsz,buf,sparseNA);}
 
   // extract fp value from an (byte)offset
   protected final double getFValue(int off){
@@ -55,14 +55,18 @@ public class CXDChunk extends CXIChunk {
 
   @Override protected long at8_impl(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx){
+      if(_sparseNA)
+        throw new IllegalArgumentException("at8_abs but value is missing");
+      return 0;
+    }
     double d = getFValue(off);
     if(Double.isNaN(d)) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)d;
   }
   @Override protected double atd_impl(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx)return _sparseNA?Double.NaN:0;
     return getFValue(off);
   }
 
@@ -71,15 +75,36 @@ public class CXDChunk extends CXIChunk {
     return getId(off) == i && Double.isNaN(getFValue(off));
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(_len);
-    nc.set_sparseLen(_sparseLen);
-    nc.alloc_doubles(_sparseLen);
-    nc.alloc_indices(_sparseLen);
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
     int off = _OFF;
-    for( int i = 0; i < _sparseLen; ++i, off += ridsz() + valsz()) {
-      nc.indices()[i] = getId(off);
-      nc.doubles()[i] = getFValue(off);
+    int prev = from - 1;
+    for( int i = getId(findOffset(from)); i < getId(findOffset(to)); ++i, off += _ridsz + _valsz) {
+      int id = getId(off);
+      int zeroCnt = id - prev - 1;
+      if(zeroCnt > 0 && isSparseZero()) {
+        nc.addZeros(zeroCnt);
+      } else if(isSparseNA()) {
+        nc.addNAs(zeroCnt);
+      } else throw H2O.unimpl();
+      nc.addNum(getFValue(off));
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for(int i:lines) {
+      int off = findOffset(lines[i]);
+      int j = getId(off);
+      if(i == j) {
+        nc.addNum(getFValue(off));
+      } else if( isSparseZero()){
+        nc.addNum(0.0);
+      } else if(isSparseNA()) {
+        nc.addNA();
+      } else
+        throw H2O.unimpl();
     }
     return nc;
   }

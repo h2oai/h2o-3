@@ -5,6 +5,7 @@ import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
@@ -27,15 +28,15 @@ public class ConfusionMatrix extends Iced {
    *  print_threshold.  Actuals might have extra levels not trained on (hence
    *  never predicted).  Actuals with NAs are not scored, and their predictions
    *  ignored. */
-  public static ConfusionMatrix buildCM(Vec actuals, Vec predictions) {
-    if (!actuals.isCategorical()) throw new IllegalArgumentException("actuals must be categorical.");
-    if (!predictions.isCategorical()) throw new IllegalArgumentException("predictions must be categorical.");
+  public static ConfusionMatrix buildCM(VecAry actuals, VecAry predictions) {
+    if (!actuals.isCategorical(0)) throw new IllegalArgumentException("actuals must be categorical.");
+    if (!predictions.isCategorical(0)) throw new IllegalArgumentException("predictions must be categorical.");
     Scope.enter();
     try {
-      Vec adapted = predictions.adaptTo(actuals.domain());
-      int len = actuals.domain().length;
-      CMBuilder cm = new CMBuilder(len).doAll(actuals, adapted);
-      return new ConfusionMatrix(cm._arr, actuals.domain());
+      VecAry adapted = predictions.adaptTo(actuals.domain(0));
+      int len = actuals.domain(0).length;
+      CMBuilder cm = new CMBuilder(len).doAll(new VecAry(actuals, adapted));
+      return new ConfusionMatrix(cm._arr, actuals.domain(0));
     } finally {
       Scope.exit();
     }

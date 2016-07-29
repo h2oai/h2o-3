@@ -15,42 +15,42 @@ public class VecStatsTest extends TestUtil {
     try {
       Futures fs = new Futures();
       Random random = new Random();
-      Vec[] vecs = new Vec[1];
+
       AppendableVec vec = new AppendableVec(Vec.newKey(), Vec.T_NUM);
       for( int i = 0; i < 2; i++ ) {
         NewChunk chunk = new NewChunk(vec, i);
         for( int r = 0; r < 1000; r++ )
           chunk.addNum(random.nextInt(1000));
-        chunk.close(i, fs);
+        vec.closeChunk(i, chunk, fs);
       }
-      vecs[0] = vec.layout_and_close(fs);
+      VecAry vecs = vec.layout_and_close(fs);
       fs.blockForPending();
-      frame = new Frame(Key.make(), null, vecs);
+      frame = new Frame(Key.make(), (Frame.Names)null, vecs);
 
       // Make sure we test the multi-chunk case
       vecs = frame.vecs();
-      assert vecs[0].nChunks() > 1;
+      assert vecs.nChunks() > 1;
       long rows = frame.numRows();
-      Vec v = vecs[0];
+
       double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY, mean = 0, sigma = 0;
       for( int r = 0; r < rows; r++ ) {
-        double d = v.at(r);
+        double d = vecs.at(r,0);
         if( d < min ) min = d;
         if( d > max ) max = d;
         mean += d;
       }
       mean /= rows;
       for( int r = 0; r < rows; r++ ) {
-        double d = v.at(r);
+        double d = vecs.at(r,0);
         sigma += (d - mean) * (d - mean);
       }
       sigma = Math.sqrt(sigma / (rows - 1));
 
       double epsilon = 1e-9;
-      assertEquals(max, v.max(), epsilon);
-      assertEquals(min, v.min(), epsilon);
-      assertEquals(mean, v.mean(), epsilon);
-      assertEquals(sigma, v.sigma(), epsilon);
+      assertEquals(max, vecs.max(0), epsilon);
+      assertEquals(min, vecs.min(0), epsilon);
+      assertEquals(mean, vecs.mean(0), epsilon);
+      assertEquals(sigma, vecs.sigma(0), epsilon);
     } finally {
       if( frame != null ) frame.delete();
     }
@@ -58,17 +58,15 @@ public class VecStatsTest extends TestUtil {
 
   @Test public void testPCTiles() {
     // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
-    Vec vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
-    double[] pctiles = vec.pctiles();
+    VecAry vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
+    double[] pctiles = vec.pctiles(0);
     //System.out.println(java.util.Arrays.toString(pctiles));
     Assert.assertEquals(13.75,pctiles[4],1e-5);
     vec.remove();
-
     vec = vec(5 , 8 ,  9 , 9 , 9 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 31 , 34 , 43,  43,  43, 161);
-    pctiles = vec.pctiles();
+    pctiles = vec.pctiles(0);
     //System.out.println(java.util.Arrays.toString(pctiles));
     Assert.assertEquals(10.75,pctiles[4],1e-5);
     vec.remove();
-
   }
 }

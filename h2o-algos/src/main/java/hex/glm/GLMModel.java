@@ -16,6 +16,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.*;
 import water.util.ArrayUtils;
 
@@ -117,7 +118,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         return _output._submodels[i].getBeta(MemoryManager.malloc8d(_output._dinfo.fullN()+1));
     throw new RuntimeException("no such lambda value, lambda = " + lambda);
   }
-  public String [] names(){ return _output._names;}
+  public String [] names(){ return _output._names.getNames();}
 
   @Override
   public double deviance(double w, double y, double f) {
@@ -228,20 +229,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           glm.error("beta_constraints","beta constraints are not supported for family = multionomial");
         Frame f = _beta_constraints.get();
         if(f == null) glm.error("beta_constraints","Missing frame for beta constraints");
-        Vec v = f.vec("names");
-        if(v == null)glm.error("beta_constraints","Beta constraints parameter must have names column with valid coefficient names");
+        VecAry v = f.vecs("names");
+        if(v.len() == 0)glm.error("beta_constraints","Beta constraints parameter must have names column with valid coefficient names");
         // todo: check the coefficient names
-        v = f.vec("upper_bounds");
-        if(v != null && !v.isNumeric())
-          glm.error("beta_constraints","upper_bounds must be numeric if present");v = f.vec("upper_bounds");
-        v = f.vec("lower_bounds");
-        if(v != null && !v.isNumeric())
+        v = f.vecs("upper_bounds");
+        if(v.len() > 0 && !v.isNumeric(0))
+          glm.error("beta_constraints","upper_bounds must be numeric if present");
+        v = f.vecs("lower_bounds");
+        if(v.len() > 0 && !v.isNumeric(0))
           glm.error("beta_constraints","lower_bounds must be numeric if present");
-        v = f.vec("beta_given");
-        if(v != null && !v.isNumeric())
-          glm.error("beta_constraints","beta_given must be numeric if present");v = f.vec("upper_bounds");
-        v = f.vec("beta_start");
-        if(v != null && !v.isNumeric())
+        v = f.vecs("beta_given");
+        if(v.len() > 0 && !v.isNumeric(0))
+          glm.error("beta_constraints","beta_given must be numeric if present");
+        v = f.vecs("beta_start");
+        if(v.len() > 0 && !v.isNumeric(0))
           glm.error("beta_constraints","beta_start must be numeric if present");
       }
       if(!_lambda_search) {
@@ -769,10 +770,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
 
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
+    public GLMOutput(DataInfo dinfo, Frame.Names column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
-      _dinfo._adaptedFrame = new Frame(dinfo._adaptedFrame.names().clone(),dinfo._adaptedFrame.vecs().clone());
+      _dinfo._adaptedFrame = new Frame(dinfo._adaptedFrame);
       _names = column_names;
       _domains = domains;
       _coefficient_names = coefficient_names;
@@ -784,7 +785,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta) {
+    public GLMOutput(DataInfo dinfo, Frame.Names column_names, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta) {
       this(dinfo,column_names,domains,coefficient_names,binomial);
       assert !ArrayUtils.hasNaNsOrInfs(beta);
       _global_beta=beta;
@@ -796,21 +797,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public GLMOutput(GLM glm) {
       super(glm);
       _dinfo = glm._dinfo.clone();
-      _dinfo._adaptedFrame = new Frame(glm._dinfo._adaptedFrame.names().clone(),glm._dinfo._adaptedFrame.vecs().clone());
+      _dinfo._adaptedFrame = new Frame(glm._dinfo._adaptedFrame);
       if(!glm.hasWeightCol())
         _dinfo.dropWeights();
       String[] cnames = glm._dinfo.coefNames();
-      String [] names = _dinfo._adaptedFrame._names;
-      String [][] domains = _dinfo._adaptedFrame.domains();
-      int id = glm._generatedWeights == null?-1:ArrayUtils.find(names, glm._generatedWeights);
+      Frame.Names names = _dinfo._adaptedFrame._names;
+      String [][] domains = _dinfo._adaptedFrame.vecs().domains();
+      int id = glm._generatedWeights == null?-1:names.getId(glm._generatedWeights);
       if(id >= 0) {
-        String [] ns = new String[names.length-1];
         String[][] ds = new String[domains.length-1][];
-        System.arraycopy(names,0,ns,0,id);
         System.arraycopy(domains,0,ds,0,id);
-        System.arraycopy(names,id+1,ns,id,ns.length-id);
         System.arraycopy(domains,id+1,ds,id,ds.length-id);
-        names = ns;
+        names.remove(id);
         domains = ds;
       }
       _names = names;
@@ -1169,7 +1167,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   private GLMScore makeScoringTask(Frame adaptFrm, boolean generatePredictions, Job j){
     // Build up the names & domains.
     final boolean computeMetrics = adaptFrm.find(_output.responseName()) >= 0;
-    String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.vecs().domain(adaptFrm.numCols()-1);
     // Score the dataset, building the class distribution & predictions
     return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);
   }
@@ -1185,7 +1183,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
-    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
+    GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm.vecs());
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
@@ -1198,7 +1196,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    */
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
+    return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm.vecs())._mb;
   }
 
 }

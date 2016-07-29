@@ -6,10 +6,7 @@ import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.pca.PCAModel;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.Arrays;
 
@@ -19,7 +16,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     public String algoName() { return "Aggregator"; }
     public String fullName() { return "Aggregator"; }
     public String javaName() { return AggregatorModel.class.getName(); }
-    @Override public long progressUnits() { return 5 + 2*train().anyVec().nChunks() - 1; } // nChunks maps and nChunks-1 reduces, multiply by two for main job overhead
+    @Override public long progressUnits() { return 5 + 2*train().vecs().nChunks() - 1; } // nChunks maps and nChunks-1 reduces, multiply by two for main job overhead
 
     public double _radius_scale=1.0;
     public DataInfo.TransformType _transform = DataInfo.TransformType.NORMALIZE; // Data transformation
@@ -40,7 +37,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   public Aggregator.Exemplar[] _exemplars;
   public long[] _counts;
-  public Key<Vec> _exemplar_assignment_vec_key;
+  public VecAry _exemplar_assignment_vec;
 
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
 
@@ -51,7 +48,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   @Override
   protected Futures remove_impl(Futures fs) {
-    _exemplar_assignment_vec_key.remove();
+    _exemplar_assignment_vec.remove();
     return super.remove_impl(fs);
   }
 
@@ -69,10 +66,9 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     final long[] keep = new long[_exemplars.length];
     for (int i=0;i<keep.length;++i)
       keep[i]=_exemplars[i].gid;
-
-    Vec exAssignment = _exemplar_assignment_vec_key.get();
+    VecAry exAssignment = _exemplar_assignment_vec;
     // preserve the original row order
-    Vec booleanCol = new MRTask() {
+    VecAry booleanCol = new MRTask() {
       @Override
       public void map(Chunk c, Chunk c2) {
         for (int i=0;i<keep.length;++i) {
@@ -81,22 +77,22 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
           c2.set((int)(keep[i]-c.start()), 1);
         }
       }
-    }.doAll(new Frame(new Vec[]{exAssignment, exAssignment.makeZero()}))._fr.vec(1);
+    }.doAll(new VecAry(exAssignment, exAssignment.makeZero())).vecs().getVecs(1);
 
     Frame orig = _parms.train();
-    Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-    vecs[vecs.length-1] = booleanCol;
+    VecAry vecs = orig.vecs();
+    vecs.addVecs(booleanCol);
 
-    Frame ff = new Frame(orig.names(), orig.vecs());
+    Frame ff = new Frame(orig);
     ff.add("predicate", booleanCol);
-    Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    Frame res = new Frame.DeepSelect().doAll(orig.vecs().types(),ff.vecs()).outputFrame(destination_key, orig._names, orig.vecs().domains());
     booleanCol.remove();
     assert(res.numRows()==_exemplars.length);
 
-    Vec cnts = res.anyVec().makeZero();
-    Vec.Writer vw = cnts.open();
+    VecAry cnts = res.vecs().makeZero();
+    VecAry.VecAryWriter vw = cnts.vecWriter();
     for (int i=0;i<_counts.length;++i)
-      vw.set(i, _counts[i]);
+      vw.set(i,0, _counts[i]);
     vw.close();
     res.add("counts", cnts);
     return res;
@@ -104,21 +100,21 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   @Override
   public Frame scoreExemplarMembers(Key destination_key, final int exemplarIdx) {
-    Vec booleanCol = new MRTask() {
+    VecAry booleanCol = new MRTask() {
       @Override
       public void map(Chunk c, NewChunk nc) {
         for (int i=0;i<c._len;++i)
           nc.addNum(c.at8(i)==_exemplars[exemplarIdx].gid ? 1 : 0,0);
       }
-    }.doAll(Vec.T_NUM, new Frame(new Vec[]{_exemplar_assignment_vec_key.get()})).outputFrame().anyVec();
+    }.doAll(Vec.T_NUM, _exemplar_assignment_vec).outputVecs(null);
 
     Frame orig = _parms.train();
-    Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-    vecs[vecs.length-1] = booleanCol;
+    VecAry vecs = new VecAry(orig.vecs());
+    vecs.addVecs(booleanCol);
 
-    Frame ff = new Frame(orig.names(), orig.vecs());
+    Frame ff = new Frame(orig);
     ff.add("predicate", booleanCol);
-    Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    Frame res = new Frame.DeepSelect().doAll(orig.vecs().types(),ff.vecs()).outputFrame(destination_key, orig._names, orig.vecs().domains());
     assert(res.numRows()==_counts[exemplarIdx]);
     booleanCol.remove();
     return res;
@@ -133,7 +129,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
       exemplarGIDs[i] = this._exemplars[i].gid;
     long[] counts = new long[this._exemplars.length];
     for (int i = 0; i < _parms.train().numRows(); ++i) {
-      long ass = (_exemplar_assignment_vec_key.get()).at8(i);
+      long ass = _exemplar_assignment_vec.at8(i,0);
       for (int j = 0; j < exemplarGIDs.length; ++j) {
         if (exemplarGIDs[j] == ass) {
           counts[j]++;

@@ -136,27 +136,27 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._nv; i++)
-      adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
+      adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.vecs().makeZero());
 
     new MRTask() {
       @Override public void map( Chunk chks[] ) {
         if (isCancelled() || j != null && j.stop_requested()) return;
-        double tmp [] = new double[_output._names.length];
+        double tmp [] = new double[_output._names.len()];
         double preds[] = new double[_parms._nv];
         for( int row = 0; row < chks[0]._len; row++) {
           double p[] = score0(chks, row, tmp, preds);
           for( int c=0; c<preds.length; c++ )
-            chks[_output._names.length+c].set(row, p[c]);
+            chks[_output._names.len()+c].set(row, p[c]);
         }
         if (j !=null) j.update(1);
       }
-    }.doAll(adaptFrm);
+    }.doAll(adaptFrm.vecs());
 
     // Return the projection into right singular vector (V) space
-    int x = _output._names.length, y = adaptFrm.numCols();
+    int x = _output._names.len(), y = adaptFrm.numCols();
     Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
 
-    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f._names.getNames(), f.vecs());
     DKV.put(f);
     makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
     return f;

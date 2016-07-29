@@ -6,6 +6,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.*;
 import water.util.TwoDimTable;
 
@@ -100,7 +101,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
       long na_cnt = 0;
       Frame train = _train.get();
       for(int i = 0; i < train.numCols(); i++)
-        na_cnt += train.vec(i).naCnt();
+        na_cnt += train.vecs().naCnt(i);
       return hasClosedForm(na_cnt);
     }
 
@@ -491,7 +492,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
     /** Override because base class implements ncols-1 for features with the
      *  last column as a response variable; for GLRM all the columns are features. */
-    @Override public int nfeatures() { return _names.length; }
+    @Override public int nfeatures() { return _names.len(); }
 
     @Override public ModelCategory getModelCategory() {
       return ModelCategory.DimReduction;
@@ -522,7 +523,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   private Frame reconstruct(Frame orig, Frame adaptedFr, Key destination_key, boolean save_imputed, boolean reverse_transform) {
-    final int ncols = _output._names.length;
+    final int ncols = _output._names.len();
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
 
@@ -531,19 +532,18 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame fullFrm = new Frame(adaptedFr);
     Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
-    String[][] adaptedDomme = adaptedFr.domains();
+    String[][] adaptedDomme = adaptedFr.vecs().domains();
     for(int i = 0; i < ncols; i++) {
-      Vec v = fullFrm.anyVec().makeZero();
-      v.setDomain(adaptedDomme[i]);
-      fullFrm.add(prefix + _output._names[i], v);
+      VecAry v = fullFrm.vecs().makeZero(adaptedDomme[i]);
+      fullFrm.add(prefix + _output._names.getName(i), v);
     }
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, save_imputed, reverse_transform).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, _parms._k, save_imputed, reverse_transform).doAll(fullFrm.vecs());
 
     // Return the imputed training frame
     int x = ncols + _parms._k, y = fullFrm.numCols();
     Frame f = fullFrm.extractFrame(x, y);  // this will call vec_impl() and we cannot call the delete() below just yet
 
-    f = new Frame((null == destination_key ? Key.make() : destination_key), f.names(), f.vecs());
+    f = new Frame((null == destination_key ? Key.make() : destination_key), f._names, f.vecs());
     DKV.put(f);
     gs._mb.makeModelMetrics(GLRMModel.this, orig, null, null);   // save error metrics based on imputed data
     return f;
@@ -566,11 +566,11 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
    * @return Frame containing k rows and n columns, where each row corresponds to an archetype
    */
   public Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform) {
-    final int ncols = _output._names.length;
+    final int ncols = _output._names.len();
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
     assert ncols == adaptedFr.numCols();
-    String[][] adaptedDomme = adaptedFr.domains();
+    String[][] adaptedDomme = adaptedFr.vecs().domains();
     double[][] proj = new double[_parms._k][_output._nnums + _output._ncats];
 
     // Categorical columns
@@ -592,8 +592,8 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     }
 
     // Convert projection of archetypes into a frame with correct domains
-    Frame f = ArrayUtils.frame((null == destination_key ? Key.make() : destination_key), adaptedFr.names(), proj);
-    for(int i = 0; i < ncols; i++) f.vec(i).setDomain(adaptedDomme[i]);
+    Frame f = ArrayUtils.frame((null == destination_key ? Key.make() : destination_key), adaptedFr._names.getNames(), proj);
+    for(int i = 0; i < ncols; i++) f.vecs().setDomain(i,adaptedDomme[i]);
     return f;
   }
 
@@ -679,7 +679,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   public ModelMetricsGLRM scoreMetricsOnly(Frame frame) {
-    final int ncols = _output._names.length;
+    final int ncols = _output._names.len();
 
     // Need [A,X] where A = adapted test frame, X = loading frame
     // Note: A is adapted to original training frame
@@ -692,7 +692,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     Frame loadingFrm = DKV.get(_output._representation_key).get();
     fullFrm.add(loadingFrm);
 
-    GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm);
+    GLRMScore gs = new GLRMScore(ncols, _parms._k, false).doAll(fullFrm.vecs());
     ModelMetrics mm = gs._mb.makeModelMetrics(GLRMModel.this, adaptedFr, null, null);   // save error metrics based on imputed data
     return (ModelMetricsGLRM) mm;
   }

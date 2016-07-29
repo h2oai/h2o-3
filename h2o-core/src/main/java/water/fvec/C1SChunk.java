@@ -38,19 +38,7 @@ public class C1SChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)C1Chunk._NA; return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    double dx = Math.log10(_scale);
-    assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.set_sparseLen(0);
-    nc.set_len(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = 0xFF&_mem[i+_OFF];
-      if( res == C1Chunk._NA ) nc.addNA();
-      else nc.addNum((res+_bias),(int)dx);
-    }
-    return nc;
-  }
+
   //public int pformat_len0() { return hasFloat() ? pformat_len0(_scale,3) : super.pformat_len0(); }
   //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
@@ -88,6 +76,30 @@ public class C1SChunk extends Chunk {
       vals[j++] = res != C1Chunk._NA?(res + _bias)*_scale:Double.NaN;
     }
     return vals;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
+    double dx = Math.log10(_scale);
+    assert water.util.PrettyPrint.fitsIntoInt(dx);
+    for( int i=from; i<to; i++ ) {
+      int res = 0xFF&_mem[i+_OFF];
+      if( res == C1Chunk._NA ) nc.addNA();
+      else nc.addNum((res+_bias),(int)dx);
+    }
+    return nc;
+  }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    double dx = Math.log10(_scale);
+    assert water.util.PrettyPrint.fitsIntoInt(dx);
+    for( int i:lines) {
+      int res = 0xFF&_mem[i+_OFF];
+      if( res == C1Chunk._NA ) nc.addNA();
+      else nc.addNum((res+_bias),(int)dx);
+    }
+    return nc;
   }
 
 }

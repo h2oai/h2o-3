@@ -8,7 +8,7 @@ import java.util.Iterator;
 
 // Sparse chunk.
 public class CXIChunk extends Chunk {
-  private transient int _valsz; // byte size of stored value
+  protected transient int _valsz; // byte size of stored value
   protected final int valsz() { return _valsz; }
   private transient int _valsz_log; //
   protected transient int _ridsz; // byte size of stored (chunk-relative) row nums
@@ -19,7 +19,8 @@ public class CXIChunk extends Chunk {
 
   private static final long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
-  protected CXIChunk(int len, int valsz, byte [] buf){
+  protected CXIChunk(int len, int valsz, byte [] buf, boolean sparseNA){
+    super(buf,!sparseNA,sparseNA);
     assert (valsz == 0 || valsz == 1 || valsz == 2 || valsz == 4 || valsz == 8);
     set_len(len);
     int log = 0;
@@ -32,7 +33,6 @@ public class CXIChunk extends Chunk {
     byte b = (byte) _ridsz;
     buf[4] = b;
     buf[5] = (byte) _valsz;
-    _mem = buf;
     _sparseLen = (_mem.length - _OFF) / (_valsz+_ridsz);
     assert (_mem.length - _OFF) % (_valsz+_ridsz) == 0:"unexpected mem buffer length: mem.length = " + _mem.length + ", off = " + _OFF + ", valSz = " + _valsz + "ridsz = " + _ridsz;
   }
@@ -55,23 +55,49 @@ public class CXIChunk extends Chunk {
     return vals;
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_nums(_sparseLen);
-    nc.alloc_indices(_sparseLen);
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
     int off = _OFF;
-    for( int i = 0; i < _sparseLen; ++i, off += _ridsz + _valsz) {
+    int prev = from - 1;
+    for( int i = getId(findOffset(from)); i < getId(findOffset(to)); ++i, off += _ridsz + _valsz) {
       int id = getId(off);
-      nc.addZeros(id-nc._len);
+      if(isSparseZero())
+        nc.addZeros(id-prev-1);
+      else if(isSparseNA())
+        nc.addNAs(id-prev-1);
+      else
+        throw H2O.unimpl();
+      prev = id;
       long v = getIValue(off);
       if(v == NAS[_valsz_log])
         nc.addNA();
       else
         nc.addNum(v,0);
     }
-    nc.set_len(_len);
-    assert nc._sparseLen == _sparseLen;
     return nc;
   }
+
+  @Override
+  public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
+    for(int i:lines) {
+      int off = findOffset(lines[i]);
+      int j = getId(off);
+      if(i == j) {
+        long v = getIValue(off);
+        if(v == NAS[_valsz_log])
+          nc.addNA();
+        else
+          nc.addNum(v,0);
+      } else if( isSparseZero()){
+        nc.addNum(0,0);
+      } else if(isSparseNA()) {
+        nc.addNA();
+      } else
+        throw H2O.unimpl();
+    }
+    return nc;
+  }
+
 
   @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
     if(vals.length < _sparseLen)throw new IllegalArgumentException();
@@ -140,11 +166,9 @@ public class CXIChunk extends Chunk {
           break;
       }
     } else throw H2O.unimpl();
-    return isSparseNA() ? sparseLenNA() : sparseLenZero();
+    return sparseLen();
   }
 
-  @Override public boolean isSparseZero() {return true;}
-  @Override public int sparseLenZero(){ return _sparseLen; }
   @Override public int nextNZ(int rid){
     final int off = rid == -1?_OFF:findOffset(rid);
     int x = getId(off);
@@ -169,7 +193,10 @@ public class CXIChunk extends Chunk {
 
   @Override protected long at8_impl(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx) {
+      if(_sparseNA) throw new IllegalArgumentException("at8_abs but value is missing");
+      return 0;
+    }
     long v = getIValue(off);
     if( v== NAS[_valsz_log])
       throw new IllegalArgumentException("at8_abs but value is missing");
@@ -177,14 +204,16 @@ public class CXIChunk extends Chunk {
   }
   @Override protected double atd_impl(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx)
+      return _sparseNA?Double.NaN:0;
     long v =  getIValue(off);
     return (v == NAS[_valsz_log])?Double.NaN:v;
   }
 
   @Override protected boolean isNA_impl( int i ) {
     int off = findOffset(i);
-    return getId(off) == i && getIValue(off) == NAS[_valsz_log];
+    int j = getId(off);
+    return _sparseNA && i != j || i == j && getIValue(off) == NAS[_valsz_log];
   }
 
 

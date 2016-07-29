@@ -19,11 +19,11 @@ public final class HDFSFileVec extends FileVec {
   public static Key make(String path, long size, Futures fs) {
     Key k = Key.make(path);
     Key k2 = Vec.newKey(k);
-    new Frame(k).delete_and_lock();
+    new Frame(k, new VecAry()).delete_and_lock();
     // Insert the top-level FileVec key into the store
     Vec v = new HDFSFileVec(k2,size);
     DKV.put(k2, v, fs);
-    Frame fr = new Frame(k,new String[]{path},new Vec[]{v});
+    Frame fr = new Frame(k,new Frame.Names(path),new VecAry(v));
     fr.update();
     fr.unlock();
     return k;

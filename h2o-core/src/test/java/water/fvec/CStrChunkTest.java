@@ -45,7 +45,7 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc2.isNA(vals.length + l));
       Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate();
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 
       if (l==1) Assert.assertTrue(nc.isNA(0));
@@ -78,16 +78,16 @@ public class CStrChunkTest extends TestUtil {
 
       //Create a label vector
       byte[] typeArr = {Vec.T_STR};
-      Vec labels = frame.lastVec().makeCons(1, 0, null, typeArr)[0];
-      Vec.Writer writer = labels.open();
-      int rowCnt = (int)frame.lastVec().length();
+      VecAry labels = frame.vecs().makeCons(1, 0, null, typeArr);
+      VecAry.VecAryWriter writer = labels.vecWriter();
+      int rowCnt = (int)frame.numRows();
       for (int r = 0; r < rowCnt; r++) // adding labels in reverse order
-        writer.set(rowCnt-r-1, "Foo"+(r+1));
+        writer.set(rowCnt-r-1,0, "Foo"+(r+1));
       writer.close();
 
       //Append label vector and spot check
       frame.add("Labels", labels);
-      Assert.assertTrue("Failed to create a new String based label column", frame.lastVec().atStr(new BufferedString(), 42).compareTo(new BufferedString("Foo108"))==0);
+      Assert.assertTrue("Failed to create a new String based label column", frame.vecs().vecReader(false).atStr(new BufferedString(), 42, frame.numCols()-1).compareTo(new BufferedString("Foo108"))==0);
     } finally {
       if (frame != null) frame.delete();
     }

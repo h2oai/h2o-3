@@ -6,6 +6,7 @@ import water.util.ArrayUtils;
 import water.util.RandomUtils;
 import water.util.VecUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -41,7 +42,8 @@ public class VecAry extends Iced {
     throw H2O.unimpl();
   }
 
-  public AVec getVecRaw(int i) {return _vblocks[i];}
+  public AVec getAVecRaw(int i) {return _vblocks[i];}
+  public AVec getAVecForCol(int i) {throw H2O.unimpl();}
 
   public boolean isInt(int col) {
     throw H2O.unimpl(); // TODO
@@ -64,7 +66,7 @@ public class VecAry extends Iced {
     throw H2O.unimpl(); // TODO
   }
 
-  public int elem2ChunkId(long l) {
+  public int elem2ChunkIdx(long l) {
     int res = Arrays.binarySearch(espc(),l);
     return res < 0?(-res-2):res;
   }
@@ -144,9 +146,8 @@ public class VecAry extends Iced {
     throw H2O.unimpl();
   }
 
-
-  public VecAry adaptTo(int i, String [] domain){
-    return new VecAry(new CategoricalWrappedVec(group().addVec(),_vblocks[0]._rowLayout,domain,getVecs(i)));
+  public VecAry adaptTo(String [] domain){
+    return new VecAry(new CategoricalWrappedVec(group().addVec(),_vblocks[0]._rowLayout,domain,this));
   }
 
   public boolean isConst(int i) {
@@ -171,7 +172,7 @@ public class VecAry extends Iced {
     throw H2O.unimpl();
   }
 
-  public void setVec(int id, VecAry vec) {
+  public VecAry setVec(int id, VecAry vec) {
     throw H2O.unimpl();
   }
 
@@ -205,13 +206,12 @@ public class VecAry extends Iced {
     throw H2O.unimpl();
   }
 
-  public String get_type_str() {
-    byte [] ts = types();
-    if(ts.length == 1) return Vec.TYPE_STR[ts[0]];
-    StringBuilder sb = new StringBuilder();
-    for(byte b:ts)
-      sb.append(Vec.TYPE_STR[b]).append(",");
-    return sb.toString();
+
+  public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
+    String s[] = new String[len()];
+    for(int i=0;i<len();++i)
+      s[i] = Vec.TYPE_STR[type(i)];
+    return s;
   }
 
   public int cardinality(int i) {
@@ -220,6 +220,95 @@ public class VecAry extends Iced {
 
   public double[] pctiles(int i) {
     throw H2O.unimpl();
+  }
+
+  public long[] bins(int i) {
+    throw H2O.unimpl();
+  }
+
+  /**
+   * Copy out all vecs in this ary which are supported by the given AVec.
+   * Used for reference counting on AVecs.
+   * @param k
+   */
+  public void replaceWithCopy(Key<AVec> k) {
+    throw H2O.unimpl();
+  }
+
+  public int homeNode(int c) {return _vblocks[0].chunkKey(c).home_node().index();}
+
+  public int [] categoricals() {
+    int [] res = new int[len()];
+    int j = 0;
+    for(int i = 0; i < res.length; ++i)
+      if(isCategorical(i))
+        res[j++] = i;
+    return j == res.length?res:Arrays.copyOf(res,j);
+  }
+
+  public int nzCnt(int i) {
+    throw H2O.unimpl();
+  }
+
+  public double[] sigmas() {
+    throw H2O.unimpl();
+  }
+
+  public double sparseRatio(int i) {
+    return (double)nzCnt(i)/numRows();
+  }
+
+  public VecAry makeCons(int totcols, long value) {
+    throw H2O.unimpl();
+  }
+
+
+  public VecAry replaceVecs(VecAry vecs, int... cols) {
+    throw H2O.unimpl();
+  }
+  public boolean isTime(int n) {
+    throw H2O.unimpl();
+  }
+
+  public double at(long i, int j) {
+    throw H2O.unimpl();
+  }
+
+  public boolean isNA(long i, int j) {
+    throw H2O.unimpl();
+  }
+
+  public BufferedString atStr(BufferedString str, long row, int vecId) {
+    throw H2O.unimpl();
+  }
+
+  public long at8(long rowId, int vecId) {
+    throw H2O.unimpl();
+  }
+
+  public int at4(long rowId, int vecId) {
+    long l = at8(rowId,vecId);
+    int i = (int)l;
+    if(i != l) throw new IllegalArgumentException("can not fit in integer, l = " + l);
+    return i;
+  }
+
+  public long at16l(int row, int col) {
+    throw H2O.unimpl();
+  }
+
+  public long at16h(int row, int col) {
+    throw H2O.unimpl();
+  }
+
+  public int mode(int i) {throw H2O.unimpl();}
+
+  public AVec[] getAVecs(Class<? extends AVec> c) {
+    ArrayList<AVec> res = new ArrayList<>();
+    for(AVec a:_vblocks)
+      if(c.isInstance(a))
+        res.add(a);
+    return res.toArray(new AVec[res.size()]);
   }
 
 
@@ -295,6 +384,10 @@ public class VecAry extends Iced {
       Futures fs = new Futures();
       close(fs);
       fs.blockForPending();
+    }
+
+    public void set(long rowId, int vecId, String s) {
+      throw H2O.unimpl();
     }
   }
 
@@ -449,6 +542,7 @@ public class VecAry extends Iced {
   public Futures postWrite( Futures fs ) {
     throw H2O.unimpl();
   }
+
 
   // Make a bunch of compatible zero Vectors
   public VecAry makeCons(final int n, final double con, String[][] domains, byte[] types) {

@@ -56,4 +56,21 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
   }
 
   public Class<? extends KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }
+
+  /** Write this Keyed object, and all nested Keys. */
+  public final AutoBuffer writeAll(AutoBuffer ab) { return writeAll_impl(ab.put(this)); }
+  // Override this to write out subparts
+  protected AutoBuffer writeAll_impl(AutoBuffer ab) { throw H2O.unimpl();  }
+
+  /** Read a Keyed object, and all nested Keys.  Nested Keys are injected into the K/V store
+   *  overwriting what was there before.  */
+  public static Keyed readAll(AutoBuffer ab) {
+    Futures fs = new Futures();
+    Keyed k = ab.getKey(fs);
+    fs.blockForPending();       // Settle out all internal Key puts
+    return k;
+  }
+  // Override this to read in subparts
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { throw H2O.unimpl(); }
+
 }

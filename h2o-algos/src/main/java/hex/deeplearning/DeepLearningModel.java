@@ -10,10 +10,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 
 import java.lang.reflect.Field;
@@ -210,7 +207,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     makeWeightsBiases(destKey);
     _output._scoring_history = DeepLearningScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
-    _output._names = dataInfo._adaptedFrame.names();
+    _output._names = dataInfo._adaptedFrame._names;
     _output._domains = dataInfo._adaptedFrame.domains();
     assert(Arrays.equals(_key._kb, destKey._kb));
   }
@@ -546,7 +543,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
       Frame f = new MRTask() {
         @Override public void map( Chunk chks[], NewChunk recon[] ) {
-          double tmp [] = new double[_output._names.length];
+          double tmp [] = new double[_output._names.len()];
           double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
@@ -555,7 +552,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               recon[c].addNum(p[c]);
           }
         }
-      }.doAll(len, Vec.T_NUM, adaptedFr).outputFrame();
+      }.doAll(len, Vec.T_NUM, adaptedFr.vecs()).outputFrame();
 
       Frame of = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), names, f.vecs());
       DKV.put(of);
@@ -706,7 +703,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public Frame scoreAutoEncoder(Frame frame, Key destination_key, final boolean reconstruction_error_per_feature) {
     if (!get_params()._autoencoder)
       throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
-    final int len = _output._names.length;
+    final int len = _output._names.len();
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     final int outputcols = reconstruction_error_per_feature ? model_info.data_info.fullN() : 1;
@@ -723,7 +720,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             mse[i].addNum(out[i]);
         }
       }
-    }.doAll(outputcols, Vec.T_NUM, adaptFrm).outputFrame();
+    }.doAll(outputcols, Vec.T_NUM, adaptFrm.vecs()).outputFrame();
 
     String[] names;
     if (reconstruction_error_per_feature) {
@@ -739,7 +736,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
-    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/));
+    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs().mean(0) /*mean MSE*/));
     return res;
   }
 
@@ -763,22 +760,21 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       int ridx = frame.find(_output.responseName());
       if (ridx != -1) { // drop the response for scoring!
         frame = new Frame(frame);
-        resp = frame.vecs()[ridx];
         frame.remove(ridx);
       }
     }
     Frame adaptFrm = new Frame(frame);
     //create new features, will be dense
     final int features = model_info().get_params()._hidden[layer];
-    Vec v = adaptFrm.anyVec();
-    Vec[] vecs = v!=null ? v.makeZeros(features) : null;
+    VecAry v = adaptFrm.vecs();
+    VecAry vecs = v!=null ? v.makeZeros(features) : null;
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
     adaptTestForTrain(_output._names, _output.weightsName(), _output.offsetName(), _output.foldName(), null /*don't skip response*/, _output._domains, adaptFrm, get_params().missingColumnsType(), true, true,_output.interactions());
-    for (int j=0; j<features; ++j) {
-      adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
-    }
+    String [] names = new String[vecs.len()];
+    for (int j=0; j<features; ++j) names[j] = "DF.L"+(layer+1)+".C" + (j+1);
+    adaptFrm.add(names, vecs);
     final int mb=0;
     final int n=1;
     new MRTask() {
@@ -793,14 +789,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
           double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
-            chks[_output._names.length+c].set(row,out[c]);
+            chks[_output._names.len()+c].set(row,out[c]);
         }
         if (job != null) job.update(1);
       }
-    }.doAll(adaptFrm);
+    }.doAll(adaptFrm.vecs());
 
     // Return just the output columns
-    int x=_output._names.length, y=adaptFrm.numCols();
+    int x=_output._names.len(), y=adaptFrm.numCols();
     Frame ret = adaptFrm.extractFrame(x, y);
 //    if (resp != null) ret.prepend(_output.responseName(), resp);
     Scope.exit();
@@ -811,7 +807,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   // Make (potentially expanded) reconstruction
   private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
     assert(get_params()._autoencoder);
-    assert(tmp.length == _output._names.length);
+    assert(tmp.length == _output._names.len());
     for (int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
     score_autoencoder(tmp, preds, neurons, reconstruction, reconstruction_error_per_feature); // this fills preds, returns MSE error (ignored here)
@@ -864,7 +860,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return Threshold in MSE value for a point to be above the quantile
    */
   public double calcOutlierThreshold(Vec mse, double quantile) {
-    Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
+    Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new VecAry(mse));
     DKV.put(mse_frame._key, mse_frame);
 
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();

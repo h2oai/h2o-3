@@ -26,12 +26,12 @@ public class RebalanceDatasetTest extends TestUtil {
         Frame rebalanced = null;
         try {
           Scope.enter();
-          RebalanceDataSet rb = new RebalanceDataSet(fr, rebalancedKey, i);
+          RebalanceDataSet rb = new RebalanceDataSet(fr.vecs(), i);
           H2O.submitTask(rb);
           rb.join();
-          rebalanced = DKV.get(rebalancedKey).get();
+          rebalanced = new Frame(rb._dst);
           assertEquals(rebalanced.numRows(), fr.numRows());
-          assertEquals(rebalanced.anyVec().nChunks(), i);
+          assertEquals(rebalanced.vecs().nChunks(), i);
           assertTrue(isBitIdentical(fr, rebalanced));
           Log.info("Rebalanced into " + i + " chunks:");
           Log.info(FrameUtils.chunkSummary(rebalanced).toString());
