@@ -195,7 +195,7 @@ sys.excepthook = _except_hook
 
 def _handle_soft_error(exc_type, exc_value, exc_tb):
     colorama.init()
-    err(Fore.LIGHTRED_EX + exc_type.__name__ + ": " + str(exc_value))
+    err(Fore.LIGHTRED_EX + exc_type.__name__ + ": " + str(exc_value) + Style.RESET_ALL)
 
     # Convert to the list of frames
     tb = exc_tb
@@ -218,6 +218,7 @@ def _handle_soft_error(exc_type, exc_value, exc_tb):
         line += _wrap(args_str + ") line %d" % frames[i].f_lineno, indent=indent_len)
         line += Style.RESET_ALL
         err(line)
+    err()
 
     colorama.deinit()
 

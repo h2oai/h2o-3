@@ -113,8 +113,10 @@ class H2OTypeError(H2OSoftError):
                 res.append("string")
             elif tt is int:
                 res.append("integer")
-            elif is_str(tt) or is_int(tt):
-                res.append(repr(tt))
+            elif is_str(tt):
+                res.append('"%s"' % repr(tt)[1:-1])
+            elif is_int(tt):
+                res.append(str(tt))
             elif isinstance(tt, U):
                 res.append(H2OTypeError._get_type_name(tt))
             elif isinstance(tt, type):
@@ -127,7 +129,7 @@ class H2OTypeError(H2OSoftError):
                 res.append("(%s)" % ", ".join(H2OTypeError._get_type_name([item]) for item in tt))
             elif isinstance(tt, dict):
                 res.append("dict(%s)" % ", ".join(
-                    "%s: %s" % (H2OTypeError._get_type_name(tk), H2OTypeError._get_type_name(tv))
+                    "%s: %s" % (H2OTypeError._get_type_name([tk]), H2OTypeError._get_type_name([tv]))
                     for tk, tv in tt.items()
                 ))
             else:

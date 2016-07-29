@@ -225,35 +225,38 @@ def _retrieve_assert_arguments():
             fr = fr.f_back
 
         # Read the source file and tokenize it, extracting the expressions.
-        with open(fr.f_code.co_filename, "r") as f:
-            # Skip initial lines that are irrelevant
-            for i in range(fr.f_lineno - 1): next(f)
-            # Create tokenizer
-            g = tokenize.generate_tokens(f.readline)
-            step = 0
-            args_tokens = []
-            level = 0
-            for ttt in g:
-                if step == 0:
-                    if ttt[0] != tokenize.NAME: continue
-                    if not ttt[1].startswith("assert_"): continue
-                    step = 1
-                elif step == 1:
-                    assert ttt[0] == tokenize.OP and ttt[1] == "("
-                    args_tokens.append([])
-                    step = 2
-                elif step == 2:
-                    if level == 0 and ttt[0] == tokenize.OP and ttt[1] == ",":
+        try:
+            with open(fr.f_code.co_filename, "r") as f:
+                # Skip initial lines that are irrelevant
+                for i in range(fr.f_lineno - 1): next(f)
+                # Create tokenizer
+                g = tokenize.generate_tokens(f.readline)
+                step = 0
+                args_tokens = []
+                level = 0
+                for ttt in g:
+                    if step == 0:
+                        if ttt[0] != tokenize.NAME: continue
+                        if not ttt[1].startswith("assert_"): continue
+                        step = 1
+                    elif step == 1:
+                        assert ttt[0] == tokenize.OP and ttt[1] == "("
                         args_tokens.append([])
-                    elif level == 0 and ttt[0] == tokenize.OP and ttt[1] == ")":
-                        break
-                    else:
-                        if ttt[0] == tokenize.OP and ttt[1] in "([{": level += 1
-                        if ttt[0] == tokenize.OP and ttt[1] in ")]}": level -= 1
-                        assert level >= 0, "Parse error: parentheses level became negative"
-                        args_tokens[-1].append(ttt)
-            args = [tokenize.untokenize(at).strip().replace("\n", " ") for at in args_tokens]
-            return args
+                        step = 2
+                    elif step == 2:
+                        if level == 0 and ttt[0] == tokenize.OP and ttt[1] == ",":
+                            args_tokens.append([])
+                        elif level == 0 and ttt[0] == tokenize.OP and ttt[1] == ")":
+                            break
+                        else:
+                            if ttt[0] == tokenize.OP and ttt[1] in "([{": level += 1
+                            if ttt[0] == tokenize.OP and ttt[1] in ")]}": level -= 1
+                            assert level >= 0, "Parse error: parentheses level became negative"
+                            args_tokens[-1].append(ttt)
+                args = [tokenize.untokenize(at).strip().replace("\n", " ") for at in args_tokens]
+                return args
+        except IOError:
+            return "arg",
 
 
 
