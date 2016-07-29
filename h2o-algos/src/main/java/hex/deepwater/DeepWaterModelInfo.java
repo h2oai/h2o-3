@@ -14,6 +14,8 @@ import water.util.*;
  */
 final public class DeepWaterModelInfo extends Iced {
   transient ImageTrain _imageTrain; //each node needs to load its own native model
+  int _height;
+  int _width;
 
   public TwoDimTable summaryTable;
 
@@ -68,6 +70,8 @@ final public class DeepWaterModelInfo extends Iced {
     _imageTrain = new ImageTrain();
     _imageTrain.buildNet(nClasses, parameters._mini_batch_size, "inception_bn");
     _imageTrain.loadParam(expandPath("~/deepwater/Inception/model.params"));
+    _height = 360;
+    _width = 360;
   }
   static String expandPath(String path) {
     return path.replaceFirst("^~", System.getProperty("user.home"));
