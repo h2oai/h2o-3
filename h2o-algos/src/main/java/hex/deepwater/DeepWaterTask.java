@@ -4,6 +4,7 @@ import water.Futures;
 import water.H2O;
 import water.Job;
 import water.MRTask;
+import water.gpu.ImageTrain;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -101,40 +102,54 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
 
       start = System.currentTimeMillis();
-      long gputime=0;
+      long nativetime =0;
       Futures fs = new Futures();
+      NativeTrainTask ntt = null;
       while(img_iter.Next(fs) && !_job.isStopping()) {
+        if (ntt!=null) nativetime +=ntt._timeInMillis;
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
         long n = _localmodel.get_processed_total();
         Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
         _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
         _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
-        long gpustart = System.currentTimeMillis();
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        final float[] mydata=data;
-        final float[] mylabels=labels;
-        fs.add(H2O.submitTask(new H2O.H2OCountedCompleter() {
-          @Override
-          public void compute2() {
-            _localmodel._imageTrain.train(mydata,mylabels); //ignore predictions
-            tryComplete();
-          }
-        }
-        ));
-        long gpuend = System.currentTimeMillis();
-        gputime+=gpuend-gpustart;
+        ntt = new NativeTrainTask(model_info()._imageTrain, data, labels);
+        fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(batch_size);
       }
+      nativetime +=ntt._timeInMillis;
       end = System.currentTimeMillis();
-      long cputime=end-start-gputime;
+      long cputime=end-start- nativetime;
       Log.info("Time for one epoch: " + PrettyPrint.msecs(end-start, true));
       Log.info("Time for data preparation: " + PrettyPrint.msecs(cputime, true));
-      Log.info("Time for Native training : " + PrettyPrint.msecs(gputime, true));
+      Log.info("Time for Native training : " + PrettyPrint.msecs(nativetime, true));
 
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  static private class NativeTrainTask extends H2O.H2OCountedCompleter<NativeTrainTask> {
+    NativeTrainTask(ImageTrain it, float[] data, float[] labels) {
+      _it = it;
+      _data = data;
+      _labels = labels;
+    }
+    long _timeInMillis;
+    final ImageTrain _it;
+    float[] _data;
+    float[] _labels;
+
+    @Override
+    public void compute2() {
+      long start = System.currentTimeMillis();
+      _it.train(_data,_labels); //ignore predictions
+      long end = System.currentTimeMillis();
+      _timeInMillis += end-start;
+      tryComplete();
+    }
+
   }
 
   /**
